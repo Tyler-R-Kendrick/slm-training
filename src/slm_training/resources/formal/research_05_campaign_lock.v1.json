@@ -1,0 +1,133 @@
+{
+  "locked_at": "2026-08-12T14:53:42.929623Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "exhaustive_replay",
+        "config_sha256": "d9c6ef921314fc6cab8f7a150304bd88c5ea784606fd83f39b4202d0a5d4ecbd",
+        "role": "control"
+      },
+      {
+        "arm_id": "lrat_pilot",
+        "config_sha256": "b41ed65dee1464f13b4cec0191d3d4ea6988e7f5ae35007a1232309b89e2ec42",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-05",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-05-vss-lrat",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "exhaustive_replay",
+        "description": "Canonical exhaustive VSS replay on identical instances.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "encoding_flip_literal",
+        "description": "Encoding polarity mutation must not authorize unsat.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "certificate_hint_corrupt",
+        "description": "Corrupt LRAT hints must not authorize unsat.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff zero witness disagreements, 100% mutation rejection, and median paired warm LRAT/exhaustive ratio < 1.0; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "decrease",
+        "endpoint_id": "warm_lrat_over_exhaustive_ratio",
+        "metric": "median_paired_warm_lrat_check_over_exhaustive_replay_time_ratio",
+        "minimum_effect": 0.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "witness_disagreement_count",
+        "metric": "witness_disagreement_count",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "increase",
+        "endpoint_id": "mutation_rejection_rate",
+        "metric": "mutation_rejection_rate",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_05_vss_lrat_sat",
+    "formal_obligations": [],
+    "hypothesis": "For a declared bounded VSS subset, verified VSS-to-CNF plus checked LRAT preserves exact agreement while making warm refutation cheaper than exhaustive replay.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research05_primary",
+        "hypothesis_ids": [
+          "warm_lrat_over_exhaustive_ratio"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "encoding_flip_literal",
+      "certificate_hint_corrupt"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "warm_lrat_over_exhaustive_ratio",
+        "gate_id": "ratio_lt_one",
+        "operator": "lt",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "witness_disagreement_count",
+        "gate_id": "any_disagreement",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture suite stop after paired warm/exhaustive report"
+    ]
+  },
+  "manifest_sha256": "28f468da369df47c00779b5ce183e3e100443dd71afbc27bd47ed9a2e109010d",
+  "schema_version": "CampaignLockV1"
+}

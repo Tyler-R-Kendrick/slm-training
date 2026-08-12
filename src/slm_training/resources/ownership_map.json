@@ -356,7 +356,7 @@
       ],
       "authority_tier": "compiler-hard",
       "design_doc": "docs/design/experiment-campaign-governance.md",
-      "notes": "AP-007+ runners and every promotion candidate use this contract. No competing implementation found. RESEARCH-02/SLM-533 adds default-off research_preregistry.py over this owner (knob/hypothesis signatures + blocker/campaign-lock activation); not a parallel campaign store."
+      "notes": "AP-007+ runners and every promotion candidate use this contract. No competing implementation found. RESEARCH-02/SLM-533 adds default-off research_preregistry.py over this owner (knob/hypothesis signatures + blocker/campaign-lock activation); not a parallel campaign store. RESEARCH-05/SLM-563 adds default-off VSS LRAT pilot harness over this owner (campaign lock + paired warm/exhaustive evidence); not a parallel campaign store."
     },
     {
       "id": "decode_telemetry",
@@ -1636,6 +1636,16 @@
       ],
       "new_owner_justified": false,
       "justification": "Thin default-off/research-only registry over ExperimentCampaignV1/CampaignLockV1 plus RESEARCH-01 citations; no parallel campaign store."
+    },
+    {
+      "issue": "RESEARCH-05",
+      "linear_id": "SLM-563",
+      "title": "Experiment: proof-producing VSS SAT backend with LRAT",
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Isolated default-off research adapter + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-10 verified encoding (lrat_pilot); RESEARCH-02 preregistry activation only \u2014 no parallel campaign store or production decode authority."
     }
   ],
   "contract_version_governance": {

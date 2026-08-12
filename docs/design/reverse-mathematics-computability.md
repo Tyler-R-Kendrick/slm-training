@@ -9,6 +9,7 @@
 **Verified by:** `python -m scripts.verify_revmath_owners` · `python -m scripts.verify_revmath_harness_parity` · `python -m scripts.verify_agent_surfaces --obligation revmath.canonical-owners`
 **Research citations (RESEARCH-01):** [research-citation-catalog.md](research-citation-catalog.md) · machine-readable [`research_citation_catalog.json`](../../src/slm_training/resources/research_citation_catalog.json) · `python -m scripts.verify_research_citation_catalog`  
 **Experiment preregistry (RESEARCH-02):** [research-experiment-preregistry.md](research-experiment-preregistry.md) · [`research_experiment_preregistry.json`](../../src/slm_training/resources/research_experiment_preregistry.json) · `python -m scripts.verify_research_experiment_preregistry`
+**RESEARCH-05 (VSS LRAT pilot):** [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (default-off; completed accept under campaign lock).
 
 > **Goal law:** bound by [decode-invariants.md](decode-invariants.md). Reverse mathematics here means *which assumptions suffice for which conclusion* — not a second training stack.
 

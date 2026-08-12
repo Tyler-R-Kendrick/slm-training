@@ -188,7 +188,7 @@
         {
           "version": "v3",
           "date": "2026-07-30",
-          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology\u00d7diffusion ADR (\u0393 tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo\u2260AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md."
+          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology×diffusion ADR (Γ tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo≠AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md."
         },
         {
           "version": "v2",
@@ -917,7 +917,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle"
         }
       ]
     },
@@ -1297,7 +1297,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally \u2014 public behavior and every test_operator_merge.py test are unchanged"
+          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally — public behavior and every test_operator_merge.py test are unchanged"
         },
         {
           "version": "v1",
@@ -1383,7 +1383,7 @@
         {
           "version": "v23",
           "date": "2026-08-10",
-          "note": "RSP-003/SLM-485: add packed_semantic_summary.py \u2014 request-independent packed semantic kind summary derived solely from tokenizer_authority (ids/kinds/special ids); load_checked/try_load fail closed; excluded from production default; consumed by EXP-SR-7 fixture campaign only."
+          "note": "RSP-003/SLM-485: add packed_semantic_summary.py — request-independent packed semantic kind summary derived solely from tokenizer_authority (ids/kinds/special ids); load_checked/try_load fail closed; excluded from production default; consumed by EXP-SR-7 fixture campaign only."
         },
         {
           "version": "v22",
@@ -1398,7 +1398,7 @@
         {
           "version": "v21",
           "date": "2026-08-08",
-          "note": "no-bump: PCT-004 (SLM-440) \u2014 added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged."
+          "note": "no-bump: PCT-004 (SLM-440) — added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged."
         },
         {
           "version": "v21",
@@ -1586,12 +1586,12 @@
         {
           "version": "v14",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) \u2014 dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
+          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected."
         },
         {
           "version": "v13",
           "date": "2026-08-08",
-          "note": "no-bump: PCT-004 (SLM-440) \u2014 added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam."
+          "note": "no-bump: PCT-004 (SLM-440) — added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam."
         },
         {
           "version": "v13",
@@ -1723,7 +1723,7 @@
         {
           "version": "v1",
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral \u2014 never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy."
+          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral — never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy."
         }
       ]
     },
@@ -1911,7 +1911,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-05: initial atomic multi-action operator transaction executor \u2014 independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
+          "note": "DSH5-05: initial atomic multi-action operator transaction executor — independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained"
         }
       ]
     },
@@ -1927,7 +1927,7 @@
         {
           "version": "v3",
           "date": "2026-07-25",
-          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all \u2014 previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
+          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all — previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes"
         },
         {
           "version": "v2",
@@ -1937,7 +1937,7 @@
         {
           "version": "v1",
           "date": "2026-07-25",
-          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts \u2014 one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired"
         }
       ]
     },
@@ -2083,7 +2083,7 @@
         {
           "version": "v7",
           "date": "2026-08-10",
-          "note": "PGS-E01 (SLM-504): decode-time goal_support_mode seam in dsl/solver/decode.py \u2014 normalize/validate config, build_goal_support_decode_binding, goal_support_certified_prune via exact_goal_closure, goal_support_diagnostic_observe forest-parity path."
+          "note": "PGS-E01 (SLM-504): decode-time goal_support_mode seam in dsl/solver/decode.py — normalize/validate config, build_goal_support_decode_binding, goal_support_certified_prune via exact_goal_closure, goal_support_diagnostic_observe forest-parity path."
         },
         {
           "version": "v6",
@@ -2741,7 +2741,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -3142,6 +3142,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-05 (SLM-563) downstream_extension_map row over experiment_campaign; no new subsystem."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-02 (SLM-533) notes + downstream_extension_map row pointing experiment_campaign at research_preregistry; no new subsystem."
         },
         {
@@ -3177,47 +3182,47 @@
         {
           "version": "v23",
           "date": "2026-08-11T13:14:39Z",
-          "note": "no-bump: HARN-10 (SLM-548) wires check_changed path\u2192test map for revmath profile_binding / run_revmath_profile only; ownership map unchanged."
+          "note": "no-bump: HARN-10 (SLM-548) wires check_changed path→test map for revmath profile_binding / run_revmath_profile only; ownership map unchanged."
         },
         {
           "version": "v23",
           "date": "2026-08-11T12:54:41Z",
-          "note": "no-bump: HARN-09 (SLM-560) wires check_changed path\u2192test map for revmath self_healing only; ownership map unchanged."
+          "note": "no-bump: HARN-09 (SLM-560) wires check_changed path→test map for revmath self_healing only; ownership map unchanged."
         },
         {
           "version": "v23",
-          "note": "no-bump: HARN-08 (SLM-537) wires check_changed path\u2192test map for revmath labeling only; ownership map unchanged.",
+          "note": "no-bump: HARN-08 (SLM-537) wires check_changed path→test map for revmath labeling only; ownership map unchanged.",
           "date": "2026-08-11T12:35:52Z"
         },
         {
           "version": "v23",
-          "note": "no-bump: HARN-06 (SLM-546) wires check_changed path\u2192test map for revmath constructivization/counterexample only; ownership map unchanged.",
+          "note": "no-bump: HARN-06 (SLM-546) wires check_changed path→test map for revmath constructivization/counterexample only; ownership map unchanged.",
           "date": "2026-08-11T12:28:02Z"
         },
         {
           "version": "v23",
           "date": "2026-08-11",
-          "note": "no-bump: HARN-07 (SLM-547) wires check_changed path\u2192test map for revmath quantitative_bound only; ownership map unchanged."
+          "note": "no-bump: HARN-07 (SLM-547) wires check_changed path→test map for revmath quantitative_bound only; ownership map unchanged."
         },
         {
           "version": "v23",
           "date": "2026-08-11",
-          "note": "no-bump: HARN-05 (SLM-545) wires check_changed path\u2192test map for revmath reversal only; ownership map unchanged."
+          "note": "no-bump: HARN-05 (SLM-545) wires check_changed path→test map for revmath reversal only; ownership map unchanged."
         },
         {
           "version": "v23",
           "date": "2026-08-11",
-          "note": "no-bump: HARN-04 (SLM-544) wires check_changed path\u2192test map for revmath assumption_ablation only; ownership map unchanged."
+          "note": "no-bump: HARN-04 (SLM-544) wires check_changed path→test map for revmath assumption_ablation only; ownership map unchanged."
         },
         {
           "version": "v23",
           "date": "2026-08-11",
-          "note": "no-bump: HARN-03 (SLM-536) wires check_changed path\u2192test map for revmath runner/replay/fixtures/CLI; no ownership_map.json structural change."
+          "note": "no-bump: HARN-03 (SLM-536) wires check_changed path→test map for revmath runner/replay/fixtures/CLI; no ownership_map.json structural change."
         },
         {
           "version": "v23",
           "date": "2026-08-11",
-          "note": "no-bump: HARN-02 (SLM-527) wires check_changed path\u2192test map for harnesses/reasoning/revmath/ and owner-map refresh; no ownership_map.json structural change."
+          "note": "no-bump: HARN-02 (SLM-527) wires check_changed path→test map for harnesses/reasoning/revmath/ and owner-map refresh; no ownership_map.json structural change."
         },
         {
           "version": "v23",
@@ -3292,7 +3297,7 @@
         {
           "version": "v12",
           "date": "2026-08-10",
-          "note": "no-bump: SLM-483 (SIE-006) knowledge-surface link only \u2014 ownership_map.json SIE-006 row cites iter-slm483-sie-006-construct-validity-20260810.md; no owner_symbols or structural map change."
+          "note": "no-bump: SLM-483 (SIE-006) knowledge-surface link only — ownership_map.json SIE-006 row cites iter-slm483-sie-006-construct-validity-20260810.md; no owner_symbols or structural map change."
         },
         {
           "version": "v12",
@@ -3327,7 +3332,7 @@
         {
           "version": "v9",
           "date": "2026-08-10",
-          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only \u2014 repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change."
+          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only — repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change."
         },
         {
           "version": "v9",
@@ -3337,7 +3342,7 @@
         {
           "version": "v9",
           "date": "2026-08-10",
-          "note": "no-bump: SLM-478 (SIE-005) knowledge-surface link only \u2014 repository-ownership-map.md + ownership_map.json cite iter-slm478-sie-005-blinded-packet-20260810.md on the SIE-005 row and name SIE-006/EXP-SR-3 as campaign successor; no owner_symbols or structural map change."
+          "note": "no-bump: SLM-478 (SIE-005) knowledge-surface link only — repository-ownership-map.md + ownership_map.json cite iter-slm478-sie-005-blinded-packet-20260810.md on the SIE-005 row and name SIE-006/EXP-SR-3 as campaign successor; no owner_symbols or structural map change."
         },
         {
           "version": "v9",
@@ -3347,7 +3352,7 @@
         {
           "version": "v8",
           "date": "2026-08-10",
-          "note": "no-bump: SLM-474 (SRP-010) knowledge-surface link only \u2014 repository-ownership-map.md cites iter-slm474-srp-010-portability-20260810.md on the SRP-010 fixture row and names EXP-SR-12/RSP-008 (SLM-487) as the campaign execution successor; no owner_symbols or ownership_map.json structural change."
+          "note": "no-bump: SLM-474 (SRP-010) knowledge-surface link only — repository-ownership-map.md cites iter-slm474-srp-010-portability-20260810.md on the SRP-010 fixture row and names EXP-SR-12/RSP-008 (SLM-487) as the campaign execution successor; no owner_symbols or ownership_map.json structural change."
         },
         {
           "version": "v8",
@@ -3508,6 +3513,11 @@
         {
           "version": "v1",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-05 (SLM-563) updates RESEARCH-05 row disposition/campaign_lock_sha256/blockers only; schema+loader unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-08/SLM-540 sets campaign_lock_sha256 + disposition after fixture run; schema unchanged."
         },
         {
@@ -3530,6 +3540,11 @@
         "src/slm_training/resources/revmath/examples/README.md"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-05 (SLM-563) docs-only pointer to iter-revmath-research-05-preregistered.md in reverse-mathematics-computability.md; owner map unchanged."
+        },
         {
           "version": "v22",
           "date": "2026-08-12",
@@ -3838,6 +3853,11 @@
         {
           "version": "v208",
           "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-05 (SLM-563) design/results docs; deterministic fold, no campaign contract change."
+        },
+        {
+          "version": "v208",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-08/SLM-540 rebuilt autotrain_climb evidence_ledger.v1.json from docs/design after adding iter-revmath-research-08 evidence; campaign schema unchanged."
         },
         {
@@ -3958,12 +3978,12 @@
         {
           "version": "v202",
           "date": "2026-08-10",
-          "note": "CodeRabbit fix: the matched-control fingerprint (_manifest's ctrl dict) reset the pre-existing treatment knobs to their off-defaults but never reset solver_energy_loss_weight/solver_energy_decode_weight/legal_edit_hazard_loss_weight/legal_edit_hazard_decode_weight added by the solver-energy-rerank and legal-edit-hazard arms \u2014 a candidate config using either arm could hash-collide its own control, silently invalidating the matched-control contract. Added the four missing resets."
+          "note": "CodeRabbit fix: the matched-control fingerprint (_manifest's ctrl dict) reset the pre-existing treatment knobs to their off-defaults but never reset solver_energy_loss_weight/solver_energy_decode_weight/legal_edit_hazard_loss_weight/legal_edit_hazard_decode_weight added by the solver-energy-rerank and legal-edit-hazard arms — a candidate config using either arm could hash-collide its own control, silently invalidating the matched-control contract. Added the four missing resets."
         },
         {
           "version": "v201",
           "date": "2026-08-10",
-          "note": "Merge origin/main (#1551 evidence-ledger stamping) into this PR's branch: main independently bumped this component again from the shared ancestor (stamping continuous_cycle_results with build_version_stamp and regenerating the evidence ledger) while this branch's own history already used the same v200 label for a different entry \u2014 both are kept byte-identical to their own parent's history (duplicate version labels across distinct entries are an existing, tolerated pattern in this file \u2014 see the v195 entries below) and this new top-level entry uses a genuinely fresh label so both lines combine into one sequence without altering any entry already published on either side."
+          "note": "Merge origin/main (#1551 evidence-ledger stamping) into this PR's branch: main independently bumped this component again from the shared ancestor (stamping continuous_cycle_results with build_version_stamp and regenerating the evidence ledger) while this branch's own history already used the same v200 label for a different entry — both are kept byte-identical to their own parent's history (duplicate version labels across distinct entries are an existing, tolerated pattern in this file — see the v195 entries below) and this new top-level entry uses a genuinely fresh label so both lines combine into one sequence without altering any entry already published on either side."
         },
         {
           "version": "v200",
@@ -3978,7 +3998,7 @@
         {
           "version": "v199",
           "date": "2026-08-10",
-          "note": "_preflight_screening_slug now passes the arm's cumulative ledger n_complete (+1 for this cycle) as the preflight candidate's n_seeds, instead of a literal 1 \u2014 reconciles the seeds policy with the power preflight so screening can actually accumulate evidence across cycles."
+          "note": "_preflight_screening_slug now passes the arm's cumulative ledger n_complete (+1 for this cycle) as the preflight candidate's n_seeds, instead of a literal 1 — reconciles the seeds policy with the power preflight so screening can actually accumulate evidence across cycles."
         },
         {
           "version": "v198",
@@ -3993,7 +4013,7 @@
         {
           "version": "v198",
           "date": "2026-08-09",
-          "note": "darkfactory completion (units G+L): terminal governance \u2014 park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution \u2014 staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8"
+          "note": "darkfactory completion (units G+L): terminal governance — park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution — staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8"
         },
         {
           "version": "v197",
@@ -4018,7 +4038,7 @@
         {
           "version": "v195",
           "date": "2026-08-08",
-          "note": "no-bump: _git_commit_paths() no longer overrides committer identity with user.email=autotrain@local / user.name=autotrain for the docs self-heal commit; it now inherits the ambient (signed) git identity instead. Commit content, staging, and campaign semantics are unchanged \u2014 only the committer metadata on self-heal commits."
+          "note": "no-bump: _git_commit_paths() no longer overrides committer identity with user.email=autotrain@local / user.name=autotrain for the docs self-heal commit; it now inherits the ambient (signed) git identity instead. Commit content, staging, and campaign semantics are unchanged — only the committer metadata on self-heal commits."
         },
         {
           "version": "v195",
@@ -4068,7 +4088,7 @@
         {
           "version": "v188",
           "date": "2026-08-06",
-          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness\u2192next_experiment; robust porcelain path parse"
+          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness→next_experiment; robust porcelain path parse"
         },
         {
           "version": "v187",
@@ -4108,12 +4128,12 @@
         {
           "version": "v183",
           "date": "2026-08-06",
-          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/\u2026) still fail closed"
+          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/…) still fail closed"
         },
         {
           "version": "v182",
           "date": "2026-08-05",
-          "note": "dual-regime thrash: isolate + climb residual + timeout\u2192decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes"
+          "note": "dual-regime thrash: isolate + climb residual + timeout→decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes"
         },
         {
           "version": "v181",
@@ -4178,7 +4198,7 @@
         {
           "version": "v170",
           "date": "2026-08-03",
-          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred \u2260 hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
+          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred ≠ hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor"
         },
         {
           "version": "v169",
@@ -4188,7 +4208,7 @@
         {
           "version": "v168",
           "date": "2026-08-03",
-          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n\u00d7decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
+          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n×decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++"
         },
         {
           "version": "v167",
@@ -4998,7 +5018,7 @@
         {
           "version": "v27",
           "date": "2026-08-01",
-          "note": "Promote formal timeout 600s \u2192 timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
+          "note": "Promote formal timeout 600s → timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout"
         },
         {
           "version": "v26",
@@ -5224,7 +5244,7 @@
         {
           "version": "v18",
           "date": "2026-08-11",
-          "note": "INTEG-02 (SLM-555): document MechanismTrigger admission via preflight.mechanism_no_effect; break formal\u2194revmath.profile_binding circular import by TYPE_CHECKING-only RevmathFourAxisAnalysisV1 import."
+          "note": "INTEG-02 (SLM-555): document MechanismTrigger admission via preflight.mechanism_no_effect; break formal↔revmath.profile_binding circular import by TYPE_CHECKING-only RevmathFourAxisAnalysisV1 import."
         },
         {
           "version": "v17",
@@ -5279,7 +5299,7 @@
         {
           "version": "v14",
           "date": "2026-08-03",
-          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again \u2014 test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
+          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again — test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged."
         },
         {
           "version": "v14",
@@ -5772,6 +5792,11 @@
         {
           "version": "v163",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-05/SLM-563 lives under dedicated component harness.experiments.slm563_research05_vss_lrat (v1)."
+        },
+        {
+          "version": "v163",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-08/SLM-540 lives under dedicated component harness.experiments.slm540_research08_myhill_nerode (v1)."
         },
         {
@@ -5782,7 +5807,7 @@
         {
           "version": "v163",
           "date": "2026-08-11",
-          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py \u2014 default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence."
+          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py — default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence."
         },
         {
           "version": "v162",
@@ -5827,22 +5852,22 @@
         {
           "version": "v159",
           "date": "2026-08-10",
-          "note": "RSP-008/SLM-487: add rsp008_second_pack_portability.py \u2014 diagnostic EXP-SR-12 second-pack portability certification composing SRP-010 seams on OpenUI (control) and symbolic_regression (candidate) under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic, promotion=false). Scores second_pack_portability_parity_rate; honest fork inventory falsifies zero-fork certification. Dedicated component harness.experiments.slm487_rsp008_portability owns the harness/CLI/tests/docs paths."
+          "note": "RSP-008/SLM-487: add rsp008_second_pack_portability.py — diagnostic EXP-SR-12 second-pack portability certification composing SRP-010 seams on OpenUI (control) and symbolic_regression (candidate) under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic, promotion=false). Scores second_pack_portability_parity_rate; honest fork inventory falsifies zero-fork certification. Dedicated component harness.experiments.slm487_rsp008_portability owns the harness/CLI/tests/docs paths."
         },
         {
           "version": "v158",
           "date": "2026-08-10",
-          "note": "SIE-004/SLM-482: add sie004_predictor_campaign.py \u2014 fixture-scale EXP-SR-2 matched prompt-requirement predictor campaign composing SIE-003's advisory predictor seam (none/deterministic/frequency/retrieval/learned/gold-oracle arms) with the SIE-001 exp-sr-2 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) group-by-source_program splits over openui_hard_valid_v1; loads SIE-002 authorized_factors (roles, bindings) as the RequirementFact emission gate; legal_support_parity exact. Durable docs/design/iter-slm482-sie-004-predictor-campaign-20260810.{json,md}."
+          "note": "SIE-004/SLM-482: add sie004_predictor_campaign.py — fixture-scale EXP-SR-2 matched prompt-requirement predictor campaign composing SIE-003's advisory predictor seam (none/deterministic/frequency/retrieval/learned/gold-oracle arms) with the SIE-001 exp-sr-2 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) group-by-source_program splits over openui_hard_valid_v1; loads SIE-002 authorized_factors (roles, bindings) as the RequirementFact emission gate; legal_support_parity exact. Durable docs/design/iter-slm482-sie-004-predictor-campaign-20260810.{json,md}."
         },
         {
           "version": "v157",
           "date": "2026-08-10",
-          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py \u2014 fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips."
+          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py — fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips."
         },
         {
           "version": "v156",
           "date": "2026-08-10",
-          "note": "RSP-004 (SLM-479): add symbolic_egraph.py -- a minimal union-find e-graph over the typed symbolic-expression IR, seeded and rewritten exclusively through SRP-005's certified REWRITE_RULES (no new rewrite semantics), plus a cycle-safe bottom-up extractor (safe_representatives) and independent numerical re-verification (verify_rewrite_numerically, NaN-aware) of every applied rewrite. scripts/run_exp_sr8_egraph_experiment.py executes the locked SIE-001 exp-sr-8 identity (exp_sr_catalogue.py) over a fixed fixture corpus, comparing canonical-hash dedup alone against e-graph saturation+extraction at a matched budget, and persists honest evidence to docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}: e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly (expected -- the current REWRITE_RULES are each complexity-non-increasing and confluent, so both mechanisms converge to the same fixed point), egraph_certified_equivalence_rate=1.0 (10/10 applications independently re-verified), rollback gate clear. Per SLM-479's acceptance criterion, this stays an isolated, default-off experiment module -- no import from dsl/symbolic_regression_pack.py or any production canonicalization path. Bumped v155\u2192v156 on rebase onto main."
+          "note": "RSP-004 (SLM-479): add symbolic_egraph.py -- a minimal union-find e-graph over the typed symbolic-expression IR, seeded and rewritten exclusively through SRP-005's certified REWRITE_RULES (no new rewrite semantics), plus a cycle-safe bottom-up extractor (safe_representatives) and independent numerical re-verification (verify_rewrite_numerically, NaN-aware) of every applied rewrite. scripts/run_exp_sr8_egraph_experiment.py executes the locked SIE-001 exp-sr-8 identity (exp_sr_catalogue.py) over a fixed fixture corpus, comparing canonical-hash dedup alone against e-graph saturation+extraction at a matched budget, and persists honest evidence to docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}: e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly (expected -- the current REWRITE_RULES are each complexity-non-increasing and confluent, so both mechanisms converge to the same fixed point), egraph_certified_equivalence_rate=1.0 (10/10 applications independently re-verified), rollback gate clear. Per SLM-479's acceptance criterion, this stays an isolated, default-off experiment module -- no import from dsl/symbolic_regression_pack.py or any production canonicalization path. Bumped v155→v156 on rebase onto main."
         },
         {
           "version": "v155",
@@ -5852,7 +5877,7 @@
         {
           "version": "v154",
           "date": "2026-08-10",
-          "note": "no-bump: SLM-474 (SRP-010) optional corpus/enumerate exercise lives in srp010_pack_portability.py, owned by dedicated component harness.experiments.slm474_srp010_portability (v1\u2192v2)."
+          "note": "no-bump: SLM-474 (SRP-010) optional corpus/enumerate exercise lives in srp010_pack_portability.py, owned by dedicated component harness.experiments.slm474_srp010_portability (v1→v2)."
         },
         {
           "version": "v154",
@@ -5947,7 +5972,7 @@
         {
           "version": "v138",
           "date": "2026-07-27",
-          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes \u2014 the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2."
+          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes — the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2."
         },
         {
           "version": "v137",
@@ -6612,7 +6637,7 @@
         {
           "version": "v31",
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
         },
         {
           "version": "v30",
@@ -6652,7 +6677,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -6712,7 +6737,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -6833,7 +6858,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -7428,7 +7453,7 @@
         {
           "version": "sde5-03-v1",
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness"
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
@@ -8011,7 +8036,7 @@
         {
           "version": "v1",
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     },
@@ -9185,7 +9210,7 @@
         {
           "version": "v4",
           "date": "2026-07-25",
-          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy — exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)"
         },
         {
           "version": "v4",
@@ -13056,7 +13081,7 @@
         {
           "version": "v96",
           "date": "2026-08-10",
-          "note": "CodeRabbit fix (data minimization): the PostHog LLM-telemetry mirror in trace.py now forwards only an explicit allowlist of scalar llm.* metadata keys (temperature, max_tokens, finish_reason, cost_usd, cached, retry_count, stream) instead of every llm.*-prefixed attribute verbatim \u2014 the prior passthrough could have forwarded free-form generation content (a prompt, completion, or raw response) to the third-party mirror if a caller ever tagged a span with such an attribute."
+          "note": "CodeRabbit fix (data minimization): the PostHog LLM-telemetry mirror in trace.py now forwards only an explicit allowlist of scalar llm.* metadata keys (temperature, max_tokens, finish_reason, cost_usd, cached, retry_count, stream) instead of every llm.*-prefixed attribute verbatim — the prior passthrough could have forwarded free-form generation content (a prompt, completion, or raw response) to the third-party mirror if a caller ever tagged a span with such an attribute."
         },
         {
           "version": "v95",
@@ -14452,7 +14477,7 @@
         {
           "version": "v19",
           "date": "2026-07-25",
-          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1"
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified — the new module is versioned under harness.experiments.slm379_operator_frames v1"
         },
         {
           "version": "v19",
@@ -14737,7 +14762,7 @@
         {
           "version": "v9",
           "date": "2026-08-03",
-          "note": "no-bump: Round 7 follow-up docs \u2014 record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
+          "note": "no-bump: Round 7 follow-up docs — record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged."
         },
         {
           "version": "v9",
@@ -15676,12 +15701,12 @@
         {
           "version": "v314",
           "date": "2026-08-10",
-          "note": "PGS-E01 (SLM-504): default-off goal_support_mode off/diagnostic/certified on compiler-tree decode \u2014 GoalSupportProvider construction from structured GenerationRequest inputs, diagnostic exact_goal_closure observation without forest mutation, certified goal_support_certified_prune via exact_goal_closure, factory/runtime override + CLI wiring; off remains byte-identical."
+          "note": "PGS-E01 (SLM-504): default-off goal_support_mode off/diagnostic/certified on compiler-tree decode — GoalSupportProvider construction from structured GenerationRequest inputs, diagnostic exact_goal_closure observation without forest mutation, certified goal_support_certified_prune via exact_goal_closure, factory/runtime override + CLI wiring; off remains byte-identical."
         },
         {
           "version": "v313",
           "date": "2026-08-09",
-          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers \u2014 solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough"
+          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers — solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough"
         },
         {
           "version": "v312",
@@ -17850,7 +17875,7 @@
       ]
     },
     "formal.objects": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "tests/test_formal/test_integ10_release_matrix.py",
@@ -17923,9 +17948,17 @@
         "src/slm_training/formal/judgment.py",
         "tests/test_formal/test_refutation_authority.py",
         "src/slm_training/resources/formal/judgment_truth_table.v1.json",
-        "src/slm_training/resources/formal/goal_support_golden_cases.v1.json"
+        "src/slm_training/resources/formal/goal_support_golden_cases.v1.json",
+        "src/slm_training/formal/vss_lrat_backend.py",
+        "tests/test_formal/test_vss_lrat_backend.py",
+        "src/slm_training/resources/formal/research_05_campaign_lock.v1.json"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-08-12",
+          "note": "RESEARCH-05 (SLM-563): default-off VSS LRAT SAT pilot adapter, campaign lock, paired warm/exhaustive evidence; formal-objects-multi-prover.md RESEARCH-05 section."
+        },
         {
           "version": "v24",
           "date": "2026-08-11",
@@ -18159,7 +18192,7 @@
         {
           "version": "v7",
           "date": "2026-07-31",
-          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python\u2194Lean bridges; hollow residual theorems documented as ADR sketches."
+          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python↔Lean bridges; hollow residual theorems documented as ADR sketches."
         },
         {
           "version": "v6",
@@ -18179,12 +18212,12 @@
         {
           "version": "v3",
           "date": "2026-07-31",
-          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17\u2013C19 efficiency gates."
+          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17–C19 efficiency gates."
         },
         {
           "version": "v2",
           "date": "2026-07-31",
-          "note": "Measured SFF suite n_ranked=78 (26\u00d73 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class."
+          "note": "Measured SFF suite n_ranked=78 (26×3 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class."
         },
         {
           "version": "v1",
@@ -18249,12 +18282,12 @@
         {
           "version": "v2",
           "date": "2026-08-08",
-          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form\u2282FormControl / Card\u2282CardHeader substring suppression)."
+          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form⊂FormControl / Card⊂CardHeader substring suppression)."
         },
         {
           "version": "v1",
           "date": "2026-08-08",
-          "note": "SGS-004 (SLM-442): conservative deterministic GenerationRequest \u2192 PromptSemanticRequirementsV1 extractor with stable rule ids, gold-target access guards, ambiguity abstention, and reuse of existing _prompt_component_requirements inventory behavior; registers the SGS-003 contract + canonicalize + extract surface under one component."
+          "note": "SGS-004 (SLM-442): conservative deterministic GenerationRequest → PromptSemanticRequirementsV1 extractor with stable rule ids, gold-target access guards, ambiguity abstention, and reuse of existing _prompt_component_requirements inventory behavior; registers the SGS-003 contract + canonicalize + extract surface under one component."
         }
       ]
     },
@@ -18278,12 +18311,12 @@
         {
           "version": "v4",
           "date": "2026-08-10",
-          "note": "CodeRabbit fix: schema.sql revoked anon/authenticated on evidence_records and relied on RLS bypass for the service-role sync client, but table-level GRANTs and RLS are separate Postgres controls \u2014 RLS bypass does not imply a table-level privilege. Added an explicit 'grant select, insert, update, delete on evidence_records to service_role' so the upsert sync keeps working even on a project without Supabase's default service_role privileges (self-hosted Postgres+PostgREST, or a project with altered default privileges) instead of silently degrading to the local-only mirror on a 42501."
+          "note": "CodeRabbit fix: schema.sql revoked anon/authenticated on evidence_records and relied on RLS bypass for the service-role sync client, but table-level GRANTs and RLS are separate Postgres controls — RLS bypass does not imply a table-level privilege. Added an explicit 'grant select, insert, update, delete on evidence_records to service_role' so the upsert sync keeps working even on a project without Supabase's default service_role privileges (self-hosted Postgres+PostgREST, or a project with altered default privileges) instead of silently degrading to the local-only mirror on a 42501."
         },
         {
           "version": "v3",
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes: find_prior_attempts now unions remote results with the local mirror instead of replacing it (a successful-but-empty remote query \u2014 schema.sql applied but not yet synced, or a lagging remote table \u2014 no longer silently hides a local match); write_local_index writes atomically (temp file + os.replace); _map_climb_ledger populates version_stamp from the source payload instead of hardcoding {}; schema.sql enables row-level security and revokes anon/authenticated access (the sync client's service-role key bypasses RLS, so this only closes the anonymous-read exposure of a table created in public)."
+          "note": "CodeRabbit fixes: find_prior_attempts now unions remote results with the local mirror instead of replacing it (a successful-but-empty remote query — schema.sql applied but not yet synced, or a lagging remote table — no longer silently hides a local match); write_local_index writes atomically (temp file + os.replace); _map_climb_ledger populates version_stamp from the source payload instead of hardcoding {}; schema.sql enables row-level security and revokes anon/authenticated access (the sync client's service-role key bypasses RLS, so this only closes the anonymous-read exposure of a table created in public)."
         },
         {
           "version": "v2",
@@ -18360,7 +18393,7 @@
         {
           "version": "v3",
           "date": "2026-08-10",
-          "note": "CodeRabbit fix (real bug): config_fingerprint excluded FINGERPRINT_EXCLUDE_KEYS (steps) only in its local fallback, but passed the unfiltered config to the evidence-store helper when importable \u2014 since that module ships in this same PR the helper path always won, so the fingerprint changed every cycle and prior-attempt matching silently never fired. Stable mapping is now built once and used by both paths."
+          "note": "CodeRabbit fix (real bug): config_fingerprint excluded FINGERPRINT_EXCLUDE_KEYS (steps) only in its local fallback, but passed the unfiltered config to the evidence-store helper when importable — since that module ships in this same PR the helper path always won, so the fingerprint changed every cycle and prior-attempt matching silently never fired. Stable mapping is now built once and used by both paths."
         },
         {
           "version": "v2",
@@ -18462,7 +18495,7 @@
         {
           "version": "v2",
           "date": "2026-08-10",
-          "note": "CodeRabbit fix: report_merge_readiness.sh printed a bare 'READY' verdict for --fast runs even though verify_merge_ready.py's own summary already flags fast=true (changed-test execution skipped) \u2014 the wrapper never read that field. Verdict now reads STATIC-READY for a passing fast run and labels the mode explicitly, so a fast/static pass is never mistaken for full merge readiness."
+          "note": "CodeRabbit fix: report_merge_readiness.sh printed a bare 'READY' verdict for --fast runs even though verify_merge_ready.py's own summary already flags fast=true (changed-test execution skipped) — the wrapper never read that field. Verdict now reads STATIC-READY for a passing fast run and labels the mode explicitly, so a fast/static pass is never mistaken for full merge readiness."
         },
         {
           "version": "v1",
@@ -18490,7 +18523,7 @@
         {
           "version": "v2",
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes: default_distinct_id no longer falls back to the machine hostname (can reveal infrastructure naming or a person's machine) \u2014 falls straight to the fixed literal 'slm-training'; close() now bounds the worker-thread join and the final drain by one shared absolute deadline (including the flush-lock acquisition itself, not just the loop body), so a full queue behind a slow transport can no longer delay process shutdown past the requested timeout, with a deadline-exceeded drop counted in stats.dropped."
+          "note": "CodeRabbit fixes: default_distinct_id no longer falls back to the machine hostname (can reveal infrastructure naming or a person's machine) — falls straight to the fixed literal 'slm-training'; close() now bounds the worker-thread join and the final drain by one shared absolute deadline (including the flush-lock acquisition itself, not just the loop body), so a full queue behind a slow transport can no longer delay process shutdown past the requested timeout, with a deadline-exceeded drop counted in stats.dropped."
         },
         {
           "version": "v1",
@@ -18514,12 +18547,12 @@
         {
           "version": "v3",
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes: (1) ScreenConfig.max_minutes had no upper bound (only ge=1, default 30) while the repo's own MAX_RUN_MINUTES hard-run-cap law caps every run at 3 minutes and hf_jobs_train.py already enforces this exactly \u2014 hf_jobs_screen.py now caps max_minutes at MAX_RUN_MINUTES too, same as its sibling script. (2) collect_results' seed-file identity check omitted run_id and steps, so a stale seed_<n>.json from an earlier run at a different step count could pass identity and silently enter the aggregate; both are now part of the required identity match. (3) a seed file containing valid-but-non-object JSON (an array/scalar/null) crashed with AttributeError on payload.get(...) instead of degrading to incomplete like other malformed inputs \u2014 now guarded before the identity check."
+          "note": "CodeRabbit fixes: (1) ScreenConfig.max_minutes had no upper bound (only ge=1, default 30) while the repo's own MAX_RUN_MINUTES hard-run-cap law caps every run at 3 minutes and hf_jobs_train.py already enforces this exactly — hf_jobs_screen.py now caps max_minutes at MAX_RUN_MINUTES too, same as its sibling script. (2) collect_results' seed-file identity check omitted run_id and steps, so a stale seed_<n>.json from an earlier run at a different step count could pass identity and silently enter the aggregate; both are now part of the required identity match. (3) a seed file containing valid-but-non-object JSON (an array/scalar/null) crashed with AttributeError on payload.get(...) instead of degrading to incomplete like other malformed inputs — now guarded before the identity check."
         },
         {
           "version": "v2",
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes (real security issues): ScreenConfig validates screen_id/metric/suite against a safe charset (they were interpolated into generated shell/Python script text \u2014 a crafted --config could otherwise inject shell commands or escape the intended bucket path); collect_results validates each seed file's identity (schema/screen_id/seed/suite/metric) before aggregating and requires a finite numeric value, so a stale or unrelated seed_<k>.json can no longer silently enter this screen's evidence; hf_jobs_train.ensure_hf_token_env aliases HUGGING_FACE_HUB_TOKEN to HF_TOKEN in-process before submission (never via a literal secret value on argv) so a caller with only that variable set still authenticates the remote job instead of silently starting one with no token."
+          "note": "CodeRabbit fixes (real security issues): ScreenConfig validates screen_id/metric/suite against a safe charset (they were interpolated into generated shell/Python script text — a crafted --config could otherwise inject shell commands or escape the intended bucket path); collect_results validates each seed file's identity (schema/screen_id/seed/suite/metric) before aggregating and requires a finite numeric value, so a stale or unrelated seed_<k>.json can no longer silently enter this screen's evidence; hf_jobs_train.ensure_hf_token_env aliases HUGGING_FACE_HUB_TOKEN to HF_TOKEN in-process before submission (never via a literal secret value on argv) so a caller with only that variable set still authenticates the remote job instead of silently starting one with no token."
         },
         {
           "version": "v1",
@@ -18553,7 +18586,7 @@
         {
           "version": "v1",
           "date": "2026-08-10",
-          "note": "SLM-474 (SRP-010): end-to-end symbolic-pack portability fixture \u2014 default OpenUI isolation, SR pack parse/canonicalize/oracle/evaluate-fit/evidence, VerifiedSynthesisProblemV1 + SyGuS capability export (inspired_interoperability), AST import audit, honest forks/unsupported_hooks inventory. claim_class=fixture; cites exp-sr-12 without locking ExperimentCampaignV1."
+          "note": "SLM-474 (SRP-010): end-to-end symbolic-pack portability fixture — default OpenUI isolation, SR pack parse/canonicalize/oracle/evaluate-fit/evidence, VerifiedSynthesisProblemV1 + SyGuS capability export (inspired_interoperability), AST import audit, honest forks/unsupported_hooks inventory. claim_class=fixture; cites exp-sr-12 without locking ExperimentCampaignV1."
         }
       ]
     },
@@ -18736,7 +18769,7 @@
         {
           "version": "v1",
           "date": "2026-08-10",
-          "note": "SLM-491: honest external-blocked prepared-package closeout for EXP-SR-3 \u2014 reuses SIE-006 external-blocked mode + frozen SIE-005 pin; kappa/calibration metrics stay null."
+          "note": "SLM-491: honest external-blocked prepared-package closeout for EXP-SR-3 — reuses SIE-006 external-blocked mode + frozen SIE-005 pin; kappa/calibration metrics stay null."
         }
       ]
     },
@@ -18754,7 +18787,7 @@
         {
           "version": "v1",
           "date": "2026-08-10",
-          "note": "SLM-492: honest external-blocked prepared-package closeout for EXP-SR-11 \u2014 reuses RSP-007 + SRP-011 adapter isolation; no SOTA claim when PySR/Julia unavailable."
+          "note": "SLM-492: honest external-blocked prepared-package closeout for EXP-SR-11 — reuses RSP-007 + SRP-011 adapter isolation; no SOTA claim when PySR/Julia unavailable."
         }
       ]
     },
@@ -19130,7 +19163,24 @@
         {
           "version": "v1",
           "date": "2026-08-12",
-          "note": "RESEARCH-08/SLM-540: default-off Myhill\u2013Nerode quotient of terminal-continuation static residual DFA; fixture evidence; never production authority."
+          "note": "RESEARCH-08/SLM-540: default-off Myhill–Nerode quotient of terminal-continuation static residual DFA; fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm563_research05_vss_lrat": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/research_05_vss_lrat.py",
+        "scripts/run_research_05_vss_lrat.py",
+        "docs/design/iter-revmath-research-05-preregistered-results.json",
+        "docs/design/iter-revmath-research-05-preregistered.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-05/SLM-563: default-off VSS LRAT campaign harness + runner + preregistered evidence; never production authority."
         }
       ]
     }

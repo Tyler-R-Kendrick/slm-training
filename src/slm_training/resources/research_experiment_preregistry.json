@@ -153,9 +153,24 @@
           "blocker_id": "SLM-533",
           "note": "RESEARCH-02 preregistry (this registry) must exist before execution",
           "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-517",
+          "note": "KERN-02 CompleteDomain landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-542",
+          "note": "EVID-09 checked refutation authority landed",
+          "status": "completed"
+        },
+        {
+          "blocker_id": "SLM-553",
+          "note": "EVID-10 verified encoding adapters landed",
+          "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "28f468da369df47c00779b5ce183e3e100443dd71afbc27bd47ed9a2e109010d",
       "cited_lineage": [
         "arxiv-2607.00815",
         "szs-ontology",
@@ -163,7 +178,7 @@
       ],
       "decision_rule": "Correctness gates pass and warm time ratio < 1.0; otherwise reject/retire.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-05-preregistered.md",
       "experiment_key": "RESEARCH-05",
       "falsifier": "Correctness disagreement, mutation miss, or ratio >= 1.0 with no coverage gain.",

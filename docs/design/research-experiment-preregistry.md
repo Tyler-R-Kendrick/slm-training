@@ -53,7 +53,7 @@ bespoke runner. Execution still goes through the existing
 
 ## Pilot span
 
-Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
+Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
 contracts.
 
 ## Validation
@@ -66,3 +66,12 @@ PYTHONPATH=src uv run python -m scripts.verify_research_experiment_preregistry
 
 Extends `experiment_campaign` + RESEARCH-01 citation catalog. No parallel
 campaign store, evidence ledger, or runner.
+
+## RESEARCH-05 status (SLM-563)
+
+Preregistered VSS LRAT SAT pilot executed under campaign lock
+`28f468da369df47c00779b5ce183e3e100443dd71afbc27bd47ed9a2e109010d`.
+Disposition: **completed** (accept — correctness gates + warm/exhaustive ratio < 1.0).
+Evidence: [`iter-revmath-research-05-preregistered.md`](iter-revmath-research-05-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
