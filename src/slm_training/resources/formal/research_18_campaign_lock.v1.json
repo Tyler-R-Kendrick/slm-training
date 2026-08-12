@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T18:27:34.663058Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "control_total_computable",
+        "config_sha256": "7fe89621705abab9441329958bb968e36e1c0673445186357ca8bb18d8f60002",
+        "role": "control"
+      },
+      {
+        "arm_id": "treatment_weihrauch",
+        "config_sha256": "6e858bb7c754e5a2be323fb29deff6176b475b2b71e90ff51769c793cfe9d55c",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-18",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-18-weihrauch-multivalued-classification",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "control_total_computable",
+        "description": "Unclassified multi-valued tasks treated as ordinary total computable work.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "big_five_inflation_fails_closed",
+        "description": "Weihrauch labels must not auto-upgrade to Big-Five production claims.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff treatment type-I rate stays within alpha tolerance under null replay and planted-stream power remains usable vs fixed-n oracle; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "faithful_classification",
+        "metric": "faithful_weihrauch_class_assignment_rate_on_frozen_task_set",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "big_five_inflation",
+        "metric": "big_five_label_inflation",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_18_weihrauch_multivalued_classification",
+    "formal_obligations": [],
+    "hypothesis": "Anytime-valid e-process evidence can govern adaptive autoresearch promotion without invalidating type-I control under optional stopping.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research18_primary",
+        "hypothesis_ids": [
+          "faithful_classification"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "big_five_inflation_fails_closed"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "faithful_classification",
+        "gate_id": "faithful_classification",
+        "operator": "ge",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "big_five_inflation",
+        "gate_id": "big_five_inflation",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "frozen multivalued task corpus stops after paired classification"
+    ]
+  },
+  "manifest_sha256": "d5f0b411cc447948ef65437178f8211663287d54252e1beefc360cf9386126fc",
+  "schema_version": "CampaignLockV1"
+}

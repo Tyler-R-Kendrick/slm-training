@@ -1,0 +1,116 @@
+{
+  "big_five_label_inflation": 0,
+  "campaign_id": "research-18-weihrauch-multivalued-classification",
+  "campaign_lock_sha256": "d5f0b411cc447948ef65437178f8211663287d54252e1beefc360cf9386126fc",
+  "claim_class": "fixture",
+  "control_misclassifies_oracle_tasks": true,
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-18-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_18_weihrauch_multivalued_classification",
+  "experiment_key": "RESEARCH-18",
+  "linear_id": "SLM-551",
+  "oracle_relative_smuggling": 0,
+  "paired_report": {
+    "big_five_label_inflation": 0,
+    "control_misclassifies_oracle_tasks": true,
+    "control_rows": [
+      {
+        "arm": "control_total_computable",
+        "big_five_inflation": false,
+        "entry_id": "oracle_relative_witness_control",
+        "faithful": false,
+        "practical_class": "total_recursive",
+        "weihrauch_problem": "COMPUTABLE_TOTAL"
+      }
+    ],
+    "corpus_digest": "b0030d6736c14f0c279b419e3c14fbaf66c31e7727d1a5b6867af46f8bf48a9f",
+    "decision": "accept",
+    "eval_treatment_count": 5,
+    "faithful_weihrauch_class_assignment_rate_on_frozen_task_set": 1.0,
+    "oracle_relative_smuggling": 0,
+    "reason": "faithful_weihrauch_without_big_five_inflation",
+    "schema": "weihrauch_multivalued_classification_report/v1",
+    "toolchain": {
+      "backend_id": "weihrauch_multivalued_classification_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/weihrauch_multivalued_corpus.v1.json",
+      "toolchain_id": "hermetic_python_weihrauch_v1",
+      "trust_domain": "research_only/weihrauch_multivalued_classification"
+    },
+    "treatment_rows": [
+      {
+        "arm": "treatment_weihrauch",
+        "big_five_inflation": false,
+        "entry_id": "grammar_singleton_completion_eval",
+        "faithful": true,
+        "practical_class": "finite_decidable",
+        "weihrauch_problem": "CFin"
+      },
+      {
+        "arm": "treatment_weihrauch",
+        "big_five_inflation": false,
+        "entry_id": "grammar_ambiguous_completion_eval",
+        "faithful": true,
+        "practical_class": "bounded_search",
+        "weihrauch_problem": "CFin"
+      },
+      {
+        "arm": "treatment_weihrauch",
+        "big_five_inflation": false,
+        "entry_id": "proof_witness_search_eval",
+        "faithful": true,
+        "practical_class": "semidecidable",
+        "weihrauch_problem": "CN"
+      },
+      {
+        "arm": "treatment_weihrauch",
+        "big_five_inflation": false,
+        "entry_id": "oracle_relative_witness_eval",
+        "faithful": true,
+        "practical_class": "oracle_relative",
+        "weihrauch_problem": "UNCLASSIFIED_WEIHRAUCH"
+      },
+      {
+        "arm": "treatment_weihrauch",
+        "big_five_inflation": true,
+        "entry_id": "big_five_smuggling_eval",
+        "faithful": false,
+        "practical_class": "bounded_search",
+        "rejection_reason": "big_five_label_inflation",
+        "weihrauch_problem": "CFin"
+      },
+      {
+        "arm": "treatment_weihrauch",
+        "big_five_inflation": false,
+        "entry_id": "grammar_singleton_completion_train",
+        "faithful": true,
+        "practical_class": "finite_decidable",
+        "weihrauch_problem": "CFin"
+      }
+    ],
+    "unknown_collapse_rate": 0.0
+  },
+  "primary_metric": "faithful_weihrauch_class_assignment_rate_on_frozen_task_set",
+  "primary_value": 1.0,
+  "reason": "faithful_weihrauch_without_big_five_inflation",
+  "research_only": true,
+  "schema": "research_18_experiment_result/v1",
+  "toolchain": {
+    "backend_id": "weihrauch_multivalued_classification_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/weihrauch_multivalued_corpus.v1.json",
+    "toolchain_id": "hermetic_python_weihrauch_v1",
+    "trust_domain": "research_only/weihrauch_multivalued_classification"
+  },
+  "unknown_collapse_rate": 0.0,
+  "version_stamp": {
+    "code_commit": "0dbdad70b7cf9bb2500af77c39ac329a93d1c30e",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm551_research18_weihrauch": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T18:28:08.786935+00:00"
+  }
+}

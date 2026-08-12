@@ -3982,6 +3982,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-18/SLM-551 ownership map extension + render; no authority tier change.",
+          "version": "v27"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-15/SLM-569 ownership-map row only; no authority change.",
           "version": "v27"
         },
@@ -4426,6 +4431,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-18/SLM-551 preregistry disposition + evidence doc pointers; contract unchanged.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-15/SLM-569 pilot-span status doc line only; schema+loader unchanged.",
           "version": "v2"
         },
@@ -4828,6 +4838,21 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-18 (SLM-551) Weihrauch classification evidence docs; deterministic fold, no campaign contract change.",
+          "version": "v211"
+        },
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-18 (SLM-551) Weihrauch classification evidence docs; deterministic fold, no campaign contract change.",
+          "version": "v211"
+        },
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-18 (SLM-551) Weihrauch classification evidence docs; deterministic fold, no campaign contract change.",
+          "version": "v211"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-15 (SLM-569) design/results docs; deterministic fold, no campaign contract change.",
@@ -14445,6 +14470,29 @@
         "docs/design/iter-revmath-research-04-preregistered.md",
         "tests/test_harnesses/experiments/test_research_04_rm_zoo_benchmark.py",
         "tests/test_scripts/test_run_research_04_rm_zoo.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm551_research18_weihrauch": {
+      "history": [
+        {
+          "date": "2026-08-12",
+          "note": "RESEARCH-18/SLM-551: default-off Weihrauch/oracle multivalued classification backend+harness+runner+lock+fixture evidence; never production authority.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/weihrauch_multivalued_classification.py",
+        "src/slm_training/resources/formal/weihrauch_multivalued_corpus.v1.json",
+        "tests/test_formal/test_weihrauch_multivalued_classification.py",
+        "src/slm_training/resources/formal/research_18_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_18_weihrauch_multivalued_classification.py",
+        "scripts/run_research_18_weihrauch.py",
+        "docs/design/iter-revmath-research-18-preregistered.json",
+        "docs/design/iter-revmath-research-18-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_18_weihrauch_multivalued_classification.py",
+        "tests/test_scripts/test_run_research_18_weihrauch.py"
       ],
       "version": "v1"
     },
