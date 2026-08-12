@@ -3508,6 +3508,11 @@
         {
           "version": "v1",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-08/SLM-540 sets campaign_lock_sha256 + disposition after fixture run; schema unchanged."
+        },
+        {
+          "version": "v1",
+          "date": "2026-08-12",
           "note": "RESEARCH-02 (SLM-533): default-off/research-only experiment preregistration registry with knob/hypothesis signatures, blocker+campaign-lock execution gate, RESEARCH-03..20 pilots, and merge/CI/check_changed wiring."
         }
       ]
@@ -3830,6 +3835,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v208",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-08/SLM-540 rebuilt autotrain_climb evidence_ledger.v1.json from docs/design after adding iter-revmath-research-08 evidence; campaign schema unchanged."
+        },
         {
           "version": "v208",
           "date": "2026-08-12",
@@ -5759,6 +5769,11 @@
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
       "history": [
+        {
+          "version": "v163",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-08/SLM-540 lives under dedicated component harness.experiments.slm540_research08_myhill_nerode (v1)."
+        },
         {
           "version": "v163",
           "date": "2026-08-11",
@@ -19095,6 +19110,27 @@
           "version": "v1",
           "date": "2026-08-11",
           "note": "EVID-12 (SLM-543): thin PROV-O / RO-Crate / SPDX 3 / in-toto-SLSA / OCI-referrer projection profile; authority ids stay native; import never upgrades semantic_authority."
+        }
+      ]
+    },
+    "harness.experiments.slm540_research08_myhill_nerode": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/grammar/fastpath/myhill_nerode.py",
+        "src/slm_training/harnesses/experiments/research08_myhill_nerode.py",
+        "scripts/run_research08_myhill_nerode.py",
+        "tests/test_dsl/test_myhill_nerode.py",
+        "tests/test_harnesses/experiments/test_research08_myhill_nerode.py",
+        "tests/test_scripts/test_run_research08_myhill_nerode.py",
+        "docs/design/iter-revmath-research-08-preregistered.json",
+        "docs/design/iter-revmath-research-08-preregistered.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-08/SLM-540: default-off Myhill\u2013Nerode quotient of terminal-continuation static residual DFA; fixture evidence; never production authority."
         }
       ]
     }

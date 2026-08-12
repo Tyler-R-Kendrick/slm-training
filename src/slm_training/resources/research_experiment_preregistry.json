@@ -366,6 +366,11 @@
           "blocker_id": "SLM-533",
           "status": "completed",
           "note": "RESEARCH-02 preregistry (this registry) must exist before execution"
+        },
+        {
+          "blocker_id": "SLM-517",
+          "status": "completed",
+          "note": "KERN-02 CompleteDomain proof-bearing contracts landed; used for fixture parity"
         }
       ],
       "matched_control": "Current static compiled residual graph/artifact without minimization.",
@@ -396,11 +401,11 @@
         "pilot": "myhill_nerode_minimize",
         "scope": "static_regular_subset"
       },
-      "disposition": "registered",
+      "disposition": "completed",
       "default_off": true,
       "research_only": true,
       "knob_hypothesis_signature": "6046861020dba8de0c19a4d5242782019406463dc797aed84bfba5c5c06f7427",
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "eddf497518c466fe2164d9b3fcb732004bf7ea757770aea668e93a846fcbfaea",
       "reopen_evidence_path": null
     },
     {
