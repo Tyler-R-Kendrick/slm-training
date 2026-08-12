@@ -151,7 +151,14 @@ existing identity-scoped exhausted-knob ledger before predecessor, posterior,
 or timeout-residual selection, and any historical post-retirement selection is
 persisted as a typed autoresearch harness signal. Exhausted recovery parks as
 `screening_objective_saturated`; it does not weaken smoke gates or create ship
-evidence.
+evidence. That terminal state now requires the predecessor's typed
+`HypothesisFeedback` and routes through the existing `rebuild_data` then
+`next_experiment` actions: expand the immutable L3-L5 `frontier_simplified`
+inventory, inspect synthesis feedback, and invoke the configured external
+`Researcher` once to preregister a size-matched simplified-NL-to-AST objective.
+Missing feedback fails closed. Ordinary cycles do not invoke the researcher,
+and exhausted decoder-lever compositions are not a substitute for changing the
+capability objective.
 
 The c1812 frozen-promotion replay exposed a formal-ordering gap: the loader saw
 the source manifest's required Lean obligation and rejected the replay before a

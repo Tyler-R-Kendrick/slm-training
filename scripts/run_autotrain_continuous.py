@@ -79,6 +79,7 @@ from slm_training.autoresearch.schemas import (
     FormalObligationV1,
     FormalPreflightV1,
     HarnessSignalV1,
+    HypothesisFeedback,
     HypothesisMatrix,
     NextRunPriorityV1,
     utc_now,
@@ -1445,6 +1446,27 @@ def _park_screening_saturation(
 
     from slm_training.autoresearch import evidence_ledger as _ev
 
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        raise RuntimeError(
+            "screening objective saturated without a typed predecessor handoff"
+        )
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    actions = _capability_objective_refresh_actions(
+        root=root,
+        campaign_id=campaign_id,
+        preserved_actions=tuple(
+            action for action in handoff.actions if action.kind == "document"
+        ),
+    )
+    handoff_path.write_text(
+        handoff.model_copy(update={"actions": actions}).model_dump_json(indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+
     verdict = _ev.build_regime_exhausted_verdict(
         campaign_id=campaign_id,
         loop_id=loop_id,
@@ -1453,7 +1475,8 @@ def _park_screening_saturation(
         closed_slugs=sorted(set(ranked_regimes)),
         policy_sha256=policy.sha256,
         resume_predicate=(
-            "the screening metric, suite, saturation policy, or legal arm bank changes"
+            "a feedback-grounded simplified-NL-to-AST data and capability "
+            "objective is preregistered under unchanged I10 rung gates"
         ),
         bank_fingerprint=_screening_bank_fingerprint(policy_sha256=policy.sha256),
     )
@@ -1471,7 +1494,7 @@ def _park_screening_saturation(
             active_campaign_id=None,
             last_completed_campaign_id=campaign_id,
             cycle_index=cycle_index,
-            next_action="repair_harness",
+            next_action=actions[0].kind,
             blocker_fingerprint="screening_objective_saturated",
             blocker_count=1,
             pid=os.getpid(),
@@ -1483,6 +1506,63 @@ def _park_screening_saturation(
         flush=True,
     )
     return _REGIME_PARKED_STATUS
+
+
+def _latest_hypothesis_feedback(
+    root: Path, campaign_id: str
+) -> HypothesisFeedback:
+    """Load the terminal typed feedback that grounds an objective change."""
+
+    store = CampaignStore(campaign_id, root)
+    for event in reversed(store.verify_event_chain()):
+        if event.get("event_type") != "hypothesizer_feedback_recorded":
+            continue
+        digest = str(event.get("artifact_sha256") or "")
+        path = store.root / "artifacts" / "hypothesizer_feedback" / f"{digest}.json"
+        feedback = HypothesisFeedback.model_validate_json(
+            path.read_text(encoding="utf-8")
+        )
+        if feedback.campaign_id == campaign_id:
+            return feedback
+    raise RuntimeError(
+        "screening objective change requires terminal HypothesisFeedback"
+    )
+
+
+def _capability_objective_refresh_actions(
+    *,
+    root: Path,
+    campaign_id: str,
+    preserved_actions: Sequence[AutotrainActionV1] = (),
+) -> tuple[AutotrainActionV1, ...]:
+    """Route exhausted smoke search into the existing rung/data/research loop."""
+
+    feedback = _latest_hypothesis_feedback(root, campaign_id)
+    evidence_ids = (feedback.feedback_id, f"campaign:{campaign_id}")
+    return (
+        AutotrainActionV1(
+            kind="rebuild_data",
+            owner="synthesis-feedback",
+            reason=(
+                "expand the immutable L3-L5 frontier_simplified inventory for "
+                "simplified-NL-to-AST; preserve I10 rung gates and inspect the "
+                "quality report before any new training"
+            ),
+            evidence_ids=evidence_ids,
+        ),
+        *preserved_actions,
+        AutotrainActionV1(
+            kind="next_experiment",
+            owner="autotrain",
+            reason=(
+                "after the data receipt and objective change, invoke the configured "
+                "Researcher once with the terminal HypothesisFeedback and "
+                "preregister a size-matched simplified-NL-to-AST capability "
+                "objective; do not rotate the exhausted decoder-lever bank"
+            ),
+            evidence_ids=evidence_ids,
+        ),
+    )
 
 
 def _short_lever_token(key: str) -> str:
@@ -9345,85 +9425,35 @@ def _write_cycle_handoff(
         saturation_closed = bool(
             isinstance(saturation, dict) and not saturation.get("pending_regimes", [])
         )
-        # Prefer compose thrash successors over hard repair_harness so continuous
-        # thrash never freezes waiting for a human to "preregister an objective".
         closed = _recent_completed_nonpositive_slugs(root, campaign_id)
-        entries = _load_champion_queue(_champion_queue_path(root, loop_id))
-        skip = _skip_arm_slugs(
-            entries,
-            integration_commit=integration_commit or None,
-            include_causal_cap=False,
-        )
-        composed = (
-            False
-            if saturation_closed
-            else _self_heal_thrash_bank_exhaust(
-                root, loop_id, closed=closed, skip=skip | closed
+        actions = list(
+            _capability_objective_refresh_actions(
+                root=root,
+                campaign_id=campaign_id,
+                preserved_actions=tuple(actions),
             )
         )
-        if composed:
-            actions.append(
-                AutotrainActionV1(
-                    kind="next_experiment",
-                    owner="autotrain",
-                    reason=(
-                        "static quality-arm bank was empty; consume composed thrash "
-                        "successors (continuous self-heal)"
-                    ),
-                    evidence_ids=(evidence_id,),
-                )
-            )
-        else:
-            actions.insert(
-                0,
-                AutotrainActionV1(
-                    kind="repair_harness",
-                    owner="improve-openui-harnesses",
-                    reason=(
-                        "screening primary saturated after bounded residual "
-                        "multi-seed recovery; change the objective or suite"
-                        if saturation_closed
-                        else (
-                            "registered quality-arm bank exhausted; no untried "
-                            "size-matched compose pairs remain — preregister and wire "
-                            "a distinct model-build objective before the next run"
-                        )
-                    ),
-                    evidence_ids=(evidence_id,),
-                    harness_family="model_build",
-                ),
-            )
-            try:
-                from slm_training.autoresearch import evidence_ledger as _ev
-                from slm_training.autoresearch.climb_policy import load_climb_policy
+        from slm_training.autoresearch import evidence_ledger as _ev
+        from slm_training.autoresearch.climb_policy import load_climb_policy
 
-                policy_sha = load_climb_policy().sha256
-                terminal_verdict = _ev.build_regime_exhausted_verdict(
-                    campaign_id=campaign_id,
-                    loop_id=loop_id,
-                    cycle_index=cycle_index,
-                    binding_constraint=(
-                        "screening_objective_saturated"
-                        if saturation_closed
-                        else "quality_arm_bank_exhausted"
-                    ),
-                    closed_slugs=sorted(closed),
-                    policy_sha256=policy_sha,
-                    resume_predicate=(
-                        "the screening metric, suite, saturation policy, or legal "
-                        "arm bank changes"
-                        if saturation_closed
-                        else (
-                            "a new lever family, budget tier, or metric floor is "
-                            "registered (integrated code identity changes)"
-                        )
-                    ),
-                    bank_fingerprint=_screening_bank_fingerprint(
-                        policy_sha256=policy_sha
-                    ),
-                )
-            except Exception:  # noqa: BLE001 — verdict is additive evidence
-                terminal_verdict = None
+        policy_sha = load_climb_policy().sha256
+        terminal_verdict = _ev.build_regime_exhausted_verdict(
+            campaign_id=campaign_id,
+            loop_id=loop_id,
+            cycle_index=cycle_index,
+            binding_constraint=(
+                "screening_objective_saturated"
+                if saturation_closed
+                else "quality_arm_bank_exhausted"
+            ),
+            closed_slugs=sorted(closed),
+            policy_sha256=policy_sha,
+            resume_predicate=(
+                "a feedback-grounded simplified-NL-to-AST data and capability "
+                "objective is preregistered under unchanged I10 rung gates"
+            ),
+            bank_fingerprint=_screening_bank_fingerprint(policy_sha256=policy_sha),
+        )
     else:
         actions.append(
             AutotrainActionV1(
