@@ -1,0 +1,186 @@
+{
+  "campaign_id": "research-05-vss-lrat",
+  "campaign_lock_sha256": "28f468da369df47c00779b5ce183e3e100443dd71afbc27bd47ed9a2e109010d",
+  "claim_class": "fixture",
+  "correctness_ok": true,
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-05-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_05_vss_lrat_sat",
+  "experiment_key": "RESEARCH-05",
+  "linear_id": "SLM-563",
+  "mutation_rejection_rate": 1.0,
+  "paired_report": {
+    "correctness_ok": true,
+    "covered": 4,
+    "decision": "accept",
+    "median_paired_warm_lrat_check_over_exhaustive_replay_time_ratio": 0.870722497926642,
+    "mutation": {
+      "cases": [
+        {
+          "case_id": "encoding_flip_literal",
+          "outcome": "unknown",
+          "reason": "lrat_check_encoded_digest_mismatch",
+          "rejected": true
+        },
+        {
+          "case_id": "certificate_hint_corrupt",
+          "outcome": "unknown",
+          "reason": "lrat_check_hint_missing",
+          "rejected": true
+        },
+        {
+          "case_id": "stale_problem_digest",
+          "outcome": "unknown",
+          "reason": "lrat_check_stale_problem",
+          "rejected": true
+        }
+      ],
+      "ok": true,
+      "reason": "all_mutations_rejected",
+      "rejection_rate": 1.0
+    },
+    "mutation_rejection_rate": 1.0,
+    "rows": [
+      {
+        "certificate_bytes": 834,
+        "cold_elapsed_s": 0.00015325999993365258,
+        "control_elapsed_s": 2.759100016191951e-05,
+        "identities": {
+          "backend_id": "vss_lrat_sat_pilot",
+          "certificate_digest": "e61c97498e9ae0db20a9dcb613dc9abb38bd7a1925e8fc9523b4bab4e64c19fc",
+          "certificate_format": "lrat_pilot",
+          "certificate_schema": "vss_lrat_certificate/v1",
+          "checker_backend": "python_lrat_rup_pilot",
+          "encoded_digest": "95ee647915c9cfa2c06ed88e696efb61f5072a6c08f80aad0c9b7cb57c36a8a3",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "6f2119a30a56013c6a82c3baeefe98e8dd3478bc316a956eb42e43b6efd2227f",
+          "toolchain_id": "hermetic_python_lrat_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+lrat_pilot"
+        },
+        "problem_id": "research05/unsat_pad0",
+        "status": "ok",
+        "warm_median_s": 5.013999998482177e-05,
+        "warm_over_exhaustive_ratio": 1.8172592399902883
+      },
+      {
+        "certificate_bytes": 834,
+        "cold_elapsed_s": 0.00018332499985262984,
+        "control_elapsed_s": 6.168899972180952e-05,
+        "identities": {
+          "backend_id": "vss_lrat_sat_pilot",
+          "certificate_digest": "347cff96ff7bd91d0c90fe7d3c42e9b72914013571ebc0b500b222e941cc6829",
+          "certificate_format": "lrat_pilot",
+          "certificate_schema": "vss_lrat_certificate/v1",
+          "checker_backend": "python_lrat_rup_pilot",
+          "encoded_digest": "8e3bc65d0918f2581720d48fe9540940ca15d05ffad7f9e4f306bf4e401d767b",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "cd8c09f7b853e54123ad7e8c4e3a097350950e4188965a966edb27694c6c45f5",
+          "toolchain_id": "hermetic_python_lrat_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+lrat_pilot"
+        },
+        "problem_id": "research05/unsat_pad4",
+        "status": "ok",
+        "warm_median_s": 5.3713999932369916e-05,
+        "warm_over_exhaustive_ratio": 0.870722497926642
+      },
+      {
+        "certificate_bytes": 834,
+        "cold_elapsed_s": 0.0008336690002579417,
+        "control_elapsed_s": 0.0011844609998661326,
+        "identities": {
+          "backend_id": "vss_lrat_sat_pilot",
+          "certificate_digest": "87f484f7c456ce19a031e01a467e0cefda454bf276f4bbcc44c0136b3658b504",
+          "certificate_format": "lrat_pilot",
+          "certificate_schema": "vss_lrat_certificate/v1",
+          "checker_backend": "python_lrat_rup_pilot",
+          "encoded_digest": "c7895641b1d86e615cd9d484deef287416aa81336abc6dedff1b93814ec9ab89",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "d3353dd217d1c864297de24cc2bf24d4b524a9e3ae33306ebf7a7f38f8049b81",
+          "toolchain_id": "hermetic_python_lrat_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+lrat_pilot"
+        },
+        "problem_id": "research05/unsat_pad8",
+        "status": "ok",
+        "warm_median_s": 5.7838999964587856e-05,
+        "warm_over_exhaustive_ratio": 0.048831493794329064
+      },
+      {
+        "certificate_bytes": 834,
+        "cold_elapsed_s": 0.0037946380002722435,
+        "control_elapsed_s": 0.006306094999672496,
+        "identities": {
+          "backend_id": "vss_lrat_sat_pilot",
+          "certificate_digest": "a3f5b50ba65c8999f2a007ee46f432a0f1ca1f8bff3122de1b2c54f28409e39d",
+          "certificate_format": "lrat_pilot",
+          "certificate_schema": "vss_lrat_certificate/v1",
+          "checker_backend": "python_lrat_rup_pilot",
+          "encoded_digest": "320e2f2d6d087f8b8e2ac4c547828ad083a79b9579d82bb815e0fe7413534d70",
+          "encoder_family": "cnf_ref",
+          "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+          "encoder_version": "cnf_ref_v1",
+          "problem_digest": "9aed178484b6f4c45d9526a14461957b2716b9470479e52820e8f632ba7be654",
+          "toolchain_id": "hermetic_python_lrat_pilot_v1",
+          "trust_domain": "encoding_bridge/cnf_ref+lrat_pilot"
+        },
+        "problem_id": "research05/unsat_pad10",
+        "status": "ok",
+        "warm_median_s": 6.19639999968058e-05,
+        "warm_over_exhaustive_ratio": 0.009826049242839486
+      }
+    ],
+    "schema": "research_05_paired_warm_report/v1",
+    "secondary": {
+      "certificate_bytes_median": 834,
+      "cold_elapsed_s_median": 0.0008336690002579417
+    },
+    "suite_n": 4,
+    "supported_subset_coverage": 1.0,
+    "toolchain": {
+      "backend_id": "vss_lrat_sat_pilot",
+      "certificate_format": "lrat_pilot",
+      "certificate_schema": "vss_lrat_certificate/v1",
+      "checker_backend": "python_lrat_rup_pilot",
+      "encoder_family": "cnf_ref",
+      "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+      "encoder_version": "cnf_ref_v1",
+      "toolchain_id": "hermetic_python_lrat_pilot_v1",
+      "trust_domain": "encoding_bridge/cnf_ref+lrat_pilot"
+    },
+    "witness_disagreement_count": 0
+  },
+  "primary_metric": "median_paired_warm_lrat_check_over_exhaustive_replay_time_ratio",
+  "primary_value": 0.870722497926642,
+  "research_only": true,
+  "schema": "research_05_experiment_result/v1",
+  "supported_subset_coverage": 1.0,
+  "toolchain": {
+    "backend_id": "vss_lrat_sat_pilot",
+    "certificate_format": "lrat_pilot",
+    "certificate_schema": "vss_lrat_certificate/v1",
+    "checker_backend": "python_lrat_rup_pilot",
+    "encoder_family": "cnf_ref",
+    "encoder_hash": "0752e7e4570417794e8a3cbed145d659438cd055170e59d05ddcfe043bc4e270",
+    "encoder_version": "cnf_ref_v1",
+    "toolchain_id": "hermetic_python_lrat_pilot_v1",
+    "trust_domain": "encoding_bridge/cnf_ref+lrat_pilot"
+  },
+  "version_stamp": {
+    "code_commit": "bfc84a2c3363fa5aecf110d8a98a66a665745523",
+    "code_dirty": true,
+    "components": {
+      "formal.objects": "v24",
+      "governance.research_experiment_preregistry": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T14:36:04.438977+00:00"
+  },
+  "witness_disagreement_count": 0
+}

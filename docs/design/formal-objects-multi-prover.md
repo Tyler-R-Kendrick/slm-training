@@ -74,6 +74,15 @@ capability/trust domain, and original problem digest on `FormalAuthorityV2`.
 Pilot formats (`lrat_pilot` / `pblean_pilot` / `alethe_pilot`) are named for
 future RESEARCH pilots and are not production dependencies.
 
+### RESEARCH-05 — VSS LRAT SAT pilot (SLM-563)
+
+Default-off research adapter: `src/slm_training/formal/vss_lrat_backend.py` +
+`harnesses/experiments/research_05_vss_lrat.py`. Control = exhaustive VSS/CNF
+replay; treatment = EVID-10 `lrat_pilot` encoding + hermetic RUP certificate
+check. Evidence: [`iter-revmath-research-05-preregistered.md`](iter-revmath-research-05-preregistered.md).
+Never production decode / ship-gate / serving authority.
+
+
 ### Mutation / red-team acceptance suite (EVID-11)
 
 Code: `src/slm_training/formal/mutation_suite.py`  
