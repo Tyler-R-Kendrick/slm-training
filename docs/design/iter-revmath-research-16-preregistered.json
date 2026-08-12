@@ -1,0 +1,202 @@
+{
+  "bound_violation_miss_rate": 0.0,
+  "campaign_id": "research-16-rational-float-transfer",
+  "campaign_lock_sha256": "a07c24e7905e58b5b9469089e241b10e14e9d41dfd23c58c769028b2496dd8df",
+  "claim_class": "fixture",
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-16-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_16_rational_float_transfer",
+  "experiment_key": "RESEARCH-16",
+  "float_flip_count": 1,
+  "float_flip_detections": 1,
+  "linear_id": "SLM-570",
+  "paired_report": {
+    "bound_violation_miss_rate": 0.0,
+    "control_rows": [
+      {
+        "arm": "direct_float",
+        "exact_decision": "pass",
+        "flip_vs_exact": false,
+        "reported_decision": "pass"
+      },
+      {
+        "arm": "direct_float",
+        "exact_decision": "fail",
+        "flip_vs_exact": true,
+        "reported_decision": "pass"
+      },
+      {
+        "arm": "direct_float",
+        "exact_decision": "pass",
+        "flip_vs_exact": false,
+        "reported_decision": "pass"
+      },
+      {
+        "arm": "direct_float",
+        "exact_decision": "pass",
+        "flip_vs_exact": false,
+        "reported_decision": "pass"
+      },
+      {
+        "arm": "direct_float",
+        "exact_decision": "pass",
+        "flip_vs_exact": false,
+        "reported_decision": "pass"
+      },
+      {
+        "arm": "direct_float",
+        "exact_decision": "pass",
+        "flip_vs_exact": false,
+        "reported_decision": "pass"
+      }
+    ],
+    "corpus_digest": "a0e741aa4b285e652768c8e28f48ce98475350e26b67adce3672df86dcb84683",
+    "covered_gate_count": 6,
+    "decision": "accept",
+    "float_flip_count": 1,
+    "float_flip_detections": 1,
+    "gate_count": 6,
+    "performance_overhead_proxy": 2.1279274638648835e-16,
+    "reason": "certificates_cover_selected_gates",
+    "schema": "rational_float_transfer_report/v1",
+    "silent_cast_incidents": 0,
+    "toolchain": {
+      "backend_id": "rational_float_transfer_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/rational_float_gate_corpus.v1.json",
+      "float_format": "float64",
+      "toolchain_id": "hermetic_python_rational_float_v1",
+      "trust_domain": "research_only/rational_float_transfer"
+    },
+    "transfer_certificate_coverage_on_selected_metric_gates": 1.0,
+    "treatment_rows": [
+      {
+        "arm": "rational_transfer_certificate",
+        "certified_decision": "indeterminate",
+        "covers_float_flip": true,
+        "exact_decision": "pass",
+        "float_decision": "pass",
+        "interval_width": 1.6653345369377348e-16,
+        "metric_interval": [
+          0.49999999999999994,
+          0.5000000000000001
+        ],
+        "safe_vs_exact": true,
+        "threshold_interval": [
+          0.49999999999999994,
+          0.5000000000000001
+        ]
+      },
+      {
+        "arm": "rational_transfer_certificate",
+        "certified_decision": "indeterminate",
+        "covers_float_flip": true,
+        "exact_decision": "fail",
+        "float_decision": "pass",
+        "interval_width": 3.3306690738754696e-16,
+        "metric_interval": [
+          0.9999999999999999,
+          1.0000000000000002
+        ],
+        "safe_vs_exact": true,
+        "threshold_interval": [
+          0.9999999999999999,
+          1.0000000000000002
+        ]
+      },
+      {
+        "arm": "rational_transfer_certificate",
+        "certified_decision": "pass",
+        "covers_float_flip": false,
+        "exact_decision": "pass",
+        "float_decision": "pass",
+        "interval_width": 2.220446049250313e-16,
+        "metric_interval": [
+          0.5000000074505805,
+          0.5000000074505807
+        ],
+        "safe_vs_exact": true,
+        "threshold_interval": [
+          0.49999999999999994,
+          0.5000000000000001
+        ]
+      },
+      {
+        "arm": "rational_transfer_certificate",
+        "certified_decision": "pass",
+        "covers_float_flip": false,
+        "exact_decision": "pass",
+        "float_decision": "pass",
+        "interval_width": 3.851859888774472e-34,
+        "metric_interval": [
+          9.999999999999999e-19,
+          1.0000000000000003e-18
+        ],
+        "safe_vs_exact": true,
+        "threshold_interval": [
+          5e-324,
+          5e-324
+        ]
+      },
+      {
+        "arm": "rational_transfer_certificate",
+        "certified_decision": "indeterminate",
+        "covers_float_flip": true,
+        "exact_decision": "pass",
+        "float_decision": "pass",
+        "interval_width": 2.220446049250313e-16,
+        "metric_interval": [
+          0.9999999999999998,
+          1.0
+        ],
+        "safe_vs_exact": true,
+        "threshold_interval": [
+          0.9999999999999998,
+          1.0
+        ]
+      },
+      {
+        "arm": "rational_transfer_certificate",
+        "certified_decision": "indeterminate",
+        "covers_float_flip": true,
+        "exact_decision": "pass",
+        "float_decision": "pass",
+        "interval_width": 3.3306690738754696e-16,
+        "metric_interval": [
+          0.9999999999999999,
+          1.0000000000000002
+        ],
+        "safe_vs_exact": true,
+        "threshold_interval": [
+          0.9999999999999999,
+          1.0000000000000002
+        ]
+      }
+    ]
+  },
+  "performance_overhead_proxy": 2.1279274638648835e-16,
+  "primary_metric": "transfer_certificate_coverage_on_selected_metric_gates",
+  "primary_value": 1.0,
+  "reason": "certificates_cover_selected_gates",
+  "research_only": true,
+  "schema": "research_16_experiment_result/v1",
+  "silent_cast_incidents": 0,
+  "toolchain": {
+    "backend_id": "rational_float_transfer_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/rational_float_gate_corpus.v1.json",
+    "float_format": "float64",
+    "toolchain_id": "hermetic_python_rational_float_v1",
+    "trust_domain": "research_only/rational_float_transfer"
+  },
+  "version_stamp": {
+    "code_commit": "52ff7851bec04b23bd7aa42778f40b6665b49774",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm570_research16_rational_float": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:31:30.779833+00:00"
+  }
+}
