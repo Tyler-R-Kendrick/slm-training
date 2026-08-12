@@ -53,7 +53,7 @@ bespoke runner. Execution still goes through the existing
 
 ## Pilot span
 
-Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-03 (SLM-549) fixture evidence: [iter-revmath-research-03-preregistered.md](iter-revmath-research-03-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-04 (SLM-550) fixture evidence: [iter-revmath-research-04-preregistered.md](iter-revmath-research-04-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). RESEARCH-07 (SLM-565) fixture evidence: [iter-revmath-research-07-preregistered.md](iter-revmath-research-07-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-09 (SLM-541) fixture evidence: [iter-revmath-research-09-preregistered.md](iter-revmath-research-09-preregistered.md) (disposition `rejected` — correctness ok, treewidth proxy did not beat flat size; still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
+Registry seeds **RESEARCH-03 … RESEARCH-20** (eighteen pilots). RESEARCH-03 (SLM-549) fixture evidence: [iter-revmath-research-03-preregistered.md](iter-revmath-research-03-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-04 (SLM-550) fixture evidence: [iter-revmath-research-04-preregistered.md](iter-revmath-research-04-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-10 (SLM-566) fixture evidence: [iter-revmath-research-10-preregistered.md](iter-revmath-research-10-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-08 (SLM-540) fixture evidence: [iter-revmath-research-08-preregistered.md](iter-revmath-research-08-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-05 (SLM-563) fixture evidence: [iter-revmath-research-05-preregistered.md](iter-revmath-research-05-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-06 (SLM-564) fixture evidence: [iter-revmath-research-06-preregistered.md](iter-revmath-research-06-preregistered.md) (disposition `rejected` — correctness ok, ratio ≥ 1.0; still `default_off` / no production authority). RESEARCH-07 (SLM-565) fixture evidence: [iter-revmath-research-07-preregistered.md](iter-revmath-research-07-preregistered.md) (disposition `completed`, still `default_off` / no production authority). RESEARCH-09 (SLM-541) fixture evidence: [iter-revmath-research-09-preregistered.md](iter-revmath-research-09-preregistered.md) (disposition `rejected` — correctness ok, treewidth proxy did not beat flat size; still `default_off` / no production authority). Individual experimental mechanisms are **not** implemented here — only preregistration
 contracts.
 
 ## Validation
@@ -108,6 +108,15 @@ Preregistered RM Zoo classification benchmark executed under campaign lock
 Disposition: **completed** (accept — dependency-disjoint eval exact rate 1.0,
 zero overclaims, zoo corpus discriminates from Big-Five-only retrieval).
 Evidence: [`iter-revmath-research-04-preregistered.md`](iter-revmath-research-04-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
+## RESEARCH-10 status (SLM-566)
+
+Preregistered proof-strength curriculum pilot executed under campaign lock (see
+`src/slm_training/resources/formal/research_10_campaign_lock.v1.json`).
+Disposition: **completed** (accept — obligation-difficulty ordering beats
+unordered control on eval pass rate under fixed budget; no root leakage).
+Evidence: [`iter-revmath-research-10-preregistered.md`](iter-revmath-research-10-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
 
 ## RESEARCH-07 status (SLM-565)

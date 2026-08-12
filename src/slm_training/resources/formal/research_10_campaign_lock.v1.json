@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T17:13:31.599634Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "unordered_control",
+        "config_sha256": "7aa1e475b400ed74f3d0cecba409d7cc3f1298fa1c7db082aa5324476f3cbb46",
+        "role": "control"
+      },
+      {
+        "arm_id": "curriculum_treatment",
+        "config_sha256": "21b4b6f83d8109ed913a76c1670b7cf58b612f75adfb3cc09af27cefdea20e40",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-10",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-10-proof-strength-curriculum",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "unordered_matched_budget",
+        "description": "Unordered mixed-strength schedule with matched step budget.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "easy_task_regression_fails_closed",
+        "description": "Curriculum must not regress easy obligations (difficulty <= 2) that gold-pass under the fixture budget.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff treatment eval pass rate exceeds control under fixed budget with zero train/eval root leakage and no easy-task regression; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "sample_efficiency",
+        "metric": "sample_efficiency_to_target_obligation_pass_rate",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "easy_task_regression",
+        "metric": "easy_task_regression",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_10_proof_strength_curriculum",
+    "formal_obligations": [],
+    "hypothesis": "A proof-strength curriculum ordered by formal obligation difficulty improves Lean training sample efficiency versus unordered mixing.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research10_primary",
+        "hypothesis_ids": [
+          "sample_efficiency"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "easy_task_regression_fails_closed"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "sample_efficiency",
+        "gate_id": "efficiency_gain",
+        "operator": "gt",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "easy_task_regression",
+        "gate_id": "easy_regression",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture corpus stop after paired report"
+    ]
+  },
+  "manifest_sha256": "4eb1a8b95a88c54ecf5d80706f9aacf09e05988ba3c5fb5de99856d1a220266b",
+  "schema_version": "CampaignLockV1"
+}
