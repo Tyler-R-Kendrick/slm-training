@@ -17,4 +17,9 @@ python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2
 # AgentV SDK for evaluate_model.py --ship-gates (scripts/run_agentv_eval.mjs).
 env -u NODE_OPTIONS npm ci
 
+# OpenUI bridge for G2/G8 whole-program verification (binding_aware_meaningful_v2).
+if [ -f src/apps/openui_bridge/package-lock.json ]; then
+  (cd src/apps/openui_bridge && env -u NODE_OPTIONS npm ci)
+fi
+
 echo "Ready: source .venv/bin/activate"

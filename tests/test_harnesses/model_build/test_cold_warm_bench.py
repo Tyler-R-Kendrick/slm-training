@@ -19,13 +19,14 @@ from slm_training.harnesses.model_build.cold_warm_bench import (
 )
 
 _COLD_SCRIPT = (
-    "import time;"
-    "from slm_training.harnesses.model_build.cold_warm_bench import phase_marker;"
-    "print(phase_marker('process_launch'));"
-    "time.sleep(0.01);"
-    "print(phase_marker('bootstrap'));"
-    "time.sleep(0.01);"
-    "print(phase_marker('first_candidate'))"
+    "import json, time\n"
+    "def _m(p):\n"
+    "    return 'PCT003_PHASE ' + json.dumps({'phase': p, 't': time.perf_counter()})\n"
+    "print(_m('process_launch'))\n"
+    "time.sleep(0.01)\n"
+    "print(_m('bootstrap'))\n"
+    "time.sleep(0.01)\n"
+    "print(_m('first_candidate'))\n"
 )
 
 _SLOW_SCRIPT = "import time; time.sleep(5)"
