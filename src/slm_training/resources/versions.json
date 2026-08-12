@@ -3982,6 +3982,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-20/SLM-552 ownership map extension + render; no authority tier change.",
+          "version": "v27"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-19/SLM-558 ownership map extension + render; no authority tier change.",
           "version": "v27"
         },
@@ -4436,6 +4441,11 @@
       "history": [
         {
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-20/SLM-552 preregistry disposition + evidence doc pointers; contract unchanged.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-19/SLM-558 preregistry disposition + evidence doc pointers; contract unchanged.",
           "version": "v2"
         },
@@ -4848,6 +4858,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-20 (SLM-552) cost formalism compare evidence docs; deterministic fold, no campaign contract change.",
+          "version": "v211"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-19 (SLM-558) Rademacher bound evidence docs; deterministic fold, no campaign contract change.",
@@ -14554,6 +14569,29 @@
         "docs/design/iter-revmath-research-19-preregistered.md",
         "tests/test_harnesses/experiments/test_research_19_lean_rademacher_bound.py",
         "tests/test_scripts/test_run_research_19_lean_rademacher.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm552_research20_cost_compare": {
+      "history": [
+        {
+          "date": "2026-08-12",
+          "note": "RESEARCH-20/SLM-552: default-off local cost kernel vs CSLib/Calf/AARA compare backend+harness+runner+lock+fixture evidence; honest reject, never production authority.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/cost_kernel_cslib_calf_aara_compare.py",
+        "src/slm_training/resources/formal/cost_kernel_compare_corpus.v1.json",
+        "tests/test_formal/test_cost_kernel_cslib_calf_aara_compare.py",
+        "src/slm_training/resources/formal/research_20_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_20_cost_kernel_cslib_calf_aara_compare.py",
+        "scripts/run_research_20_cost_compare.py",
+        "docs/design/iter-revmath-research-20-preregistered.json",
+        "docs/design/iter-revmath-research-20-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_20_cost_kernel_cslib_calf_aara_compare.py",
+        "tests/test_scripts/test_run_research_20_cost_compare.py"
       ],
       "version": "v1"
     },

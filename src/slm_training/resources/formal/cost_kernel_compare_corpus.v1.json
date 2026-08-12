@@ -1,0 +1,87 @@
+{
+  "citation": "arxiv-2601.15571",
+  "fixtures": [
+    {
+      "bound_class": "event_trace",
+      "case_id": "decode_unit_work_eval",
+      "expected_local_cost": 18,
+      "model_id": "DecodeUnitWorkModel",
+      "notes": "Mixed decode-unit events; CSLib complexity classes cannot express per-kind payload accounting.",
+      "split": "eval",
+      "trace": [
+        {"kind": "tokenize", "payload": 4},
+        {"kind": "grammar_transition", "payload": 6},
+        {"kind": "neural_forward", "payload": 8}
+      ],
+      "transfer_expected": true
+    },
+    {
+      "bound_class": "finite_search",
+      "case_id": "finite_search_eval",
+      "expected_local_cost": 9,
+      "model_id": "SolverQueryModel",
+      "notes": "Solver expansion + certificate check; Calf amortized potential disagrees on finite-search fixture.",
+      "split": "eval",
+      "trace": [
+        {"kind": "solver_expansion", "payload": 5},
+        {"kind": "certificate_check", "payload": 4}
+      ],
+      "transfer_expected": true
+    },
+    {
+      "bound_class": "compose",
+      "case_id": "compose_trace_eval",
+      "expected_local_cost": 12,
+      "model_id": "DecodeUnitWorkModel",
+      "notes": "Composition law case; external formalisms fail transfer without explicit theorems.",
+      "split": "eval",
+      "trace": [
+        {"kind": "tokenize", "payload": 3},
+        {"kind": "grammar_transition", "payload": 4},
+        {"kind": "neural_forward", "payload": 5}
+      ],
+      "transfer_expected": true
+    },
+    {
+      "bound_class": "closure",
+      "case_id": "closure_height_eval",
+      "expected_local_cost": 3,
+      "model_id": "NeuralForwardOnlyModel",
+      "notes": "Closure-height bound already owned locally; AARA typing gap on eval slice.",
+      "split": "eval",
+      "trace": [
+        {"kind": "neural_forward", "payload": 3}
+      ],
+      "transfer_expected": true
+    },
+    {
+      "bound_class": "black_box",
+      "case_id": "black_box_train",
+      "expected_local_cost": 7,
+      "model_id": "SolverQueryModel",
+      "notes": "Train-only probe; excluded from primary eval transfer rate.",
+      "split": "train",
+      "trace": [
+        {"kind": "solver_expansion", "payload": 3},
+        {"kind": "certificate_check", "payload": 4}
+      ],
+      "transfer_expected": false
+    },
+    {
+      "bound_class": "event_trace",
+      "case_id": "decode_unit_work_train",
+      "expected_local_cost": 10,
+      "model_id": "DecodeUnitWorkModel",
+      "notes": "Train-only mirror of decode unit work.",
+      "split": "train",
+      "trace": [
+        {"kind": "tokenize", "payload": 2},
+        {"kind": "grammar_transition", "payload": 3},
+        {"kind": "neural_forward", "payload": 5}
+      ],
+      "transfer_expected": true
+    }
+  ],
+  "schema": "cost_kernel_compare_corpus/v1",
+  "version": 1
+}
