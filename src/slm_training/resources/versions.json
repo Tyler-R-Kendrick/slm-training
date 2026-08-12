@@ -9787,6 +9787,11 @@
         {
           "version": "v3",
           "date": "2026-08-12",
+          "note": "no-bump: clarify active model-track and checkpoint status in README and MODEL_CARD; spectral disposition behavior is unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-02 (SLM-533) docs-only pointer to research-experiment-preregistry in research-lineage.md; spectral disposition behavior unchanged."
         },
         {

@@ -61,6 +61,16 @@ diagnostics. It rejects or blocks raw-alpha quality claims, spectral training
 controls, causal spectral retention, and WW-PGD/trace-log projection. No
 checkpoint, roster, training default, champion, or promotion status changes.
 
+| Production track | Current status |
+| --- | --- |
+| TwoTower | implemented; no ship-qualified champion pointer |
+| causal-LM | uninitialized until the pinned base bakeoff is run and locked |
+
+The rows below summarize recent checkpoint evidence, including rejected,
+incomplete, local, and superseded artifacts; they are not an active deployment
+list. Canonical deployment truth lives in the lineage pointers described in
+[the model-lineage contract](docs/design/model-lineage.md).
+
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
 | Autotrain scheduled-loop `fe71636` c2 AgentV harness failure | 2 size-matched 1,608,962-param CPU scratch checkpoints | `outputs/autoresearch/continuous-loop-20260804-continuous-openui-schedu-3d42338c-c2/runs/` (local, explicit no-sync) | Both arms trained (22 steps) but `--ship-gates` eval crashed on missing AgentV SDK before any scoreboard; repaired (`2aedf3b`, self-heal `npm ci` bootstrap), replay in c3 completed but hit decode timeouts (n=3, all incomplete). **No model attribution; harness-repair-only** ([results](docs/design/continuous-openui-scheduled-fe71636-c2-results.md)) |
