@@ -707,7 +707,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "e04e671c1269a91b5f406cc5870233d8eb505f201e5093107310217423574a05",
       "cited_lineage": [
         "simpson-sosoa",
         "repo-revmath-policy",
@@ -715,7 +715,7 @@
       ],
       "decision_rule": "Accept only independently checked models; search failure stays unknown.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-13-preregistered.md",
       "experiment_key": "RESEARCH-13",
       "falsifier": "Counterexamples are not replayable or assumption sets drift silently.",

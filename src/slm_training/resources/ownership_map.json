@@ -1756,6 +1756,16 @@
       ],
       "new_owner_justified": false,
       "justification": "Isolated default-off successor-theorem semantic validation backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-11 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
+    },
+    {
+      "issue": "RESEARCH-13",
+      "linear_id": "SLM-568",
+      "title": "Experiment: formal counterexample generation under dropped assumptions",
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Isolated default-off dropped-assumption counterexample backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-06 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
     }
   ],
   "contract_version_governance": {

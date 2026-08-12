@@ -275,6 +275,7 @@ Every SGS/VCE/PCT/SRP/SIE/RSP/PGS backlog item mapped to the existing subsystem(
 | **RESEARCH-17** — Experiment: proof-mined quantitative bounds from qualitative project theorems | SLM-557 | `experiment_campaign` | no | Isolated default-off proof-mined quantitative bounds backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-07 revmath fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
 | **RESEARCH-11** — Experiment: process-verified reward shaping for revmath proof tasks | SLM-574 | `experiment_campaign` | no | Isolated default-off process-verified reward shaping backend + harness over ExperimentCampaignV1/CampaignLockV1 and INTEG-05 failure witness fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
 | **RESEARCH-12** — Experiment: successor-theorem semantic validation for generated theorem statements | SLM-567 | `experiment_campaign` | no | Isolated default-off successor-theorem semantic validation backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-11 revmath fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
+| **RESEARCH-13** — Experiment: formal counterexample generation under dropped assumptions | SLM-568 | `experiment_campaign` | no | Isolated default-off dropped-assumption counterexample backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-06 revmath fixtures; RESEARCH-02 preregistry activation only — no production gate authority. |
 
 ## Validation
 
