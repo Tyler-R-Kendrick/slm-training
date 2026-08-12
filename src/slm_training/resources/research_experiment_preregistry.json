@@ -1009,7 +1009,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "d5f0b411cc447948ef65437178f8211663287d54252e1beefc360cf9386126fc",
       "cited_lineage": [
         "arxiv-1707.03202",
         "repo-revmath-policy",
@@ -1017,7 +1017,7 @@
       ],
       "decision_rule": "Accept if classifications stay faithful and never auto-upgrade to RCA0/WKL0.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-18-preregistered.md",
       "experiment_key": "RESEARCH-18",
       "falsifier": "Weihrauch labels inflate into Big-Five production claims.",
