@@ -19147,7 +19147,7 @@
       ]
     },
     "harness.experiments.slm540_research08_myhill_nerode": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar/fastpath/myhill_nerode.py",
@@ -19160,6 +19160,11 @@
         "docs/design/iter-revmath-research-08-preregistered.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "RESEARCH-08/SLM-540: allow fixture/docs replay when registry campaign_lock_sha256 matches and disposition is terminal (completed/rejected), without reopening assert_execution_allowed."
+        },
         {
           "version": "v1",
           "date": "2026-08-12",

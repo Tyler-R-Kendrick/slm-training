@@ -32,6 +32,7 @@ from slm_training.dsl.grammar.fastpath.static_control_domain import static_lalr_
 from slm_training.harness_core.lineage.records import content_sha
 from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.research_preregistry import (
+    TERMINAL_DISPOSITIONS,
     assert_execution_allowed,
     experiment_by_key,
 )
@@ -225,14 +226,18 @@ def run_campaign(
         )
     )
     lock = store.lock_experiment_campaign(campaign.manifest())
-    if row.get("campaign_lock_sha256") == lock.manifest_sha256:
-        assert_execution_allowed(row)
-    elif row.get("campaign_lock_sha256") is None:
+    lock_sha = row.get("campaign_lock_sha256")
+    if lock_sha == lock.manifest_sha256:
+        # Matching lock + terminal disposition: allow fixture/docs replay
+        # without reopening execution authority (disposition stays completed).
+        if row.get("disposition") not in TERMINAL_DISPOSITIONS:
+            assert_execution_allowed(row)
+    elif lock_sha is None:
         pass
     else:
         raise RuntimeError(
             f"{EXPERIMENT_KEY}: registry campaign_lock_sha256 "
-            f"{row.get('campaign_lock_sha256')!r} != live lock "
+            f"{lock_sha!r} != live lock "
             f"{lock.manifest_sha256!r}"
         )
 
