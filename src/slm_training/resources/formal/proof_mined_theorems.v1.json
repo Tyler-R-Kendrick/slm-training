@@ -1,0 +1,24 @@
+{
+  "corpus_id": "proof_mined_theorems.v1",
+  "schema_version": "proof_mined_theorems/v1",
+  "theorems": [
+    {
+      "expected_actionable": true,
+      "fixture_stem": "quant_finite_search",
+      "notes": "Finite search prefix-tree bound extractable via HARN-07",
+      "theorem_id": "thm.finite_search.completion"
+    },
+    {
+      "expected_actionable": true,
+      "fixture_stem": "quant_closure_live_upper",
+      "notes": "Closure live-upper bound extractable with KERN-05 assumptions",
+      "theorem_id": "thm.closure_live_upper"
+    },
+    {
+      "expected_actionable": false,
+      "fixture_stem": "quant_nonextractable",
+      "notes": "Missing assumptions; extraction must refuse",
+      "theorem_id": "thm.nonextractable.missing_assumptions"
+    }
+  ]
+}

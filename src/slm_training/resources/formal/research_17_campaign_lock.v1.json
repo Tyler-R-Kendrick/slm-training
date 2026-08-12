@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T17:37:51.601114Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "qualitative_control",
+        "config_sha256": "cb7ec71d68cb71a2f9f847e550fc723dc2f9da2e88d95e505dcba50742410829",
+        "role": "control"
+      },
+      {
+        "arm_id": "proof_mined_treatment",
+        "config_sha256": "4e47c82d75266a5a4918f72974287247ade8abcb17c2d65e7707185393b644e3",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-17",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-17-proof-mined-quantitative-bounds",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "qualitative_baseline",
+        "description": "Qualitative theorem statements without mined bounds.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "nonextractable_refusal",
+        "description": "Nonextractable theorems must not yield actionable bounds.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff all expected extractable theorems yield actionable replayable certificates with zero spurious constants and zero false positives on nonextractable theorems; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "actionable_extraction",
+        "metric": "actionable_bound_extraction_success_with_replayable_certificate",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "spurious_constant",
+        "metric": "spurious_constant_rate",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_17_proof_mined_quantitative_bounds",
+    "formal_obligations": [],
+    "hypothesis": "Proof-mining can extract replayable quantitative bounds from qualitative project theorems via HARN-07 bound AST validation.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research17_primary",
+        "hypothesis_ids": [
+          "actionable_extraction"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "nonextractable_refusal"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "actionable_extraction",
+        "gate_id": "full_extraction",
+        "operator": "ge",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "spurious_constant",
+        "gate_id": "spurious_constant",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture corpus stop after paired report"
+    ]
+  },
+  "manifest_sha256": "96a76aa3fbe098392f8befcab033fec5686345d32b97adb450c5307281cb9531",
+  "schema_version": "CampaignLockV1"
+}
