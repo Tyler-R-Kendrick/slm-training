@@ -647,7 +647,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "be369585113325f5303fc7e09939991fe15a1fb6c3a9125f8db3a1fed3573c51",
       "cited_lineage": [
         "arxiv-2601.15571",
         "leandojo",
@@ -655,7 +655,7 @@
       ],
       "decision_rule": "Accept if meaning-changing successors are caught without excessive false blocks.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-12-preregistered.md",
       "experiment_key": "RESEARCH-12",
       "falsifier": "Semantic validator cannot distinguish meaning change from compile-success variants.",

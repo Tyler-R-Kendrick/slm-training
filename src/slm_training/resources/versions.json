@@ -3147,6 +3147,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-12/SLM-567 ownership-map row only; no authority change."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-11/SLM-574 ownership-map row only; no authority change."
         },
         {
@@ -3565,6 +3570,11 @@
         "tests/test_scripts/test_verify_research_experiment_preregistry.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-12/SLM-567 pilot-span status doc line only; schema+loader unchanged."
+        },
         {
           "version": "v2",
           "date": "2026-08-12",
@@ -3995,6 +4005,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-12 (SLM-567) design/results docs; deterministic fold, no campaign contract change."
+        },
         {
           "version": "v211",
           "date": "2026-08-12",
@@ -19677,6 +19692,29 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-11/SLM-574: default-off process-verified reward shaping backend+harness+runner+lock+fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm567_research12_successor_semantic": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/successor_theorem_semantic_validation.py",
+        "src/slm_training/resources/formal/successor_theorem_corpus.v1.json",
+        "tests/test_formal/test_successor_theorem_semantic_validation.py",
+        "src/slm_training/resources/formal/research_12_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_12_successor_theorem_semantic_validation.py",
+        "scripts/run_research_12_successor_theorem.py",
+        "docs/design/iter-revmath-research-12-preregistered.json",
+        "docs/design/iter-revmath-research-12-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_12_successor_theorem_semantic_validation.py",
+        "tests/test_scripts/test_run_research_12_successor_theorem.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-12/SLM-567: default-off successor-theorem semantic validation backend+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }

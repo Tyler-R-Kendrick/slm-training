@@ -1,0 +1,187 @@
+{
+  "campaign_id": "research-12-successor-theorem-semantic-validation",
+  "campaign_lock_sha256": "be369585113325f5303fc7e09939991fe15a1fb6c3a9125f8db3a1fed3573c51",
+  "claim_class": "fixture",
+  "compile_only_pass_smuggling": 3,
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-12-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_12_successor_theorem_semantic_validation",
+  "experiment_key": "RESEARCH-12",
+  "false_positive_block_rate": 0.0,
+  "linear_id": "SLM-567",
+  "paired_report": {
+    "compile_only_pass_smuggling": 3,
+    "control_rows": [
+      {
+        "accepts": true,
+        "arm": "compile_only",
+        "compiles": true,
+        "record_id": "rec.faithful.add_zero"
+      },
+      {
+        "accepts": true,
+        "arm": "compile_only",
+        "compiles": true,
+        "record_id": "rec.faithful.comm"
+      },
+      {
+        "accepts": true,
+        "arm": "compile_only",
+        "compiles": true,
+        "record_id": "rec.mutation.fingerprint"
+      },
+      {
+        "accepts": true,
+        "arm": "compile_only",
+        "compiles": true,
+        "record_id": "rec.mutation.subtle_successor"
+      },
+      {
+        "accepts": true,
+        "arm": "compile_only",
+        "compiles": true,
+        "record_id": "rec.mutation.counterexample"
+      },
+      {
+        "accepts": false,
+        "arm": "compile_only",
+        "compiles": false,
+        "record_id": "rec.compile_fail"
+      }
+    ],
+    "corpus_digest": "b274abf5e272d7634cf1032d030cfc4670271764b1a9109a09cec7774f4a558b",
+    "decision": "accept",
+    "false_positive_block_rate": 0.0,
+    "fingerprint_counterexample_rows": [
+      {
+        "accepts": true,
+        "arm": "fingerprint_counterexample",
+        "counterexample_refutes": false,
+        "fingerprint_matches": true,
+        "record_id": "rec.faithful.add_zero"
+      },
+      {
+        "accepts": true,
+        "arm": "fingerprint_counterexample",
+        "counterexample_refutes": false,
+        "fingerprint_matches": true,
+        "record_id": "rec.faithful.comm"
+      },
+      {
+        "accepts": false,
+        "arm": "fingerprint_counterexample",
+        "counterexample_refutes": false,
+        "fingerprint_matches": false,
+        "record_id": "rec.mutation.fingerprint"
+      },
+      {
+        "accepts": true,
+        "arm": "fingerprint_counterexample",
+        "counterexample_refutes": false,
+        "fingerprint_matches": true,
+        "record_id": "rec.mutation.subtle_successor"
+      },
+      {
+        "accepts": false,
+        "arm": "fingerprint_counterexample",
+        "counterexample_refutes": true,
+        "fingerprint_matches": true,
+        "record_id": "rec.mutation.counterexample"
+      },
+      {
+        "accepts": false,
+        "arm": "fingerprint_counterexample",
+        "counterexample_refutes": false,
+        "fingerprint_matches": false,
+        "record_id": "rec.compile_fail"
+      }
+    ],
+    "meaning_changing_caught_count": 3,
+    "meaning_changing_compile_smuggling_count": 3,
+    "reason": "successor_validation_catches_subtle_meaning_change",
+    "schema": "successor_theorem_semantic_validation_report/v1",
+    "semantic_validation_catch_rate_on_meaning_changing_successors": 1.0,
+    "successor_incremental_catch_count": 1,
+    "toolchain": {
+      "backend_id": "successor_theorem_semantic_validation_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/successor_theorem_corpus.v1.json",
+      "toolchain_id": "hermetic_python_successor_semantic_v1",
+      "trust_domain": "research_only/successor_theorem_semantic_validation"
+    },
+    "treatment_rows": [
+      {
+        "accepts": true,
+        "arm": "successor_semantic_validation",
+        "counterexample_refutes": false,
+        "fingerprint_matches": true,
+        "record_id": "rec.faithful.add_zero",
+        "successors_hold": true
+      },
+      {
+        "accepts": true,
+        "arm": "successor_semantic_validation",
+        "counterexample_refutes": false,
+        "fingerprint_matches": true,
+        "record_id": "rec.faithful.comm",
+        "successors_hold": true
+      },
+      {
+        "accepts": false,
+        "arm": "successor_semantic_validation",
+        "counterexample_refutes": false,
+        "fingerprint_matches": false,
+        "record_id": "rec.mutation.fingerprint",
+        "successors_hold": false
+      },
+      {
+        "accepts": false,
+        "arm": "successor_semantic_validation",
+        "counterexample_refutes": false,
+        "fingerprint_matches": true,
+        "record_id": "rec.mutation.subtle_successor",
+        "successors_hold": false
+      },
+      {
+        "accepts": false,
+        "arm": "successor_semantic_validation",
+        "counterexample_refutes": true,
+        "fingerprint_matches": true,
+        "record_id": "rec.mutation.counterexample",
+        "successors_hold": true
+      },
+      {
+        "accepts": false,
+        "arm": "successor_semantic_validation",
+        "counterexample_refutes": false,
+        "fingerprint_matches": false,
+        "record_id": "rec.compile_fail",
+        "successors_hold": true
+      }
+    ],
+    "unknown_rate": 0.0
+  },
+  "primary_metric": "semantic_validation_catch_rate_on_meaning_changing_successors",
+  "primary_value": 1.0,
+  "reason": "successor_validation_catches_subtle_meaning_change",
+  "research_only": true,
+  "schema": "research_12_experiment_result/v1",
+  "successor_incremental_catch_count": 1,
+  "toolchain": {
+    "backend_id": "successor_theorem_semantic_validation_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/successor_theorem_corpus.v1.json",
+    "toolchain_id": "hermetic_python_successor_semantic_v1",
+    "trust_domain": "research_only/successor_theorem_semantic_validation"
+  },
+  "version_stamp": {
+    "code_commit": "07520710dbb4d992430d88d5862392acc54706d5",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm567_research12_successor_semantic": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:58:46.619632+00:00"
+  }
+}
