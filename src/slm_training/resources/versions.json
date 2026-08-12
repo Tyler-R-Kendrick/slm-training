@@ -3553,6 +3553,11 @@
         {
           "version": "v2",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-14/SLM-572 pilot-span status doc line only; schema+loader unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-14/SLM-572 updates RESEARCH-14 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
         },
         {
