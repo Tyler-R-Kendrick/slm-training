@@ -3262,6 +3262,31 @@ def test_screening_saturation_parks_with_typed_constraint(tmp_path: Path) -> Non
     from slm_training.autoresearch.climb_policy import load_climb_policy
 
     root = tmp_path / "autoresearch"
+    _write_terminal_feedback(root, "cycle-15")
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-15",
+        cycle_index=15,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="not_evaluated",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="persist the saturated screening result",
+                evidence_ids=("campaign:cycle-15",),
+            ),
+        ),
+    )
+    (root / "cycle-15" / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(), encoding="utf-8"
+    )
     status = _mod._park_screening_saturation(
         root=root,
         loop_id="loop-1",
@@ -3275,6 +3300,23 @@ def test_screening_saturation_parks_with_typed_constraint(tmp_path: Path) -> Non
         (root / "loops" / "loop-1" / "terminal_verdict.json").read_text()
     )
     assert verdict["binding_constraint"] == "screening_objective_saturated"
+    routed = _mod.AutotrainCycleHandoffV1.model_validate_json(
+        (root / "cycle-15" / "cycle_handoff.json").read_text(encoding="utf-8")
+    )
+    assert [action.kind for action in routed.actions] == [
+        "rebuild_data",
+        "document",
+        "next_experiment",
+    ]
+    assert "frontier_simplified" in routed.actions[0].reason
+    assert "Researcher once" in routed.actions[-1].reason
+
+
+def test_saturated_objective_refresh_requires_typed_feedback(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="requires terminal HypothesisFeedback"):
+        _mod._capability_objective_refresh_actions(
+            root=tmp_path / "autoresearch", campaign_id="cycle-no-feedback"
+        )
 
 
 def test_promotion_cadence_null_exhausts_completed_arm(tmp_path: Path) -> None:
@@ -6005,6 +6047,34 @@ def _priority_matrix() -> dict:
     }
 
 
+def _write_terminal_feedback(root: Path, campaign_id: str) -> str:
+    from slm_training.autoresearch.schemas import HypothesisFeedback
+
+    feedback_id = "feedback-" + hashlib.sha256(campaign_id.encode()).hexdigest()[:16]
+    feedback = HypothesisFeedback(
+        feedback_id=feedback_id,
+        campaign_id=campaign_id,
+        matrix_id=f"matrix-{campaign_id}",
+        experiment_id="candidate",
+        hypothesis="The current smoke objective has exhausted its legal arms.",
+        knob_signature="{}",
+        outcome_status="completed",
+        diagnosis_target="researcher",
+        diagnosis_evidence=("bounded screening objective saturated",),
+        recommended_actions=("refresh the capability objective",),
+    )
+    store = _mod.CampaignStore(campaign_id, root)
+    path = store.write_artifact("hypothesizer_feedback", feedback)
+    store.append_event(
+        "hypothesizer_feedback_recorded",
+        experiment_id="candidate",
+        status="researcher",
+        artifact_sha256=path.stem,
+        detail={"feedback_id": feedback_id},
+    )
+    return feedback_id
+
+
 def test_cycle_handoff_separates_fixture_climb_from_ship(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "cycle-1"
@@ -6088,14 +6158,14 @@ def test_predecessor_without_stack_delta_does_not_block_on_deliver_stack(
     _mod._require_predecessor_actions(root, "loop-1", "cycle-1")
 
 
-def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
+def test_cycle_handoff_routes_exhausted_bank_to_capability_refresh(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Legacy compose-successor path: only active while terminal parking is off.
     _inject_terminal_policy(monkeypatch, park=False)
     root = tmp_path / "autoresearch"
     (root / "cycle-exhausted").mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-exhausted")
     handoff = _mod._write_cycle_handoff(
         root=root,
         loop_id="loop-1",
@@ -6117,13 +6187,11 @@ def test_cycle_handoff_routes_exhausted_bank_to_model_build_repair(
         formal_status="proved",
     )
 
-    # Soft thrash law: bank exhaust is composed + next_experiment at emission,
-    # not a hard repair_harness that freezes the continuous loop.
     assert all(action.kind != "repair_harness" for action in handoff.actions)
+    assert handoff.actions[0].kind == "rebuild_data"
     nxt = next(a for a in handoff.actions if a.kind == "next_experiment")
-    assert "composed thrash successors" in (nxt.reason or "").lower() or (
-        "bank" in (nxt.reason or "").lower()
-    )
+    assert "researcher once" in nxt.reason.lower()
+    assert "simplified-nl-to-ast" in nxt.reason.lower()
     assert handoff.priorities[0].disposition == "monitor"
 
 
@@ -6439,6 +6507,7 @@ def test_bank_exhaust_parks_loop_under_typed_verdict(
     )
     root = tmp_path / "autoresearch"
     (root / "cycle-exhausted").mkdir(parents=True)
+    feedback_id = _write_terminal_feedback(root, "cycle-exhausted")
     handoff = _mod._write_cycle_handoff(
         root=root,
         loop_id="loop-1",
@@ -6465,8 +6534,15 @@ def test_bank_exhaust_parks_loop_under_typed_verdict(
     assert handoff.terminal_verdict.bank_fingerprint == (
         _mod._screening_bank_fingerprint(policy_sha256=policy.sha256)
     )
-    # The parked handoff still carries the required repair_harness action.
-    assert any(action.kind == "repair_harness" for action in handoff.actions)
+    assert [action.kind for action in handoff.actions] == [
+        "rebuild_data",
+        "document",
+        "next_experiment",
+    ]
+    assert all(feedback_id in action.evidence_ids for action in handoff.actions[::2])
+    assert handoff.actions[0].owner == "synthesis-feedback"
+    assert handoff.actions[-1].owner == "autotrain"
+    assert "simplified-NL-to-AST" in handoff.actions[-1].reason
     verdict_path = _mod._terminal_verdict_path(root, "loop-1")
     assert verdict_path.is_file()
     persisted = RegimeExhaustedVerdictV1.model_validate_json(
