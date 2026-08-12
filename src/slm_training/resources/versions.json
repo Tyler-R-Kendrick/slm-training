@@ -3913,6 +3913,11 @@
         {
           "version": "v208",
           "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-03 (SLM-549) design/results docs; deterministic fold, no campaign contract change."
+        },
+        {
+          "version": "v208",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-03/SLM-549 evidence_ledger rebuild after iter-revmath-research-03 evidence (merge-ready parity); campaign schema unchanged."
         },
         {
