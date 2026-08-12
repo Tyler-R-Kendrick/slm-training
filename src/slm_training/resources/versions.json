@@ -3147,6 +3147,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-14/SLM-572 ownership-map row only; no authority change."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-10/SLM-566 downstream_extension_map row + experiment_campaign notes only."
         },
         {
@@ -3548,6 +3553,16 @@
         {
           "version": "v2",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-14/SLM-572 pilot-span status doc line only; schema+loader unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-14/SLM-572 updates RESEARCH-14 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-10/SLM-566 updates RESEARCH-10 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
         },
         {
@@ -3935,6 +3950,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-14 (SLM-572) design/results docs; deterministic fold, no campaign contract change."
+        },
         {
           "version": "v211",
           "date": "2026-08-12",
@@ -19500,6 +19520,29 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-10/SLM-566: default-off proof-strength curriculum backend+harness+runner+lock+fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm572_research14_checker_diversity": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/checker_diversity_backend.py",
+        "src/slm_training/resources/formal/checker_diversity_corpus.v1.json",
+        "tests/test_formal/test_checker_diversity_backend.py",
+        "src/slm_training/resources/formal/research_14_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_14_checker_diversity.py",
+        "scripts/run_research_14_checker_diversity.py",
+        "docs/design/iter-revmath-research-14-preregistered.json",
+        "docs/design/iter-revmath-research-14-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_14_checker_diversity.py",
+        "tests/test_scripts/test_run_research_14_checker_diversity.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-14/SLM-572: default-off checker diversity backend+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }

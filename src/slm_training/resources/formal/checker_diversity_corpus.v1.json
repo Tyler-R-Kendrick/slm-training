@@ -1,0 +1,85 @@
+{
+  "schema": "checker_diversity_corpus/v1",
+  "evid": "EVID-08/EVID-11",
+  "notes": "Frozen seeded fault classes mapped to EVID-08 trust domains and checker backends. Research-only fixture; not live mutation execution.",
+  "cases": [
+    {
+      "case_id": "parser_proposition_mutation",
+      "fault_class": "parser_proposition",
+      "fault_domain": "python_cpython_formal_structural_family",
+      "evid11_family": "proposition",
+      "detectors": [
+        "python_structural"
+      ],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "parser_toolchain_lock_drift",
+      "fault_class": "parser_toolchain",
+      "fault_domain": "python_cpython_formal_structural_family",
+      "evid11_family": "toolchain",
+      "detectors": [
+        "python_structural"
+      ],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "kernel_axiom_footprint_drift",
+      "fault_class": "kernel_axiom",
+      "fault_domain": "lean4_kernel",
+      "evid11_family": "axiom",
+      "detectors": [
+        "lean_kernel"
+      ],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "kernel_module_binding_mismatch",
+      "fault_class": "kernel_binding",
+      "fault_domain": "lean4_kernel",
+      "evid11_family": "binding",
+      "detectors": [
+        "lean_kernel"
+      ],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "encoding_literal_flip",
+      "fault_class": "encoding_literal",
+      "fault_domain": "python_encoding_bridge",
+      "evid11_family": "encoding",
+      "detectors": [
+        "python_encoding_ref"
+      ],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "encoding_stale_problem_digest",
+      "fault_class": "encoding_digest",
+      "fault_domain": "python_encoding_bridge",
+      "evid11_family": "encoding",
+      "detectors": [
+        "python_encoding_ref"
+      ],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "shared_serialization_common_mode",
+      "fault_class": "shared_blind_spot",
+      "fault_domain": "python_cpython_formal_structural_family",
+      "evid11_family": "shared_parser",
+      "detectors": [],
+      "seeded_defect": true
+    },
+    {
+      "case_id": "negative_honest_replay",
+      "fault_class": "honest_positive",
+      "fault_domain": "python_enumerative_replay",
+      "evid11_family": "positive",
+      "detectors": [
+        "python_replay"
+      ],
+      "seeded_defect": false
+    }
+  ]
+}

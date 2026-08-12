@@ -1,0 +1,127 @@
+{
+  "locked_at": "2026-08-12T17:22:27.536550Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "single_checker_control",
+        "config_sha256": "cffdaa3c9c7e203444ee2ccf68f9244fc94c4229b2ebfc974a5563d919228957",
+        "role": "control"
+      },
+      {
+        "arm_id": "diverse_checkers_treatment",
+        "config_sha256": "b1be17e911afd3b2c67a246902efb3b6ad3c79a9d5a5168db67779404ad01ca9",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-14",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-14-checker-diversity",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "single_checker_family",
+        "description": "One structural-family checker only.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "false_alarm_fails_closed",
+        "description": "Honest positives must not trigger false alarms.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff diverse checkers detect additional independent fault classes without false-alarm blow-up; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "unique_defect_gain",
+        "metric": "unique_defect_detection_gain_vs_single_checker",
+        "minimum_effect": 0.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "false_alarm_rate",
+        "metric": "false_alarm_rate",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "shared_blind_spot_residual",
+        "metric": "shared_blind_spot_residual",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_14_checker_diversity",
+    "formal_obligations": [],
+    "hypothesis": "Checker diversity across independent fault domains increases defect detection versus a single checker family on frozen certificate corpora.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research14_primary",
+        "hypothesis_ids": [
+          "unique_defect_gain"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "false_alarm_fails_closed"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "unique_defect_gain",
+        "gate_id": "unique_gain",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "false_alarm_rate",
+        "gate_id": "false_alarm",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture corpus stop after paired report"
+    ]
+  },
+  "manifest_sha256": "2f3969f98f653574496fc50fcaba6c9b790d22df3f663c98f43459b5042492c2",
+  "schema_version": "CampaignLockV1"
+}
