@@ -1,0 +1,67 @@
+{
+  "schema": "rational_float_gate_corpus/v1",
+  "evid": "EVID-04",
+  "notes": "Adversarial gate fixtures with exact rational definitions. Research-only; not production gate authority.",
+  "cases": [
+    {
+      "case_id": "tie_exact_half",
+      "metric_num": 1,
+      "metric_den": 2,
+      "threshold_num": 1,
+      "threshold_den": 2,
+      "operator": "ge",
+      "float_flip_expected": false,
+      "notes": "Exact tie; float agrees."
+    },
+    {
+      "case_id": "float_rounds_up_to_pass",
+      "metric_num": 9999999999999999999,
+      "metric_den": 10000000000000000000,
+      "threshold_num": 1,
+      "threshold_den": 1,
+      "operator": "ge",
+      "float_flip_expected": true,
+      "notes": "Exact value below 1.0; float64 rounds up to 1.0 and passes."
+    },
+    {
+      "case_id": "ulp_above_threshold",
+      "metric_num": 67108865,
+      "metric_den": 134217728,
+      "threshold_num": 1,
+      "threshold_den": 2,
+      "operator": "ge",
+      "float_flip_expected": false,
+      "notes": "Just above 0.5; both pass."
+    },
+    {
+      "case_id": "cancellation_near_zero",
+      "metric_num": 1,
+      "metric_den": 1000000000000000000,
+      "threshold_num": 0,
+      "threshold_den": 1,
+      "operator": "gt",
+      "float_flip_expected": false,
+      "notes": "Tiny positive vs zero threshold."
+    },
+    {
+      "case_id": "large_ratio_boundary",
+      "metric_num": 9007199254740991,
+      "metric_den": 9007199254740992,
+      "threshold_num": 9007199254740991,
+      "threshold_den": 9007199254740992,
+      "operator": "ge",
+      "float_flip_expected": false,
+      "notes": "Near 2^53 boundary; exact tie."
+    },
+    {
+      "case_id": "tiny_delta_promotion",
+      "metric_num": 10000000000000001,
+      "metric_den": 10000000000000000,
+      "threshold_num": 1,
+      "threshold_den": 1,
+      "operator": "ge",
+      "float_flip_expected": false,
+      "notes": "1.0000000000000001 vs 1.0 threshold."
+    }
+  ]
+}

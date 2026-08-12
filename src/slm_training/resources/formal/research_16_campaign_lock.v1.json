@@ -1,0 +1,120 @@
+{
+  "locked_at": "2026-08-12T17:31:30.737737Z",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "direct_float_control",
+        "config_sha256": "6f174bb2e48eca928ba2bce68625a5a4895d337d28d6a0213d17ab4e99fac273",
+        "role": "control"
+      },
+      {
+        "arm_id": "certificate_treatment",
+        "config_sha256": "828da9745d2793a00dca229ae50aa714ff52eff11bb26be2eba3825a00d34871",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 1
+      }
+    ],
+    "author": "research-16",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 30.0
+    },
+    "campaign_id": "research-16-rational-float-transfer",
+    "claim_class": "fixture",
+    "controls": [
+      {
+        "control_id": "direct_float_baseline",
+        "description": "Direct Python float64 gate comparison.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "silent_cast_fails_closed",
+        "description": "Certificates must not force pass/fail when intervals overlap float flips.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "decision": "Accept iff certificates cover all selected gates safely (match exact or return indeterminate on float flips) with zero silent cast incidents; else reject/retire.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "transfer_coverage",
+        "metric": "transfer_certificate_coverage_on_selected_metric_gates",
+        "minimum_effect": 1.0,
+        "role": "primary"
+      },
+      {
+        "direction": "decrease",
+        "endpoint_id": "silent_cast",
+        "metric": "silent_cast_incidents",
+        "minimum_effect": 0.0,
+        "role": "secondary"
+      }
+    ],
+    "executable_kill_criteria": [],
+    "experiment_id": "research_16_rational_float_transfer",
+    "formal_obligations": [],
+    "hypothesis": "Rational-to-float transfer certificates can bound selected metric/gate float evaluations without pretending float equality is exact.",
+    "locked_eval_manifest_sha256": null,
+    "mechanism_off_arm_ids": [],
+    "metric_expectations_sha256": null,
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "research16_primary",
+        "hypothesis_ids": [
+          "transfer_coverage"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "silent_cast_fails_closed"
+    ],
+    "power_feasibility": null,
+    "promotion_gates": [
+      {
+        "endpoint_id": "transfer_coverage",
+        "gate_id": "full_coverage",
+        "operator": "ge",
+        "threshold": 1.0
+      }
+    ],
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "silent_cast",
+        "gate_id": "silent_cast",
+        "operator": "gt",
+        "threshold": 0.0
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": false,
+    "stopping_rules": [
+      "single fixture corpus stop after paired report"
+    ]
+  },
+  "manifest_sha256": "a07c24e7905e58b5b9469089e241b10e14e9d41dfd23c58c769028b2496dd8df",
+  "schema_version": "CampaignLockV1"
+}

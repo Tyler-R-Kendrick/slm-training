@@ -889,7 +889,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "a07c24e7905e58b5b9469089e241b10e14e9d41dfd23c58c769028b2496dd8df",
       "cited_lineage": [
         "repo-only-hypothesis",
         "repo-research-lineage",
@@ -897,7 +897,7 @@
       ],
       "decision_rule": "Accept if certificates cover selected gates and catch bound violations.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-16-preregistered.md",
       "experiment_key": "RESEARCH-16",
       "falsifier": "Certificates miss violations or overhead makes gates unusable.",
