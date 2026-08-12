@@ -1,0 +1,128 @@
+{
+  "bound_uselessness_rate": 0.0,
+  "campaign_id": "research-17-proof-mined-quantitative-bounds",
+  "campaign_lock_sha256": "96a76aa3fbe098392f8befcab033fec5686345d32b97adb450c5307281cb9531",
+  "claim_class": "fixture",
+  "decision": "accept",
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-17-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_17_proof_mined_quantitative_bounds",
+  "experiment_key": "RESEARCH-17",
+  "linear_id": "SLM-557",
+  "paired_report": {
+    "actionable_bound_extraction_success_with_replayable_certificate": 1.0,
+    "actionable_success_count": 2,
+    "bound_uselessness_rate": 0.0,
+    "control_rows": [
+      {
+        "actionable": false,
+        "arm": "qualitative_only",
+        "bound_value": null,
+        "certificate_sha256": null,
+        "qualitative_statement": "qualitative: finite complete domains imply finite exhaustive assignment search with prefix-tree expansion bound",
+        "theorem_id": "thm.finite_search.completion"
+      },
+      {
+        "actionable": false,
+        "arm": "qualitative_only",
+        "bound_value": null,
+        "certificate_sha256": null,
+        "qualitative_statement": "qualitative: exact closure is fixed-point or removes >=1 live candidate; survivors at most pre-closure live cardinality (KERN-05)",
+        "theorem_id": "thm.closure_live_upper"
+      },
+      {
+        "actionable": false,
+        "arm": "qualitative_only",
+        "bound_value": null,
+        "certificate_sha256": null,
+        "qualitative_statement": "qualitative: neural training converges to a global minimum (no finite-size or cost model assumptions)",
+        "theorem_id": "thm.nonextractable.missing_assumptions"
+      }
+    ],
+    "corpus_digest": "1368515f8c4f40b4f8c154c688d035a4898f68b2cae1e7b518a357d478e1d000",
+    "decision": "accept",
+    "expected_actionable_count": 2,
+    "proof_mining_failures_as_unknown": 0,
+    "reason": "proof_mining_yields_replayable_bounds",
+    "schema": "proof_mined_quantitative_bounds_report/v1",
+    "spurious_constant_rate": 0.0,
+    "toolchain": {
+      "backend_id": "proof_mined_quantitative_bounds_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/proof_mined_theorems.v1.json",
+      "fixtures_relpath": "src/slm_training/resources/revmath/fixtures",
+      "toolchain_id": "hermetic_python_proof_mined_bounds_v1",
+      "trust_domain": "research_only/proof_mined_quantitative_bounds"
+    },
+    "treatment_rows": [
+      {
+        "actionable": true,
+        "arm": "proof_mined_extraction",
+        "bound_ast_id": "bound.finite_search.prefix_tree.v1",
+        "bound_value": "15",
+        "certificate_sha256": "5722b56d0b9adde5f988e54c4b733a0bbcbf0be4521ca8b06bfdd695baddb750",
+        "missing_assumptions": [],
+        "outcome": "extracted",
+        "report_digest": "77013ca20c28f5d7ae20188d780bdfe1a801927fe4d133c3d170095a5a2203a0",
+        "spurious_constant": false,
+        "theorem_id": "thm.finite_search.completion",
+        "validated_via_bound_ast": true
+      },
+      {
+        "actionable": true,
+        "arm": "proof_mined_extraction",
+        "bound_ast_id": "bound.closure.live_upper.v1",
+        "bound_value": "7",
+        "certificate_sha256": "836eedc90fc226816e6866b8a9474cfe749a4b3efb8545a285b501feafec2a44",
+        "missing_assumptions": [],
+        "outcome": "extracted",
+        "report_digest": "d186b9358115a4a095ea5f128f2fdd56192b296d6534748fd80421d86ffad4fc",
+        "spurious_constant": false,
+        "theorem_id": "thm.closure_live_upper",
+        "validated_via_bound_ast": true
+      },
+      {
+        "actionable": false,
+        "arm": "proof_mined_extraction",
+        "bound_ast_id": null,
+        "bound_value": null,
+        "certificate_sha256": null,
+        "missing_assumptions": [
+          "explicit_stepsize_schedule",
+          "finite_horizon",
+          "finite_parameter_dimension",
+          "named_cost_model"
+        ],
+        "outcome": "nonextractable",
+        "report_digest": "4998b82ec2b9274de3473fb09c4d7f1fb8804024925851014054014dd2ecc09e",
+        "spurious_constant": false,
+        "theorem_id": "thm.nonextractable.missing_assumptions",
+        "validated_via_bound_ast": false
+      }
+    ]
+  },
+  "primary_metric": "actionable_bound_extraction_success_with_replayable_certificate",
+  "primary_value": 1.0,
+  "proof_mining_failures_as_unknown": 0,
+  "reason": "proof_mining_yields_replayable_bounds",
+  "research_only": true,
+  "schema": "research_17_experiment_result/v1",
+  "spurious_constant_rate": 0.0,
+  "toolchain": {
+    "backend_id": "proof_mined_quantitative_bounds_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/proof_mined_theorems.v1.json",
+    "fixtures_relpath": "src/slm_training/resources/revmath/fixtures",
+    "toolchain_id": "hermetic_python_proof_mined_bounds_v1",
+    "trust_domain": "research_only/proof_mined_quantitative_bounds"
+  },
+  "version_stamp": {
+    "code_commit": "6104d1053ae96673514a1b74378813780c4dd094",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm557_research17_proof_mined": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:38:47.622349+00:00"
+  }
+}

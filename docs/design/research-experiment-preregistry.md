@@ -139,6 +139,14 @@ gates; float flips safely return indeterminate with zero silent casts).
 Evidence: [`iter-revmath-research-16-preregistered.md`](iter-revmath-research-16-preregistered.md).
 Still `default_off` / `research_only` — not production authority.
 
+## RESEARCH-17 status (SLM-557)
+
+Preregistered proof-mined quantitative bounds pilot executed under campaign lock
+(see `src/slm_training/resources/formal/research_17_campaign_lock.v1.json`).
+Disposition: see evidence doc (fixture HARN-07 extraction over frozen theorem records).
+Evidence: [`iter-revmath-research-17-preregistered.md`](iter-revmath-research-17-preregistered.md).
+Still `default_off` / `research_only` — not production authority.
+
 ## RESEARCH-07 status (SLM-565)
 
 Preregistered VSS Alethe/SMT proof-reconstruction pilot executed under campaign lock

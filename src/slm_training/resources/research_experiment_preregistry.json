@@ -949,7 +949,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "96a76aa3fbe098392f8befcab033fec5686345d32b97adb450c5307281cb9531",
       "cited_lineage": [
         "arxiv-2410.15986",
         "repo-research-lineage",
@@ -957,7 +957,7 @@
       ],
       "decision_rule": "Accept if mined bounds are replayable and tighten gates without spurious constants.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-17-preregistered.md",
       "experiment_key": "RESEARCH-17",
       "falsifier": "Extracted bounds are non-actionable or not replayably certified.",

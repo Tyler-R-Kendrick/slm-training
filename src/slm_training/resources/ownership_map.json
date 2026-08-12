@@ -1726,6 +1726,16 @@
       ],
       "new_owner_justified": false,
       "justification": "Isolated default-off rational-to-float transfer certificate backend + harness over ExperimentCampaignV1/CampaignLockV1 and EVID-04 exact-arithmetic fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
+    },
+    {
+      "issue": "RESEARCH-17",
+      "linear_id": "SLM-557",
+      "title": "Experiment: proof-mined quantitative bounds from qualitative project theorems",
+      "extension_points": [
+        "experiment_campaign"
+      ],
+      "new_owner_justified": false,
+      "justification": "Isolated default-off proof-mined quantitative bounds backend + harness over ExperimentCampaignV1/CampaignLockV1 and HARN-07 revmath fixtures; RESEARCH-02 preregistry activation only \u2014 no production gate authority."
     }
   ],
   "contract_version_governance": {
