@@ -1,0 +1,106 @@
+{
+  "assumption_under_declaration": 0,
+  "bound_vacuity": 0,
+  "campaign_id": "research-19-lean-rademacher-bound",
+  "campaign_lock_sha256": "f9c927b9594902aada494180215e81dbd72751a8a3f4d9f9a86b2d1e66e7aa24",
+  "claim_class": "fixture",
+  "decision": "accept",
+  "decision_usefulness_rate": 1.0,
+  "default_off": true,
+  "evidence_path": "docs/design/iter-revmath-research-19-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_19_lean_rademacher_bound",
+  "experiment_key": "RESEARCH-19",
+  "linear_id": "SLM-558",
+  "paired_report": {
+    "assumption_under_declaration": 0,
+    "bound_vacuity": 0,
+    "control_rows": [
+      {
+        "arm": "control_narrative",
+        "bound_value": null,
+        "case_id": "narrative_control_eval",
+        "certificate_valid": false,
+        "decision_useful": false,
+        "generalization_gap": 0.039999999999999994,
+        "ship_authority_claimed": true
+      }
+    ],
+    "corpus_digest": "064e163d3f5749c97b48af09975f307a22fc7212ea9923cc1b4f831e22f7ddbd",
+    "decision": "accept",
+    "decision_usefulness_rate": 1.0,
+    "eval_case_count": 2,
+    "lean_checked_toy_bound_certificate_validity": 1.0,
+    "reason": "lean_checked_toy_bound_is_decision_useful",
+    "schema": "lean_rademacher_bound_report/v1",
+    "ship_gate_authority_smuggling": 0,
+    "toolchain": {
+      "backend_id": "lean_rademacher_bound_pilot",
+      "corpus_relpath": "src/slm_training/resources/formal/lean_rademacher_corpus.v1.json",
+      "lean_package": "research_only/hermetic_certificate",
+      "toolchain_id": "hermetic_python_lean_rademacher_v1",
+      "trust_domain": "research_only/lean_rademacher_bound"
+    },
+    "treatment_rows": [
+      {
+        "arm": "treatment_lean_certificate",
+        "bound_vacuous": false,
+        "bound_value": 0.13,
+        "case_id": "constant_class_eval",
+        "certificate_valid": true,
+        "decision_useful": true,
+        "generalization_gap": 0.039999999999999994,
+        "missing_assumptions": [],
+        "population_risk_upper": 0.24,
+        "recomputed_bound": 0.12919923127230043
+      },
+      {
+        "arm": "treatment_lean_certificate",
+        "bound_vacuous": true,
+        "bound_value": 1.25,
+        "case_id": "vacuous_class_eval",
+        "certificate_valid": false,
+        "decision_useful": false,
+        "generalization_gap": 0.04999999999999999,
+        "missing_assumptions": [],
+        "population_risk_upper": 1.65,
+        "recomputed_bound": 0.8024779790979724
+      },
+      {
+        "arm": "treatment_lean_certificate",
+        "bound_vacuous": false,
+        "bound_value": 0.13,
+        "case_id": "constant_class_train",
+        "certificate_valid": true,
+        "decision_useful": true,
+        "generalization_gap": 0.039999999999999994,
+        "missing_assumptions": [],
+        "population_risk_upper": 0.24,
+        "recomputed_bound": 0.12919923127230043
+      }
+    ]
+  },
+  "primary_metric": "lean_checked_toy_bound_certificate_validity",
+  "primary_value": 1.0,
+  "reason": "lean_checked_toy_bound_is_decision_useful",
+  "research_only": true,
+  "schema": "research_19_experiment_result/v1",
+  "ship_gate_authority_smuggling": 0,
+  "toolchain": {
+    "backend_id": "lean_rademacher_bound_pilot",
+    "corpus_relpath": "src/slm_training/resources/formal/lean_rademacher_corpus.v1.json",
+    "lean_package": "research_only/hermetic_certificate",
+    "toolchain_id": "hermetic_python_lean_rademacher_v1",
+    "trust_domain": "research_only/lean_rademacher_bound"
+  },
+  "version_stamp": {
+    "code_commit": "9db131ce01ed586e790968a79230ec45415cceac",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm558_research19_rademacher": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T18:33:24.253383+00:00"
+  }
+}

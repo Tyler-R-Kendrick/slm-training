@@ -1069,7 +1069,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "f9c927b9594902aada494180215e81dbd72751a8a3f4d9f9a86b2d1e66e7aa24",
       "cited_lineage": [
         "arxiv-2410.15986",
         "repo-only-hypothesis",
@@ -1077,7 +1077,7 @@
       ],
       "decision_rule": "Accept research certificate only; never ship-gate authority from this pilot alone.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-19-preregistered.md",
       "experiment_key": "RESEARCH-19",
       "falsifier": "Bound is vacuous or used to authorize ship gates without separate promotion.",
