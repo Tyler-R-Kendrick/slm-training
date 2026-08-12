@@ -117,6 +117,16 @@ preserves the terminal outcome but blocks promotion and requires the successor
 matrix to cover `measurement_control`, `training_method`, `architecture`,
 `lean_model`, and `assumptions` with explicitly labeled candidates.
 
+Decision-bearing continuous screening locks
+`metric_expectations.screening.v1.json`: invalid grammar, uncertified fallback,
+singleton neural forward, missing observation, and runtime timeout counts all
+have the theorem-backed optimum zero. The timeout obligation applies because a
+screening comparison is decision-bearing only after both arms complete; timed-out
+rows remain incomplete evidence. This does not restore the removed screening
+formal-preflight lane and does not give Lean authority over empirical quality or
+latency. Those remain measured by the evaluation harness; promotion separately
+locks its assumption-backed calibration manifest.
+
 The registry in `src/slm_training/autoresearch/researchers.py` initially provides
 two invocation adapters. Both run in a separately installed upstream checkout and
 Python environment; no upstream package or dependency graph is vendored into this
