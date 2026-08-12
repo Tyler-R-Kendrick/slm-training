@@ -3147,6 +3147,11 @@
         {
           "version": "v27",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-10/SLM-566 downstream_extension_map row + experiment_campaign notes only."
+        },
+        {
+          "version": "v27",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-04/SLM-550 downstream_extension_map row + experiment_campaign notes only."
         },
         {
@@ -3543,6 +3548,11 @@
         {
           "version": "v2",
           "date": "2026-08-12",
+          "note": "no-bump: RESEARCH-10/SLM-566 updates RESEARCH-10 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
+        },
+        {
+          "version": "v2",
+          "date": "2026-08-12",
           "note": "no-bump: RESEARCH-04/SLM-550 updates RESEARCH-04 row disposition/campaign_lock_sha256 only; schema+loader unchanged."
         },
         {
@@ -3925,6 +3935,11 @@
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-08-12",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after RESEARCH-10 (SLM-566) proof-strength curriculum evidence docs; deterministic fold, no campaign contract change."
+        },
         {
           "version": "v211",
           "date": "2026-08-12",
@@ -19462,6 +19477,29 @@
           "version": "v1",
           "date": "2026-08-12",
           "note": "RESEARCH-04/SLM-550: default-off RM Zoo benchmark backend+harness+runner+lock+fixture evidence; never production authority."
+        }
+      ]
+    },
+    "harness.experiments.slm566_research10_proof_strength": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/proof_strength_curriculum.py",
+        "src/slm_training/resources/formal/proof_strength_records.v1.json",
+        "tests/test_formal/test_proof_strength_curriculum.py",
+        "src/slm_training/resources/formal/research_10_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_10_proof_strength_curriculum.py",
+        "scripts/run_research_10_proof_strength.py",
+        "docs/design/iter-revmath-research-10-preregistered.json",
+        "docs/design/iter-revmath-research-10-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_10_proof_strength_curriculum.py",
+        "tests/test_scripts/test_run_research_10_proof_strength.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-12",
+          "note": "RESEARCH-10/SLM-566: default-off proof-strength curriculum backend+harness+runner+lock+fixture evidence; never production authority."
         }
       ]
     }

@@ -1,0 +1,68 @@
+{
+  "citation_ids": [
+    "leandojo",
+    "arxiv-2410.06209",
+    "simpson-sosoa"
+  ],
+  "corpus_id": "proof_strength_curriculum.v1",
+  "groups": [
+    {
+      "group_id": "train.wkl_ablation",
+      "root_family_id": "wkl.train.a",
+      "split": "train",
+      "theorem_id": "thm.wkl.forward",
+      "obligations": [
+        {"obligation_id": "orig", "kind": "original_proof", "difficulty": 2, "gold_pass": true},
+        {"obligation_id": "abl.weak", "kind": "assumption_ablation", "difficulty": 4, "gold_pass": true},
+        {"obligation_id": "rev", "kind": "reversal", "difficulty": 5, "gold_pass": true},
+        {"obligation_id": "constr", "kind": "constructivization", "difficulty": 3, "gold_pass": true},
+        {"obligation_id": "cx", "kind": "counterexample", "difficulty": 6, "gold_pass": false},
+        {"obligation_id": "bound", "kind": "quantitative_bound", "difficulty": 5, "gold_pass": true}
+      ]
+    },
+    {
+      "group_id": "train.rca0_min",
+      "root_family_id": "rca0.train.b",
+      "split": "train",
+      "theorem_id": "thm.rca0.min",
+      "obligations": [
+        {"obligation_id": "orig", "kind": "original_proof", "difficulty": 1, "gold_pass": true},
+        {"obligation_id": "abl", "kind": "assumption_ablation", "difficulty": 3, "gold_pass": true},
+        {"obligation_id": "rev", "kind": "reversal", "difficulty": 4, "gold_pass": true},
+        {"obligation_id": "constr", "kind": "constructivization", "difficulty": 2, "gold_pass": true},
+        {"obligation_id": "cx", "kind": "counterexample", "difficulty": 5, "gold_pass": false},
+        {"obligation_id": "bound", "kind": "quantitative_bound", "difficulty": 4, "gold_pass": true}
+      ]
+    },
+    {
+      "group_id": "eval.sep_pair",
+      "root_family_id": "sep.eval.a",
+      "split": "eval",
+      "theorem_id": "thm.sep.pair",
+      "obligations": [
+        {"obligation_id": "orig", "kind": "original_proof", "difficulty": 2, "gold_pass": true},
+        {"obligation_id": "abl", "kind": "assumption_ablation", "difficulty": 5, "gold_pass": true},
+        {"obligation_id": "rev", "kind": "reversal", "difficulty": 6, "gold_pass": true},
+        {"obligation_id": "constr", "kind": "constructivization", "difficulty": 3, "gold_pass": true},
+        {"obligation_id": "cx", "kind": "counterexample", "difficulty": 6, "gold_pass": false},
+        {"obligation_id": "bound", "kind": "quantitative_bound", "difficulty": 4, "gold_pass": true}
+      ]
+    },
+    {
+      "group_id": "eval.dnr_zoo",
+      "root_family_id": "zoo.eval.b",
+      "split": "eval",
+      "theorem_id": "thm.zoo.dnr",
+      "obligations": [
+        {"obligation_id": "orig", "kind": "original_proof", "difficulty": 3, "gold_pass": true},
+        {"obligation_id": "abl", "kind": "assumption_ablation", "difficulty": 4, "gold_pass": true},
+        {"obligation_id": "rev", "kind": "reversal", "difficulty": 5, "gold_pass": true},
+        {"obligation_id": "constr", "kind": "constructivization", "difficulty": 2, "gold_pass": true},
+        {"obligation_id": "cx", "kind": "counterexample", "difficulty": 6, "gold_pass": false},
+        {"obligation_id": "bound", "kind": "quantitative_bound", "difficulty": 5, "gold_pass": true}
+      ]
+    }
+  ],
+  "schedule_budget_per_eval_group": 4,
+  "schema_version": "proof_strength_curriculum/v1"
+}

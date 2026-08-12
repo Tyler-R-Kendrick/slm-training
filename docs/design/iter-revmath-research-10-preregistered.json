@@ -1,0 +1,123 @@
+{
+  "campaign_id": "research-10-proof-strength-curriculum",
+  "campaign_lock_sha256": "4eb1a8b95a88c54ecf5d80706f9aacf09e05988ba3c5fb5de99856d1a220266b",
+  "claim_class": "fixture",
+  "control_eval_pass_rate": 0.5,
+  "decision": "accept",
+  "default_off": true,
+  "easy_task_regression": false,
+  "evidence_path": "docs/design/iter-revmath-research-10-preregistered.md",
+  "executed": true,
+  "experiment_id": "research_10_proof_strength_curriculum",
+  "experiment_key": "RESEARCH-10",
+  "linear_id": "SLM-566",
+  "paired_report": {
+    "budget_per_eval_group": 4,
+    "control_eval_pass_rate": 0.5,
+    "control_runs": [
+      {
+        "attempted_obligation_ids": [
+          "cx",
+          "bound",
+          "abl",
+          "constr"
+        ],
+        "budget": 4,
+        "group_id": "eval.sep_pair",
+        "ordering": "unordered",
+        "pass_rate": 0.5,
+        "passes": 3,
+        "split": "eval",
+        "steps_used": 4
+      },
+      {
+        "attempted_obligation_ids": [
+          "abl",
+          "cx",
+          "rev",
+          "bound"
+        ],
+        "budget": 4,
+        "group_id": "eval.dnr_zoo",
+        "ordering": "unordered",
+        "pass_rate": 0.5,
+        "passes": 3,
+        "split": "eval",
+        "steps_used": 4
+      }
+    ],
+    "corpus_digest": "3327945edf942328d3434374f7cd721184eee3e0273284946121b3b6ef1ed6db",
+    "curriculum_leakage": false,
+    "decision": "accept",
+    "easy_task_regression": false,
+    "hidden_axiom_reliance": false,
+    "reason": "curriculum_improves_sample_efficiency",
+    "sample_efficiency_to_target_obligation_pass_rate": 1.3333333333333333,
+    "schema": "proof_strength_curriculum_report/v1",
+    "toolchain": {
+      "backend_id": "proof_strength_curriculum_pilot",
+      "control_seed": "0",
+      "corpus_relpath": "src/slm_training/resources/formal/proof_strength_records.v1.json",
+      "toolchain_id": "hermetic_python_proof_strength_v1",
+      "trust_domain": "research_only/proof_strength_curriculum"
+    },
+    "train_eval_root_leakage": false,
+    "treatment_eval_pass_rate": 0.6666666666666666,
+    "treatment_runs": [
+      {
+        "attempted_obligation_ids": [
+          "orig",
+          "constr",
+          "bound",
+          "abl"
+        ],
+        "budget": 4,
+        "group_id": "eval.sep_pair",
+        "ordering": "obligation_difficulty",
+        "pass_rate": 0.6666666666666666,
+        "passes": 4,
+        "split": "eval",
+        "steps_used": 4
+      },
+      {
+        "attempted_obligation_ids": [
+          "constr",
+          "orig",
+          "abl",
+          "bound"
+        ],
+        "budget": 4,
+        "group_id": "eval.dnr_zoo",
+        "ordering": "obligation_difficulty",
+        "pass_rate": 0.6666666666666666,
+        "passes": 4,
+        "split": "eval",
+        "steps_used": 4
+      }
+    ]
+  },
+  "primary_metric": "sample_efficiency_to_target_obligation_pass_rate",
+  "primary_value": 1.3333333333333333,
+  "reason": "curriculum_improves_sample_efficiency",
+  "research_only": true,
+  "schema": "research_10_experiment_result/v1",
+  "toolchain": {
+    "backend_id": "proof_strength_curriculum_pilot",
+    "control_seed": "0",
+    "corpus_relpath": "src/slm_training/resources/formal/proof_strength_records.v1.json",
+    "toolchain_id": "hermetic_python_proof_strength_v1",
+    "trust_domain": "research_only/proof_strength_curriculum"
+  },
+  "train_eval_root_leakage": false,
+  "treatment_eval_pass_rate": 0.6666666666666666,
+  "version_stamp": {
+    "code_commit": "2dc54ede7b0e91549a47ce4d9d63aac29968e6a5",
+    "code_dirty": true,
+    "components": {
+      "governance.research_experiment_preregistry": "v2",
+      "harness.experiments.slm566_research10_proof_strength": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-12T17:13:31.629389+00:00"
+  }
+}

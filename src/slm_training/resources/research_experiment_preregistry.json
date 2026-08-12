@@ -525,7 +525,7 @@
           "status": "completed"
         }
       ],
-      "campaign_lock_sha256": null,
+      "campaign_lock_sha256": "4eb1a8b95a88c54ecf5d80706f9aacf09e05988ba3c5fb5de99856d1a220266b",
       "cited_lineage": [
         "leandojo",
         "arxiv-2605.20244",
@@ -533,7 +533,7 @@
       ],
       "decision_rule": "Accept only with efficiency gain and no easy-task regression or axiom leakage.",
       "default_off": true,
-      "disposition": "registered",
+      "disposition": "completed",
       "evidence_path": "docs/design/iter-revmath-research-10-preregistered.md",
       "experiment_key": "RESEARCH-10",
       "falsifier": "Curriculum gains come from leakage or regressions on weaker obligations.",
