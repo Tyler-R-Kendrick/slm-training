@@ -85,14 +85,33 @@ def minimal_valid_program(dsl: str | None = None) -> str | None:
     (the probe then honestly skips every record rather than inventing a
     baseline).
     """
+    import logging
+
     from slm_training.dsl.parser import validate
 
+    log = logging.getLogger(__name__)
+    failures: list[str] = []
     for candidate in MINIMAL_CANDIDATES:
         try:
             validate(candidate, dsl=dsl)
-        except Exception:  # noqa: BLE001 - any parse/validate failure disqualifies
+        except Exception as exc:  # noqa: BLE001 - any parse/validate failure disqualifies
+            detail = f"{type(exc).__name__}: {exc}"
+            failures.append(f"{candidate!r} -> {detail}")
+            log.debug(
+                "emptiness_probe: minimal candidate rejected dsl=%r candidate=%r err=%s",
+                dsl,
+                candidate,
+                detail,
+                exc_info=True,
+            )
             continue
         return candidate
+    if failures:
+        log.warning(
+            "emptiness_probe: no minimal_valid_program for dsl=%r; failures=%s",
+            dsl,
+            failures,
+        )
     return None
 
 

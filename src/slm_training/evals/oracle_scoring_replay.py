@@ -59,71 +59,71 @@ _STRING_LITERAL_RE = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"')
 _WRONG_COMPONENT_OR_PROPERTY_ROLE: dict[str, str] = {
     "card": (
         'root = Stack([header, body])\n'
-        'header = CardHeader(":card.title")\n'
-        'body = TextContent(":card.body")\n'
+        'header = CardHeader(":slot_0")\n'
+        'body = TextContent(":slot_1")\n'
     ),
     "slider": (
         'root = Stack([s])\n'
-        's = TextContent(":settings.caption")\n'
+        's = TextContent(":slot_0")\n'
     ),
     "switch": (
         'root = Stack([s])\n'
-        's = TextContent(":settings.caption")\n'
+        's = TextContent(":slot_0")\n'
     ),
     "tabs": (
         'root = Stack([tab1])\n'
-        'tab1 = Button(":tab.trigger")\n'
+        'tab1 = Button(":slot_0")\n'
     ),
-    "button": 'root = TextContent(":btn.action")\n',
+    "button": 'root = TextContent(":slot_0")\n',
     "callout": (
         'root = Card([title, desc])\n'
-        'title = TextContent(":callout.title")\n'
-        'desc = TextContent(":callout.desc")\n'
+        'title = TextContent(":slot_0")\n'
+        'desc = TextContent(":slot_1")\n'
     ),
-    "image_block": 'root = TextContent(":img.alt")\n',
+    "image_block": 'root = TextContent(":slot_1")\n',
 }
 
 _PROMPT_INCOMPATIBLE_BUT_VALID: dict[str, str] = {
     "card": (
         'root = Stack([header, body])\n'
-        'header = CardHeader(":card.title")\n'
-        'body = TextContent(":card.body")\n'
+        'header = CardHeader(":slot_0")\n'
+        'body = TextContent(":slot_1")\n'
     ),
     "slider": (
         'root = Stack([s])\n'
-        's = Button(":settings.caption")\n'
+        's = Button(":slot_0")\n'
     ),
     "switch": (
         'root = Stack([s])\n'
-        's = Slider(":settings.caption", "continuous", 0, 100)\n'
+        's = Slider(":slot_0", "continuous", 0, 100)\n'
     ),
     "tabs": (
         'root = Stack([tab1])\n'
-        'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content")])\n'
+        'tab1 = TabItem("tab1", ":slot_0", [TextContent(":slot_1")])\n'
     ),
     "button": (
         'root = Stack([b])\n'
-        'b = TextContent(":btn.action")\n'
+        'b = TextContent(":slot_0")\n'
     ),
     "callout": (
         'root = Card([title, desc])\n'
-        'title = TextContent(":callout.title")\n'
-        'desc = TextContent(":callout.desc")\n'
+        'title = TextContent(":slot_0")\n'
+        'desc = TextContent(":slot_1")\n'
     ),
     "image_block": (
         'root = Stack([img])\n'
-        'img = TextContent(":img.src")\n'
+        'img = TextContent(":slot_0")\n'
     ),
 }
 
 _PROMPT_CONTRACT_OMISSION: dict[str, str] = {
-    "card": 'root = Card([TextContent(":card.body")])\n',
-    "slider": 'root = Stack([TextContent(":settings.caption")])\n',
-    "switch": 'root = Stack([TextContent(":settings.caption")])\n',
-    "tabs": 'root = Tabs([TabItem("tab1", ":tab.trigger", [])])\n',
-    "button": 'root = Stack([TextContent(":btn.action")])\n',
-    "callout": 'root = Callout("info", ":callout.title", ":callout.title")\n',
-    "image_block": 'root = Stack([TextContent(":img.alt")])\n',
+    "card": 'root = Card([TextContent(":slot_1")])\n',
+    "slider": 'root = Stack([TextContent(":slot_0")])\n',
+    "switch": 'root = Stack([TextContent(":slot_0")])\n',
+    "tabs": 'root = Tabs([TabItem("tab1", ":slot_0", [])])\n',
+    "button": 'root = Stack([TextContent(":slot_0")])\n',
+    "callout": 'root = Callout("info", ":slot_0", ":slot_0")\n',
+    "image_block": 'root = Stack([TextContent(":slot_1")])\n',
 }
 
 # Duplicate/filler transforms keep the requested component but add repeated
@@ -131,53 +131,53 @@ _PROMPT_CONTRACT_OMISSION: dict[str, str] = {
 _DUPLICATE_OR_FILLER_GAMING: dict[str, str] = {
     "card": (
         'root = Card([header, body, t1, t2, t3])\n'
-        'header = CardHeader(":card.title")\n'
-        'body = TextContent(":card.body")\n'
-        't1 = TextContent(":card.body")\n'
-        't2 = TextContent(":card.body")\n'
-        't3 = TextContent(":card.body")\n'
+        'header = CardHeader(":slot_0")\n'
+        'body = TextContent(":slot_1")\n'
+        't1 = TextContent(":slot_1")\n'
+        't2 = TextContent(":slot_1")\n'
+        't3 = TextContent(":slot_1")\n'
     ),
     "slider": (
         'root = Stack([s, t1, t2, t3])\n'
-        's = Slider(":settings.caption", "continuous", 0, 100)\n'
-        't1 = TextContent(":settings.caption")\n'
-        't2 = TextContent(":settings.caption")\n'
-        't3 = TextContent(":settings.caption")\n'
+        's = Slider(":slot_0", "continuous", 0, 100)\n'
+        't1 = TextContent(":slot_0")\n'
+        't2 = TextContent(":slot_0")\n'
+        't3 = TextContent(":slot_0")\n'
     ),
     "switch": (
         'root = Stack([s, t1, t2, t3])\n'
-        's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
-        't1 = TextContent(":settings.caption")\n'
-        't2 = TextContent(":settings.caption")\n'
-        't3 = TextContent(":settings.caption")\n'
+        's = SwitchItem(":slot_0", ":slot_1", "notifications")\n'
+        't1 = TextContent(":slot_0")\n'
+        't2 = TextContent(":slot_0")\n'
+        't3 = TextContent(":slot_0")\n'
     ),
     "tabs": (
         'root = Tabs([tab1])\n'
-        'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content"), t1, t2, t3])\n'
-        't1 = TextContent(":tab.content")\n'
-        't2 = TextContent(":tab.content")\n'
-        't3 = TextContent(":tab.content")\n'
+        'tab1 = TabItem("tab1", ":slot_0", [TextContent(":slot_1"), t1, t2, t3])\n'
+        't1 = TextContent(":slot_1")\n'
+        't2 = TextContent(":slot_1")\n'
+        't3 = TextContent(":slot_1")\n'
     ),
     "button": (
         'root = Stack([b, t1, t2, t3])\n'
-        'b = Button(":btn.action")\n'
-        't1 = TextContent(":btn.action")\n'
-        't2 = TextContent(":btn.action")\n'
-        't3 = TextContent(":btn.action")\n'
+        'b = Button(":slot_0")\n'
+        't1 = TextContent(":slot_0")\n'
+        't2 = TextContent(":slot_0")\n'
+        't3 = TextContent(":slot_0")\n'
     ),
     "callout": (
         'root = Stack([callout, t1, t2, t3])\n'
-        'callout = Callout("info", ":callout.title", ":callout.desc")\n'
-        't1 = TextContent(":callout.desc")\n'
-        't2 = TextContent(":callout.desc")\n'
-        't3 = TextContent(":callout.desc")\n'
+        'callout = Callout("info", ":slot_0", ":slot_1")\n'
+        't1 = TextContent(":slot_1")\n'
+        't2 = TextContent(":slot_1")\n'
+        't3 = TextContent(":slot_1")\n'
     ),
     "image_block": (
         'root = Stack([img, t1, t2, t3])\n'
-        'img = ImageBlock(":img.src", ":img.alt")\n'
-        't1 = TextContent(":img.alt")\n'
-        't2 = TextContent(":img.alt")\n'
-        't3 = TextContent(":img.alt")\n'
+        'img = ImageBlock(":slot_0", ":slot_1")\n'
+        't1 = TextContent(":slot_1")\n'
+        't2 = TextContent(":slot_1")\n'
+        't3 = TextContent(":slot_1")\n'
     ),
 }
 
@@ -185,36 +185,36 @@ _DUPLICATE_OR_FILLER_GAMING: dict[str, str] = {
 _UNREACHABLE_OR_DEAD_CONTENT: dict[str, str] = {
     "card": (
         'root = Card([header, body])\n'
-        'header = CardHeader(":card.title")\n'
-        'body = TextContent(":card.body")\n'
-        'dead = TextContent(":card.title")\n'
+        'header = CardHeader(":slot_0")\n'
+        'body = TextContent(":slot_1")\n'
+        'dead = TextContent(":slot_0")\n'
     ),
     "slider": (
         'root = Stack([s])\n'
-        's = Slider(":settings.caption", "continuous", 0, 100)\n'
-        'dead = TextContent(":settings.caption")\n'
+        's = Slider(":slot_0", "continuous", 0, 100)\n'
+        'dead = TextContent(":slot_0")\n'
     ),
     "switch": (
         'root = Stack([s])\n'
-        's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
-        'dead = TextContent(":settings.caption")\n'
+        's = SwitchItem(":slot_0", ":slot_1", "notifications")\n'
+        'dead = TextContent(":slot_0")\n'
     ),
     "tabs": (
         'root = Tabs([tab1])\n'
-        'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content")])\n'
-        'dead = TextContent(":tab.content")\n'
+        'tab1 = TabItem("tab1", ":slot_0", [TextContent(":slot_1")])\n'
+        'dead = TextContent(":slot_1")\n'
     ),
     "button": (
-        'root = Button(":btn.action")\n'
-        'dead = TextContent(":btn.action")\n'
+        'root = Button(":slot_0")\n'
+        'dead = TextContent(":slot_0")\n'
     ),
     "callout": (
-        'root = Callout("info", ":callout.title", ":callout.desc")\n'
-        'dead = TextContent(":callout.title")\n'
+        'root = Callout("info", ":slot_0", ":slot_1")\n'
+        'dead = TextContent(":slot_0")\n'
     ),
     "image_block": (
-        'root = ImageBlock(":img.src", ":img.alt")\n'
-        'dead = TextContent(":img.src")\n'
+        'root = ImageBlock(":slot_0", ":slot_1")\n'
+        'dead = TextContent(":slot_0")\n'
     ),
 }
 
