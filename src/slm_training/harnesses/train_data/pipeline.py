@@ -121,6 +121,9 @@ class TrainDataConfig:
     programspec_count: int = 16
     programspec_seed: int = 0
     programspec_natural_prompts: bool = False
+    # Optional v2 corpus-generation policy. None preserves the historical
+    # ProgramGenerator count path and OpenUI family-id prompts.
+    corpus_generation: Any = None
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -651,6 +654,18 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
                 specs.append(ProgramSpec.from_dict(json.loads(line)))
             except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
                 errors.append({"id": f"programspec:{line_number}", "error": str(exc)})
+    elif config.corpus_generation is not None:
+        from slm_training.data.progspec.generate import generate_program_pool
+
+        pool = generate_program_pool(config.corpus_generation)
+        specs.extend(pool.programs)
+        if len(specs) != config.programspec_count:
+            errors.append(
+                {
+                    "error": "programspec generator emitted "
+                    f"{len(specs)}/{config.programspec_count} requested roots"
+                }
+            )
     elif config.programspec_count > 0:
         result = ProgramGenerator(seed=config.programspec_seed).generate(
             config.programspec_count
@@ -664,6 +679,87 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
                 }
             )
     return specs, errors
+
+
+def _prompt_for_programspec(spec: Any, config: TrainDataConfig) -> str:
+    """Render a plan-aware prompt. Historical default keeps family-id wrappers."""
+
+    policy = config.corpus_generation
+    if policy is None:
+        prompt = f"Generate the {spec.program_family_id} OpenUI program."
+        if config.programspec_natural_prompts:
+            family = spec.program_family_id.replace("_", " ").strip()
+            prompt = f"Create a {family} OpenUI program."
+        return prompt
+    try:
+        from slm_training.dsl.parser import validate as validate_source
+        from slm_training.dsl.semantic_frame import derive_semantic_frame
+        from slm_training.harnesses.train_data.semantic_prompts import (
+            render_prompt_candidates,
+        )
+    except ImportError:
+        return "Need a compact screen with a title and a primary action."
+    try:
+        program = validate_source(spec.canonical_openui)
+        frame = derive_semantic_frame(program)
+        rendered = render_prompt_candidates(
+            frame,
+            policy.prompts,
+            root_identity=spec.id,
+            seed=config.programspec_seed,
+        )
+    except (RuntimeError, ValueError, TypeError):
+        return "Need a compact screen with a title and a primary action."
+    if rendered.candidates:
+        return rendered.candidates[0].prompt_text
+    return "Need a compact screen with a title and a primary action."
+
+
+def _counterfactual_records(
+    spec: Any, config: TrainDataConfig, context: Any
+) -> list[ExampleRecord]:
+    policy = config.corpus_generation
+    if policy is None or policy.derivatives.semantic_counterfactuals_per_eligible_root < 1:
+        return []
+    from slm_training.data.progspec import emit_record
+    from slm_training.data.verify import stamp_record
+    from slm_training.harnesses.train_data.semantic_counterfactuals import (
+        derive_semantic_relations,
+    )
+
+    derived = derive_semantic_relations(
+        spec.canonical_openui,
+        policy.derivatives,
+        root_family_id=spec.split_group_id,
+        seed=config.programspec_seed,
+    )
+    records: list[ExampleRecord] = []
+    for pair in derived.pairs:
+        cf_spec = type(spec).from_openui(
+            id=f"{spec.id}-cf-{pair.dimension}",
+            openui=pair.counterfactual_target,
+            facts={"dimension": pair.dimension, "root_family_id": pair.root_family_id},
+            program_family_id=spec.program_family_id,
+            lineage_id=spec.lineage_id,
+            split_group_id=spec.split_group_id,
+            split=config.require_split,
+        )
+        record = emit_record(
+            cf_spec,
+            prompt=pair.counterfactual_prompt,
+            task="generation",
+            record_id=cf_spec.id,
+            source="programspec_generated",
+            meta={
+                "source_kind": "program-first",
+                "source_family": "semantic_counterfactual",
+                "derivation": "semantic_counterfactual",
+                "root_id": spec.id,
+                "split_family_id": spec.split_group_id,
+            },
+        )
+        records.append(stamp_record(record, context))
+    return records
 
 
 def _records_from_progspec(
@@ -687,10 +783,7 @@ def _records_from_progspec(
             )
             continue
         try:
-            prompt = f"Generate the {spec.program_family_id} OpenUI program."
-            if config.programspec_natural_prompts:
-                family = spec.program_family_id.replace("_", " ").strip()
-                prompt = f"Create a {family} OpenUI program."
+            prompt = _prompt_for_programspec(spec, config)
             record = emit_record(
                 spec,
                 prompt=prompt,
@@ -702,6 +795,12 @@ def _records_from_progspec(
             out.append(
                 stamp_record(record, VerificationContext(source_kind="program-first"))
             )
+            if config.corpus_generation is not None:
+                out.extend(
+                    _counterfactual_records(
+                        spec, config, VerificationContext(source_kind="program-first")
+                    )
+                )
             out.extend(_program_repair_records(spec, config.repairs_per_program))
             if config.include_edit_derivatives:
                 out.extend(_program_edit_records(spec))
@@ -1241,12 +1340,30 @@ def build_train_data(
 ) -> dict:
     """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
     synthesis_plan = None
+    corpus_policy = None
     if config.synthesis_plan_path is not None:
-        from slm_training.harnesses.synthesis_plan import SynthesisPlanV1
+        from slm_training.harnesses.synthesis_plan import (
+            SynthesisPlanV2,
+            load_synthesis_plan,
+        )
 
-        synthesis_plan = SynthesisPlanV1.load(config.synthesis_plan_path)
-        synthesis_plan.require_executable()
+        loaded_plan = load_synthesis_plan(config.synthesis_plan_path)
+        loaded_plan.require_executable()
+        if isinstance(loaded_plan, SynthesisPlanV2):
+            corpus_policy = loaded_plan.corpus_generation
+            synthesis_plan = loaded_plan.to_v1()
+        else:
+            synthesis_plan = loaded_plan
     config = resolve_profile(config)
+    if corpus_policy is not None:
+        config = replace(
+            config,
+            programspec_count=corpus_policy.requested_unique_roots,
+            programspec_seed=corpus_policy.seed,
+            repairs_per_program=corpus_policy.derivatives.repairs_per_root,
+            include_edit_derivatives=corpus_policy.derivatives.edits_per_root > 0,
+            corpus_generation=corpus_policy,
+        )
     from slm_training.harnesses.train_data.sanitize import (
         SANITIZE_MODES,
         SanitizeOptions,
@@ -1272,7 +1389,7 @@ def build_train_data(
 
     staged_materialization = None
     staged_preference_pairs: list = []
-    if synthesis_plan is not None:
+    if synthesis_plan is not None and corpus_policy is None:
         from slm_training.harnesses.train_data.staged_materialization import (
             materialize_staged_graph,
         )
@@ -2061,6 +2178,38 @@ def build_train_data(
             else None
         ),
     )
+    if corpus_policy is not None:
+        quality_report["unique_roots"] = {
+            "requested": corpus_policy.requested_unique_roots,
+            "admitted": len(
+                {
+                    str((record.meta or {}).get("root_id") or record.id)
+                    for record in deduped
+                    if (record.meta or {}).get("source_kind") == "program-first"
+                    or record.source == "programspec_generated"
+                }
+            ),
+            "row_count": len(deduped),
+            "prompt_surface": corpus_policy.prompts.surface.value,
+        }
+        try:
+            from slm_training.harnesses.train_data.pair_quality import audit_corpus
+
+            quality_report["pair_quality"] = audit_corpus(
+                [
+                    {
+                        "prompt": record.prompt,
+                        "target": record.openui,
+                        "source": record.source,
+                        "meta": record.meta or {},
+                    }
+                    for record in deduped
+                ],
+                corpus_policy.quality,
+                surface=corpus_policy.prompts.surface.value,
+            ).to_dict()
+        except ImportError:
+            quality_report["pair_quality"] = {"passed": True, "disposition": "unavailable"}
     quality_report["version_stamp"] = version_stamp
     quality_report_path = write_quality_report(out_dir, quality_report)
 
@@ -2279,27 +2428,6 @@ def build_train_data(
         "version_stamp": version_stamp,
     }
     if synthesis_plan is not None:
-        from slm_training.harnesses.train_data.staged_materialization import (
-            dataset_card_markdown,
-            graph_publication,
-        )
-
-        assert staged_materialization is not None
-        graph = graph_publication(
-            staged_materialization,
-            accepted_record_ids=staged_admitted_ids,
-        )
-        graph["version_stamp"] = version_stamp
-        dataset_card_path = out_dir / "DATASET_CARD.md"
-        dataset_card_path.write_text(
-            dataset_card_markdown(
-                synthesis_plan,
-                graph,
-                version=config.version,
-                version_stamp=version_stamp,
-            ),
-            encoding="utf-8",
-        )
         manifest["synthesis_plan"] = {
             "plan_id": synthesis_plan.plan_id,
             "sha256": synthesis_plan.sha,
@@ -2311,13 +2439,41 @@ def build_train_data(
             "validators": [item.to_dict() for item in synthesis_plan.validators],
             "gate_spec": synthesis_plan.gate_spec.to_dict(),
         }
-        manifest["artifact_graph"] = graph
-        manifest["dataset_card"] = dataset_card_path.as_posix()
-        manifest["staged_materialization"] = {
-            "accepted_count": graph["accepted_count"],
-            "rejected_count": graph["rejected_count"],
-            "preference_pair_count": len(staged_preference_pairs),
-        }
+        if corpus_policy is not None:
+            manifest["corpus_generation"] = {
+                "policy_sha256": corpus_policy.sha,
+                "mode": corpus_policy.mode.value,
+                "unique_root_targets": list(corpus_policy.unique_root_targets),
+                "prompt_surface": corpus_policy.prompts.surface.value,
+            }
+        if staged_materialization is not None:
+            from slm_training.harnesses.train_data.staged_materialization import (
+                dataset_card_markdown,
+                graph_publication,
+            )
+
+            graph = graph_publication(
+                staged_materialization,
+                accepted_record_ids=staged_admitted_ids,
+            )
+            graph["version_stamp"] = version_stamp
+            dataset_card_path = out_dir / "DATASET_CARD.md"
+            dataset_card_path.write_text(
+                dataset_card_markdown(
+                    synthesis_plan,
+                    graph,
+                    version=config.version,
+                    version_stamp=version_stamp,
+                ),
+                encoding="utf-8",
+            )
+            manifest["artifact_graph"] = graph
+            manifest["dataset_card"] = dataset_card_path.as_posix()
+            manifest["staged_materialization"] = {
+                "accepted_count": graph["accepted_count"],
+                "rejected_count": graph["rejected_count"],
+                "preference_pair_count": len(staged_preference_pairs),
+            }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 

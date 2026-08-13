@@ -69,3 +69,10 @@ and `GET /api/data/train/{version}/rejected`.
   `rejected.jsonl` and the report.
 - Feedback flows into harness changes and experiments; the loop never edits
   its own acceptance thresholds (`improve-openui-harnesses` contract).
+- Blocking findings (`insufficient_unique_roots`, cue/source shortcuts,
+  target-surface leaks, coverage gaps, anchor deficits) cannot close with a
+  prose note. Use `action_receipt()` bound to a new plan hash and dataset
+  manifest hash, or an explicit diagnostic waiver that cannot authorize
+  promotion.
+- Emitted `experiment_candidates` with `data_only: true` must compile through
+  `ExperimentKnobs.data_generation` allowlisted knobs.

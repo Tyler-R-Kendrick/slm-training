@@ -85,6 +85,42 @@ def test_small_groups_do_not_trigger_noise() -> None:
     assert feedback["experiment_candidates"] == []
 
 
+def test_blocking_findings_need_a_build_receipt() -> None:
+    from slm_training.harnesses.train_data.feedback import action_receipt
+
+    feedback = build_synthesis_feedback(
+        version="v",
+        profile="strict",
+        built_at="t",
+        admitted=[_admitted("a", "synthetic")],
+        rejections=[],
+        quality_report={
+            "unique_roots": {"requested": 8, "admitted": 1},
+            "pair_quality": {
+                "passed": False,
+                "blocking_reasons": ["cue_only_shortcut"],
+            },
+        },
+    )
+    codes = {item["code"] for item in feedback["findings"]}
+    assert "insufficient_unique_roots" in codes
+    assert "cue_only_shortcut" in codes
+    assert any(item.get("data_only") for item in feedback["experiment_candidates"])
+    try:
+        action_receipt(
+            prior_feedback_hash="a" * 64,
+            action_code="insufficient_unique_roots",
+            synthesis_plan_hash="b" * 64,
+            dataset_manifest_hash="c" * 64,
+            before={"admitted": 1},
+            after={"admitted": 1},
+            disposition="acknowledged",
+        )
+        raise AssertionError("prose ack must not close a blocking finding")
+    except ValueError as exc:
+        assert "cannot close" in str(exc)
+
+
 def test_selection_drops_are_not_reported_as_synthesis_failures() -> None:
     feedback = build_synthesis_feedback(
         version="v",

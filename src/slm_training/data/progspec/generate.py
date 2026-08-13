@@ -16,7 +16,9 @@ from slm_training.bridge_utils import repo_root
 from slm_training.data.language_contract.corpus import component_names
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.data.verify import Tier, VerificationContext, verify_record
+from slm_training.dsl.canonicalize import canonicalize
 from slm_training.dsl.lang_core import library_schema
+from slm_training.harness_core.lineage.records import content_sha
 
 GENERATOR_VERSION = 2
 PROGRAM_FAMILY = "programspec_generated"
@@ -236,6 +238,53 @@ class _Candidate:
 class GenerationResult:
     programs: tuple[ProgramSpec, ...]
     coverage: dict[str, Any]
+
+
+class GenerationExhausted(ValueError):
+    """Requested unique-root count could not be met from the typed generator."""
+
+    def __init__(self, message: str, report: Mapping[str, Any]) -> None:
+        super().__init__(message)
+        self.report = dict(report)
+
+
+def canonical_root_identity(source: str) -> str:
+    """Content identity after alpha-normalization. Placeholder renames collide."""
+
+    canonical = canonicalize(source)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True)
+class ProgramPoolResult:
+    programs: tuple[ProgramSpec, ...]
+    root_ids: tuple[str, ...]
+    coverage: dict[str, Any]
+    rejections: tuple[dict[str, Any], ...]
+    ladder: dict[int, tuple[str, ...]]
+    shard_index: int
+    shard_count: int
+    exhausted: bool
+    attempts: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "program_ids": [spec.id for spec in self.programs],
+            "root_ids": list(self.root_ids),
+            "unique_root_count": len(self.root_ids),
+            "row_count": len(self.programs),
+            "coverage": self.coverage,
+            "rejections": list(self.rejections),
+            "ladder": {str(size): list(ids) for size, ids in sorted(self.ladder.items())},
+            "shard_index": self.shard_index,
+            "shard_count": self.shard_count,
+            "exhausted": self.exhausted,
+            "attempts": self.attempts,
+        }
+
+    @property
+    def sha(self) -> str:
+        return content_sha(self.to_dict())
 
 
 def _value_class(schema: Mapping[str, Any], variant: str) -> str:
@@ -1093,6 +1142,79 @@ class ProgramGenerator:
                 raise
         return GenerationResult(tuple(programs), self.tracker.report())
 
+    def _prop_targets(self) -> tuple[_PropTarget, ...]:
+        targets: list[_PropTarget] = []
+        for name in self.components:
+            properties = self.definitions[name].get("properties", {})
+            for prop, schema in properties.items():
+                schema = schema if isinstance(schema, Mapping) else {}
+                for variant in _variants(schema, prop):
+                    targets.append(_PropTarget(name, prop, variant))
+        return tuple(targets)
+
+    def _groups_for_width(self, width: int) -> tuple[tuple[str, ...], ...]:
+        required = set(self.required_components)
+        if required:
+            groups = [
+                group
+                for group in combinations(self.components, width)
+                if required <= set(group)
+            ]
+            return tuple(groups) or (tuple(self.required_components),)
+        if width == 1:
+            return tuple((name,) for name in self.components)
+        if width == 2:
+            return tuple(combinations(self.components, 2))
+        return tuple(combinations(self.components, min(width, len(self.components))))
+
+    def candidate_from_index(self, index: int) -> _Candidate:
+        """Deterministic unbounded candidate. Index, not grid membership, is identity."""
+
+        if index < 0:
+            raise ValueError("candidate index must be non-negative")
+        width = 1 + (index % min(self.config.max_width, len(self.components)))
+        depth = 1 + ((index // self.config.max_width) % self.config.max_depth)
+        groups = self._groups_for_width(width)
+        if not groups:
+            groups = ((self.components[0],),)
+        group = groups[(index // (self.config.max_width * self.config.max_depth)) % len(groups)]
+        # Rotate the selected group so sibling order is a coverage axis, not a
+        # new semantic root unless the typed AST actually changes.
+        rotated = tuple(group[(offset + index) % len(group)] for offset in range(len(group)))
+        prop_targets = self._prop_targets()
+        prop_target = (
+            prop_targets[index % len(prop_targets)] if prop_targets and index % 5 == 0 else None
+        )
+        pattern = None
+        if self.config.forward_reference_patterns and index % 11 == 0:
+            pattern = self.config.forward_reference_patterns[
+                index % len(self.config.forward_reference_patterns)
+            ]
+        return self._candidate(
+            rotated,
+            index,
+            prop_target=prop_target,
+            depth=depth,
+            width=max(width, len(self.required_components) or 1),
+            forward_reference_pattern=pattern,
+        )
+
+    def extra_coverage_cells(self, spec: ProgramSpec) -> frozenset[CoverageCell]:
+        source = spec.canonical_openui
+        cells = {
+            CoverageCell("root_family", spec.program_family_id),
+            CoverageCell("cardinality_family", str(source.count("="))),
+            CoverageCell(
+                "order_sensitive_sibling",
+                "row" if '"row"' in source else "column",
+            ),
+        }
+        if ":" in source:
+            cells.add(CoverageCell("required_slot_ownership", "placeholder"))
+        if any(token in source for token in ("input1", "input2", "$0")):
+            cells.add(CoverageCell("reference_topology", "forward"))
+        return frozenset(cells)
+
 
 def generate_program_specs(
     count: int,
@@ -1103,17 +1225,168 @@ def generate_program_specs(
     return ProgramGenerator(config, seed=seed).generate(count)
 
 
+def _config_from_policy(policy: Any) -> GeneratorConfig:
+    generator = policy.generator
+    components = generator.components or None
+    required: tuple[str, ...] = ()
+    if generator.required_component_groups:
+        required = tuple(dict.fromkeys(
+            name for group in generator.required_component_groups for name in group
+        ))
+    return GeneratorConfig(
+        components=components or None,
+        required_components=required,
+        forward_reference_patterns=generator.forward_reference_families,
+        max_depth=generator.max_depth,
+        max_width=generator.max_width,
+    )
+
+
+def generate_program_pool(policy: Any) -> ProgramPoolResult:
+    """Admit canonically unique roots for a CorpusGenerationPolicy.
+
+    Prompt variants, repairs, edits, and alpha-renames are not roots.
+    Scaling-ladder snapshots are nested prefixes of one admitted pool.
+    """
+
+    from slm_training.harnesses.synthesis_plan import ExhaustionBehavior, GenerationMode
+
+    config = _config_from_policy(policy)
+    generator = ProgramGenerator(config, seed=policy.seed)
+    target = policy.requested_unique_roots
+    max_attempts = policy.max_attempts
+    admitted: list[ProgramSpec] = []
+    root_ids: list[str] = []
+    seen: set[str] = set()
+    rejections: list[dict[str, Any]] = []
+    extra_hits: Counter[CoverageCell] = Counter()
+    attempts = 0
+    # Prefer the coverage-guided grid first so count and until_coverage share
+    # one ledger, then expand by deterministic index if the grid is too small.
+    grid_size = len(generator._candidates)
+    while len(admitted) < target and attempts < max_attempts:
+        try:
+            if attempts < grid_size:
+                spec = generator.generate_one()
+            else:
+                spec = generator._materialize(generator.candidate_from_index(attempts))
+        except ValueError as exc:
+            rejections.append({"stage": "generate", "reason": str(exc), "attempt": attempts})
+            attempts += 1
+            if str(exc) == "candidate grid exhausted":
+                continue
+            if "failed F2" in str(exc):
+                continue
+            raise
+        attempts += 1
+        try:
+            root_id = canonical_root_identity(spec.canonical_openui)
+        except (ValueError, RuntimeError) as exc:
+            rejections.append(
+                {"stage": "canonicalize", "reason": str(exc), "id": spec.id}
+            )
+            continue
+        if root_id in seen:
+            rejections.append(
+                {"stage": "canonical_duplicate", "reason": "alpha_or_serialize_equivalent", "id": spec.id}
+            )
+            continue
+        bucket = int(root_id[:8], 16) % policy.shard_count
+        if bucket != policy.shard_index:
+            rejections.append(
+                {"stage": "shard", "reason": "other_shard", "root_id": root_id}
+            )
+            continue
+        seen.add(root_id)
+        extra_hits.update(generator.extra_coverage_cells(spec))
+        admitted.append(spec)
+        root_ids.append(root_id)
+
+    exhausted = len(admitted) < target
+    coverage = generator.tracker.report()
+    coverage["extra_axes"] = {
+        cell.label(): extra_hits[cell] for cell in sorted(extra_hits)
+    }
+    coverage["unique_roots"] = len(admitted)
+    coverage["attempts"] = attempts
+    if exhausted:
+        report = {
+            "requested": target,
+            "admitted": len(admitted),
+            "attempts": attempts,
+            "rejections": rejections[-16:],
+            "coverage": coverage,
+        }
+        if policy.exhaustion is ExhaustionBehavior.FAIL:
+            raise GenerationExhausted(
+                f"unique-root target {target} unmet after {attempts} attempts "
+                f"({len(admitted)} admitted)",
+                report,
+            )
+    ladder: dict[int, tuple[str, ...]] = {}
+    if policy.mode is GenerationMode.SCALING_LADDER:
+        for size in policy.unique_root_targets:
+            ladder[size] = tuple(root_ids[:size])
+    else:
+        ladder[len(root_ids)] = tuple(root_ids)
+    return ProgramPoolResult(
+        programs=tuple(admitted),
+        root_ids=tuple(root_ids),
+        coverage=coverage,
+        rejections=tuple(rejections),
+        ladder=ladder,
+        shard_index=policy.shard_index,
+        shard_count=policy.shard_count,
+        exhausted=exhausted,
+        attempts=attempts,
+    )
+
+
+def merge_program_pools(pools: Sequence[ProgramPoolResult]) -> ProgramPoolResult:
+    """Merge shards by canonical root id. Order of `pools` does not matter."""
+
+    by_root: dict[str, ProgramSpec] = {}
+    rejections: list[dict[str, Any]] = []
+    attempts = 0
+    for pool in pools:
+        attempts += pool.attempts
+        rejections.extend(pool.rejections)
+        for spec, root_id in zip(pool.programs, pool.root_ids, strict=True):
+            by_root.setdefault(root_id, spec)
+    root_ids = tuple(sorted(by_root))
+    programs = tuple(by_root[root_id] for root_id in root_ids)
+    ordered = tuple(
+        sorted(rejections, key=lambda item: json.dumps(item, sort_keys=True))
+    )
+    return ProgramPoolResult(
+        programs=programs,
+        root_ids=root_ids,
+        coverage={"unique_roots": len(root_ids), "merged_shards": len(pools)},
+        rejections=ordered,
+        ladder={len(root_ids): root_ids},
+        shard_index=0,
+        shard_count=1,
+        exhausted=False,
+        attempts=attempts,
+    )
+
+
 __all__ = [
     "GENERATOR_VERSION",
     "PROGRAM_FAMILY",
     "ComponentCall",
     "CoverageCell",
     "CoverageTracker",
+    "GenerationExhausted",
     "GenerationResult",
     "GeneratorConfig",
     "ProgramGenerator",
+    "ProgramPoolResult",
     "Reference",
     "TypedProgram",
     "TypedStatement",
+    "canonical_root_identity",
+    "generate_program_pool",
     "generate_program_specs",
+    "merge_program_pools",
 ]

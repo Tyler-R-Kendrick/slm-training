@@ -40,7 +40,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any, Callable, Iterable, Literal, Mapping, Sequence
 
 from slm_training.dsl.canonicalize import canonicalize
@@ -59,6 +59,7 @@ from slm_training.harnesses.train_data.frame_paraphrases import (
     FrameParaphraseFixtureProviderV1,
     generate_frame_paraphrases,
 )
+from slm_training.harnesses.synthesis_plan import DerivativePolicy
 from slm_training.harnesses.train_data.split_policy import RootFamilySplitPolicyV1
 
 SCHEMA_VERSION = "semantic_counterfactuals/v1"
@@ -1310,9 +1311,100 @@ def constant_baseline_accuracy(pairs: Sequence[CounterfactualPairV1]) -> float:
     return 0.5
 
 
+# --------------------------------------------------------------------------
+# Plan-controlled derivative adapter (relational, not new roots)
+# --------------------------------------------------------------------------
+
+
+PLAN_ADAPTER_SCHEMA = "semantic_counterfactual_plan/v1"
+
+
+@dataclass(frozen=True)
+class DerivativeResult:
+    """Admitted one-fact pairs plus typed rejections for one plan root."""
+
+    pairs: tuple[Any, ...]
+    rejections: tuple[dict[str, Any], ...]
+    eligible_roots: int
+    attempted_dimensions: tuple[str, ...]
+    admitted_pair_count: int
+    # Counterfactuals are relational supervision, NOT new roots.
+    independent_root_delta: int = 0
+
+    def __post_init__(self) -> None:
+        if self.independent_root_delta != 0:
+            raise ValueError("independent_root_delta must be 0")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": PLAN_ADAPTER_SCHEMA,
+            "pairs": [pair.to_dict() for pair in self.pairs],
+            "rejections": list(self.rejections),
+            "eligible_roots": self.eligible_roots,
+            "attempted_dimensions": list(self.attempted_dimensions),
+            "admitted_pair_count": self.admitted_pair_count,
+            "independent_root_delta": self.independent_root_delta,
+        }
+
+
+def derive_semantic_relations(
+    root_source: str,
+    policy: DerivativePolicy,
+    *,
+    root_family_id: str,
+    seed: int = 0,
+) -> DerivativeResult:
+    """Admit one-fact pairs for a plan root without counting new independent roots.
+
+    For each requested dimension, up to
+    ``policy.semantic_counterfactuals_per_eligible_root`` admitted pairs,
+    try the existing one-fact mutation. Source and counterfactual are
+    admitted together or both rejected. Split family is ``root_family_id``.
+    Mutations are table-driven; this adapter does not invent sites or call
+    an LLM. ``seed`` is reserved for the caller and does not change sites.
+    """
+    del seed
+    budget = policy.semantic_counterfactuals_per_eligible_root
+    if budget == 0:
+        return DerivativeResult(
+            pairs=(),
+            rejections=(),
+            eligible_roots=0,
+            attempted_dimensions=(),
+            admitted_pair_count=0,
+            independent_root_delta=0,
+        )
+
+    schema = CAP1SchemaV1.from_pack("openui")
+    frame = derive_semantic_frame(root_source, schema)
+    split = RootFamilySplitPolicyV1().assign(root_family_id)
+    pairs: list[CounterfactualPairV1] = []
+    rejections: list[dict[str, Any]] = []
+    attempted: list[str] = []
+    for dimension in policy.counterfactual_dimensions:
+        if len(pairs) >= budget:
+            break
+        name = dimension.value
+        attempted.append(name)
+        result = generate_counterfactual_pair(frame, name, schema=schema)
+        if isinstance(result, CounterfactualPairV1):
+            pairs.append(replace(result, root_family_id=root_family_id, split=split))
+        else:
+            rejections.append(result.to_dict())
+    return DerivativeResult(
+        pairs=tuple(pairs),
+        rejections=tuple(rejections),
+        eligible_roots=1,
+        attempted_dimensions=tuple(attempted),
+        admitted_pair_count=len(pairs),
+        independent_root_delta=0,
+    )
+
+
 __all__ = [
     "DEFAULT_STYLE",
     "FACT_DIMENSIONS",
+    "PLAN_ADAPTER_SCHEMA",
     "PROMPT_LENGTH_RATIO_TOLERANCE",
     "REJECTION_CODES",
     "SCHEMA_VERSION",
@@ -1321,6 +1413,7 @@ __all__ = [
     "CounterfactualPairError",
     "CounterfactualPairV1",
     "CounterfactualRejectionV1",
+    "DerivativeResult",
     "FactDimension",
     "MutationSpecV1",
     "OneFactProofV1",
@@ -1328,6 +1421,7 @@ __all__ = [
     "TopologyNegativeV1",
     "constant_baseline_accuracy",
     "check_pair_prompt_controls",
+    "derive_semantic_relations",
     "dimension_projection",
     "embedding_close_negative",
     "generate_counterfactual_pair",

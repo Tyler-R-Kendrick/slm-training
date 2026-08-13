@@ -17,6 +17,11 @@ slm data build-train --source all --version v1 --synthesizer quality
 # Fast fixture-only rebuild (CI/scratch)
 slm data build-train --source fixture --version v0 --synthesizer quality
 
+# Capability-aware tiny corpus from a v2 synthesis plan (unique roots, not rows)
+slm data build-train --source programspec \
+  --synthesis-plan src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json \
+  --version cap0-tiny-corpus
+
 # Immutable Git publish of a selected snapshot
 slm data publish-train --version v1
 
@@ -39,7 +44,10 @@ floor, n-gram decontamination, exposure caps; explicit flags override),
 `--dedup-against <ids>` (exclude pairs already in committed corpora),
 `--difficulty-from <run>/record_nll.jsonl` (Superfiltering curation weight;
 produce it with `slm sft train … --emit-record-nll`),
-`--mixture-manifest`, `--publish` / `--publish-root`, `--frontier-artifacts`.
+`--mixture-manifest`, `--publish` / `--publish-root`, `--frontier-artifacts`,
+`--synthesis-plan` (v1 staged graph or v2 `corpus_generation` policy). A v2
+plan overrides unique-root count/seed from the policy. See
+`docs/design/capability-driven-data-synthesis.md`.
 
 ## Outputs
 

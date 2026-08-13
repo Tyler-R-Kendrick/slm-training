@@ -1,6 +1,6 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v10",
+  "version": "v11",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout\u2192decode residual routing.",
   "screening_primary": {
     "metric": "smoke.structural_similarity",
@@ -153,6 +153,13 @@
     ],
     "allow_global_waiver_code": "*",
     "prefer_data_rebuild_before_sft": true
+  },
+  "data_intervention": {
+    "min_unique_roots": 32,
+    "block_model_on_pair_quality": true,
+    "prefer_data_before_terminal_tie": true,
+    "fixture_claim_class": "fixture",
+    "fixture_train_version": "wf_smoke_v2"
   },
   "rung_gates": {
     "enabled": true,

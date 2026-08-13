@@ -5026,6 +5026,11 @@ def _sync_reproduced_timeout_retirements(
             eval_version=str(knobs.get("eval_version") or eval_version),
             primary_metric=str(handoff.get("primary_metric") or primary_metric),
             direction=direction,
+            extra=(
+                {"data_generation": knobs["data_generation"]}
+                if knobs.get("data_generation")
+                else None
+            ),
         )
         try:
             cycle_index = int(
