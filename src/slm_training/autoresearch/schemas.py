@@ -350,13 +350,21 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
 
 _PLAN_PATH_SUFFIXES = (".json", ".yaml", ".yml")
 _PLAN_PATH_SHELL_MARKERS = frozenset(";&|`$<>(){}!\n\r\x00")
-_DATA_ONLY_FORBIDDEN_FIELDS = (
-    "steps",
-    "lr",
-    "batch_size",
-    "output_tokenizer",
-    "compiler_decode_mode",
-    "allow_unconstrained_fallback",
+# Corpus-build fields compile_commands reads before the data-only return.
+_DATA_ONLY_ALLOWED_FIELDS = frozenset(
+    {
+        "data_generation",
+        "data_source",
+        "train_version",
+        "derive_from",
+        "synthesizer",
+        "max_records_per_parent",
+        "min_quality_score",
+        "scope_contracts",
+        "scope_independent_noise",
+        "scope_local_oracle",
+        "scope_contract_negatives",
+    }
 )
 
 
@@ -794,8 +802,8 @@ def validate_data_only_arm(knobs: ExperimentKnobs) -> ExperimentKnobs:
         return knobs
     forbidden = [
         name
-        for name in _DATA_ONLY_FORBIDDEN_FIELDS
-        if getattr(knobs, name, None) is not None
+        for name in ExperimentKnobs.model_fields
+        if name not in _DATA_ONLY_ALLOWED_FIELDS and getattr(knobs, name) is not None
     ]
     if forbidden:
         raise ValueError(

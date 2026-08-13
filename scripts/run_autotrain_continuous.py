@@ -4991,6 +4991,7 @@ def _sync_reproduced_timeout_retirements(
     primary_metric: str,
     direction: str,
     claim_class: str,
+    data_generation: Mapping[str, Any] | None = None,
 ) -> tuple[set[str], tuple[str, ...]]:
     """Backfill and enforce exact reproduced-timeout retirements."""
 
@@ -4999,6 +5000,9 @@ def _sync_reproduced_timeout_retirements(
         loop_data_eval_identity,
         save_loop_exhausted_ledger,
     )
+
+    def _identity_extra(raw: object) -> dict[str, Any]:
+        return {"data_generation": raw or None}
 
     ledger = load_loop_exhausted_ledger(root, loop_id, policy)
     before = len(ledger.entries)
@@ -5026,11 +5030,7 @@ def _sync_reproduced_timeout_retirements(
             eval_version=str(knobs.get("eval_version") or eval_version),
             primary_metric=str(handoff.get("primary_metric") or primary_metric),
             direction=direction,
-            extra=(
-                {"data_generation": knobs["data_generation"]}
-                if knobs.get("data_generation")
-                else None
-            ),
+            extra=_identity_extra(knobs.get("data_generation")),
         )
         try:
             cycle_index = int(
@@ -5067,6 +5067,7 @@ def _sync_reproduced_timeout_retirements(
         eval_version=eval_version,
         primary_metric=primary_metric,
         direction=direction,
+        extra=_identity_extra(data_generation),
     )
     retired_slugs = {
         slug
@@ -11676,6 +11677,7 @@ def run_cycle(
         primary_metric=str(screening_primary["metric"]),
         direction=str(screening_primary["direction"]),
         claim_class=screening_claim_class,
+        data_generation=None,
     )
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
