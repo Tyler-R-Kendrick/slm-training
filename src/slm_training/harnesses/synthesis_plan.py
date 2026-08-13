@@ -1458,6 +1458,8 @@ def apply_corpus_generation_overrides(
     policy: CorpusGenerationPolicy,
     *,
     generation_mode: str | None = None,
+    unique_root_target: int | None = None,
+    generator_seed: int | None = None,
     generator_max_depth: int | None = None,
     generator_max_width: int | None = None,
     prompt_surface: str | None = None,
@@ -1471,6 +1473,19 @@ def apply_corpus_generation_overrides(
     updates: dict[str, Any] = {}
     if generation_mode is not None:
         updates["mode"] = GenerationMode(generation_mode)
+    if unique_root_target is not None:
+        mode = updates.get("mode", policy.mode)
+        if mode is GenerationMode.SCALING_LADDER:
+            prior = policy.unique_root_targets[:-1]
+            if prior and unique_root_target <= prior[-1]:
+                raise ValueError(
+                    "unique_root_target must exceed the previous scaling_ladder rung"
+                )
+            updates["unique_root_targets"] = (*prior, unique_root_target)
+        else:
+            updates["unique_root_targets"] = (unique_root_target,)
+    if generator_seed is not None:
+        updates["seed"] = generator_seed
     generator = policy.generator
     if generator_max_depth is not None:
         generator = replace(generator, max_depth=generator_max_depth)

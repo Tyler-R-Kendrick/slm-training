@@ -106,7 +106,10 @@ is false; no model, CAP, or ship claim.
 - Learnability diagnostics run on the default single-suite path and use the
   first suite `prompt` fields, not metric names.
 - Data-only arms are allowlisted; `compile_commands` lowers the full
-  `DataGenerationKnobs` set.
+  `DataGenerationKnobs` set, including `--unique-root-target` overlays that
+  a v2 plan previously ignored.
+- A v2 root admits every rendered prompt candidate; repairs and
+  counterfactuals still fire once per root.
 - Provider paraphrase stays offline in ordinary tests.
 
 ## Papers used as design guidance

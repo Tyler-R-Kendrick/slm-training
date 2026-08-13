@@ -352,10 +352,14 @@ def test_apply_corpus_generation_overrides_keeps_schema_keys() -> None:
     policy = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR)
     updated = apply_corpus_generation_overrides(
         policy,
+        unique_root_target=8,
+        generator_seed=99,
         generator_max_depth=4,
         prompts_per_root=3,
         retain_trusted_anchors=False,
     )
+    assert updated.requested_unique_roots == 8
+    assert updated.seed == 99
     assert updated.generator.max_depth == 4
     assert updated.prompts.prompts_per_root == 3
     assert updated.source_anchors.retain_available_trusted_roots is False

@@ -133,6 +133,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Override corpus_generation.mode on a loaded v2 plan.",
     )
     parser.add_argument(
+        "--unique-root-target",
+        type=int,
+        default=None,
+        help="Override corpus_generation unique-root target on a loaded v2 plan.",
+    )
+    parser.add_argument(
+        "--generator-seed",
+        type=int,
+        default=None,
+        help="Override corpus_generation.seed on a loaded v2 plan.",
+    )
+    parser.add_argument(
         "--generator-max-depth",
         type=int,
         default=None,
@@ -526,6 +538,8 @@ def main(argv: list[str] | None = None) -> int:
         programspec_seed=args.programspec_seed,
         programspec_natural_prompts=args.programspec_natural_prompts,
         generation_mode=args.generation_mode,
+        unique_root_target=args.unique_root_target,
+        generator_seed=args.generator_seed,
         generator_max_depth=args.generator_max_depth,
         generator_max_width=args.generator_max_width,
         prompt_surface=args.prompt_surface,
