@@ -46,8 +46,9 @@ floor, n-gram decontamination, exposure caps; explicit flags override),
 produce it with `slm sft train … --emit-record-nll`),
 `--mixture-manifest`, `--publish` / `--publish-root`, `--frontier-artifacts`,
 `--synthesis-plan` (v1 staged graph or v2 `corpus_generation` policy). A v2
-plan overrides unique-root count/seed from the policy. See
-`docs/design/capability-driven-data-synthesis.md`.
+plan's `corpus_generation` overrides count, seed, and repairs. CLI generation
+flags can further override surface/depth/width/counterfactuals/renderer/mode
+when present. See `docs/design/capability-driven-data-synthesis.md`.
 
 ## Outputs
 

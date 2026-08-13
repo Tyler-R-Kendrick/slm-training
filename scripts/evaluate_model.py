@@ -75,6 +75,18 @@ def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
     return 0
 
 
+def _write_learnability_diagnostics(config: ModelBuildConfig, suites: list[str]) -> str:
+    from slm_training.evals.learnability_diagnostics import write_learnability_diagnostics
+
+    return str(
+        write_learnability_diagnostics(
+            config.run_dir,
+            test_dir=config.test_dir,
+            suites=suites,
+        )
+    )
+
+
 def _load_suite_reachability(path: Path | None) -> dict[str, float] | None:
     if path is None:
         return None
@@ -977,21 +989,9 @@ def main(argv: list[str] | None = None) -> int:
             scoreboard["research_flags"] = assignments_payload(flag_assignments)
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.learnability_diagnostics:
-            from slm_training.evals.learnability_diagnostics import diagnose_records
-
-            rows = []
-            for suite_name, metrics in (scoreboard.get("suites") or {}).items():
-                rows.append(
-                    {
-                        "id": suite_name,
-                        "prompt": str(metrics.get("primary_metric") or suite_name),
-                        "group_id": suite_name,
-                    }
-                )
-            payload = diagnose_records(rows)
-            out = config.run_dir / "learnability_diagnostics.json"
-            out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-            scoreboard["learnability_diagnostics"] = str(out)
+            scoreboard["learnability_diagnostics"] = _write_learnability_diagnostics(
+                config, suites
+            )
         if args.ship_gates:
             gates = scoreboard.get("gates")
             if not gates or "pass" not in gates:
@@ -1042,6 +1042,10 @@ def main(argv: list[str] | None = None) -> int:
     summary = {k: v for k, v in metrics.items() if k != "details"}
     if flag_assignments:
         summary["research_flags"] = assignments_payload(flag_assignments)
+    if args.learnability_diagnostics:
+        summary["learnability_diagnostics"] = _write_learnability_diagnostics(
+            config, [config.suite]
+        )
     print(json.dumps(summary, indent=2))
     return _check_fail_unders(metrics, args)
 
