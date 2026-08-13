@@ -1,4 +1,8 @@
-"""Bounded prompt-intervention diagnostics. Non-authoritative unless full eval."""
+"""Bounded prompt-intervention diagnostics.
+
+Fixture wiring only. A disposition such as ``objective_sampler_mismatch``
+is a label, not a closed experiment and not a capability certificate.
+"""
 
 from __future__ import annotations
 

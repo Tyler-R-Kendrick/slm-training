@@ -5,9 +5,14 @@
   "model_quality_claimed": false,
   "ship_claimed": false,
   "capability_certificate_issued": false,
+  "large_corpus_generated": false,
+  "max_unique_roots_executed": 4,
+  "prompt_provider": "offline_fixture_renderer",
+  "prompt_provider_authoritative": false,
+  "objective_mismatch_resolved": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "0251a66cff86ab0e3cb6008cda6bcc7a84e89431",
+    "code_commit": "e01263233f32893a91eadec0094f3251999efdf0",
     "code_dirty": true,
     "components": {
       "harness.synthesis_plan": "v3",
@@ -18,55 +23,9 @@
       "harness.experiments.slm366_counterfactuals": "v2",
       "harness.model_build.eval": "v100"
     },
-    "stamped_at": "2026-08-13T17:28:26.829480+00:00"
+    "stamped_at": "2026-08-13T17:45:36.528604+00:00"
   },
-  "commands": [
-    {
-      "cmd": ".venv/bin/python -m pytest -q tests/test_data/test_progspec_pool.py",
-      "exit_code": 0,
-      "n": 8,
-      "note": "unique-root pool, ladder prefix, shard merge, exhaustion"
-    },
-    {
-      "cmd": ".venv/bin/python -m pytest -q tests/test_harnesses/train_data/test_semantic_prompts.py",
-      "exit_code": 0,
-      "n": 12,
-      "note": "simplified-NL has no OpenUI; families do not share a prefix"
-    },
-    {
-      "cmd": ".venv/bin/python -m pytest -q tests/test_harnesses/train_data/test_pair_quality.py",
-      "exit_code": 0,
-      "n": 5,
-      "note": "cue-only OpenUI fixture fails; tiny support is insufficient_support"
-    },
-    {
-      "cmd": ".venv/bin/python -m pytest -q tests/test_harnesses/train_data/test_corpus_plan_build.py",
-      "exit_code": 0,
-      "n": 2,
-      "note": "tiny v2 plan build emits unique_roots + pair_quality + findings"
-    },
-    {
-      "cmd": ".venv/bin/python -m pytest -q tests/test_autoresearch/test_data_generation_knobs.py",
-      "exit_code": 0,
-      "n": 7,
-      "note": "data-only knobs compile to scripts.build_train_data; wf_smoke_v2 stays fixture"
-    },
-    {
-      "cmd": ".venv/bin/python -m pytest -q tests/test_evals/test_learnability_diagnostics.py",
-      "exit_code": 0,
-      "n": 3,
-      "note": "shuffle does not carry gold target; fixture cannot issue a certificate"
-    }
-  ],
-  "preexisting_failures": [
-    {
-      "test": "tests/test_harnesses/test_synthesis_plan.py require_executable on dsh0_cap0_fixture",
-      "reason": "checked-in v1 fixture still pins pack.corpus_generator v24; harness.train_data is v27. Fixture bytes left unchanged to preserve synthesis_plan/v1 SHA."
-    }
-  ],
   "wf_smoke_v2_mutated": false,
-  "targeted_pytest": {
-    "exit_code": 0,
-    "passed": 84
-  }
+  "cap0_fixture_alias_refresh": true,
+  "note": "Checked-in dsh0_cap0_fixture.json SHA changed only because component aliases were refreshed to the live registry. Other historical v1 payloads are unchanged if their bytes are untouched."
 }

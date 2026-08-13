@@ -18,8 +18,12 @@ semantic frames, prompt surfaces, and shortcut-resistant pair checks are.
 
 ## Contract
 
-- `synthesis_plan/v1` files still load with exact-key validation. Their SHA
-  values are unchanged.
+- `synthesis_plan/v1` files still load with exact-key validation. Historical
+  v1 payloads keep their SHA if their bytes are untouched. The checked-in
+  CAP0 fixture SHA **did change** in this change: only component-version
+  aliases were refreshed so `require_executable()` matches the live
+  `harness.train_data` / surface / ship-gate registry. That is an alias
+  refresh, not a silent v1 semantic change.
 - `synthesis_plan/v2` adds a required `corpus_generation` policy
   (`corpus_generation/v1`) covering unique-root targets, generator bounds,
   prompt surface, cue policy, derivatives, trusted anchors, pair-quality
@@ -60,7 +64,8 @@ python -m scripts.build_train_data \
 
 `--programspec-count` remains the historical count path. A v2 plan overrides
 count/seed/repairs from `corpus_generation`. CI fixtures stay tiny. An 8,192
-root request is a policy value, not a committed corpus.
+root request is a **legal policy value**. This change did **not** generate,
+train on, or commit an 8,192-root corpus.
 
 ## Artifacts
 
@@ -74,13 +79,20 @@ waiver that cannot authorize promotion.
 
 ## Honest limits
 
-- Fixture and smoke results are wiring evidence only.
+- **Claim class:** `fixture_wiring`. No capability certificate. No ship
+  claim. No model-quality claim.
+- Offline `offline_fixture_renderer` prompts are not production natural
+  language and cannot authorize a CAP1 simplified-NL certificate.
 - A cue-only classifier on tiny support returns `insufficient_support`.
-- Synthetic-only corpora can be diagnostic; they are not promotion-authoritative
-  without trusted anchors.
-- Masked-reconstruction vs free-running mismatch remains an independent
-  hypothesis. Data generation does not resolve it.
+- Synthetic-only corpora can be diagnostic; they are not
+  promotion-authoritative without trusted anchors.
+- Masked-reconstruction vs free-running / LTR mismatch remains an
+  independent hypothesis. The learnability probe can *label* that
+  disposition; this change does not close it.
 - `wf_smoke_v2` is unchanged and remains fixture-only.
+- Plan-driven `quality_report.json` / `synthesis_feedback.json` stamp
+  `claim_class=fixture_wiring` and `capability_certificate=false`. A
+  missing pair-quality auditor is a fail, not a pass.
 
 ## Papers used as design guidance
 

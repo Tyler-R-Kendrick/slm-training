@@ -105,7 +105,7 @@ def iter_reference_sources(
         seen.add(resolved)
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
             continue
         for ref_dict, origin in _extract_references(data):
             yield path, ref_dict, origin

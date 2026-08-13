@@ -2879,6 +2879,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "no-bump: clarify learnability diagnostics cannot close the objective-mismatch hypothesis or issue a capability certificate",
+          "version": "v25"
+        },
+        {
+          "date": "2026-08-13",
           "note": "Add bounded prompt-intervention learnability diagnostics (shuffle/cue ablation) that cannot issue a capability certificate",
           "version": "v25"
         },
@@ -4001,6 +4006,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "no-bump: exact-path check_changed mapping for verify_checkpoint_references.py; ownership map and contract-version checks unchanged",
+          "version": "v27"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: GH-1263 skip .claude/** in check_changed select_tests so config-only hook edits do not require the full tests/ fallback; ownership map contract unchanged.",
           "version": "v27"
@@ -4888,6 +4898,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-13",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after capability-driven data-synthesis design docs; campaign contract unchanged",
+          "version": "v212"
+        },
         {
           "date": "2026-08-13",
           "note": "Typed DataGenerationKnobs compile onto build_train_data; exhausted/replay identity includes a data-generation digest; climb policy routes evidence-driven rebuild_data interventions.",
@@ -16704,6 +16719,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "no-bump: test that a scaling_ladder policy may name an 8192 unique-root rung without generating that corpus",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-13",
           "note": "Refresh the executable CAP0 fixture aliases to current train-data, symbolic-surface, and ship-gate registry versions after the v2 corpus-generation policy bump",
           "version": "v3"
         },
@@ -16745,6 +16765,11 @@
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-08-13",
+          "note": "no-bump: stamp fixture_wiring / no capability certificate on plan-driven reports and fail closed if the pair-quality auditor import is missing; admission gates unchanged when the auditor is present",
+          "version": "v27"
+        },
         {
           "date": "2026-08-13",
           "note": "Capability-aware corpus generation: plan-driven unique-root pools, pair-quality/feedback findings, semantic prompt admission, and receipt-bound shortcut closure",

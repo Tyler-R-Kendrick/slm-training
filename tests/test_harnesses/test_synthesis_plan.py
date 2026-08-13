@@ -299,6 +299,17 @@ def test_capability_and_prompt_surface_are_not_conflated() -> None:
         )
 
 
+def test_scaling_ladder_can_name_an_8192_rung_without_building_it() -> None:
+    policy = tiny_corpus_generation_policy(
+        capability=Capability.CAP0_GRAMMAR,
+        mode=GenerationMode.SCALING_LADDER,
+        unique_root_targets=(128, 512, 2048, 8192),
+        seed=17,
+    )
+    assert policy.requested_unique_roots == 8192
+    assert policy.unique_root_targets == (128, 512, 2048, 8192)
+
+
 def test_invalid_coverage_cue_anchor_and_ladder_configurations_fail() -> None:
     with pytest.raises(ValueError, match="scaling_ladder requires"):
         tiny_corpus_generation_policy(

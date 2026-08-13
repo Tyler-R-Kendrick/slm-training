@@ -56,7 +56,11 @@ def test_v2_plan_loader_does_not_require_staged_graph(tmp_path: Path) -> None:
     )
     manifest = result["manifest"]
     assert manifest["corpus_generation"]["unique_root_targets"] == [4]
+    assert result["quality_report"]["claim_class"] == "fixture_wiring"
+    assert result["quality_report"]["capability_certificate"] is False
+    assert result["quality_report"]["unique_roots"]["prompt_provider_authoritative"] is False
     assert "pair_quality" in result["quality_report"]
+    assert result["synthesis_feedback"]["capability_certificate"] is False
     assert "findings" in result["synthesis_feedback"]
     records = result["stats"]["record_count"]
     assert records >= 1

@@ -402,6 +402,9 @@ def build_synthesis_feedback(
         "recommendations": recommendations,
         "findings": findings,
         "experiment_candidates": experiments,
+        "claim_class": str(quality_report.get("claim_class") or "fixture_wiring"),
+        # This builder cannot issue a capability certificate.
+        "capability_certificate": False,
     }
 
 

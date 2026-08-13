@@ -68,6 +68,16 @@ def test_under_provenanced_frontier_fails(tmp_path: Path) -> None:
     assert any("verification_timestamp" in err for err in report["errors"])
 
 
+def test_undecodable_json_is_skipped_not_a_crash(tmp_path: Path) -> None:
+    design = tmp_path / "docs" / "design"
+    design.mkdir(parents=True, exist_ok=True)
+    (design / "binary.json").write_bytes(b"\xbd\xf4\x8f\x8f")
+    _write(tmp_path, {"ok.json": _frontier()})
+    report = build_report(root=tmp_path)
+    assert report["pass"] is True
+    assert report["reference_count"] == 1
+
+
 def test_fixture_local_only_is_allowed(tmp_path: Path) -> None:
     fixture = CheckpointReferenceV1(
         run_id="fx",

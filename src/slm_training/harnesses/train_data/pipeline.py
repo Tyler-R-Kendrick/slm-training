@@ -2179,6 +2179,8 @@ def build_train_data(
         ),
     )
     if corpus_policy is not None:
+        quality_report["claim_class"] = "fixture_wiring"
+        quality_report["capability_certificate"] = False
         quality_report["unique_roots"] = {
             "requested": corpus_policy.requested_unique_roots,
             "admitted": len(
@@ -2191,6 +2193,8 @@ def build_train_data(
             ),
             "row_count": len(deduped),
             "prompt_surface": corpus_policy.prompts.surface.value,
+            "prompt_provider": "offline_fixture_renderer",
+            "prompt_provider_authoritative": False,
         }
         try:
             from slm_training.harnesses.train_data.pair_quality import audit_corpus
@@ -2209,7 +2213,11 @@ def build_train_data(
                 surface=corpus_policy.prompts.surface.value,
             ).to_dict()
         except ImportError:
-            quality_report["pair_quality"] = {"passed": True, "disposition": "unavailable"}
+            quality_report["pair_quality"] = {
+                "passed": False,
+                "disposition": "unavailable",
+                "blocking_reasons": ["pair_quality_auditor_unavailable"],
+            }
     quality_report["version_stamp"] = version_stamp
     quality_report_path = write_quality_report(out_dir, quality_report)
 
