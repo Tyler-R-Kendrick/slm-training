@@ -26,6 +26,7 @@ _PROP_ORDER_PATH = (
     repo_root() / "src" / "slm_training" / "dsl" / "grammars" / "openui_prop_order.json"
 )
 _BINDER_RE = re.compile(r"[^a-z0-9_]+")
+_TYPE_NAME_RE = re.compile(r"=\s*([A-Z][A-Za-z0-9_]*)\s*\(")
 _LITERAL_STRING_PROPS = frozenset({"language", "value", "category", "name"})
 _DEFERRED_PATTERNS = ("state", "query", "mutation", "action", "tool")
 _FORWARD_REFERENCE_PATTERNS = frozenset(
@@ -1199,8 +1200,14 @@ class ProgramGenerator:
             forward_reference_pattern=pattern,
         )
 
-    def extra_coverage_cells(self, spec: ProgramSpec) -> frozenset[CoverageCell]:
+    def extra_coverage_cells(
+        self,
+        spec: ProgramSpec,
+        *,
+        property_value_classes: Sequence[str] = (),
+    ) -> frozenset[CoverageCell]:
         source = spec.canonical_openui
+        types = tuple(dict.fromkeys(_TYPE_NAME_RE.findall(source)))
         cells = {
             CoverageCell("root_family", spec.program_family_id),
             CoverageCell("cardinality_family", str(source.count("="))),
@@ -1208,11 +1215,27 @@ class ProgramGenerator:
                 "order_sensitive_sibling",
                 "row" if '"row"' in source else "column",
             ),
+            CoverageCell("length", _statement_length_bucket(source)),
         }
+        cells.update(CoverageCell("component", name) for name in types)
+        if len(types) >= 2:
+            cells.update(
+                CoverageCell("component_pair", "|".join(pair))
+                for pair in combinations(sorted(types), 2)
+            )
         if ":" in source:
             cells.add(CoverageCell("required_slot_ownership", "placeholder"))
         if any(token in source for token in ("input1", "input2", "$0")):
             cells.add(CoverageCell("reference_topology", "forward"))
+        if property_value_classes:
+            for label in spec.facts.get("coverage_cells") or ():
+                if not isinstance(label, str) or not label.startswith(
+                    "prop_value_class:"
+                ):
+                    continue
+                key = label.split(":", 1)[1]
+                if any(cls in key for cls in property_value_classes):
+                    cells.add(CoverageCell("property_value_class", key))
         return frozenset(cells)
 
 
@@ -1223,6 +1246,41 @@ def generate_program_specs(
     seed: int = 0,
 ) -> GenerationResult:
     return ProgramGenerator(config, seed=seed).generate(count)
+
+
+def _statement_length_bucket(source: str) -> str:
+    lines = source.count("\n") + 1 if source else 0
+    return "short" if lines <= 3 else "medium" if lines <= 6 else "long"
+
+
+def _axis_hit_count(
+    axis: str,
+    extra_hits: Counter[CoverageCell],
+    tracker_axes: Mapping[str, Any],
+) -> int:
+    hits = len({cell.key for cell in extra_hits if cell.axis == axis})
+    tracked = tracker_axes.get(axis)
+    if tracked is not None:
+        hits += int(tracked.get("covered") or 0)
+    return hits
+
+
+def _unmet_coverage_minima(
+    extra_hits: Counter[CoverageCell],
+    tracker_axes: Mapping[str, Any],
+    coverage_minimums: Sequence[tuple[str, int]],
+) -> list[dict[str, Any]]:
+    unmet: list[dict[str, Any]] = []
+    for axis, minimum in coverage_minimums:
+        hits = _axis_hit_count(axis, extra_hits, tracker_axes)
+        if hits < minimum:
+            unmet.append({"axis": axis, "minimum": minimum, "hits": hits})
+    return unmet
+
+
+def _shard_local_target(requested: int, shard_count: int, shard_index: int) -> int:
+    base, rem = divmod(requested, shard_count)
+    return base + (1 if shard_index < rem else 0)
 
 
 def _config_from_policy(policy: Any) -> GeneratorConfig:
@@ -1253,7 +1311,10 @@ def generate_program_pool(policy: Any) -> ProgramPoolResult:
 
     config = _config_from_policy(policy)
     generator = ProgramGenerator(config, seed=policy.seed)
-    target = policy.requested_unique_roots
+    requested = policy.requested_unique_roots
+    local_target = _shard_local_target(
+        requested, policy.shard_count, policy.shard_index
+    )
     max_attempts = policy.max_attempts
     admitted: list[ProgramSpec] = []
     root_ids: list[str] = []
@@ -1264,7 +1325,7 @@ def generate_program_pool(policy: Any) -> ProgramPoolResult:
     # Prefer the coverage-guided grid first so count and until_coverage share
     # one ledger, then expand by deterministic index if the grid is too small.
     grid_size = len(generator._candidates)
-    while len(admitted) < target and attempts < max_attempts:
+    while len(admitted) < local_target and attempts < max_attempts:
         try:
             if attempts < grid_size:
                 spec = generator.generate_one()
@@ -1298,29 +1359,49 @@ def generate_program_pool(policy: Any) -> ProgramPoolResult:
             )
             continue
         seen.add(root_id)
-        extra_hits.update(generator.extra_coverage_cells(spec))
+        extra_hits.update(
+            generator.extra_coverage_cells(
+                spec,
+                property_value_classes=policy.generator.property_value_classes,
+            )
+        )
         admitted.append(spec)
         root_ids.append(root_id)
 
-    exhausted = len(admitted) < target
     coverage = generator.tracker.report()
     coverage["extra_axes"] = {
         cell.label(): extra_hits[cell] for cell in sorted(extra_hits)
     }
     coverage["unique_roots"] = len(admitted)
     coverage["attempts"] = attempts
+    coverage["requested"] = requested
+    coverage["local_target"] = local_target
+    unmet = _unmet_coverage_minima(
+        extra_hits,
+        coverage.get("axes") or {},
+        policy.generator.coverage_minimums,
+    )
+    coverage["unmet_minima"] = unmet
+    exhausted = len(admitted) < local_target or bool(unmet)
     if exhausted:
         report = {
-            "requested": target,
+            "requested": requested,
+            "local_target": local_target,
+            "shard_index": policy.shard_index,
+            "shard_count": policy.shard_count,
             "admitted": len(admitted),
             "attempts": attempts,
             "rejections": rejections[-16:],
             "coverage": coverage,
+            "unmet_minima": unmet,
         }
         if policy.exhaustion is ExhaustionBehavior.FAIL:
             raise GenerationExhausted(
-                f"unique-root target {target} unmet after {attempts} attempts "
-                f"({len(admitted)} admitted)",
+                f"unique-root target {requested} unmet after {attempts} attempts "
+                f"({len(admitted)} admitted, local_target={local_target})"
+                if len(admitted) < local_target
+                else f"coverage minima unmet after {attempts} attempts "
+                f"({len(admitted)} admitted): {unmet}",
                 report,
             )
     ladder: dict[int, tuple[str, ...]] = {}
@@ -1347,10 +1428,28 @@ def merge_program_pools(pools: Sequence[ProgramPoolResult]) -> ProgramPoolResult
 
     by_root: dict[str, ProgramSpec] = {}
     rejections: list[dict[str, Any]] = []
+    extra_axes: Counter[str] = Counter()
+    unmet: list[Any] = []
+    shards: list[dict[str, Any]] = []
+    requested_marks: list[int] = []
     attempts = 0
     for pool in pools:
         attempts += pool.attempts
         rejections.extend(pool.rejections)
+        extra_axes.update(pool.coverage.get("extra_axes") or {})
+        unmet.extend(pool.coverage.get("unmet_minima") or [])
+        shards.append(
+            {
+                "shard_index": pool.shard_index,
+                "unique_roots": len(pool.root_ids),
+                "exhausted": pool.exhausted,
+                "attempts": pool.attempts,
+            }
+        )
+        for key in ("requested", "local_target", "unique_roots"):
+            if key in pool.coverage:
+                requested_marks.append(int(pool.coverage[key]))
+                break
         for spec, root_id in zip(pool.programs, pool.root_ids, strict=True):
             by_root.setdefault(root_id, spec)
     root_ids = tuple(sorted(by_root))
@@ -1358,15 +1457,32 @@ def merge_program_pools(pools: Sequence[ProgramPoolResult]) -> ProgramPoolResult
     ordered = tuple(
         sorted(rejections, key=lambda item: json.dumps(item, sort_keys=True))
     )
+    max_requested = max(requested_marks, default=len(root_ids))
+    exhausted = any(pool.exhausted for pool in pools)
+    if (
+        pools
+        and all(pool.exhausted for pool in pools)
+        and len(root_ids) < max_requested
+    ):
+        exhausted = True
     return ProgramPoolResult(
         programs=programs,
         root_ids=root_ids,
-        coverage={"unique_roots": len(root_ids), "merged_shards": len(pools)},
+        coverage={
+            "unique_roots": len(root_ids),
+            "merged_shards": len(pools),
+            "extra_axes": {key: extra_axes[key] for key in sorted(extra_axes)},
+            "attempts": attempts,
+            "unmet_minima": sorted(
+                unmet, key=lambda item: json.dumps(item, sort_keys=True)
+            ),
+            "shards": sorted(shards, key=lambda item: item["shard_index"]),
+        },
         rejections=ordered,
         ladder={len(root_ids): root_ids},
         shard_index=0,
         shard_count=1,
-        exhausted=False,
+        exhausted=exhausted,
         attempts=attempts,
     )
 
