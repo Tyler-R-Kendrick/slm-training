@@ -188,6 +188,93 @@ def test_v2_prompt_stamps_pair_quality_provenance(monkeypatch) -> None:
     assert rendered.provenance["template_id"] == "inv-1"
     assert rendered.provenance["required_facts"] == ["title"]
     assert rendered.provenance["forbidden_facts"] == ["sidebar"]
+    assert len(rendered.items) == 1
+
+
+def test_v2_emits_every_prompt_candidate_once(monkeypatch) -> None:
+    first = PromptCandidate(
+        prompt_text="Need a title and a submit action.",
+        renderer_family="concise_intent",
+        renderer_version="v1",
+        surface="simplified_nl",
+        required_fact_ids=("title",),
+        house_style_fact_ids=(),
+        forbidden_fact_ids=(),
+        cue_intervention=None,
+        invariance_group_id="inv-1",
+        provider_id="offline",
+        provenance={},
+    )
+    second = PromptCandidate(
+        prompt_text="A compact screen needs a heading and a confirm control.",
+        renderer_family="task_context",
+        renderer_version="v1",
+        surface="simplified_nl",
+        required_fact_ids=("title",),
+        house_style_fact_ids=(),
+        forbidden_fact_ids=(),
+        cue_intervention=None,
+        invariance_group_id="inv-2",
+        provider_id="offline",
+        provenance={},
+    )
+    emitted: list[str] = []
+
+    def fake_emit(spec, prompt, task, record_id, source, meta):
+        emitted.append(record_id)
+        return ExampleRecord(
+            id=record_id,
+            prompt=prompt,
+            openui=spec.canonical_openui,
+            placeholders=[],
+            split="train",
+            meta=meta,
+        )
+
+    monkeypatch.setattr("slm_training.dsl.parser.validate", lambda source: object())
+    monkeypatch.setattr(
+        "slm_training.dsl.semantic_frame.derive_semantic_frame",
+        lambda program, schema=None: object(),
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.semantic_prompts.render_prompt_candidates",
+        lambda *args, **kwargs: PromptRenderResult((first, second), ()),
+    )
+    monkeypatch.setattr("slm_training.data.progspec.emit_record", fake_emit)
+    monkeypatch.setattr(
+        "slm_training.data.verify.stamp_record", lambda record, ctx: record
+    )
+    monkeypatch.setattr(
+        "slm_training.evals.learnability_diagnostics.make_interventions",
+        lambda *a, **k: (),
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.pipeline._counterfactual_records",
+        lambda *a, **k: [],
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.pipeline._program_repair_records",
+        lambda spec, limit: [],
+    )
+    records, errors, _rejected = _records_from_progspec(
+        TrainDataConfig(
+            corpus_generation=tiny_corpus_generation_policy(
+                capability=Capability.CAP1_SEMANTICS
+            ),
+            repairs_per_program=0,
+            include_edit_derivatives=False,
+            include_scope_derivatives=False,
+        ),
+        preloaded=([_spec()], []),
+    )
+    assert not errors
+    assert emitted == ["root-1", "root-1-p1"]
+    assert [item.prompt for item in records] == [
+        first.prompt_text,
+        second.prompt_text,
+    ]
+    assert records[0].meta["root_id"] == "root-1"
+    assert records[1].meta["prompt_index"] == 1
 
 
 def test_counterfactual_failure_keeps_repairs(monkeypatch) -> None:

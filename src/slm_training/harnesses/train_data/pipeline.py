@@ -127,6 +127,8 @@ class TrainDataConfig:
     # CLI overrides applied to a loaded v2 policy via dataclasses.replace.
     # None leaves the checked-in plan unchanged.
     generation_mode: str | None = None
+    unique_root_target: int | None = None
+    generator_seed: int | None = None
     generator_max_depth: int | None = None
     generator_max_width: int | None = None
     prompt_surface: str | None = None
@@ -698,10 +700,29 @@ class _ProgramspecPrompt:
     provenance: dict[str, Any]
     rejections: tuple[dict[str, Any], ...] = ()
     error: str | None = None
+    items: tuple[tuple[str, dict[str, Any]], ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.items or self.prompt is None:
+            return
+        object.__setattr__(self, "items", ((self.prompt, dict(self.provenance)),))
+
+
+def _prompt_provenance(candidate: Any) -> dict[str, Any]:
+    return {
+        "renderer_family": candidate.renderer_family,
+        "renderer_id": candidate.renderer_family,
+        "invariance_group_id": candidate.invariance_group_id,
+        "template_id": candidate.invariance_group_id,
+        "required_fact_ids": list(candidate.required_fact_ids),
+        "required_facts": list(candidate.required_fact_ids),
+        "forbidden_fact_ids": list(candidate.forbidden_fact_ids),
+        "forbidden_facts": list(candidate.forbidden_fact_ids),
+    }
 
 
 def _prompt_for_programspec(spec: Any, config: TrainDataConfig) -> _ProgramspecPrompt:
-    """Render a plan-aware prompt. Historical default keeps family-id wrappers."""
+    """Render plan-aware prompts. Historical default keeps family-id wrappers."""
 
     policy = config.corpus_generation
     if policy is None:
@@ -740,20 +761,16 @@ def _prompt_for_programspec(spec: Any, config: TrainDataConfig) -> _ProgramspecP
             rejections=rejections,
             error="prompt renderer produced zero candidates",
         )
-    chosen = rendered.candidates[0]
+    items = tuple(
+        (chosen.prompt_text, _prompt_provenance(chosen))
+        for chosen in rendered.candidates
+    )
+    first_prompt, first_prov = items[0]
     return _ProgramspecPrompt(
-        chosen.prompt_text,
-        {
-            "renderer_family": chosen.renderer_family,
-            "renderer_id": chosen.renderer_family,
-            "invariance_group_id": chosen.invariance_group_id,
-            "template_id": chosen.invariance_group_id,
-            "required_fact_ids": list(chosen.required_fact_ids),
-            "required_facts": list(chosen.required_fact_ids),
-            "forbidden_fact_ids": list(chosen.forbidden_fact_ids),
-            "forbidden_facts": list(chosen.forbidden_fact_ids),
-        },
+        first_prompt,
+        first_prov,
         rejections=rejections,
+        items=items,
     )
 
 
@@ -839,7 +856,7 @@ def _records_from_progspec(
                         detail=dict(item),
                     )
                 )
-            if rendered.prompt is None:
+            if not rendered.items:
                 errors.append(
                     {
                         "id": spec.id,
@@ -847,50 +864,55 @@ def _records_from_progspec(
                     }
                 )
                 continue
-            cue_names: list[str] = []
-            if config.corpus_generation is not None:
-                cue_names = [
-                    item.name
-                    for item in make_interventions(
-                        rendered.prompt,
-                        group_id=str(spec.split_group_id),
-                        target_id=spec.id,
+            for index, (prompt_text, provenance) in enumerate(rendered.items):
+                record_id = spec.id if index == 0 else f"{spec.id}-p{index}"
+                cue_names: list[str] = []
+                if config.corpus_generation is not None:
+                    cue_names = [
+                        item.name
+                        for item in make_interventions(
+                            prompt_text,
+                            group_id=str(spec.split_group_id),
+                            target_id=spec.id,
+                        )
+                    ]
+                    rejected.append(
+                        rejection_entry(
+                            "cue_intervention_control",
+                            "not_train_eligible",
+                            record_id=record_id,
+                            detail={
+                                "train_eligible": False,
+                                "interventions": cue_names,
+                            },
+                        )
                     )
-                ]
-                rejected.append(
-                    rejection_entry(
-                        "cue_intervention_control",
-                        "not_train_eligible",
-                        record_id=spec.id,
-                        detail={
-                            "train_eligible": False,
-                            "interventions": cue_names,
-                        },
+                meta = {
+                    "source_kind": "program-first",
+                    **provenance,
+                }
+                if config.corpus_generation is not None:
+                    meta.update(
+                        {
+                            "root_id": spec.id,
+                            "split_family_id": spec.split_group_id,
+                            "cue_interventions": cue_names,
+                            "prompt_index": index,
+                        }
+                    )
+                record = emit_record(
+                    spec,
+                    prompt=prompt_text,
+                    task="generation",
+                    record_id=record_id,
+                    source="programspec_generated",
+                    meta=meta,
+                )
+                out.append(
+                    stamp_record(
+                        record, VerificationContext(source_kind="program-first")
                     )
                 )
-            meta = {
-                "source_kind": "program-first",
-                **rendered.provenance,
-            }
-            if config.corpus_generation is not None:
-                meta.update(
-                    {
-                        "root_id": spec.id,
-                        "split_family_id": spec.split_group_id,
-                        "cue_interventions": cue_names,
-                    }
-                )
-            record = emit_record(
-                spec,
-                prompt=rendered.prompt,
-                task="generation",
-                record_id=spec.id,
-                source="programspec_generated",
-                meta=meta,
-            )
-            out.append(
-                stamp_record(record, VerificationContext(source_kind="program-first"))
-            )
             if config.corpus_generation is not None:
                 try:
                     out.extend(
@@ -1465,6 +1487,8 @@ def build_train_data(
             corpus_policy = apply_corpus_generation_overrides(
                 loaded_plan.corpus_generation,
                 generation_mode=config.generation_mode,
+                unique_root_target=config.unique_root_target,
+                generator_seed=config.generator_seed,
                 generator_max_depth=config.generator_max_depth,
                 generator_max_width=config.generator_max_width,
                 prompt_surface=config.prompt_surface,

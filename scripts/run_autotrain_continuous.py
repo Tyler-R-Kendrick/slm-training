@@ -11667,6 +11667,14 @@ def run_cycle(
         policy.defaults.get("claim_class_screening") or "diagnostic"
     )
     current_eval_version = default_eval_version()
+    predecessor_generation = None
+    if pred:
+        pred_delivery = _read_json(root / pred / "sdlc_delivery.json")
+        pred_knobs = _load_experiment_knobs(
+            root / pred, str(pred_delivery.get("candidate_id") or "")
+        )
+        if pred_knobs:
+            predecessor_generation = pred_knobs.get("data_generation")
     timeout_retired, selector_signal_sources = _sync_reproduced_timeout_retirements(
         root,
         loop_id,
@@ -11677,7 +11685,7 @@ def run_cycle(
         primary_metric=str(screening_primary["metric"]),
         direction=str(screening_primary["direction"]),
         claim_class=screening_claim_class,
-        data_generation=None,
+        data_generation=predecessor_generation,
     )
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)

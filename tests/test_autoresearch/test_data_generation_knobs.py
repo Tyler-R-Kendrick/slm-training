@@ -103,7 +103,10 @@ def test_compile_commands_uses_canonical_builder() -> None:
     build = commands[0]
     assert "scripts.build_train_data" in build
     assert "--synthesis-plan" in build
+    assert "--unique-root-target" in build
     assert "--programspec-count" in build
+    assert build[build.index("--unique-root-target") + 1] == "4"
+    assert build[build.index("--generator-seed") + 1] == "17"
     assert "4" in build
     assert build[build.index("--generation-mode") + 1] == "count"
     assert build[build.index("--generator-max-depth") + 1] == "3"

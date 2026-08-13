@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "compile_commands emits --unique-root-target/--generator-seed so data-only unique-root overlays survive a v2 plan; timeout lookup uses predecessor data_generation",
+          "version": "v214"
+        },
+        {
+          "date": "2026-08-13",
           "note": "Data-only arms use an explicit corpus-build allowlist; compile_commands lowers the full DataGenerationKnobs set; timeout-retirement identity includes data_generation",
           "version": "v213"
         },
@@ -6463,7 +6468,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v213"
+      "version": "v214"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -16734,6 +16739,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "apply_corpus_generation_overrides accepts unique_root_target and generator_seed without changing v2 exact keys",
+          "version": "v5"
+        },
+        {
+          "date": "2026-08-13",
           "note": "CLI/knob overlays can replace corpus_generation mode, depth, width, surface, renderer families, counterfactuals, and trusted-anchor retention without changing v2 exact keys",
           "version": "v4"
         },
@@ -16781,10 +16791,15 @@
         "docs/design/dsh0-03-synthesis-plan-20260723.json",
         "docs/design/dsh0-03-synthesis-plan-20260723.md"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-08-13",
+          "note": "Admit every policy prompt candidate per root and honor --unique-root-target/--generator-seed overlays on v2 plans",
+          "version": "v29"
+        },
         {
           "date": "2026-08-13",
           "note": "Policy-first v2 pools, fail-closed prompt provenance, mapped pair-quality finding codes, bounded root folds, source_anchors, and CLI generation overlays",
@@ -16960,7 +16975,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v28"
+      "version": "v29"
     },
     "harness_core.evidence_bundle": {
       "history": [

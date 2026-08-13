@@ -414,8 +414,10 @@ def _data_generation_flags(generation: DataGenerationKnobs) -> list[str]:
     if generation.plan_path:
         flags.extend(["--synthesis-plan", generation.plan_path])
     if generation.unique_root_target is not None:
+        flags.extend(["--unique-root-target", str(generation.unique_root_target)])
         flags.extend(["--programspec-count", str(generation.unique_root_target)])
     if generation.generator_seed is not None:
+        flags.extend(["--generator-seed", str(generation.generator_seed)])
         flags.extend(["--programspec-seed", str(generation.generator_seed)])
     if generation.generation_mode:
         flags.extend(["--generation-mode", generation.generation_mode])
