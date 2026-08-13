@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import yaml
 
@@ -1452,3 +1452,54 @@ def migrate_plan_v1_to_v2(
     """Explicit content-addressed migration. Does not rewrite v1 files."""
 
     return SynthesisPlanV2.from_v1(plan, corpus_generation)
+
+
+def apply_corpus_generation_overrides(
+    policy: CorpusGenerationPolicy,
+    *,
+    generation_mode: str | None = None,
+    generator_max_depth: int | None = None,
+    generator_max_width: int | None = None,
+    prompt_surface: str | None = None,
+    prompts_per_root: int | None = None,
+    renderer_families: Sequence[str] | None = None,
+    counterfactuals_per_root: int | None = None,
+    retain_trusted_anchors: bool | None = None,
+) -> CorpusGenerationPolicy:
+    """CLI/knob overlays. Does not add or rename corpus_generation/v1 keys."""
+
+    updates: dict[str, Any] = {}
+    if generation_mode is not None:
+        updates["mode"] = GenerationMode(generation_mode)
+    generator = policy.generator
+    if generator_max_depth is not None:
+        generator = replace(generator, max_depth=generator_max_depth)
+    if generator_max_width is not None:
+        generator = replace(generator, max_width=generator_max_width)
+    if generator is not policy.generator:
+        updates["generator"] = generator
+    prompts = policy.prompts
+    if prompt_surface is not None:
+        prompts = replace(prompts, surface=PromptSurface(prompt_surface))
+    if prompts_per_root is not None:
+        prompts = replace(prompts, prompts_per_root=prompts_per_root)
+    if renderer_families is not None:
+        prompts = replace(
+            prompts,
+            renderer_families=tuple(
+                RendererFamily(item) for item in renderer_families
+            ),
+        )
+    if prompts is not policy.prompts:
+        updates["prompts"] = prompts
+    if counterfactuals_per_root is not None:
+        updates["derivatives"] = replace(
+            policy.derivatives,
+            semantic_counterfactuals_per_eligible_root=counterfactuals_per_root,
+        )
+    if retain_trusted_anchors is not None:
+        updates["source_anchors"] = replace(
+            policy.source_anchors,
+            retain_available_trusted_roots=retain_trusted_anchors,
+        )
+    return replace(policy, **updates) if updates else policy

@@ -17,7 +17,10 @@ from slm_training.harnesses.train_data.split_policy import RootFamilySplitPolicy
 from slm_training.data.progspec.generate import canonical_root_identity
 
 
-PLAN_PATH = Path("src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json")
+REPO_ROOT = Path(__file__).resolve().parents[3]
+PLAN_PATH = (
+    REPO_ROOT / "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json"
+)
 
 
 def test_legacy_v1_bytes_do_not_grow_a_corpus_generation_field() -> None:

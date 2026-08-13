@@ -7,9 +7,11 @@ from typing import Any
 from slm_training.harnesses.staged import Capability
 from slm_training.harnesses.synthesis_plan import tiny_corpus_generation_policy
 from slm_training.harnesses.train_data.pair_quality import (
+    GROUPED_FOLD_CAP,
     SCHEMA_VERSION,
     CorpusAudit,
     PairAudit,
+    _grouped_folds,
     audit_corpus,
     audit_pair,
 )
@@ -207,6 +209,17 @@ def test_full_prompt_signal_is_reported_not_a_shortcut_gate() -> None:
     assert audit.full_prompt["disposition"] == "report_only"
     assert "full_prompt" not in audit.blocking_reasons
     assert all("full_prompt" not in reason for reason in audit.blocking_reasons)
+
+
+def test_grouped_folds_hash_roots_into_bounded_buckets() -> None:
+    roots = [f"root-{index // 2:02d}" for index in range(80)]
+    folds = _grouped_folds(roots)
+    assert len(set(folds)) <= GROUPED_FOLD_CAP
+    by_root: dict[str, set[int]] = {}
+    for root, fold in zip(roots, folds):
+        by_root.setdefault(root, set()).add(fold)
+    assert all(len(seen) == 1 for seen in by_root.values())
+    assert len(by_root) == 40
 
 
 def test_root_grouped_folds_never_cross_variants() -> None:

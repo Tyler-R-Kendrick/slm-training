@@ -39,6 +39,10 @@ FINDING_CODES = (
     "split_family_leakage",
     "synthetic_anchor_deficit",
     "rare_family_erasure",
+    "hard_forbidden_cue",
+    "prefix_concentration",
+    "pair_quality_auditor_unavailable",
+    "unknown_blocking_reason",
 )
 
 # Findings that cannot close with a prose note; they need a new build receipt.
@@ -53,8 +57,23 @@ BLOCKING_FINDING_CODES = frozenset(
         "synthetic_anchor_deficit",
         "split_family_leakage",
         "eval_leakage_source",
+        "pair_quality_auditor_unavailable",
+        "unknown_blocking_reason",
     }
 )
+
+# audit_corpus blocking_reasons → synthesis-feedback finding codes.
+AUDITOR_REASON_TO_FINDING = {
+    "cue_only_lift": "cue_only_shortcut",
+    "source_only_lift": "source_only_shortcut",
+    "target_surface_leak": "target_surface_leakage",
+    "complete_inventory_leak": "complete_inventory_leakage",
+    "hard_forbidden_cue": "hard_forbidden_cue",
+    "prefix_concentration": "prefix_concentration",
+    "template_concentration": "template_concentration",
+    "prompt_target_contradiction": "prompt_target_contradiction",
+    "pair_quality_auditor_unavailable": "pair_quality_auditor_unavailable",
+}
 
 _EXECUTABLE_KNOBS = {
     "insufficient_unique_roots": ["data_generation.unique_root_target", "data_source"],
@@ -65,6 +84,14 @@ _EXECUTABLE_KNOBS = {
     "synthetic_anchor_deficit": ["data_generation.retain_trusted_anchors"],
     "target_surface_leakage": ["data_generation.prompt_surface"],
     "complete_inventory_leakage": ["data_generation.prompt_surface"],
+    "hard_forbidden_cue": [
+        "data_generation.prompt_surface",
+        "data_generation.renderer_families",
+    ],
+    "prefix_concentration": [
+        "data_generation.prompts_per_root",
+        "data_generation.renderer_families",
+    ],
     "low_yield": ["synthesizer"],
     "redundant_expansion": ["max_records_per_parent", "synthesizer"],
     "eval_leakage_source": ["decontam_eval_root"],
@@ -289,9 +316,10 @@ def _capability_findings(quality_report: dict[str, Any]) -> list[dict[str, Any]]
         )
     if pair.get("passed") is False:
         for reason in pair.get("blocking_reasons") or ():
-            code = str(reason)
-            if code not in FINDING_CODES:
-                code = "target_surface_leakage"
+            mapped = AUDITOR_REASON_TO_FINDING.get(str(reason), str(reason))
+            code = (
+                mapped if mapped in FINDING_CODES else "unknown_blocking_reason"
+            )
             findings.append(
                 {
                     "code": code,
@@ -308,8 +336,9 @@ def _capability_findings(quality_report: dict[str, Any]) -> list[dict[str, Any]]
         findings.append(
             {
                 "code": "synthetic_anchor_deficit",
-                "severity": "blocks_capability_claim",
-                "authority": "diagnostic_waiver_not_promotion",
+                "severity": "hard_admission_failure",
+                "authority": "blocks_capability_claim",
+                "waiver": "diagnostic_waiver_not_promotion",
                 "closure": "new_immutable_build",
                 "evidence": dict(anchors),
             }
@@ -415,6 +444,7 @@ def write_synthesis_feedback(out_dir: Path, feedback: dict[str, Any]) -> Path:
 
 
 __all__ = [
+    "AUDITOR_REASON_TO_FINDING",
     "BLOCKING_FINDING_CODES",
     "FEEDBACK_SCHEMA_VERSION",
     "FINDING_CODES",

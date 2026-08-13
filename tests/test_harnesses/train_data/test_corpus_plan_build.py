@@ -3,14 +3,31 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
+from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.staged import Capability
 from slm_training.harnesses.synthesis_plan import (
     tiny_corpus_generation_policy,
 )
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+from slm_training.harnesses.train_data.pipeline import (
+    _ProgramspecPrompt,
+    _load_progspecs,
+    _prompt_for_programspec,
+    _records_from_progspec,
+)
+from slm_training.harnesses.train_data.semantic_prompts import (
+    PromptCandidate,
+    PromptRenderResult,
+)
 from slm_training.data.progspec.generate import generate_program_pool
 from dataclasses import replace
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+V2_PLAN_PATH = (
+    REPO_ROOT / "src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json"
+)
 
 
 def test_pool_roots_are_not_inflated_by_prompt_or_repair_counts() -> None:
@@ -36,7 +53,7 @@ def test_pool_roots_are_not_inflated_by_prompt_or_repair_counts() -> None:
 
 
 def test_v2_plan_loader_does_not_require_staged_graph(tmp_path: Path) -> None:
-    plan = Path("src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json")
+    plan = V2_PLAN_PATH
     result = build_train_data(
         TrainDataConfig(
             profile="permissive",
@@ -60,7 +77,167 @@ def test_v2_plan_loader_does_not_require_staged_graph(tmp_path: Path) -> None:
     assert result["quality_report"]["capability_certificate"] is False
     assert result["quality_report"]["unique_roots"]["prompt_provider_authoritative"] is False
     assert "pair_quality" in result["quality_report"]
+    assert "source_anchors" in result["quality_report"]
     assert result["synthesis_feedback"]["capability_certificate"] is False
     assert "findings" in result["synthesis_feedback"]
     records = result["stats"]["record_count"]
     assert records >= 1
+
+
+def test_corpus_policy_ignores_committed_programspec_jsonl(
+    tmp_path: Path, monkeypatch
+) -> None:
+    dummy = tmp_path / "programs.jsonl"
+    dummy.write_text('{"id": "DUMMY-SHOULD-NOT-LOAD"}\n', encoding="utf-8")
+
+    class Pool:
+        programs = [SimpleNamespace(id="generated-root")]
+
+    seen: dict[str, object] = {}
+
+    def fake_pool(policy):
+        seen["policy"] = policy
+        return Pool()
+
+    monkeypatch.setattr(
+        "slm_training.data.progspec.generate.generate_program_pool", fake_pool
+    )
+    policy = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR)
+    specs, errors = _load_progspecs(
+        TrainDataConfig(
+            programspec_path=dummy,
+            corpus_generation=policy,
+            programspec_count=4,
+        )
+    )
+    assert seen["policy"] is policy
+    assert [item.id for item in specs] == ["generated-root"]
+    assert not any("DUMMY" in str(item) for item in errors)
+    assert not any("programspec:1" in str(item.get("id", "")) for item in errors)
+
+
+def _spec() -> SimpleNamespace:
+    return SimpleNamespace(
+        id="root-1",
+        program_family_id="hero_card",
+        split_group_id="fam-1",
+        split="train",
+        canonical_openui="unused",
+    )
+
+
+def test_v2_prompt_render_failure_skips_generic(monkeypatch) -> None:
+    monkeypatch.setattr("slm_training.dsl.parser.validate", lambda source: object())
+    monkeypatch.setattr(
+        "slm_training.dsl.semantic_frame.derive_semantic_frame",
+        lambda program, schema=None: object(),
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.semantic_prompts.render_prompt_candidates",
+        lambda *args, **kwargs: PromptRenderResult(
+            (), ({"reason": "zero_candidates", "detail": "none"},)
+        ),
+    )
+    rendered = _prompt_for_programspec(
+        _spec(),
+        TrainDataConfig(
+            corpus_generation=tiny_corpus_generation_policy(
+                capability=Capability.CAP0_GRAMMAR
+            )
+        ),
+    )
+    assert rendered.prompt is None
+    assert rendered.error == "prompt renderer produced zero candidates"
+    assert rendered.rejections[0]["reason"] == "zero_candidates"
+    assert "Need a compact screen" not in (rendered.error or "")
+
+
+def test_v2_prompt_stamps_pair_quality_provenance(monkeypatch) -> None:
+    chosen = PromptCandidate(
+        prompt_text="Need a title and a submit action.",
+        renderer_family="concise_intent",
+        renderer_version="v1",
+        surface="simplified_nl",
+        required_fact_ids=("title",),
+        house_style_fact_ids=(),
+        forbidden_fact_ids=("sidebar",),
+        cue_intervention=None,
+        invariance_group_id="inv-1",
+        provider_id="offline",
+        provenance={},
+    )
+    monkeypatch.setattr("slm_training.dsl.parser.validate", lambda source: object())
+    monkeypatch.setattr(
+        "slm_training.dsl.semantic_frame.derive_semantic_frame",
+        lambda program, schema=None: object(),
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.semantic_prompts.render_prompt_candidates",
+        lambda *args, **kwargs: PromptRenderResult((chosen,), ()),
+    )
+    rendered = _prompt_for_programspec(
+        _spec(),
+        TrainDataConfig(
+            corpus_generation=tiny_corpus_generation_policy(
+                capability=Capability.CAP1_SEMANTICS
+            )
+        ),
+    )
+    assert rendered.prompt == chosen.prompt_text
+    assert rendered.provenance["renderer_family"] == "concise_intent"
+    assert rendered.provenance["template_id"] == "inv-1"
+    assert rendered.provenance["required_facts"] == ["title"]
+    assert rendered.provenance["forbidden_facts"] == ["sidebar"]
+
+
+def test_counterfactual_failure_keeps_repairs(monkeypatch) -> None:
+    gold = ExampleRecord(
+        id="root-1",
+        prompt="Need a title.",
+        openui="root = Stack([x])",
+        placeholders=[],
+        split="train",
+        meta={},
+    )
+    repair = ExampleRecord(
+        id="repair-1",
+        prompt="fix",
+        openui="root = Stack([x])",
+        placeholders=[],
+        split="train",
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.pipeline._prompt_for_programspec",
+        lambda spec, config: _ProgramspecPrompt("Need a title.", {}),
+    )
+    monkeypatch.setattr("slm_training.data.progspec.emit_record", lambda *a, **k: gold)
+    monkeypatch.setattr("slm_training.data.verify.stamp_record", lambda record, ctx: record)
+    monkeypatch.setattr(
+        "slm_training.evals.learnability_diagnostics.make_interventions",
+        lambda *a, **k: (),
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.pipeline._counterfactual_records",
+        lambda *a, **k: (_ for _ in ()).throw(ValueError("cf exploded")),
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.train_data.pipeline._program_repair_records",
+        lambda spec, limit: [repair],
+    )
+    records, errors, _rejected = _records_from_progspec(
+        TrainDataConfig(
+            corpus_generation=tiny_corpus_generation_policy(
+                capability=Capability.CAP0_GRAMMAR
+            ),
+            repairs_per_program=1,
+            include_edit_derivatives=False,
+            include_scope_derivatives=False,
+        ),
+        preloaded=([_spec()], []),
+    )
+    assert any(item.id == "repair-1" for item in records)
+    assert any(
+        item.get("family") == "semantic_counterfactual"
+        and "cf exploded" in str(item.get("error"))
+        for item in errors
+    )

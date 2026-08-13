@@ -20,6 +20,7 @@ from slm_training.harnesses.synthesis_plan import (
     SynthesisPlanRegistry,
     SynthesisPlanV1,
     SynthesisPlanV2,
+    apply_corpus_generation_overrides,
     load_synthesis_plan,
     migrate_plan_v1_to_v2,
     tiny_corpus_generation_policy,
@@ -345,3 +346,18 @@ def test_invalid_coverage_cue_anchor_and_ladder_configurations_fail() -> None:
                 capability=Capability.CAP0_GRAMMAR
             ).source_anchors
         ).from_dict(policy["source_anchors"])
+
+
+def test_apply_corpus_generation_overrides_keeps_schema_keys() -> None:
+    policy = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR)
+    updated = apply_corpus_generation_overrides(
+        policy,
+        generator_max_depth=4,
+        prompts_per_root=3,
+        retain_trusted_anchors=False,
+    )
+    assert updated.generator.max_depth == 4
+    assert updated.prompts.prompts_per_root == 3
+    assert updated.source_anchors.retain_available_trusted_roots is False
+    assert set(updated.to_dict()) == set(policy.to_dict())
+    assert apply_corpus_generation_overrides(policy) is policy

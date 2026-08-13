@@ -2879,6 +2879,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "Learnability diagnostics load real suite prompts, stamp version_stamp/v1, and stay fixture_wiring with no capability certificate",
+          "version": "v26"
+        },
+        {
+          "date": "2026-08-13",
           "note": "no-bump: clarify learnability diagnostics cannot close the objective-mismatch hypothesis or issue a capability certificate",
           "version": "v25"
         },
@@ -3032,7 +3037,7 @@
       "paths": [
         "src/slm_training/evals/"
       ],
-      "version": "v25"
+      "version": "v26"
     },
     "evals.semantic_bits": {
       "history": [
@@ -4900,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "Data-only arms use an explicit corpus-build allowlist; compile_commands lowers the full DataGenerationKnobs set; timeout-retirement identity includes data_generation",
+          "version": "v213"
+        },
+        {
+          "date": "2026-08-13",
           "note": "no-bump: rebuild evidence_ledger.v1.json after capability-driven data-synthesis design docs; campaign contract unchanged",
           "version": "v212"
         },
@@ -6453,7 +6463,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v212"
+      "version": "v213"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -15240,6 +15250,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "--learnability-diagnostics writes on default single-suite evals using suite prompts; ship gates unchanged",
+          "version": "v101"
+        },
+        {
+          "date": "2026-08-13",
           "note": "Optional --learnability-diagnostics writes a fixture-class intervention artifact; ship gates unchanged",
           "version": "v100"
         },
@@ -15838,7 +15853,7 @@
         "tests/test_harnesses/model_build/test_eval_metric_semantics.py",
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
-      "version": "v100"
+      "version": "v101"
     },
     "harness.model_build.train": {
       "history": [
@@ -16719,6 +16734,11 @@
       "history": [
         {
           "date": "2026-08-13",
+          "note": "CLI/knob overlays can replace corpus_generation mode, depth, width, surface, renderer families, counterfactuals, and trusted-anchor retention without changing v2 exact keys",
+          "version": "v4"
+        },
+        {
+          "date": "2026-08-13",
           "note": "no-bump: test that a scaling_ladder policy may name an 8192 unique-root rung without generating that corpus",
           "version": "v3"
         },
@@ -16761,10 +16781,15 @@
         "docs/design/dsh0-03-synthesis-plan-20260723.json",
         "docs/design/dsh0-03-synthesis-plan-20260723.md"
       ],
-      "version": "v3"
+      "version": "v4"
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-08-13",
+          "note": "Policy-first v2 pools, fail-closed prompt provenance, mapped pair-quality finding codes, bounded root folds, source_anchors, and CLI generation overlays",
+          "version": "v28"
+        },
         {
           "date": "2026-08-13",
           "note": "no-bump: stamp fixture_wiring / no capability certificate on plan-driven reports and fail closed if the pair-quality auditor import is missing; admission gates unchanged when the auditor is present",
@@ -16935,7 +16960,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v27"
+      "version": "v28"
     },
     "harness_core.evidence_bundle": {
       "history": [
