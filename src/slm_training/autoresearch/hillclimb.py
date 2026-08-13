@@ -43,6 +43,7 @@ __all__ = [
     "load_exhausted_ledger",
     "save_exhausted_ledger",
     "matrix_data_eval_identity",
+    "data_generation_sha256",
     "is_measured_null_feedback",
     "resolve_primary_effect",
     "resolve_baseline_primary",
@@ -274,6 +275,22 @@ def data_eval_identity(
         "claim_class": claim_class,
     }
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def data_generation_sha256(
+    data_generation: Mapping[str, Any] | None,
+) -> str | None:
+    """Stable digest of corpus-generation knobs; None when the block is absent."""
+
+    if not data_generation:
+        return None
+    if hasattr(data_generation, "model_dump"):
+        cleaned = data_generation.model_dump(exclude_none=True, mode="json")
+    else:
+        cleaned = {key: value for key, value in data_generation.items() if value is not None}
+    if not cleaned:
+        return None
+    return hashlib.sha256(canonical_json(cleaned).encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -629,13 +646,16 @@ def matrix_data_eval_identity(
     primary_metric: str,
     claim_class: str = "fixture",
     locked_eval_manifest_sha256: str | None = None,
+    data_generation: Mapping[str, Any] | None = None,
 ) -> str:
     """Stable identity for exhausted-knob scope in the exploratory matrix loop."""
 
+    material = f"{evidence_snapshot_id}:{primary_metric}"
+    digest = data_generation_sha256(data_generation)
+    if digest:
+        material = f"{material}:{digest}"
     return data_eval_identity(
-        data_manifest_sha256=hashlib.sha256(
-            f"{evidence_snapshot_id}:{primary_metric}".encode("utf-8")
-        ).hexdigest(),
+        data_manifest_sha256=hashlib.sha256(material.encode("utf-8")).hexdigest(),
         locked_eval_manifest_sha256=locked_eval_manifest_sha256,
         claim_class=claim_class,
     )

@@ -179,6 +179,15 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--learnability-diagnostics",
+        action="store_true",
+        help=(
+            "Write learnability_diagnostics.json (prompt shuffle/cue ablation "
+            "interventions). Fixture wiring only; never a capability certificate "
+            "or ship-gate input."
+        ),
+    )
+    parser.add_argument(
         "--run-class",
         choices=RUN_CLASSES,
         default=None,
@@ -967,6 +976,22 @@ def main(argv: list[str] | None = None) -> int:
         if flag_assignments:
             scoreboard["research_flags"] = assignments_payload(flag_assignments)
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
+        if args.learnability_diagnostics:
+            from slm_training.evals.learnability_diagnostics import diagnose_records
+
+            rows = []
+            for suite_name, metrics in (scoreboard.get("suites") or {}).items():
+                rows.append(
+                    {
+                        "id": suite_name,
+                        "prompt": str(metrics.get("primary_metric") or suite_name),
+                        "group_id": suite_name,
+                    }
+                )
+            payload = diagnose_records(rows)
+            out = config.run_dir / "learnability_diagnostics.json"
+            out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            scoreboard["learnability_diagnostics"] = str(out)
         if args.ship_gates:
             gates = scoreboard.get("gates")
             if not gates or "pass" not in gates:

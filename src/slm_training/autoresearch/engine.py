@@ -10,9 +10,11 @@ import time
 from pathlib import Path
 from typing import Mapping
 
+from slm_training.autoresearch.hillclimb import data_generation_sha256
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
     CampaignSpec,
+    DataGenerationKnobs,
     Diagnosis,
     EvidenceSnapshot,
     ExperimentOutcome,
@@ -24,6 +26,7 @@ from slm_training.autoresearch.schemas import (
     evaluation_completeness_failures,
     evaluation_measurement_incomplete,
     utc_now,
+    validate_data_only_arm,
 )
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
@@ -374,6 +377,13 @@ def create_hypothesis_feedback(
             else None
         ),
     }
+    generation = candidate.experiment.knobs.data_generation
+    if generation is not None:
+        dumped = generation.model_dump(exclude_none=True, mode="json")
+        identity["data_generation"] = dumped
+        digest = data_generation_sha256(dumped)
+        if digest:
+            identity["data_generation_sha256"] = digest
     feedback_id = (
         "feedback-"
         + hashlib.sha256(
@@ -399,6 +409,17 @@ def create_hypothesis_feedback(
     )
 
 
+def _data_generation_flags(generation: DataGenerationKnobs) -> list[str]:
+    flags: list[str] = []
+    if generation.plan_path:
+        flags.extend(["--synthesis-plan", generation.plan_path])
+    if generation.unique_root_target is not None:
+        flags.extend(["--programspec-count", str(generation.unique_root_target)])
+    if generation.generator_seed is not None:
+        flags.extend(["--programspec-seed", str(generation.generator_seed)])
+    return flags
+
+
 def compile_commands(
     campaign: CampaignSpec,
     experiment: ExperimentSpec,
@@ -411,15 +432,28 @@ def compile_commands(
     version = f"autoresearch-{campaign.campaign_id}-{experiment.experiment_id}"
     train_dir = Path("outputs/data/train") / version
     commands: list[list[str]] = []
-    if knobs.data_source:
+    generation = knobs.data_generation
+    if generation is not None and generation.data_only:
+        validate_data_only_arm(knobs)
+    if knobs.data_source or generation is not None:
+        source = knobs.data_source or (
+            "staged" if generation is not None and generation.plan_path else "programspec"
+        )
+        build_version = (
+            knobs.train_version
+            if generation is not None and knobs.data_source is None and knobs.train_version
+            else version
+        )
+        if knobs.train_version and knobs.data_source is None:
+            train_dir = Path("outputs/data/train") / knobs.train_version
         build = [
             sys.executable,
             "-m",
             "scripts.build_train_data",
             "--source",
-            knobs.data_source,
+            source,
             "--version",
-            version,
+            build_version,
             "--immutable",
         ]
         if knobs.derive_from:
@@ -442,9 +476,13 @@ def compile_commands(
             )
         ):
             build.append("--scope-derivatives")
+        if generation is not None:
+            build.extend(_data_generation_flags(generation))
         commands.append(build)
     elif not knobs.train_version:
         train_dir = DEFAULT_TRAIN_DATA_DIR
+    if generation is not None and generation.data_only:
+        return commands
     mixture_path = root / "mixture.json"
     if knobs.mixture_weights:
         commands.append(

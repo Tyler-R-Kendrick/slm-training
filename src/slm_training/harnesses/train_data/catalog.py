@@ -55,6 +55,13 @@ KNOWN_FAMILIES = (
     "scope_repair_expression",
     "scope_repair_lexical",
     "lexical_typed_map",
+    "semantic_counterfactual",
+    "semantic_prompt",
+    "cue_intervention",
+)
+
+TRUSTED_ANCHOR_FAMILIES = frozenset(
+    {"human_curated", "human_feedback", "rico_real", "frontier_described"}
 )
 
 _SYNTH_TO_FAMILY = {
@@ -218,6 +225,31 @@ def family_stats(records: list[ExampleRecord]) -> dict[str, Any]:
         "total_records": len(records),
         "unique_root_parents": len(all_parent_counts),
         "records_per_root_parent": _exposure_stats(list(all_parent_counts.values())),
+        "source_anchors": source_anchor_report(records),
+    }
+
+
+def source_anchor_report(records: list[ExampleRecord]) -> dict[str, Any]:
+    """Trusted-anchor accounting. Synthetic-only corpora stay diagnostic."""
+
+    roots: dict[str, set[str]] = {}
+    for record in records:
+        family = classify_source_family(record)
+        root = str((record.meta or {}).get("root_parent_id") or record.id)
+        roots.setdefault(root, set()).add(family)
+    trusted_roots = sum(
+        1
+        for families in roots.values()
+        if families & TRUSTED_ANCHOR_FAMILIES
+    )
+    unique = len(roots)
+    fraction = (trusted_roots / unique) if unique else 0.0
+    return {
+        "unique_roots": unique,
+        "trusted_roots": trusted_roots,
+        "trusted_root_fraction": round(fraction, 4),
+        "promotion_authoritative": trusted_roots > 0,
+        "deficit": unique > 0 and trusted_roots == 0,
     }
 
 

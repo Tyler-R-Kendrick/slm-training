@@ -72,6 +72,12 @@ def test_script_changes_include_their_domain_suite() -> None:
     assert select_tests(["scripts/check_changed.py"]) == [
         "tests/test_scripts/test_check_changed.py",
     ]
+    assert select_tests(["scripts/verify_checkpoint_references.py"]) == [
+        "tests/test_scripts/test_verify_checkpoint_references.py",
+    ]
+    assert select_tests(
+        ["src/slm_training/evals/learnability_diagnostics.py"]
+    ) == ["tests/test_evals/test_learnability_diagnostics.py"]
 
 
 def test_hook_prefers_explicit_changed_regressions() -> None:

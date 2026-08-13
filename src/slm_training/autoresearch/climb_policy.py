@@ -21,6 +21,7 @@ from slm_training.autoresearch.hillclimb import (
     MetricDirection,
     assert_capacity_growth_allowed,
     assert_matrix_knobs_not_exhausted,
+    data_generation_sha256,
     improvement_signed,
     infer_metric_direction,
     is_measured_null_feedback,
@@ -56,6 +57,8 @@ __all__ = [
     "count_recipe_nulls_in_ledger",
     "assert_rung_allows_promotion",
     "synthesis_policy_allows_sft",
+    "data_intervention_indicated",
+    "data_intervention_action",
 ]
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -178,6 +181,22 @@ class ClimbPolicy:
     @property
     def synthesis_loop(self) -> Mapping[str, Any]:
         return dict(self.payload["synthesis_loop"])
+
+    @property
+    def data_intervention(self) -> Mapping[str, Any]:
+        """Optional corpus-rebuild policy; missing block uses fail-closed defaults."""
+
+        raw = self.payload.get("data_intervention")
+        block = {
+            "min_unique_roots": 32,
+            "block_model_on_pair_quality": True,
+            "prefer_data_before_terminal_tie": True,
+            "fixture_claim_class": "fixture",
+            "fixture_train_version": "wf_smoke_v2",
+        }
+        if isinstance(raw, Mapping):
+            block.update(dict(raw))
+        return block
 
     @property
     def rung_gates(self) -> Mapping[str, Any]:
@@ -496,9 +515,16 @@ def loop_data_eval_identity(
     }
     if extra:
         values.update(dict(extra))
+    digest = values.get("data_generation_sha256") or ""
+    if not digest:
+        digest = data_generation_sha256(values.get("data_generation")) or ""
+    if digest:
+        values["data_generation_sha256"] = digest
     ordered = {
         field: values.get(field, "") for field in policy.exhausted_identity_fields
     }
+    if digest:
+        ordered["data_generation_sha256"] = digest
     return hashlib.sha256(canonical_json(ordered).encode("utf-8")).hexdigest()
 
 
@@ -885,6 +911,102 @@ def synthesis_policy_allows_sft(
         allow_global_waiver_code=str(waiver) if waiver is not None else "*",
     )
     return True
+
+
+def _feedback_cue_only_shortcut(feedback: Mapping[str, Any] | None) -> bool:
+    if not isinstance(feedback, Mapping):
+        return False
+    if feedback.get("cue_only_shortcut") is True:
+        return True
+    quality = feedback.get("quality")
+    if isinstance(quality, Mapping):
+        if quality.get("cue_only_shortcut") is True:
+            return True
+        lift = quality.get("cue_only_accuracy_lift")
+        ceiling = quality.get("max_cue_only_accuracy_lift")
+        if (
+            isinstance(lift, (int, float))
+            and isinstance(ceiling, (int, float))
+            and float(lift) > float(ceiling)
+        ):
+            return True
+    for item in feedback.get("recommendations") or ():
+        if not isinstance(item, Mapping):
+            continue
+        if item.get("status") in {"done", "closed", "waived", "acted"}:
+            continue
+        code = str(item.get("code") or item.get("recommendation_code") or "").lower()
+        if "cue_only" in code or "cue-only" in code:
+            return True
+    return False
+
+
+def _missing_required_prompt_surface(
+    policy_block: Mapping[str, Any], feedback: Mapping[str, Any] | None
+) -> bool:
+    required = policy_block.get("required_prompt_surface")
+    available: object = None
+    if isinstance(feedback, Mapping):
+        required = feedback.get("required_prompt_surface", required)
+        available = feedback.get("prompt_surface")
+        if available is None:
+            available = feedback.get("available_prompt_surfaces")
+    if not required:
+        return False
+    if available is None:
+        return True
+    if isinstance(available, str):
+        return available != required
+    if isinstance(available, (list, tuple, set, frozenset)):
+        return required not in available
+    return True
+
+
+def data_intervention_indicated(
+    policy: ClimbPolicy,
+    *,
+    feedback: Mapping[str, Any] | None,
+    unique_roots: int | None,
+    blocking_findings: Sequence[str],
+) -> bool:
+    """True when unique roots below policy min, open blocking synthesis findings,
+    cue-only shortcut, or missing required prompt surface. Does not fire merely
+    because model knobs are exhausted."""
+
+    block = policy.data_intervention
+    min_roots = int(block.get("min_unique_roots") or 32)
+    if unique_roots is not None and unique_roots < min_roots:
+        return True
+    if any(str(item) for item in blocking_findings):
+        return True
+    if _feedback_cue_only_shortcut(feedback):
+        return True
+    if _missing_required_prompt_surface(block, feedback):
+        return True
+    return False
+
+
+def data_intervention_action(policy: ClimbPolicy) -> dict[str, Any]:
+    """Typed rebuild_data action skeleton requiring snapshot+feedback receipt."""
+
+    block = policy.data_intervention
+    return {
+        "schema": "autotrain_data_intervention/v1",
+        "kind": "rebuild_data",
+        "owner": "synthesis-feedback",
+        "reason": "evidence-driven corpus rebuild; receipt requires snapshot+feedback",
+        "requires_receipt": ("data_snapshot", "synthesis_feedback"),
+        "claim_class": str(block.get("fixture_claim_class") or "fixture"),
+        "train_version": str(block.get("fixture_train_version") or "wf_smoke_v2"),
+        "block_model_on_pair_quality": bool(
+            block.get("block_model_on_pair_quality", True)
+        ),
+        "prefer_data_before_terminal_tie": bool(
+            block.get("prefer_data_before_terminal_tie", True)
+        ),
+        "min_unique_roots": int(block.get("min_unique_roots") or 32),
+        "promotion_authorized": False,
+    }
 
 
 def train_eval_from_knobs(

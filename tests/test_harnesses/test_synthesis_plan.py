@@ -14,15 +14,25 @@ from slm_training.harnesses.staged import (
 from slm_training.harnesses.synthesis_plan import (
     CertificateRefV1,
     ComponentRefV1,
+    GenerationMode,
     PlanAction,
+    PromptSurface,
     SynthesisPlanRegistry,
     SynthesisPlanV1,
+    SynthesisPlanV2,
+    load_synthesis_plan,
+    migrate_plan_v1_to_v2,
+    tiny_corpus_generation_policy,
+    validate_capability_prompt_surface,
 )
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLAN_PATH = (
     REPO_ROOT / "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json"
+)
+V2_PLAN_PATH = (
+    REPO_ROOT / "src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json"
 )
 SHA = "a" * 64
 
@@ -135,15 +145,16 @@ def test_unknown_components_versions_and_pack_capabilities_are_rejected() -> Non
             _plan(),
             validators=(ComponentRefV1("made.up", "v1"),),
         ).require_executable()
+    train_data_version = _plan().generators[0].version
     with pytest.raises(ValueError, match="must include symbolic_surface"):
         replace(
             _plan(),
-            validators=(ComponentRefV1("pack.oracle", "v18"),),
+            validators=(ComponentRefV1("pack.oracle", train_data_version),),
         ).require_executable()
     with pytest.raises(ValueError, match="is not a gate"):
         replace(
             _plan(),
-            gate_spec=ComponentRefV1("harness.train_data", "v18"),
+            gate_spec=ComponentRefV1("harness.train_data", train_data_version),
         ).require_executable()
 
     toy_version = (
@@ -208,3 +219,129 @@ def test_no_plan_default_preserves_the_existing_config_path() -> None:
     config = TrainDataConfig(profile="permissive", source="fixture")
     assert config.synthesis_plan_path is None
     assert config.curriculum is False
+
+
+def test_checked_in_v2_tiny_plan_loads_without_touching_v1_registry() -> None:
+    plan = load_synthesis_plan(V2_PLAN_PATH)
+    assert isinstance(plan, SynthesisPlanV2)
+    assert plan.plan_id == "cap0-tiny-corpus-v2"
+    assert plan.corpus_generation.requested_unique_roots == 4
+    # The v1 registry loader is non-recursive; a v2 file in a subdirectory
+    # must not appear as a v1 plan or change the checked-in v1 identity.
+    v1 = SynthesisPlanV1.load(PLAN_PATH)
+    assert v1.plan_id == "dsh0-cap0-fixture"
+    assert "corpus_generation" not in v1.to_dict()
+
+
+def test_legacy_v1_plan_hash_is_stable_and_shared_loader_preserves_type() -> None:
+    plan = _plan()
+    loaded = load_synthesis_plan(PLAN_PATH)
+    assert isinstance(loaded, SynthesisPlanV1)
+    assert loaded == plan
+    assert loaded.sha == plan.sha
+    assert "corpus_generation" not in plan.to_dict()
+    # Adding the optional policy via explicit migration must not rewrite v1 bytes.
+    migrated = migrate_plan_v1_to_v2(
+        plan, tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR)
+    )
+    assert isinstance(migrated, SynthesisPlanV2)
+    assert migrated.to_v1() == plan
+    assert migrated.to_v1().sha == plan.sha
+    assert migrated.sha != plan.sha
+
+
+def test_v2_plan_round_trips_and_rejects_unknown_keys(tmp_path: Path) -> None:
+    plan = migrate_plan_v1_to_v2(
+        _plan(), tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR)
+    )
+    payload = plan.to_dict()
+    yaml_path = tmp_path / "plan.yaml"
+    json_path = tmp_path / "plan.json"
+    yaml_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    loaded_yaml = load_synthesis_plan(yaml_path)
+    loaded_json = load_synthesis_plan(json_path)
+    assert loaded_yaml == loaded_json == plan
+    assert loaded_yaml.sha == loaded_json.sha == plan.sha
+
+    payload["unexpected"] = True
+    with pytest.raises(ValueError, match="unknown=\\['unexpected'\\]"):
+        SynthesisPlanV2.from_dict(payload)
+
+    policy = plan.corpus_generation.to_dict()
+    policy["extra"] = 1
+    with pytest.raises(ValueError, match="unknown=\\['extra'\\]"):
+        type(plan.corpus_generation).from_dict(policy)
+
+
+def test_capability_and_prompt_surface_are_not_conflated() -> None:
+    validate_capability_prompt_surface(
+        Capability.CAP0_GRAMMAR, PromptSurface.GRAMMAR_SCHEMA
+    )
+    validate_capability_prompt_surface(
+        Capability.CAP1_SEMANTICS, PromptSurface.SIMPLIFIED_NL
+    )
+    validate_capability_prompt_surface(
+        Capability.CAP2_TRANSFORM, PromptSurface.TRANSFORMATION_NL
+    )
+    with pytest.raises(ValueError, match="CAP1_SEMANTICS requires prompt surface"):
+        validate_capability_prompt_surface(
+            Capability.CAP1_SEMANTICS, PromptSurface.GRAMMAR_SCHEMA
+        )
+    with pytest.raises(ValueError, match="complex_nl is unavailable"):
+        validate_capability_prompt_surface(
+            Capability.CAP1_SEMANTICS, PromptSurface.COMPLEX_NL
+        )
+    with pytest.raises(ValueError, match="requires prompt surface"):
+        migrate_plan_v1_to_v2(
+            _plan(),
+            tiny_corpus_generation_policy(capability=Capability.CAP1_SEMANTICS),
+        )
+
+
+def test_scaling_ladder_can_name_an_8192_rung_without_building_it() -> None:
+    policy = tiny_corpus_generation_policy(
+        capability=Capability.CAP0_GRAMMAR,
+        mode=GenerationMode.SCALING_LADDER,
+        unique_root_targets=(128, 512, 2048, 8192),
+        seed=17,
+    )
+    assert policy.requested_unique_roots == 8192
+    assert policy.unique_root_targets == (128, 512, 2048, 8192)
+
+
+def test_invalid_coverage_cue_anchor_and_ladder_configurations_fail() -> None:
+    with pytest.raises(ValueError, match="scaling_ladder requires"):
+        tiny_corpus_generation_policy(
+            capability=Capability.CAP0_GRAMMAR,
+            mode=GenerationMode.SCALING_LADDER,
+            unique_root_targets=(4,),
+        )
+    with pytest.raises(ValueError, match="strictly increasing"):
+        tiny_corpus_generation_policy(
+            capability=Capability.CAP0_GRAMMAR,
+            mode=GenerationMode.SCALING_LADDER,
+            unique_root_targets=(8, 4),
+        )
+    policy = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR).to_dict()
+    policy["quality"]["max_cue_only_accuracy_lift"] = 1.5
+    with pytest.raises(ValueError, match="max_cue_only_accuracy_lift"):
+        type(
+            tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR)
+        ).from_dict(policy)
+    policy = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR).to_dict()
+    policy["prompts"]["hard_forbidden_cues"] = ["ui"]
+    policy["prompts"]["balanced_generic_cues"] = ["ui"]
+    with pytest.raises(ValueError, match="overlap"):
+        type(
+            tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR).prompts
+        ).from_dict(policy["prompts"])
+    policy = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR).to_dict()
+    policy["source_anchors"]["promotion_requires_anchors"] = True
+    policy["source_anchors"]["trusted_source_families"] = []
+    with pytest.raises(ValueError, match="trusted_source_families"):
+        type(
+            tiny_corpus_generation_policy(
+                capability=Capability.CAP0_GRAMMAR
+            ).source_anchors
+        ).from_dict(policy["source_anchors"])

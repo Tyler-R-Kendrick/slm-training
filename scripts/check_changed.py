@@ -169,6 +169,10 @@ SUITES_BY_PREFIX = (
         ("tests/test_scripts/test_verify_checkpoint_references.py",),
     ),
     (
+        "scripts/verify_checkpoint_references.py",
+        ("tests/test_scripts/test_verify_checkpoint_references.py",),
+    ),
+    (
         "scripts/verify_agent_surfaces.py",
         ("tests/test_scripts/test_verify_agent_surfaces.py",),
     ),
@@ -248,6 +252,10 @@ SUITES_BY_PREFIX = (
     ),
     ("src/slm_training/autoresearch/", ("tests/test_autoresearch",)),
     ("src/slm_training/dsl/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
+    (
+        "src/slm_training/evals/learnability_diagnostics.py",
+        ("tests/test_evals/test_learnability_diagnostics.py",),
+    ),
     (
         "src/slm_training/evals/",
         ("tests/test_evals", "tests/test_harnesses/model_build"),

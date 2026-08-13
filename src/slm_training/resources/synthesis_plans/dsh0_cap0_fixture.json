@@ -15,17 +15,17 @@
   "generators": [
     {
       "component_id": "pack.corpus_generator",
-      "version": "v24"
+      "version": "v27"
     }
   ],
   "validators": [
     {
       "component_id": "pack.oracle",
-      "version": "v24"
+      "version": "v27"
     },
     {
       "component_id": "symbolic_surface",
-      "version": "v4"
+      "version": "v7"
     }
   ],
   "split_policy": {
@@ -38,7 +38,7 @@
   },
   "gate_spec": {
     "component_id": "gates.ship",
-    "version": "openui_ship_gates_v5"
+    "version": "openui_ship_gates_v6"
   },
   "seeds": [
     0,

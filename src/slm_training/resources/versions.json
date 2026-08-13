@@ -28,6 +28,11 @@
     "autoresearch.conclusions": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "no-bump: optional data_intervention block on policy.v2.json; conclusion criteria and conclusions.py behavior are unchanged.",
+          "version": "v3"
+        },
+        {
           "date": "2026-08-10",
           "note": "no-bump: policy.v2 mirrors policy.v1 screening saturation and advances its internal artifact version from v9 to v10; conclusion criteria and conclusions.py behavior are unchanged.",
           "version": "v3"
@@ -2873,6 +2878,16 @@
     "evals.scoring": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "no-bump: clarify learnability diagnostics cannot close the objective-mismatch hypothesis or issue a capability certificate",
+          "version": "v25"
+        },
+        {
+          "date": "2026-08-13",
+          "note": "Add bounded prompt-intervention learnability diagnostics (shuffle/cue ablation) that cannot issue a capability certificate",
+          "version": "v25"
+        },
+        {
           "date": "2026-08-12",
           "note": "SLM-577: canonicalize metric_gaming._archetypes and adversarial transforms to opaque :slot_N markers; assert_canonical_template_marker_inventory on every archetype contract.",
           "version": "v24"
@@ -3017,7 +3032,7 @@
       "paths": [
         "src/slm_training/evals/"
       ],
-      "version": "v24"
+      "version": "v25"
     },
     "evals.semantic_bits": {
       "history": [
@@ -3991,6 +4006,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "no-bump: exact-path check_changed mapping for verify_checkpoint_references.py; ownership map and contract-version checks unchanged",
+          "version": "v27"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: GH-1263 skip .claude/** in check_changed select_tests so config-only hook edits do not require the full tests/ fallback; ownership map contract unchanged.",
           "version": "v27"
@@ -4855,6 +4875,11 @@
     "harness.artifact_graph": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "Root-family split helpers for derivative/holdout tags without crossing families",
+          "version": "v2"
+        },
+        {
           "date": "2026-07-23",
           "note": "initial append-only dataset artifact graph, root-family split inheritance, cross-split leakage quarantine, traversal, and explain CLI",
           "version": "v1"
@@ -4869,10 +4894,20 @@
         "docs/design/dsh0-05-artifact-graph-20260723.json",
         "docs/design/dsh0-05-artifact-graph-20260723.md"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-13",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after capability-driven data-synthesis design docs; campaign contract unchanged",
+          "version": "v212"
+        },
+        {
+          "date": "2026-08-13",
+          "note": "Typed DataGenerationKnobs compile onto build_train_data; exhausted/replay identity includes a data-generation digest; climb policy routes evidence-driven rebuild_data interventions.",
+          "version": "v212"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: SLM-578 harvest of 97 docs/design measured-results from agent/autotrain-continuous-live (continuous-openui-local-* + related autotrain-cycle / decode-timeout self-heal notes) + evidence_ledger.v1.json rebuild; campaign contract unchanged. Live tip self-heal already superseded on main \u2014 no run_autotrain_continuous.py port.",
@@ -6418,7 +6453,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v211"
+      "version": "v212"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -13998,6 +14033,11 @@
     "harness.experiments.slm366_counterfactuals": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "Plan-controlled one-fact derivative adapter; independent_root_delta is always 0",
+          "version": "v2"
+        },
+        {
           "date": "2026-07-25",
           "note": "initial one-fact semantic counterfactuals over SemanticFrameV1: typed mutations per declared dimension (role/order/cardinality/closed_value/required_child/relation) on the canonical AST with inverse round-trip, path-insensitive per-dimension frame projections proving exactly one dimension differs, matched-style length-bounded prompts via the SLM-365 offline fixture provider with marker/state-surface neutralization, embedding-close/action-distant and inventory-matched topology negatives, root-split-family inheritance with artifact-graph cross-family rejection, constant/frequency-only baseline at chance, and coded stop-rule rejections for any uncontrolled cue",
           "version": "v1"
@@ -14010,7 +14050,7 @@
         "docs/design/iter-slm366-counterfactuals-20260725.md",
         "docs/design/iter-slm366-counterfactuals-20260725.json"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "harness.experiments.slm367_two_pack_freeze": {
       "history": [
@@ -15199,6 +15239,11 @@
     "harness.model_build.eval": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "Optional --learnability-diagnostics writes a fixture-class intervention artifact; ship gates unchanged",
+          "version": "v100"
+        },
+        {
           "date": "2026-08-11",
           "note": "Proof-carrying goal support: add distinct support, coverage, replay, obstruction, and bounded-work decode telemetry without changing default-off output.",
           "version": "v99"
@@ -15793,7 +15838,7 @@
         "tests/test_harnesses/model_build/test_eval_metric_semantics.py",
         "tests/test_harnesses/model_build/test_eval_gates.py"
       ],
-      "version": "v99"
+      "version": "v100"
     },
     "harness.model_build.train": {
       "history": [
@@ -16673,6 +16718,21 @@
     "harness.synthesis_plan": {
       "history": [
         {
+          "date": "2026-08-13",
+          "note": "no-bump: test that a scaling_ladder policy may name an 8192 unique-root rung without generating that corpus",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-13",
+          "note": "Refresh the executable CAP0 fixture aliases to current train-data, symbolic-surface, and ship-gate registry versions after the v2 corpus-generation policy bump",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-13",
+          "note": "Add synthesis_plan/v2 corpus-generation policy (unique-root scale, prompt surfaces, cue/quality/anchor fields) while preserving exact synthesis_plan/v1 hashes",
+          "version": "v3"
+        },
+        {
           "date": "2026-07-30",
           "note": "no-bump: refresh the executable CAP0 fixture aliases to the current train-data, symbolic-surface, and ship-gate registry versions",
           "version": "v2"
@@ -16701,10 +16761,20 @@
         "docs/design/dsh0-03-synthesis-plan-20260723.json",
         "docs/design/dsh0-03-synthesis-plan-20260723.md"
       ],
-      "version": "v2"
+      "version": "v3"
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-08-13",
+          "note": "no-bump: stamp fixture_wiring / no capability certificate on plan-driven reports and fail closed if the pair-quality auditor import is missing; admission gates unchanged when the auditor is present",
+          "version": "v27"
+        },
+        {
+          "date": "2026-08-13",
+          "note": "Capability-aware corpus generation: plan-driven unique-root pools, pair-quality/feedback findings, semantic prompt admission, and receipt-bound shortcut closure",
+          "version": "v27"
+        },
         {
           "date": "2026-08-11",
           "note": "INTEG-04 (SLM-529): opt-in four-axis ledger projection on quality_report.json seam.",
@@ -16865,7 +16935,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v26"
+      "version": "v27"
     },
     "harness_core.evidence_bundle": {
       "history": [

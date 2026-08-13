@@ -16,7 +16,59 @@ from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord
 
-FEEDBACK_SCHEMA_VERSION = 1
+FEEDBACK_SCHEMA_VERSION = 2
+
+FINDING_CODES = (
+    "low_yield",
+    "redundant_expansion",
+    "eval_leakage_source",
+    "insufficient_unique_roots",
+    "insufficient_semantic_frames",
+    "coverage_cell_gap",
+    "ambiguity_family_gap",
+    "template_concentration",
+    "renderer_concentration",
+    "technical_trigger_concentration",
+    "target_surface_leakage",
+    "complete_inventory_leakage",
+    "cue_only_shortcut",
+    "source_only_shortcut",
+    "prompt_target_contradiction",
+    "counterfactual_coverage_gap",
+    "paraphrase_invariance_gap",
+    "split_family_leakage",
+    "synthetic_anchor_deficit",
+    "rare_family_erasure",
+)
+
+# Findings that cannot close with a prose note; they need a new build receipt.
+BLOCKING_FINDING_CODES = frozenset(
+    {
+        "insufficient_unique_roots",
+        "cue_only_shortcut",
+        "source_only_shortcut",
+        "target_surface_leakage",
+        "complete_inventory_leakage",
+        "coverage_cell_gap",
+        "synthetic_anchor_deficit",
+        "split_family_leakage",
+        "eval_leakage_source",
+    }
+)
+
+_EXECUTABLE_KNOBS = {
+    "insufficient_unique_roots": ["data_generation.unique_root_target", "data_source"],
+    "coverage_cell_gap": ["data_generation.generator_max_depth", "data_generation.generator_max_width"],
+    "template_concentration": ["data_generation.prompts_per_root", "data_generation.renderer_families"],
+    "cue_only_shortcut": ["data_generation.prompt_surface", "data_generation.renderer_families"],
+    "source_only_shortcut": ["data_generation.retain_trusted_anchors"],
+    "synthetic_anchor_deficit": ["data_generation.retain_trusted_anchors"],
+    "target_surface_leakage": ["data_generation.prompt_surface"],
+    "complete_inventory_leakage": ["data_generation.prompt_surface"],
+    "low_yield": ["synthesizer"],
+    "redundant_expansion": ["max_records_per_parent", "synthesizer"],
+    "eval_leakage_source": ["decontam_eval_root"],
+}
 
 # Recommendation thresholds (documented in the artifact for honesty).
 _LOW_YIELD = 0.4
@@ -209,10 +261,115 @@ def _experiment_candidates(
                     "rationale": f"build {version}: {item['evidence']}",
                     "expected_effect": "decontamination drops reach 0 for this source",
                     "falsification_criteria": "drops persist after source filtering",
-                    "knobs": ["producer_inputs", "decontam_eval_root"],
+                    "knobs": ["decontam_eval_root"],
                 }
             )
     return experiments
+
+
+def _capability_findings(quality_report: dict[str, Any]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    pair = quality_report.get("pair_quality") or {}
+    roots = quality_report.get("unique_roots") or {}
+    requested = roots.get("requested")
+    admitted = roots.get("admitted")
+    if (
+        isinstance(requested, int)
+        and isinstance(admitted, int)
+        and admitted < requested
+    ):
+        findings.append(
+            {
+                "code": "insufficient_unique_roots",
+                "severity": "hard_admission_failure",
+                "authority": "blocks_capability_claim",
+                "closure": "new_immutable_build",
+                "evidence": {"requested": requested, "admitted": admitted},
+            }
+        )
+    if pair.get("passed") is False:
+        for reason in pair.get("blocking_reasons") or ():
+            code = str(reason)
+            if code not in FINDING_CODES:
+                code = "target_surface_leakage"
+            findings.append(
+                {
+                    "code": code,
+                    "severity": "hard_admission_failure"
+                    if code in BLOCKING_FINDING_CODES
+                    else "experiment_recommendation",
+                    "authority": "blocks_capability_claim",
+                    "closure": "new_immutable_build",
+                    "evidence": {"reason": reason},
+                }
+            )
+    anchors = quality_report.get("source_anchors") or {}
+    if anchors.get("deficit"):
+        findings.append(
+            {
+                "code": "synthetic_anchor_deficit",
+                "severity": "blocks_capability_claim",
+                "authority": "diagnostic_waiver_not_promotion",
+                "closure": "new_immutable_build",
+                "evidence": dict(anchors),
+            }
+        )
+    return findings
+
+
+def _capability_experiments(
+    findings: list[dict[str, Any]], version: str
+) -> list[dict[str, Any]]:
+    experiments: list[dict[str, Any]] = []
+    for finding in findings:
+        knobs = _EXECUTABLE_KNOBS.get(finding["code"], ["data_generation.unique_root_target"])
+        experiments.append(
+            {
+                "hypothesis": (
+                    f"A matched data-only rebuild addressing {finding['code']} "
+                    f"raises the named metric without changing model knobs"
+                ),
+                "rationale": f"build {version}: {finding.get('evidence')}",
+                "expected_effect": f"{finding['code']} closes on a new manifest",
+                "falsification_criteria": (
+                    "finding persists on the rebuilt snapshot at the same policy hash"
+                ),
+                "knobs": knobs,
+                "data_only": True,
+            }
+        )
+    return experiments
+
+
+def action_receipt(
+    *,
+    prior_feedback_hash: str,
+    action_code: str,
+    synthesis_plan_hash: str,
+    dataset_manifest_hash: str,
+    before: dict[str, Any],
+    after: dict[str, Any],
+    disposition: str,
+    version_stamp: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Append-only receipt. A prose note is not a valid substitute."""
+
+    if action_code in BLOCKING_FINDING_CODES and disposition == "acknowledged":
+        raise ValueError(
+            f"{action_code} cannot close with a prose acknowledgement; "
+            "emit a new immutable build or an explicit diagnostic waiver"
+        )
+    return {
+        "schema_version": "synthesis_feedback_receipt/v1",
+        "prior_feedback_hash": prior_feedback_hash,
+        "action_code": action_code,
+        "synthesis_plan_hash": synthesis_plan_hash,
+        "dataset_manifest_hash": dataset_manifest_hash,
+        "before": before,
+        "after": after,
+        "disposition": disposition,
+        "version_stamp": version_stamp,
+    }
 
 
 def build_synthesis_feedback(
@@ -226,6 +383,9 @@ def build_synthesis_feedback(
 ) -> dict[str, Any]:
     families, synths = _group_stats(admitted, rejections)
     recommendations = _recommendations(families, synths)
+    findings = _capability_findings(quality_report)
+    experiments = _experiment_candidates(recommendations, version)
+    experiments.extend(_capability_experiments(findings, version))
     return {
         "schema_version": FEEDBACK_SCHEMA_VERSION,
         "version": version,
@@ -240,7 +400,11 @@ def build_synthesis_feedback(
         "synthesizers": dict(sorted(synths.items())),
         "warnings": quality_report.get("warnings") or [],
         "recommendations": recommendations,
-        "experiment_candidates": _experiment_candidates(recommendations, version),
+        "findings": findings,
+        "experiment_candidates": experiments,
+        "claim_class": str(quality_report.get("claim_class") or "fixture_wiring"),
+        # This builder cannot issue a capability certificate.
+        "capability_certificate": False,
     }
 
 
@@ -251,7 +415,10 @@ def write_synthesis_feedback(out_dir: Path, feedback: dict[str, Any]) -> Path:
 
 
 __all__ = [
+    "BLOCKING_FINDING_CODES",
     "FEEDBACK_SCHEMA_VERSION",
+    "FINDING_CODES",
+    "action_receipt",
     "build_synthesis_feedback",
     "write_synthesis_feedback",
 ]

@@ -1,0 +1,31 @@
+{
+  "schema": "capability_driven_data_synthesis_results/v1",
+  "claim_class": "fixture_wiring",
+  "honest_disposition": "data_infrastructure_only",
+  "model_quality_claimed": false,
+  "ship_claimed": false,
+  "capability_certificate_issued": false,
+  "large_corpus_generated": false,
+  "max_unique_roots_executed": 4,
+  "prompt_provider": "offline_fixture_renderer",
+  "prompt_provider_authoritative": false,
+  "objective_mismatch_resolved": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e01263233f32893a91eadec0094f3251999efdf0",
+    "code_dirty": true,
+    "components": {
+      "harness.synthesis_plan": "v3",
+      "harness.train_data": "v27",
+      "harness.autoresearch.experiment_campaign": "v212",
+      "evals.scoring": "v25",
+      "harness.artifact_graph": "v2",
+      "harness.experiments.slm366_counterfactuals": "v2",
+      "harness.model_build.eval": "v100"
+    },
+    "stamped_at": "2026-08-13T17:45:36.528604+00:00"
+  },
+  "wf_smoke_v2_mutated": false,
+  "cap0_fixture_alias_refresh": true,
+  "note": "Checked-in dsh0_cap0_fixture.json SHA changed only because component aliases were refreshed to the live registry. Other historical v1 payloads are unchanged if their bytes are untouched."
+}

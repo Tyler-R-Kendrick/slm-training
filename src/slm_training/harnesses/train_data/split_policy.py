@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 SCHEMA_VERSION = "root_family_split/v1"
 SPLITS = ("train", "validation", "test")
+HOLD_OUT_TAGS = ("topology_holdout", "renderer_holdout")
 
 
 @dataclass(frozen=True)
@@ -63,3 +64,22 @@ class RootFamilySplitPolicyV1:
             raise ValueError(
                 f"composition has incompatible source splits: {parent_splits}"
             )
+
+    def require_same_family(
+        self, *, root_family_id: str, member_family_ids: tuple[str, ...]
+    ) -> None:
+        if any(member != root_family_id for member in member_family_ids):
+            raise ValueError(
+                "prompt variants, counterfactuals, and derivatives must stay "
+                f"inside root family {root_family_id!r}"
+            )
+
+    def holdout_tag(self, *, topology_id: str, renderer_id: str) -> str | None:
+        """Tag a family for topology/renderer holdout without crossing splits."""
+
+        digest = hashlib.sha256(f"{topology_id}|{renderer_id}".encode("utf-8")).digest()
+        if digest[0] % 20 == 0:
+            return "topology_holdout"
+        if digest[1] % 20 == 0:
+            return "renderer_holdout"
+        return None

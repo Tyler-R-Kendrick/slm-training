@@ -8,7 +8,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 
 from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.formal.bound_ast import REGISTERED_BOUND_AST_IDS
@@ -336,8 +343,59 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "action_alias_mode",
         "action_alias_manifest",
         "action_description_name_mode",
+        "data_generation",
     }
 )
+
+
+_PLAN_PATH_SUFFIXES = (".json", ".yaml", ".yml")
+_PLAN_PATH_SHELL_MARKERS = frozenset(";&|`$<>(){}!\n\r\x00")
+_DATA_ONLY_FORBIDDEN_FIELDS = (
+    "steps",
+    "lr",
+    "batch_size",
+    "output_tokenizer",
+    "compiler_decode_mode",
+    "allow_unconstrained_fallback",
+)
+
+
+class DataGenerationKnobs(StrictModel):
+    """Typed corpus-generation knobs compiled onto ``build_train_data``."""
+
+    plan_id: str | None = None
+    plan_path: str | None = None
+    unique_root_target: int | None = Field(default=None, ge=1, le=32768)
+    generation_mode: Literal["count", "until_coverage", "scaling_ladder"] | None = None
+    generator_seed: int | None = Field(default=None, ge=0)
+    generator_max_depth: int | None = Field(default=None, ge=1, le=8)
+    generator_max_width: int | None = Field(default=None, ge=1, le=12)
+    prompt_surface: Literal[
+        "grammar_schema", "simplified_nl", "transformation_nl"
+    ] | None = None
+    prompts_per_root: int | None = Field(default=None, ge=1, le=16)
+    renderer_families: tuple[str, ...] | None = None
+    counterfactuals_per_root: int | None = Field(default=None, ge=0, le=8)
+    retain_trusted_anchors: bool | None = None
+    data_only: bool = False
+
+    @field_validator("plan_path")
+    @classmethod
+    def validate_plan_path(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value != value.strip() or not value:
+            raise ValueError("plan_path must be a relative repo path")
+        path = Path(value)
+        if path.is_absolute() or value.startswith(("/", "~")):
+            raise ValueError("plan_path must be relative")
+        if ".." in path.parts:
+            raise ValueError("plan_path must not contain ..")
+        if any(marker in value for marker in _PLAN_PATH_SHELL_MARKERS):
+            raise ValueError("plan_path rejects researcher shell")
+        if path.suffix.lower() not in _PLAN_PATH_SUFFIXES:
+            raise ValueError("plan_path must end with .json/.yaml/.yml")
+        return value
 
 
 class CampaignSpec(StrictModel):
@@ -696,6 +754,7 @@ class ExperimentKnobs(StrictModel):
     scope_independent_noise: bool | None = None
     scope_local_oracle: bool | None = None
     scope_contract_negatives: bool | None = None
+    data_generation: DataGenerationKnobs | None = None
 
     @model_validator(mode="after")
     def validate_mixture(self) -> ExperimentKnobs:
@@ -722,7 +781,27 @@ class ExperimentKnobs(StrictModel):
             "all",
         }:
             raise ValueError("scope knobs require ProgramSpec-backed data_source")
+        if self.data_generation is not None and self.data_generation.data_only:
+            validate_data_only_arm(self)
         return self
+
+
+def validate_data_only_arm(knobs: ExperimentKnobs) -> ExperimentKnobs:
+    """Reject model/train knobs on a data-only corpus arm."""
+
+    gen = knobs.data_generation
+    if gen is None or not gen.data_only:
+        return knobs
+    forbidden = [
+        name
+        for name in _DATA_ONLY_FORBIDDEN_FIELDS
+        if getattr(knobs, name, None) is not None
+    ]
+    if forbidden:
+        raise ValueError(
+            "data_only arm forbids non-data knobs: " + ", ".join(forbidden)
+        )
+    return knobs
 
 
 FormalProofPolicy = Literal["required", "advisory"]

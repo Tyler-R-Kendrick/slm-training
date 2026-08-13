@@ -1,5 +1,11 @@
 # Data synthesis: final verification
 
+Capability-aware unique-root generation, semantic prompt surfaces, and
+shortcut audits live in
+[capability-driven-data-synthesis.md](capability-driven-data-synthesis.md).
+That work is data infrastructure; it does not replace the verification below
+or authorize a ship claim.
+
 Status: **bounded verification complete; production ship not claimed**.
 Machine-readable evidence: [data-synthesis-results.json](data-synthesis-results.json).
 
