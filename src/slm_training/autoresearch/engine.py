@@ -417,6 +417,26 @@ def _data_generation_flags(generation: DataGenerationKnobs) -> list[str]:
         flags.extend(["--programspec-count", str(generation.unique_root_target)])
     if generation.generator_seed is not None:
         flags.extend(["--programspec-seed", str(generation.generator_seed)])
+    if generation.generation_mode:
+        flags.extend(["--generation-mode", generation.generation_mode])
+    if generation.generator_max_depth is not None:
+        flags.extend(["--generator-max-depth", str(generation.generator_max_depth)])
+    if generation.generator_max_width is not None:
+        flags.extend(["--generator-max-width", str(generation.generator_max_width)])
+    if generation.prompt_surface:
+        flags.extend(["--prompt-surface", generation.prompt_surface])
+    if generation.prompts_per_root is not None:
+        flags.extend(["--prompts-per-root", str(generation.prompts_per_root)])
+    if generation.renderer_families:
+        flags.extend(["--renderer-families", ",".join(generation.renderer_families)])
+    if generation.counterfactuals_per_root is not None:
+        flags.extend(
+            ["--counterfactuals-per-root", str(generation.counterfactuals_per_root)]
+        )
+    if generation.retain_trusted_anchors is True:
+        flags.append("--retain-trusted-anchors")
+    elif generation.retain_trusted_anchors is False:
+        flags.append("--no-retain-trusted-anchors")
     return flags
 
 

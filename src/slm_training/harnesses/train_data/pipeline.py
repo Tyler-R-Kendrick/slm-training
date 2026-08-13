@@ -124,6 +124,16 @@ class TrainDataConfig:
     # Optional v2 corpus-generation policy. None preserves the historical
     # ProgramGenerator count path and OpenUI family-id prompts.
     corpus_generation: Any = None
+    # CLI overrides applied to a loaded v2 policy via dataclasses.replace.
+    # None leaves the checked-in plan unchanged.
+    generation_mode: str | None = None
+    generator_max_depth: int | None = None
+    generator_max_width: int | None = None
+    prompt_surface: str | None = None
+    prompts_per_root: int | None = None
+    renderer_families: tuple[str, ...] | None = None
+    counterfactuals_per_root: int | None = None
+    retain_trusted_anchors: bool | None = None
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -643,18 +653,7 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
 
     errors: list[dict] = []
     specs: list[ProgramSpec] = []
-    path = config.programspec_path
-    if path is not None and Path(path).exists():
-        for line_number, line in enumerate(
-            Path(path).read_text(encoding="utf-8").splitlines(), start=1
-        ):
-            if not line.strip():
-                continue
-            try:
-                specs.append(ProgramSpec.from_dict(json.loads(line)))
-            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-                errors.append({"id": f"programspec:{line_number}", "error": str(exc)})
-    elif config.corpus_generation is not None:
+    if config.corpus_generation is not None:
         from slm_training.data.progspec.generate import generate_program_pool
 
         pool = generate_program_pool(config.corpus_generation)
@@ -666,6 +665,18 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
                     f"{len(specs)}/{config.programspec_count} requested roots"
                 }
             )
+        return specs, errors
+    path = config.programspec_path
+    if path is not None and Path(path).exists():
+        for line_number, line in enumerate(
+            Path(path).read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if not line.strip():
+                continue
+            try:
+                specs.append(ProgramSpec.from_dict(json.loads(line)))
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                errors.append({"id": f"programspec:{line_number}", "error": str(exc)})
     elif config.programspec_count > 0:
         result = ProgramGenerator(seed=config.programspec_seed).generate(
             config.programspec_count
@@ -681,7 +692,15 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
     return specs, errors
 
 
-def _prompt_for_programspec(spec: Any, config: TrainDataConfig) -> str:
+@dataclass(frozen=True)
+class _ProgramspecPrompt:
+    prompt: str | None
+    provenance: dict[str, Any]
+    rejections: tuple[dict[str, Any], ...] = ()
+    error: str | None = None
+
+
+def _prompt_for_programspec(spec: Any, config: TrainDataConfig) -> _ProgramspecPrompt:
     """Render a plan-aware prompt. Historical default keeps family-id wrappers."""
 
     policy = config.corpus_generation
@@ -690,29 +709,52 @@ def _prompt_for_programspec(spec: Any, config: TrainDataConfig) -> str:
         if config.programspec_natural_prompts:
             family = spec.program_family_id.replace("_", " ").strip()
             prompt = f"Create a {family} OpenUI program."
-        return prompt
+        return _ProgramspecPrompt(prompt, {})
     try:
         from slm_training.dsl.parser import validate as validate_source
-        from slm_training.dsl.semantic_frame import derive_semantic_frame
+        from slm_training.dsl.semantic_frame import (
+            CAP1SchemaV1,
+            derive_semantic_frame,
+        )
         from slm_training.harnesses.train_data.semantic_prompts import (
             render_prompt_candidates,
         )
-    except ImportError:
-        return "Need a compact screen with a title and a primary action."
+    except ImportError as exc:
+        return _ProgramspecPrompt(None, {}, error=f"prompt renderer unavailable: {exc}")
     try:
         program = validate_source(spec.canonical_openui)
-        frame = derive_semantic_frame(program)
+        frame = derive_semantic_frame(program, CAP1SchemaV1.from_pack("openui"))
         rendered = render_prompt_candidates(
             frame,
             policy.prompts,
             root_identity=spec.id,
             seed=config.programspec_seed,
         )
-    except (RuntimeError, ValueError, TypeError):
-        return "Need a compact screen with a title and a primary action."
-    if rendered.candidates:
-        return rendered.candidates[0].prompt_text
-    return "Need a compact screen with a title and a primary action."
+    except (RuntimeError, ValueError, TypeError) as exc:
+        return _ProgramspecPrompt(None, {}, error=str(exc))
+    rejections = tuple(dict(item) for item in rendered.rejections)
+    if not rendered.candidates:
+        return _ProgramspecPrompt(
+            None,
+            {},
+            rejections=rejections,
+            error="prompt renderer produced zero candidates",
+        )
+    chosen = rendered.candidates[0]
+    return _ProgramspecPrompt(
+        chosen.prompt_text,
+        {
+            "renderer_family": chosen.renderer_family,
+            "renderer_id": chosen.renderer_family,
+            "invariance_group_id": chosen.invariance_group_id,
+            "template_id": chosen.invariance_group_id,
+            "required_fact_ids": list(chosen.required_fact_ids),
+            "required_facts": list(chosen.required_fact_ids),
+            "forbidden_fact_ids": list(chosen.forbidden_fact_ids),
+            "forbidden_facts": list(chosen.forbidden_fact_ids),
+        },
+        rejections=rejections,
+    )
 
 
 def _counterfactual_records(
@@ -766,12 +808,14 @@ def _records_from_progspec(
     config: TrainDataConfig,
     *,
     preloaded: tuple[list, list[dict]] | None = None,
-) -> tuple[list[ExampleRecord], list[dict]]:
+) -> tuple[list[ExampleRecord], list[dict], list[dict]]:
     from slm_training.data.progspec import emit_record
     from slm_training.data.verify import VerificationContext, stamp_record
+    from slm_training.evals.learnability_diagnostics import make_interventions
 
     specs, load_errors = preloaded if preloaded is not None else _load_progspecs(config)
     errors = list(load_errors)
+    rejected: list[dict] = []
     out: list[ExampleRecord] = []
     for spec in sorted(specs, key=lambda item: item.id):
         if spec.split != config.require_split:
@@ -783,24 +827,87 @@ def _records_from_progspec(
             )
             continue
         try:
-            prompt = _prompt_for_programspec(spec, config)
+            rendered = _prompt_for_programspec(spec, config)
+            for item in rendered.rejections:
+                reason = str(item.get("reason") or "prompt_render_failed")
+                errors.append({"id": spec.id, "error": reason})
+                rejected.append(
+                    rejection_entry(
+                        "prompt_render",
+                        reason,
+                        record_id=spec.id,
+                        detail=dict(item),
+                    )
+                )
+            if rendered.prompt is None:
+                errors.append(
+                    {
+                        "id": spec.id,
+                        "error": rendered.error or "prompt_render_failed",
+                    }
+                )
+                continue
+            cue_names: list[str] = []
+            if config.corpus_generation is not None:
+                cue_names = [
+                    item.name
+                    for item in make_interventions(
+                        rendered.prompt,
+                        group_id=str(spec.split_group_id),
+                        target_id=spec.id,
+                    )
+                ]
+                rejected.append(
+                    rejection_entry(
+                        "cue_intervention_control",
+                        "not_train_eligible",
+                        record_id=spec.id,
+                        detail={
+                            "train_eligible": False,
+                            "interventions": cue_names,
+                        },
+                    )
+                )
+            meta = {
+                "source_kind": "program-first",
+                **rendered.provenance,
+            }
+            if config.corpus_generation is not None:
+                meta.update(
+                    {
+                        "root_id": spec.id,
+                        "split_family_id": spec.split_group_id,
+                        "cue_interventions": cue_names,
+                    }
+                )
             record = emit_record(
                 spec,
-                prompt=prompt,
+                prompt=rendered.prompt,
                 task="generation",
                 record_id=spec.id,
                 source="programspec_generated",
-                meta={"source_kind": "program-first"},
+                meta=meta,
             )
             out.append(
                 stamp_record(record, VerificationContext(source_kind="program-first"))
             )
             if config.corpus_generation is not None:
-                out.extend(
-                    _counterfactual_records(
-                        spec, config, VerificationContext(source_kind="program-first")
+                try:
+                    out.extend(
+                        _counterfactual_records(
+                            spec,
+                            config,
+                            VerificationContext(source_kind="program-first"),
+                        )
                     )
-                )
+                except (RuntimeError, ValueError) as exc:
+                    errors.append(
+                        {
+                            "id": spec.id,
+                            "error": str(exc),
+                            "family": "semantic_counterfactual",
+                        }
+                    )
             out.extend(_program_repair_records(spec, config.repairs_per_program))
             if config.include_edit_derivatives:
                 out.extend(_program_edit_records(spec))
@@ -810,7 +917,7 @@ def _records_from_progspec(
                 out.extend(derive_scope_records(spec))
         except (RuntimeError, ValueError) as exc:
             errors.append({"id": spec.id, "error": str(exc)})
-    return out, errors
+    return out, errors, rejected
 
 
 def _records_from_language_contract(
@@ -1350,7 +1457,25 @@ def build_train_data(
         loaded_plan = load_synthesis_plan(config.synthesis_plan_path)
         loaded_plan.require_executable()
         if isinstance(loaded_plan, SynthesisPlanV2):
-            corpus_policy = loaded_plan.corpus_generation
+            from slm_training.harnesses.synthesis_plan import (
+                apply_corpus_generation_overrides,
+                validate_capability_prompt_surface,
+            )
+
+            corpus_policy = apply_corpus_generation_overrides(
+                loaded_plan.corpus_generation,
+                generation_mode=config.generation_mode,
+                generator_max_depth=config.generator_max_depth,
+                generator_max_width=config.generator_max_width,
+                prompt_surface=config.prompt_surface,
+                prompts_per_root=config.prompts_per_root,
+                renderer_families=config.renderer_families,
+                counterfactuals_per_root=config.counterfactuals_per_root,
+                retain_trusted_anchors=config.retain_trusted_anchors,
+            )
+            validate_capability_prompt_surface(
+                loaded_plan.capability, corpus_policy.prompts.surface
+            )
             synthesis_plan = loaded_plan.to_v1()
         else:
             synthesis_plan = loaded_plan
@@ -1435,11 +1560,12 @@ def build_train_data(
         # One committed-file parse / seeded generation feeds both consumers;
         # each still reports the load errors it reported before.
         preloaded_specs = _load_progspecs(config)
-        records, source_errors = _records_from_progspec(
+        records, source_errors, source_rejections = _records_from_progspec(
             config, preloaded=preloaded_specs
         )
         seeds.extend(records)
         errors.extend(source_errors)
+        rejections.extend(source_rejections)
         records, source_errors, scope_preference_pairs = _records_from_scope_corpus(
             config, preloaded=preloaded_specs
         )
@@ -2218,6 +2344,9 @@ def build_train_data(
                 "disposition": "unavailable",
                 "blocking_reasons": ["pair_quality_auditor_unavailable"],
             }
+    from slm_training.harnesses.train_data.catalog import source_anchor_report
+
+    quality_report["source_anchors"] = source_anchor_report(deduped)
     quality_report["version_stamp"] = version_stamp
     quality_report_path = write_quality_report(out_dir, quality_report)
 

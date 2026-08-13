@@ -219,7 +219,7 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     # The synthesis-feedback loop artifact is present and structured.
     feedback = result["synthesis_feedback"]
     assert (out_dir / "synthesis_feedback.json").is_file()
-    assert feedback["schema_version"] == 1
+    assert feedback["schema_version"] == 2
     assert feedback["version_stamp"] == report["version_stamp"]
     assert feedback["families"]
     assert isinstance(feedback["recommendations"], list)

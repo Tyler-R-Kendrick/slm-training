@@ -15,6 +15,7 @@ from slm_training.data.progspec.generate import (
 from slm_training.dsl.canonicalize import canonicalize
 from slm_training.harnesses.staged import Capability
 from slm_training.harnesses.synthesis_plan import (
+    ExhaustionBehavior,
     GenerationMode,
     tiny_corpus_generation_policy,
 )
@@ -96,10 +97,13 @@ def test_shard_union_is_merge_order_independent() -> None:
     base = _policy(max_attempts=80, unique_root_targets=(3,))
     shard0 = generate_program_pool(replace(base, shard_count=2, shard_index=0))
     shard1 = generate_program_pool(replace(base, shard_count=2, shard_index=1))
+    assert len(shard0.root_ids) <= 2
+    assert len(shard1.root_ids) <= 1
     merged_a = merge_program_pools((shard0, shard1))
     merged_b = merge_program_pools((shard1, shard0))
     assert merged_a.root_ids == merged_b.root_ids
     assert merged_a.sha == merged_b.sha
+    assert len(merged_a.root_ids) <= 3
 
 
 def test_exhaustion_fails_closed_with_typed_report() -> None:
@@ -107,7 +111,23 @@ def test_exhaustion_fails_closed_with_typed_report() -> None:
     with pytest.raises(GenerationExhausted) as exc:
         generate_program_pool(policy)
     assert exc.value.report["requested"] == 64
+    assert exc.value.report["local_target"] == 64
     assert exc.value.report["admitted"] < 64
+
+
+def test_unmet_coverage_minimum_fails_closed() -> None:
+    policy = _policy(max_attempts=32)
+    policy = replace(
+        policy,
+        generator=replace(policy.generator, coverage_minimums=(("component", 999),)),
+    )
+    with pytest.raises(GenerationExhausted) as exc:
+        generate_program_pool(policy)
+    unmet = exc.value.report["unmet_minima"]
+    assert unmet
+    assert unmet[0]["axis"] == "component"
+    assert unmet[0]["minimum"] == 999
+    assert unmet[0]["hits"] < 999
 
 
 def test_count_and_until_coverage_share_one_ledger() -> None:
@@ -126,3 +146,24 @@ def test_grid_programs_validate() -> None:
         assert spec.canonical_openui
         assert spec.contract_id
         assert spec.id.startswith("program_")
+
+
+def test_merge_preserves_report_exhaustion_and_extra_axes() -> None:
+    base = _policy(max_attempts=32)
+    exhausted_pool = generate_program_pool(
+        replace(
+            base,
+            exhaustion=ExhaustionBehavior.REPORT,
+            generator=replace(base.generator, coverage_minimums=(("component", 999),)),
+        )
+    )
+    other = generate_program_pool(base)
+    assert exhausted_pool.exhausted is True
+    assert exhausted_pool.coverage["unmet_minima"]
+    assert exhausted_pool.coverage["extra_axes"]
+    merged = merge_program_pools((exhausted_pool, other))
+    assert merged.exhausted is True
+    assert merged.coverage["extra_axes"]
+    assert merged.coverage["unmet_minima"]
+    assert merged.coverage["merged_shards"] == 2
+    assert merged.attempts == exhausted_pool.attempts + other.attempts

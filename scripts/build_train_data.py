@@ -127,6 +127,59 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--generation-mode",
+        choices=["count", "until_coverage", "scaling_ladder"],
+        default=None,
+        help="Override corpus_generation.mode on a loaded v2 plan.",
+    )
+    parser.add_argument(
+        "--generator-max-depth",
+        type=int,
+        default=None,
+        help="Override corpus_generation.generator.max_depth on a loaded v2 plan.",
+    )
+    parser.add_argument(
+        "--generator-max-width",
+        type=int,
+        default=None,
+        help="Override corpus_generation.generator.max_width on a loaded v2 plan.",
+    )
+    parser.add_argument(
+        "--prompt-surface",
+        choices=["grammar_schema", "simplified_nl", "transformation_nl"],
+        default=None,
+        help="Override corpus_generation.prompts.surface on a loaded v2 plan.",
+    )
+    parser.add_argument(
+        "--prompts-per-root",
+        type=int,
+        default=None,
+        help="Override corpus_generation.prompts.prompts_per_root on a loaded v2 plan.",
+    )
+    parser.add_argument(
+        "--renderer-families",
+        default=None,
+        help="Comma-separated override of corpus_generation.prompts.renderer_families.",
+    )
+    parser.add_argument(
+        "--counterfactuals-per-root",
+        type=int,
+        default=None,
+        help=(
+            "Override corpus_generation.derivatives."
+            "semantic_counterfactuals_per_eligible_root on a loaded v2 plan."
+        ),
+    )
+    parser.add_argument(
+        "--retain-trusted-anchors",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Override corpus_generation.source_anchors."
+            "retain_available_trusted_roots on a loaded v2 plan."
+        ),
+    )
+    parser.add_argument(
         "--language-contract",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -472,6 +525,22 @@ def main(argv: list[str] | None = None) -> int:
         programspec_count=args.programspec_count,
         programspec_seed=args.programspec_seed,
         programspec_natural_prompts=args.programspec_natural_prompts,
+        generation_mode=args.generation_mode,
+        generator_max_depth=args.generator_max_depth,
+        generator_max_width=args.generator_max_width,
+        prompt_surface=args.prompt_surface,
+        prompts_per_root=args.prompts_per_root,
+        renderer_families=(
+            tuple(
+                item.strip()
+                for item in args.renderer_families.split(",")
+                if item.strip()
+            )
+            if args.renderer_families
+            else None
+        ),
+        counterfactuals_per_root=args.counterfactuals_per_root,
+        retain_trusted_anchors=args.retain_trusted_anchors,
         include_language_contract=args.language_contract,
         documentize_expressions=args.documentize_expressions,
         target_kinds=(

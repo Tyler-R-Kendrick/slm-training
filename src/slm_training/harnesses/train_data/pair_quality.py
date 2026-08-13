@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -20,6 +21,7 @@ from slm_training.harnesses.synthesis_plan import (
 
 SCHEMA_VERSION = "pair_quality/v1"
 MIN_SUPPORT_ROOTS = 20
+GROUPED_FOLD_CAP = 8
 _NGRAM_N = 4
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _SURFACE_LEAK_RES = (
@@ -323,10 +325,15 @@ def audit_pair(
 
 
 def _grouped_folds(root_ids: Sequence[str]) -> list[int]:
-    """Leave-one-root-out fold index. Same root always shares one fold."""
-    unique = sorted(set(root_ids))
-    index = {root: fold for fold, root in enumerate(unique)}
-    return [index[root] for root in root_ids]
+    """Hash roots into at most 8 folds. Same root always shares one fold."""
+    unique = len(set(root_ids))
+    k = min(unique, GROUPED_FOLD_CAP)
+    if k <= 0:
+        return []
+    return [
+        int(hashlib.sha256(root.encode("utf-8")).hexdigest()[:8], 16) % k
+        for root in root_ids
+    ]
 
 
 def _majority_baseline(labels: Sequence[str]) -> float:
@@ -709,6 +716,7 @@ def audit_corpus(
 __all__ = [
     "SCHEMA_VERSION",
     "MIN_SUPPORT_ROOTS",
+    "GROUPED_FOLD_CAP",
     "PairAudit",
     "CorpusAudit",
     "audit_pair",

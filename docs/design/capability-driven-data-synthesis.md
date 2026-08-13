@@ -94,6 +94,21 @@ waiver that cannot authorize promotion.
   `claim_class=fixture_wiring` and `capability_certificate=false`. A
   missing pair-quality auditor is a fail, not a pass.
 
+## Follow-ups (this change)
+
+Wiring only. `claim_class` remains `fixture_wiring`; `capability_certificate`
+is false; no model, CAP, or ship claim.
+
+- Coverage minima are enforced at pool generation. CI still uses 4 roots;
+  8192 is a legal policy value, never a committed corpus.
+- Pair-quality auditor reasons map onto `FINDING_CODES`. There is no silent
+  relabel to leakage.
+- Learnability diagnostics run on the default single-suite path and use the
+  first suite `prompt` fields, not metric names.
+- Data-only arms are allowlisted; `compile_commands` lowers the full
+  `DataGenerationKnobs` set.
+- Provider paraphrase stays offline in ordinary tests.
+
 ## Papers used as design guidance
 
 Self-Instruct, TinyStories, Textbooks Are All You Need, AlpaGasus,

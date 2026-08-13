@@ -85,6 +85,49 @@ def test_small_groups_do_not_trigger_noise() -> None:
     assert feedback["experiment_candidates"] == []
 
 
+def test_auditor_cue_only_lift_maps_to_shortcut() -> None:
+    feedback = build_synthesis_feedback(
+        version="v",
+        profile="strict",
+        built_at="t",
+        admitted=[_admitted("a", "synthetic")],
+        rejections=[],
+        quality_report={
+            "pair_quality": {
+                "passed": False,
+                "blocking_reasons": ["cue_only_lift", "not_a_real_reason"],
+            },
+        },
+    )
+    codes = {item["code"] for item in feedback["findings"]}
+    assert "cue_only_shortcut" in codes
+    assert "target_surface_leakage" not in codes
+    assert "unknown_blocking_reason" in codes
+    cue = next(
+        item for item in feedback["findings"] if item["code"] == "cue_only_shortcut"
+    )
+    assert cue["evidence"]["reason"] == "cue_only_lift"
+
+
+def test_synthetic_anchor_deficit_uses_admission_severity() -> None:
+    feedback = build_synthesis_feedback(
+        version="v",
+        profile="strict",
+        built_at="t",
+        admitted=[_admitted("a", "synthetic")],
+        rejections=[],
+        quality_report={"source_anchors": {"deficit": True, "trusted_roots": 0}},
+    )
+    item = next(
+        finding
+        for finding in feedback["findings"]
+        if finding["code"] == "synthetic_anchor_deficit"
+    )
+    assert item["severity"] == "hard_admission_failure"
+    assert item["authority"] == "blocks_capability_claim"
+    assert item["waiver"] == "diagnostic_waiver_not_promotion"
+
+
 def test_blocking_findings_need_a_build_receipt() -> None:
     from slm_training.harnesses.train_data.feedback import action_receipt
 

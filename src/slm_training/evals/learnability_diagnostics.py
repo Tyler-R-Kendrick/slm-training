@@ -7,14 +7,20 @@ is a label, not a closed experiment and not a capability certificate.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from slm_training.harness_core.lineage.records import content_sha
+from slm_training.versioning import build_version_stamp
 
 SCHEMA_VERSION = "learnability_diagnostics/v1"
 CLAIM_CLASS = "fixture_wiring"
+STAMP_COMPONENTS = ("evals.scoring",)
+PROMPT_RECORD_LIMIT = 4
+ARTIFACT_NAME = "learnability_diagnostics.json"
 
 _GENERIC = (
     "ui",
@@ -120,10 +126,85 @@ def interpret_probe(metrics: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _suite_jsonl(test_dir: Path, suite: str) -> Path:
+    from slm_training.data.store import DataStore
+
+    resolved = DataStore().resolve_path("eval", test_dir)
+    manifest_path = resolved / "manifest.json"
+    if manifest_path.is_file():
+        try:
+            declared = (
+                json.loads(manifest_path.read_text(encoding="utf-8")).get("suites") or {}
+            ).get(suite)
+        except (OSError, json.JSONDecodeError, TypeError):
+            declared = None
+        if declared:
+            path = Path(declared)
+            if path.is_file():
+                return path
+    return resolved / "suites" / suite / "records.jsonl"
+
+
+def load_suite_prompt_records(
+    test_dir: Path | str | None,
+    suites: Sequence[str],
+    *,
+    limit: int = PROMPT_RECORD_LIMIT,
+) -> tuple[list[dict[str, str]], list[str]]:
+    """First N suite ``prompt`` fields. Never invent prompts from metric names."""
+
+    if test_dir is None:
+        return [], ["test_dir is missing"]
+    records: list[dict[str, str]] = []
+    reasons: list[str] = []
+    for suite in suites:
+        try:
+            path = _suite_jsonl(Path(test_dir), suite)
+        except (OSError, ValueError) as exc:
+            reasons.append(f"{suite}: {exc}")
+            continue
+        if not path.is_file():
+            reasons.append(f"{suite}: missing suite records at {path}")
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as exc:
+            reasons.append(f"{suite}: {exc}")
+            continue
+        taken = 0
+        for line in lines:
+            if taken >= limit:
+                break
+            text = line.strip()
+            if not text:
+                continue
+            try:
+                row = json.loads(text)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(row, dict):
+                continue
+            prompt = row.get("prompt")
+            if not isinstance(prompt, str) or not prompt.strip():
+                continue
+            records.append(
+                {
+                    "id": str(row.get("id") or f"{suite}-{taken}"),
+                    "prompt": prompt,
+                    "group_id": suite,
+                }
+            )
+            taken += 1
+        if taken == 0:
+            reasons.append(f"{suite}: no prompt fields in {path}")
+    return records, reasons
+
+
 def diagnose_records(
     records: Sequence[Mapping[str, Any]],
     *,
     probe_metrics: Mapping[str, Any] | None = None,
+    unavailable_reasons: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     interventions = []
     for index, record in enumerate(records):
@@ -139,7 +220,9 @@ def diagnose_records(
         "schema_version": SCHEMA_VERSION,
         "claim_class": CLAIM_CLASS,
         "capability_certificate": False,
+        "version_stamp": build_version_stamp(*STAMP_COMPONENTS),
         "interventions": interventions,
+        "unavailable_reasons": list(unavailable_reasons or ()),
         "interpretation": interpret_probe(probe_metrics or {}),
         "digest": hashlib.sha256(
             repr(tuple(item["name"] for item in interventions)).encode("utf-8")
@@ -149,3 +232,23 @@ def diagnose_records(
         {key: value for key, value in payload.items() if key != "sha256"}
     )
     return payload
+
+
+def write_learnability_diagnostics(
+    run_dir: Path | str,
+    *,
+    test_dir: Path | str | None,
+    suites: Sequence[str],
+    probe_metrics: Mapping[str, Any] | None = None,
+) -> Path:
+    records, reasons = load_suite_prompt_records(test_dir, suites)
+    payload = diagnose_records(
+        records,
+        probe_metrics=probe_metrics,
+        unavailable_reasons=reasons,
+    )
+    out = Path(run_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / ARTIFACT_NAME
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return path

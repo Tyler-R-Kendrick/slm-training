@@ -60,6 +60,21 @@ def test_data_only_rejects_model_knobs() -> None:
         )
 
 
+def test_data_only_rejects_seed_and_backend() -> None:
+    with pytest.raises(ValidationError, match="data_only"):
+        ExperimentKnobs(
+            data_source="programspec",
+            seed=0,
+            data_generation=DataGenerationKnobs(data_only=True, unique_root_target=8),
+        )
+    with pytest.raises(ValidationError, match="data_only"):
+        ExperimentKnobs(
+            data_source="programspec",
+            context_backend="scratch",
+            data_generation=DataGenerationKnobs(data_only=True, unique_root_target=8),
+        )
+
+
 def test_compile_commands_uses_canonical_builder() -> None:
     campaign = CampaignSpec(
         campaign_id="camp",
@@ -72,6 +87,14 @@ def test_compile_commands_uses_canonical_builder() -> None:
             plan_path="src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json",
             unique_root_target=4,
             generator_seed=17,
+            generation_mode="count",
+            generator_max_depth=3,
+            generator_max_width=4,
+            prompt_surface="grammar_schema",
+            prompts_per_root=2,
+            renderer_families=("openui", "html"),
+            counterfactuals_per_root=1,
+            retain_trusted_anchors=True,
             data_only=True,
         ),
     )
@@ -82,6 +105,24 @@ def test_compile_commands_uses_canonical_builder() -> None:
     assert "--synthesis-plan" in build
     assert "--programspec-count" in build
     assert "4" in build
+    assert build[build.index("--generation-mode") + 1] == "count"
+    assert build[build.index("--generator-max-depth") + 1] == "3"
+    assert build[build.index("--generator-max-width") + 1] == "4"
+    assert build[build.index("--prompt-surface") + 1] == "grammar_schema"
+    assert build[build.index("--prompts-per-root") + 1] == "2"
+    assert build[build.index("--renderer-families") + 1] == "openui,html"
+    assert build[build.index("--counterfactuals-per-root") + 1] == "1"
+    assert "--retain-trusted-anchors" in build
+
+    off = ExperimentKnobs(
+        data_source="programspec",
+        data_generation=DataGenerationKnobs(
+            data_only=True,
+            retain_trusted_anchors=False,
+        ),
+    )
+    off_build = compile_commands(campaign, _experiment(off))[0]
+    assert "--no-retain-trusted-anchors" in off_build
 
 
 def test_data_identity_changes_with_root_target() -> None:
