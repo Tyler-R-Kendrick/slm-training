@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-14",
+          "note": "Close snapshot thrash arms by train_version identity and candidate-id suffix; park_on_exhaust fires when only snapshot leftovers remain; not-climbing is a selector/park signal, never a parent halt.",
+          "version": "v217"
+        },
+        {
+          "date": "2026-08-14",
           "note": "no-bump: rebuild evidence_ledger.v1.json so merge-ready --check matches docs/design; deterministic fold, campaign contract unchanged.",
           "version": "v216"
         },
@@ -6483,7 +6488,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v216"
+      "version": "v217"
     },
     "harness.autoresearch.formal": {
       "history": [

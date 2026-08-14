@@ -6571,6 +6571,194 @@ def test_handoff_parks_exhausted_bank_despite_experiment_next(
     assert state["next_action"] == "rebuild_data"
 
 
+def test_arm_slug_recovers_snapshot_suffix_when_thrash_slug_stripped() -> None:
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "simplified-nl-frontier-c52",
+            "snapshot leftover",
+            {"train_version": "frontier_simplified_nl_c52_v1"},
+        )
+    )
+    knobs = {
+        "train_version": "frontier_simplified_nl_c52_v1",
+        "fidelity_loss_weight": 0.5,
+    }
+    assert (
+        _mod._arm_slug_from_knobs(
+            knobs,
+            candidate_id="c193-simplified-nl-frontier-c52",
+        )
+        == "simplified-nl-frontier-c52"
+    )
+
+
+def test_arm_slug_does_not_map_steps40_variant_to_steps() -> None:
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            "simplified-nl-c52-steps40",
+            "snapshot leftover",
+            {"train_version": "frontier_simplified_nl_c52_v1"},
+        )
+    )
+    knobs = {"train_version": "frontier_simplified_nl_c52_v1", "steps": 40}
+    assert (
+        _mod._arm_slug_from_knobs(
+            knobs,
+            candidate_id="c58-simplified-nl-c52-steps40",
+        )
+        == "simplified-nl-c52-steps40"
+    )
+
+
+def test_recent_completed_closes_snapshot_clones_by_train_version(
+    tmp_path: Path,
+) -> None:
+    _mod._DYNAMIC_THRASH_ARMS.extend(
+        [
+            (
+                "simplified-nl-frontier-c52",
+                "front",
+                {"train_version": "frontier_simplified_nl_c52_v1"},
+            ),
+            (
+                "simplified-nl-c52-steps40",
+                "clone",
+                {"train_version": "frontier_simplified_nl_c52_v1"},
+            ),
+        ]
+    )
+    root = tmp_path / "autoresearch"
+    predecessor: str | None = None
+    for cycle, slug in (
+        (180, "simplified-nl-frontier-c52"),
+        (181, "simplified-nl-c52-steps40"),
+    ):
+        campaign_id = f"continuous-loop-20260814-c{cycle}"
+        candidate_id = f"{campaign_id}-{slug}"
+        camp = root / campaign_id
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "matrix-proposal.json").write_text(
+            json.dumps(
+                {
+                    "hypotheses": [
+                        {
+                            "experiment": {
+                                "experiment_id": candidate_id,
+                                "knobs": {
+                                    "train_version": "frontier_simplified_nl_c52_v1",
+                                    "seed": 100000 + cycle,
+                                },
+                            }
+                        }
+                    ]
+                }
+            )
+        )
+        (camp / "sdlc_delivery.json").write_text(
+            json.dumps(
+                {
+                    "candidate_id": candidate_id,
+                    "cycle_intent": "screening",
+                    "positive": False,
+                    "measurement_complete": True,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    closed = _mod._recent_completed_nonpositive_slugs(root, predecessor)
+    assert "simplified-nl-frontier-c52" in closed
+    assert "simplified-nl-c52-steps40" in closed
+
+
+def test_handoff_parks_when_only_snapshot_leftovers_remain(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = _inject_terminal_policy(monkeypatch, park=True)
+    root = tmp_path / "autoresearch"
+    _mod._append_dynamic_thrash_arms(
+        root,
+        "loop-1",
+        [
+            (
+                "simplified-nl-frontier-c48",
+                "c48 leftover",
+                {"train_version": "frontier_simplified_nl_c48_v1"},
+            ),
+            (
+                "simplified-nl-frontier-c52",
+                "c52 leftover",
+                {"train_version": "frontier_simplified_nl_c52_v1"},
+            ),
+        ],
+    )
+    monkeypatch.setattr(
+        _mod,
+        "_recent_completed_nonpositive_slugs",
+        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK},
+    )
+    (root / "cycle-snapshots").mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-snapshots")
+    matrix = _priority_matrix()
+    matrix["next_run_priorities"] = [
+        {
+            "rank": 1,
+            "area": "experiments",
+            "hypothesis": "The recent quality families are exhausted; run c48.",
+            "evidence_ids": ["feedback-1"],
+            "confidence": 0.9,
+            "expected_information_gain": "Rematch a snapshot clone.",
+            "authority": "observed_result",
+            "disposition": "experiment_next",
+            "proposed_experiment_id": "c-next-simplified-nl-frontier-c48",
+        }
+    ]
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-snapshots",
+        cycle_index=193,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=matrix,
+        delivery={
+            "positive": False,
+            "candidate_id": "simplified-nl-frontier-c52",
+            "control_id": "control",
+            "reasons": ["fixture_insufficient_n_alone"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert handoff.terminal_verdict is not None
+    assert handoff.terminal_verdict.binding_constraint == "quality_arm_bank_exhausted"
+    assert [action.kind for action in handoff.actions] == [
+        "rebuild_data",
+        "document",
+        "next_experiment",
+    ]
+    assert policy.payload["terminal"]["park_on_exhaust"] is True
+    assert _mod._open_slugs_are_snapshot_leftovers(
+        {"simplified-nl-frontier-c48", "simplified-nl-frontier-c52"}
+    )
+
+
 def test_supervisor_noops_when_regime_parked(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

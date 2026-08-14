@@ -29,8 +29,10 @@ numbers/inventory without re-authoring classifiers.
 - **Recipe-tweak knobs** + null cap → regime-transition pressure
 - **Phase A positive rules** (fixture `n` never enqueueable, even with a
   smoke primary tick; executable unblock; size-match / EG_params; minimum
-  efficiency effect). `park_on_exhaust` routes an empty isolate bank to
-  `rebuild_data` / I10 instead of compose rematches.
+  efficiency effect). `park_on_exhaust` routes an empty isolate bank — or a
+  bank whose only leftovers are snapshot `train_version` clones — to
+  `rebuild_data` / I10 instead of compose rematches. Snapshot close is by
+  `train_version` identity, not slug spelling.
 - **Synthesis loop** action filenames and fail-closed SFT (still enforced in `hillclimb`)
 - **I10 rung gates** (enabled and fail-closed, with durable prior-rung evidence)
 - **Command walls** (screening, promotion, and Lean obey `MAX_RUN_MINUTES`)

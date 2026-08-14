@@ -49,6 +49,7 @@ before continuous or multi-run work.
 | Non-terminating | An unbudgeted host goal owns persistence; each bounded cycle returns control before cycle N+1 |
 | Self-heal | Fix path/knob/harness failures from evidence; re-run |
 | Soft failures | Fixture ship-gate fails / null deltas / single timeouts → next cycle |
+| Not climbing | Selector/park (`rebuild_data` / I10), never a parent halt or rematch |
 | Hard block only | Same unrecoverable blocker 3× with no new info → report blocked |
 | Incremental commits | Commit green code/docs units every cycle while working on an iteration or fix |
 | Stacked PR (positive only) | Open/update a `gh stack` layer **only** after a positive-result run (metric win, ship-quality win, or proven executable unblock) |

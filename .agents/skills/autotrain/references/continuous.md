@@ -83,6 +83,14 @@ persistence is the host goal and the append-only campaign event chains.
    agent cannot obtain, theorem contradiction unrepaired after three formal
    attempts). Soft failures (ship gates fail on fixture n, null lever deltas,
    timeouts, healable bank exhaust) **never** stop the loop.
+   **"Not hill-climbing" is a selector/park signal, never a parent halt.**
+   Fixture-n screens, snapshot rematches (`simplified-nl-frontier-c48` /
+   `c52` clones, same `train_version`), and an isolate bank whose remaining
+   open slugs are train_version leftovers mean: emit/execute `rebuild_data`
+   (I10) and **park**. Do not start another `wf_smoke_v2` rematch. Do not
+   compose filler slugs. Do not stop the parent to write a diagnosis and
+   wait. A parent that reports "cannot climb on this recipe" and ends the
+   turn has failed this law — the heal is park, not silence.
 5. **Remote compute is opt-in.** No paid GPU, remote job, or HF write unless
    the user already granted that authority in this session.
 6. **Code delivery is not local-only, but stack layers are selective.** While
@@ -458,6 +466,10 @@ Do **not** end with only a resume command or “branch is ready when you are.”
 - Stopping after one cycle to “report status and wait”
 - Asking the user to re-invoke `/autotrain`
 - Treating ship-gate fails on fixture `n` as terminal
+- Treating “not hill-climbing” / screening saturation / snapshot rematch as a
+  parent halt (that is park + `rebuild_data`, not a stop)
+- Rematching a falsified snapshot identity (`train_version` already
+  multi-seed null) as a new hill
 - Leaving the loop because an experiment failed once
 - Skipping docs closeout to go faster
 - Remote/HF/paid compute without prior authority
