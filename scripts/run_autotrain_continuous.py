@@ -11940,6 +11940,25 @@ def run_cycle(
     # only open thrash arm, held in harness_failure by deadline_reserve skips,
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
+        leftover = _thrash_bank_open_slugs(recent_exhausted) - skip_slugs
+        if _terminal_park_on_exhaust() and pred and _open_slugs_are_snapshot_leftovers(
+            leftover
+        ):
+            # Isolate OFAT is done. Do not smoke-screen unused snapshot slugs
+            # (c96/c120/c78) as if they were a new hill.
+            print(
+                "SELF_HEAL_BANK_EXHAUST parked reason=snapshot_leftovers_before_select "
+                f"leftover={sorted(leftover)}",
+                flush=True,
+            )
+            return _park_screening_saturation(
+                root=root,
+                loop_id=loop_id,
+                campaign_id=pred,
+                cycle_index=idx,
+                policy=policy,
+                ranked_regimes=sorted(recent_exhausted | leftover),
+            )
         try:
             _select_recommended_slug(cycle, skip=skip_slugs, root=root, loop_id=loop_id)
         except RuntimeError as exc:
