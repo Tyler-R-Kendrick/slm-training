@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-14",
+          "note": "Isolate open-bank excludes snapshot train_version slugs when park_on_exhaust, so UCB cannot smoke c96/c120 while any OFAT slug remains open.",
+          "version": "v219"
+        },
+        {
+          "date": "2026-08-14",
           "note": "Park snapshot leftovers before selecting the next screening slug so unused c96/c120 clones are not smoked as a new hill.",
           "version": "v218"
         },
@@ -6493,7 +6498,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v218"
+      "version": "v219"
     },
     "harness.autoresearch.formal": {
       "history": [
