@@ -154,6 +154,25 @@ def test_classify_positive_screening_quality_win_and_regression() -> None:
     assert win["positive"] is True
     assert any(r.startswith("primary_metric_win") for r in win["reasons"])
 
+    fixture_tick = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics={
+            "structural_similarity": 0.174,
+            "binder_reference_f1": 0.63,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.214,
+            "binder_reference_f1": 0.63,
+            "parse_rate": 1.0,
+        },
+        fixture_insufficient_n=True,
+    )
+    assert fixture_tick["positive"] is False
+    assert any(r.startswith("primary_metric_win") for r in fixture_tick["reasons"])
+    assert "fixture_insufficient_n_alone" in fixture_tick["reasons"]
+
     # Lower structure is not positive.
     bad = classify_positive_metrics(
         policy,

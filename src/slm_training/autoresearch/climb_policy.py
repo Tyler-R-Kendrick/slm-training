@@ -840,9 +840,10 @@ def classify_positive_metrics(
     if (
         fixture_insufficient_n
         and pos_cfg.get("fixture_insufficient_n_alone_not_positive", True)
-        and not any(r.startswith("primary_metric_win") for r in reasons)
         and not any(r.startswith("executable_unblock") for r in reasons)
     ):
+        # Fixture n cannot mint a climb candidate. A smoke SS tick on
+        # insufficient_n is still fixture noise (c159 queued, c160 tied).
         positive = False
         reasons.append("fixture_insufficient_n_alone")
 

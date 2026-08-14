@@ -3051,6 +3051,7 @@ def self_heal_unblock_loop(
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
     pred = campaign_id or _latest_cycle(root, loop_id)[1]
+    parked = _check_regime_parked(root=root, loop_id=loop_id) is not None
 
     # 0) Incomplete merge (UU) from landing origin/main into the thrash worktree.
     try:
@@ -3105,18 +3106,20 @@ def self_heal_unblock_loop(
         print(f"SELF_HEAL_UNBLOCK timeout_warn={exc!r}", flush=True)
 
     # 2b) Quality-arm bank exhaust repair_harness → compose + next_experiment.
-    try:
-        bank_kind = _self_heal_bank_exhaust_repair(
-            cwd=cwd,
-            root=root,
-            loop_id=loop_id,
-            campaign_id=pred,
-            integration_commit=integration_commit,
-        )
-        if bank_kind:
-            soft_healed.append(bank_kind)
-    except Exception as exc:  # noqa: BLE001
-        print(f"SELF_HEAL_UNBLOCK bank_repair_warn={exc!r}", flush=True)
+    # Parked I10 off-ramp must not be unparked by compose filler.
+    if not parked:
+        try:
+            bank_kind = _self_heal_bank_exhaust_repair(
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                campaign_id=pred,
+                integration_commit=integration_commit,
+            )
+            if bank_kind:
+                soft_healed.append(bank_kind)
+        except Exception as exc:  # noqa: BLE001
+            print(f"SELF_HEAL_UNBLOCK bank_repair_warn={exc!r}", flush=True)
 
     # 3) Document closeout.
     try:
@@ -3129,26 +3132,27 @@ def self_heal_unblock_loop(
         print(f"SELF_HEAL_UNBLOCK document_warn={exc!r}", flush=True)
 
     # 4) Bank exhaust when no open screening arms.
-    try:
-        closed = _recent_completed_nonpositive_slugs(root, pred)
-        entries = _load_champion_queue(_champion_queue_path(root, loop_id))
-        if integration_commit:
-            _reopen_harness_blocked_champions(
-                root, entries, integration_commit=integration_commit
+    if not parked:
+        try:
+            closed = _recent_completed_nonpositive_slugs(root, pred)
+            entries = _load_champion_queue(_champion_queue_path(root, loop_id))
+            if integration_commit:
+                _reopen_harness_blocked_champions(
+                    root, entries, integration_commit=integration_commit
+                )
+                _write_champion_queue(_champion_queue_path(root, loop_id), entries)
+            skip = _skip_arm_slugs(
+                entries, integration_commit=integration_commit, include_causal_cap=False
             )
-            _write_champion_queue(_champion_queue_path(root, loop_id), entries)
-        skip = _skip_arm_slugs(
-            entries, integration_commit=integration_commit, include_causal_cap=False
-        )
-        if _self_heal_thrash_bank_exhaust(
-            root, loop_id, closed=closed, skip=skip | closed
-        ):
-            # Only record as heal when bank was empty before (heuristic: open_now
-            # was empty). The helper returns True also when arms already open;
-            # still safe to note compose path.
-            soft_healed.append("thrash_bank_compose")
-    except Exception as exc:  # noqa: BLE001
-        print(f"SELF_HEAL_UNBLOCK bank_warn={exc!r}", flush=True)
+            if _self_heal_thrash_bank_exhaust(
+                root, loop_id, closed=closed, skip=skip | closed
+            ):
+                # Only record as heal when bank was empty before (heuristic: open_now
+                # was empty). The helper returns True also when arms already open;
+                # still safe to note compose path.
+                soft_healed.append("thrash_bank_compose")
+        except Exception as exc:  # noqa: BLE001
+            print(f"SELF_HEAL_UNBLOCK bank_warn={exc!r}", flush=True)
 
     # 5) Enumerate remaining hard prereqs on predecessor.
     if pred:
@@ -5734,6 +5738,10 @@ def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
     if not delivery.get("positive"):
         return False
     reasons = list(delivery.get("reasons") or [])
+    if any(
+        str(reason).startswith("fixture_insufficient_n") for reason in reasons
+    ):
+        return False
     primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
     if primary_leaf != "latency_ms_p50" and _confirmation_quality_reheld(delivery):
         return True
@@ -7923,6 +7931,16 @@ def _classify_positive(
     ):
         decision["positive"] = False
         decision["stack_layer"] = False
+    if fixture_only_fails or any(
+        str(reason).startswith("fixture_insufficient_n") for reason in reasons
+    ):
+        # Tradeoff / primary_metric_win must not re-green fixture n.
+        decision["positive"] = False
+        decision["stack_layer"] = False
+        if not any(
+            str(reason).startswith("fixture_insufficient_n_alone") for reason in reasons
+        ):
+            reasons.append("fixture_insufficient_n_alone")
 
     decision["reasons"] = reasons
     decision["control_id"] = control_id
@@ -8927,6 +8945,38 @@ def _predecessor_priority_slug(
     return None
 
 
+def _handoff_should_route_exhausted_bank(
+    *,
+    root: Path,
+    campaign_id: str,
+    loop_id: str,
+    matrix: Mapping[str, Any],
+    priorities: Sequence[Any],
+) -> bool:
+    """Park to rebuild_data when the isolate bank is done, even if ranks remain.
+
+    Ranked ``experiment_next`` slugs used to suppress the I10 off-ramp, so the
+    loop rematched exhausted decoder arms forever. ``park_on_exhaust`` plus an
+    empty open bank (or a closed saturation recovery) is terminal.
+    """
+    _load_dynamic_thrash_arms(root, loop_id)
+    saturation = (
+        (matrix.get("thrash_regime") or {}).get("screening_saturation")
+        if isinstance(matrix.get("thrash_regime"), dict)
+        else None
+    )
+    if isinstance(saturation, dict) and not saturation.get("pending_regimes", []):
+        return True
+    closed = _recent_completed_nonpositive_slugs(root, campaign_id)
+    if _terminal_park_on_exhaust() and not _thrash_bank_open_slugs(closed):
+        return True
+    return not any(
+        getattr(priority, "disposition", None) == "experiment_next"
+        and getattr(priority, "proposed_experiment_id", None)
+        for priority in priorities
+    )
+
+
 def _write_cycle_handoff(
     *,
     root: Path,
@@ -9431,10 +9481,12 @@ def _write_cycle_handoff(
         cycle_intent in {"screening", "promotion"}
         and not measurement_incomplete
         and not delivery.get("positive")
-        and not any(
-            priority.disposition == "experiment_next"
-            and priority.proposed_experiment_id
-            for priority in priorities
+        and _handoff_should_route_exhausted_bank(
+            root=root,
+            campaign_id=campaign_id,
+            loop_id=loop_id,
+            matrix=matrix,
+            priorities=priorities,
         )
     ):
         saturation = (
@@ -11829,6 +11881,18 @@ def run_cycle(
                 _select_recommended_slug(
                     cycle, skip=skip_slugs, root=root, loop_id=loop_id
                 )
+            elif _terminal_park_on_exhaust() and pred:
+                try:
+                    return _park_screening_saturation(
+                        root=root,
+                        loop_id=loop_id,
+                        campaign_id=pred,
+                        cycle_index=idx,
+                        policy=policy,
+                        ranked_regimes=sorted(recent_exhausted),
+                    )
+                except RuntimeError:
+                    raise RuntimeError(_BANK_EXHAUST_MSG) from exc
             else:
                 raise
     campaign_id = _campaign_id(loop_id, cycle)

@@ -6494,6 +6494,144 @@ def test_park_policy_retires_confirm_fallback_and_compose_synthesis(
     assert _mod._self_heal_thrash_bank_exhaust(root, "L", closed=set(), skip=set())
 
 
+def test_should_enqueue_rejects_fixture_volume_win() -> None:
+    assert not _mod._should_enqueue_champion(
+        {
+            "positive": True,
+            "primary_metric": "smoke.structural_similarity",
+            "reasons": [
+                "fixture_insufficient_n:c159-control",
+                "fixture_insufficient_n:c159-typed-family-balance",
+                "primary_metric_win:smoke.structural_similarity:"
+                "0.174->0.214:improvement=0.04",
+                "quality_held:parse=1.0 mpr=0.333",
+            ],
+        }
+    )
+
+
+def test_handoff_parks_exhausted_bank_despite_experiment_next(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = _inject_terminal_policy(monkeypatch, park=True)
+    monkeypatch.setattr(
+        _mod,
+        "_recent_completed_nonpositive_slugs",
+        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK},
+    )
+    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: set())
+    root = tmp_path / "autoresearch"
+    (root / "cycle-exhausted").mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-exhausted")
+    matrix = _priority_matrix()
+    matrix["next_run_priorities"] = [
+        {
+            "rank": 1,
+            "area": "model",
+            "hypothesis": "Rematch a just-lost decoder slug.",
+            "evidence_ids": ["feedback-1"],
+            "confidence": 0.9,
+            "expected_information_gain": "More smoke.",
+            "authority": "observed_result",
+            "disposition": "experiment_next",
+            "proposed_experiment_id": "c-next-literal-close-structure",
+        }
+    ]
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-exhausted",
+        cycle_index=1795,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=matrix,
+        delivery={
+            "positive": False,
+            "candidate_id": "literal-close-structure",
+            "control_id": "control",
+            "reasons": ["primary_metric_null_or_worse"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert handoff.terminal_verdict is not None
+    assert handoff.terminal_verdict.binding_constraint == "quality_arm_bank_exhausted"
+    assert [action.kind for action in handoff.actions] == [
+        "rebuild_data",
+        "document",
+        "next_experiment",
+    ]
+    assert policy.payload["terminal"]["park_on_exhaust"] is True
+    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
+    assert state["state"] == "BLOCKED"
+    assert state["next_action"] == "rebuild_data"
+
+
+def test_supervisor_noops_when_regime_parked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "run_autotrain_supervisor",
+        Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_supervisor.py",
+    )
+    assert spec is not None and spec.loader is not None
+    supervisor = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(supervisor)
+    root = tmp_path / "autoresearch"
+    loop = "loop-parked"
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.parent.mkdir(parents=True)
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-exhausted",
+                "loop_id": loop,
+                "cycle_index": 170,
+                "binding_constraint": "quality_arm_bank_exhausted",
+                "closed_slugs": [],
+                "policy_sha256": None,
+                "resume_predicate": "I10 objective preregistered",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    launched: list[list[str]] = []
+
+    def _forbid_launch(*args: object, **kwargs: object) -> object:
+        launched.append(list(args[0]) if args else [])
+        raise AssertionError("parked supervisor must not start a smoke cycle")
+
+    monkeypatch.setattr(supervisor.subprocess, "run", _forbid_launch)
+    fake_continuous = SimpleNamespace(
+        _check_regime_parked=lambda **kwargs: _mod._REGIME_PARKED_STATUS,
+        self_heal_unblock_loop=lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("must not heal")
+        ),
+    )
+    monkeypatch.setattr(supervisor, "_load_continuous", lambda: fake_continuous)
+    rc = supervisor.main(
+        [
+            "--loop-id",
+            loop,
+            "--root",
+            str(root),
+            "--max-cycles",
+            "3",
+            "--train-version",
+            "wf_smoke_v2",
+            "--steps",
+            "20",
+        ]
+    )
+    assert rc == 0
+    assert launched == []
+
+
 def test_bank_exhaust_parks_loop_under_typed_verdict(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
