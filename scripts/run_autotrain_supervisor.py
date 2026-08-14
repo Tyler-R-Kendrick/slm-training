@@ -93,6 +93,16 @@ def main(argv: list[str] | None = None) -> int:
     cycle = 0
     while args.max_cycles == 0 or cycle < args.max_cycles:
         cycle += 1
+        parked = continuous._check_regime_parked(root=root, loop_id=args.loop_id)
+        if parked:
+            log_event(
+                {
+                    "event": "regime_parked",
+                    "status": parked,
+                    "cycle": cycle,
+                }
+            )
+            return 0
         # Always soft-unblock before launch.
         try:
             report = continuous.self_heal_unblock_loop(

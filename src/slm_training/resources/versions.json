@@ -4905,6 +4905,16 @@
       "history": [
         {
           "date": "2026-08-14",
+          "note": "no-bump: rebuild evidence_ledger.v1.json so merge-ready --check matches docs/design; deterministic fold, campaign contract unchanged.",
+          "version": "v216"
+        },
+        {
+          "date": "2026-08-14",
+          "note": "Fixture n cannot enqueue a champion even on a smoke primary tick; park_on_exhaust routes an empty isolate bank to rebuild_data/I10 even when experiment_next ranks remain; supervisor no-ops a parked loop instead of pinning wf_smoke_v2.",
+          "version": "v216"
+        },
+        {
+          "date": "2026-08-14",
           "note": "rebuild_data action includes compileable data_generation knobs; timeout lookup falls back to matrix knobs when experiment artifacts are missing",
           "version": "v215"
         },
@@ -6473,7 +6483,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v215"
+      "version": "v216"
     },
     "harness.autoresearch.formal": {
       "history": [

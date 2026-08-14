@@ -20,8 +20,11 @@ persistence is the host goal and the append-only campaign event chains.
    harness incompletes, and feedback identity races are inputs to the next
    cycle — not reasons to yield or wait for a human re-prompt. The continuous
    driver must recover in-process when it can:
-   - thrash bank multi-seed exhaust → compose size-matched successors under
-     `loops/<id>/dynamic_thrash_arms.jsonl` (`SELF_HEAL_BANK_EXHAUST`)
+   - thrash bank multi-seed exhaust → when `terminal.park_on_exhaust` is on,
+     emit `rebuild_data` (I10 simplified-NL) and **park**; do not compose
+     filler slugs or start another `wf_smoke_v2` screen. Compose remains
+     only for the diagnostic `park_on_exhaust=false` path
+     (`SELF_HEAL_BANK_EXHAUST`)
    - causal CAP emptying multi-seed-open arms → `THRASH_CAUSAL_CAP_RELAX`
    - harness-blocked champions after tip change → rearm promote
    - climb `promoted` / `climb_accepted` under a **stale promote authority**
@@ -51,11 +54,10 @@ persistence is the host goal and the append-only campaign event chains.
      real cycle_failures message**, never only from
      `repair repeated blocker:<fingerprint>` (that matched no heal branch
      and false-cleared via bank compose).
-   - **thrash quality-arm bank exhaust** → compose size-matched dynamic thrash
-     successors (`SELF_HEAL_BANK_EXHAUST`) **and rewrite** predecessor
-     `repair_harness` → `next_experiment` (`SELF_HEAL_BANK_EXHAUST_REPAIR`).
-     Compose alone is not enough: the handoff prereq must be retired.
-     Hard-stop only when no untried size-matched compose pairs remain.
+   - **thrash quality-arm bank exhaust** → park to `rebuild_data` +
+     size-matched simplified-NL-to-AST `next_experiment` when
+     `park_on_exhaust` is on. Compose-filler rewrite
+     (`SELF_HEAL_BANK_EXHAUST_REPAIR`) is the diagnostic off path only.
    - **incomplete `origin/main` merge (`UU` / MERGE_HEAD)** → finish the merge
      in-process (`SELF_HEAL_INCOMPLETE_MERGE`): prefer origin/main (*theirs*)
      for harness/code paths, keep *ours* for continuous closeout docs, commit.
