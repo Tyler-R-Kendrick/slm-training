@@ -2338,7 +2338,9 @@ def build_train_data(
                     str((record.meta or {}).get("root_id") or record.id)
                     for record in deduped
                     if (record.meta or {}).get("source_kind") == "program-first"
-                    or record.source == "programspec_generated"
+                    and (record.meta or {}).get("derivation")
+                    != "semantic_counterfactual"
+                    and int((record.meta or {}).get("prompt_index") or 0) == 0
                 }
             ),
             "row_count": len(deduped),
