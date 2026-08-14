@@ -1751,6 +1751,14 @@ def _self_heal_thrash_bank_exhaust(
     bank = _all_screening_arm_bank()
     known = {slug for slug, _, _ in bank}
     open_now = {slug for slug, _, _ in bank if slug not in closed and slug not in skip}
+    if _terminal_park_on_exhaust() and _open_slugs_are_snapshot_leftovers(open_now):
+        # Isolate OFAT bank is done. Remaining snapshot slugs are I10
+        # leftovers, not compose fodder.
+        print(
+            "SELF_HEAL_BANK_EXHAUST parked reason=snapshot_leftovers",
+            flush=True,
+        )
+        return False
     if open_now:
         return True
     if _terminal_park_on_exhaust():
@@ -4469,9 +4477,63 @@ def _arm_slug_from_knobs(
     if knobs.get("batch_size") == 1:
         return "batch1"
     cid = candidate_id or ""
-    if cid.endswith("-steps") or "-steps" in cid:
+    recovered = _slug_from_candidate_id(cid)
+    if recovered:
+        return recovered
+    if cid.endswith("-steps"):
         return "steps"
     return None
+
+
+def _slug_from_candidate_id(candidate_id: str) -> str | None:
+    """Recover a bank slug after hypothesis knobs drop ``_thrash_slug``.
+
+    Train-version-only snapshot arms have no lever match. The old
+    ``"-steps" in candidate_id`` fallback also collapsed
+    ``simplified-nl-c52-steps40`` onto ``steps``, so those identities
+    never closed.
+    """
+    cid = str(candidate_id or "")
+    if not cid:
+        return None
+    matches = [
+        slug
+        for slug, _, _ in _all_screening_arm_bank()
+        if cid == slug or cid.endswith(f"-{slug}")
+    ]
+    if not matches:
+        return None
+    return max(matches, key=len)
+
+
+def _default_screening_train_version() -> str:
+    try:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+
+        return str(load_climb_policy().defaults.get("train_version") or "wf_smoke_v2")
+    except Exception:  # noqa: BLE001 — identity close must stay computable
+        return "wf_smoke_v2"
+
+
+def _slug_is_snapshot_arm(slug: str, extras: Mapping[str, Any] | None = None) -> bool:
+    """True when the arm is a data-snapshot leftover, not an isolate OFAT lever."""
+    if extras is None:
+        extras = next(
+            (row[2] for row in _all_screening_arm_bank() if row[0] == slug),
+            {},
+        )
+    train_version = str((extras or {}).get("train_version") or "")
+    return bool(train_version) and train_version != _default_screening_train_version()
+
+
+def _open_slugs_are_snapshot_leftovers(open_slugs: set[str]) -> bool:
+    """Park signal: isolate OFAT bank is closed; only snapshot slugs remain."""
+    if not open_slugs:
+        return True
+    extras_by_slug = {slug: extras for slug, _, extras in _all_screening_arm_bank()}
+    return all(
+        _slug_is_snapshot_arm(slug, extras_by_slug.get(slug)) for slug in open_slugs
+    )
 
 
 def _is_decisive_causal_terminal(row: dict[str, Any]) -> bool:
@@ -4698,7 +4760,9 @@ def _recent_completed_nonpositive_slugs(
     (``recipe_null_cap.max_nulls_per_family``, default 2).
 
     A complete **positive** after nulls clears the null-seed tally for that
-    slug (the approach is not permanently dead if it later wins).
+    slug (the approach is not permanently dead if it later wins). Snapshot
+    clones that share ``train_version`` close together once that identity
+    has enough distinct-seed nulls.
     """
 
     required = (
@@ -4708,6 +4772,8 @@ def _recent_completed_nonpositive_slugs(
     )
     # slug -> set of seeds with complete non-positive (since last positive)
     null_seeds: dict[str, set[int | None]] = {}
+    # train_version -> seeds; snapshot clones share identity, not slug spelling
+    tv_null_seeds: dict[str, set[int | None]] = {}
     for camp_id in _lineage_campaign_ids(
         root, predecessor_campaign_id, max_cycles=max_cycles
     ):
@@ -4788,6 +4854,8 @@ def _recent_completed_nonpositive_slugs(
             seed: int | None = int(seed_raw) if seed_raw is not None else None
         except (TypeError, ValueError):
             seed = None
+        train_version = str(knobs.get("train_version") or "")
+        default_tv = _default_screening_train_version()
         # Incomplete / harness outcomes never close a thrash approach — even if
         # a buggy delivery marked measurement_complete or positive=False.
         if not runtime_terminal and (
@@ -4803,10 +4871,26 @@ def _recent_completed_nonpositive_slugs(
         if stored_positive is True:
             # Win re-opens the approach; clear prior null tally for this slug.
             null_seeds[slug] = set()
+            if train_version and train_version != default_tv:
+                tv_null_seeds[train_version] = set()
             continue
         null_seeds.setdefault(slug, set()).add(seed)
+        if train_version and train_version != default_tv:
+            tv_null_seeds.setdefault(train_version, set()).add(seed)
 
-    return {slug for slug, seeds in null_seeds.items() if len(seeds) >= required}
+    closed = {slug for slug, seeds in null_seeds.items() if len(seeds) >= required}
+    # Snapshot clones share a train_version but differ by slug spelling. Close
+    # every bank slug on an identity that already has enough complete nulls.
+    exhausted_versions = {
+        train_version
+        for train_version, seeds in tv_null_seeds.items()
+        if len(seeds) >= required
+    }
+    if exhausted_versions:
+        for slug, _, extras in _all_screening_arm_bank():
+            if extras.get("train_version") in exhausted_versions:
+                closed.add(slug)
+    return closed
 
 
 def _interesting_residuals_path(root: Path, loop_id: str) -> Path:
@@ -8957,7 +9041,8 @@ def _handoff_should_route_exhausted_bank(
 
     Ranked ``experiment_next`` slugs used to suppress the I10 off-ramp, so the
     loop rematched exhausted decoder arms forever. ``park_on_exhaust`` plus an
-    empty open bank (or a closed saturation recovery) is terminal.
+    empty isolate bank — including when the only leftovers are snapshot
+    train_version clones — is terminal.
     """
     _load_dynamic_thrash_arms(root, loop_id)
     saturation = (
@@ -8968,8 +9053,10 @@ def _handoff_should_route_exhausted_bank(
     if isinstance(saturation, dict) and not saturation.get("pending_regimes", []):
         return True
     closed = _recent_completed_nonpositive_slugs(root, campaign_id)
-    if _terminal_park_on_exhaust() and not _thrash_bank_open_slugs(closed):
-        return True
+    if _terminal_park_on_exhaust():
+        open_slugs = _thrash_bank_open_slugs(closed)
+        if not open_slugs or _open_slugs_are_snapshot_leftovers(open_slugs):
+            return True
     return not any(
         getattr(priority, "disposition", None) == "experiment_next"
         and getattr(priority, "proposed_experiment_id", None)
