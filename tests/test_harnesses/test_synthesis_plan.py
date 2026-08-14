@@ -355,13 +355,15 @@ def test_apply_corpus_generation_overrides_keeps_schema_keys() -> None:
         unique_root_target=8,
         generator_seed=99,
         generator_max_depth=4,
-        prompts_per_root=3,
+        prompts_per_root=16,
         retain_trusted_anchors=False,
     )
     assert updated.requested_unique_roots == 8
     assert updated.seed == 99
+    assert updated.max_attempts >= 8 * 16
     assert updated.generator.max_depth == 4
-    assert updated.prompts.prompts_per_root == 3
+    assert updated.prompts.prompts_per_root == 16
+    assert updated.quality.per_root_exposure_cap == 16
     assert updated.source_anchors.retain_available_trusted_roots is False
     assert set(updated.to_dict()) == set(policy.to_dict())
     assert apply_corpus_generation_overrides(policy) is policy

@@ -986,10 +986,16 @@ def data_intervention_indicated(
     return False
 
 
+_FIXTURE_PLAN_PATH = (
+    "src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json"
+)
+
+
 def data_intervention_action(policy: ClimbPolicy) -> dict[str, Any]:
-    """Typed rebuild_data action skeleton requiring snapshot+feedback receipt."""
+    """Typed rebuild_data action with compileable data-only knobs."""
 
     block = policy.data_intervention
+    min_roots = int(block.get("min_unique_roots") or 32)
     return {
         "schema": "autotrain_data_intervention/v1",
         "kind": "rebuild_data",
@@ -1004,8 +1010,13 @@ def data_intervention_action(policy: ClimbPolicy) -> dict[str, Any]:
         "prefer_data_before_terminal_tie": bool(
             block.get("prefer_data_before_terminal_tie", True)
         ),
-        "min_unique_roots": int(block.get("min_unique_roots") or 32),
+        "min_unique_roots": min_roots,
         "promotion_authorized": False,
+        "data_generation": {
+            "plan_path": str(block.get("fixture_plan_path") or _FIXTURE_PLAN_PATH),
+            "unique_root_target": min_roots,
+            "data_only": True,
+        },
     }
 
 

@@ -11669,10 +11669,14 @@ def run_cycle(
     current_eval_version = default_eval_version()
     predecessor_generation = None
     if pred:
-        pred_delivery = _read_json(root / pred / "sdlc_delivery.json")
-        pred_knobs = _load_experiment_knobs(
-            root / pred, str(pred_delivery.get("candidate_id") or "")
-        )
+        pred_dir = root / pred
+        pred_delivery = _read_json(pred_dir / "sdlc_delivery.json")
+        pred_candidate = str(pred_delivery.get("candidate_id") or "")
+        pred_knobs = _load_experiment_knobs(pred_dir, pred_candidate)
+        if not pred_knobs:
+            pred_knobs = _matrix_experiment_knobs(
+                _read_json(pred_dir / "matrix-proposal.json"), pred_candidate
+            )
         if pred_knobs:
             predecessor_generation = pred_knobs.get("data_generation")
     timeout_retired, selector_signal_sources = _sync_reproduced_timeout_retirements(

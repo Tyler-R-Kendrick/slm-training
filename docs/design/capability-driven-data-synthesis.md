@@ -110,6 +110,9 @@ is false; no model, CAP, or ship claim.
   a v2 plan previously ignored.
 - A v2 root admits every rendered prompt candidate; repairs and
   counterfactuals still fire once per root.
+- Unique-root overlays raise `max_attempts` so a larger target cannot
+  silently exhaust the plan's tiny attempt budget. `rebuild_data` now
+  carries compileable `data_generation` knobs.
 - Provider paraphrase stays offline in ordinary tests.
 
 ## Papers used as design guidance

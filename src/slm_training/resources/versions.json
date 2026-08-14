@@ -4904,6 +4904,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-08-14",
+          "note": "rebuild_data action includes compileable data_generation knobs; timeout lookup falls back to matrix knobs when experiment artifacts are missing",
+          "version": "v215"
+        },
+        {
           "date": "2026-08-13",
           "note": "compile_commands emits --unique-root-target/--generator-seed so data-only unique-root overlays survive a v2 plan; timeout lookup uses predecessor data_generation",
           "version": "v214"
@@ -6468,7 +6473,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v214"
+      "version": "v215"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -16738,6 +16743,11 @@
     "harness.synthesis_plan": {
       "history": [
         {
+          "date": "2026-08-14",
+          "note": "unique_root_target overlays raise max_attempts; prompts_per_root overlays raise per_root_exposure_cap",
+          "version": "v6"
+        },
+        {
           "date": "2026-08-13",
           "note": "apply_corpus_generation_overrides accepts unique_root_target and generator_seed without changing v2 exact keys",
           "version": "v5"
@@ -16791,10 +16801,15 @@
         "docs/design/dsh0-03-synthesis-plan-20260723.json",
         "docs/design/dsh0-03-synthesis-plan-20260723.md"
       ],
-      "version": "v5"
+      "version": "v6"
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-08-14",
+          "note": "unique_roots.admitted counts gold program-first roots only, excluding extra prompts and counterfactuals",
+          "version": "v30"
+        },
         {
           "date": "2026-08-13",
           "note": "Admit every policy prompt candidate per root and honor --unique-root-target/--generator-seed overlays on v2 plans",
@@ -16975,7 +16990,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v29"
+      "version": "v30"
     },
     "harness_core.evidence_bundle": {
       "history": [

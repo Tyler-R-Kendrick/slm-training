@@ -1484,6 +1484,7 @@ def apply_corpus_generation_overrides(
             updates["unique_root_targets"] = (*prior, unique_root_target)
         else:
             updates["unique_root_targets"] = (unique_root_target,)
+        updates["max_attempts"] = max(policy.max_attempts, unique_root_target * 16)
     if generator_seed is not None:
         updates["seed"] = generator_seed
     generator = policy.generator
@@ -1498,6 +1499,10 @@ def apply_corpus_generation_overrides(
         prompts = replace(prompts, surface=PromptSurface(prompt_surface))
     if prompts_per_root is not None:
         prompts = replace(prompts, prompts_per_root=prompts_per_root)
+        if prompts_per_root > policy.quality.per_root_exposure_cap:
+            updates["quality"] = replace(
+                policy.quality, per_root_exposure_cap=prompts_per_root
+            )
     if renderer_families is not None:
         prompts = replace(
             prompts,

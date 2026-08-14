@@ -153,3 +153,7 @@ def test_data_intervention_from_blocking_finding() -> None:
     assert action["promotion_authorized"] is False
     assert action["train_version"] == "wf_smoke_v2"
     assert action["claim_class"] == "fixture"
+    generation = action["data_generation"]
+    assert generation["data_only"] is True
+    assert generation["unique_root_target"] == action["min_unique_roots"]
+    assert generation["plan_path"].endswith("cap0_tiny_v2.json")
