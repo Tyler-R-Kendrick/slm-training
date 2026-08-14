@@ -4627,7 +4627,21 @@ def _skip_arm_slugs(
 
 
 def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
-    return {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
+    """Open isolate slugs. Snapshot train_version arms are I10 leftovers.
+
+    When ``park_on_exhaust`` is on they are not isolate screening candidates —
+    otherwise UCB rematches c96/c120 after c48/c52 while any OFAT slug is still
+    technically open.
+    """
+    open_slugs = {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
+    if not _terminal_park_on_exhaust():
+        return open_slugs
+    extras_by_slug = {slug: extras for slug, _, extras in _all_screening_arm_bank()}
+    return {
+        slug
+        for slug in open_slugs
+        if not _slug_is_snapshot_arm(slug, extras_by_slug.get(slug))
+    }
 
 
 def _arm_close_min_null_seeds(policy: Any | None = None) -> int:

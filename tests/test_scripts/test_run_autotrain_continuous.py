@@ -6760,10 +6760,9 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     leftover = _mod._thrash_bank_open_slugs(
         {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     )
-    assert leftover == {
-        "simplified-nl-frontier-c48",
-        "simplified-nl-frontier-c52",
-    }
+    # Isolate open set excludes snapshot train_version arms, so leftover
+    # is empty and park-before-select fires instead of smoking c96.
+    assert leftover == set()
     assert _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
