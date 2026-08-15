@@ -70,10 +70,17 @@ persistence is the host goal and the append-only campaign event chains.
      Soft-rank open thrash slugs with residual boosts + `slug_stats` prior;
      multi-seed close still wins. Interesting ≠ promotable; mine offline via
      `python -m scripts.mine_continuous_residuals --write-ledger`.
-   - **Never auto-ack real** `repair_formal`, `rebuild_data`, `stop_campaign`,
-     or `deliver_stack`. **Never fake** a harness repair commit for true
-     harness crashes (missing AgentV, import errors). Those stay hard until
-     the owner skill lands a real fix.
+   - **Local-CPU `rebuild_data`** (I10 / bank-exhaust park) → driver runs a
+     wall-capped `build_train_data` (`SELF_HEAL_REBUILD_DATA`), requires
+     `quality_report.json` + `synthesis_feedback.json` + `data_manifest.json`,
+     acks the action, and registers an I10 `_heal_resume` arm so park
+     resumes. Never fake those artifacts. Paid GPU / HF write is still
+     opt-in and is not this heal.
+   - **Never auto-ack** `repair_formal`, `stop_campaign`, or `deliver_stack`.
+     **Never fake** a harness repair commit for true harness crashes
+     (missing AgentV, import errors). Those stay hard until the owner skill
+     lands a real fix. `rebuild_data` is supervisor-owned on local CPU; do
+     not leave it pending as a parent no-op.
    Repair named harness families via owner skills when evidence requires code
    change; otherwise change knobs and re-run. **Do not** wait for the user to
    say “diagnose and restart.”
@@ -86,11 +93,12 @@ persistence is the host goal and the append-only campaign event chains.
    **"Not hill-climbing" is a selector/park signal, never a parent halt.**
    Fixture-n screens, snapshot rematches (`simplified-nl-frontier-c48` /
    `c52` clones, same `train_version`), and an isolate bank whose remaining
-   open slugs are train_version leftovers mean: emit/execute `rebuild_data`
-   (I10) and **park**. Do not start another `wf_smoke_v2` rematch. Do not
-   compose filler slugs. Do not stop the parent to write a diagnosis and
-   wait. A parent that reports "cannot climb on this recipe" and ends the
-   turn has failed this law — the heal is park, not silence.
+   open slugs are train_version leftovers mean: emit **and execute**
+   `rebuild_data` (I10) on local CPU, then continue. Park is the stop for
+   smoke rematch, not a stop for the data heal. Do not compose filler slugs.
+   Do not treat `BLOCKED` + `rebuild_data` as a report-only state. A parent
+   or 20-minute tick that prints PARKED and returns without running
+   `SELF_HEAL_REBUILD_DATA` has failed this law.
 5. **Remote compute is opt-in.** No paid GPU, remote job, or HF write unless
    the user already granted that authority in this session.
 6. **Code delivery is not local-only, but stack layers are selective.** While
@@ -467,7 +475,9 @@ Do **not** end with only a resume command or “branch is ready when you are.”
 - Asking the user to re-invoke `/autotrain`
 - Treating ship-gate fails on fixture `n` as terminal
 - Treating “not hill-climbing” / screening saturation / snapshot rematch as a
-  parent halt (that is park + `rebuild_data`, not a stop)
+  parent halt (that is park + execute local `rebuild_data`, not a stop)
+- Treating `BLOCKED` + pending `rebuild_data` as a report-only no-op when
+  local CPU can run `SELF_HEAL_REBUILD_DATA`
 - Rematching a falsified snapshot identity (`train_version` already
   multi-seed null) as a new hill
 - Leaving the loop because an experiment failed once

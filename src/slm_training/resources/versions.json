@@ -4904,6 +4904,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-08-15",
+          "note": "Supervisor-owned local-CPU rebuild_data heal: wall-capped build_train_data, required quality artifacts, I10 _heal_resume arm so park is not a no-op.",
+          "version": "v220"
+        },
+        {
           "date": "2026-08-14",
           "note": "Isolate open-bank excludes snapshot train_version slugs when park_on_exhaust, so UCB cannot smoke c96/c120 while any OFAT slug remains open.",
           "version": "v219"
@@ -6498,7 +6503,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v219"
+      "version": "v220"
     },
     "harness.autoresearch.formal": {
       "history": [
