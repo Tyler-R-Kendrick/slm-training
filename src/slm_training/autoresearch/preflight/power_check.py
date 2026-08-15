@@ -97,6 +97,10 @@ MIN_LEDGER_DOF = 20
 MAX_REASONABLE_N = 64
 #: The ledger's deltas are measurements of the loop screening primary.
 LEDGER_METRIC_LEAF = "structural_similarity"
+#: Process / heal / wiring arms execute a local successor (new snapshot,
+#: rebuild_data resume). They are not confirmatory climb designs — a
+#: first-cycle n=1 is expected and must not be blocked by RC1 power.
+PROCESS_CLAIM_CLASSES = frozenset({"process", "heal", "wiring"})
 
 DEFAULT_LEDGER_PATH = (
     Path(__file__).resolve().parents[2]
@@ -157,6 +161,14 @@ def _positive_float(value: Any) -> float | None:
     if isinstance(value, (int, float)) and math.isfinite(float(value)):
         return float(value) if float(value) > 0 else None
     return None
+
+
+def _is_process_candidate(candidate: Mapping[str, Any]) -> bool:
+    """True when the candidate is a process/heal arm, not a confirmatory screen."""
+    if candidate.get("process_arm") or candidate.get("heal_resume"):
+        return True
+    claim = candidate.get("claim_class")
+    return isinstance(claim, str) and claim in PROCESS_CLAIM_CLASSES
 
 
 def _make_verdict(
@@ -279,6 +291,13 @@ class PowerDecidabilityCheck:
                 f"accumulating toward required_n_for_effect="
                 f"{report.required_n_for_effect}"
             )
+        if verdict == "block" and _is_process_candidate(candidate):
+            reasons.append(
+                "process/heal arm is not a confirmatory design; power "
+                "decidability warns instead of blocking first execution"
+            )
+            details["process_arm"] = True
+            verdict = "warn"
         return _make_verdict(verdict, reasons, details)
 
 

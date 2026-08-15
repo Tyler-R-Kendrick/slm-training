@@ -35,6 +35,9 @@ numbers/inventory without re-authoring classifiers.
   `train_version` identity, not slug spelling. The supervisor runs a
   wall-capped local-CPU `build_train_data` for that action
   (`SELF_HEAL_REBUILD_DATA`) and resumes on the new `_heal_resume` arm.
+  That successor is a **process arm**: confirmatory power preflight cannot
+  skip it, and driver-written evidence-store mirrors restore instead of
+  parking the tree as `foreign_dirty_tree`.
 - **Synthesis loop** action filenames and fail-closed SFT (still enforced in `hillclimb`)
 - **I10 rung gates** (enabled and fail-closed, with durable prior-rung evidence)
 - **Command walls** (screening, promotion, and Lean obey `MAX_RUN_MINUTES`)

@@ -76,6 +76,18 @@ persistence is the host goal and the append-only campaign event chains.
      acks the action, and registers an I10 `_heal_resume` arm so park
      resumes. Never fake those artifacts. Paid GPU / HF write is still
      opt-in and is not this heal.
+   - **Process / heal arms are execution, not confirmatory climb.** A
+     `heal_resume` / `process_arm` successor after local rebuild is a first
+     train on a new snapshot. Power preflight may **warn**; it must not
+     `PREFLIGHT_BLOCK` then rotate to a leftover rematch (`c48`/`c52`/`c78`/
+     `c96`). Driver log: `PROCESS_ARM_PREFLIGHT_CONTINUE`. Same class: any
+     future heal that sets `process_arm` / `process_role`.
+   - **Loop-owned generated dirt** → restore to HEAD
+     (`SELF_HEAL_LOOP_OWNED_DIRT`). The driver may rewrite tracked mirrors
+     such as `src/slm_training/resources/evidence_store/local_index.jsonl`
+     at closeout. That is not human WIP and is never `foreign_dirty_tree`.
+     Register new driver-written tracked paths in
+     `_LOOP_OWNED_GENERATED_PATHS`. Do not parent-halt to `git restore`.
    - **Never auto-ack** `repair_formal`, `stop_campaign`, or `deliver_stack`.
      **Never fake** a harness repair commit for true harness crashes
      (missing AgentV, import errors). Those stay hard until the owner skill
@@ -478,6 +490,10 @@ Do **not** end with only a resume command or “branch is ready when you are.”
   parent halt (that is park + execute local `rebuild_data`, not a stop)
 - Treating `BLOCKED` + pending `rebuild_data` as a report-only no-op when
   local CPU can run `SELF_HEAL_REBUILD_DATA`
+- Treating a process/heal first-train as a confirmatory power design and
+  rotating it away at `PREFLIGHT_BLOCK`
+- Treating driver-written tracked mirrors (`local_index.jsonl` and any
+  registered loop-owned generated path) as `foreign_dirty_tree` human WIP
 - Rematching a falsified snapshot identity (`train_version` already
   multi-seed null) as a new hill
 - Leaving the loop because an experiment failed once

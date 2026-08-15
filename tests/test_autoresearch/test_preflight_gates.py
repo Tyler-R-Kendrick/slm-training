@@ -609,6 +609,47 @@ def test_driver_gate_ledger_load_failure_degrades_to_one(
     assert captured[0]["n_seeds"] == 1
 
 
+def test_driver_gate_process_arm_continues_when_preflight_blocks(
+    driver, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Heal/process arms must execute; confirmatory preflight cannot rotate them."""
+    from slm_training.autoresearch import preflight as preflight_mod
+
+    heal = driver._HEAL_RESUME_SLUG
+    other = driver._SCREENING_ARM_BANK[0][0]
+    driver._DYNAMIC_THRASH_ARMS.append(
+        (heal, "I10 heal", {"train_version": "continuous_i10_x", "process_arm": True})
+    )
+
+    def _block_all(candidate: dict) -> list[PreflightVerdict]:
+        return [
+            PreflightVerdict(
+                check_id="power_decidability",
+                verdict="block",
+                reasons=["min_attainable_p=1 > alpha=0.05 at n=1"],
+            )
+        ]
+
+    monkeypatch.setattr(preflight_mod, "run_preflight", _block_all)
+    reselected: list[set[str]] = []
+    try:
+        chosen, payload = driver._preflight_screening_slug(
+            heal,
+            steps=20,
+            endpoint_metric=_ENDPOINT,
+            minimum_effect=0.01,
+            skip=set(),
+            reselect=lambda skip: reselected.append(set(skip)) or other,
+        )
+    finally:
+        driver._DYNAMIC_THRASH_ARMS.pop()
+    assert chosen == heal
+    assert reselected == []
+    assert payload is not None
+    assert payload["selected_slug"] == heal
+    assert payload["override"] == "process_arm_not_confirmatory"
+
+
 def test_driver_gate_skips_blocked_slug_and_reselects(
     driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
 ) -> None:

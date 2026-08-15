@@ -1408,6 +1408,20 @@ def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
+_PROCESS_ARM_FLAG_KEYS = ("heal_resume", "_heal_resume", "process_arm")
+_PROCESS_ROLES = frozenset({"heal_resume", "rebuild_data", "first_snapshot"})
+_PROCESS_ARM_KNOB_KEYS = frozenset({"heal_resume", "process_arm", "process_role"})
+
+
+def _is_process_arm(extras: Mapping[str, Any] | None) -> bool:
+    """True for heal/resume/first-snapshot arms — execution, not confirmatory climb."""
+    extras = extras or {}
+    if any(extras.get(key) for key in _PROCESS_ARM_FLAG_KEYS):
+        return True
+    role = extras.get("process_role")
+    return isinstance(role, str) and role in _PROCESS_ROLES
+
+
 def _check_regime_parked(*, root: Path, loop_id: str) -> str | None:
     """Deterministic park/resume predicate over a persisted terminal verdict.
 
@@ -1420,10 +1434,7 @@ def _check_regime_parked(*, root: Path, loop_id: str) -> str | None:
         return None
     verdict = _read_json(path)
     _load_dynamic_thrash_arms(root, loop_id)
-    if any(
-        extras.get("heal_resume") or extras.get("_heal_resume")
-        for _, _, extras in _all_screening_arm_bank()
-    ):
+    if any(_is_process_arm(extras) for _, _, extras in _all_screening_arm_bank()):
         resolved = path.with_name(
             f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
         )
@@ -2396,6 +2407,14 @@ def _self_heal_cycle_error(
                         return None
             return kind
     if "loop worktree is dirty" in message:
+        try:
+            owned_kind = _self_heal_loop_owned_generated_dirt(
+                cwd=work_cwd, root=root, loop_id=loop_id
+            )
+        except Exception:  # noqa: BLE001 — fall through to closeout heal
+            owned_kind = None
+        if owned_kind:
+            return owned_kind
         dirty_kind = _self_heal_continuous_dirty_tree(
             cwd=work_cwd, root=root, loop_id=loop_id
         )
@@ -2556,10 +2575,30 @@ def _is_continuous_closeout_path(rel: str) -> bool:
     return name.startswith("continuous-") and name.endswith((".md", ".json"))
 
 
+# Tracked mirrors the driver itself mutates (evidence-store sync, similar).
+# Restore to HEAD — never treat as human WIP, never commit every cycle.
+_LOOP_OWNED_GENERATED_PATHS = frozenset(
+    {
+        "src/slm_training/resources/evidence_store/local_index.jsonl",
+    }
+)
+_LOOP_OWNED_GENERATED_SUFFIXES = ("/evidence_store/local_index.jsonl",)
+
+
+def _is_loop_owned_generated_path(rel: str) -> bool:
+    """True when the continuous driver is allowed to dirty this tracked path."""
+    path = rel.replace("\\", "/").lstrip("./")
+    if path in _LOOP_OWNED_GENERATED_PATHS:
+        return True
+    return any(path.endswith(suffix) for suffix in _LOOP_OWNED_GENERATED_SUFFIXES)
+
+
 def _is_foreign_dirty_path(rel: str) -> bool:
     """True when porcelain path should hard-block continuous thrash."""
     path = rel.replace("\\", "/").lstrip("./")
     if _is_continuous_closeout_path(path):
+        return False
+    if _is_loop_owned_generated_path(path):
         return False
     # Runtime artifacts are never continuous blockers (usually gitignored).
     if path == "outputs" or path.startswith("outputs/"):
@@ -2846,6 +2885,8 @@ def _register_i10_heal_arm(
                 {
                     "train_version": train_version,
                     "heal_resume": True,
+                    "process_arm": True,
+                    "process_role": "heal_resume",
                 },
             )
         ],
@@ -3160,6 +3201,45 @@ def _self_heal_document_actions(
     return "document_closeout"
 
 
+def _self_heal_loop_owned_generated_dirt(
+    *,
+    cwd: Path,
+    root: Path | None = None,
+    loop_id: str | None = None,
+) -> str | None:
+    """Restore driver-written tracked mirrors so they never hard-block thrash."""
+    git_kw: dict[str, Any] = {"cwd": cwd}
+    if root is not None and loop_id is not None:
+        git_kw.update(root=root, loop_id=loop_id)
+    porcelain = _git(
+        "status",
+        "--porcelain",
+        stage="self-heal-owned-dirt-status" if root is not None else None,
+        **git_kw,
+    )
+    if not porcelain.strip():
+        return None
+    owned = [
+        path
+        for path in _porcelain_paths(porcelain)
+        if _is_loop_owned_generated_path(path)
+    ]
+    if not owned:
+        return None
+    _git(
+        "restore",
+        "--source=HEAD",
+        "--worktree",
+        "--staged",
+        "--",
+        *owned,
+        stage="self-heal-owned-dirt" if root is not None else None,
+        **git_kw,
+    )
+    print(f"SELF_HEAL_LOOP_OWNED_DIRT files={owned}", flush=True)
+    return "loop_owned_generated_dirt"
+
+
 def _self_heal_continuous_dirty_tree(
     *,
     cwd: Path,
@@ -3226,6 +3306,14 @@ def _self_heal_closeout_blockers(
     except Exception as exc:  # noqa: BLE001 — surface, keep trying dirty heal
         print(f"SELF_HEAL_DOCUMENT_WARN err={exc!r}", flush=True)
     try:
+        owned_kind = _self_heal_loop_owned_generated_dirt(
+            cwd=cwd, root=root, loop_id=loop_id
+        )
+        if owned_kind:
+            kinds.append(owned_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_LOOP_OWNED_DIRT_WARN err={exc!r}", flush=True)
+    try:
         dirty_kind = _self_heal_continuous_dirty_tree(
             cwd=cwd, root=root, loop_id=loop_id
         )
@@ -3255,8 +3343,9 @@ def self_heal_unblock_loop(
           "predecessor_campaign_id": str | None,
         }
 
-    Soft: incomplete origin/main merge, document, continuous-only dirt, thrash
-    timeout residual repair_harness, bank exhaust, local-CPU rebuild_data.
+    Soft: incomplete origin/main merge, document, continuous-only dirt,
+    loop-owned generated mirrors, thrash timeout residual repair_harness,
+    bank exhaust, local-CPU rebuild_data.
     Hard: true harness crash, formal, deliver_stack, foreign dirt (non-merge WIP).
     """
     soft_healed: list[str] = []
@@ -3272,7 +3361,15 @@ def self_heal_unblock_loop(
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK merge_warn={exc!r}", flush=True)
 
-    # 1) Hygiene — continuous-only dirty tree.
+    # 1) Hygiene — restore driver-written mirrors, then commit closeout docs.
+    try:
+        owned_kind = _self_heal_loop_owned_generated_dirt(
+            cwd=cwd, root=root, loop_id=loop_id
+        )
+        if owned_kind:
+            soft_healed.append(owned_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK owned_dirt_warn={exc!r}", flush=True)
     try:
         dirty_kind = _self_heal_continuous_dirty_tree(
             cwd=cwd, root=root, loop_id=loop_id
@@ -4737,7 +4834,7 @@ def _slug_is_snapshot_arm(slug: str, extras: Mapping[str, Any] | None = None) ->
             {},
         )
     extras = extras or {}
-    if extras.get("heal_resume") or extras.get("_heal_resume"):
+    if _is_process_arm(extras):
         return False
     train_version = str(extras.get("train_version") or "")
     return bool(train_version) and train_version != _default_screening_train_version()
@@ -4848,7 +4945,7 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
 
     When ``park_on_exhaust`` is on they are not isolate screening candidates —
     otherwise UCB rematches c96/c120 after c48/c52 while any OFAT slug is still
-    technically open. A ``_heal_resume`` arm from a local rebuild_data heal is
+    technically open. A process/heal arm from a local rebuild_data heal is
     the I10 successor and stays selectable.
     """
     open_slugs = {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
@@ -4858,8 +4955,7 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
     return {
         slug
         for slug in open_slugs
-        if extras_by_slug.get(slug, {}).get("heal_resume")
-        or extras_by_slug.get(slug, {}).get("_heal_resume")
+        if _is_process_arm(extras_by_slug.get(slug))
         or not _slug_is_snapshot_arm(slug, extras_by_slug.get(slug))
     }
 
@@ -5617,10 +5713,7 @@ def _select_recommended_slug(
     """
     skip = skip or set()
     for slug, _, extras in _all_screening_arm_bank():
-        if (
-            slug not in skip
-            and (extras.get("heal_resume") or extras.get("_heal_resume"))
-        ):
+        if slug not in skip and _is_process_arm(extras):
             print(f"HEAL_RESUME_SELECT cycle={cycle} slug={slug}", flush=True)
             return slug
     # Evidence-triggered and successor quality arms do not perturb the stable
@@ -5961,7 +6054,9 @@ def _preflight_screening_slug(
             if row is None:
                 break
             hypothesis, extras = row
-            levers = _apply_arm_extras(steps, dict(extras))
+            extras = dict(extras)
+            process_arm = _is_process_arm(extras) or current == _HEAL_RESUME_SLUG
+            levers = _apply_arm_extras(steps, extras)
             arm_stats = _ledger_arms.get(current)
             cumulative_n = int((arm_stats or {}).get("n_complete") or 0)
             candidate = {
@@ -5975,6 +6070,12 @@ def _preflight_screening_slug(
                 "slug": current,
                 "levers": levers,
             }
+            if process_arm:
+                candidate["process_arm"] = True
+                candidate["heal_resume"] = True
+                candidate["claim_class"] = str(
+                    extras.get("process_role") or extras.get("claim_class") or "process"
+                )
             verdicts = run_preflight(candidate)
             verdicts_by_slug[current] = [v.model_dump() for v in verdicts]
             if not has_block(verdicts):
@@ -5989,6 +6090,19 @@ def _preflight_screening_slug(
                 f"PREFLIGHT_BLOCK slug={current} reasons={reasons[:2]}",
                 flush=True,
             )
+            if process_arm:
+                print(
+                    f"PROCESS_ARM_PREFLIGHT_CONTINUE slug={current} "
+                    "reason=not_confirmatory_design",
+                    flush=True,
+                )
+                return current, {
+                    "schema": "autotrain_preflight/v1",
+                    "selected_slug": current,
+                    "blocked_slugs": blocked,
+                    "override": "process_arm_not_confirmatory",
+                    "verdicts": verdicts_by_slug,
+                }
             blocked.append(current)
             skip = skip | {current}
             current = reselect(skip)
@@ -10764,7 +10878,7 @@ def _matrix(
         extra_map = {
             k: v
             for k, v in dict(extra).items()
-            if not str(k).startswith("_") and k != "heal_resume"
+            if not str(k).startswith("_") and k not in _PROCESS_ARM_KNOB_KEYS
         }
         contrast_weight = float(extra_map.get("semantic_contrast_loss_weight") or 0.0)
         contrast_exposure = bool(
@@ -12155,7 +12269,7 @@ def run_cycle(
             heal_open = {
                 slug
                 for slug, _, extras in _all_screening_arm_bank()
-                if extras.get("heal_resume") or extras.get("_heal_resume")
+                if _is_process_arm(extras)
             } - skip_slugs
             if not pending and not heal_open:
                 return _park_screening_saturation(
@@ -13584,6 +13698,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"EVIDENCE_STORE_SYNC rc={proc.returncode}", flush=True)
         except Exception as sync_exc:  # noqa: BLE001 — closeout never raises
             print(f"EVIDENCE_STORE_SYNC_WARN {sync_exc!r}", flush=True)
+        try:
+            owned_kind = _self_heal_loop_owned_generated_dirt(cwd=cwd)
+            if owned_kind:
+                print(f"SELF_HEAL_LOOP_OWNED_DIRT closeout={owned_kind}", flush=True)
+        except Exception as owned_exc:  # noqa: BLE001 — closeout never raises
+            print(f"SELF_HEAL_LOOP_OWNED_DIRT_WARN {owned_exc!r}", flush=True)
         try:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
         except OSError:

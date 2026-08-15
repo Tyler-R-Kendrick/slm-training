@@ -192,3 +192,17 @@ The fix has two parts:
 (`docs/design/hypothesis-family-conclusions.md`), so ordinary accumulation
 toward an 8-to-64-seed decision is never blocked — only designs that
 could never reach a decision at any realistic budget are.
+
+## Process / heal arms (not confirmatory)
+
+A local `rebuild_data` successor (`heal_resume`, or any candidate with
+`process_arm=true` / `claim_class` in `{process, heal, wiring}`) is a first
+execution on a new snapshot, not a confirmatory screen of a 0.01 effect.
+At n=1 the paired floor is 1.0 and `required_n_for_effect` exceeds
+`MAX_REASONABLE_N` — the same arithmetic that correctly blocks RC1
+screening must **not** skip the heal and rematch a leftover fixture slug.
+
+`power_check` therefore **warns** (never blocks) on process candidates.
+`_preflight_screening_slug` also refuses to rotate a process arm away if
+another plugin still returns `block`. Observed failure: cycle 198 selected
+`simplified-nl-i10-heal` then `PREFLIGHT_BLOCK` rotated to `c78`.

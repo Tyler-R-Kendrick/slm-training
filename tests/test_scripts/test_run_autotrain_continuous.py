@@ -9277,6 +9277,44 @@ def test_is_continuous_closeout_path_allowlist() -> None:
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
 
 
+def test_loop_owned_generated_path_is_not_foreign() -> None:
+    path = "src/slm_training/resources/evidence_store/local_index.jsonl"
+    assert _mod._is_loop_owned_generated_path(path)
+    assert not _mod._is_foreign_dirty_path(path)
+    assert _mod._is_process_arm({"heal_resume": True})
+    assert _mod._is_process_arm({"process_arm": True, "process_role": "first_snapshot"})
+    assert not _mod._is_process_arm({"train_version": "wf_smoke_v2"})
+
+
+def test_self_heal_restores_loop_owned_generated_dirt(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    mirror = repo / "src" / "slm_training" / "resources" / "evidence_store" / "local_index.jsonl"
+    mirror.parent.mkdir(parents=True)
+    mirror.write_text('{"ok": true}\n', encoding="utf-8")
+    subprocess.check_call(["git", "add", str(mirror.relative_to(repo))], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "seed mirror"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    mirror.write_text('{"ok": false, "dirty": true}\n', encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(
+        cwd=repo, root=root, loop_id="continuous-openui-local"
+    )
+    assert "loop_owned_generated_dirt" in report.get("soft_healed", [])
+    assert not any(
+        item.get("kind") == "foreign_dirty_tree"
+        for item in report.get("hard_pending") or []
+    )
+    assert mirror.read_text(encoding="utf-8") == '{"ok": true}\n'
+    status = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=repo, text=True
+    )
+    assert "local_index.jsonl" not in status
+
+
 def test_load_frozen_replay_skips_missing_control_manifest(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

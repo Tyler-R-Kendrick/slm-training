@@ -84,6 +84,13 @@ class TestVerdicts:
         assert verdict.data["required_n_for_effect"] > MAX_REASONABLE_N
         assert any("realistic accumulation" in reason for reason in verdict.reasons)
 
+    def test_process_arm_warns_instead_of_blocking(self) -> None:
+        # First-train I10 / heal_resume is execution, not a confirmatory claim.
+        verdict = CHECK.run(_candidate(n_seeds=1, process_arm=True, heal_resume=True))
+        assert verdict.verdict == "warn"
+        assert verdict.data.get("process_arm") is True
+        assert any("not a confirmatory design" in reason for reason in verdict.reasons)
+
     def test_ledger_sd_used_for_primary_metric(self) -> None:
         verdict = CHECK.run(_candidate(n_seeds=8, minimum_effect=0.05))
         assert "evidence_ledger" in verdict.data["sd_source"]
