@@ -5615,6 +5615,14 @@ def _select_recommended_slug(
     When residual / slug-stat ledgers exist under the loop root, soft-rank open
     candidates (boost interesting residuals; still never reopen skipped arms).
     """
+    skip = skip or set()
+    for slug, _, extras in _all_screening_arm_bank():
+        if (
+            slug not in skip
+            and (extras.get("heal_resume") or extras.get("_heal_resume"))
+        ):
+            print(f"HEAL_RESUME_SELECT cycle={cycle} slug={slug}", flush=True)
+            return slug
     # Evidence-triggered and successor quality arms do not perturb the stable
     # cycle-number rotation of the original screening bank. They become the
     # fail-forward path only after older approaches are closed.

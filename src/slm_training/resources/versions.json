@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Screening selector prefers heal_resume over leftover snapshot UCB picks after local rebuild_data.",
+          "version": "v226"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Parked verdict yields when a heal_resume arm is already registered so rebuild_data can continue into training.",
           "version": "v225"
         },
@@ -6528,7 +6533,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v225"
+      "version": "v226"
     },
     "harness.autoresearch.formal": {
       "history": [
