@@ -6785,6 +6785,7 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
         {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     )
     assert leftover == {_mod._HEAL_RESUME_SLUG}
+    assert not _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
 def test_self_heal_rebuild_data_acks_local_artifacts(
