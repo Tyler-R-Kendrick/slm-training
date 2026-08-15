@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "heal_resume arms are not snapshot leftovers and skip saturation park so I10 can train after rebuild_data.",
+          "version": "v224"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Persist heal_resume on I10 dynamic arms; underscore keys are stripped from jsonl and the resume arm was treated as a leftover snapshot.",
           "version": "v223"
         },
@@ -6518,7 +6523,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v223"
+      "version": "v224"
     },
     "harness.autoresearch.formal": {
       "history": [

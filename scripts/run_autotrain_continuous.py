@@ -4725,7 +4725,10 @@ def _slug_is_snapshot_arm(slug: str, extras: Mapping[str, Any] | None = None) ->
             (row[2] for row in _all_screening_arm_bank() if row[0] == slug),
             {},
         )
-    train_version = str((extras or {}).get("train_version") or "")
+    extras = extras or {}
+    if extras.get("heal_resume") or extras.get("_heal_resume"):
+        return False
+    train_version = str(extras.get("train_version") or "")
     return bool(train_version) and train_version != _default_screening_train_version()
 
 
@@ -12128,7 +12131,12 @@ def run_cycle(
         )
         if saturation_state is not None:
             pending = list(saturation_state["pending_regimes"])
-            if not pending:
+            heal_open = {
+                slug
+                for slug, _, extras in _all_screening_arm_bank()
+                if extras.get("heal_resume") or extras.get("_heal_resume")
+            } - skip_slugs
+            if not pending and not heal_open:
                 return _park_screening_saturation(
                     root=root,
                     loop_id=loop_id,
