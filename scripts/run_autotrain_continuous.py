@@ -2771,6 +2771,22 @@ def _local_rebuild_data_argv(*, train_version: str) -> list[str]:
     ]
 
 
+def _rebuild_data_artifact_sources(train_dir: Path) -> dict[str, Path] | None:
+    """Map receipt names to files written by build_train_data."""
+    quality = train_dir / "quality_report.json"
+    feedback = train_dir / "synthesis_feedback.json"
+    manifest = train_dir / "data_manifest.json"
+    if not manifest.is_file():
+        manifest = train_dir / "manifest.json"
+    if not (quality.is_file() and feedback.is_file() and manifest.is_file()):
+        return None
+    return {
+        "quality_report.json": quality,
+        "synthesis_feedback.json": feedback,
+        "data_manifest.json": manifest,
+    }
+
+
 def _ack_rebuild_data_action(
     root: Path,
     handoff: AutotrainCycleHandoffV1,
@@ -2858,8 +2874,8 @@ def _self_heal_rebuild_data(
     cycle_index = int(handoff.cycle_index or 0)
     train_version = _local_i10_train_version(loop_id, cycle_index)
     train_dir = cwd / "outputs" / "data" / "train" / train_version
-    required = ("data_manifest.json", "quality_report.json", "synthesis_feedback.json")
-    if not all((train_dir / name).is_file() for name in required):
+    sources = _rebuild_data_artifact_sources(train_dir)
+    if sources is None:
         argv = _local_rebuild_data_argv(train_version=train_version)
         print(
             f"SELF_HEAL_REBUILD_DATA start campaign={campaign_id} "
@@ -2879,20 +2895,20 @@ def _self_heal_rebuild_data(
                 flush=True,
             )
             return None
-    missing = [name for name in required if not (train_dir / name).is_file()]
-    if missing:
+        sources = _rebuild_data_artifact_sources(train_dir)
+    if sources is None:
         print(
             f"SELF_HEAL_REBUILD_DATA_FAIL campaign={campaign_id} "
-            f"missing={missing}",
+            "missing=quality/feedback/manifest",
             flush=True,
         )
         return None
     camp_dir = root / campaign_id
     camp_dir.mkdir(parents=True, exist_ok=True)
     evidence_uris: list[str] = []
-    for name in required:
+    for name, src in sources.items():
         dest = camp_dir / name
-        dest.write_bytes((train_dir / name).read_bytes())
+        dest.write_bytes(src.read_bytes())
         evidence_uris.append(name)
     for index, _action in pending:
         _ack_rebuild_data_action(
@@ -2901,7 +2917,7 @@ def _self_heal_rebuild_data(
     _register_i10_heal_arm(root, loop_id, train_version=train_version)
     print(
         f"SELF_HEAL_REBUILD_DATA campaign={campaign_id} "
-        f"version={train_version} files={list(required)}",
+        f"version={train_version} files={evidence_uris}",
         flush=True,
     )
     return "rebuild_data"

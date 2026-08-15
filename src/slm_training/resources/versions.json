@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Local rebuild_data accepts build_train_data manifest.json as data_manifest.json receipt evidence.",
+          "version": "v222"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Local rebuild_data uses the policy plan surface; do not force simplified_nl onto CAP0_GRAMMAR cap0_tiny.",
           "version": "v221"
         },
@@ -6508,7 +6513,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v221"
+      "version": "v222"
     },
     "harness.autoresearch.formal": {
       "history": [

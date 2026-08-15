@@ -6824,7 +6824,7 @@ def test_self_heal_rebuild_data_acks_local_artifacts(
     version = _mod._local_i10_train_version("loop-1", 196)
     train_dir = tmp_path / "outputs" / "data" / "train" / version
     train_dir.mkdir(parents=True)
-    for name in ("data_manifest.json", "quality_report.json", "synthesis_feedback.json"):
+    for name in ("manifest.json", "quality_report.json", "synthesis_feedback.json"):
         (train_dir / name).write_text(json.dumps({"ok": True, "name": name}) + "\n")
 
     def _forbid_build(*args: object, **kwargs: object) -> object:
