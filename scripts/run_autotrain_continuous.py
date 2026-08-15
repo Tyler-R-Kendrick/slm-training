@@ -2752,7 +2752,8 @@ def _local_rebuild_data_argv(*, train_version: str) -> list[str]:
 
     spec = data_intervention_action(load_climb_policy())
     raw = dict(spec.get("data_generation") or {})
-    raw["prompt_surface"] = "simplified_nl"
+    # Use the policy plan's legal surface. cap0_tiny is CAP0_GRAMMAR and
+    # rejects simplified_nl; I10 NL waits on a CAP1 plan, not a forced flag.
     raw["data_only"] = True
     target = int(raw.get("unique_root_target") or spec.get("min_unique_roots") or 8)
     raw["unique_root_target"] = max(1, min(target, _LOCAL_I10_ROOT_CAP))
