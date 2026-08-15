@@ -6786,6 +6786,7 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     )
     assert leftover == {_mod._HEAL_RESUME_SLUG}
     assert not _mod._open_slugs_are_snapshot_leftovers(leftover)
+    assert _mod._select_recommended_slug(197, skip=set()) == _mod._HEAL_RESUME_SLUG
 
 
 def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
