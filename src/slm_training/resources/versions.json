@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Persist heal_resume on I10 dynamic arms; underscore keys are stripped from jsonl and the resume arm was treated as a leftover snapshot.",
+          "version": "v223"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Local rebuild_data accepts build_train_data manifest.json as data_manifest.json receipt evidence.",
           "version": "v222"
         },
@@ -6513,7 +6518,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v222"
+      "version": "v223"
     },
     "harness.autoresearch.formal": {
       "history": [

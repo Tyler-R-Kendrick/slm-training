@@ -2834,7 +2834,7 @@ def _register_i10_heal_arm(
                 ),
                 {
                     "train_version": train_version,
-                    "_heal_resume": True,
+                    "heal_resume": True,
                 },
             )
         ],
@@ -4844,7 +4844,8 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
     return {
         slug
         for slug in open_slugs
-        if extras_by_slug.get(slug, {}).get("_heal_resume")
+        if extras_by_slug.get(slug, {}).get("heal_resume")
+        or extras_by_slug.get(slug, {}).get("_heal_resume")
         or not _slug_is_snapshot_arm(slug, extras_by_slug.get(slug))
     }
 

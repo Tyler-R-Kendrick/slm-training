@@ -6778,7 +6778,7 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
         (
             _mod._HEAL_RESUME_SLUG,
             "I10 heal",
-            {"train_version": "continuous_i10_loop_c196", "_heal_resume": True},
+            {"train_version": "continuous_i10_loop_c196", "heal_resume": True},
         )
     )
     leftover = _mod._thrash_bank_open_slugs(
