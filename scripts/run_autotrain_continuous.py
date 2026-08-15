@@ -1420,6 +1420,17 @@ def _check_regime_parked(*, root: Path, loop_id: str) -> str | None:
         return None
     verdict = _read_json(path)
     _load_dynamic_thrash_arms(root, loop_id)
+    if any(
+        extras.get("heal_resume") or extras.get("_heal_resume")
+        for _, _, extras in _all_screening_arm_bank()
+    ):
+        resolved = path.with_name(
+            f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
+        )
+        path.replace(resolved)
+        print("REGIME_RESUMED reason=heal_resume_arm_open", flush=True)
+        _clear_loop_blocker(root, loop_id, reason="regime_resumed_heal_resume_arm")
+        return None
     stored = verdict.get("bank_fingerprint")
     if stored and stored == _screening_bank_fingerprint():
         print(

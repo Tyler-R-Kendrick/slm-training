@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Parked verdict yields when a heal_resume arm is already registered so rebuild_data can continue into training.",
+          "version": "v225"
+        },
+        {
+          "date": "2026-08-15",
           "note": "heal_resume arms are not snapshot leftovers and skip saturation park so I10 can train after rebuild_data.",
           "version": "v224"
         },
@@ -6523,7 +6528,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v224"
+      "version": "v225"
     },
     "harness.autoresearch.formal": {
       "history": [
