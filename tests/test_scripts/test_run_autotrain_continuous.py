@@ -6788,6 +6788,38 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     assert not _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
+def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.parent.mkdir(parents=True)
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-parked",
+                "loop_id": loop,
+                "cycle_index": 196,
+                "binding_constraint": "screening_objective_saturated",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    _mod._append_dynamic_thrash_arms(
+        root,
+        loop,
+        [
+            (
+                _mod._HEAL_RESUME_SLUG,
+                "I10 heal",
+                {"train_version": "continuous_i10_loop_c196", "heal_resume": True},
+            )
+        ],
+    )
+    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert not verdict.is_file()
+
+
 def test_self_heal_rebuild_data_acks_local_artifacts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
