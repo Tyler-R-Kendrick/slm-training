@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Strip heal_resume from experiment knobs; it is bank metadata and StrictModel rejected the I10 matrix.",
+          "version": "v227"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Screening selector prefers heal_resume over leftover snapshot UCB picks after local rebuild_data.",
           "version": "v226"
         },
@@ -6533,7 +6538,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v226"
+      "version": "v227"
     },
     "harness.autoresearch.formal": {
       "history": [

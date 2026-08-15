@@ -10762,7 +10762,9 @@ def _matrix(
         # schema — OFAT control packages copy bank extras and previously
         # leaked ``_thrash_slug`` into hypotheses[0].
         extra_map = {
-            k: v for k, v in dict(extra).items() if not str(k).startswith("_")
+            k: v
+            for k, v in dict(extra).items()
+            if not str(k).startswith("_") and k != "heal_resume"
         }
         contrast_weight = float(extra_map.get("semantic_contrast_loss_weight") or 0.0)
         contrast_exposure = bool(
