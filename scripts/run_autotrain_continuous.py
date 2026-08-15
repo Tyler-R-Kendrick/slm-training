@@ -5988,8 +5988,22 @@ def _select_cycle_slug(
             bank_slugs=bank_slugs,
             isolate_selector=_isolate,
         )
+    extras_by_slug = {slug: extras for slug, _, extras in _all_screening_arm_bank()}
+    process_open = [
+        slug
+        for slug, extras in extras_by_slug.items()
+        if slug not in skip and _is_process_arm(extras)
+    ]
     if predecessor_priority and predecessor_priority not in skip:
-        return predecessor_priority
+        # A leftover rematch (c78/c96 after a derailed heal) must not outrank
+        # an open process/heal first-train.
+        if not process_open or _is_process_arm(extras_by_slug.get(predecessor_priority)):
+            return predecessor_priority
+        print(
+            f"PROCESS_ARM_OUTRANKS_PREDECESSOR process={process_open[0]} "
+            f"predecessor={predecessor_priority}",
+            flush=True,
+        )
     return select_recommended_slug_for_regime(
         decision=decision,
         cycle=cycle,

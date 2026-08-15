@@ -80,7 +80,9 @@ persistence is the host goal and the append-only campaign event chains.
      `heal_resume` / `process_arm` successor after local rebuild is a first
      train on a new snapshot. Power preflight may **warn**; it must not
      `PREFLIGHT_BLOCK` then rotate to a leftover rematch (`c48`/`c52`/`c78`/
-     `c96`). Driver log: `PROCESS_ARM_PREFLIGHT_CONTINUE`. Same class: any
+     `c96`). Driver log: `PROCESS_ARM_PREFLIGHT_CONTINUE`. An incomplete
+     leftover rematch in the predecessor handoff must not outrank an open
+     process arm (`PROCESS_ARM_OUTRANKS_PREDECESSOR`). Same class: any
      future heal that sets `process_arm` / `process_role`.
    - **Loop-owned generated dirt** → restore to HEAD
      (`SELF_HEAL_LOOP_OWNED_DIRT`). The driver may rewrite tracked mirrors
