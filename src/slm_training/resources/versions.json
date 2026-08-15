@@ -4915,6 +4915,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "no-bump: rebuild climb evidence ledger after harvesting incomplete fixture cycle continuous-openui-local-8c0b60dd-c1; selector and policy unchanged.",
+          "version": "v229"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Open process/heal arms outrank predecessor leftover rematches so a derailed first-train cannot force c78/c96 replay.",
           "version": "v229"
         },
