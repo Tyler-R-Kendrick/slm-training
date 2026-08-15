@@ -4915,6 +4915,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Open process/heal arms outrank predecessor leftover rematches so a derailed first-train cannot force c78/c96 replay.",
+          "version": "v229"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Process-arm contract: heal/resume first-trains skip confirmatory preflight rotate; loop-owned generated mirrors restore instead of foreign_dirty_tree.",
           "version": "v228"
         },
@@ -6553,7 +6558,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v228"
+      "version": "v229"
     },
     "harness.autoresearch.formal": {
       "history": [

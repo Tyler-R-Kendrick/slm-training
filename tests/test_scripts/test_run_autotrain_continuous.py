@@ -6821,6 +6821,27 @@ def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
     assert not verdict.is_file()
 
 
+def test_process_arm_outranks_predecessor_leftover_rematch() -> None:
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            _mod._HEAL_RESUME_SLUG,
+            "I10 heal",
+            {"train_version": "continuous_i10_loop_c196", "heal_resume": True},
+        )
+    )
+    try:
+        chosen = _mod._select_cycle_slug(
+            199,
+            predecessor_priority="simplified-nl-c78-all-maxchildren3",
+            skip=set(),
+            has_confirm_levers=False,
+            has_promote_levers=False,
+        )
+    finally:
+        _mod._DYNAMIC_THRASH_ARMS.pop()
+    assert chosen == _mod._HEAL_RESUME_SLUG
+
+
 def test_self_heal_rebuild_data_acks_local_artifacts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
