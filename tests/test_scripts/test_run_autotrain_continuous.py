@@ -6766,6 +6766,76 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     assert _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
+def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            _mod._HEAL_RESUME_SLUG,
+            "I10 heal",
+            {"train_version": "continuous_i10_loop_c196", "_heal_resume": True},
+        )
+    )
+    leftover = _mod._thrash_bank_open_slugs(
+        {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    )
+    assert leftover == {_mod._HEAL_RESUME_SLUG}
+
+
+def test_self_heal_rebuild_data_acks_local_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-parked"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": "loop-1",
+        "campaign_id": campaign_id,
+        "cycle_index": 196,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "rejected",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": ["fixture_insufficient_n_alone"],
+        "priorities": [],
+        "actions": [
+            {
+                "schema_version": "AutotrainActionV1",
+                "kind": "rebuild_data",
+                "owner": "synthesis-feedback",
+                "reason": "expand simplified-NL inventory",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+        "created_at": "2026-08-14T00:00:00Z",
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    version = _mod._local_i10_train_version("loop-1", 196)
+    train_dir = tmp_path / "outputs" / "data" / "train" / version
+    train_dir.mkdir(parents=True)
+    for name in ("data_manifest.json", "quality_report.json", "synthesis_feedback.json"):
+        (train_dir / name).write_text(json.dumps({"ok": True, "name": name}) + "\n")
+
+    def _forbid_build(*args: object, **kwargs: object) -> object:
+        raise AssertionError("existing artifacts must not rebuild")
+
+    monkeypatch.setattr(_mod, "run_bounded_process", _forbid_build)
+    kind = _mod._self_heal_rebuild_data(
+        cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
+    )
+    assert kind == "rebuild_data"
+    assert (camp / "quality_report.json").is_file()
+    receipts = (root / "loops" / "loop-1" / "action_receipts.jsonl").read_text()
+    assert "rebuild_data" in receipts
+    assert any(
+        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+    )
+
+
 def test_supervisor_noops_when_regime_parked(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -6804,9 +6874,12 @@ def test_supervisor_noops_when_regime_parked(
     monkeypatch.setattr(supervisor.subprocess, "run", _forbid_launch)
     fake_continuous = SimpleNamespace(
         _check_regime_parked=lambda **kwargs: _mod._REGIME_PARKED_STATUS,
-        self_heal_unblock_loop=lambda **kwargs: (_ for _ in ()).throw(
-            AssertionError("must not heal")
-        ),
+        self_heal_unblock_loop=lambda **kwargs: {
+            "soft_healed": [],
+            "hard_pending": [{"kind": "rebuild_data", "reason": "still pending"}],
+            "blocker_cleared": False,
+            "predecessor_campaign_id": "cycle-exhausted",
+        },
     )
     monkeypatch.setattr(supervisor, "_load_continuous", lambda: fake_continuous)
     rc = supervisor.main(

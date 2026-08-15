@@ -32,7 +32,9 @@ numbers/inventory without re-authoring classifiers.
   efficiency effect). `park_on_exhaust` routes an empty isolate bank — or a
   bank whose only leftovers are snapshot `train_version` clones — to
   `rebuild_data` / I10 instead of compose rematches. Snapshot close is by
-  `train_version` identity, not slug spelling.
+  `train_version` identity, not slug spelling. The supervisor runs a
+  wall-capped local-CPU `build_train_data` for that action
+  (`SELF_HEAL_REBUILD_DATA`) and resumes on the new `_heal_resume` arm.
 - **Synthesis loop** action filenames and fail-closed SFT (still enforced in `hillclimb`)
 - **I10 rung gates** (enabled and fail-closed, with durable prior-rung evidence)
 - **Command walls** (screening, promotion, and Lean obey `MAX_RUN_MINUTES`)

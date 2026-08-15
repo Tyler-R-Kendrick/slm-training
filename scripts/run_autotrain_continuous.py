@@ -2731,6 +2731,181 @@ def _ack_document_action(
     )
 
 
+# Wall-capped local CPU I10 heal. Policy min_unique_roots=32 is promotion-scale.
+_LOCAL_I10_ROOT_CAP = 8
+_HEAL_RESUME_SLUG = "simplified-nl-i10-heal"
+
+
+def _local_i10_train_version(loop_id: str, cycle_index: int) -> str:
+    safe = re.sub(r"[^a-z0-9]+", "_", str(loop_id).lower()).strip("_")
+    return f"continuous_i10_{safe}_c{int(cycle_index)}"
+
+
+def _local_rebuild_data_argv(*, train_version: str) -> list[str]:
+    """Compile a local, data-only build_train_data command from climb policy."""
+    from slm_training.autoresearch.climb_policy import (
+        data_intervention_action,
+        load_climb_policy,
+    )
+    from slm_training.autoresearch.engine import _data_generation_flags
+    from slm_training.autoresearch.schemas import DataGenerationKnobs
+
+    spec = data_intervention_action(load_climb_policy())
+    raw = dict(spec.get("data_generation") or {})
+    raw["prompt_surface"] = "simplified_nl"
+    raw["data_only"] = True
+    target = int(raw.get("unique_root_target") or spec.get("min_unique_roots") or 8)
+    raw["unique_root_target"] = max(1, min(target, _LOCAL_I10_ROOT_CAP))
+    generation = DataGenerationKnobs.model_validate(raw)
+    return [
+        sys.executable,
+        "-m",
+        "scripts.build_train_data",
+        "--source",
+        "programspec",
+        "--version",
+        train_version,
+        "--immutable",
+        *_data_generation_flags(generation),
+    ]
+
+
+def _ack_rebuild_data_action(
+    root: Path,
+    handoff: AutotrainCycleHandoffV1,
+    *,
+    action_index: int,
+    evidence_uris: Sequence[str],
+) -> None:
+    action = handoff.actions[action_index]
+    if action.kind != "rebuild_data":
+        raise ValueError(f"refusing to ack non-rebuild_data action: {action.kind}")
+    uris = tuple(evidence_uris)
+    evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
+    append_autotrain_action_receipt(
+        root,
+        AutotrainActionReceiptV1(
+            loop_id=handoff.loop_id,
+            campaign_id=handoff.campaign_id,
+            action_index=action_index,
+            action_sha256=autotrain_action_sha256(action),
+            action_kind="rebuild_data",
+            status="completed",
+            evidence_uris=uris,
+            evidence=evidence,
+        ),
+    )
+
+
+def _register_i10_heal_arm(
+    root: Path, loop_id: str, *, train_version: str
+) -> None:
+    """Add a selectable I10 successor so the park fingerprint moves."""
+    _load_dynamic_thrash_arms(root, loop_id)
+    if any(slug == _HEAL_RESUME_SLUG for slug, _, _ in _all_screening_arm_bank()):
+        return
+    _append_dynamic_thrash_arms(
+        root,
+        loop_id,
+        [
+            (
+                _HEAL_RESUME_SLUG,
+                (
+                    "Size-matched TwoTower on the local I10 simplified-NL rebuild "
+                    f"{train_version} improves smoke.structural_similarity versus "
+                    "the matched control without rotating the exhausted OFAT bank."
+                ),
+                {
+                    "train_version": train_version,
+                    "_heal_resume": True,
+                },
+            )
+        ],
+    )
+
+
+def _self_heal_rebuild_data(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None,
+) -> str | None:
+    """Run a wall-capped local CPU data rebuild and ack rebuild_data.
+
+    Does not fake a receipt: missing quality artifacts leave the action pending.
+    A successful heal registers an I10 resume arm so the parked fingerprint
+    moves and the next cycle can train instead of rematching smoke.
+    """
+    if not campaign_id:
+        return None
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
+        return None
+    pending = [
+        (index, action)
+        for index, action in pending_autotrain_actions(root, handoff)
+        if action.kind == "rebuild_data"
+    ]
+    if not pending:
+        return None
+    cycle_index = int(handoff.cycle_index or 0)
+    train_version = _local_i10_train_version(loop_id, cycle_index)
+    train_dir = cwd / "outputs" / "data" / "train" / train_version
+    required = ("data_manifest.json", "quality_report.json", "synthesis_feedback.json")
+    if not all((train_dir / name).is_file() for name in required):
+        argv = _local_rebuild_data_argv(train_version=train_version)
+        print(
+            f"SELF_HEAL_REBUILD_DATA start campaign={campaign_id} "
+            f"version={train_version} argv={argv}",
+            flush=True,
+        )
+        result = run_bounded_process(
+            argv,
+            interrupt_after_seconds=float(INTERRUPT_AFTER_SECONDS),
+            kill_grace_seconds=float(KILL_GRACE_SECONDS),
+            cwd=str(cwd),
+        )
+        if result.outcome != ProcessOutcome.COMPLETED or result.returncode != 0:
+            print(
+                f"SELF_HEAL_REBUILD_DATA_FAIL campaign={campaign_id} "
+                f"outcome={result.outcome} code={result.returncode}",
+                flush=True,
+            )
+            return None
+    missing = [name for name in required if not (train_dir / name).is_file()]
+    if missing:
+        print(
+            f"SELF_HEAL_REBUILD_DATA_FAIL campaign={campaign_id} "
+            f"missing={missing}",
+            flush=True,
+        )
+        return None
+    camp_dir = root / campaign_id
+    camp_dir.mkdir(parents=True, exist_ok=True)
+    evidence_uris: list[str] = []
+    for name in required:
+        dest = camp_dir / name
+        dest.write_bytes((train_dir / name).read_bytes())
+        evidence_uris.append(name)
+    for index, _action in pending:
+        _ack_rebuild_data_action(
+            root, handoff, action_index=index, evidence_uris=evidence_uris
+        )
+    _register_i10_heal_arm(root, loop_id, train_version=train_version)
+    print(
+        f"SELF_HEAL_REBUILD_DATA campaign={campaign_id} "
+        f"version={train_version} files={list(required)}",
+        flush=True,
+    )
+    return "rebuild_data"
+
+
 _VERSION_REGISTRY_REL = "src/slm_training/resources/versions.json"
 
 
@@ -3053,8 +3228,8 @@ def self_heal_unblock_loop(
         }
 
     Soft: incomplete origin/main merge, document, continuous-only dirt, thrash
-    timeout residual repair_harness, bank exhaust. Hard: true harness crash,
-    formal, deliver_stack, foreign dirt (non-merge WIP).
+    timeout residual repair_harness, bank exhaust, local-CPU rebuild_data.
+    Hard: true harness crash, formal, deliver_stack, foreign dirt (non-merge WIP).
     """
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
@@ -3128,6 +3303,17 @@ def self_heal_unblock_loop(
                 soft_healed.append(bank_kind)
         except Exception as exc:  # noqa: BLE001
             print(f"SELF_HEAL_UNBLOCK bank_repair_warn={exc!r}", flush=True)
+
+    # 2c) Local CPU rebuild_data (I10 / bank-exhaust park). Never fake.
+    try:
+        rebuild_kind = _self_heal_rebuild_data(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if rebuild_kind:
+            soft_healed.append(rebuild_kind)
+            parked = _check_regime_parked(root=root, loop_id=loop_id) is not None
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK rebuild_warn={exc!r}", flush=True)
 
     # 3) Document closeout.
     try:
@@ -4631,7 +4817,8 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
 
     When ``park_on_exhaust`` is on they are not isolate screening candidates —
     otherwise UCB rematches c96/c120 after c48/c52 while any OFAT slug is still
-    technically open.
+    technically open. A ``_heal_resume`` arm from a local rebuild_data heal is
+    the I10 successor and stays selectable.
     """
     open_slugs = {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
     if not _terminal_park_on_exhaust():
@@ -4640,7 +4827,8 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
     return {
         slug
         for slug in open_slugs
-        if not _slug_is_snapshot_arm(slug, extras_by_slug.get(slug))
+        if extras_by_slug.get(slug, {}).get("_heal_resume")
+        or not _slug_is_snapshot_arm(slug, extras_by_slug.get(slug))
     }
 
 

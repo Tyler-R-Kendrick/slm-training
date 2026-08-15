@@ -12,7 +12,8 @@ Usage::
       --train-version wf_smoke_v2 --steps 20
 
 Hard pending (true harness crash, formal, foreign dirt, deliver_stack) logs and
-backs off; soft failures heal and immediately continue.
+backs off; soft failures heal and immediately continue. Parked
+``rebuild_data`` is a local-CPU heal, not a no-op.
 """
 
 from __future__ import annotations
@@ -93,17 +94,8 @@ def main(argv: list[str] | None = None) -> int:
     cycle = 0
     while args.max_cycles == 0 or cycle < args.max_cycles:
         cycle += 1
-        parked = continuous._check_regime_parked(root=root, loop_id=args.loop_id)
-        if parked:
-            log_event(
-                {
-                    "event": "regime_parked",
-                    "status": parked,
-                    "cycle": cycle,
-                }
-            )
-            return 0
-        # Always soft-unblock before launch.
+        # Heal first (including local-CPU rebuild_data). Park is not a stop
+        # while a locally executable rebuild is pending.
         try:
             report = continuous.self_heal_unblock_loop(
                 cwd=cwd,
@@ -111,18 +103,30 @@ def main(argv: list[str] | None = None) -> int:
                 loop_id=args.loop_id,
             )
             log_event({"event": "pre_cycle_unblock", "cycle": cycle, **report})
-            if report.get("hard_pending"):
-                log_event(
-                    {
-                        "event": "hard_pending_backoff",
-                        "cycle": cycle,
-                        "hard_pending": report["hard_pending"],
-                    }
-                )
-                time.sleep(max(1.0, float(args.hard_backoff_seconds)))
-                continue
         except Exception as exc:  # noqa: BLE001
             log_event({"event": "pre_cycle_unblock_error", "error": repr(exc)})
+            report = {}
+        parked = continuous._check_regime_parked(root=root, loop_id=args.loop_id)
+        if parked:
+            log_event(
+                {
+                    "event": "regime_parked",
+                    "status": parked,
+                    "cycle": cycle,
+                    "soft_healed": list(report.get("soft_healed") or []),
+                }
+            )
+            return 0
+        if report.get("hard_pending"):
+            log_event(
+                {
+                    "event": "hard_pending_backoff",
+                    "cycle": cycle,
+                    "hard_pending": report["hard_pending"],
+                }
+            )
+            time.sleep(max(1.0, float(args.hard_backoff_seconds)))
+            continue
 
         cmd = [
             py,
