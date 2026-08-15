@@ -6766,6 +6766,13 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     assert _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
+def test_local_rebuild_argv_keeps_policy_plan_surface() -> None:
+    argv = _mod._local_rebuild_data_argv(train_version="continuous_i10_test")
+    assert "--synthesis-plan" in argv
+    assert "simplified_nl" not in argv
+    assert "--unique-root-target" in argv
+
+
 def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     _mod._DYNAMIC_THRASH_ARMS.append(
         (

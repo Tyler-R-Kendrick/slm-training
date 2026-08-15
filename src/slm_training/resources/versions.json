@@ -4905,6 +4905,11 @@
       "history": [
         {
           "date": "2026-08-15",
+          "note": "Local rebuild_data uses the policy plan surface; do not force simplified_nl onto CAP0_GRAMMAR cap0_tiny.",
+          "version": "v221"
+        },
+        {
+          "date": "2026-08-15",
           "note": "Supervisor-owned local-CPU rebuild_data heal: wall-capped build_train_data, required quality artifacts, I10 _heal_resume arm so park is not a no-op.",
           "version": "v220"
         },
@@ -6503,7 +6508,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v220"
+      "version": "v221"
     },
     "harness.autoresearch.formal": {
       "history": [
