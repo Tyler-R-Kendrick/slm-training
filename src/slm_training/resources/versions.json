@@ -73,6 +73,16 @@
       "history": [
         {
           "date": "2026-08-16",
+          "note": "no-bump: extract_test_cases moved the traversal/absolute-prefix parameter table into the mirrored external case file; assertions and covered cases are unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "no-bump: adversarial review fixes inside the unreleased v1 delivery \u2014 crash-safe per-blocker runner with incremental receipt/ledger persistence (forbidden allowlists become refused_scope receipts), healed plans excluded from cycle detection so environment regressions stay repairable, per-step scope baseline re-advance, traversal/absolute allowlist rejection, word-boundary reason normalization, BlockerClass-typed fields, authority marker classification, receipts stamped recorded_at, sys.executable/json.dumps probe hardening, backoff exponent clamp.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-16",
           "note": "no-bump: extract_test_cases moved the two pytest parameter tables (kind routing, frozen-surface prefixes) into mirrored external case files; assertions and covered cases are unchanged.",
           "version": "v1"
         },
@@ -4946,6 +4956,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-16",
+          "note": "no-bump: adversarial review fixes inside the unreleased v230 delivery \u2014 SELF_HEAL_ENV_REPAIR now rejects heal receipts recorded before the handoff's created_at (a historical heal never clears a later regression of the same cross-campaign fingerprint); supervisor floor-sleeps on the healed path and annotates the quarantine stash SHA only when unambiguous.",
+          "version": "v230"
+        },
         {
           "date": "2026-08-16",
           "note": "Self-healing escalation layer: hard-pending blockers carry a typed blocker_class; environment-incomplete repair_harness with a verified heal receipt is rewritten to next_experiment (SELF_HEAL_ENV_REPAIR, the thrash-timeout precedent \u2014 never a receipt ack; code-class crashes stay hard); the true-crash marker list moved to autoresearch.heal.classify (single source of truth); the supervisor replaces the blind fixed hard-pending sleep with playbook dispatch + escalation-governed backoff and runs the WP-4 family-closure writer post-cycle; closed_approaches.v1.json joins the continuous closeout commit set.",

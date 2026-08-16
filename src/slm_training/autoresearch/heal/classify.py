@@ -67,6 +67,19 @@ _FORMAL_CONTRADICTION_MARKERS: tuple[str, ...] = (
     "band_breach",
 )
 
+#: Markers naming decisions only a human may make (paid compute, HF writes,
+#: explicit user authority). These route as class ``authority`` → owner
+#: ``human`` regardless of blocker kind.
+_AUTHORITY_MARKERS: tuple[str, ...] = (
+    "paid gpu",
+    "paid compute",
+    "remote compute authority",
+    "hf write",
+    "requires user authority",
+    "human approval",
+    "billing budget",
+)
+
 _MISSING_JS_MODULE_RE = re.compile(
     r"(?:cannot find (?:module|package)|err_module_not_found)"
     r"[^'\"]*['\"]([^'\"]+)['\"]",
@@ -92,6 +105,10 @@ def classify_blocker(kind: str, reason: str) -> BlockerClass:
     kind_s = str(kind).strip()
     text = str(reason).lower()
 
+    # Human-authority decisions dominate every other class: no playbook or
+    # agent session may substitute for a paid-compute / approval grant.
+    if any(m in text for m in _AUTHORITY_MARKERS):
+        return "authority"
     if kind_s == "stop_campaign":
         return "formal_contradiction"
     if kind_s == "repair_formal":

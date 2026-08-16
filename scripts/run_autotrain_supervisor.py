@@ -74,23 +74,27 @@ def _handle_hard_pending(
         any_healed = any(r.outcome == "healed" for r in receipts)
         # Cross-link a fresh quarantine stash SHA into the escalation note so
         # the next agent can find the quarantined evidence (skeptic O6.5).
-        for receipt in receipts:
-            if (
-                receipt.outcome == "healed"
-                and receipt.playbook_id.startswith("quarantine_dirt")
-            ):
-                stash_sha = _stash_head_sha(cwd)
-                if stash_sha:
-                    ledger = EscalationLedger.load(root, loop_id)
-                    ledger.resolve(
-                        receipt.blocker_fingerprint,
-                        note=(
-                            f"quarantined_stash_sha={stash_sha} "
-                            f"restore=git stash apply {stash_sha}"
-                        ),
-                    )
-                    ledger.save()
+        # stash@{0} is only unambiguous when exactly one quarantine healed in
+        # this dispatch; with several, annotating would name the wrong stash,
+        # so leave attribution to the per-receipt stash message instead.
         ledger = EscalationLedger.load(root, loop_id)
+        quarantined = [
+            r
+            for r in receipts
+            if r.outcome == "healed"
+            and r.playbook_id.startswith("quarantine_dirt")
+        ]
+        if len(quarantined) == 1:
+            stash_sha = _stash_head_sha(cwd)
+            if stash_sha:
+                ledger.resolve(
+                    quarantined[0].blocker_fingerprint,
+                    note=(
+                        f"quarantined_stash_sha={stash_sha} "
+                        f"restore=git stash apply {stash_sha}"
+                    ),
+                )
+        ledger.save()
         return {
             "any_healed": any_healed,
             "sleep_seconds": ledger.sleep_seconds(default=30.0),
@@ -248,7 +252,11 @@ def main(argv: list[str] | None = None) -> int:
                 }
             )
             if outcome.get("any_healed"):
-                continue  # re-run the unblock loop immediately
+                # Floor sleep: a blocker whose reason text shifts each cycle
+                # mints fresh fingerprints, so the attempt budget alone does
+                # not bound a heal-spin — never loop with zero delay.
+                time.sleep(max(0.5, float(args.soft_backoff_seconds)))
+                continue  # re-run the unblock loop
             time.sleep(
                 max(
                     1.0,

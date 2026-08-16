@@ -53,6 +53,7 @@ from slm_training.autoresearch.heal.escalation import (
 from slm_training.autoresearch.heal.schemas import (
     HealAttemptReceiptV1,
     HealPlanV1,
+    HealScopeError,
     HealStepResultV1,
     plan_sha256,
     reject_forbidden_heal,
@@ -241,8 +242,19 @@ def run_playbooks(
     cwd = Path(cwd)
     ledger = EscalationLedger.load(root, loop_id)
     prior_receipts = load_heal_receipts(root, loop_id)
-    seen_plan_shas = {r.plan_sha256 for r in prior_receipts}
+    # A plan that already healed is not a cycle: the environment can regress
+    # (container rebuild drops node_modules) and the deterministic repair must
+    # stay available. Only unresolved/failed plans count toward cycles.
+    seen_plan_shas = {
+        r.plan_sha256 for r in prior_receipts if r.outcome != "healed"
+    }
     available = tuple(playbooks) if playbooks is not None else discovered_playbooks()
+
+    def _persist(receipt: HealAttemptReceiptV1) -> None:
+        # Incremental persistence: a later blocker's crash must never discard
+        # earlier receipts or ledger attempt counts (the budget law).
+        write_heal_receipt(root, receipt)
+        ledger.save()
 
     receipts: list[HealAttemptReceiptV1] = []
     for blocker in blockers:
@@ -281,6 +293,7 @@ def run_playbooks(
                     outcome="budget_exhausted",
                 )
             )
+            _persist(receipts[-1])
             continue
         try:
             plan = playbook.plan(dict(blocker), cwd=cwd)
@@ -298,12 +311,32 @@ def run_playbooks(
                     note=_crash_summary(exc),
                 )
             )
+            _persist(receipts[-1])
             continue
         if plan is None:
             ledger.escalate(fingerprint, note="playbook_declined")
             continue
-        for step in plan.steps:
-            reject_forbidden_heal(step.writes_allowed)
+        try:
+            for step in plan.steps:
+                reject_forbidden_heal(step.writes_allowed)
+        except HealScopeError as exc:
+            # A playbook naming a frozen surface is a buggy/hostile playbook:
+            # record the refusal and escalate — never take down the runner.
+            ledger.escalate(fingerprint, note="refused_scope_allowlist")
+            receipts.append(
+                _receipt(
+                    loop_id,
+                    campaign_id,
+                    playbook.playbook_id,
+                    fingerprint,
+                    plan=None,
+                    attempts_prior=record.attempts,
+                    outcome="refused_scope",
+                    note=str(exc)[:400],
+                )
+            )
+            _persist(receipts[-1])
+            continue
         signature = plan_sha256(plan)
         if signature in seen_plan_shas:
             ledger.escalate(fingerprint, note="cycle_detected")
@@ -318,28 +351,40 @@ def run_playbooks(
                     outcome="cycle_detected",
                 )
             )
+            _persist(receipts[-1])
             continue
         seen_plan_shas.add(signature)
         ledger.record_attempt(fingerprint, playbook.playbook_id)
 
-        receipt = _execute_plan(
-            plan,
-            loop_id=loop_id,
-            campaign_id=campaign_id,
-            fingerprint=fingerprint,
-            attempts_prior=record.attempts,
-            cwd=cwd,
-        )
+        try:
+            receipt = _execute_plan(
+                plan,
+                loop_id=loop_id,
+                campaign_id=campaign_id,
+                fingerprint=fingerprint,
+                attempts_prior=record.attempts,
+                cwd=cwd,
+            )
+        except Exception as exc:  # noqa: BLE001 — execution crash is a failed attempt
+            receipt = _receipt(
+                loop_id,
+                campaign_id,
+                playbook.playbook_id,
+                fingerprint,
+                plan=plan,
+                attempts_prior=record.attempts,
+                outcome="step_failed",
+                note=_crash_summary(exc),
+            )
         receipts.append(receipt)
         if receipt.outcome == "healed":
             ledger.resolve(fingerprint, note=f"healed_by:{plan.playbook_id}")
         elif receipt.outcome == "step_timeout":
             # Kill is not evidence: escalate immediately, zero retries.
             ledger.escalate(fingerprint, note="step_timeout_under_run_cap")
+        _persist(receipt)
 
     ledger.save()
-    for receipt in receipts:
-        write_heal_receipt(root, receipt)
     return tuple(receipts)
 
 
@@ -383,15 +428,17 @@ def _execute_plan(
         if result.returncode != 0:
             outcome = "step_failed"
             break
-        violation = _scope_violation(
-            before, _dirty_paths(cwd), step.writes_allowed
-        )
+        after = _dirty_paths(cwd)
+        violation = _scope_violation(before, after, step.writes_allowed)
         if violation:
             outcome = "refused_scope"
             step_results[-1] = result.model_copy(
                 update={"tail": (result.tail + f"\nscope_violation={violation[:8]}")[:2000]}
             )
             break
+        # Re-baseline: dirt a step legally produced must not be re-judged
+        # under the next step's (disjoint) allowlist.
+        before = after
     if outcome == "healed":
         verify_result = _run_step(
             plan.verify.argv,
@@ -433,6 +480,8 @@ def _receipt(
     verify_result: HealStepResultV1 | None = None,
     note: str = "",
 ) -> HealAttemptReceiptV1:
+    from slm_training.autoresearch.schemas import utc_now
+
     return HealAttemptReceiptV1(
         loop_id=loop_id,
         campaign_id=campaign_id,
@@ -444,4 +493,8 @@ def _receipt(
         verify_result=verify_result,
         outcome=outcome,  # type: ignore[arg-type]
         note=note,
+        # Recency binding: the driver's rewrite rejects receipts older than
+        # the blocker's handoff, so a historical heal can never authorize a
+        # later regression of the same fingerprint.
+        recorded_at=utc_now(),
     )

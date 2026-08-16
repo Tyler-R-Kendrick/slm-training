@@ -23,6 +23,7 @@ the quarantined evidence.
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 from slm_training.autoresearch.heal.escalation import blocker_fingerprint
@@ -133,7 +134,7 @@ class _QuarantineDirtPlaybook:
             # escalation note (see run_autotrain_supervisor).
             verify=HealVerifyV1(
                 argv=(
-                    "python3",
+                    sys.executable,
                     "-c",
                     (
                         "import subprocess, sys; "

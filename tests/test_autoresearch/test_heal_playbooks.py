@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
+import pydantic
 import pytest
 
 from tests.casefiles import case_values
@@ -32,17 +34,34 @@ from slm_training.autoresearch.heal.schemas import (
 )
 
 
+# Isolate from ambient Git config (gpgsign, hooksPath) so setup commits and
+# stash behavior never depend on the developer machine or CI image.
+_GIT_ENV = {
+    **os.environ,
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_SYSTEM": os.devnull,
+    "GIT_CONFIG_NOSYSTEM": "1",
+}
+
+
 def _git_repo(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
-    subprocess.check_call(["git", "init"], cwd=path, stdout=subprocess.DEVNULL)
     subprocess.check_call(
-        ["git", "config", "user.email", "t@example.com"], cwd=path
+        ["git", "init"], cwd=path, env=_GIT_ENV, stdout=subprocess.DEVNULL
     )
-    subprocess.check_call(["git", "config", "user.name", "t"], cwd=path)
-    (path / "README.md").write_text("x\n", encoding="utf-8")
-    subprocess.check_call(["git", "add", "-A"], cwd=path)
     subprocess.check_call(
-        ["git", "commit", "-m", "init"], cwd=path, stdout=subprocess.DEVNULL
+        ["git", "config", "user.email", "t@example.com"], cwd=path, env=_GIT_ENV
+    )
+    subprocess.check_call(
+        ["git", "config", "user.name", "t"], cwd=path, env=_GIT_ENV
+    )
+    (path / "README.md").write_text("x\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "-A"], cwd=path, env=_GIT_ENV)
+    subprocess.check_call(
+        ["git", "commit", "-m", "init"],
+        cwd=path,
+        env=_GIT_ENV,
+        stdout=subprocess.DEVNULL,
     )
     return path
 
@@ -107,8 +126,18 @@ class TestForbiddenScope:
     def test_environment_prefixes_allowed(self) -> None:
         reject_forbidden_heal(("node_modules/", ".lake/", "package-lock.json"))
 
+    @pytest.mark.parametrize(
+        "prefix",
+        case_values(__file__, "test_traversal_and_absolute_prefixes_rejected"),
+    )
+    def test_traversal_and_absolute_prefixes_rejected(self, prefix: str) -> None:
+        # A traversal or absolute spelling must not alias a frozen surface
+        # past the prefix comparison.
+        with pytest.raises(HealScopeError):
+            reject_forbidden_heal((prefix,))
+
     def test_plan_without_verify_fails_validation(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(pydantic.ValidationError):
             HealPlanV1.model_validate(
                 {
                     "playbook_id": "x/v1",
@@ -201,7 +230,11 @@ class TestRunnerLaws:
         )
         assert [r.outcome for r in receipts] == ["refused_scope"]
 
-    def test_forbidden_allowlist_raises(self, tmp_path: Path) -> None:
+    def test_forbidden_allowlist_yields_refused_scope(
+        self, tmp_path: Path
+    ) -> None:
+        # A playbook naming a frozen surface is recorded and escalated —
+        # never a runner escape that would discard earlier receipts.
         repo = _git_repo(tmp_path / "repo")
         root = tmp_path / "ar"
         frozen = _FakePlaybook(
@@ -216,15 +249,86 @@ class TestRunnerLaws:
                 ),
             )
         )
-        with pytest.raises(HealScopeError):
-            run_playbooks(
-                root=root,
-                loop_id="loop-1",
-                campaign_id="c1",
-                blockers=[_env_blocker()],
-                cwd=repo,
-                playbooks=[frozen],
-            )
+        receipts = run_playbooks(
+            root=root,
+            loop_id="loop-1",
+            campaign_id="c1",
+            blockers=[_env_blocker()],
+            cwd=repo,
+            playbooks=[frozen],
+        )
+        assert [r.outcome for r in receipts] == ["refused_scope"]
+        ledger = EscalationLedger.load(root, "loop-1")
+        record = next(iter(ledger.records.values()))
+        assert record.status == "escalated"
+
+    def test_crash_on_one_blocker_preserves_prior_receipts(
+        self, tmp_path: Path
+    ) -> None:
+        # Incremental persistence: blocker B crashing must not discard
+        # blocker A's receipt or attempt counts.
+        repo = _git_repo(tmp_path / "repo")
+        root = tmp_path / "ar"
+
+        class _Exploding(_FakePlaybook):
+            def plan(self, blocker: dict, *, cwd: Path):
+                if "second" in str(blocker.get("reason")):
+                    raise RuntimeError("boom")
+                return _plan(
+                    steps=(
+                        HealStepV1(
+                            step_id="noop", argv=("true",), timeout_seconds=30
+                        ),
+                    ),
+                    verify_argv=("true",),
+                )
+
+        receipts = run_playbooks(
+            root=root,
+            loop_id="loop-1",
+            campaign_id="c1",
+            blockers=[
+                _env_blocker(),
+                _env_blocker("second blocker: AgentV SDK is unavailable"),
+            ],
+            cwd=repo,
+            playbooks=[_Exploding(None)],
+        )
+        assert [r.outcome for r in receipts] == ["healed", "step_failed"]
+        persisted = heal.load_heal_receipts(root, "loop-1")
+        assert [r.outcome for r in persisted] == ["healed", "step_failed"]
+
+    def test_healed_plan_may_rerun_after_regression(
+        self, tmp_path: Path
+    ) -> None:
+        # A deterministic repair that healed once must stay available when
+        # the environment regresses — healed receipts are not cycles.
+        repo = _git_repo(tmp_path / "repo")
+        root = tmp_path / "ar"
+        factory = lambda b, cwd: _plan(  # noqa: E731
+            steps=(
+                HealStepV1(step_id="noop", argv=("true",), timeout_seconds=30),
+            ),
+            verify_argv=("true",),
+        )
+        first = run_playbooks(
+            root=root,
+            loop_id="loop-1",
+            campaign_id="c1",
+            blockers=[_env_blocker()],
+            cwd=repo,
+            playbooks=[_FakePlaybook(factory)],
+        )
+        assert [r.outcome for r in first] == ["healed"]
+        second = run_playbooks(
+            root=root,
+            loop_id="loop-1",
+            campaign_id="c2",
+            blockers=[_env_blocker()],
+            cwd=repo,
+            playbooks=[_FakePlaybook(factory)],
+        )
+        assert [r.outcome for r in second] == ["healed"]
 
     def test_cycle_detection_on_identical_plan(self, tmp_path: Path) -> None:
         repo = _git_repo(tmp_path / "repo")
@@ -430,7 +534,10 @@ class TestQuarantinePlaybook:
         repo = _git_repo(tmp_path / "repo")
         root = tmp_path / "ar"
         git_dir = subprocess.check_output(
-            ["git", "rev-parse", "--absolute-git-dir"], cwd=repo, text=True
+            ["git", "rev-parse", "--absolute-git-dir"],
+            cwd=repo,
+            env=_GIT_ENV,
+            text=True,
         ).strip()
         sentinel = worktree_sentinel_path(root, "loop-1")
         sentinel.parent.mkdir(parents=True, exist_ok=True)
@@ -453,12 +560,12 @@ class TestQuarantinePlaybook:
         )
         assert [r.outcome for r in receipts] == ["healed"]
         status = subprocess.check_output(
-            ["git", "status", "--porcelain"], cwd=repo, text=True
+            ["git", "status", "--porcelain"], cwd=repo, env=_GIT_ENV, text=True
         )
         assert status.strip() == ""
         # The stash still holds the quarantined work (reversible by law).
         stashes = subprocess.check_output(
-            ["git", "stash", "list"], cwd=repo, text=True
+            ["git", "stash", "list"], cwd=repo, env=_GIT_ENV, text=True
         )
         assert "heal-quarantine:loop-1" in stashes
 
@@ -466,7 +573,10 @@ class TestQuarantinePlaybook:
         repo = _git_repo(tmp_path / "repo")
         root = tmp_path / "ar"
         git_dir = subprocess.check_output(
-            ["git", "rev-parse", "--absolute-git-dir"], cwd=repo, text=True
+            ["git", "rev-parse", "--absolute-git-dir"],
+            cwd=repo,
+            env=_GIT_ENV,
+            text=True,
         ).strip()
         sentinel = worktree_sentinel_path(root, "loop-1")
         sentinel.parent.mkdir(parents=True, exist_ok=True)

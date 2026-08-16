@@ -2388,10 +2388,17 @@ def _self_heal_env_repair_rewrite(
     from slm_training.autoresearch.heal.classify import classify_blocker
     from slm_training.autoresearch.heal.escalation import blocker_fingerprint
 
+    # Recency binding: fingerprints are cross-campaign, so only receipts
+    # recorded at/after this handoff's creation may authorize its rewrite —
+    # a historical heal never clears a later regression of the same blocker.
+    handoff_created = str(handoff.created_at or "")
     healed_by_fingerprint = {
         receipt.blocker_fingerprint: receipt
         for receipt in load_heal_receipts(root, loop_id)
-        if receipt.outcome == "healed" and receipt.verify_result is not None
+        if receipt.outcome == "healed"
+        and receipt.verify_result is not None
+        and receipt.recorded_at
+        and (not handoff_created or receipt.recorded_at >= handoff_created)
     }
     matched: list[tuple[int, AutotrainActionV1, str]] = []
     for index, action in repair_pending:

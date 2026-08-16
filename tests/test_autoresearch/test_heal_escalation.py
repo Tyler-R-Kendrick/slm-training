@@ -147,8 +147,14 @@ class TestAdvisoryOnly:
         for name in public:
             lowered = name.lower()
             assert not any(tok in lowered for tok in forbidden_tokens), name
+        # Restrict the module scan to names esc itself defines — imported
+        # helpers must not fail this test without a real authority change.
         module_public = [
-            name for name in dir(esc) if not name.startswith("_")
+            name
+            for name in dir(esc)
+            if not name.startswith("_")
+            and getattr(getattr(esc, name), "__module__", esc.__name__)
+            == esc.__name__
         ]
         for name in module_public:
             lowered = name.lower()

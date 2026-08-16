@@ -44,6 +44,43 @@
           ]
         }
       ]
+    },
+    "test_traversal_and_absolute_prefixes_rejected": {
+      "parameters": [
+        "prefix"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "outputs/../src/slm_training/"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "/src/slm_training/"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "../src/slm_training/"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            "node_modules/../scripts/"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            ".."
+          ]
+        }
+      ]
     }
   }
 }

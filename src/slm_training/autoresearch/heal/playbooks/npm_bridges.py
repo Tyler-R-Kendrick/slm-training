@@ -15,6 +15,7 @@ module — never ``npm ci`` exit 0.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from slm_training.autoresearch.heal.classify import missing_js_module
@@ -78,11 +79,15 @@ class _NpmBridgesPlaybook:
             ),
             blocker_class="environment",
             steps=tuple(steps),
+            # The probe runs from the repo root deliberately: the ship-gate
+            # eval that crashed resolves from there, so root resolution IS the
+            # original failing check. json.dumps hardens the module name
+            # against quotes/backslashes in hostile crash text.
             verify=HealVerifyV1(
                 argv=(
                     "node",
                     "-e",
-                    f"require.resolve({module!r})",
+                    f"require.resolve({json.dumps(module)})",
                 ),
                 cwd="",
                 env_clears=("NODE_OPTIONS",),

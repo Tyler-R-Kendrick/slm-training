@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -22,6 +23,14 @@ from slm_training.autoresearch.heal.schemas import (
     HealAttemptReceiptV1,
     HealStepResultV1,
 )
+from slm_training.autoresearch.schemas import utc_now
+
+_GIT_ENV = {
+    **os.environ,
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_SYSTEM": os.devnull,
+    "GIT_CONFIG_NOSYSTEM": "1",
+}
 
 _SCRIPT = (
     Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
@@ -39,17 +48,28 @@ _CODE_REASON = "No module named slm_training.harnesses.model_build.missing"
 
 
 def _init_git_repo(path: Path) -> None:
-    subprocess.check_call(["git", "init"], cwd=path, stdout=subprocess.DEVNULL)
     subprocess.check_call(
-        ["git", "config", "user.email", "test@example.com"], cwd=path
+        ["git", "init"], cwd=path, env=_GIT_ENV, stdout=subprocess.DEVNULL
     )
-    subprocess.check_call(["git", "config", "user.name", "test"], cwd=path)
+    subprocess.check_call(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=path,
+        env=_GIT_ENV,
+    )
+    subprocess.check_call(
+        ["git", "config", "user.name", "test"], cwd=path, env=_GIT_ENV
+    )
     (path / "README.md").write_text("# test\n", encoding="utf-8")
     (path / "docs" / "design").mkdir(parents=True)
     (path / "docs" / "design" / ".gitkeep").write_text("", encoding="utf-8")
-    subprocess.check_call(["git", "add", "README.md", "docs"], cwd=path)
     subprocess.check_call(
-        ["git", "commit", "-m", "init"], cwd=path, stdout=subprocess.DEVNULL
+        ["git", "add", "README.md", "docs"], cwd=path, env=_GIT_ENV
+    )
+    subprocess.check_call(
+        ["git", "commit", "-m", "init"],
+        cwd=path,
+        env=_GIT_ENV,
+        stdout=subprocess.DEVNULL,
     )
 
 
@@ -96,6 +116,9 @@ def _write_handoff(
         ],
         "checkpoint_paths": [],
         "checkpoint_documentation_required": False,
+        # Explicit: the default_factory would re-stamp created_at on every
+        # parse, defeating the receipt-recency comparison under test.
+        "created_at": "2026-01-01T00:00:00+00:00",
     }
     path = camp / "cycle_handoff.json"
     path.write_text(json.dumps(handoff) + "\n", encoding="utf-8")
@@ -103,7 +126,11 @@ def _write_handoff(
 
 
 def _healed_receipt(
-    loop_id: str, campaign_id: str, reason: str
+    loop_id: str,
+    campaign_id: str,
+    reason: str,
+    *,
+    recorded_at: str | None = None,
 ) -> HealAttemptReceiptV1:
     digest = hashlib.sha256(b"probe-ok").hexdigest()
     probe = HealStepResultV1(
@@ -123,6 +150,7 @@ def _healed_receipt(
         step_results=(probe,),
         verify_result=probe,
         outcome="healed",
+        recorded_at=recorded_at if recorded_at is not None else utc_now(),
     )
 
 
@@ -190,6 +218,56 @@ def test_unverified_receipt_stays_hard(loop_repo: tuple[Path, Path]) -> None:
         cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
     )
     assert kind is None
+
+
+def test_healed_without_verify_result_stays_hard(
+    loop_repo: tuple[Path, Path],
+) -> None:
+    # Both halves of the predicate must hold: a "healed" claim with no verify
+    # probe result is unrepresentable evidence and never rewrites.
+    repo, root = loop_repo
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-c95"
+    _write_handoff(root, loop_id=loop_id, campaign_id=campaign_id, reason=_ENV_REASON)
+    receipt = _healed_receipt(loop_id, campaign_id, _ENV_REASON).model_copy(
+        update={"verify_result": None}
+    )
+    write_heal_receipt(root, receipt)
+
+    assert (
+        _mod._self_heal_env_repair_rewrite(
+            cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+        )
+        is None
+    )
+
+
+def test_stale_receipt_from_before_handoff_stays_hard(
+    loop_repo: tuple[Path, Path],
+) -> None:
+    # Fingerprints are cross-campaign: a heal recorded before this handoff
+    # existed must never authorize its rewrite (the environment regressed
+    # again after that heal).
+    repo, root = loop_repo
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-c96"
+    _write_handoff(root, loop_id=loop_id, campaign_id=campaign_id, reason=_ENV_REASON)
+    write_heal_receipt(
+        root,
+        _healed_receipt(
+            loop_id,
+            campaign_id,
+            _ENV_REASON,
+            recorded_at="2020-01-01T00:00:00+00:00",
+        ),
+    )
+
+    assert (
+        _mod._self_heal_env_repair_rewrite(
+            cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+        )
+        is None
+    )
 
 
 def test_code_class_crash_never_rewritten(loop_repo: tuple[Path, Path]) -> None:

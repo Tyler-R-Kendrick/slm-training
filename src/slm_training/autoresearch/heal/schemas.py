@@ -21,6 +21,7 @@ Design constraints (skeptic-panel dispositions, see
 from __future__ import annotations
 
 import hashlib
+import posixpath
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -80,16 +81,28 @@ class HealScopeError(ValueError):
 
 
 def _normalize_path_prefix(prefix: str) -> str:
+    """Separator-normalize and collapse traversal so prefixes compare honestly."""
     text = str(prefix).replace("\\", "/")
     while text.startswith("./"):
         text = text[2:]
-    return text
+    trailing = text.endswith("/")
+    collapsed = posixpath.normpath(text) if text else text
+    if collapsed in {".", ""}:
+        return ""
+    return collapsed + "/" if trailing else collapsed
 
 
 def reject_forbidden_heal(writes_allowed: tuple[str, ...] | list[str]) -> None:
     """Fail closed when an allowlist would authorize writes to frozen surfaces."""
     for prefix in writes_allowed:
         normalized = _normalize_path_prefix(prefix)
+        # Absolute or worktree-escaping prefixes can alias frozen surfaces
+        # under another spelling — reject them outright.
+        if normalized.startswith("/") or normalized.split("/", 1)[0] == "..":
+            raise HealScopeError(
+                f"heal allowlist prefix {prefix!r} is absolute or escapes the "
+                "worktree; allowlists must be repo-relative"
+            )
         for forbidden in FORBIDDEN_HEAL_WRITE_PREFIXES:
             if normalized.startswith(forbidden) or forbidden.startswith(normalized):
                 raise HealScopeError(
@@ -127,7 +140,7 @@ class HealPlanV1(StrictModel):
     schema_version: Literal["heal_plan/v1"] = "heal_plan/v1"
     playbook_id: str = Field(min_length=1)
     blocker_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
-    blocker_class: str = Field(min_length=1)
+    blocker_class: BlockerClass
     steps: tuple[HealStepV1, ...] = Field(min_length=1)
     verify: HealVerifyV1
 
@@ -204,7 +217,7 @@ class EscalationRecordV1(StrictModel):
     loop_id: str = Field(min_length=1)
     fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     kind: str = Field(min_length=1)
-    blocker_class: str = Field(min_length=1)
+    blocker_class: BlockerClass
     reason: str = ""
     campaign_ids: tuple[str, ...] = ()
     owner_skill: str = ""
@@ -228,7 +241,9 @@ def _normalize_reason(reason: str) -> str:
     text = str(reason).lower().strip()
     text = re.sub(r"\b[0-9a-f]{12,64}\b", "<sha>", text)
     text = re.sub(r"\b\d{4}-\d{2}-\d{2}t?[\d:.z+-]*\b", "<ts>", text)
-    text = re.sub(r"c?\d+", "<n>", text)
+    # Word boundaries keep digits inside identifiers (openui_bridge2, agentv3)
+    # so distinct blockers never collapse into one fingerprint/budget.
+    text = re.sub(r"\bc?\d+\b", "<n>", text)
     text = re.sub(r"\s+", " ", text)
     return text[:400]
 

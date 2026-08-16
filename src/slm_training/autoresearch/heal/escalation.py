@@ -68,7 +68,9 @@ def blocker_fingerprint(kind: str, reason: str) -> str:
 
 def next_backoff_seconds(seen_count: int) -> int:
     """Exponential governor: 30s doubling to a 1h cap."""
-    exponent = max(0, int(seen_count) - 1)
+    # Clamp before the shift: seen_count is unbounded in a standing loop and
+    # 2**7 already reaches the cap.
+    exponent = min(max(0, int(seen_count) - 1), 8)
     return int(min(_BACKOFF_BASE_SECONDS * (2**exponent), _BACKOFF_CAP_SECONDS))
 
 
