@@ -26,6 +26,8 @@ missing file is normal and is reported as "not present", never as an error.
 | Evidence store | `src/slm_training/resources/evidence_store/local_index.jsonl` — query via `python -m scripts.query_evidence` **when that script exists**, else read the JSONL directly | Recent runs, preflight blocks, pending confirmations |
 | Merge preflight | The delivery ledger's persisted `preflight` field (`outputs/autoresearch/sdlc_delivery_ledger.jsonl`, when present) | Preflight-block status from the most recent recorded cycle |
 | Model card | `docs/MODEL_CARD.md` (plus README "Model card (summary)") | Currently promoted model / roster status |
+| Escalations | `outputs/autoresearch/loops/<loop-id>/escalations.jsonl` (when present) | Open hard blockers: class, owner skill, needed authority, attempts, backoff — the typed diagnosis surface for anything the heal playbooks could not clear |
+| Heal receipts | `outputs/autoresearch/loops/<loop-id>/heal_receipts.jsonl` (when present) | Recent bounded heal attempts and their verify outcomes |
 
 **Never invoke `scripts.verify_merge_ready` (or any full/fast merge-gate run)
 from this skill.** That script runs `compileall` (writes `__pycache__`) and,

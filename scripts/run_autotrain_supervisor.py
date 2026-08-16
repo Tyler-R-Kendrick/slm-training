@@ -37,6 +37,110 @@ def _load_continuous():
     return mod
 
 
+def _handle_hard_pending(
+    hard_pending: list[dict],
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    max_heal_attempts: int,
+    playbooks_enabled: bool,
+    log_event,
+) -> dict:
+    """Dispatch heal playbooks + escalation governance for hard blockers.
+
+    Returns ``{"any_healed": bool, "sleep_seconds": float, "outcomes": [...]}``.
+    Never raises: heal-layer bugs degrade to the legacy fixed backoff.
+    """
+    try:
+        from slm_training.autoresearch import heal
+        from slm_training.autoresearch.heal.escalation import EscalationLedger
+
+        blockers = [
+            {**entry, "_root": root, "_loop_id": loop_id}
+            for entry in hard_pending
+        ]
+        receipts = ()
+        if playbooks_enabled:
+            receipts = heal.run_playbooks(
+                root=root,
+                loop_id=loop_id,
+                campaign_id=campaign_id or "unknown",
+                blockers=blockers,
+                cwd=cwd,
+                max_attempts_per_fingerprint=max_heal_attempts,
+            )
+        any_healed = any(r.outcome == "healed" for r in receipts)
+        # Cross-link a fresh quarantine stash SHA into the escalation note so
+        # the next agent can find the quarantined evidence (skeptic O6.5).
+        # stash@{0} is only unambiguous when exactly one quarantine healed in
+        # this dispatch; with several, annotating would name the wrong stash,
+        # so leave attribution to the per-receipt stash message instead.
+        ledger = EscalationLedger.load(root, loop_id)
+        quarantined = [
+            r
+            for r in receipts
+            if r.outcome == "healed"
+            and r.playbook_id.startswith("quarantine_dirt")
+        ]
+        if len(quarantined) == 1:
+            stash_sha = _stash_head_sha(cwd)
+            if stash_sha:
+                ledger.resolve(
+                    quarantined[0].blocker_fingerprint,
+                    note=(
+                        f"quarantined_stash_sha={stash_sha} "
+                        f"restore=git stash apply {stash_sha}"
+                    ),
+                )
+        ledger.save()
+        return {
+            "any_healed": any_healed,
+            "sleep_seconds": ledger.sleep_seconds(default=30.0),
+            "outcomes": [r.outcome for r in receipts],
+            "open_escalations": len(ledger.open_records()),
+        }
+    except Exception as exc:  # noqa: BLE001 — heal bugs never kill supervision
+        log_event({"event": "hard_pending_heal_error", "error": repr(exc)})
+        return {"any_healed": False, "sleep_seconds": 30.0, "outcomes": []}
+
+
+def _stash_head_sha(cwd: Path) -> str | None:
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "stash@{0}"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    sha = out.stdout.strip()
+    return sha if out.returncode == 0 and len(sha) == 40 else None
+
+
+def _write_family_closures(log_event) -> None:
+    """Fail-soft post-cycle conclusion writer (WP-4 production caller)."""
+    try:
+        from slm_training.autoresearch.heal.conclusion_writer import (
+            write_family_closures,
+        )
+
+        appended = write_family_closures()
+        if appended:
+            log_event(
+                {
+                    "event": "family_closures_appended",
+                    "families": [r.family_key for r in appended],
+                }
+            )
+    except Exception as exc:  # noqa: BLE001 — a writer bug never kills a cycle
+        log_event({"event": "family_closures_error", "error": repr(exc)})
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--loop-id", default="continuous-openui-local")
@@ -69,6 +173,17 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=0,
         help="0 = unbounded supervised restarts",
+    )
+    parser.add_argument(
+        "--max-heal-attempts",
+        type=int,
+        default=2,
+        help="Playbook attempts per blocker fingerprint before escalation",
+    )
+    parser.add_argument(
+        "--no-playbooks",
+        action="store_true",
+        help="Disable heal-playbook dispatch (ledger + governed backoff only)",
     )
     args = parser.parse_args(argv)
 
@@ -118,14 +233,39 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
         if report.get("hard_pending"):
+            outcome = _handle_hard_pending(
+                report["hard_pending"],
+                cwd=cwd,
+                root=root,
+                loop_id=args.loop_id,
+                campaign_id=str(report.get("predecessor_campaign_id") or ""),
+                max_heal_attempts=int(args.max_heal_attempts),
+                playbooks_enabled=not args.no_playbooks,
+                log_event=log_event,
+            )
             log_event(
                 {
-                    "event": "hard_pending_backoff",
+                    "event": "hard_pending_heal",
                     "cycle": cycle,
                     "hard_pending": report["hard_pending"],
+                    **outcome,
                 }
             )
-            time.sleep(max(1.0, float(args.hard_backoff_seconds)))
+            if outcome.get("any_healed"):
+                # Floor sleep: a blocker whose reason text shifts each cycle
+                # mints fresh fingerprints, so the attempt budget alone does
+                # not bound a heal-spin — never loop with zero delay.
+                time.sleep(max(0.5, float(args.soft_backoff_seconds)))
+                continue  # re-run the unblock loop
+            time.sleep(
+                max(
+                    1.0,
+                    float(
+                        outcome.get("sleep_seconds")
+                        or args.hard_backoff_seconds
+                    ),
+                )
+            )
             continue
 
         cmd = [
@@ -164,6 +304,7 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
         # Post-cycle unblock regardless of exit code.
+        _write_family_closures(log_event)
         try:
             report = continuous.self_heal_unblock_loop(
                 cwd=cwd,
