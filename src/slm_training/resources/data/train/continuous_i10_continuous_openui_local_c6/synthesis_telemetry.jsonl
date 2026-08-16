@@ -1,0 +1,14 @@
+{"max_quality_score": 0.95, "mean_quality_score": 0.95, "min_quality_score": 0.95, "record_count": 7, "root_parent_count": 7, "source_family": "corruption_repair", "task_counts": {"repair": 7}}
+{"max_quality_score": 0.95, "mean_quality_score": 0.95, "min_quality_score": 0.95, "record_count": 14, "root_parent_count": 7, "source_family": "edit_trajectory", "task_counts": {"edit": 7, "patch": 7}}
+{"max_quality_score": 0.95, "mean_quality_score": 0.95, "min_quality_score": 0.95, "record_count": 14, "root_parent_count": 7, "source_family": "layout_augment", "task_counts": {"generation": 14}}
+{"max_quality_score": 0.95, "mean_quality_score": 0.95, "min_quality_score": 0.95, "record_count": 3, "root_parent_count": 2, "source_family": "scope_canonical_document", "task_counts": {"edit": 3}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 6, "root_parent_count": 2, "source_family": "scope_canonical_expression", "task_counts": {"edit": 6}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 3, "root_parent_count": 2, "source_family": "scope_canonical_lexical", "task_counts": {"edit": 3}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 5, "root_parent_count": 2, "source_family": "scope_canonical_statement", "task_counts": {"edit": 5}}
+{"max_quality_score": 0.95, "mean_quality_score": 0.95, "min_quality_score": 0.95, "record_count": 1, "root_parent_count": 1, "source_family": "scope_identity_document", "task_counts": {"identity": 1}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 8, "root_parent_count": 2, "source_family": "scope_identity_expression", "task_counts": {"identity": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 6, "root_parent_count": 2, "source_family": "scope_identity_lexical", "task_counts": {"identity": 6}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 5, "root_parent_count": 2, "source_family": "scope_identity_statement", "task_counts": {"identity": 5}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 4, "root_parent_count": 2, "source_family": "scope_repair_expression", "task_counts": {"repair": 4}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 2, "root_parent_count": 2, "source_family": "scope_repair_lexical", "task_counts": {"repair": 2}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 3, "root_parent_count": 2, "source_family": "scope_repair_statement", "task_counts": {"repair": 3}}

@@ -16927,6 +16927,11 @@
     "harness.synthesis_plan": {
       "history": [
         {
+          "version": "v7",
+          "note": "no-bump: retarget cap0_tiny_v2 generator/oracle pins to active harness.train_data v32 so local I10 rebuild_data can execute.",
+          "date": "2026-08-16"
+        },
+        {
           "date": "2026-08-16",
           "note": "component_coverage_minimum overlay on apply_corpus_generation_overrides (existing component-axis key; fail-closed targeted witness floor)",
           "version": "v7"
