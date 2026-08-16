@@ -439,6 +439,13 @@ def _data_generation_flags(generation: DataGenerationKnobs) -> list[str]:
         flags.append("--retain-trusted-anchors")
     elif generation.retain_trusted_anchors is False:
         flags.append("--no-retain-trusted-anchors")
+    if generation.component_coverage_minimum is not None:
+        flags.extend(
+            [
+                "--component-coverage-minimum",
+                str(generation.component_coverage_minimum),
+            ]
+        )
     return flags
 
 

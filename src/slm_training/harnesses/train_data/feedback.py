@@ -97,13 +97,15 @@ _EXECUTABLE_KNOBS = {
     "low_yield": ["synthesizer"],
     "redundant_expansion": ["max_records_per_parent", "synthesizer"],
     "eval_leakage_source": ["decontam_eval_root"],
-    # Sample-adequacy climb signals (autoresearch.sample_adequacy). Below the
-    # certified coverage floor the executable knob is more unique roots; above
-    # the capacity ceiling the executable knob is less expansion — never an
-    # uncharged capacity bump (decode-invariants VI).
+    # Sample-adequacy climb signals (autoresearch.sample_adequacy).
+    # Under-witnessed components get a *targeted* fail-closed rebuild
+    # (until_coverage + raised component minimum), never a blind global
+    # volume raise; measured-flat marginal gain routes away from volume —
+    # never an uncharged capacity bump (decode-invariants VI).
     "sample_size_below_coverage_floor": [
-        "data_generation.unique_root_target",
+        "data_generation.component_coverage_minimum",
         "data_generation.generation_mode",
+        "data_generation.unique_root_target",
     ],
     "sample_size_above_capacity_ceiling": [
         "max_records_per_parent",

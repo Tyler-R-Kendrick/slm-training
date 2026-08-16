@@ -970,12 +970,10 @@ def data_intervention_indicated(
     feedback: Mapping[str, Any] | None,
     unique_roots: int | None,
     blocking_findings: Sequence[str],
-    sample_adequacy: Mapping[str, Any] | None = None,
 ) -> bool:
     """True when unique roots below policy min, open blocking synthesis findings,
-    cue-only shortcut, missing required prompt surface, or a sample-adequacy
-    verdict demanding more data. Does not fire merely because model knobs are
-    exhausted."""
+    cue-only shortcut, or missing required prompt surface. Does not fire merely
+    because model knobs are exhausted."""
 
     block = policy.data_intervention
     min_roots = int(block.get("min_unique_roots") or 32)
@@ -986,11 +984,6 @@ def data_intervention_indicated(
     if _feedback_cue_only_shortcut(feedback):
         return True
     if _missing_required_prompt_surface(block, feedback):
-        return True
-    if (
-        isinstance(sample_adequacy, Mapping)
-        and sample_adequacy.get("verdict") == "generate_more"
-    ):
         return True
     return False
 
@@ -1032,30 +1025,27 @@ def data_intervention_action(policy: ClimbPolicy) -> dict[str, Any]:
 # DataGenerationKnobs.unique_root_target schema ceiling (schemas.py).
 _UNIQUE_ROOT_TARGET_MAX = 32768
 
-# Sample-adequacy verdicts that close the data-volume approach at the current
-# trajectory (decode-invariants I14: an approach closes, never the goal).
-_ADEQUACY_TRAJECTORY_VERDICTS = frozenset(
-    {"saturated_change_trajectory", "conflict_change_trajectory"}
-)
-
 
 def sample_adequacy_intervention(
     policy: ClimbPolicy, report: Mapping[str, Any]
 ) -> dict[str, Any] | None:
-    """Map a ``sample_adequacy/v1`` report onto a typed climb action.
+    """Map a ``sample_adequacy/v2`` report onto a typed climb action.
 
-    ``generate_more`` compiles onto the existing ``rebuild_data`` action with
-    the unique-root target raised toward the certified coverage floor (never
-    above the knob-schema ceiling). Saturation/conflict and coverage-gap
-    verdicts return a ``change_trajectory`` action: more volume is the wrong
-    lever, and capacity may only grow charged (``EG_params``). ``sufficient``
-    and ``insufficient_evidence`` return ``None`` — the signal recommends, it
+    ``generate_more`` compiles onto the existing ``rebuild_data`` action as a
+    *targeted* rebuild: ``generation_mode=until_coverage`` with the component
+    coverage minimum raised to the witness target, so the fail-closed build —
+    not a projection — decides whether coverage is reachable. The unique-root
+    target rises toward the projected floor, never above the knob ceiling.
+    ``saturated_change_trajectory`` (measured flat marginal gain only)
+    returns a ``change_trajectory`` action: more volume is the wrong lever,
+    and capacity may only grow charged (``EG_params``). ``sufficient`` and
+    ``insufficient_evidence`` return ``None`` — the signal recommends, it
     never gates.
     """
 
-    if report.get("schema_version") != "sample_adequacy/v1":
+    if report.get("schema_version") != "sample_adequacy/v2":
         raise ClimbPolicyError(
-            "sample_adequacy_intervention requires a sample_adequacy/v1 report"
+            "sample_adequacy_intervention requires a sample_adequacy/v2 report"
         )
     verdict = str(report.get("verdict") or "")
     bound_refs = [
@@ -1071,12 +1061,13 @@ def sample_adequacy_intervention(
         target = max(action["min_unique_roots"], target)
         target = min(target, _UNIQUE_ROOT_TARGET_MAX)
         action["reason"] = (
-            "sample-adequacy coverage floor above observed records; "
-            "certified rebuild target"
+            "under-witnessed components; targeted until_coverage rebuild "
+            "(fail-closed), not a global volume raise"
         )
         action["owner"] = "sample-adequacy"
         action["sample_adequacy"] = {
             "verdict": verdict,
+            "coverage_deficits": report.get("coverage_deficits"),
             "coverage_floor_records": floor,
             "observed_records": report.get("observed_records"),
             "bounds": bound_refs,
@@ -1084,40 +1075,31 @@ def sample_adequacy_intervention(
         action["data_generation"] = {
             **action["data_generation"],
             "unique_root_target": target,
+            "generation_mode": "until_coverage",
+            "component_coverage_minimum": int(
+                report.get("witnesses_per_component") or 1
+            ),
         }
         return action
-    if verdict in _ADEQUACY_TRAJECTORY_VERDICTS or verdict == "coverage_gap_blocked":
-        if verdict == "coverage_gap_blocked":
-            successors = ("generator_coverage_widening",)
-            reason = (
-                "zero-witness components: volume at the observed distribution "
-                "cannot close coverage; widen the generator"
-            )
-        else:
-            successors = (
-                "quality_levers",
-                "coverage_distribution",
-                "charged_capacity_growth_EG_params",
-            )
-            reason = (
-                "observed records exceed (or coverage floor conflicts with) the "
-                "capacity ceiling at the generous prior endpoint; more volume "
-                "is waste at this trajectory"
-            )
+    if verdict == "saturated_change_trajectory":
         return {
             "schema": "autotrain_data_intervention/v1",
             "kind": "change_trajectory",
             "owner": "sample-adequacy",
-            "reason": reason,
+            "reason": (
+                "measured marginal gain is flat at current coverage; more "
+                "volume is waste at this trajectory"
+            ),
             "close_approach": "data_volume_at_current_trajectory",
-            "successor_axes": successors,
+            "successor_axes": (
+                "quality_levers",
+                "coverage_distribution",
+                "charged_capacity_growth_EG_params",
+            ),
             "sample_adequacy": {
                 "verdict": verdict,
                 "observed_records": report.get("observed_records"),
-                "coverage_floor_records": report.get("coverage_floor_records"),
-                "capacity_ceiling_records_high_prior": report.get(
-                    "capacity_ceiling_records_high_prior"
-                ),
+                "marginal_gain_source": report.get("marginal_gain_source"),
                 "bounds": bound_refs,
             },
             "promotion_authorized": False,

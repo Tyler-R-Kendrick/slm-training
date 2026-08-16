@@ -1467,6 +1467,7 @@ def apply_corpus_generation_overrides(
     renderer_families: Sequence[str] | None = None,
     counterfactuals_per_root: int | None = None,
     retain_trusted_anchors: bool | None = None,
+    component_coverage_minimum: int | None = None,
 ) -> CorpusGenerationPolicy:
     """CLI/knob overlays. Does not add or rename corpus_generation/v1 keys."""
 
@@ -1492,6 +1493,15 @@ def apply_corpus_generation_overrides(
         generator = replace(generator, max_depth=generator_max_depth)
     if generator_max_width is not None:
         generator = replace(generator, max_width=generator_max_width)
+    if component_coverage_minimum is not None:
+        # Overlay the existing component-axis minimum; other axes keep theirs.
+        # Raising it and building with exhaustion=fail is the targeted answer
+        # to under-witnessed components (sample-adequacy coverage floor).
+        merged = dict(generator.coverage_minimums)
+        merged["component"] = component_coverage_minimum
+        generator = replace(
+            generator, coverage_minimums=tuple(sorted(merged.items()))
+        )
     if generator is not policy.generator:
         updates["generator"] = generator
     prompts = policy.prompts

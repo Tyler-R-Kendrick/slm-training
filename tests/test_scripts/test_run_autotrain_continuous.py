@@ -6773,6 +6773,51 @@ def test_local_rebuild_argv_keeps_policy_plan_surface() -> None:
     assert "--unique-root-target" in argv
 
 
+def test_local_rebuild_argv_shaped_by_adequacy_stays_wall_capped() -> None:
+    from slm_training.autoresearch.sample_adequacy import (
+        SampleAdequacyObservation,
+        compute_sample_adequacy,
+    )
+
+    report = compute_sample_adequacy(
+        SampleAdequacyObservation(
+            observed_records=101,
+            component_witnesses={"Button": 60, "SwitchGroup": 2},
+        )
+    ).model_dump(mode="json")
+    argv = _mod._local_rebuild_data_argv(
+        train_version="continuous_i10_test", adequacy=report
+    )
+    # Targeted mode reaches the local build; the promotion-scale component
+    # minimum and floor-sized root target stay off the wall-capped CPU heal.
+    assert "--generation-mode" in argv
+    assert argv[argv.index("--generation-mode") + 1] == "until_coverage"
+    assert "--component-coverage-minimum" not in argv
+    target = int(argv[argv.index("--unique-root-target") + 1])
+    assert target <= _mod._LOCAL_I10_ROOT_CAP
+
+
+def test_sample_adequacy_report_reads_fixture_stats(tmp_path: Path) -> None:
+    stats_dir = (
+        tmp_path / "src/slm_training/resources/data/train/wf_smoke_v2"
+    )
+    stats_dir.mkdir(parents=True)
+    (stats_dir / "stats.json").write_text(
+        json.dumps(
+            {
+                "record_count": 101,
+                "component_histogram": {"Button": 60, "SwitchGroup": 2},
+            }
+        )
+    )
+    report = _mod._sample_adequacy_report(tmp_path)
+    assert report is not None
+    assert report["verdict"] == "generate_more"
+    assert report["coverage_deficits"] == {"SwitchGroup": 2}
+    # No stats anywhere: no report, heal proceeds unshaped.
+    assert _mod._sample_adequacy_report(tmp_path / "missing") is None
+
+
 def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     _mod._DYNAMIC_THRASH_ARMS.append(
         (

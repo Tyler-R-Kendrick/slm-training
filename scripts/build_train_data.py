@@ -139,6 +139,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Override corpus_generation unique-root target on a loaded v2 plan.",
     )
     parser.add_argument(
+        "--component-coverage-minimum",
+        type=int,
+        default=None,
+        help=(
+            "Override the component-axis coverage minimum on a loaded v2 plan "
+            "(targeted witness floor per component; fails closed when unmet)."
+        ),
+    )
+    parser.add_argument(
         "--generator-seed",
         type=int,
         default=None,
@@ -539,6 +548,7 @@ def main(argv: list[str] | None = None) -> int:
         programspec_natural_prompts=args.programspec_natural_prompts,
         generation_mode=args.generation_mode,
         unique_root_target=args.unique_root_target,
+        component_coverage_minimum=args.component_coverage_minimum,
         generator_seed=args.generator_seed,
         generator_max_depth=args.generator_max_depth,
         generator_max_width=args.generator_max_width,

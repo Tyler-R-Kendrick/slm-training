@@ -2791,22 +2791,92 @@ def _local_i10_train_version(loop_id: str, cycle_index: int) -> str:
     return f"continuous_i10_{safe}_c{int(cycle_index)}"
 
 
-def _local_rebuild_data_argv(*, train_version: str) -> list[str]:
-    """Compile a local, data-only build_train_data command from climb policy."""
+def _sample_adequacy_report(cwd: Path) -> dict | None:
+    """Compute the cycle's sample-adequacy report from live build evidence.
+
+    Observes the most recent local heal build's stats (falling back to the
+    policy's committed fixture corpus) plus the latest data-adequacy ladder
+    classification when one has been measured. Returns the report as a JSON
+    dict, or None when no stats evidence exists.
+    """
     from slm_training.autoresearch.climb_policy import (
         data_intervention_action,
         load_climb_policy,
     )
+    from slm_training.autoresearch.sample_adequacy import (
+        compute_sample_adequacy,
+        observation_from_train_stats,
+    )
+    from slm_training.harnesses.experiments.data_adequacy_ladder import (
+        load_ladder_classification,
+    )
+
+    spec = data_intervention_action(load_climb_policy())
+    heal_stats = sorted(
+        (cwd / "outputs" / "data" / "train").glob("continuous_i10_*/stats.json"),
+        key=lambda path: path.stat().st_mtime,
+    )
+    fixture_stats = (
+        cwd
+        / "src/slm_training/resources/data/train"
+        / str(spec.get("train_version") or "wf_smoke_v2")
+        / "stats.json"
+    )
+    stats_path = heal_stats[-1] if heal_stats else fixture_stats
+    if not stats_path.is_file():
+        return None
+    stats = json.loads(stats_path.read_text(encoding="utf-8"))
+    flat: bool | None = None
+    source: str | None = None
+    ladders = sorted(
+        (cwd / "outputs" / "ladders").glob("**/data_adequacy_ladder.json"),
+        key=lambda path: path.stat().st_mtime,
+    )
+    if ladders:
+        try:
+            flat, source = load_ladder_classification(ladders[-1])
+        except ValueError:
+            flat, source = None, None
+    observation = observation_from_train_stats(
+        stats, marginal_gain_flat=flat, marginal_gain_source=source
+    )
+    return compute_sample_adequacy(observation).model_dump(mode="json")
+
+
+def _local_rebuild_data_argv(
+    *, train_version: str, adequacy: dict | None = None
+) -> list[str]:
+    """Compile a local, data-only build_train_data command from climb policy.
+
+    When the cycle's sample-adequacy verdict is ``generate_more``, the
+    rebuild is shaped by ``sample_adequacy_intervention`` (until_coverage
+    targeting). The local wall-capped heal keeps the plan's own coverage
+    minima — the raised component minimum applies at promotion scale, where
+    the fail-closed build has the attempt budget to satisfy it.
+    """
+    from slm_training.autoresearch.climb_policy import (
+        data_intervention_action,
+        load_climb_policy,
+        sample_adequacy_intervention,
+    )
     from slm_training.autoresearch.engine import _data_generation_flags
     from slm_training.autoresearch.schemas import DataGenerationKnobs
 
-    spec = data_intervention_action(load_climb_policy())
+    policy = load_climb_policy()
+    spec = data_intervention_action(policy)
+    if adequacy is not None:
+        shaped = sample_adequacy_intervention(policy, adequacy)
+        if shaped is not None and shaped.get("kind") == "rebuild_data":
+            spec = shaped
     raw = dict(spec.get("data_generation") or {})
     # Use the policy plan's legal surface. cap0_tiny is CAP0_GRAMMAR and
     # rejects simplified_nl; I10 NL waits on a CAP1 plan, not a forced flag.
     raw["data_only"] = True
     target = int(raw.get("unique_root_target") or spec.get("min_unique_roots") or 8)
     raw["unique_root_target"] = max(1, min(target, _LOCAL_I10_ROOT_CAP))
+    # Local CPU heal stays reliable: the plan's own minima apply here; the
+    # raised component_coverage_minimum is a promotion-scale instruction.
+    raw.pop("component_coverage_minimum", None)
     generation = DataGenerationKnobs.model_validate(raw)
     return [
         sys.executable,
@@ -2926,9 +2996,24 @@ def _self_heal_rebuild_data(
     cycle_index = int(handoff.cycle_index or 0)
     train_version = _local_i10_train_version(loop_id, cycle_index)
     train_dir = cwd / "outputs" / "data" / "train" / train_version
+    adequacy = _sample_adequacy_report(cwd)
+    if adequacy is not None and adequacy.get("verdict") == (
+        "saturated_change_trajectory"
+    ):
+        # Measured flat marginal gain: rebuilding is the wrong lever. Leave
+        # the action pending for a trajectory decision instead of faking
+        # progress with another same-distribution corpus.
+        print(
+            f"SAMPLE_ADEQUACY_SATURATED campaign={campaign_id} "
+            f"source={adequacy.get('marginal_gain_source')}",
+            flush=True,
+        )
+        return None
     sources = _rebuild_data_artifact_sources(train_dir)
     if sources is None:
-        argv = _local_rebuild_data_argv(train_version=train_version)
+        argv = _local_rebuild_data_argv(
+            train_version=train_version, adequacy=adequacy
+        )
         print(
             f"SELF_HEAL_REBUILD_DATA start campaign={campaign_id} "
             f"version={train_version} argv={argv}",
@@ -2962,6 +3047,11 @@ def _self_heal_rebuild_data(
         dest = camp_dir / name
         dest.write_bytes(src.read_bytes())
         evidence_uris.append(name)
+    if adequacy is not None:
+        (camp_dir / "sample_adequacy.json").write_text(
+            json.dumps(adequacy, indent=2) + "\n", encoding="utf-8"
+        )
+        evidence_uris.append("sample_adequacy.json")
     for index, _action in pending:
         _ack_rebuild_data_action(
             root, handoff, action_index=index, evidence_uris=evidence_uris

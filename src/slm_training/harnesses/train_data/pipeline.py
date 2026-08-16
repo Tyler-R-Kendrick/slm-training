@@ -136,6 +136,7 @@ class TrainDataConfig:
     renderer_families: tuple[str, ...] | None = None
     counterfactuals_per_root: int | None = None
     retain_trusted_anchors: bool | None = None
+    component_coverage_minimum: int | None = None
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -1496,6 +1497,7 @@ def build_train_data(
                 renderer_families=config.renderer_families,
                 counterfactuals_per_root=config.counterfactuals_per_root,
                 retain_trusted_anchors=config.retain_trusted_anchors,
+                component_coverage_minimum=config.component_coverage_minimum,
             )
             validate_capability_prompt_surface(
                 loaded_plan.capability, corpus_policy.prompts.surface
