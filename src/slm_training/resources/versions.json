@@ -28,6 +28,11 @@
     "autoresearch.conclusions": {
       "history": [
         {
+          "date": "2026-08-16",
+          "note": "WP-4 write path goes live: heal.conclusion_writer maps durable evidence-store rows into ConclusionEvidenceRecord (decidable only with a finite p-value) and calls conclude() from the supervisor post-cycle step, so adequately powered failure families actually close instead of the ledger staying empty. Criteria and thresholds unchanged.",
+          "version": "v4"
+        },
+        {
           "date": "2026-08-13",
           "note": "no-bump: optional data_intervention block on policy.v2.json; conclusion criteria and conclusions.py behavior are unchanged.",
           "version": "v3"
@@ -62,7 +67,45 @@
         "docs/design/hypothesis-family-conclusions.md",
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
-      "version": "v3"
+      "version": "v4"
+    },
+    "autoresearch.heal": {
+      "history": [
+        {
+          "date": "2026-08-16",
+          "note": "no-bump: extract_test_cases moved the traversal/absolute-prefix parameter table into the mirrored external case file; assertions and covered cases are unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "no-bump: adversarial review fixes inside the unreleased v1 delivery \u2014 crash-safe per-blocker runner with incremental receipt/ledger persistence (forbidden allowlists become refused_scope receipts), healed plans excluded from cycle detection so environment regressions stay repairable, per-step scope baseline re-advance, traversal/absolute allowlist rejection, word-boundary reason normalization, BlockerClass-typed fields, authority marker classification, receipts stamped recorded_at, sys.executable/json.dumps probe hardening, backoff exponent clamp.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "no-bump: extract_test_cases moved the two pytest parameter tables (kind routing, frozen-surface prefixes) into mirrored external case files; assertions and covered cases are unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "Initial registration: bounded heal-playbook runner + advisory escalation ledger (SELF_HEAL_ENV_REPAIR / heal_receipts.jsonl / escalations.jsonl). Playbooks perform real bounded environment repairs verified by the original failing probe; the ledger schedules governed backoff and names owner skills, with no authority to acknowledge or soften hard actions.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "docs/design/self-healing-escalation-layer.md",
+        "src/slm_training/autoresearch/heal/",
+        "src/slm_training/resources/test_cases/test_autoresearch/test_heal_classify.json",
+        "src/slm_training/resources/test_cases/test_autoresearch/test_heal_playbooks.json",
+        "tests/test_autoresearch/test_heal_classify.py",
+        "tests/test_autoresearch/test_heal_conclusion_writer.py",
+        "tests/test_autoresearch/test_heal_escalation.py",
+        "tests/test_autoresearch/test_heal_playbooks.py",
+        "tests/test_scripts/test_env_repair_rewrite.py",
+        "tests/test_scripts/test_run_autotrain_supervisor.py"
+      ],
+      "version": "v1"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -4914,6 +4957,16 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-08-16",
+          "note": "no-bump: adversarial review fixes inside the unreleased v230 delivery \u2014 SELF_HEAL_ENV_REPAIR now rejects heal receipts recorded before the handoff's created_at (a historical heal never clears a later regression of the same cross-campaign fingerprint); supervisor floor-sleeps on the healed path and annotates the quarantine stash SHA only when unambiguous.",
+          "version": "v230"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "Self-healing escalation layer: hard-pending blockers carry a typed blocker_class; environment-incomplete repair_harness with a verified heal receipt is rewritten to next_experiment (SELF_HEAL_ENV_REPAIR, the thrash-timeout precedent \u2014 never a receipt ack; code-class crashes stay hard); the true-crash marker list moved to autoresearch.heal.classify (single source of truth); the supervisor replaces the blind fixed hard-pending sleep with playbook dispatch + escalation-governed backoff and runs the WP-4 family-closure writer post-cycle; closed_approaches.v1.json joins the continuous closeout commit set.",
+          "version": "v230"
+        },
+        {
           "date": "2026-08-15",
           "note": "no-bump: rebuild climb evidence ledger after harvesting incomplete fixture cycle continuous-openui-local-8c0b60dd-c1; selector and policy unchanged.",
           "version": "v229"
@@ -6563,7 +6616,7 @@
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
         "docs/design/integ-03-campaign-formal-evidence.md"
       ],
-      "version": "v229"
+      "version": "v230"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -14706,6 +14759,29 @@
       ],
       "version": "v1"
     },
+    "harness.experiments.slm552_research20_cost_compare": {
+      "history": [
+        {
+          "date": "2026-08-12",
+          "note": "RESEARCH-20/SLM-552: default-off local cost kernel vs CSLib/Calf/AARA compare backend+harness+runner+lock+fixture evidence; honest reject, never production authority.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/formal/cost_kernel_cslib_calf_aara_compare.py",
+        "src/slm_training/resources/formal/cost_kernel_compare_corpus.v1.json",
+        "tests/test_formal/test_cost_kernel_cslib_calf_aara_compare.py",
+        "src/slm_training/resources/formal/research_20_campaign_lock.v1.json",
+        "src/slm_training/harnesses/experiments/research_20_cost_kernel_cslib_calf_aara_compare.py",
+        "scripts/run_research_20_cost_compare.py",
+        "docs/design/iter-revmath-research-20-preregistered.json",
+        "docs/design/iter-revmath-research-20-preregistered.md",
+        "tests/test_harnesses/experiments/test_research_20_cost_kernel_cslib_calf_aara_compare.py",
+        "tests/test_scripts/test_run_research_20_cost_compare.py"
+      ],
+      "version": "v1"
+    },
     "harness.experiments.slm557_research17_proof_mined": {
       "history": [
         {
@@ -14749,29 +14825,6 @@
         "docs/design/iter-revmath-research-19-preregistered.md",
         "tests/test_harnesses/experiments/test_research_19_lean_rademacher_bound.py",
         "tests/test_scripts/test_run_research_19_lean_rademacher.py"
-      ],
-      "version": "v1"
-    },
-    "harness.experiments.slm552_research20_cost_compare": {
-      "history": [
-        {
-          "date": "2026-08-12",
-          "note": "RESEARCH-20/SLM-552: default-off local cost kernel vs CSLib/Calf/AARA compare backend+harness+runner+lock+fixture evidence; honest reject, never production authority.",
-          "version": "v1"
-        }
-      ],
-      "kind": "harness",
-      "paths": [
-        "src/slm_training/formal/cost_kernel_cslib_calf_aara_compare.py",
-        "src/slm_training/resources/formal/cost_kernel_compare_corpus.v1.json",
-        "tests/test_formal/test_cost_kernel_cslib_calf_aara_compare.py",
-        "src/slm_training/resources/formal/research_20_campaign_lock.v1.json",
-        "src/slm_training/harnesses/experiments/research_20_cost_kernel_cslib_calf_aara_compare.py",
-        "scripts/run_research_20_cost_compare.py",
-        "docs/design/iter-revmath-research-20-preregistered.json",
-        "docs/design/iter-revmath-research-20-preregistered.md",
-        "tests/test_harnesses/experiments/test_research_20_cost_kernel_cslib_calf_aara_compare.py",
-        "tests/test_scripts/test_run_research_20_cost_compare.py"
       ],
       "version": "v1"
     },

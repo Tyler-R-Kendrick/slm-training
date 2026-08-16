@@ -90,11 +90,40 @@ persistence is the host goal and the append-only campaign event chains.
      at closeout. That is not human WIP and is never `foreign_dirty_tree`.
      Register new driver-written tracked paths in
      `_LOOP_OWNED_GENERATED_PATHS`. Do not parent-halt to `git restore`.
+   - **Environment-incomplete `repair_harness`** (missing JS bridge / AgentV
+     installs — `blocker_class=environment` from
+     `slm_training.autoresearch.heal.classify`, the single marker source) →
+     the supervisor's heal playbook (`npm_bridges/v1`) performs the
+     documented bounded `npm ci` repair and verifies with the original
+     failing resolution probe; a **verified** `heal_receipts.jsonl` receipt
+     lets the driver rewrite the action to `next_experiment`
+     (`SELF_HEAL_ENV_REPAIR`, the thrash-timeout precedent — never a receipt
+     ack). Code-class crashes (repo-internal import errors) are **never**
+     rewritten, even if a spurious heal receipt exists.
    - **Never auto-ack** `repair_formal`, `stop_campaign`, or `deliver_stack`.
-     **Never fake** a harness repair commit for true harness crashes
-     (missing AgentV, import errors). Those stay hard until the owner skill
-     lands a real fix. `rebuild_data` is supervisor-owned on local CPU; do
-     not leave it pending as a parent no-op.
+     **Never fake** a harness repair commit for true **code-class** harness
+     crashes (repo-internal import errors, real harness bugs). Those stay
+     hard until the owner skill lands a real fix. `rebuild_data` is
+     supervisor-owned on local CPU; do not leave it pending as a parent
+     no-op.
+   - **Hard blockers escalate as typed records, never blind spin.** The
+     supervisor deduplicates every hard blocker into
+     `loops/<id>/escalations.jsonl` (cross-campaign fingerprint, blocker
+     class, owner skill, needed authority, attempts, governed exponential
+     backoff to a 1 h cap). The ledger is advisory-only: it schedules and
+     routes; it can never acknowledge, soften, or expire a hard action.
+     Agents and `evidence-brief` read it instead of re-deriving diagnoses
+     from logs. Foreign dirt on an operator-marked dedicated worktree
+     (`loops/<id>/WORKTREE_DEDICATED` sentinel) may be quarantined by
+     reversible stash with the stash SHA recorded (`quarantine_dirt/v1`);
+     un-quarantining is an agent/human act.
+   - **Families conclude automatically (WP-4).** After every supervised
+     cycle the supervisor runs the family-closure writer: adequately powered
+     failures in the durable evidence store close their hypothesis family in
+     `closed_approaches.v1.json` (append-only, idempotent, committed like
+     closeout docs), and the `concluded_family` preflight enforces the
+     closure. A closed approach never closes a goal.
+     Full design: [`docs/design/self-healing-escalation-layer.md`](../../../../docs/design/self-healing-escalation-layer.md).
    Repair named harness families via owner skills when evidence requires code
    change; otherwise change knobs and re-run. **Do not** wait for the user to
    say “diagnose and restart.”
