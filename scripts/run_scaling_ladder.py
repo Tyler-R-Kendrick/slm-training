@@ -44,11 +44,165 @@ def _parse_formats(value: str) -> tuple[str, ...]:
     return tuple(x.strip() for x in value.split(",") if x.strip())
 
 
+def _run_data_adequacy_family(parser: argparse.ArgumentParser, args) -> int:
+    """Train nested-subset rungs and classify marginal data utility.
+
+    Wiring-scale measurement (claim_class fixture): the artifact feeds
+    ``autoresearch.sample_adequacy`` as the only admissible saturation
+    evidence. An underpowered eval classifies as undecidable, never flat.
+    """
+    from statistics import mean, stdev
+
+    from slm_training.harnesses.experiments.data_adequacy_ladder import (
+        RungMeasurement,
+        build_ladder_artifact,
+        classify_marginal_gain,
+        materialize_nested_subsets,
+        plan_nested_rungs,
+    )
+    from slm_training.harnesses.experiments.ladder import (
+        model_build_config_for_point,
+        scratch_ladder_default,
+    )
+    from slm_training.harnesses.model_build import train
+    from slm_training.versioning import build_version_stamp
+
+    if args.train_dir is None or args.test_dir is None:
+        parser.error("--train-dir and --test-dir are required for data-adequacy")
+    records_path = args.train_dir / "records.jsonl"
+    test_records = args.test_dir / "records.jsonl"
+    if not records_path.is_file() or not test_records.is_file():
+        parser.error("train/test dirs must contain records.jsonl")
+    record_count = sum(
+        1 for line in records_path.read_text(encoding="utf-8").splitlines() if line
+    )
+    suite_n = sum(
+        1 for line in test_records.read_text(encoding="utf-8").splitlines() if line
+    )
+    if args.rungs.strip():
+        rungs = tuple(sorted(int(x) for x in args.rungs.split(",") if x.strip()))
+    else:
+        rungs = plan_nested_rungs(record_count)
+    seeds = [int(x) for x in args.seeds.split(",") if x.strip()]
+    widths = tuple(int(x) for x in args.widths.split(",") if x.strip())
+    ladder = scratch_ladder_default(
+        base_token_budget=args.base_token_budget,
+        widths=widths[:1],
+        horizons=(1.0,),
+        representation=args.representation,
+    )
+    point = ladder.points[0]
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    wall_started = time.monotonic()
+
+    def stop_on_budget(_signum, _frame) -> None:
+        (out / "ladder_stopped_wall_budget.json").write_text(
+            json.dumps(
+                {
+                    "status": "stopped",
+                    "reason": "wall_time_budget",
+                    "family": "data-adequacy",
+                    "max_wall_minutes": args.max_wall_minutes,
+                    "elapsed_wall_seconds": time.monotonic() - wall_started,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        raise SystemExit(2)
+
+    previous_alarm = signal.signal(signal.SIGALRM, stop_on_budget)
+    signal.setitimer(signal.ITIMER_REAL, args.max_wall_minutes * 60)
+    try:
+        subsets = materialize_nested_subsets(args.train_dir, out / "subsets", rungs)
+        measurements: list[RungMeasurement] = []
+        per_rung_values: dict[int, list[float]] = {}
+        for rung, subset_dir in subsets:
+            for seed in seeds:
+                cfg = model_build_config_for_point(
+                    point,
+                    ladder,
+                    train_dir=subset_dir,
+                    test_dir=args.test_dir,
+                    run_root=out / "runs" / f"rung_{rung:06d}",
+                    seed=seed,
+                    steps=args.steps,
+                    batch_size=args.batch_size,
+                )
+                cfg.device = args.device
+                cfg.max_wall_minutes = args.max_wall_minutes
+                cfg.eval_every = args.steps
+                summary = train(cfg)
+                weighted = summary.get("best_weighted_nll")
+                if weighted is None:
+                    final = summary.get("final_loss_eval") or {}
+                    weighted = (
+                        final.get("weighted_nll") if isinstance(final, dict) else None
+                    )
+                if weighted is None:
+                    raise RuntimeError(
+                        f"rung {rung} seed {seed}: no weighted NLL in train summary"
+                    )
+                per_rung_values.setdefault(rung, []).append(float(weighted))
+        for rung, values in sorted(per_rung_values.items()):
+            measurements.append(
+                RungMeasurement(
+                    records=rung,
+                    metric=mean(values),
+                    suite_n=suite_n,
+                    seed=seeds[0],
+                )
+            )
+        last_values = per_rung_values.get(rungs[-1]) or []
+        sd = stdev(last_values) if len(last_values) >= 2 else None
+        verdict = classify_marginal_gain(
+            measurements, mde=args.mde, sd=sd, higher_is_better=False
+        )
+        artifact = build_ladder_artifact(
+            train_dir=str(args.train_dir),
+            measurements=measurements,
+            verdict=verdict,
+            metric_name="best_weighted_nll",
+            higher_is_better=False,
+            version_stamp=build_version_stamp("harness.experiments"),
+        )
+        artifact_path = out / "data_adequacy_ladder.json"
+        payload = json.dumps(artifact, indent=2) + "\n"
+        artifact_path.write_text(payload, encoding="utf-8")
+        if args.docs_out is not None:
+            args.docs_out.parent.mkdir(parents=True, exist_ok=True)
+            args.docs_out.write_text(payload, encoding="utf-8")
+        print(
+            json.dumps(
+                {
+                    "artifact": str(artifact_path),
+                    "classification": verdict.classification,
+                    "reason": verdict.reason,
+                    "rungs": list(rungs),
+                    "suite_n": suite_n,
+                },
+                indent=2,
+            )
+        )
+        return 0
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_alarm)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--family",
-        choices=("scaling", "discrete-bottleneck", "equal-byte-precision"),
+        choices=(
+            "scaling",
+            "discrete-bottleneck",
+            "equal-byte-precision",
+            "data-adequacy",
+        ),
         default="scaling",
         help="Experiment family to run (default: scaling).",
     )
@@ -144,6 +298,24 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=128,
         help="CAP3-05: quantization group size for byte modeling (default: 128).",
+    )
+    # data-adequacy family options (marginal utility of training data).
+    parser.add_argument(
+        "--rungs",
+        default="",
+        help=(
+            "data-adequacy: comma-separated nested rung sizes (default: "
+            "halving ladder planned from the corpus size)."
+        ),
+    )
+    parser.add_argument(
+        "--mde",
+        type=float,
+        default=0.05,
+        help=(
+            "data-adequacy: minimum detectable marginal gain per 100 records "
+            "below which a powered measurement classifies as flat."
+        ),
     )
     parser.add_argument("--campaign-manifest", type=Path)
     parser.add_argument("--campaign-result", type=Path)
@@ -265,6 +437,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+
+    if args.family == "data-adequacy":
+        return _run_data_adequacy_family(parser, args)
 
     if args.train_dir is None or args.test_dir is None:
         parser.error("--train-dir and --test-dir are required for the scaling family")

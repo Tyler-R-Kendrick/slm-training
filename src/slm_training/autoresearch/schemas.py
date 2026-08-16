@@ -385,6 +385,7 @@ class DataGenerationKnobs(StrictModel):
     renderer_families: tuple[str, ...] | None = None
     counterfactuals_per_root: int | None = Field(default=None, ge=0, le=8)
     retain_trusted_anchors: bool | None = None
+    component_coverage_minimum: int | None = Field(default=None, ge=1, le=64)
     data_only: bool = False
 
     @field_validator("plan_path")

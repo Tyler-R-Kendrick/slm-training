@@ -59,6 +59,7 @@ __all__ = [
     "synthesis_policy_allows_sft",
     "data_intervention_indicated",
     "data_intervention_action",
+    "sample_adequacy_intervention",
 ]
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -1019,6 +1020,91 @@ def data_intervention_action(policy: ClimbPolicy) -> dict[str, Any]:
             "data_only": True,
         },
     }
+
+
+# DataGenerationKnobs.unique_root_target schema ceiling (schemas.py).
+_UNIQUE_ROOT_TARGET_MAX = 32768
+
+
+def sample_adequacy_intervention(
+    policy: ClimbPolicy, report: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Map a ``sample_adequacy/v2`` report onto a typed climb action.
+
+    ``generate_more`` compiles onto the existing ``rebuild_data`` action as a
+    *targeted* rebuild: ``generation_mode=until_coverage`` with the component
+    coverage minimum raised to the witness target, so the fail-closed build —
+    not a projection — decides whether coverage is reachable. The unique-root
+    target rises toward the projected floor, never above the knob ceiling.
+    ``saturated_change_trajectory`` (measured flat marginal gain only)
+    returns a ``change_trajectory`` action: more volume is the wrong lever,
+    and capacity may only grow charged (``EG_params``). ``sufficient`` and
+    ``insufficient_evidence`` return ``None`` — the signal recommends, it
+    never gates.
+    """
+
+    if report.get("schema_version") != "sample_adequacy/v2":
+        raise ClimbPolicyError(
+            "sample_adequacy_intervention requires a sample_adequacy/v2 report"
+        )
+    verdict = str(report.get("verdict") or "")
+    bound_refs = [
+        {"bound_ast_id": item.get("bound_ast_id"), "value": item.get("value")}
+        for item in report.get("bounds") or ()
+        if isinstance(item, Mapping)
+    ]
+    if verdict == "generate_more":
+        action = data_intervention_action(policy)
+        recommended = report.get("recommended_records")
+        floor = report.get("coverage_floor_records")
+        target = int(recommended or floor or action["min_unique_roots"])
+        target = max(action["min_unique_roots"], target)
+        target = min(target, _UNIQUE_ROOT_TARGET_MAX)
+        action["reason"] = (
+            "under-witnessed components; targeted until_coverage rebuild "
+            "(fail-closed), not a global volume raise"
+        )
+        action["owner"] = "sample-adequacy"
+        action["sample_adequacy"] = {
+            "verdict": verdict,
+            "coverage_deficits": report.get("coverage_deficits"),
+            "coverage_floor_records": floor,
+            "observed_records": report.get("observed_records"),
+            "bounds": bound_refs,
+        }
+        action["data_generation"] = {
+            **action["data_generation"],
+            "unique_root_target": target,
+            "generation_mode": "until_coverage",
+            "component_coverage_minimum": int(
+                report.get("witnesses_per_component") or 1
+            ),
+        }
+        return action
+    if verdict == "saturated_change_trajectory":
+        return {
+            "schema": "autotrain_data_intervention/v1",
+            "kind": "change_trajectory",
+            "owner": "sample-adequacy",
+            "reason": (
+                "measured marginal gain is flat at current coverage; more "
+                "volume is waste at this trajectory"
+            ),
+            "close_approach": "data_volume_at_current_trajectory",
+            "successor_axes": (
+                "quality_levers",
+                "coverage_distribution",
+                "charged_capacity_growth_EG_params",
+            ),
+            "sample_adequacy": {
+                "verdict": verdict,
+                "observed_records": report.get("observed_records"),
+                "marginal_gain_source": report.get("marginal_gain_source"),
+                "bounds": bound_refs,
+            },
+            "promotion_authorized": False,
+        }
+    return None
 
 
 def train_eval_from_knobs(

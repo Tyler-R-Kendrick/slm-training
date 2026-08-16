@@ -217,6 +217,10 @@ open LeverProofLean
 #print axioms VerifiedEncoding.sat_encode_iff_satisfies
 #print axioms VerifiedEncoding.cardinality_feature_unsupported
 #print axioms VerifiedEncoding.mutated_encoding_ne_original
+
+-- Training-sample adequacy bounds (data-volume climb signal)
+#print axioms SampleAdequacy.coverageLowerBound_covers
+#print axioms SampleAdequacy.capacityUpperBound_within_budget
 #print axioms Judgment.skipped_replay_never_authorizes_removal
 #print axioms Judgment.classification_exhaustive
 #print axioms Judgment.classified_payload_matches

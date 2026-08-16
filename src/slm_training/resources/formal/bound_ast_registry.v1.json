@@ -380,6 +380,214 @@
       "lean_module": null,
       "lean_def": null,
       "digest_sha256": "fe4682de7a193f13c33947d286b6ac31e1f70815040dbb887e52eadd04b3b4f0"
+    },
+    {
+      "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.sample_size.coverage_lower.v1",
+      "meaning": "Training records required for every tracked component to accumulate witnesses_target witnesses, projecting the scarcest component's observed witness rate (min_witness_count across observed_records): ceil(witnesses_target*observed_records/min_witness_count). Rate persistence is a declared assumption; the arithmetic is proved (SampleAdequacy.coverageLowerBound_covers). Not a generalization or wall-clock claim.",
+      "variables": [
+        {
+          "name": "witnesses_target",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "witness",
+          "meaning": "Required witnesses per tracked component for trainability"
+        },
+        {
+          "name": "observed_records",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "record",
+          "meaning": "Admitted records in the observed build the rate is measured on"
+        },
+        {
+          "name": "min_witness_count",
+          "kind": "scalar",
+          "domain": "pos_rat",
+          "unit": "witness",
+          "meaning": "Observed witnesses of the scarcest tracked component (must be positive)"
+        }
+      ],
+      "expression": {
+        "op": "ceil",
+        "arg": {
+          "op": "div",
+          "numerator": {
+            "op": "mul",
+            "args": [
+              {
+                "op": "var",
+                "name": "witnesses_target"
+              },
+              {
+                "op": "var",
+                "name": "observed_records"
+              }
+            ]
+          },
+          "denominator": {
+            "op": "var",
+            "name": "min_witness_count"
+          }
+        }
+      },
+      "predicate": {
+        "op": "le",
+        "left": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "var",
+              "name": "witnesses_target"
+            },
+            {
+              "op": "var",
+              "name": "observed_records"
+            }
+          ]
+        },
+        "right": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "var",
+              "name": "min_witness_count"
+            },
+            {
+              "op": "ceil",
+              "arg": {
+                "op": "div",
+                "numerator": {
+                  "op": "mul",
+                  "args": [
+                    {
+                      "op": "var",
+                      "name": "witnesses_target"
+                    },
+                    {
+                      "op": "var",
+                      "name": "observed_records"
+                    }
+                  ]
+                },
+                "denominator": {
+                  "op": "var",
+                  "name": "min_witness_count"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.SampleAdequacy",
+      "lean_def": "coverageLowerBound",
+      "digest_sha256": "f249c1609729dd38e804e6c529cc446cb37394b3234cb282e18b629ea588e2c5"
+    },
+    {
+      "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.sample_size.capacity_upper.v1",
+      "meaning": "Examples whose total description length fits the parameter budget under a declared bits-per-parameter capacity prior: floor(trainable_params*bits_per_param/bits_per_example). The prior interval is assumption-backed (Collins et al. 3-6 task bits per parameter); only the budget arithmetic is proved (SampleAdequacy.capacityUpperBound_within_budget). Not a generalization or wall-clock claim.",
+      "variables": [
+        {
+          "name": "trainable_params",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "parameter",
+          "meaning": "Trainable parameter count of the candidate architecture"
+        },
+        {
+          "name": "bits_per_param",
+          "kind": "scalar",
+          "domain": "pos_rat",
+          "unit": "bit/parameter",
+          "meaning": "Declared capacity-prior endpoint (assumption box, e.g. 3 or 6)"
+        },
+        {
+          "name": "bits_per_example",
+          "kind": "scalar",
+          "domain": "pos_rat",
+          "unit": "bit/record",
+          "meaning": "Observed mean per-example description length in bits"
+        }
+      ],
+      "expression": {
+        "op": "floor",
+        "arg": {
+          "op": "div",
+          "numerator": {
+            "op": "mul",
+            "args": [
+              {
+                "op": "var",
+                "name": "trainable_params"
+              },
+              {
+                "op": "var",
+                "name": "bits_per_param"
+              }
+            ]
+          },
+          "denominator": {
+            "op": "var",
+            "name": "bits_per_example"
+          }
+        }
+      },
+      "predicate": {
+        "op": "le",
+        "left": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "floor",
+              "arg": {
+                "op": "div",
+                "numerator": {
+                  "op": "mul",
+                  "args": [
+                    {
+                      "op": "var",
+                      "name": "trainable_params"
+                    },
+                    {
+                      "op": "var",
+                      "name": "bits_per_param"
+                    }
+                  ]
+                },
+                "denominator": {
+                  "op": "var",
+                  "name": "bits_per_example"
+                }
+              }
+            },
+            {
+              "op": "var",
+              "name": "bits_per_example"
+            }
+          ]
+        },
+        "right": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "var",
+              "name": "trainable_params"
+            },
+            {
+              "op": "var",
+              "name": "bits_per_param"
+            }
+          ]
+        }
+      },
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.SampleAdequacy",
+      "lean_def": "capacityUpperBound",
+      "digest_sha256": "d9eb5e1e28c5c4a17c68486d9950dcffa8c989db05a40b056f2ac8b77435ffc9"
     }
   ]
 }

@@ -3399,6 +3399,11 @@
     "formal.bound_ast": {
       "history": [
         {
+          "date": "2026-08-16",
+          "note": "sample-size adequacy bounds: register bound.sample_size.coverage_lower.v1 and bound.sample_size.capacity_upper.v1 with Lean parity anchors (SampleAdequacy)",
+          "version": "v5"
+        },
+        {
           "date": "2026-08-11",
           "note": "KERN-06 (SLM-524): register bound.event_trace.decode_unit_work.v1 and compose.v1 parity fixtures.",
           "version": "v4"
@@ -3426,7 +3431,7 @@
         "src/slm_training/resources/formal/bound_ast_parity_fixtures.v1.json",
         "tests/test_formal/test_bound_ast.py"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "formal.computability_classification": {
       "history": [
@@ -3450,6 +3455,11 @@
     },
     "formal.leverproof": {
       "history": [
+        {
+          "date": "2026-08-16",
+          "note": "add LeverProofLean.SampleAdequacy: coverageLowerBound/capacityUpperBound defs, coverage/budget theorems, registry guard anchors",
+          "version": "v29"
+        },
         {
           "date": "2026-08-12",
           "note": "Replace forbidden native_decide fixture proofs in ProofTraceRefinement with kernel-checked decide so the proof-source trust gate and formal preflight remain authoritative.",
@@ -3642,7 +3652,7 @@
         "src/leverproof_lean/LeverProofLean/ResourceBoundParity.lean",
         "docs/design/kern-10-resource-bound-trigger-parity.md"
       ],
-      "version": "v28"
+      "version": "v29"
     },
     "formal.leverproof.ecosystem_tier": {
       "history": [
@@ -4956,6 +4966,21 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-08-16",
+          "note": "merge reconciliation: the sample-adequacy branch and the self-healing escalation layer both claimed v230 in parallel; both histories are preserved verbatim below (position, not version string, orders staleness) and the union advances to v232.",
+          "version": "v232"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "sample_adequacy/v2: per-component coverage deficits drive targeted until_coverage rebuilds; saturation requires a measured flat marginal-gain classification; capacity prior demoted to diagnostic; continuous heal computes/attaches the report (signal-only, no gate change)",
+          "version": "v231"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "sample-adequacy climb signal: sample_adequacy/v1 report module, sample_adequacy_intervention, data_intervention_indicated sample_adequacy input (signal-only, no gate change)",
+          "version": "v230"
+        },
         {
           "date": "2026-08-16",
           "note": "no-bump: adversarial review fixes inside the unreleased v230 delivery \u2014 SELF_HEAL_ENV_REPAIR now rejects heal receipts recorded before the handoff's created_at (a historical heal never clears a later regression of the same cross-campaign fingerprint); supervisor floor-sleeps on the healed path and annotates the quarantine stash SHA only when unambiguous.",
@@ -6614,9 +6639,10 @@
         "tests/test_autoresearch/test_evidence_ledger.py",
         "src/slm_training/autoresearch/campaign_formal_evidence.py",
         "tests/test_autoresearch/test_campaign_formal_evidence.py",
-        "docs/design/integ-03-campaign-formal-evidence.md"
+        "docs/design/integ-03-campaign-formal-evidence.md",
+        "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v230"
+      "version": "v232"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -7180,6 +7206,11 @@
     },
     "harness.experiments": {
       "history": [
+        {
+          "date": "2026-08-16",
+          "note": "data-adequacy ladder: nested-subset marginal-gain measurement with powered flat/rising/undecidable classification; run_scaling_ladder --family data-adequacy",
+          "version": "v164"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: RESEARCH-06/SLM-564 lives under dedicated component harness.experiments.slm564_research06_vss_pblean (v1).",
@@ -8230,7 +8261,7 @@
         "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
-      "version": "v163"
+      "version": "v164"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [
@@ -16886,6 +16917,11 @@
     "harness.synthesis_plan": {
       "history": [
         {
+          "date": "2026-08-16",
+          "note": "component_coverage_minimum overlay on apply_corpus_generation_overrides (existing component-axis key; fail-closed targeted witness floor)",
+          "version": "v7"
+        },
+        {
           "date": "2026-08-14",
           "note": "unique_root_target overlays raise max_attempts; prompts_per_root overlays raise per_root_exposure_cap",
           "version": "v6"
@@ -16944,10 +16980,20 @@
         "docs/design/dsh0-03-synthesis-plan-20260723.json",
         "docs/design/dsh0-03-synthesis-plan-20260723.md"
       ],
-      "version": "v6"
+      "version": "v7"
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-08-16",
+          "note": "component-coverage-minimum CLI/knob plumbing for targeted until_coverage rebuilds; adequacy finding codes map to targeted knobs",
+          "version": "v32"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "register sample_size_below_coverage_floor / sample_size_above_capacity_ceiling finding codes with executable knobs (non-blocking climb vocabulary)",
+          "version": "v31"
+        },
         {
           "date": "2026-08-14",
           "note": "unique_roots.admitted counts gold program-first roots only, excluding extra prompts and counterfactuals",
@@ -17133,7 +17179,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v30"
+      "version": "v32"
     },
     "harness_core.evidence_bundle": {
       "history": [
