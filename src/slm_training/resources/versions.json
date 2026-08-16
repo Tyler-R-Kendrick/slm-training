@@ -4972,6 +4972,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v234",
+          "date": "2026-08-16",
+          "note": "I10 heal: prepare harness-only SFT snapshot + synthesis_feedback_actions; refresh/retire heal process arm after complete dual-arm measurement so fixture-n rejects do not rematch forever."
+        },
+        {
           "version": "v233",
           "note": "Replace dangling sdlc_delivery_ledger.jsonl symlink before Phase A append so continuous closeout cannot FileNotFoundError on a removed /tmp worktree.",
           "date": "2026-08-16"
@@ -6652,7 +6657,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v233"
+      "version": "v234"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -9034,6 +9039,11 @@
     },
     "harness.experiments.semantic_floor_gate": {
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-08-16",
+          "note": "no-bump: refresh stale published SemanticFloorGateV1 JSON/Markdown fingerprints so --check matches live closeout (content regeneration only)."
+        },
         {
           "date": "2026-08-10",
           "note": "no-bump: regenerate the committed gate artifact after newly merged harness components changed its embedded component stamp; verdict remains inconclusive and thresholds and gate behavior are unchanged.",

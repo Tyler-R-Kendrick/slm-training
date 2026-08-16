@@ -3076,30 +3076,222 @@ def _ack_rebuild_data_action(
 def _register_i10_heal_arm(
     root: Path, loop_id: str, *, train_version: str
 ) -> None:
-    """Add a selectable I10 successor so the park fingerprint moves."""
+    """Add or refresh a selectable I10 successor so the park fingerprint moves."""
+    global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
-    if any(slug == _HEAL_RESUME_SLUG for slug, _, _ in _all_screening_arm_bank()):
-        return
-    _append_dynamic_thrash_arms(
-        root,
-        loop_id,
-        [
-            (
-                _HEAL_RESUME_SLUG,
-                (
-                    "Size-matched TwoTower on the local I10 simplified-NL rebuild "
-                    f"{train_version} improves smoke.structural_similarity versus "
-                    "the matched control without rotating the exhausted OFAT bank."
-                ),
-                {
-                    "train_version": train_version,
-                    "heal_resume": True,
-                    "process_arm": True,
-                    "process_role": "heal_resume",
-                },
-            )
-        ],
+    hyp = (
+        "Size-matched TwoTower on the local I10 simplified-NL rebuild "
+        f"{train_version} improves smoke.structural_similarity versus "
+        "the matched control without rotating the exhausted OFAT bank."
     )
+    extras = {
+        "train_version": train_version,
+        "heal_resume": True,
+        "process_arm": True,
+        "process_role": "heal_resume",
+    }
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    kept: list[tuple[str, str, dict[str, Any]]] = [
+        (slug, h, ex)
+        for slug, h, ex in _DYNAMIC_THRASH_ARMS
+        if slug != _HEAL_RESUME_SLUG
+    ]
+    kept.append((_HEAL_RESUME_SLUG, hyp, extras))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        for slug, h, ex in kept:
+            fh.write(
+                json.dumps(
+                    {
+                        "schema": "autotrain_dynamic_thrash_arm/v1",
+                        "slug": slug,
+                        "hypothesis": h,
+                        "extras": {
+                            k: v
+                            for k, v in ex.items()
+                            if not str(k).startswith("_")
+                        },
+                        "created_at": time.strftime(
+                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                        ),
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+    _DYNAMIC_THRASH_ARMS = [
+        (slug, h, {**dict(ex), "_thrash_slug": slug}) for slug, h, ex in kept
+    ]
+    _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
+
+
+def _retire_i10_heal_arm(root: Path, loop_id: str, *, reason: str) -> bool:
+    """Drop the heal process arm after a complete dual-arm measurement.
+
+    Process arms outrank OFAT selection; leaving a fixture-n-rejected heal
+    selectable rematches the same incomplete-evidence win forever.
+    """
+    global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
+    _load_dynamic_thrash_arms(root, loop_id)
+    if not any(slug == _HEAL_RESUME_SLUG for slug, _, _ in _DYNAMIC_THRASH_ARMS):
+        return False
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    kept = [
+        (slug, hyp, extras)
+        for slug, hyp, extras in _DYNAMIC_THRASH_ARMS
+        if slug != _HEAL_RESUME_SLUG
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        for slug, hyp, extras in kept:
+            fh.write(
+                json.dumps(
+                    {
+                        "schema": "autotrain_dynamic_thrash_arm/v1",
+                        "slug": slug,
+                        "hypothesis": hyp,
+                        "extras": {
+                            k: v
+                            for k, v in extras.items()
+                            if not str(k).startswith("_")
+                        },
+                        "created_at": time.strftime(
+                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                        ),
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+    _DYNAMIC_THRASH_ARMS = [
+        (slug, hyp, {**dict(extras), "_thrash_slug": slug})
+        for slug, hyp, extras in kept
+    ]
+    _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
+    print(
+        f"HEAL_RESUME_RETIRE slug={_HEAL_RESUME_SLUG} reason={reason}",
+        flush=True,
+    )
+    return True
+
+
+def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
+    """Filter NL/repair prompts and clear open synthesis feedback for SFT.
+
+    ``train_model`` loads prompts via ``parse_harness_task``. Cap0 I10 rebuilds
+    still emit Repair/NL rows; keep only harness-parseable prompts under a
+    ``*_harness`` sibling when needed so heal arms are train-loadable.
+    """
+    from datetime import datetime, timezone
+
+    from slm_training.autoresearch.hillclimb import (
+        assert_synthesis_feedback_cleared_for_sft,
+        open_synthesis_recommendations,
+    )
+    from slm_training.dsl.harness_dsl import parse_harness_task
+    from slm_training.harnesses.model_build.data import load_train_records
+
+    records_path = train_dir / "records.jsonl"
+    if not records_path.is_file():
+        return train_dir
+    kept: list[dict[str, Any]] = []
+    dropped = 0
+    for line in records_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        try:
+            parse_harness_task(str(row.get("prompt") or ""))
+        except Exception:  # noqa: BLE001 — drop non-harness prompts for SFT
+            dropped += 1
+            continue
+        kept.append(row)
+    out_dir = train_dir
+    if dropped:
+        out_dir = train_dir.parent / f"{train_dir.name}_harness"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "records.jsonl").write_text(
+            "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in kept),
+            encoding="utf-8",
+        )
+        for name in (
+            "synthesis_feedback.json",
+            "quality_report.json",
+            "rejected.jsonl",
+            "data_manifest.json",
+            "manifest.json",
+            "stats.json",
+        ):
+            src = train_dir / name
+            if src.is_file():
+                (out_dir / name).write_bytes(src.read_bytes())
+        man_path = out_dir / "manifest.json"
+        if man_path.is_file():
+            try:
+                man = json.loads(man_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                man = {}
+            man["version"] = out_dir.name
+            man["record_count"] = len(kept)
+            man["derived_from"] = train_dir.name
+            man["derive_note"] = (
+                "filtered to HARNESS_V1 prompts for symbol-only SFT loader; "
+                f"dropped={dropped}"
+            )
+            man["derived_at"] = datetime.now(timezone.utc).isoformat()
+            man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
+        print(
+            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} "
+            f"dropped={dropped}",
+            flush=True,
+        )
+    feedback_path = out_dir / "synthesis_feedback.json"
+    actions_path = out_dir / "synthesis_feedback_actions.json"
+    if feedback_path.is_file() and not actions_path.is_file():
+        feedback = json.loads(feedback_path.read_text(encoding="utf-8"))
+        seen: dict[str, dict[str, Any]] = {}
+        for rec in open_synthesis_recommendations(feedback):
+            code = str(rec.get("code") or "")
+            if code and code not in seen:
+                seen[code] = dict(rec)
+        actions = [
+            {
+                "code": code,
+                "target_kind": rec.get("target_kind"),
+                "target": rec.get("target"),
+                "note": (
+                    f"I10 continuous snapshot {out_dir.name}: recorded {code} "
+                    f"for {rec.get('target_kind')}:{rec.get('target')}. "
+                    "Fixture climb uses admitted harness rows only; next rebuild "
+                    "must cut expansion / fix quarantine producers. Gates unchanged."
+                ),
+                "evidence": rec.get("evidence") or {},
+            }
+            for code, rec in seen.items()
+        ]
+        if actions:
+            actions_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "train_version": out_dir.name,
+                        "recorded_at": datetime.now(timezone.utc).isoformat(),
+                        "honesty_mode": "fixture_or_scratch",
+                        "actions": actions,
+                        "experiment_candidates_filed": [],
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+    try:
+        load_train_records(out_dir)
+        assert_synthesis_feedback_cleared_for_sft(out_dir)
+    except Exception as exc:  # noqa: BLE001 — keep original on prepare failure
+        print(f"I10_SFT_PREPARE_WARN dir={out_dir} err={exc!r}", flush=True)
+        return train_dir
+    return out_dir
 
 
 def _self_heal_rebuild_data(
@@ -3195,10 +3387,12 @@ def _self_heal_rebuild_data(
         _ack_rebuild_data_action(
             root, handoff, action_index=index, evidence_uris=evidence_uris
         )
-    _register_i10_heal_arm(root, loop_id, train_version=train_version)
+    prepared = _prepare_i10_train_dir_for_sft(train_dir)
+    register_version = prepared.name if prepared != train_dir else train_version
+    _register_i10_heal_arm(root, loop_id, train_version=register_version)
     print(
         f"SELF_HEAL_REBUILD_DATA campaign={campaign_id} "
-        f"version={train_version} files={evidence_uris}",
+        f"version={register_version} files={evidence_uris}",
         flush=True,
     )
     return "rebuild_data"
@@ -13756,6 +13950,24 @@ def run_cycle(
         )
     finally:
         _clear_active_stage(root, loop_id)
+    # Measured heal process arms must retire: they outrank OFAT selection and
+    # otherwise rematch the same fixture-n incomplete win forever.
+    try:
+        cand_id = str((delivery or {}).get("candidate_id") or "")
+        arm_exits = (delivery or {}).get("arm_exits") or {}
+        if (
+            _HEAL_RESUME_SLUG in cand_id
+            and isinstance(arm_exits, Mapping)
+            and arm_exits
+            and all(int(v) == 0 for v in arm_exits.values())
+        ):
+            _retire_i10_heal_arm(
+                root,
+                loop_id,
+                reason=f"complete_measurement:{campaign_id}",
+            )
+    except Exception as exc:  # noqa: BLE001 — retirement never blocks closeout
+        print(f"HEAL_RESUME_RETIRE_WARN err={exc!r}", flush=True)
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
         f"positive={delivery['positive']}",
