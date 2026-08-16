@@ -42,6 +42,8 @@ FINDING_CODES = (
     "hard_forbidden_cue",
     "prefix_concentration",
     "pair_quality_auditor_unavailable",
+    "sample_size_below_coverage_floor",
+    "sample_size_above_capacity_ceiling",
     "unknown_blocking_reason",
 )
 
@@ -95,6 +97,18 @@ _EXECUTABLE_KNOBS = {
     "low_yield": ["synthesizer"],
     "redundant_expansion": ["max_records_per_parent", "synthesizer"],
     "eval_leakage_source": ["decontam_eval_root"],
+    # Sample-adequacy climb signals (autoresearch.sample_adequacy). Below the
+    # certified coverage floor the executable knob is more unique roots; above
+    # the capacity ceiling the executable knob is less expansion — never an
+    # uncharged capacity bump (decode-invariants VI).
+    "sample_size_below_coverage_floor": [
+        "data_generation.unique_root_target",
+        "data_generation.generation_mode",
+    ],
+    "sample_size_above_capacity_ceiling": [
+        "max_records_per_parent",
+        "synthesizer",
+    ],
 }
 
 # Recommendation thresholds (documented in the artifact for honesty).

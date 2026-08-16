@@ -46,6 +46,8 @@ BOUND_BLACK_BOX_UNSUPPORTED_QUERY_LOWER = "bound.black_box.unsupported_query_low
 BOUND_EVENT_TRACE_DECODE_UNIT_WORK = "bound.event_trace.decode_unit_work.v1"
 BOUND_EVENT_TRACE_COMPOSE = "bound.event_trace.compose.v1"
 BOUND_PLACEHOLDER_PENDING = "bound.placeholder.pending_evid04.v1"
+BOUND_SAMPLE_SIZE_COVERAGE_LOWER = "bound.sample_size.coverage_lower.v1"
+BOUND_SAMPLE_SIZE_CAPACITY_UPPER = "bound.sample_size.capacity_upper.v1"
 
 REGISTERED_BOUND_AST_IDS: frozenset[str] = frozenset(
     {
@@ -57,6 +59,8 @@ REGISTERED_BOUND_AST_IDS: frozenset[str] = frozenset(
         BOUND_EVENT_TRACE_DECODE_UNIT_WORK,
         BOUND_EVENT_TRACE_COMPOSE,
         BOUND_PLACEHOLDER_PENDING,
+        BOUND_SAMPLE_SIZE_COVERAGE_LOWER,
+        BOUND_SAMPLE_SIZE_CAPACITY_UPPER,
     }
 )
 
@@ -651,6 +655,8 @@ __all__ = [
     "BOUND_FINITE_SEARCH_COARSE",
     "BOUND_FINITE_SEARCH_PREFIX_TREE",
     "BOUND_PLACEHOLDER_PENDING",
+    "BOUND_SAMPLE_SIZE_CAPACITY_UPPER",
+    "BOUND_SAMPLE_SIZE_COVERAGE_LOWER",
     "REGISTERED_BOUND_AST_IDS",
     "Add",
     "BoundAstDocumentV1",

@@ -163,6 +163,62 @@
       "lean_def": "traceCost_append",
       "lean_guard": "traceCost decodeUnitWorkModel ([.neuralForward 2] ++ [.solverExpansion 3]) = 5",
       "kern06_field": "compose"
+    },
+    {
+      "id": "sample_coverage_smoke_scarcest_two",
+      "bound_ast_id": "bound.sample_size.coverage_lower.v1",
+      "env": {
+        "witnesses_target": 4,
+        "observed_records": 101,
+        "min_witness_count": 2
+      },
+      "expected_value": "202",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.SampleAdequacy",
+      "lean_def": "coverageLowerBound",
+      "lean_guard": "coverageLowerBound 4 101 2 = 202"
+    },
+    {
+      "id": "sample_coverage_every_record_witnesses",
+      "bound_ast_id": "bound.sample_size.coverage_lower.v1",
+      "env": {
+        "witnesses_target": 4,
+        "observed_records": 101,
+        "min_witness_count": 101
+      },
+      "expected_value": "4",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.SampleAdequacy",
+      "lean_def": "coverageLowerBound",
+      "lean_guard": "coverageLowerBound 4 101 101 = 4"
+    },
+    {
+      "id": "sample_capacity_low_prior_endpoint",
+      "bound_ast_id": "bound.sample_size.capacity_upper.v1",
+      "env": {
+        "trainable_params": 1000,
+        "bits_per_param": 3,
+        "bits_per_example": 60
+      },
+      "expected_value": "50",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.SampleAdequacy",
+      "lean_def": "capacityUpperBound",
+      "lean_guard": "capacityUpperBound 1000 3 60 = 50"
+    },
+    {
+      "id": "sample_capacity_high_prior_endpoint",
+      "bound_ast_id": "bound.sample_size.capacity_upper.v1",
+      "env": {
+        "trainable_params": 1000,
+        "bits_per_param": 6,
+        "bits_per_example": 60
+      },
+      "expected_value": "100",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.SampleAdequacy",
+      "lean_def": "capacityUpperBound",
+      "lean_guard": "capacityUpperBound 1000 6 60 = 100"
     }
   ]
 }

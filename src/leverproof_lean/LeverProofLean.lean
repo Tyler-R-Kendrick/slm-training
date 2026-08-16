@@ -27,3 +27,5 @@ import LeverProofLean.GoalSupport
 import LeverProofLean.Judgment
 import LeverProofLean.ProofTraceRefinement
 import LeverProofLean.VerifiedEncoding
+-- Training-sample adequacy bounds (data-volume climb signal)
+import LeverProofLean.SampleAdequacy
