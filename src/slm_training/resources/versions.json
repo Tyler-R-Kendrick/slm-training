@@ -4543,6 +4543,11 @@
     "governance.research_experiment_preregistry": {
       "history": [
         {
+          "version": "v2",
+          "note": "no-bump: broaden duplicate-signature test match to current reject-equivalent wording; validator behavior unchanged.",
+          "date": "2026-08-16"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: RESEARCH-20/SLM-552 preregistry disposition + evidence doc pointers; contract unchanged.",
           "version": "v2"
@@ -4966,6 +4971,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "version": "v233",
+          "note": "Replace dangling sdlc_delivery_ledger.jsonl symlink before Phase A append so continuous closeout cannot FileNotFoundError on a removed /tmp worktree.",
+          "date": "2026-08-16"
+        },
         {
           "date": "2026-08-16",
           "note": "merge reconciliation: the sample-adequacy branch and the self-healing escalation layer both claimed v230 in parallel; both histories are preserved verbatim below (position, not version string, orders staleness) and the union advances to v232.",
@@ -6642,7 +6652,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v232"
+      "version": "v233"
     },
     "harness.autoresearch.formal": {
       "history": [

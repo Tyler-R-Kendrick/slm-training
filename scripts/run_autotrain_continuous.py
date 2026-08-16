@@ -8824,6 +8824,10 @@ def _phase_a_delivery(
     out_path = camp_dir / "sdlc_delivery.json"
     out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     ledger = root / "sdlc_delivery_ledger.jsonl"
+    # Dangling symlinks (e.g. prior /tmp continuous worktree) raise FileNotFoundError
+    # on open("a"); replace with a real ledger so Phase A closeout never hard-fails.
+    if ledger.is_symlink() and not ledger.exists():
+        ledger.unlink()
     with ledger.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, sort_keys=True) + "\n")
 

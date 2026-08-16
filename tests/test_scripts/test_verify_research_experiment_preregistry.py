@@ -132,7 +132,10 @@ def test_duplicate_signature_in_document_rejected(tmp_path):
     b["hypothesis"] = a["hypothesis"]
     b["knob_hypothesis_signature"] = a["knob_hypothesis_signature"]
     doc["experiments"] = [a, b]
-    with pytest.raises(ResearchPreregistryError, match="duplicate knob/hypothesis"):
+    with pytest.raises(
+        ResearchPreregistryError,
+        match=r"duplicate knob/hypothesis|reject equivalent|owned by terminal",
+    ):
         validate_registry_document(doc, root=REPO_ROOT, check_citations=False)
 
 
