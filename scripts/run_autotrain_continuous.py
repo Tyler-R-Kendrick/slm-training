@@ -1867,14 +1867,11 @@ def _delivery_is_thrash_timeout_residual(
         for action in handoff.actions:
             reasons.append(str(action.reason or ""))
     joined = " ".join(reasons).lower()
-    hard_harness_markers = (
-        "agentv sdk is unavailable",
-        "npm ci",
-        "module not found",
-        "import error",
-        "no module named",
-    )
-    if any(m in joined for m in hard_harness_markers):
+    # Single source of truth shared with the heal-playbook classifier so the
+    # emission-time markers and the environment/code split can never drift.
+    from slm_training.autoresearch.heal.classify import HARD_HARNESS_MARKERS
+
+    if any(m in joined for m in HARD_HARNESS_MARKERS):
         return False
     timeout_markers = (
         "decode_timeout",
@@ -2344,6 +2341,133 @@ def _self_heal_thrash_timeout_repair(
     return doc_kind or "thrash_timeout_repair_bypass"
 
 
+def _self_heal_env_repair_rewrite(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None,
+) -> str | None:
+    """Retire an environment-incomplete ``repair_harness`` after a verified heal.
+
+    A missing JS bridge / AgentV dependency install is an *environment*
+    condition misclassified at emission as a harness crash. When a heal
+    playbook has actually performed the documented install **and its verify
+    probe passed** (``heal_receipts.jsonl`` outcome ``healed`` for this
+    blocker's cross-campaign fingerprint), rewrite the pending action to
+    ``next_experiment`` with the receipt as evidence — the
+    ``SELF_HEAL_THRASH_TIMEOUT_REPAIR`` precedent, never a receipt ack.
+
+    Code-class crashes (repo-internal import errors) are untouched: they stay
+    hard until the owner skill lands a real fix. The rewrite reason carries
+    the heal-receipt sha so the successor's provenance names its evidence.
+    """
+    if not campaign_id:
+        return None
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        return None
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
+        return None
+    pending = list(pending_autotrain_actions(root, handoff))
+    repair_pending = [(i, a) for i, a in pending if a.kind == "repair_harness"]
+    if not repair_pending:
+        return None
+    other_hard = [
+        (i, a)
+        for i, a in pending
+        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS and a.kind != "repair_harness"
+    ]
+    if other_hard:
+        return None
+
+    from slm_training.autoresearch.heal import load_heal_receipts
+    from slm_training.autoresearch.heal.classify import classify_blocker
+    from slm_training.autoresearch.heal.escalation import blocker_fingerprint
+
+    healed_by_fingerprint = {
+        receipt.blocker_fingerprint: receipt
+        for receipt in load_heal_receipts(root, loop_id)
+        if receipt.outcome == "healed" and receipt.verify_result is not None
+    }
+    matched: list[tuple[int, AutotrainActionV1, str]] = []
+    for index, action in repair_pending:
+        reason = str(action.reason or "")
+        if classify_blocker("repair_harness", reason) != "environment":
+            return None  # any code-class repair keeps the whole handoff hard
+        receipt = healed_by_fingerprint.get(
+            blocker_fingerprint("repair_harness", reason)
+        )
+        if receipt is None:
+            return None  # no verified heal — stays hard
+        matched.append((index, action, receipt.sha256()))
+    if not matched:
+        return None
+
+    evidence_id = f"campaign:{campaign_id}"
+    receipt_shas = sorted({sha for _, _, sha in matched})
+    kept: list[AutotrainActionV1] = []
+    for action in handoff.actions:
+        if action.kind in {"repair_harness", "retry_measurement"}:
+            continue
+        kept.append(action)
+    if not any(a.kind == "document" for a in kept):
+        kept.insert(
+            0,
+            AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="persist environment-repair closeout under docs/design",
+                evidence_ids=(evidence_id,),
+            ),
+        )
+    if not any(a.kind == "next_experiment" for a in kept):
+        kept.append(
+            AutotrainActionV1(
+                kind="next_experiment",
+                owner="autotrain",
+                reason=(
+                    "environment-incomplete repair verified by heal receipt "
+                    f"{receipt_shas[0][:12]}; replay the frozen arm on the "
+                    "restored environment (continuous self-heal; not a model "
+                    "attribution)"
+                ),
+                evidence_ids=(evidence_id,),
+            )
+        )
+    rebuilt = handoff.model_copy(
+        update={
+            "actions": tuple(kept),
+            "reasons": tuple(
+                list(handoff.reasons)
+                + [
+                    "self_heal:env_repair_verified:"
+                    + ",".join(sha[:12] for sha in receipt_shas)
+                ]
+            ),
+        }
+    )
+    handoff_path.write_text(rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    print(
+        f"SELF_HEAL_ENV_REPAIR campaign={campaign_id} "
+        f"receipts={receipt_shas} actions={[a.kind for a in rebuilt.actions]}",
+        flush=True,
+    )
+    doc_kind = _self_heal_document_actions(
+        cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    pending_after = pending_autotrain_actions(root, rebuilt)
+    hard_after = [
+        (i, a) for i, a in pending_after if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
+    ]
+    if hard_after:
+        return None
+    return doc_kind or "env_repair_rewrite"
+
+
 def _self_heal_cycle_error(
     *,
     root: Path,
@@ -2566,6 +2690,14 @@ def _is_continuous_closeout_path(rel: str) -> bool:
     """True when a dirty path is continuous-driver closeout material only."""
     path = rel.replace("\\", "/").lstrip("./")
     if path in {"docs/MODEL_CARD.md", "README.md"}:
+        return True
+    # Family closures are append-only machine-written science (WP-4): the
+    # supervisor's conclusion writer appends them and the driver commits them
+    # exactly like continuous results docs.
+    if path == (
+        "src/slm_training/resources/experiments/autotrain_climb/"
+        "closed_approaches.v1.json"
+    ):
         return True
     if not path.startswith("docs/design/"):
         return False
@@ -3413,6 +3545,17 @@ def self_heal_unblock_loop(
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK timeout_warn={exc!r}", flush=True)
 
+    # 2a) Environment-incomplete repair_harness with a verified heal receipt →
+    # next_experiment (SELF_HEAL_ENV_REPAIR). Code-class crashes stay hard.
+    try:
+        env_kind = _self_heal_env_repair_rewrite(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if env_kind:
+            soft_healed.append(env_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK env_repair_warn={exc!r}", flush=True)
+
     # 2b) Quality-arm bank exhaust repair_harness → compose + next_experiment.
     # Parked I10 off-ramp must not be unparked by compose filler.
     if not parked:
@@ -3557,6 +3700,19 @@ def self_heal_unblock_loop(
                 hard_pending = [h for h in hard_pending if h.get("kind") != "document"]
         except Exception:  # noqa: BLE001
             pass
+
+    # Annotate every hard blocker with its heal class so the supervisor's
+    # playbook dispatch and the escalation ledger never re-derive it.
+    if hard_pending:
+        try:
+            from slm_training.autoresearch.heal.classify import classify_blocker
+
+            for entry in hard_pending:
+                entry["blocker_class"] = classify_blocker(
+                    str(entry.get("kind") or ""), str(entry.get("reason") or "")
+                )
+        except Exception as exc:  # noqa: BLE001
+            print(f"SELF_HEAL_UNBLOCK classify_warn={exc!r}", flush=True)
 
     blocker_cleared = not hard_pending
     if blocker_cleared:
