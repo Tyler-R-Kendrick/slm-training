@@ -4973,6 +4973,11 @@
       "history": [
         {
           "version": "v236",
+          "date": "2026-08-17",
+          "note": "no-bump: agent-skill docs only — between-iteration PR resolve/squash-merge delivery law in autotrain/sdlc skills; continuous driver behavior unchanged."
+        },
+        {
+          "version": "v236",
           "date": "2026-08-16",
           "note": "Allow retired heal/snapshot train_version arms to enqueue as champions when slug left the thrash bank."
         },
