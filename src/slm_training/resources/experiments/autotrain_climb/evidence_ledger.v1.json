@@ -237,7 +237,7 @@
       "n_complete": 29,
       "n_delta": 29,
       "n_null": 17,
-      "n_obs": 85,
+      "n_obs": 86,
       "n_positive": 10
     },
     "component-structure": {
@@ -440,8 +440,8 @@
     "gates.ship"
   ],
   "file_counts": {
-    "observations": 283,
-    "scanned": 2180,
+    "observations": 284,
+    "scanned": 2181,
     "unreadable": 0
   },
   "generated_from": "docs/design",
