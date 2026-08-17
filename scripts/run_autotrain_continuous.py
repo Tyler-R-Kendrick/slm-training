@@ -5645,7 +5645,23 @@ def _recent_completed_nonpositive_slugs(
             continue
         if delivery.get("harness_failure") is True and not runtime_terminal:
             continue
-        if stored_positive is True:
+        # Fixture-n screening wins stay positive=False (no stack) but are still
+        # confirm candidates — do not burn the thrash approach as a null seed.
+        confirm_win = False
+        if (
+            not runtime_terminal
+            and delivery.get("measurement_complete") is True
+            and intent in {"screening", "retry_measurement"}
+        ):
+            confirm_win = _is_confirm_candidate_win(
+                {
+                    **dict(delivery),
+                    "positive": stored_positive,
+                    "reasons": list(delivery.get("reasons") or []),
+                    "measurement_complete": True,
+                }
+            )
+        if stored_positive is True or confirm_win:
             # Win re-opens the approach; clear prior null tally for this slug.
             null_seeds[slug] = set()
             if train_version and train_version != default_tv:
@@ -6603,6 +6619,73 @@ def _quality_held_reasons(reasons: list[str] | None) -> bool:
     )
 
 
+def _delivery_parse_mpr_held(delivery: dict[str, Any]) -> bool:
+    """Parse/MPR non-regression from delivery metrics (fixture SS wins omit quality_held)."""
+    control = delivery.get("control_metrics") or {}
+    candidate = delivery.get("candidate_metrics") or {}
+    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
+        return False
+
+    def _leaf(row: Mapping[str, Any], name: str) -> float | None:
+        raw = row.get(name)
+        if raw is None:
+            raw = row.get(f"smoke.{name}")
+        return _finite_metric(raw)
+
+    c_pr, t_pr = _leaf(control, "parse_rate"), _leaf(candidate, "parse_rate")
+    c_mpr, t_mpr = (
+        _leaf(control, "meaningful_program_rate"),
+        _leaf(candidate, "meaningful_program_rate"),
+    )
+    # Missing metrics must not invent a quality hold.
+    if None in (c_pr, t_pr, c_mpr, t_mpr):
+        return False
+    return bool(t_pr + _EPS >= c_pr and t_mpr + _EPS >= c_mpr)
+
+
+def _confirm_candidate_blocked(reasons: list[str]) -> bool:
+    blocked_prefixes = (
+        "primary_metric_null_or_worse:",
+        "non_regression_fail:",
+        "eg_params_block:",
+        "measurement_incomplete:",
+        "wall_timeout:",
+        "empty_metrics:",
+        "harness_failure:",
+        "primary_quality_win_rejected",
+    )
+    return any(reason.startswith(blocked_prefixes) for reason in reasons)
+
+
+def _has_primary_metric_win(delivery: dict[str, Any], reasons: list[str]) -> bool:
+    primary_metric = str(delivery.get("primary_metric") or "")
+    if not primary_metric:
+        return False
+    return any(
+        reason.startswith(f"primary_metric_win:{primary_metric}:") for reason in reasons
+    )
+
+
+def _is_confirm_candidate_win(delivery: dict[str, Any]) -> bool:
+    """Screening primary quality win worth confirming (fixture-n may keep positive=False).
+
+    Smoke n=3 cannot mint climb ``positive`` / stack layers, but a held-quality
+    primary win must still enter the champion queue and must not tally as a
+    thrash null seed. Confirmation/promotion escalate suites and n.
+    """
+    if delivery.get("measurement_complete") is False:
+        return False
+    reasons = [str(reason) for reason in delivery.get("reasons") or []]
+    if _confirm_candidate_blocked(reasons):
+        return False
+    if not _has_primary_metric_win(delivery, reasons):
+        return False
+    primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
+    if primary_leaf == "latency_ms_p50":
+        return _quality_held_reasons(reasons)
+    return _quality_held_reasons(reasons) or _delivery_parse_mpr_held(delivery)
+
+
 def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
     """Require the policy-owned primary quality win on a confirmation run.
 
@@ -6615,16 +6698,7 @@ def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
     if not delivery.get("positive") or delivery.get("measurement_complete") is False:
         return False
     reasons = [str(reason) for reason in delivery.get("reasons") or []]
-    blocked_prefixes = (
-        "primary_metric_null_or_worse:",
-        "non_regression_fail:",
-        "eg_params_block:",
-        "measurement_incomplete:",
-        "wall_timeout:",
-        "empty_metrics:",
-        "harness_failure:",
-    )
-    if any(reason.startswith(blocked_prefixes) for reason in reasons):
+    if _confirm_candidate_blocked(reasons):
         return False
     primary_metric = str(delivery.get("primary_metric") or "")
     if not primary_metric:
@@ -6635,23 +6709,27 @@ def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
 
 
 def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
-    """Enqueue only quality-held positives (never empty-meaning latency blips)."""
+    """Enqueue confirm candidates on quality primary wins (never latency-only blips).
+
+    Fixture insufficient_n forces ``positive=False`` so screening cannot stack
+    or ship; it must not block champion enqueue — confirm/promote raise n.
+    """
+    reasons = [str(reason) for reason in delivery.get("reasons") or []]
+    if _is_confirm_candidate_win(delivery):
+        return True
     if not delivery.get("positive"):
         return False
-    reasons = list(delivery.get("reasons") or [])
-    if any(
-        str(reason).startswith("fixture_insufficient_n") for reason in reasons
-    ):
+    if any(reason.startswith("fixture_insufficient_n") for reason in reasons):
+        # Positive+fixture_n should not happen under current classify; fail closed.
         return False
     primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
     if primary_leaf != "latency_ms_p50" and _confirmation_quality_reheld(delivery):
         return True
     if _quality_held_reasons(reasons):
         return True
-    # Efficiency / primary latency win only when quality_held co-tagged.
     if any(
-        r.startswith("efficiency_win:") or r.startswith("primary_metric_win:")
-        for r in reasons
+        reason.startswith("efficiency_win:") or reason.startswith("primary_metric_win:")
+        for reason in reasons
     ):
         return _quality_held_reasons(reasons)
     return False
@@ -6840,6 +6918,10 @@ def _enqueue_champion(
             "candidate": delivery.get("candidate_metrics"),
         },
         "source_reasons": list(delivery.get("reasons") or []),
+        "fixture_volume_confirm_candidate": any(
+            str(r).startswith("fixture_insufficient_n")
+            for r in (delivery.get("reasons") or [])
+        ),
         "confirm_campaign_id": None,
         "confirm_cycle_index": None,
         "confirm_attempts": 0,
