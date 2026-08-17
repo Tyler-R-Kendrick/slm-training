@@ -6841,7 +6841,14 @@ def _reconcile_completed_confirmation_replays(
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
     """True when knobs encode a thrash arm (not pure matched control)."""
-    return _arm_slug_from_knobs(knobs, candidate_id=candidate_id) is not None
+    if _arm_slug_from_knobs(knobs, candidate_id=candidate_id) is not None:
+        return True
+    # Heal / snapshot first-trains may leave the thrash bank after retirement
+    # but still carry a distinct train_version worth confirming.
+    train_version = str(knobs.get("train_version") or "")
+    if train_version and train_version != _default_screening_train_version():
+        return True
+    return False
 
 
 def _load_experiment_knobs(camp_dir: Path, experiment_id: str) -> dict[str, Any]:

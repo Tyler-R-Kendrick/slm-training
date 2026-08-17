@@ -4972,6 +4972,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v236",
+          "date": "2026-08-16",
+          "note": "Allow retired heal/snapshot train_version arms to enqueue as champions when slug left the thrash bank."
+        },
+        {
           "version": "v235",
           "date": "2026-08-16",
           "note": "Enqueue fixture-n screening primary wins as confirm candidates; do not tally them as thrash null seeds so smoke n=3 can still climb into confirm/promote."
@@ -6662,7 +6667,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v235"
+      "version": "v236"
     },
     "harness.autoresearch.formal": {
       "history": [
