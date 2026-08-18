@@ -3076,30 +3076,222 @@ def _ack_rebuild_data_action(
 def _register_i10_heal_arm(
     root: Path, loop_id: str, *, train_version: str
 ) -> None:
-    """Add a selectable I10 successor so the park fingerprint moves."""
+    """Add or refresh a selectable I10 successor so the park fingerprint moves."""
+    global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
-    if any(slug == _HEAL_RESUME_SLUG for slug, _, _ in _all_screening_arm_bank()):
-        return
-    _append_dynamic_thrash_arms(
-        root,
-        loop_id,
-        [
-            (
-                _HEAL_RESUME_SLUG,
-                (
-                    "Size-matched TwoTower on the local I10 simplified-NL rebuild "
-                    f"{train_version} improves smoke.structural_similarity versus "
-                    "the matched control without rotating the exhausted OFAT bank."
-                ),
-                {
-                    "train_version": train_version,
-                    "heal_resume": True,
-                    "process_arm": True,
-                    "process_role": "heal_resume",
-                },
-            )
-        ],
+    hyp = (
+        "Size-matched TwoTower on the local I10 simplified-NL rebuild "
+        f"{train_version} improves smoke.structural_similarity versus "
+        "the matched control without rotating the exhausted OFAT bank."
     )
+    extras = {
+        "train_version": train_version,
+        "heal_resume": True,
+        "process_arm": True,
+        "process_role": "heal_resume",
+    }
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    kept: list[tuple[str, str, dict[str, Any]]] = [
+        (slug, h, ex)
+        for slug, h, ex in _DYNAMIC_THRASH_ARMS
+        if slug != _HEAL_RESUME_SLUG
+    ]
+    kept.append((_HEAL_RESUME_SLUG, hyp, extras))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        for slug, h, ex in kept:
+            fh.write(
+                json.dumps(
+                    {
+                        "schema": "autotrain_dynamic_thrash_arm/v1",
+                        "slug": slug,
+                        "hypothesis": h,
+                        "extras": {
+                            k: v
+                            for k, v in ex.items()
+                            if not str(k).startswith("_")
+                        },
+                        "created_at": time.strftime(
+                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                        ),
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+    _DYNAMIC_THRASH_ARMS = [
+        (slug, h, {**dict(ex), "_thrash_slug": slug}) for slug, h, ex in kept
+    ]
+    _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
+
+
+def _retire_i10_heal_arm(root: Path, loop_id: str, *, reason: str) -> bool:
+    """Drop the heal process arm after a complete dual-arm measurement.
+
+    Process arms outrank OFAT selection; leaving a fixture-n-rejected heal
+    selectable rematches the same incomplete-evidence win forever.
+    """
+    global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
+    _load_dynamic_thrash_arms(root, loop_id)
+    if not any(slug == _HEAL_RESUME_SLUG for slug, _, _ in _DYNAMIC_THRASH_ARMS):
+        return False
+    path = _dynamic_thrash_arms_path(root, loop_id)
+    kept = [
+        (slug, hyp, extras)
+        for slug, hyp, extras in _DYNAMIC_THRASH_ARMS
+        if slug != _HEAL_RESUME_SLUG
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        for slug, hyp, extras in kept:
+            fh.write(
+                json.dumps(
+                    {
+                        "schema": "autotrain_dynamic_thrash_arm/v1",
+                        "slug": slug,
+                        "hypothesis": hyp,
+                        "extras": {
+                            k: v
+                            for k, v in extras.items()
+                            if not str(k).startswith("_")
+                        },
+                        "created_at": time.strftime(
+                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                        ),
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+    _DYNAMIC_THRASH_ARMS = [
+        (slug, hyp, {**dict(extras), "_thrash_slug": slug})
+        for slug, hyp, extras in kept
+    ]
+    _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
+    print(
+        f"HEAL_RESUME_RETIRE slug={_HEAL_RESUME_SLUG} reason={reason}",
+        flush=True,
+    )
+    return True
+
+
+def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
+    """Filter NL/repair prompts and clear open synthesis feedback for SFT.
+
+    ``train_model`` loads prompts via ``parse_harness_task``. Cap0 I10 rebuilds
+    still emit Repair/NL rows; keep only harness-parseable prompts under a
+    ``*_harness`` sibling when needed so heal arms are train-loadable.
+    """
+    from datetime import datetime, timezone
+
+    from slm_training.autoresearch.hillclimb import (
+        assert_synthesis_feedback_cleared_for_sft,
+        open_synthesis_recommendations,
+    )
+    from slm_training.dsl.harness_dsl import parse_harness_task
+    from slm_training.harnesses.model_build.data import load_train_records
+
+    records_path = train_dir / "records.jsonl"
+    if not records_path.is_file():
+        return train_dir
+    kept: list[dict[str, Any]] = []
+    dropped = 0
+    for line in records_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        try:
+            parse_harness_task(str(row.get("prompt") or ""))
+        except Exception:  # noqa: BLE001 — drop non-harness prompts for SFT
+            dropped += 1
+            continue
+        kept.append(row)
+    out_dir = train_dir
+    if dropped:
+        out_dir = train_dir.parent / f"{train_dir.name}_harness"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "records.jsonl").write_text(
+            "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in kept),
+            encoding="utf-8",
+        )
+        for name in (
+            "synthesis_feedback.json",
+            "quality_report.json",
+            "rejected.jsonl",
+            "data_manifest.json",
+            "manifest.json",
+            "stats.json",
+        ):
+            src = train_dir / name
+            if src.is_file():
+                (out_dir / name).write_bytes(src.read_bytes())
+        man_path = out_dir / "manifest.json"
+        if man_path.is_file():
+            try:
+                man = json.loads(man_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                man = {}
+            man["version"] = out_dir.name
+            man["record_count"] = len(kept)
+            man["derived_from"] = train_dir.name
+            man["derive_note"] = (
+                "filtered to HARNESS_V1 prompts for symbol-only SFT loader; "
+                f"dropped={dropped}"
+            )
+            man["derived_at"] = datetime.now(timezone.utc).isoformat()
+            man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
+        print(
+            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} "
+            f"dropped={dropped}",
+            flush=True,
+        )
+    feedback_path = out_dir / "synthesis_feedback.json"
+    actions_path = out_dir / "synthesis_feedback_actions.json"
+    if feedback_path.is_file() and not actions_path.is_file():
+        feedback = json.loads(feedback_path.read_text(encoding="utf-8"))
+        seen: dict[str, dict[str, Any]] = {}
+        for rec in open_synthesis_recommendations(feedback):
+            code = str(rec.get("code") or "")
+            if code and code not in seen:
+                seen[code] = dict(rec)
+        actions = [
+            {
+                "code": code,
+                "target_kind": rec.get("target_kind"),
+                "target": rec.get("target"),
+                "note": (
+                    f"I10 continuous snapshot {out_dir.name}: recorded {code} "
+                    f"for {rec.get('target_kind')}:{rec.get('target')}. "
+                    "Fixture climb uses admitted harness rows only; next rebuild "
+                    "must cut expansion / fix quarantine producers. Gates unchanged."
+                ),
+                "evidence": rec.get("evidence") or {},
+            }
+            for code, rec in seen.items()
+        ]
+        if actions:
+            actions_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "train_version": out_dir.name,
+                        "recorded_at": datetime.now(timezone.utc).isoformat(),
+                        "honesty_mode": "fixture_or_scratch",
+                        "actions": actions,
+                        "experiment_candidates_filed": [],
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+    try:
+        load_train_records(out_dir)
+        assert_synthesis_feedback_cleared_for_sft(out_dir)
+    except Exception as exc:  # noqa: BLE001 — keep original on prepare failure
+        print(f"I10_SFT_PREPARE_WARN dir={out_dir} err={exc!r}", flush=True)
+        return train_dir
+    return out_dir
 
 
 def _self_heal_rebuild_data(
@@ -3195,10 +3387,12 @@ def _self_heal_rebuild_data(
         _ack_rebuild_data_action(
             root, handoff, action_index=index, evidence_uris=evidence_uris
         )
-    _register_i10_heal_arm(root, loop_id, train_version=train_version)
+    prepared = _prepare_i10_train_dir_for_sft(train_dir)
+    register_version = prepared.name if prepared != train_dir else train_version
+    _register_i10_heal_arm(root, loop_id, train_version=register_version)
     print(
         f"SELF_HEAL_REBUILD_DATA campaign={campaign_id} "
-        f"version={train_version} files={evidence_uris}",
+        f"version={register_version} files={evidence_uris}",
         flush=True,
     )
     return "rebuild_data"
@@ -5451,7 +5645,23 @@ def _recent_completed_nonpositive_slugs(
             continue
         if delivery.get("harness_failure") is True and not runtime_terminal:
             continue
-        if stored_positive is True:
+        # Fixture-n screening wins stay positive=False (no stack) but are still
+        # confirm candidates — do not burn the thrash approach as a null seed.
+        confirm_win = False
+        if (
+            not runtime_terminal
+            and delivery.get("measurement_complete") is True
+            and intent in {"screening", "retry_measurement"}
+        ):
+            confirm_win = _is_confirm_candidate_win(
+                {
+                    **dict(delivery),
+                    "positive": stored_positive,
+                    "reasons": list(delivery.get("reasons") or []),
+                    "measurement_complete": True,
+                }
+            )
+        if stored_positive is True or confirm_win:
             # Win re-opens the approach; clear prior null tally for this slug.
             null_seeds[slug] = set()
             if train_version and train_version != default_tv:
@@ -6409,6 +6619,73 @@ def _quality_held_reasons(reasons: list[str] | None) -> bool:
     )
 
 
+def _delivery_parse_mpr_held(delivery: dict[str, Any]) -> bool:
+    """Parse/MPR non-regression from delivery metrics (fixture SS wins omit quality_held)."""
+    control = delivery.get("control_metrics") or {}
+    candidate = delivery.get("candidate_metrics") or {}
+    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
+        return False
+
+    def _leaf(row: Mapping[str, Any], name: str) -> float | None:
+        raw = row.get(name)
+        if raw is None:
+            raw = row.get(f"smoke.{name}")
+        return _finite_metric(raw)
+
+    c_pr, t_pr = _leaf(control, "parse_rate"), _leaf(candidate, "parse_rate")
+    c_mpr, t_mpr = (
+        _leaf(control, "meaningful_program_rate"),
+        _leaf(candidate, "meaningful_program_rate"),
+    )
+    # Missing metrics must not invent a quality hold.
+    if None in (c_pr, t_pr, c_mpr, t_mpr):
+        return False
+    return bool(t_pr + _EPS >= c_pr and t_mpr + _EPS >= c_mpr)
+
+
+def _confirm_candidate_blocked(reasons: list[str]) -> bool:
+    blocked_prefixes = (
+        "primary_metric_null_or_worse:",
+        "non_regression_fail:",
+        "eg_params_block:",
+        "measurement_incomplete:",
+        "wall_timeout:",
+        "empty_metrics:",
+        "harness_failure:",
+        "primary_quality_win_rejected",
+    )
+    return any(reason.startswith(blocked_prefixes) for reason in reasons)
+
+
+def _has_primary_metric_win(delivery: dict[str, Any], reasons: list[str]) -> bool:
+    primary_metric = str(delivery.get("primary_metric") or "")
+    if not primary_metric:
+        return False
+    return any(
+        reason.startswith(f"primary_metric_win:{primary_metric}:") for reason in reasons
+    )
+
+
+def _is_confirm_candidate_win(delivery: dict[str, Any]) -> bool:
+    """Screening primary quality win worth confirming (fixture-n may keep positive=False).
+
+    Smoke n=3 cannot mint climb ``positive`` / stack layers, but a held-quality
+    primary win must still enter the champion queue and must not tally as a
+    thrash null seed. Confirmation/promotion escalate suites and n.
+    """
+    if delivery.get("measurement_complete") is False:
+        return False
+    reasons = [str(reason) for reason in delivery.get("reasons") or []]
+    if _confirm_candidate_blocked(reasons):
+        return False
+    if not _has_primary_metric_win(delivery, reasons):
+        return False
+    primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
+    if primary_leaf == "latency_ms_p50":
+        return _quality_held_reasons(reasons)
+    return _quality_held_reasons(reasons) or _delivery_parse_mpr_held(delivery)
+
+
 def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
     """Require the policy-owned primary quality win on a confirmation run.
 
@@ -6421,16 +6698,7 @@ def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
     if not delivery.get("positive") or delivery.get("measurement_complete") is False:
         return False
     reasons = [str(reason) for reason in delivery.get("reasons") or []]
-    blocked_prefixes = (
-        "primary_metric_null_or_worse:",
-        "non_regression_fail:",
-        "eg_params_block:",
-        "measurement_incomplete:",
-        "wall_timeout:",
-        "empty_metrics:",
-        "harness_failure:",
-    )
-    if any(reason.startswith(blocked_prefixes) for reason in reasons):
+    if _confirm_candidate_blocked(reasons):
         return False
     primary_metric = str(delivery.get("primary_metric") or "")
     if not primary_metric:
@@ -6441,23 +6709,27 @@ def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
 
 
 def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
-    """Enqueue only quality-held positives (never empty-meaning latency blips)."""
+    """Enqueue confirm candidates on quality primary wins (never latency-only blips).
+
+    Fixture insufficient_n forces ``positive=False`` so screening cannot stack
+    or ship; it must not block champion enqueue — confirm/promote raise n.
+    """
+    reasons = [str(reason) for reason in delivery.get("reasons") or []]
+    if _is_confirm_candidate_win(delivery):
+        return True
     if not delivery.get("positive"):
         return False
-    reasons = list(delivery.get("reasons") or [])
-    if any(
-        str(reason).startswith("fixture_insufficient_n") for reason in reasons
-    ):
+    if any(reason.startswith("fixture_insufficient_n") for reason in reasons):
+        # Positive+fixture_n should not happen under current classify; fail closed.
         return False
     primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
     if primary_leaf != "latency_ms_p50" and _confirmation_quality_reheld(delivery):
         return True
     if _quality_held_reasons(reasons):
         return True
-    # Efficiency / primary latency win only when quality_held co-tagged.
     if any(
-        r.startswith("efficiency_win:") or r.startswith("primary_metric_win:")
-        for r in reasons
+        reason.startswith("efficiency_win:") or reason.startswith("primary_metric_win:")
+        for reason in reasons
     ):
         return _quality_held_reasons(reasons)
     return False
@@ -6569,7 +6841,14 @@ def _reconcile_completed_confirmation_replays(
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
     """True when knobs encode a thrash arm (not pure matched control)."""
-    return _arm_slug_from_knobs(knobs, candidate_id=candidate_id) is not None
+    if _arm_slug_from_knobs(knobs, candidate_id=candidate_id) is not None:
+        return True
+    # Heal / snapshot first-trains may leave the thrash bank after retirement
+    # but still carry a distinct train_version worth confirming.
+    train_version = str(knobs.get("train_version") or "")
+    if train_version and train_version != _default_screening_train_version():
+        return True
+    return False
 
 
 def _load_experiment_knobs(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
@@ -6646,6 +6925,10 @@ def _enqueue_champion(
             "candidate": delivery.get("candidate_metrics"),
         },
         "source_reasons": list(delivery.get("reasons") or []),
+        "fixture_volume_confirm_candidate": any(
+            str(r).startswith("fixture_insufficient_n")
+            for r in (delivery.get("reasons") or [])
+        ),
         "confirm_campaign_id": None,
         "confirm_cycle_index": None,
         "confirm_attempts": 0,
@@ -8824,6 +9107,10 @@ def _phase_a_delivery(
     out_path = camp_dir / "sdlc_delivery.json"
     out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     ledger = root / "sdlc_delivery_ledger.jsonl"
+    # Dangling symlinks (e.g. prior /tmp continuous worktree) raise FileNotFoundError
+    # on open("a"); replace with a real ledger so Phase A closeout never hard-fails.
+    if ledger.is_symlink() and not ledger.exists():
+        ledger.unlink()
     with ledger.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, sort_keys=True) + "\n")
 
@@ -13752,6 +14039,24 @@ def run_cycle(
         )
     finally:
         _clear_active_stage(root, loop_id)
+    # Measured heal process arms must retire: they outrank OFAT selection and
+    # otherwise rematch the same fixture-n incomplete win forever.
+    try:
+        cand_id = str((delivery or {}).get("candidate_id") or "")
+        arm_exits = (delivery or {}).get("arm_exits") or {}
+        if (
+            _HEAL_RESUME_SLUG in cand_id
+            and isinstance(arm_exits, Mapping)
+            and arm_exits
+            and all(int(v) == 0 for v in arm_exits.values())
+        ):
+            _retire_i10_heal_arm(
+                root,
+                loop_id,
+                reason=f"complete_measurement:{campaign_id}",
+            )
+    except Exception as exc:  # noqa: BLE001 — retirement never blocks closeout
+        print(f"HEAL_RESUME_RETIRE_WARN err={exc!r}", flush=True)
     print(
         f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
         f"positive={delivery['positive']}",

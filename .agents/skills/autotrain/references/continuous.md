@@ -144,13 +144,15 @@ persistence is the host goal and the append-only campaign event chains.
    `SELF_HEAL_REBUILD_DATA` has failed this law.
 5. **Remote compute is opt-in.** No paid GPU, remote job, or HF write unless
    the user already granted that authority in this session.
-6. **Code delivery is not local-only, but stack layers are selective.** While
+6. **Code delivery is not local-only, and merges are not stop-only.** While
    the loop is active, follow `sdlc` Phase A: incremental commits every cycle,
    document every run, **open/update a stacked PR only after a positive-result
-   run**, get latest, resolve conflicts. Non-positive cycles (fixture gate
-   fails, null deltas, timeouts without a win) stay local commits + docs.
-   When the loop **stops**, run `sdlc` Phase B bottom-up closeout on open
-   positive layers. Binding reference:
+   run**, get latest, resolve conflicts, **and every tick resolve PR/CI then
+   squash-merge green bottom positive layers** (A5). Non-positive cycles
+   (fixture gate fails, null deltas, timeouts without a win) stay local
+   commits + docs — no new stack layer. When the loop **stops**, run `sdlc`
+   Phase B residual closeout on any still-open positive layers. Binding
+   reference:
    [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
 7. **Never kill a live continuous driver or its train/eval children** to ship
    docs, fix CI, open PRs, “clean the worktree,” or restart for convenience.
@@ -414,6 +416,9 @@ For each cycle, run the full body without pausing:
      push to the open positive layer if the same concern continues).
    Acknowledge `deliver_stack` with the merged commit SHA.
    - **If not positive:** no new stack layer; keep local commits and continue.
+   - **Every tick (positive or not):** inventory open stack PRs; resolve
+     review comments; fix CI; squash-merge the green bottom positive layer;
+     `gh stack sync`. Report merged URLs in the matrix writeup.
    - Never PR raw `outputs/` or weight blobs.
    Full checklist:
    [`../../sdlc/references/autotrain-iteration-delivery.md`](../../sdlc/references/autotrain-iteration-delivery.md).
@@ -430,7 +435,7 @@ For each cycle, run the full body without pausing:
     **commit only** continuous closeout docs (`SELF_HEAL_DOCUMENT` /
     `SELF_HEAL_DIRTY_TREE`) so thrash can continue without a human re-prompt.
     It still does not fetch/merge (except when not `--supervised`), push, or
-    open PRs itself.
+    open PRs itself. **The agent owns PR open / resolve / squash-merge.**
 
 Owner skills (invoke; do not reimplement):
 
@@ -444,7 +449,7 @@ Owner skills (invoke; do not reimplement):
 | Evaluation/readiness interpretation | `honest-ship-eval` |
 | Run evidence and closeout | `documenting-experiment-results` |
 | Prior-work/knowledge refresh when needed | `autoresearch` |
-| Iteration commits, positive-only stacked PRs, get-latest, stop closeout | `sdlc` (+ autotrain-iteration-delivery) |
+| Iteration commits, positive-only stacked PRs, between-iteration resolve/squash-merge, stop residual closeout | `sdlc` (+ autotrain-iteration-delivery) |
 
 ### Continuous recipe defaults (fail closed)
 
@@ -494,14 +499,17 @@ not optional process folklore — it runs in
 revalidation. One-off `repair_vacuous_promotes` remains a historical backfill
 only.
 
-## When training stops (SDLC Phase B — mandatory)
+## When training stops (SDLC Phase B — residual closeout)
 
 Any of: user stop/pause, thrice-repeated hard block, session end of the loop.
 
+Green bottom positive layers should already have been squash-merged **during**
+Phase A ticks (A5). Phase B finishes whatever is still open:
+
 1. Stop starting new train/eval cycles.
-2. Inventory open autotrain stack layers (`gh stack view`) — these should only
-   be positive-result layers.
-3. Run **full** `sdlc` closeout **bottom → top** — rubber-duck + adversarial
+2. Inventory remaining open autotrain stack layers (`gh stack view`) — these
+   should only be positive-result layers.
+3. Run **residual** `sdlc` closeout **bottom → top** — rubber-duck + adversarial
    review, resolve comments, fix CI, squash-merge, `gh stack sync` — exactly
    as documented in
    [`../../sdlc/references/closeout-review.md`](../../sdlc/references/closeout-review.md)
@@ -511,6 +519,7 @@ Any of: user stop/pause, thrice-repeated hard block, session end of the loop.
 4. Report merged PR URLs + SHAs + residual risks.
 
 Do **not** end with only a resume command or “branch is ready when you are.”
+Do **not** treat Phase B as the first time merges happen — that is an A5 miss.
 
 ## Forbidden continuous-mode behaviors
 

@@ -1,0 +1,3178 @@
+{
+  "schema_version": 1,
+  "version": "continuous_i10_continuous_openui_local_c6",
+  "profile": "strict",
+  "built_at": "2026-08-16T05:03:51.921486+00:00",
+  "counts": {
+    "seeds": 134,
+    "candidates": 288,
+    "collected": 281,
+    "admitted": 81,
+    "rejected_total": 224,
+    "source_errors": 6,
+    "by_stage": {
+      "cue_intervention_control": 16,
+      "dedup": 65,
+      "normalize": 7,
+      "quality": 4,
+      "verification": 132
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 7,
+    "parse_rate": 0.9757,
+    "tier_histogram": {
+      "Bronze": 28,
+      "Silver": 53
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 132,
+    "placeholder_contract_violations": 1,
+    "judge_contract_violations": 3,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 4,
+    "reason_histogram": {
+      "identity_echo_mismatch": 3,
+      "too_few_placeholders": 1,
+      "unknown_components": 4
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 81
+    },
+    "mean_quality_score": 0.9759,
+    "min_quality_score": 0.95
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 38,
+      "fuzzy_minhash": 7,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 20,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 80,
+      "records_per_cluster": {
+        "max": 2,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "6c1a67e1b6ac495f|f72645402c544403aa424f49e6cc5290b82455d68e29b6990f3940498bae6bc5|9f8a8f70ccfc9951",
+        "count": 2,
+        "sample_ids": [
+          "4b91a2f6c72da350_scope",
+          "4b91a2f6c72da350_scope"
+        ]
+      },
+      {
+        "cluster": "0469287c93226a51|7fdccc14db7b7dcb8c6cc4dda4a39e16dd16345bf471c30dd13e8f6f6d9035a0|8f8073771acb3bfa",
+        "count": 1,
+        "sample_ids": [
+          "program_009db66ad96b0a8f_repair_88229abd1d67"
+        ]
+      },
+      {
+        "cluster": "06845779bbc87974|a56145270ce6b3bebd1dd012b73948677dd618d496488bc608a3cb43ce3547dd|e3b0c44298fc1c14",
+        "count": 1,
+        "sample_ids": [
+          "1a31e8ab196005ba_scope"
+        ]
+      },
+      {
+        "cluster": "0c6cf4f75a369108|c9331e5722407c9b7ca13a46a75d8b3bc0caa01aa4ed88cd6d4f5c229152d719|d77fefe9b1a660de",
+        "count": 1,
+        "sample_ids": [
+          "program_f8126d2f55cea3f8_edit_9f5b82155dd2"
+        ]
+      },
+      {
+        "cluster": "0d5e5e6f8f6aa15a|65ff37f8b61be7775e4157f7d3bc86b6e5203be817b3a2904d91163d87c7c23f|7e3145c083fe1856",
+        "count": 1,
+        "sample_ids": [
+          "program_3440f626b8cc736c_repair_e4bd23f110f2"
+        ]
+      },
+      {
+        "cluster": "0dfd617309a7a8ab|915bdc19398950e88668a3c5460f425764fcc8c0d20269e62a1f6c21ca703ccb|51b5864d40580965",
+        "count": 1,
+        "sample_ids": [
+          "program_f8126d2f55cea3f8_generation_f66ec528cc67_aug_cta"
+        ]
+      },
+      {
+        "cluster": "0e357401344a3dc1|2e0c90247d7120eb3221b1e34759e077f0f8c416a834e1a340feb75722656902|3580447316fdd68f",
+        "count": 1,
+        "sample_ids": [
+          "program_4b089034ac9ab508_generation_c76ca3076803_aug_cta"
+        ]
+      },
+      {
+        "cluster": "1099c86ff8fdd166|2045a15b1efc7a6227e943e59796bfcb8cc189dda22ca8a0de0709295d6ef07c|383067b7962f2d54",
+        "count": 1,
+        "sample_ids": [
+          "program_f8126d2f55cea3f8_generation_f66ec528cc67_aug_dir"
+        ]
+      },
+      {
+        "cluster": "1117c12998a71f4d|1de3880410d9772b02ba49b19f2b86a99d4b925f5e7df364d550fefa9a97a55e|4c645b95a716e2ed",
+        "count": 1,
+        "sample_ids": [
+          "0835fe120ca8549c_scope"
+        ]
+      },
+      {
+        "cluster": "12527efe0605598d|32d78dbd6700ffcd6e9b0a3ee27eacb94a9d577f27cabb6e08b6447fab06785c|e3b0c44298fc1c14",
+        "count": 1,
+        "sample_ids": [
+          "6c5bd1ba8f65eca7_scope"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 281,
+    "changed": 215,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 216,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 0
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 150,
+      "misses": 81
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 7,
+      "root_parent_count": 7,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "repair": 7
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 14,
+      "root_parent_count": 7,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "edit": 7,
+        "patch": 7
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 14,
+      "root_parent_count": 7,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "generation": 14
+      }
+    },
+    {
+      "source_family": "scope_canonical_document",
+      "record_count": 3,
+      "root_parent_count": 2,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "edit": 3
+      }
+    },
+    {
+      "source_family": "scope_canonical_expression",
+      "record_count": 6,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 6
+      }
+    },
+    {
+      "source_family": "scope_canonical_lexical",
+      "record_count": 3,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 3
+      }
+    },
+    {
+      "source_family": "scope_canonical_statement",
+      "record_count": 5,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 5
+      }
+    },
+    {
+      "source_family": "scope_identity_document",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "identity": 1
+      }
+    },
+    {
+      "source_family": "scope_identity_expression",
+      "record_count": 8,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 8
+      }
+    },
+    {
+      "source_family": "scope_identity_lexical",
+      "record_count": 6,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 6
+      }
+    },
+    {
+      "source_family": "scope_identity_statement",
+      "record_count": 5,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 5
+      }
+    },
+    {
+      "source_family": "scope_repair_expression",
+      "record_count": 4,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 4
+      }
+    },
+    {
+      "source_family": "scope_repair_lexical",
+      "record_count": 2,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 2
+      }
+    },
+    {
+      "source_family": "scope_repair_statement",
+      "record_count": 3,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 3
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.2812,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 1,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "claim_class": "fixture_wiring",
+  "capability_certificate": false,
+  "unique_roots": {
+    "requested": 8,
+    "admitted": 0,
+    "row_count": 81,
+    "prompt_surface": "grammar_schema",
+    "prompt_provider": "offline_fixture_renderer",
+    "prompt_provider_authoritative": false
+  },
+  "pair_quality": {
+    "blocking_reasons": [
+      "prefix_concentration",
+      "template_concentration"
+    ],
+    "cue_only": {
+      "accuracy": 1.0,
+      "disposition": "pass",
+      "fold_assignments": {
+        "row-0": 5,
+        "row-1": 7,
+        "row-10": 3,
+        "row-11": 2,
+        "row-12": 1,
+        "row-13": 2,
+        "row-14": 0,
+        "row-15": 1,
+        "row-16": 2,
+        "row-17": 2,
+        "row-18": 1,
+        "row-19": 0,
+        "row-2": 7,
+        "row-20": 2,
+        "row-21": 0,
+        "row-22": 3,
+        "row-23": 0,
+        "row-24": 0,
+        "row-25": 5,
+        "row-26": 6,
+        "row-27": 0,
+        "row-28": 1,
+        "row-29": 1,
+        "row-3": 7,
+        "row-30": 0,
+        "row-31": 4,
+        "row-32": 0,
+        "row-33": 4,
+        "row-34": 6,
+        "row-35": 3,
+        "row-36": 0,
+        "row-37": 4,
+        "row-38": 2,
+        "row-39": 6,
+        "row-4": 0,
+        "row-40": 7,
+        "row-41": 7,
+        "row-42": 3,
+        "row-43": 4,
+        "row-44": 7,
+        "row-45": 6,
+        "row-46": 0,
+        "row-47": 0,
+        "row-48": 2,
+        "row-49": 0,
+        "row-5": 3,
+        "row-50": 0,
+        "row-51": 3,
+        "row-52": 2,
+        "row-53": 7,
+        "row-54": 0,
+        "row-55": 7,
+        "row-56": 5,
+        "row-57": 7,
+        "row-58": 6,
+        "row-59": 1,
+        "row-6": 1,
+        "row-60": 6,
+        "row-61": 1,
+        "row-62": 4,
+        "row-63": 6,
+        "row-64": 0,
+        "row-65": 4,
+        "row-66": 6,
+        "row-67": 5,
+        "row-68": 0,
+        "row-69": 4,
+        "row-7": 7,
+        "row-70": 1,
+        "row-71": 4,
+        "row-72": 2,
+        "row-73": 1,
+        "row-74": 1,
+        "row-75": 0,
+        "row-76": 3,
+        "row-77": 2,
+        "row-78": 4,
+        "row-79": 1,
+        "row-8": 0,
+        "row-80": 1,
+        "row-9": 1
+      },
+      "folds": {
+        "row-0": 5,
+        "row-1": 7,
+        "row-10": 3,
+        "row-11": 2,
+        "row-12": 1,
+        "row-13": 2,
+        "row-14": 0,
+        "row-15": 1,
+        "row-16": 2,
+        "row-17": 2,
+        "row-18": 1,
+        "row-19": 0,
+        "row-2": 7,
+        "row-20": 2,
+        "row-21": 0,
+        "row-22": 3,
+        "row-23": 0,
+        "row-24": 0,
+        "row-25": 5,
+        "row-26": 6,
+        "row-27": 0,
+        "row-28": 1,
+        "row-29": 1,
+        "row-3": 7,
+        "row-30": 0,
+        "row-31": 4,
+        "row-32": 0,
+        "row-33": 4,
+        "row-34": 6,
+        "row-35": 3,
+        "row-36": 0,
+        "row-37": 4,
+        "row-38": 2,
+        "row-39": 6,
+        "row-4": 0,
+        "row-40": 7,
+        "row-41": 7,
+        "row-42": 3,
+        "row-43": 4,
+        "row-44": 7,
+        "row-45": 6,
+        "row-46": 0,
+        "row-47": 0,
+        "row-48": 2,
+        "row-49": 0,
+        "row-5": 3,
+        "row-50": 0,
+        "row-51": 3,
+        "row-52": 2,
+        "row-53": 7,
+        "row-54": 0,
+        "row-55": 7,
+        "row-56": 5,
+        "row-57": 7,
+        "row-58": 6,
+        "row-59": 1,
+        "row-6": 1,
+        "row-60": 6,
+        "row-61": 1,
+        "row-62": 4,
+        "row-63": 6,
+        "row-64": 0,
+        "row-65": 4,
+        "row-66": 6,
+        "row-67": 5,
+        "row-68": 0,
+        "row-69": 4,
+        "row-7": 7,
+        "row-70": 1,
+        "row-71": 4,
+        "row-72": 2,
+        "row-73": 1,
+        "row-74": 1,
+        "row-75": 0,
+        "row-76": 3,
+        "row-77": 2,
+        "row-78": 4,
+        "row-79": 1,
+        "row-8": 0,
+        "row-80": 1,
+        "row-9": 1
+      },
+      "lift": 0.0,
+      "majority_baseline": 1.0,
+      "n_folds": 8,
+      "record_folds": [
+        5,
+        7,
+        7,
+        7,
+        0,
+        3,
+        1,
+        7,
+        0,
+        1,
+        3,
+        2,
+        1,
+        2,
+        0,
+        1,
+        2,
+        2,
+        1,
+        0,
+        2,
+        0,
+        3,
+        0,
+        0,
+        5,
+        6,
+        0,
+        1,
+        1,
+        0,
+        4,
+        0,
+        4,
+        6,
+        3,
+        0,
+        4,
+        2,
+        6,
+        7,
+        7,
+        3,
+        4,
+        7,
+        6,
+        0,
+        0,
+        2,
+        0,
+        0,
+        3,
+        2,
+        7,
+        0,
+        7,
+        5,
+        7,
+        6,
+        1,
+        6,
+        1,
+        4,
+        6,
+        0,
+        4,
+        6,
+        5,
+        0,
+        4,
+        1,
+        4,
+        2,
+        1,
+        1,
+        0,
+        3,
+        2,
+        4,
+        1,
+        1
+      ],
+      "support": 81,
+      "threshold": 0.05
+    },
+    "cue_prevalence": {
+      "any_hard_forbidden": 67,
+      "balanced_generic": {
+        "build": 0,
+        "create": 14,
+        "design": 0,
+        "generate": 0,
+        "interface": 0,
+        "layout": 0,
+        "page": 0,
+        "screen": 0,
+        "ui": 0
+      },
+      "hard_forbidden": {
+        "ast": 0,
+        "component inventory": 14,
+        "declarations": 14,
+        "dsl": 0,
+        "openui": 67,
+        "placeholder": 0,
+        "reference graph": 14
+      },
+      "n": 81,
+      "no_generic_fraction": 0.82716
+    },
+    "full_prompt": {
+      "accuracy": 1.0,
+      "disposition": "report_only",
+      "fold_assignments": {
+        "row-0": 5,
+        "row-1": 7,
+        "row-10": 3,
+        "row-11": 2,
+        "row-12": 1,
+        "row-13": 2,
+        "row-14": 0,
+        "row-15": 1,
+        "row-16": 2,
+        "row-17": 2,
+        "row-18": 1,
+        "row-19": 0,
+        "row-2": 7,
+        "row-20": 2,
+        "row-21": 0,
+        "row-22": 3,
+        "row-23": 0,
+        "row-24": 0,
+        "row-25": 5,
+        "row-26": 6,
+        "row-27": 0,
+        "row-28": 1,
+        "row-29": 1,
+        "row-3": 7,
+        "row-30": 0,
+        "row-31": 4,
+        "row-32": 0,
+        "row-33": 4,
+        "row-34": 6,
+        "row-35": 3,
+        "row-36": 0,
+        "row-37": 4,
+        "row-38": 2,
+        "row-39": 6,
+        "row-4": 0,
+        "row-40": 7,
+        "row-41": 7,
+        "row-42": 3,
+        "row-43": 4,
+        "row-44": 7,
+        "row-45": 6,
+        "row-46": 0,
+        "row-47": 0,
+        "row-48": 2,
+        "row-49": 0,
+        "row-5": 3,
+        "row-50": 0,
+        "row-51": 3,
+        "row-52": 2,
+        "row-53": 7,
+        "row-54": 0,
+        "row-55": 7,
+        "row-56": 5,
+        "row-57": 7,
+        "row-58": 6,
+        "row-59": 1,
+        "row-6": 1,
+        "row-60": 6,
+        "row-61": 1,
+        "row-62": 4,
+        "row-63": 6,
+        "row-64": 0,
+        "row-65": 4,
+        "row-66": 6,
+        "row-67": 5,
+        "row-68": 0,
+        "row-69": 4,
+        "row-7": 7,
+        "row-70": 1,
+        "row-71": 4,
+        "row-72": 2,
+        "row-73": 1,
+        "row-74": 1,
+        "row-75": 0,
+        "row-76": 3,
+        "row-77": 2,
+        "row-78": 4,
+        "row-79": 1,
+        "row-8": 0,
+        "row-80": 1,
+        "row-9": 1
+      },
+      "folds": {
+        "row-0": 5,
+        "row-1": 7,
+        "row-10": 3,
+        "row-11": 2,
+        "row-12": 1,
+        "row-13": 2,
+        "row-14": 0,
+        "row-15": 1,
+        "row-16": 2,
+        "row-17": 2,
+        "row-18": 1,
+        "row-19": 0,
+        "row-2": 7,
+        "row-20": 2,
+        "row-21": 0,
+        "row-22": 3,
+        "row-23": 0,
+        "row-24": 0,
+        "row-25": 5,
+        "row-26": 6,
+        "row-27": 0,
+        "row-28": 1,
+        "row-29": 1,
+        "row-3": 7,
+        "row-30": 0,
+        "row-31": 4,
+        "row-32": 0,
+        "row-33": 4,
+        "row-34": 6,
+        "row-35": 3,
+        "row-36": 0,
+        "row-37": 4,
+        "row-38": 2,
+        "row-39": 6,
+        "row-4": 0,
+        "row-40": 7,
+        "row-41": 7,
+        "row-42": 3,
+        "row-43": 4,
+        "row-44": 7,
+        "row-45": 6,
+        "row-46": 0,
+        "row-47": 0,
+        "row-48": 2,
+        "row-49": 0,
+        "row-5": 3,
+        "row-50": 0,
+        "row-51": 3,
+        "row-52": 2,
+        "row-53": 7,
+        "row-54": 0,
+        "row-55": 7,
+        "row-56": 5,
+        "row-57": 7,
+        "row-58": 6,
+        "row-59": 1,
+        "row-6": 1,
+        "row-60": 6,
+        "row-61": 1,
+        "row-62": 4,
+        "row-63": 6,
+        "row-64": 0,
+        "row-65": 4,
+        "row-66": 6,
+        "row-67": 5,
+        "row-68": 0,
+        "row-69": 4,
+        "row-7": 7,
+        "row-70": 1,
+        "row-71": 4,
+        "row-72": 2,
+        "row-73": 1,
+        "row-74": 1,
+        "row-75": 0,
+        "row-76": 3,
+        "row-77": 2,
+        "row-78": 4,
+        "row-79": 1,
+        "row-8": 0,
+        "row-80": 1,
+        "row-9": 1
+      },
+      "lift": 0.0,
+      "majority_baseline": 1.0,
+      "n_folds": 8,
+      "record_folds": [
+        5,
+        7,
+        7,
+        7,
+        0,
+        3,
+        1,
+        7,
+        0,
+        1,
+        3,
+        2,
+        1,
+        2,
+        0,
+        1,
+        2,
+        2,
+        1,
+        0,
+        2,
+        0,
+        3,
+        0,
+        0,
+        5,
+        6,
+        0,
+        1,
+        1,
+        0,
+        4,
+        0,
+        4,
+        6,
+        3,
+        0,
+        4,
+        2,
+        6,
+        7,
+        7,
+        3,
+        4,
+        7,
+        6,
+        0,
+        0,
+        2,
+        0,
+        0,
+        3,
+        2,
+        7,
+        0,
+        7,
+        5,
+        7,
+        6,
+        1,
+        6,
+        1,
+        4,
+        6,
+        0,
+        4,
+        6,
+        5,
+        0,
+        4,
+        1,
+        4,
+        2,
+        1,
+        1,
+        0,
+        3,
+        2,
+        4,
+        1,
+        1
+      ],
+      "support": 81,
+      "threshold": 0.05
+    },
+    "pair_audits": [
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 3,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 5,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 7,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 3,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 7,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 3,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 6,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 6,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui",
+          "component inventory",
+          "declarations",
+          "reference graph"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "layout_augment",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 6,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 6,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 9,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 9,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "edit_trajectory",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_document",
+        "split_family_id": "",
+        "target_surface_leak_count": 5,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_document",
+        "split_family_id": "",
+        "target_surface_leak_count": 9,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_document",
+        "split_family_id": "",
+        "target_surface_leak_count": 9,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_canonical_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_document",
+        "split_family_id": "",
+        "target_surface_leak_count": 5,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_identity_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 2,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_expression",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_lexical",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 6,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 6,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 9,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 9,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "corruption_repair",
+        "split_family_id": "",
+        "target_surface_leak_count": 4,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 0,
+        "template_id": "",
+        "topology_id": ""
+      },
+      {
+        "accepted": false,
+        "complete_inventory_leak_count": 0,
+        "contradiction_count": 0,
+        "cue_policy_violations": [
+          "openui"
+        ],
+        "evidence_class": "unverified",
+        "forbidden_fact_absent": true,
+        "invariance_group_id": null,
+        "reasons": [
+          "target_surface_leak",
+          "hard_forbidden_cue"
+        ],
+        "renderer_id": "",
+        "required_fact_coverage": 1.0,
+        "root_id": "",
+        "semantic_frame_id": "",
+        "source_id": "scope_repair_statement",
+        "split_family_id": "",
+        "target_surface_leak_count": 1,
+        "template_id": "",
+        "topology_id": ""
+      }
+    ],
+    "passed": false,
+    "prefix_concentration": {
+      "counts": {
+        "apply this structural patch": 7,
+        "create an openui program": 14,
+        "current program root stack": 7,
+        "harness v1 op canonicalize": 17,
+        "harness v1 op identity": 20,
+        "repair this openui expression": 4,
+        "repair this openui lexical": 2,
+        "repair this openui program": 7,
+        "repair this openui statement": 3
+      },
+      "n": 81,
+      "share": 0.246914,
+      "top": "harness v1 op identity"
+    },
+    "rare_family_retention": {
+      "family_counts": {
+        "": 81
+      },
+      "max_root_exposure": 81,
+      "n_families": 1,
+      "per_root_exposure_cap": 8,
+      "retained": true,
+      "unique_roots": 1,
+      "unique_structure_fraction": 0.012346
+    },
+    "schema_version": "pair_quality/v1",
+    "source_only": {
+      "accuracy": 1.0,
+      "disposition": "pass",
+      "fold_assignments": {
+        "row-0": 5,
+        "row-1": 7,
+        "row-10": 3,
+        "row-11": 2,
+        "row-12": 1,
+        "row-13": 2,
+        "row-14": 0,
+        "row-15": 1,
+        "row-16": 2,
+        "row-17": 2,
+        "row-18": 1,
+        "row-19": 0,
+        "row-2": 7,
+        "row-20": 2,
+        "row-21": 0,
+        "row-22": 3,
+        "row-23": 0,
+        "row-24": 0,
+        "row-25": 5,
+        "row-26": 6,
+        "row-27": 0,
+        "row-28": 1,
+        "row-29": 1,
+        "row-3": 7,
+        "row-30": 0,
+        "row-31": 4,
+        "row-32": 0,
+        "row-33": 4,
+        "row-34": 6,
+        "row-35": 3,
+        "row-36": 0,
+        "row-37": 4,
+        "row-38": 2,
+        "row-39": 6,
+        "row-4": 0,
+        "row-40": 7,
+        "row-41": 7,
+        "row-42": 3,
+        "row-43": 4,
+        "row-44": 7,
+        "row-45": 6,
+        "row-46": 0,
+        "row-47": 0,
+        "row-48": 2,
+        "row-49": 0,
+        "row-5": 3,
+        "row-50": 0,
+        "row-51": 3,
+        "row-52": 2,
+        "row-53": 7,
+        "row-54": 0,
+        "row-55": 7,
+        "row-56": 5,
+        "row-57": 7,
+        "row-58": 6,
+        "row-59": 1,
+        "row-6": 1,
+        "row-60": 6,
+        "row-61": 1,
+        "row-62": 4,
+        "row-63": 6,
+        "row-64": 0,
+        "row-65": 4,
+        "row-66": 6,
+        "row-67": 5,
+        "row-68": 0,
+        "row-69": 4,
+        "row-7": 7,
+        "row-70": 1,
+        "row-71": 4,
+        "row-72": 2,
+        "row-73": 1,
+        "row-74": 1,
+        "row-75": 0,
+        "row-76": 3,
+        "row-77": 2,
+        "row-78": 4,
+        "row-79": 1,
+        "row-8": 0,
+        "row-80": 1,
+        "row-9": 1
+      },
+      "folds": {
+        "row-0": 5,
+        "row-1": 7,
+        "row-10": 3,
+        "row-11": 2,
+        "row-12": 1,
+        "row-13": 2,
+        "row-14": 0,
+        "row-15": 1,
+        "row-16": 2,
+        "row-17": 2,
+        "row-18": 1,
+        "row-19": 0,
+        "row-2": 7,
+        "row-20": 2,
+        "row-21": 0,
+        "row-22": 3,
+        "row-23": 0,
+        "row-24": 0,
+        "row-25": 5,
+        "row-26": 6,
+        "row-27": 0,
+        "row-28": 1,
+        "row-29": 1,
+        "row-3": 7,
+        "row-30": 0,
+        "row-31": 4,
+        "row-32": 0,
+        "row-33": 4,
+        "row-34": 6,
+        "row-35": 3,
+        "row-36": 0,
+        "row-37": 4,
+        "row-38": 2,
+        "row-39": 6,
+        "row-4": 0,
+        "row-40": 7,
+        "row-41": 7,
+        "row-42": 3,
+        "row-43": 4,
+        "row-44": 7,
+        "row-45": 6,
+        "row-46": 0,
+        "row-47": 0,
+        "row-48": 2,
+        "row-49": 0,
+        "row-5": 3,
+        "row-50": 0,
+        "row-51": 3,
+        "row-52": 2,
+        "row-53": 7,
+        "row-54": 0,
+        "row-55": 7,
+        "row-56": 5,
+        "row-57": 7,
+        "row-58": 6,
+        "row-59": 1,
+        "row-6": 1,
+        "row-60": 6,
+        "row-61": 1,
+        "row-62": 4,
+        "row-63": 6,
+        "row-64": 0,
+        "row-65": 4,
+        "row-66": 6,
+        "row-67": 5,
+        "row-68": 0,
+        "row-69": 4,
+        "row-7": 7,
+        "row-70": 1,
+        "row-71": 4,
+        "row-72": 2,
+        "row-73": 1,
+        "row-74": 1,
+        "row-75": 0,
+        "row-76": 3,
+        "row-77": 2,
+        "row-78": 4,
+        "row-79": 1,
+        "row-8": 0,
+        "row-80": 1,
+        "row-9": 1
+      },
+      "lift": 0.0,
+      "majority_baseline": 1.0,
+      "n_folds": 8,
+      "record_folds": [
+        5,
+        7,
+        7,
+        7,
+        0,
+        3,
+        1,
+        7,
+        0,
+        1,
+        3,
+        2,
+        1,
+        2,
+        0,
+        1,
+        2,
+        2,
+        1,
+        0,
+        2,
+        0,
+        3,
+        0,
+        0,
+        5,
+        6,
+        0,
+        1,
+        1,
+        0,
+        4,
+        0,
+        4,
+        6,
+        3,
+        0,
+        4,
+        2,
+        6,
+        7,
+        7,
+        3,
+        4,
+        7,
+        6,
+        0,
+        0,
+        2,
+        0,
+        0,
+        3,
+        2,
+        7,
+        0,
+        7,
+        5,
+        7,
+        6,
+        1,
+        6,
+        1,
+        4,
+        6,
+        0,
+        4,
+        6,
+        5,
+        0,
+        4,
+        1,
+        4,
+        2,
+        1,
+        1,
+        0,
+        3,
+        2,
+        4,
+        1,
+        1
+      ],
+      "support": 81,
+      "threshold": 0.05
+    },
+    "template_concentration": {
+      "counts": {
+        "": 81
+      },
+      "n": 81,
+      "share": 1.0,
+      "top": ""
+    },
+    "thresholds": {
+      "max_cue_only_accuracy_lift": 0.05,
+      "max_exact_template_share": 0.05,
+      "max_normalized_prefix_share": 0.1,
+      "max_renderer_share": 0.5,
+      "max_source_only_accuracy_lift": 0.05,
+      "min_no_generic_cue_fraction": 0.15,
+      "min_support_roots": 20,
+      "min_unique_structure_fraction": 0.9,
+      "per_root_exposure_cap": 8,
+      "reject_target_surface_leaks": true,
+      "schema_version": "corpus_generation/v1"
+    }
+  },
+  "source_anchors": {
+    "unique_roots": 7,
+    "trusted_roots": 0,
+    "trusted_root_fraction": 0.0,
+    "promotion_authoritative": false,
+    "deficit": true
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0cde477f38f90da6b4ed974bb184e48a7988e29a",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v32"
+    },
+    "stamped_at": "2026-08-16T05:03:51.950238+00:00"
+  }
+}

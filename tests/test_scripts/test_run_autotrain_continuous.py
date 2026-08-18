@@ -6495,19 +6495,53 @@ def test_park_policy_retires_confirm_fallback_and_compose_synthesis(
 
 
 def test_should_enqueue_rejects_fixture_volume_win() -> None:
+    # Latency-primary fixture ticks without quality_held stay out of the queue.
     assert not _mod._should_enqueue_champion(
         {
-            "positive": True,
-            "primary_metric": "smoke.structural_similarity",
+            "positive": False,
+            "primary_metric": "smoke.latency_ms_p50",
+            "measurement_complete": True,
             "reasons": [
                 "fixture_insufficient_n:c159-control",
-                "fixture_insufficient_n:c159-typed-family-balance",
-                "primary_metric_win:smoke.structural_similarity:"
-                "0.174->0.214:improvement=0.04",
-                "quality_held:parse=1.0 mpr=0.333",
+                "primary_metric_win:smoke.latency_ms_p50:10000->8000",
+                "fixture_insufficient_n_alone",
             ],
+            "control_metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.3},
+            "candidate_metrics": {"parse_rate": 1.0, "meaningful_program_rate": 0.3},
         }
     )
+
+
+def test_should_enqueue_fixture_volume_structural_win() -> None:
+    """Smoke n=3 SS wins enqueue as confirm candidates (positive stays False)."""
+    delivery = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": [
+            "fixture_insufficient_n:c159-control",
+            "fixture_insufficient_n:c159-typed-family-balance",
+            "primary_metric_win:smoke.structural_similarity:"
+            "0.174->0.214:improvement=0.04",
+            "fixture_insufficient_n_alone",
+        ],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.333,
+            "structural_similarity": 0.174,
+            "binder_reference_f1": 0.6,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.333,
+            "structural_similarity": 0.214,
+            "binder_reference_f1": 0.7,
+        },
+        "candidate_id": "c159-typed-family-balance",
+        "control_id": "c159-control",
+    }
+    assert _mod._is_confirm_candidate_win(delivery)
+    assert _mod._should_enqueue_champion(delivery)
 
 
 def test_handoff_parks_exhausted_bank_despite_experiment_next(

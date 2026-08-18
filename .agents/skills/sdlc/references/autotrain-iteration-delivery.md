@@ -23,17 +23,19 @@ Stack the *code and design docs*, not the raw run directory.
 PHASE A — TRAINING ACTIVE (continuous or multi-run finite)
   edit + incremental commit → train/eval → document
   if POSITIVE RESULT → stack layer PR (gh stack add/submit)
-  always → get latest → next run
+  every tick/cycle → get latest + resolve PR/CI + squash-merge green bottom layers
+  always → next run
 
 PHASE B — TRAINING STOPPED (user stop, hard block, session end of loop)
-  bottom-up SDLC closeout for open stack layers (rubber-duck → CI → squash-merge)
+  finish residual bottom-up SDLC closeout for any still-open stack layers
 ```
 
 Do **not** open a stacked PR for every cycle. **Stacked PRs are only for
 positive-result runs** (definition below). Do **not** skip local incremental
-commits or docs "until the loop ends." Do **not** full-stack squash-merge
-mid-loop unless a lower positive layer is independently shippable and CI-green;
-default is land the open stack in Phase B.
+commits or docs "until the loop ends." **Do** land green, independently
+shippable bottom positive layers **between iterations** (review → fix CI →
+squash-merge → `gh stack sync`). Do not wait for Phase B to start merging;
+Phase B only finishes whatever is still open when training stops.
 
 ## Positive result (required gate for a stack layer)
 
@@ -107,7 +109,9 @@ recoverable; they are **not** the same as opening a stacked PR.
      - Keep local commits; carry fixes into the next cycle.
      - Optional: note "no stack layer (non-positive)" in the cycle matrix line.
 7. git fetch origin main and integrate (see A3).
-8. Start the next train/eval cycle.
+8. Between-iteration delivery health (see A5): update open positive PRs,
+   resolve review/CI, squash-merge green bottom layers, sync the stack.
+9. Start the next train/eval cycle.
 ```
 
 One **stack layer per positive iteration** (or per positive concern). If the
@@ -140,16 +144,39 @@ git rev-parse origin/main HEAD
 | Local commit | Yes (required for code/docs units) |
 | Push stack branches + open/update stacked PRs | **Only after a positive run** (or to update an existing positive layer) |
 | New stack layer for a non-positive cycle | **No** |
-| Squash-merge entire stack to main | **No** by default — wait for Phase B |
-| Squash-merge a green bottom positive layer that unblocks others | Yes if CI green and independently shippable |
+| Resolve PR comments + fix CI on open positive layers | **Yes — every tick/cycle** |
+| Squash-merge a green bottom positive layer | **Yes — between iterations** when CI green and independently shippable |
+| Squash-merge upper layers before lower ones | **No** — always bottom-up |
 | Paid remote GPU / HF bucket write | Only with prior user authority |
 | Stopping to ask "continue?" | Never |
 
 Opening a stacked PR after a **positive** run is delivery process, not a user
-confirmation step. Do not ask permission to open that layer. Do not open layers
-for noise cycles.
+confirmation step. Do not ask permission to open, review, or squash-merge that
+layer. Do not open layers for noise cycles.
 
-## Phase B — training stopped → full SDLC closeout
+### A5. Between-iteration PR / resolve / squash-merge (every tick)
+
+After documenting the cycle (and after stacking when positive), **before** the
+next train, run stack health on any open autotrain layers:
+
+```text
+1. gh stack view / gh pr list for open autotrain stack PRs
+2. For each open PR (bottom → top):
+   - Read new review comments; address them with commits on that layer
+   - Fix failing required checks (billing-budget is the only allowed pause)
+   - Push updates (gh stack push / gh stack submit)
+3. For the bottom-most PR that is mergeable + CI green + no unresolved
+   threads: rubber-duck briefly, then squash-merge
+   (gh stack merge --yes --squash or gh pr merge --squash)
+4. gh stack sync so remaining layers retarget
+5. Report merged PR URLs in the cycle matrix / tick writeup
+```
+
+Never leave green positive layers sitting unmerged for “later Phase B” while
+the continuous loop keeps thrashing. Never squash-merge fixture-noise docs-only
+commits that never earned a positive stack layer.
+
+## Phase B — training stopped → residual SDLC closeout
 
 Triggers (any one):
 
@@ -158,8 +185,8 @@ Triggers (any one):
 - Session is ending and the loop will not continue
 - Agent switches from continuous train to "land the work"
 
-Then the parent **must** run the existing SDLC closeout, **bottom → top**, for
-**open stack layers** (which should only be positive-result layers):
+Most positive layers should already have been squash-merged during Phase A
+(A5). Phase B finishes **residual** open stack layers bottom → top:
 
 1. Inventory the stack: `gh stack view` / `gh stack view --json`
 2. For each unmerged PR from the **bottom**:
@@ -205,9 +232,9 @@ measured-results path, what the next run will use.
 | One mega-PR at the end of continuous training | Layer per **positive** iteration as you go |
 | Stacking `outputs/` or `.pt` checkpoints | Keep local / bucket; never PR blobs |
 | Merge main by rewriting measured-results history | Resolve conflicts; keep provenance |
-| Full closeout mid-loop for every tiny knob | Positive layers open mid-loop; land in Phase B |
-| "Local-only" used to skip PRs after real wins | Positive runs still ship via stack |
-| Stop training and only paste a resume recipe | Phase B closeout for open positive layers |
+| Leave green positive PRs unmerged until training stops | Squash-merge green bottom layers **between iterations** (A5) |
+| "Local-only" used to skip PRs after real wins | Positive runs still ship via stack + merge |
+| Stop training and only paste a resume recipe | Phase B finishes residual open positive layers |
 
 ## Pointers
 

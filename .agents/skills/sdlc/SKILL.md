@@ -8,7 +8,8 @@ description: >
   repair, and squash-merge. Also covers Scalar enlistments, sparse-checkout,
   worktrees/workspaces for humans and agents, and autotrain iteration
   delivery (incremental commits always; stacked PR only after positive-result
-  training runs; full bottom-up closeout when training stops). Use for
+  training runs; between-iteration resolve/CI/squash-merge of green bottom
+  layers; residual bottom-up closeout when training stops). Use for
   multi-phase tasks, stacked PR workflows, PR closeout, workspace setup,
   scalar/sparse checkout, autotrain/code-fix delivery during training, or
   whenever work spans more than one reviewable layer.
@@ -279,7 +280,8 @@ work**, same class of failure as missing experiment docs.
 | Skills only installed for one harness | Canonical copy under `.agents/skills/sdlc` + discovery symlinks |
 | Autotrain runs for hours with uncommitted harness fixes | Phase A incremental commits every cycle |
 | Stacked PR for every fixture-fail / null cycle | Stack **only** after positive results |
-| Training stopped and agent only pastes a resume recipe | Phase B bottom-up closeout of open positive layers is mandatory |
+| Training stopped and agent only pastes a resume recipe | Phase B residual closeout of still-open positive layers is mandatory |
+| Green positive PRs left unmerged until stop | Squash-merge green bottom layers every tick (autotrain-iteration-delivery A5) |
 
 ## Done means
 

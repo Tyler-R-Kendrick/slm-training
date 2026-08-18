@@ -4,9 +4,10 @@ description: >
   Operate the OpenUI SLM training pipeline end to end, including a continuous
   hands-off model and harness improvement loop. Bare /autotrain is non-terminating
   and must not stop for user confirmation; an explicit phase or --once is finite.
-  Code fixes during training use incremental commits every cycle and stacked
-  PRs only after positive-result runs (sdlc autotrain-iteration-delivery);
-  when training stops, full bottom-up SDLC closeout of open positive layers.
+  Code fixes during training use incremental commits every cycle, stacked
+  PRs after positive-result runs, and between-iteration resolve/CI/
+  squash-merge of green bottom layers (sdlc autotrain-iteration-delivery);
+  when training stops, residual bottom-up closeout of any still-open layers.
 ---
 
 # Autotrain OpenUI SLMs
@@ -55,8 +56,9 @@ before continuous or multi-run work.
 | Stacked PR (positive only) | Open/update a `gh stack` layer **only** after a positive-result run (metric win, ship-quality win, or proven executable unblock) |
 | Non-positive cycles | Docs + local commits only — **no** new stack layer for fixture fails / null deltas |
 | Get latest between runs | `git fetch` + `gh stack sync` / merge `origin/main`; resolve conflicts |
+| Between-iteration land | Every tick: address PR comments, fix CI, **squash-merge green bottom positive layers**, sync stack — do not defer merges to stop |
 | Remote compute default | No paid GPU / HF write without prior user authority |
-| Training stopped | Full `sdlc` bottom-up closeout of open positive layers (review → CI → squash-merge) — not a resume paste |
+| Training stopped | Residual `sdlc` bottom-up closeout of any still-open positive layers (review → CI → squash-merge) — not a resume paste |
 | **Matrix to the user** | After every cycle (and whenever reporting status): paste the compact four-table view (liveness, results, diagnostics, priorities) from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat. **Never** claim progress without it |
 | **Liveness proof** | Prove state with the host goal plus `loops/<loop-id>/state.json` heartbeat, phase, next action, and child PID. Legacy drivers may also use `/tmp/autotrain-loop-status.txt`. **Never** use Grok “background ops” UI as liveness |
 | **Never kill the loop** | Do **not** `kill`/`pkill`/`kill -9` `run_autotrain_continuous`, its children, or the continuous worktree processes to ship skills, fix CI, merge PRs, or “restart cleanly.” Side work uses another worktree/branch |
