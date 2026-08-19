@@ -10498,6 +10498,71 @@ def test_self_heal_incomplete_merge_aborts_when_commit_fails(
     assert (repo / "harness.py").read_text(encoding="utf-8") == "loop-local\n"
 
 
+def test_integrate_origin_main_skips_diverged_unmergeable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Diverged origin/main must abort MERGE_HEAD and not raise CYCLE_ERROR."""
+    origin = tmp_path / "origin"
+    repo = tmp_path / "work"
+    origin.mkdir()
+    _init_git_repo(origin)
+    subprocess.check_call(
+        ["git", "branch", "-M", "main"], cwd=origin, stdout=subprocess.DEVNULL
+    )
+    subprocess.check_call(
+        ["git", "clone", str(origin), str(repo)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "config", "user.email", "test@example.com"], cwd=repo
+    )
+    subprocess.check_call(["git", "config", "user.name", "test"], cwd=repo)
+    (repo / "conflict.txt").write_text("loop\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "conflict.txt"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "loop diverge"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    (origin / "conflict.txt").write_text("main\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "conflict.txt"], cwd=origin)
+    subprocess.check_call(
+        ["git", "commit", "-m", "main diverge"],
+        cwd=origin,
+        stdout=subprocess.DEVNULL,
+    )
+    real_run = _mod._run
+
+    def _run_fail_commit(cmd: list[str], **kwargs: object) -> None:
+        if kwargs.get("stage") == "self-heal-merge-commit":
+            raise RuntimeError("hook: version-stamps history order")
+        real_run(cmd, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_mod, "_run", _run_fail_commit)
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    kind = _mod._integrate_origin_main(
+        cwd=repo, root=root, loop_id="continuous-openui-local"
+    )
+    assert kind == "git_ancestry_skip"
+    assert _mod._merge_head_path(repo) is None
+    porcelain = subprocess.check_output(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=repo,
+        text=True,
+    )
+    assert porcelain.strip() == ""
+    exc = subprocess.CalledProcessError(
+        1, ["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"]
+    )
+    wrapped = _mod._self_heal_git_ancestry(
+        cwd=repo, root=root, loop_id="continuous-openui-local", exc=exc
+    )
+    assert wrapped == "git_ancestry_skip"
+    assert _mod._merge_head_path(repo) is None
+
+
 def _write_registry(path: Path, *, paths: list[str], version: str = "v3") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

@@ -2000,6 +2000,137 @@ def _abort_in_progress_merge(*, cwd: Path, root: Path, loop_id: str) -> bool:
         return False
 
 
+def _git_is_ancestor(
+    ancestor: str,
+    descendant: str,
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    deadline: float | None = None,
+) -> bool:
+    try:
+        _run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-is-ancestor",
+        )
+        return True
+    except Exception:  # noqa: BLE001 — nonzero means not an ancestor
+        return False
+
+
+def _integrate_origin_main(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    deadline: float | None = None,
+) -> str:
+    """Fetch origin/main and integrate when possible; never leave MERGE_HEAD.
+
+    Already-integrated (origin/main ancestor of HEAD): skip. Fast-forward when
+    HEAD is behind main. Diverged: try merge; on conflict or stamp-hook
+    failure abort and continue on local HEAD. Unmergeable main is not
+    CYCLE_ERROR — I6 fail-closed is dirt, not a squash-diverged worktree.
+    """
+    _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
+    try:
+        _run(
+            ["git", "fetch", "origin", "main"],
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-fetch",
+        )
+        head = _git(
+            "rev-parse",
+            "HEAD",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-head",
+        )
+        upstream = _git(
+            "rev-parse",
+            "origin/main",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-upstream",
+        )
+    except Exception as fetch_exc:  # noqa: BLE001
+        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
+        print(
+            f"SELF_HEAL_GIT_ANCESTRY_SKIP reason=origin_main_unavailable "
+            f"err={fetch_exc!r}",
+            flush=True,
+        )
+        return "git_ancestry_skip"
+    if head == upstream or _git_is_ancestor(
+        upstream,
+        head,
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        deadline=deadline,
+    ):
+        print(
+            "SELF_HEAL_GIT_ANCESTRY_SKIP reason=already_integrated",
+            flush=True,
+        )
+        return "git_ancestry_already_integrated"
+    if _git_is_ancestor(
+        head,
+        upstream,
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        deadline=deadline,
+    ):
+        _run(
+            ["git", "merge", "--ff-only", "origin/main"],
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-ff",
+        )
+        print("SELF_HEAL_GIT_ANCESTRY merged origin/main reason=fast_forward", flush=True)
+        return "git_ancestry_fast_forward"
+    try:
+        _run(
+            ["git", "merge", "--no-edit", "origin/main"],
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-ancestry-merge",
+        )
+        print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
+        return "git_ancestry_merge"
+    except Exception:  # noqa: BLE001 — conflict or hook; abort and continue
+        finished = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
+        if finished:
+            print(
+                "SELF_HEAL_GIT_ANCESTRY merged origin/main via conflict resolve",
+                flush=True,
+            )
+            return finished
+        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
+        print(
+            "SELF_HEAL_GIT_ANCESTRY_SKIP reason=diverged_unmergeable",
+            flush=True,
+        )
+        return "git_ancestry_skip"
+
+
 def _unmerged_paths(
     cwd: Path,
     *,
@@ -2103,12 +2234,10 @@ def _self_heal_git_ancestry(
     loop_id: str,
     exc: BaseException,
 ) -> str | None:
-    """Merge origin/main when supervised continuous worktree drifts from trunk.
+    """Integrate origin/main after a merge-base ancestry CYCLE_ERROR.
 
-    Continuous worktrees accumulate exclusive commits; after main advances they
-    fail ``git merge-base --is-ancestor origin/main HEAD``. Heal by fetching and
-    merging origin/main so thrash can continue without a human. Merge conflicts
-    are finished by ``_self_heal_incomplete_merge`` (prefer main for harness).
+    Unmergeable divergence (squash-merged main vs exclusive worktree commits)
+    is skipped, never raised: merge --abort and continue on local HEAD.
     """
     message = str(exc)
     cmd_text = ""
@@ -2117,39 +2246,7 @@ def _self_heal_git_ancestry(
     blob = f"{message} {cmd_text}"
     if "merge-base" not in blob and "is-ancestor" not in blob:
         return None
-    try:
-        _run(
-            ["git", "fetch", "origin", "main"],
-            cwd=cwd,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-fetch",
-        )
-        try:
-            _run(
-                ["git", "merge", "--no-edit", "origin/main"],
-                cwd=cwd,
-                root=root,
-                loop_id=loop_id,
-                stage="self-heal-ancestry-merge",
-            )
-            print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
-            return "git_ancestry_merge"
-        except Exception as merge_exc:  # noqa: BLE001
-            finished = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
-            if finished:
-                print(
-                    "SELF_HEAL_GIT_ANCESTRY merged origin/main via conflict resolve",
-                    flush=True,
-                )
-                return finished
-            print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={merge_exc!r}", flush=True)
-            _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
-            return None
-    except Exception as heal_exc:  # noqa: BLE001
-        print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={heal_exc!r}", flush=True)
-        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
-        return None
+    return _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id)
 
 
 def _exception_is_soft_continuous(exc: BaseException) -> bool:
@@ -12741,23 +12838,10 @@ def run_cycle(
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
 
-    if sync_git:
-        _run(
-            ["git", "fetch", "origin", "main"],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-fetch",
-        )
-        _run(
-            ["git", "merge", "--no-edit", "origin/main"],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-merge",
-        )
+    _integrate_origin_main(
+        cwd=cwd, root=root, loop_id=loop_id, deadline=deadline
+    )
+    if sync_git and startup_commit is not None:
         integrated = _git(
             "rev-parse",
             "HEAD",
@@ -12767,7 +12851,7 @@ def run_cycle(
             loop_id=loop_id,
             stage="sync-integration-head",
         )
-        if startup_commit is not None and integrated != startup_commit:
+        if integrated != startup_commit:
             raise _CodeUpdated(
                 f"integrated {integrated}; restart stale process from {startup_commit}"
             )
@@ -12794,15 +12878,26 @@ def run_cycle(
         )
     if dirty:
         raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
-    upstream = _git(
-        "rev-parse",
-        "origin/main",
-        cwd=cwd,
-        deadline=deadline,
-        root=root,
-        loop_id=loop_id,
-        stage="sync-upstream-head",
-    )
+    try:
+        upstream = _git(
+            "rev-parse",
+            "origin/main",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-upstream-head",
+        )
+    except Exception:  # noqa: BLE001 — missing origin/main: continue on HEAD
+        upstream = _git(
+            "rev-parse",
+            "HEAD",
+            cwd=cwd,
+            deadline=deadline,
+            root=root,
+            loop_id=loop_id,
+            stage="sync-upstream-head-fallback",
+        )
     integration = _git(
         "rev-parse",
         "HEAD",
@@ -12812,16 +12907,6 @@ def run_cycle(
         loop_id=loop_id,
         stage="sync-current-head",
     )
-    if upstream != integration:
-        # merge should have equalized; if not, still require ancestor
-        _run(
-            ["git", "merge-base", "--is-ancestor", upstream, integration],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-ancestry",
-        )
 
     # Terminal governance: a parked regime verdict short-circuits the cycle
     # until its deterministic resume predicate (bank-identity change) holds.
