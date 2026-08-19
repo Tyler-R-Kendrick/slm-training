@@ -1375,9 +1375,12 @@ def _terminal_park_on_exhaust(policy: Any | None = None) -> bool:
 def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
     """Deterministic identity of the legal screening domain for park/resume.
 
-    sha256 over canonical JSON of the sorted bank (slug + public knobs from
-    ``_all_screening_arm_bank``), the climb-policy sha256, and
-    ``MAX_RUN_MINUTES``. A parked loop resumes exactly when this changes.
+    sha256 over canonical JSON of the sorted legal screening bank (slug +
+    public knobs from ``_all_screening_arm_bank``, process arms excluded),
+    the climb-policy sha256, and ``MAX_RUN_MINUTES``. Heal/resume arms are
+    execution vehicles and have their own park/resume gate
+    (``_selectable_process_arm``); including them made leftover=[] park
+    then immediately unpark when the spent heal snapshot was tombstoned.
     """
     from slm_training.levers import MAX_RUN_MINUTES
     from slm_training.lineage.records import canonical_json
@@ -1396,6 +1399,7 @@ def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
                 {k: v for k, v in extras.items() if not str(k).startswith("_")},
             )
             for slug, _, extras in _all_screening_arm_bank()
+            if not _is_process_arm(extras)
         ),
         key=lambda item: item[0],
     )
@@ -1422,6 +1426,34 @@ def _is_process_arm(extras: Mapping[str, Any] | None) -> bool:
     return isinstance(role, str) and role in _PROCESS_ROLES
 
 
+def _selectable_process_arm(
+    root: Path, loop_id: str, *, predecessor_campaign_id: str | None
+) -> bool:
+    """True when a process arm is registered and still a screening candidate.
+
+    Registration is not selectability: a spent heal snapshot stays in the
+    dynamic bank until retired, and unparking on mere presence is the
+    park/resume spin (leftover=[] → REGIME_RESUMED heal_resume_arm_open).
+    """
+    _load_dynamic_thrash_arms(root, loop_id)
+    retired = _retired_heal_versions(root, loop_id)
+    closed = (
+        _recent_completed_nonpositive_slugs(root, predecessor_campaign_id)
+        if predecessor_campaign_id
+        else set()
+    )
+    for slug, _, extras in _all_screening_arm_bank():
+        if not _is_process_arm(extras):
+            continue
+        version = str(extras.get("train_version") or "")
+        if version and version in retired:
+            continue
+        if slug in closed:
+            continue
+        return True
+    return False
+
+
 def _check_regime_parked(
     *, root: Path, loop_id: str, cwd: Path | None = None
 ) -> str | None:
@@ -1432,17 +1464,23 @@ def _check_regime_parked(
     returns ``None`` once the fingerprint moves (bank/policy/budget changed).
     A completed heal snapshot whose resume-arm registration was lost is
     re-registered here — an acked rebuild_data must never park forever.
+    A spent (null-closed or tombstoned) heal arm is not a resume reason.
     """
     path = _terminal_verdict_path(root, loop_id)
     if not path.is_file():
         return None
     verdict = _read_json(path)
+    predecessor = str(verdict.get("campaign_id") or "") or None
     _load_dynamic_thrash_arms(root, loop_id)
-    if not any(
-        _is_process_arm(extras) for _, _, extras in _all_screening_arm_bank()
+    if not _selectable_process_arm(
+        root, loop_id, predecessor_campaign_id=predecessor
     ):
-        _recover_heal_resume_arm(root, loop_id, cwd=cwd)
-    if any(_is_process_arm(extras) for _, _, extras in _all_screening_arm_bank()):
+        _recover_heal_resume_arm(
+            root, loop_id, cwd=cwd, predecessor_campaign_id=predecessor
+        )
+    if _selectable_process_arm(
+        root, loop_id, predecessor_campaign_id=predecessor
+    ):
         resolved = path.with_name(
             f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
         )
@@ -3189,14 +3227,18 @@ def _retired_heal_versions(root: Path, loop_id: str) -> set[str]:
 
 
 def _recover_heal_resume_arm(
-    root: Path, loop_id: str, *, cwd: Path | None = None
+    root: Path,
+    loop_id: str,
+    *,
+    cwd: Path | None = None,
+    predecessor_campaign_id: str | None = None,
 ) -> bool:
     """Re-register a lost heal-resume arm from a completed on-disk snapshot.
 
     A crash (or historical bug) between the rebuild_data ack and arm
     registration leaves a healed snapshot with no selectable successor — a
     permanent park. Recovery is idempotent: versions already measured and
-    retired (tombstoned) are never re-registered.
+    retired (tombstoned) or null-closed are never re-registered.
     """
     base = (cwd or Path.cwd()) / "outputs" / "data" / "train"
     retired = _retired_heal_versions(root, loop_id)
@@ -3217,6 +3259,11 @@ def _recover_heal_resume_arm(
         if version in retired or train_dir.name in retired:
             continue
         _register_i10_heal_arm(root, loop_id, train_version=version)
+        if predecessor_campaign_id and _HEAL_RESUME_SLUG in (
+            _recent_completed_nonpositive_slugs(root, predecessor_campaign_id)
+        ):
+            _retire_i10_heal_arm(root, loop_id, reason="recovered_spent_snapshot")
+            continue
         print(
             f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True
         )
@@ -13003,6 +13050,11 @@ def run_cycle(
                 "SELF_HEAL_BANK_EXHAUST parked reason=snapshot_leftovers_before_select "
                 f"leftover={sorted(leftover)}",
                 flush=True,
+            )
+            # Tombstone before the verdict fingerprint is written so park
+            # recovery cannot treat this spent snapshot as a resume reason.
+            _retire_i10_heal_arm(
+                root, loop_id, reason="snapshot_leftovers_before_select"
             )
             return _park_screening_saturation(
                 root=root,
