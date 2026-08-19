@@ -6865,6 +6865,59 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     assert _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
+def test_handoff_does_not_park_leftover_isolate_ofat(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _inject_terminal_policy(monkeypatch, park=True)
+    monkeypatch.setattr(
+        _mod,
+        "_recent_completed_nonpositive_slugs",
+        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+        - {"legal-edit-hazard"},
+    )
+    root = tmp_path / "autoresearch"
+    (root / "cycle-leftover").mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-leftover")
+    matrix = _priority_matrix()
+    matrix["next_run_priorities"] = [
+        {
+            "rank": 1,
+            "area": "model_build",
+            "hypothesis": "Bank exhausted; wire a new objective.",
+            "evidence_ids": ["feedback-1"],
+            "confidence": 0.95,
+            "expected_information_gain": "Avoid rematch.",
+            "authority": "observed_result",
+            "disposition": "monitor",
+            "proposed_experiment_id": None,
+        }
+    ]
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-leftover",
+        cycle_index=167,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=matrix,
+        delivery={
+            "positive": False,
+            "candidate_id": "legal-edit-hazard",
+            "control_id": "control",
+            "reasons": ["primary_metric_null_or_worse"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert handoff.terminal_verdict is None
+    assert "rebuild_data" not in {action.kind for action in handoff.actions}
+    assert "next_experiment" in {action.kind for action in handoff.actions}
+
+
 def test_local_rebuild_argv_keeps_policy_plan_surface() -> None:
     argv = _mod._local_rebuild_data_argv(train_version="continuous_i10_test")
     assert "--synthesis-plan" in argv
@@ -7030,14 +7083,76 @@ def test_self_heal_rebuild_data_acks_local_artifacts(
         raise AssertionError("existing artifacts must not rebuild")
 
     monkeypatch.setattr(_mod, "run_bounded_process", _forbid_build)
+    monkeypatch.setattr(
+        _mod,
+        "_sample_adequacy_report",
+        lambda cwd: {"verdict": "generate_more"},
+    )
+    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: set())
     kind = _mod._self_heal_rebuild_data(
         cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
     )
     assert kind == "rebuild_data"
     assert (camp / "quality_report.json").is_file()
+    assert (camp / "sample_adequacy.json").is_file()
     receipts = (root / "loops" / "loop-1" / "action_receipts.jsonl").read_text()
     assert "rebuild_data" in receipts
+    assert "sample_adequacy.json" not in receipts
     assert any(
+        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+    )
+
+
+def test_self_heal_rebuild_data_skips_i10_arm_when_leftover_ofat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-leftover-heal"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": "loop-1",
+        "campaign_id": campaign_id,
+        "cycle_index": 167,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "rejected",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": ["fixture_insufficient_n_alone"],
+        "priorities": [],
+        "actions": [
+            {
+                "schema_version": "AutotrainActionV1",
+                "kind": "rebuild_data",
+                "owner": "synthesis-feedback",
+                "reason": "expand simplified-NL inventory",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+        "created_at": "2026-08-14T00:00:00Z",
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    version = _mod._local_i10_train_version("loop-1", 167)
+    train_dir = tmp_path / "outputs" / "data" / "train" / version
+    train_dir.mkdir(parents=True)
+    for name in ("manifest.json", "quality_report.json", "synthesis_feedback.json"):
+        (train_dir / name).write_text(json.dumps({"ok": True, "name": name}) + "\n")
+
+    monkeypatch.setattr(
+        _mod, "run_bounded_process", lambda *a, **k: (_ for _ in ()).throw(AssertionError())
+    )
+    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: {"legal-edit-hazard"})
+    monkeypatch.setattr(_mod, "_open_slugs_are_snapshot_leftovers", lambda slugs: False)
+    kind = _mod._self_heal_rebuild_data(
+        cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
+    )
+    assert kind == "rebuild_data"
+    assert not any(
         slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
     )
 

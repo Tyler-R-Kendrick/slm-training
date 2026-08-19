@@ -3391,14 +3391,17 @@ def _self_heal_rebuild_data(
         (camp_dir / "sample_adequacy.json").write_text(
             json.dumps(adequacy, indent=2) + "\n", encoding="utf-8"
         )
-        evidence_uris.append("sample_adequacy.json")
+        # sample_adequacy.json is not a rebuild_data receipt name
     for index, _action in pending:
         _ack_rebuild_data_action(
             root, handoff, action_index=index, evidence_uris=evidence_uris
         )
     prepared = _prepare_i10_train_dir_for_sft(train_dir)
     register_version = prepared.name if prepared != train_dir else train_version
-    _register_i10_heal_arm(root, loop_id, train_version=register_version)
+    closed = _recent_completed_nonpositive_slugs(root, campaign_id)
+    open_slugs = _thrash_bank_open_slugs(closed)
+    if not open_slugs or _open_slugs_are_snapshot_leftovers(open_slugs):
+        _register_i10_heal_arm(root, loop_id, train_version=register_version)
     print(
         f"SELF_HEAL_REBUILD_DATA campaign={campaign_id} "
         f"version={register_version} files={evidence_uris}",
@@ -9979,6 +9982,7 @@ def _handoff_should_route_exhausted_bank(
         open_slugs = _thrash_bank_open_slugs(closed)
         if not open_slugs or _open_slugs_are_snapshot_leftovers(open_slugs):
             return True
+        return False
     return not any(
         getattr(priority, "disposition", None) == "experiment_next"
         and getattr(priority, "proposed_experiment_id", None)

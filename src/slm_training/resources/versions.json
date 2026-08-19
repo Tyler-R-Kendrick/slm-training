@@ -4972,6 +4972,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v239",
+          "date": "2026-08-19",
+          "note": "Do not park leftover isolate OFAT as I10 rebuild_data; omit sample_adequacy.json from rebuild receipts; skip I10 heal-arm register while isolate slugs remain."
+        },
+        {
           "version": "v238",
           "date": "2026-08-19",
           "note": "Do not re-enqueue a rejected champion fingerprint; fixture-n confirm rejects must exhaust that knob set until knobs change."
@@ -6687,7 +6692,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v238"
+      "version": "v239"
     },
     "harness.autoresearch.formal": {
       "history": [
