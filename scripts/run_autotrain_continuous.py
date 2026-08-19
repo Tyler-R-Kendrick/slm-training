@@ -1981,6 +1981,25 @@ def _merge_head_path(cwd: Path) -> Path | None:
     return path if path.is_file() else None
 
 
+def _abort_in_progress_merge(*, cwd: Path, root: Path, loop_id: str) -> bool:
+    """Fail closed: drop MERGE_HEAD so thrash is not foreign_dirty forever."""
+    if _merge_head_path(cwd) is None:
+        return False
+    try:
+        _run(
+            ["git", "merge", "--abort"],
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-merge-abort",
+        )
+        print("SELF_HEAL_MERGE_ABORT reason=fail_closed_clean_tree", flush=True)
+        return True
+    except Exception as abort_exc:  # noqa: BLE001
+        print(f"SELF_HEAL_MERGE_ABORT_FAIL err={abort_exc!r}", flush=True)
+        return False
+
+
 def _unmerged_paths(
     cwd: Path,
     *,
@@ -2020,6 +2039,8 @@ def _self_heal_incomplete_merge(
     - continuous closeout docs keep *ours* (loop-local evidence)
     - every other unmerged path takes *theirs* (incoming origin/main harness)
     - then ``git commit`` to complete the merge
+    - if the commit (or resolve) fails, ``git merge --abort`` so MERGE_HEAD
+      cannot park the loop as foreign_dirty_tree
     """
     if _merge_head_path(cwd) is None:
         return None
@@ -2048,6 +2069,7 @@ def _self_heal_incomplete_merge(
                 f"SELF_HEAL_INCOMPLETE_MERGE_HARD still_unmerged={still[:8]}",
                 flush=True,
             )
+            _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
             return None
         _run(
             [
@@ -2070,6 +2092,7 @@ def _self_heal_incomplete_merge(
         return "git_merge_complete"
     except Exception as heal_exc:  # noqa: BLE001
         print(f"SELF_HEAL_INCOMPLETE_MERGE_FAIL err={heal_exc!r}", flush=True)
+        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
         return None
 
 
@@ -2121,9 +2144,11 @@ def _self_heal_git_ancestry(
                 )
                 return finished
             print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={merge_exc!r}", flush=True)
+            _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
             return None
     except Exception as heal_exc:  # noqa: BLE001
         print(f"SELF_HEAL_GIT_ANCESTRY_FAIL err={heal_exc!r}", flush=True)
+        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
         return None
 
 

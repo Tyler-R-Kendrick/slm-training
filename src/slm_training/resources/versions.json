@@ -4977,6 +4977,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v245",
+          "date": "2026-08-19",
+          "note": "failed origin/main self-heal merge-commit now git merge --abort (fail closed): version-stamp history-order failures left MERGE_HEAD + dirty versions.json and parked the loop as foreign_dirty_tree for 960s; _self_heal_incomplete_merge and _self_heal_git_ancestry abort an in-progress merge instead of leaving the supervisor blocked."
+        },
+        {
           "version": "v244",
           "date": "2026-08-19",
           "note": "park resume requires a selectable heal snapshot, not mere process-arm registration: leftover=[] now tombstones the spent heal train_version before writing the terminal verdict; _check_regime_parked unparks only when a process arm is still a screening candidate (not null-closed, not tombstoned); recovery skips spent snapshots instead of REGIME_RESUMED heal_resume_arm_open spinning the supervisor."
@@ -6722,7 +6727,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v244"
+      "version": "v245"
     },
     "harness.autoresearch.formal": {
       "history": [

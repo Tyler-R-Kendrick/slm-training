@@ -10423,6 +10423,81 @@ def test_self_heal_incomplete_merge_prefers_main_for_harness(
     )
 
 
+def test_self_heal_incomplete_merge_aborts_when_commit_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed merge commit must abort MERGE_HEAD, not leave foreign_dirty."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    (repo / "harness.py").write_text("v1\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "harness v1"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "branch", "-f", "trunk"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    (repo / "harness.py").write_text("loop-local\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "loop diverge"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    loop_branch = subprocess.check_output(
+        ["git", "branch", "--show-current"], cwd=repo, text=True
+    ).strip()
+    subprocess.check_call(
+        ["git", "checkout", "trunk"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    (repo / "harness.py").write_text("main-fixed\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "harness fix on main"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "checkout", loop_branch],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    merge = subprocess.run(
+        ["git", "merge", "--no-edit", "trunk"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert merge.returncode != 0, "expected conflict"
+    assert _mod._merge_head_path(repo) is not None
+    real_run = _mod._run
+
+    def _run_fail_commit(cmd: list[str], **kwargs: object) -> None:
+        if kwargs.get("stage") == "self-heal-merge-commit":
+            raise RuntimeError("hook: version-stamps history order")
+        real_run(cmd, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_mod, "_run", _run_fail_commit)
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    kind = _mod._self_heal_incomplete_merge(
+        cwd=repo, root=root, loop_id="continuous-openui-local"
+    )
+    assert kind is None
+    assert _mod._merge_head_path(repo) is None
+    porcelain = subprocess.check_output(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=repo,
+        text=True,
+    )
+    assert porcelain.strip() == ""
+    assert (repo / "harness.py").read_text(encoding="utf-8") == "loop-local\n"
+
+
 def _write_registry(path: Path, *, paths: list[str], version: str = "v3") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
