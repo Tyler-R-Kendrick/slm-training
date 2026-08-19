@@ -4972,6 +4972,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v241",
+          "date": "2026-08-19",
+          "note": "park recovery for lost heal arms: _check_regime_parked re-registers the heal-resume arm from a completed on-disk rebuild_data snapshot (receipts present under outputs/data/train/continuous_i10_*) when no process arm is registered, so an acked heal never parks forever; _retire_i10_heal_arm tombstones retired train_versions (loops/<id>/heal_retired_versions.jsonl) so recovery never resurrects a measured snapshot."
+        },
+        {
           "version": "v240",
           "date": "2026-08-19",
           "note": "self-heal rebuild_data is rung-honest and tree-clean: local heal build passes --no-publish (no writes to tracked resources/data/train), heal resume slug renamed simplified-nl-i10-heal -> current-rung-data-heal, and capability-refresh / park resume_predicate prose derives the rung from policy rung_gates.current_rung instead of hardcoding simplified-NL-to-AST (an I10 skip no legal heal could execute)."
@@ -6697,7 +6702,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v240"
+      "version": "v241"
     },
     "harness.autoresearch.formal": {
       "history": [

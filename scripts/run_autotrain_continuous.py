@@ -1422,18 +1422,26 @@ def _is_process_arm(extras: Mapping[str, Any] | None) -> bool:
     return isinstance(role, str) and role in _PROCESS_ROLES
 
 
-def _check_regime_parked(*, root: Path, loop_id: str) -> str | None:
+def _check_regime_parked(
+    *, root: Path, loop_id: str, cwd: Path | None = None
+) -> str | None:
     """Deterministic park/resume predicate over a persisted terminal verdict.
 
     Returns ``_REGIME_PARKED_STATUS`` while the bank identity matches the
     verdict's fingerprint; archives the verdict, restores the loop state, and
     returns ``None`` once the fingerprint moves (bank/policy/budget changed).
+    A completed heal snapshot whose resume-arm registration was lost is
+    re-registered here — an acked rebuild_data must never park forever.
     """
     path = _terminal_verdict_path(root, loop_id)
     if not path.is_file():
         return None
     verdict = _read_json(path)
     _load_dynamic_thrash_arms(root, loop_id)
+    if not any(
+        _is_process_arm(extras) for _, _, extras in _all_screening_arm_bank()
+    ):
+        _recover_heal_resume_arm(root, loop_id, cwd=cwd)
     if any(_is_process_arm(extras) for _, _, extras in _all_screening_arm_bank()):
         resolved = path.with_name(
             f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
@@ -3159,17 +3167,99 @@ def _register_i10_heal_arm(
     _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
 
 
+def _heal_retired_versions_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "heal_retired_versions.jsonl"
+
+
+def _retired_heal_versions(root: Path, loop_id: str) -> set[str]:
+    """Train versions whose heal arm was measured and retired (tombstones)."""
+    path = _heal_retired_versions_path(root, loop_id)
+    if not path.is_file():
+        return set()
+    versions: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        version = str(row.get("train_version") or "")
+        if version:
+            versions.add(version)
+    return versions
+
+
+def _recover_heal_resume_arm(
+    root: Path, loop_id: str, *, cwd: Path | None = None
+) -> bool:
+    """Re-register a lost heal-resume arm from a completed on-disk snapshot.
+
+    A crash (or historical bug) between the rebuild_data ack and arm
+    registration leaves a healed snapshot with no selectable successor — a
+    permanent park. Recovery is idempotent: versions already measured and
+    retired (tombstoned) are never re-registered.
+    """
+    base = (cwd or Path.cwd()) / "outputs" / "data" / "train"
+    retired = _retired_heal_versions(root, loop_id)
+    candidates = sorted(
+        (
+            child
+            for child in base.glob("continuous_i10_*")
+            if child.is_dir() and not child.name.endswith("_harness")
+        ),
+        key=lambda child: child.stat().st_mtime,
+        reverse=True,
+    )
+    for train_dir in candidates:
+        if _rebuild_data_artifact_sources(train_dir) is None:
+            continue
+        prepared = train_dir.with_name(train_dir.name + "_harness")
+        version = prepared.name if prepared.is_dir() else train_dir.name
+        if version in retired or train_dir.name in retired:
+            continue
+        _register_i10_heal_arm(root, loop_id, train_version=version)
+        print(
+            f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True
+        )
+        return True
+    return False
+
+
 def _retire_i10_heal_arm(root: Path, loop_id: str, *, reason: str) -> bool:
     """Drop the heal process arm after a complete dual-arm measurement.
 
     Process arms outrank OFAT selection; leaving a fixture-n-rejected heal
-    selectable rematches the same incomplete-evidence win forever.
+    selectable rematches the same incomplete-evidence win forever. Retired
+    versions are tombstoned so park recovery never resurrects them.
     """
     global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
     if not any(slug == _HEAL_RESUME_SLUG for slug, _, _ in _DYNAMIC_THRASH_ARMS):
         return False
     path = _dynamic_thrash_arms_path(root, loop_id)
+    retired_versions = [
+        str(extras.get("train_version") or "")
+        for slug, _, extras in _DYNAMIC_THRASH_ARMS
+        if slug == _HEAL_RESUME_SLUG and extras.get("train_version")
+    ]
+    if retired_versions:
+        tombstones = _heal_retired_versions_path(root, loop_id)
+        tombstones.parent.mkdir(parents=True, exist_ok=True)
+        with tombstones.open("a", encoding="utf-8") as fh:
+            for version in retired_versions:
+                fh.write(
+                    json.dumps(
+                        {
+                            "schema": "autotrain_heal_retired_version/v1",
+                            "train_version": version,
+                            "reason": reason,
+                            "retired_at": time.strftime(
+                                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                            ),
+                        },
+                        sort_keys=True,
+                    )
+                    + "\n"
+                )
     kept = [
         (slug, hyp, extras)
         for slug, hyp, extras in _DYNAMIC_THRASH_ARMS
@@ -3811,7 +3901,7 @@ def self_heal_unblock_loop(
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
     pred = campaign_id or _latest_cycle(root, loop_id)[1]
-    parked = _check_regime_parked(root=root, loop_id=loop_id) is not None
+    parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
 
     # 0) Incomplete merge (UU) from landing origin/main into the thrash worktree.
     try:
@@ -3907,7 +3997,7 @@ def self_heal_unblock_loop(
         )
         if rebuild_kind:
             soft_healed.append(rebuild_kind)
-            parked = _check_regime_parked(root=root, loop_id=loop_id) is not None
+            parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK rebuild_warn={exc!r}", flush=True)
 
@@ -12659,7 +12749,7 @@ def run_cycle(
 
     # Terminal governance: a parked regime verdict short-circuits the cycle
     # until its deterministic resume predicate (bank-identity change) holds.
-    parked_status = _check_regime_parked(root=root, loop_id=loop_id)
+    parked_status = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd)
     if parked_status is not None:
         return parked_status
 

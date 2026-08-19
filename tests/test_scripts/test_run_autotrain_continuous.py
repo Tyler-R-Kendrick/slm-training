@@ -6994,6 +6994,88 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     assert _mod._select_recommended_slug(197, skip=set()) == _mod._HEAL_RESUME_SLUG
 
 
+def _write_heal_snapshot(cwd: Path, version: str) -> Path:
+    train_dir = cwd / "outputs" / "data" / "train" / version
+    train_dir.mkdir(parents=True)
+    for name in ("quality_report.json", "synthesis_feedback.json", "data_manifest.json"):
+        (train_dir / name).write_text("{}\n", encoding="utf-8")
+    return train_dir
+
+
+def test_regime_parked_recovers_lost_heal_arm(tmp_path: Path) -> None:
+    """An acked rebuild_data whose arm registration was lost must not park forever."""
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c168"
+    _write_heal_snapshot(tmp_path, version)
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.parent.mkdir(parents=True)
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-parked",
+                "loop_id": loop,
+                "cycle_index": 168,
+                "binding_constraint": "screening_objective_saturated",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
+    slugs = {slug for slug, _, _ in _mod._DYNAMIC_THRASH_ARMS}
+    assert _mod._HEAL_RESUME_SLUG in slugs
+    assert not verdict.is_file()
+
+
+def test_regime_parked_skips_tombstoned_heal_version(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c168"
+    _write_heal_snapshot(tmp_path, version)
+    tombstones = _mod._heal_retired_versions_path(root, loop)
+    tombstones.parent.mkdir(parents=True)
+    tombstones.write_text(
+        json.dumps({"train_version": version}) + "\n", encoding="utf-8"
+    )
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-parked",
+                "loop_id": loop,
+                "cycle_index": 168,
+                "binding_constraint": "screening_objective_saturated",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    assert (
+        _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path)
+        == _mod._REGIME_PARKED_STATUS
+    )
+    assert verdict.is_file()
+
+
+def test_retire_i10_heal_arm_writes_tombstone(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    _mod._append_dynamic_thrash_arms(
+        root,
+        loop,
+        [
+            (
+                _mod._HEAL_RESUME_SLUG,
+                "I10 heal",
+                {"train_version": "continuous_i10_loop_1_c9", "heal_resume": True},
+            )
+        ],
+    )
+    assert _mod._retire_i10_heal_arm(root, loop, reason="complete_measurement:c9")
+    assert _mod._retired_heal_versions(root, loop) == {"continuous_i10_loop_1_c9"}
+
+
 def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     loop = "loop-1"
@@ -7022,7 +7104,7 @@ def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
             )
         ],
     )
-    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
     assert not verdict.is_file()
 
 
@@ -7319,7 +7401,8 @@ def test_regime_parked_early_return_and_fingerprint_resume(
     # Unchanged fingerprint: the loop stays parked without running anything.
     _write_verdict(_mod._screening_bank_fingerprint())
     assert (
-        _mod._check_regime_parked(root=root, loop_id=loop) == _mod._REGIME_PARKED_STATUS
+        _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path)
+        == _mod._REGIME_PARKED_STATUS
     )
     assert verdict_path.is_file()
     out = capsys.readouterr().out
@@ -7328,7 +7411,7 @@ def test_regime_parked_early_return_and_fingerprint_resume(
 
     # Changed fingerprint: archive the verdict deterministically and resume.
     _write_verdict("0" * 64)
-    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
     assert not verdict_path.is_file()
     resolved = verdict_path.with_name("terminal_verdict.resolved.c1795.json")
     assert resolved.is_file()
@@ -7338,7 +7421,7 @@ def test_regime_parked_early_return_and_fingerprint_resume(
     assert state["state"] == "IDLE"
     assert state["blocker_count"] == 0
     # No verdict file means no park check applies at all.
-    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
 
 
 def test_run_cycle_short_circuits_on_parked_regime(
