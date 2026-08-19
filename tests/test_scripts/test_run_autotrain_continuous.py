@@ -3373,7 +3373,9 @@ def test_screening_saturation_parks_with_typed_constraint(tmp_path: Path) -> Non
         "document",
         "next_experiment",
     ]
-    assert "frontier_simplified" in routed.actions[0].reason
+    # I10: the refresh must target the current rung, never a skipped one.
+    assert _mod._current_rung_label() in routed.actions[0].reason
+    assert "simplified" not in routed.actions[0].reason
     assert "Researcher once" in routed.actions[-1].reason
 
 
@@ -6256,7 +6258,8 @@ def test_cycle_handoff_routes_exhausted_bank_to_capability_refresh(
     assert handoff.actions[0].kind == "rebuild_data"
     nxt = next(a for a in handoff.actions if a.kind == "next_experiment")
     assert "researcher once" in nxt.reason.lower()
-    assert "simplified-nl-to-ast" in nxt.reason.lower()
+    assert _mod._current_rung_label() in nxt.reason
+    assert "simplified-nl-to-ast" not in nxt.reason.lower()
     assert handoff.priorities[0].disposition == "monitor"
 
 
@@ -6865,11 +6868,69 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     assert _mod._open_slugs_are_snapshot_leftovers(leftover)
 
 
+def test_handoff_does_not_park_leftover_isolate_ofat(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _inject_terminal_policy(monkeypatch, park=True)
+    monkeypatch.setattr(
+        _mod,
+        "_recent_completed_nonpositive_slugs",
+        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+        - {"legal-edit-hazard"},
+    )
+    root = tmp_path / "autoresearch"
+    (root / "cycle-leftover").mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-leftover")
+    matrix = _priority_matrix()
+    matrix["next_run_priorities"] = [
+        {
+            "rank": 1,
+            "area": "model_build",
+            "hypothesis": "Bank exhausted; wire a new objective.",
+            "evidence_ids": ["feedback-1"],
+            "confidence": 0.95,
+            "expected_information_gain": "Avoid rematch.",
+            "authority": "observed_result",
+            "disposition": "monitor",
+            "proposed_experiment_id": None,
+        }
+    ]
+    handoff = _mod._write_cycle_handoff(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-leftover",
+        cycle_index=167,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        role="screening",
+        cycle_intent="screening",
+        primary_metric="smoke.structural_similarity",
+        matrix=matrix,
+        delivery={
+            "positive": False,
+            "candidate_id": "legal-edit-hazard",
+            "control_id": "control",
+            "reasons": ["primary_metric_null_or_worse"],
+        },
+        resolution=None,
+        formal_status="proved",
+    )
+    assert handoff.terminal_verdict is None
+    assert "rebuild_data" not in {action.kind for action in handoff.actions}
+    assert "next_experiment" in {action.kind for action in handoff.actions}
+
+
 def test_local_rebuild_argv_keeps_policy_plan_surface() -> None:
     argv = _mod._local_rebuild_data_argv(train_version="continuous_i10_test")
     assert "--synthesis-plan" in argv
     assert "simplified_nl" not in argv
     assert "--unique-root-target" in argv
+    # Heal snapshots stay under outputs/; publishing into tracked resources/
+    # mid-cycle parks the loop as foreign_dirty_tree.
+    assert "--no-publish" in argv
+    # Rung-honest heal identity: the resume arm must not claim a skipped rung.
+    assert "simplified" not in _mod._HEAL_RESUME_SLUG
 
 
 def test_local_rebuild_argv_shaped_by_adequacy_stays_wall_capped() -> None:
@@ -6933,6 +6994,88 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     assert _mod._select_recommended_slug(197, skip=set()) == _mod._HEAL_RESUME_SLUG
 
 
+def _write_heal_snapshot(cwd: Path, version: str) -> Path:
+    train_dir = cwd / "outputs" / "data" / "train" / version
+    train_dir.mkdir(parents=True)
+    for name in ("quality_report.json", "synthesis_feedback.json", "data_manifest.json"):
+        (train_dir / name).write_text("{}\n", encoding="utf-8")
+    return train_dir
+
+
+def test_regime_parked_recovers_lost_heal_arm(tmp_path: Path) -> None:
+    """An acked rebuild_data whose arm registration was lost must not park forever."""
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c168"
+    _write_heal_snapshot(tmp_path, version)
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.parent.mkdir(parents=True)
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-parked",
+                "loop_id": loop,
+                "cycle_index": 168,
+                "binding_constraint": "screening_objective_saturated",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
+    slugs = {slug for slug, _, _ in _mod._DYNAMIC_THRASH_ARMS}
+    assert _mod._HEAL_RESUME_SLUG in slugs
+    assert not verdict.is_file()
+
+
+def test_regime_parked_skips_tombstoned_heal_version(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c168"
+    _write_heal_snapshot(tmp_path, version)
+    tombstones = _mod._heal_retired_versions_path(root, loop)
+    tombstones.parent.mkdir(parents=True)
+    tombstones.write_text(
+        json.dumps({"train_version": version}) + "\n", encoding="utf-8"
+    )
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": "cycle-parked",
+                "loop_id": loop,
+                "cycle_index": 168,
+                "binding_constraint": "screening_objective_saturated",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    assert (
+        _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path)
+        == _mod._REGIME_PARKED_STATUS
+    )
+    assert verdict.is_file()
+
+
+def test_retire_i10_heal_arm_writes_tombstone(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    _mod._append_dynamic_thrash_arms(
+        root,
+        loop,
+        [
+            (
+                _mod._HEAL_RESUME_SLUG,
+                "I10 heal",
+                {"train_version": "continuous_i10_loop_1_c9", "heal_resume": True},
+            )
+        ],
+    )
+    assert _mod._retire_i10_heal_arm(root, loop, reason="complete_measurement:c9")
+    assert _mod._retired_heal_versions(root, loop) == {"continuous_i10_loop_1_c9"}
+
+
 def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     loop = "loop-1"
@@ -6961,7 +7104,7 @@ def test_regime_parked_resumes_when_heal_arm_is_open(tmp_path: Path) -> None:
             )
         ],
     )
-    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
     assert not verdict.is_file()
 
 
@@ -7030,14 +7173,76 @@ def test_self_heal_rebuild_data_acks_local_artifacts(
         raise AssertionError("existing artifacts must not rebuild")
 
     monkeypatch.setattr(_mod, "run_bounded_process", _forbid_build)
+    monkeypatch.setattr(
+        _mod,
+        "_sample_adequacy_report",
+        lambda cwd: {"verdict": "generate_more"},
+    )
+    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: set())
     kind = _mod._self_heal_rebuild_data(
         cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
     )
     assert kind == "rebuild_data"
     assert (camp / "quality_report.json").is_file()
+    assert (camp / "sample_adequacy.json").is_file()
     receipts = (root / "loops" / "loop-1" / "action_receipts.jsonl").read_text()
     assert "rebuild_data" in receipts
+    assert "sample_adequacy.json" not in receipts
     assert any(
+        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+    )
+
+
+def test_self_heal_rebuild_data_skips_i10_arm_when_leftover_ofat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-leftover-heal"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": "loop-1",
+        "campaign_id": campaign_id,
+        "cycle_index": 167,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "rejected",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.structural_similarity",
+        "reasons": ["fixture_insufficient_n_alone"],
+        "priorities": [],
+        "actions": [
+            {
+                "schema_version": "AutotrainActionV1",
+                "kind": "rebuild_data",
+                "owner": "synthesis-feedback",
+                "reason": "expand simplified-NL inventory",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+        "created_at": "2026-08-14T00:00:00Z",
+    }
+    (camp / "cycle_handoff.json").write_text(json.dumps(handoff) + "\n")
+    version = _mod._local_i10_train_version("loop-1", 167)
+    train_dir = tmp_path / "outputs" / "data" / "train" / version
+    train_dir.mkdir(parents=True)
+    for name in ("manifest.json", "quality_report.json", "synthesis_feedback.json"):
+        (train_dir / name).write_text(json.dumps({"ok": True, "name": name}) + "\n")
+
+    monkeypatch.setattr(
+        _mod, "run_bounded_process", lambda *a, **k: (_ for _ in ()).throw(AssertionError())
+    )
+    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: {"legal-edit-hazard"})
+    monkeypatch.setattr(_mod, "_open_slugs_are_snapshot_leftovers", lambda slugs: False)
+    kind = _mod._self_heal_rebuild_data(
+        cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
+    )
+    assert kind == "rebuild_data"
+    assert not any(
         slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
     )
 
@@ -7154,7 +7359,8 @@ def test_bank_exhaust_parks_loop_under_typed_verdict(
     assert all(feedback_id in action.evidence_ids for action in handoff.actions[::2])
     assert handoff.actions[0].owner == "synthesis-feedback"
     assert handoff.actions[-1].owner == "autotrain"
-    assert "simplified-NL-to-AST" in handoff.actions[-1].reason
+    assert _mod._current_rung_label() in handoff.actions[-1].reason
+    assert "simplified-NL-to-AST" not in handoff.actions[-1].reason
     verdict_path = _mod._terminal_verdict_path(root, "loop-1")
     assert verdict_path.is_file()
     persisted = RegimeExhaustedVerdictV1.model_validate_json(
@@ -7195,7 +7401,8 @@ def test_regime_parked_early_return_and_fingerprint_resume(
     # Unchanged fingerprint: the loop stays parked without running anything.
     _write_verdict(_mod._screening_bank_fingerprint())
     assert (
-        _mod._check_regime_parked(root=root, loop_id=loop) == _mod._REGIME_PARKED_STATUS
+        _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path)
+        == _mod._REGIME_PARKED_STATUS
     )
     assert verdict_path.is_file()
     out = capsys.readouterr().out
@@ -7204,7 +7411,7 @@ def test_regime_parked_early_return_and_fingerprint_resume(
 
     # Changed fingerprint: archive the verdict deterministically and resume.
     _write_verdict("0" * 64)
-    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
     assert not verdict_path.is_file()
     resolved = verdict_path.with_name("terminal_verdict.resolved.c1795.json")
     assert resolved.is_file()
@@ -7214,7 +7421,7 @@ def test_regime_parked_early_return_and_fingerprint_resume(
     assert state["state"] == "IDLE"
     assert state["blocker_count"] == 0
     # No verdict file means no park check applies at all.
-    assert _mod._check_regime_parked(root=root, loop_id=loop) is None
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
 
 
 def test_run_cycle_short_circuits_on_parked_regime(
