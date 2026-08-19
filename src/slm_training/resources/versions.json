@@ -4977,6 +4977,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v246",
+          "date": "2026-08-19",
+          "note": "diverged origin/main is not CYCLE_ERROR: _integrate_origin_main skips merge when main is already an ancestor, fast-forwards when HEAD is behind, and on conflict/stamp-hook failure merge --abort then SELF_HEAL_GIT_ANCESTRY_SKIP reason=diverged_unmergeable so the supervised cycle continues on local HEAD."
+        },
+        {
           "version": "v245",
           "date": "2026-08-19",
           "note": "failed origin/main self-heal merge-commit now git merge --abort (fail closed): version-stamp history-order failures left MERGE_HEAD + dirty versions.json and parked the loop as foreign_dirty_tree for 960s; _self_heal_incomplete_merge and _self_heal_git_ancestry abort an in-progress merge instead of leaving the supervisor blocked."
@@ -6727,7 +6732,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v245"
+      "version": "v246"
     },
     "harness.autoresearch.formal": {
       "history": [
