@@ -93,6 +93,73 @@ def test_handle_hard_pending_records_escalation_and_governs_backoff(
     assert second["sleep_seconds"] == 60.0
 
 
+def _stub_continuous_parked():
+    """Continuous-module stub whose park predicate always says parked."""
+    import types
+
+    return types.SimpleNamespace(
+        self_heal_unblock_loop=lambda **kwargs: {"soft_healed": []},
+        _check_regime_parked=lambda **kwargs: "regime_parked",
+    )
+
+
+def _park_events(root: Path, loop_id: str) -> list[str]:
+    import json
+
+    log = root / "loops" / loop_id / "supervisor.jsonl"
+    return [
+        json.loads(line)["event"]
+        for line in log.read_text(encoding="utf-8").splitlines()
+    ]
+
+
+def test_park_is_wait_state_not_exit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Park must re-check (pre-cycle unblock can heal; fingerprint can move),
+    # never end the process — exiting made the loop depend on an external
+    # agent relaunch, the opposite of hands-off.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_load_continuous", _stub_continuous_parked)
+    rc = _mod.main(
+        [
+            "--loop-id",
+            "loop-1",
+            "--root",
+            str(tmp_path / "ar"),
+            "--max-cycles",
+            "2",
+            "--park-backoff-seconds",
+            "0.01",
+        ]
+    )
+    assert rc == 0
+    events = _park_events(tmp_path / "ar", "loop-1")
+    assert events.count("regime_parked") == 2  # re-checked, did not exit
+    assert "start_driver" not in events
+
+
+def test_exit_on_park_preserves_legacy_single_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_load_continuous", _stub_continuous_parked)
+    rc = _mod.main(
+        [
+            "--loop-id",
+            "loop-1",
+            "--root",
+            str(tmp_path / "ar"),
+            "--max-cycles",
+            "5",
+            "--exit-on-park",
+        ]
+    )
+    assert rc == 0
+    events = _park_events(tmp_path / "ar", "loop-1")
+    assert events.count("regime_parked") == 1
+
+
 def test_handle_hard_pending_never_raises(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
