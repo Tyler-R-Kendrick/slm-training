@@ -6785,6 +6785,74 @@ def test_recent_completed_closes_snapshot_clones_by_train_version(
     assert "simplified-nl-c52-steps40" in closed
 
 
+def test_heal_slug_not_closed_by_nulls_on_distinct_snapshots(
+    tmp_path: Path,
+) -> None:
+    """Two nulls on the shared heal slug but distinct train_versions must not
+    close the slug — snapshot close is by train_version identity, not slug
+    spelling (each fresh heal snapshot is a new approach)."""
+    _mod._DYNAMIC_THRASH_ARMS.append(
+        (
+            _mod._HEAL_RESUME_SLUG,
+            "heal",
+            {"train_version": "continuous_i10_loop_1_c9_harness", "heal_resume": True},
+        )
+    )
+    root = tmp_path / "autoresearch"
+    predecessor: str | None = None
+    for cycle, version in (
+        (169, "continuous_i10_loop_1_c7_harness"),
+        (170, "continuous_i10_loop_1_c8_harness"),
+    ):
+        campaign_id = f"continuous-loop-20260819-c{cycle}"
+        candidate_id = f"{campaign_id}-{_mod._HEAL_RESUME_SLUG}"
+        camp = root / campaign_id
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": "loop-1",
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "matrix-proposal.json").write_text(
+            json.dumps(
+                {
+                    "hypotheses": [
+                        {
+                            "experiment": {
+                                "experiment_id": candidate_id,
+                                "knobs": {
+                                    "train_version": version,
+                                    "seed": 100000 + cycle,
+                                },
+                            }
+                        }
+                    ]
+                }
+            )
+        )
+        (camp / "sdlc_delivery.json").write_text(
+            json.dumps(
+                {
+                    "candidate_id": candidate_id,
+                    "cycle_intent": "screening",
+                    "positive": False,
+                    "measurement_complete": True,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+
+    closed = _mod._recent_completed_nonpositive_slugs(root, predecessor)
+    assert _mod._HEAL_RESUME_SLUG not in closed
+
+
 def test_handoff_parks_when_only_snapshot_leftovers_remain(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
