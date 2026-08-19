@@ -4972,6 +4972,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v237",
+          "date": "2026-08-18",
+          "note": "Serena cache/memories are local agent dirt, never a continuous foreign_dirty hard block; tracked .serena/project.yml and .serena/.gitignore still fail closed."
+        },
+        {
           "version": "v236",
           "date": "2026-08-17",
           "note": "no-bump: rebuild evidence_ledger.v1.json so merge-ready matches docs/design after cherry-picked continuous closeout docs."
@@ -6677,7 +6682,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v236"
+      "version": "v237"
     },
     "harness.autoresearch.formal": {
       "history": [
