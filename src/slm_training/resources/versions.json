@@ -4977,6 +4977,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v244",
+          "date": "2026-08-19",
+          "note": "park resume requires a selectable heal snapshot, not mere process-arm registration: leftover=[] now tombstones the spent heal train_version before writing the terminal verdict; _check_regime_parked unparks only when a process arm is still a screening candidate (not null-closed, not tombstoned); recovery skips spent snapshots instead of REGIME_RESUMED heal_resume_arm_open spinning the supervisor."
+        },
+        {
           "version": "v243",
           "date": "2026-08-19",
           "note": "hands-off supervisor: regime park is a wait state, not process exit \u2014 run_autotrain_supervisor sleeps --park-backoff-seconds (default 300) and re-checks (pre-cycle unblock can complete a local rebuild_data heal; _check_regime_parked recovers lost heal arms and resumes on fingerprint movement) instead of returning 0, which made every resume depend on an external agent relaunch; legacy --exit-on-park keeps the old single-check behavior; park check now passes cwd for correct snapshot recovery."
@@ -6717,7 +6722,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v243"
+      "version": "v244"
     },
     "harness.autoresearch.formal": {
       "history": [

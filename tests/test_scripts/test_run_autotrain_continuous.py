@@ -7126,6 +7126,90 @@ def test_regime_parked_skips_tombstoned_heal_version(tmp_path: Path) -> None:
     assert verdict.is_file()
 
 
+def _write_heal_null_lineage(
+    root: Path, *, version: str, loop: str, n_nulls: int = 2
+) -> str:
+    predecessor: str | None = None
+    campaign_id = ""
+    for i in range(n_nulls):
+        campaign_id = f"continuous-loop-spent-c{i}"
+        candidate_id = f"{campaign_id}-{_mod._HEAL_RESUME_SLUG}"
+        camp = root / campaign_id
+        camp.mkdir(parents=True)
+        (camp / "campaign.json").write_text(
+            json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "loop_id": loop,
+                    "predecessor_campaign_id": predecessor,
+                }
+            )
+        )
+        (camp / "matrix-proposal.json").write_text(
+            json.dumps(
+                {
+                    "hypotheses": [
+                        {
+                            "experiment": {
+                                "experiment_id": candidate_id,
+                                "knobs": {
+                                    "train_version": version,
+                                    "seed": 100000 + i,
+                                },
+                            }
+                        }
+                    ]
+                }
+            )
+        )
+        (camp / "sdlc_delivery.json").write_text(
+            json.dumps(
+                {
+                    "candidate_id": candidate_id,
+                    "cycle_intent": "screening",
+                    "positive": False,
+                    "measurement_complete": True,
+                }
+            )
+        )
+        (camp / "cycle_handoff.json").write_text(
+            json.dumps({"loop_id": loop, "cycle_intent": "screening"})
+        )
+        predecessor = campaign_id
+    return campaign_id
+
+
+def test_regime_parked_does_not_unpark_spent_heal_snapshot(tmp_path: Path) -> None:
+    """A registered heal arm whose train_version is already null-closed must
+    stay parked — unparking on mere process-arm presence is the spin."""
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c168"
+    _write_heal_snapshot(tmp_path, version)
+    last = _write_heal_null_lineage(root, version=version, loop=loop)
+    _mod._register_i10_heal_arm(root, loop, train_version=version)
+    verdict = root / "loops" / loop / "terminal_verdict.json"
+    verdict.parent.mkdir(parents=True, exist_ok=True)
+    verdict.write_text(
+        json.dumps(
+            {
+                "schema_version": "regime_exhausted_verdict/v1",
+                "campaign_id": last,
+                "loop_id": loop,
+                "cycle_index": 168,
+                "binding_constraint": "screening_objective_saturated",
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+    assert (
+        _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path)
+        == _mod._REGIME_PARKED_STATUS
+    )
+    assert verdict.is_file()
+    assert version in _mod._retired_heal_versions(root, loop)
+
+
 def test_retire_i10_heal_arm_writes_tombstone(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     loop = "loop-1"
