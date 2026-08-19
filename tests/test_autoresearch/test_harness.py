@@ -2725,6 +2725,35 @@ def test_continuous_commit_validation_requires_latest_integrated_head(
         autoresearch._validate_continuous_commits(upstream, integration)
 
 
+def test_continuous_commit_validation_allows_head_when_main_not_contained(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts import autoresearch
+
+    main = "a" * 40
+    head = "b" * 40
+
+    def fake_git(*args: str, check: bool = True):
+        if args[:2] == ("rev-parse", "--verify"):
+            ref = args[2]
+            value = (
+                main
+                if ref in {f"{main}^{{commit}}", "origin/main^{commit}"}
+                else head
+            )
+            return subprocess.CompletedProcess(args, 0, value + "\n", "")
+        if args[:2] == ("merge-base", "--is-ancestor"):
+            ancestor, descendant = args[2], args[3]
+            rc = 1 if ancestor == main and descendant == head else 0
+            return subprocess.CompletedProcess(args, rc, "", "")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(autoresearch, "_git", fake_git)
+    with pytest.raises(ValueError, match="does not contain"):
+        autoresearch._validate_continuous_commits(main, head)
+    autoresearch._validate_continuous_commits(head, head)
+
+
 def test_continuous_run_binds_manifest_to_integration_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

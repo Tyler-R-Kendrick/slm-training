@@ -4977,6 +4977,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v247",
+          "date": "2026-08-19",
+          "note": "after ancestry skip, autoresearch init uses HEAD as both --upstream-commit and --integration-commit when origin/main is not contained in HEAD; _validate_continuous_commits still requires origin/main when HEAD contains it."
+        },
+        {
           "version": "v246",
           "date": "2026-08-19",
           "note": "diverged origin/main is not CYCLE_ERROR: _integrate_origin_main skips merge when main is already an ancestor, fast-forwards when HEAD is behind, and on conflict/stamp-hook failure merge --abort then SELF_HEAL_GIT_ANCESTRY_SKIP reason=diverged_unmergeable so the supervised cycle continues on local HEAD."
@@ -6732,7 +6737,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v246"
+      "version": "v247"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -16476,6 +16481,11 @@
     "harness.preference.remine_campaign": {
       "history": [
         {
+          "date": "2026-08-19",
+          "note": "continuous init on a squash-diverged worktree: _validate_continuous_commits accepts upstream=HEAD when origin/main is not contained in HEAD (driver passes HEAD for both commits); contained-main still requires origin/main.",
+          "version": "v6"
+        },
+        {
           "date": "2026-08-04",
           "note": "autoresearch block subcommand for terminal feedback on unstarted arms",
           "version": "v5"
@@ -16621,7 +16631,7 @@
         "docs/design/ldi3-04-remine-intervene-campaign-20260718.md",
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
-      "version": "v5"
+      "version": "v6"
     },
     "harness.preference.replay_preference_context_view_variants": {
       "history": [
