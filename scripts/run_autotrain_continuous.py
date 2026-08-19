@@ -1501,8 +1501,9 @@ def _park_screening_saturation(
         closed_slugs=sorted(set(ranked_regimes)),
         policy_sha256=policy.sha256,
         resume_predicate=(
-            "a feedback-grounded simplified-NL-to-AST data and capability "
-            "objective is preregistered under unchanged I10 rung gates"
+            f"a feedback-grounded current-rung ({_current_rung_label()}) data "
+            "and capability objective is preregistered under unchanged I10 "
+            "rung gates"
         ),
         bank_fingerprint=_screening_bank_fingerprint(policy_sha256=policy.sha256),
     )
@@ -1555,23 +1556,41 @@ def _latest_hypothesis_feedback(
     )
 
 
+def _current_rung_label() -> str:
+    """Current uncertified rung from climb policy (I10 — never skip ahead)."""
+    try:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+
+        return str(
+            load_climb_policy().rung_gates.get("current_rung") or "grammar_2_ast"
+        )
+    except Exception:  # noqa: BLE001 — park prose must stay computable
+        return "grammar_2_ast"
+
+
 def _capability_objective_refresh_actions(
     *,
     root: Path,
     campaign_id: str,
     preserved_actions: Sequence[AutotrainActionV1] = (),
 ) -> tuple[AutotrainActionV1, ...]:
-    """Route exhausted smoke search into the existing rung/data/research loop."""
+    """Route exhausted smoke search into the existing rung/data/research loop.
+
+    Every action targets the policy's *current* rung. Naming a later rung
+    (e.g. simplified-NL while grammar_2_ast is uncertified) turns the pending
+    action into an I10 skip that no legal heal can execute.
+    """
 
     feedback = _latest_hypothesis_feedback(root, campaign_id)
     evidence_ids = (feedback.feedback_id, f"campaign:{campaign_id}")
+    rung = _current_rung_label()
     return (
         AutotrainActionV1(
             kind="rebuild_data",
             owner="synthesis-feedback",
             reason=(
-                "expand the immutable L3-L5 frontier_simplified inventory for "
-                "simplified-NL-to-AST; preserve I10 rung gates and inspect the "
+                f"rebuild the current-rung ({rung}) training corpus from the "
+                "climb-policy plan; preserve I10 rung gates and inspect the "
                 "quality report before any new training"
             ),
             evidence_ids=evidence_ids,
@@ -1583,8 +1602,8 @@ def _capability_objective_refresh_actions(
             reason=(
                 "after the data receipt and objective change, invoke the configured "
                 "Researcher once with the terminal HypothesisFeedback and "
-                "preregister a size-matched simplified-NL-to-AST capability "
-                "objective; do not rotate the exhausted decoder-lever bank"
+                f"preregister a size-matched capability objective for the current "
+                f"rung ({rung}); do not rotate the exhausted decoder-lever bank"
             ),
             evidence_ids=evidence_ids,
         ),
@@ -2931,7 +2950,9 @@ def _ack_document_action(
 
 # Wall-capped local CPU I10 heal. Policy min_unique_roots=32 is promotion-scale.
 _LOCAL_I10_ROOT_CAP = 8
-_HEAL_RESUME_SLUG = "simplified-nl-i10-heal"
+# Rung-honest: the heal rebuild compiles the climb-policy plan for the
+# *current* rung (I10 — never a skipped rung's corpus, see _current_rung_label).
+_HEAL_RESUME_SLUG = "current-rung-data-heal"
 
 
 def _local_i10_train_version(loop_id: str, cycle_index: int) -> str:
@@ -3035,6 +3056,9 @@ def _local_rebuild_data_argv(
         "--version",
         train_version,
         "--immutable",
+        # The heal snapshot lives under outputs/; publishing into tracked
+        # resources/ mid-cycle parks the loop as foreign_dirty_tree.
+        "--no-publish",
         *_data_generation_flags(generation),
     ]
 
@@ -3089,9 +3113,10 @@ def _register_i10_heal_arm(
     global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
     hyp = (
-        "Size-matched TwoTower on the local I10 simplified-NL rebuild "
-        f"{train_version} improves smoke.structural_similarity versus "
-        "the matched control without rotating the exhausted OFAT bank."
+        f"Size-matched TwoTower on the local current-rung "
+        f"({_current_rung_label()}) data rebuild {train_version} improves "
+        "smoke.structural_similarity versus the matched control without "
+        "rotating the exhausted OFAT bank."
     )
     extras = {
         "train_version": train_version,
@@ -10534,8 +10559,9 @@ def _write_cycle_handoff(
             closed_slugs=sorted(closed),
             policy_sha256=policy_sha,
             resume_predicate=(
-                "a feedback-grounded simplified-NL-to-AST data and capability "
-                "objective is preregistered under unchanged I10 rung gates"
+                f"a feedback-grounded current-rung ({_current_rung_label()}) "
+                "data and capability objective is preregistered under "
+                "unchanged I10 rung gates"
             ),
             bank_fingerprint=_screening_bank_fingerprint(policy_sha256=policy_sha),
         )

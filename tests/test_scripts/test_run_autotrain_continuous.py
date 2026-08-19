@@ -3373,7 +3373,9 @@ def test_screening_saturation_parks_with_typed_constraint(tmp_path: Path) -> Non
         "document",
         "next_experiment",
     ]
-    assert "frontier_simplified" in routed.actions[0].reason
+    # I10: the refresh must target the current rung, never a skipped one.
+    assert _mod._current_rung_label() in routed.actions[0].reason
+    assert "simplified" not in routed.actions[0].reason
     assert "Researcher once" in routed.actions[-1].reason
 
 
@@ -6256,7 +6258,8 @@ def test_cycle_handoff_routes_exhausted_bank_to_capability_refresh(
     assert handoff.actions[0].kind == "rebuild_data"
     nxt = next(a for a in handoff.actions if a.kind == "next_experiment")
     assert "researcher once" in nxt.reason.lower()
-    assert "simplified-nl-to-ast" in nxt.reason.lower()
+    assert _mod._current_rung_label() in nxt.reason
+    assert "simplified-nl-to-ast" not in nxt.reason.lower()
     assert handoff.priorities[0].disposition == "monitor"
 
 
@@ -6923,6 +6926,11 @@ def test_local_rebuild_argv_keeps_policy_plan_surface() -> None:
     assert "--synthesis-plan" in argv
     assert "simplified_nl" not in argv
     assert "--unique-root-target" in argv
+    # Heal snapshots stay under outputs/; publishing into tracked resources/
+    # mid-cycle parks the loop as foreign_dirty_tree.
+    assert "--no-publish" in argv
+    # Rung-honest heal identity: the resume arm must not claim a skipped rung.
+    assert "simplified" not in _mod._HEAL_RESUME_SLUG
 
 
 def test_local_rebuild_argv_shaped_by_adequacy_stays_wall_capped() -> None:
@@ -7269,7 +7277,8 @@ def test_bank_exhaust_parks_loop_under_typed_verdict(
     assert all(feedback_id in action.evidence_ids for action in handoff.actions[::2])
     assert handoff.actions[0].owner == "synthesis-feedback"
     assert handoff.actions[-1].owner == "autotrain"
-    assert "simplified-NL-to-AST" in handoff.actions[-1].reason
+    assert _mod._current_rung_label() in handoff.actions[-1].reason
+    assert "simplified-NL-to-AST" not in handoff.actions[-1].reason
     verdict_path = _mod._terminal_verdict_path(root, "loop-1")
     assert verdict_path.is_file()
     persisted = RegimeExhaustedVerdictV1.model_validate_json(
