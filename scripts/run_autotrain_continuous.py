@@ -6909,8 +6909,11 @@ def _enqueue_champion(
             "promoting",
             "promotion_inconclusive",
             "harness_failure",
+            "rejected",
         }:
-            # Already open / confirmed / pending promote — do not re-queue thrash.
+            # Already open / confirmed / pending promote / rejected — do not
+            # re-queue thrash. ponytail: rejected stays exhausted until knobs
+            # change (rebuild / train_version changes the fingerprint).
             return None
     entry = {
         "schema": _CHAMPION_QUEUE_SCHEMA,

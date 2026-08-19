@@ -439,6 +439,71 @@ def test_champion_confirm_reject_without_quality(tmp_path: Path) -> None:
     assert resolved["status"] == "rejected"
 
 
+def test_enqueue_champion_skips_rejected_fingerprint(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    loop_id = "loop-reject-dedup"
+    camp = root / "continuous-loop-c1"
+    exp_dir = camp / "artifacts" / "experiments"
+    exp_dir.mkdir(parents=True)
+    knobs = {
+        "grammar_completion_bounds": True,
+        "compact_active_canvas": False,
+        "steps": 80,
+        "batch_size": 2,
+        "train_version": "wf_smoke_v2",
+        "seed": 101,
+        "decode_timeout_seconds": 24.0,
+    }
+    (exp_dir / "c1-bounds.json").write_text(
+        __import__("json").dumps({"experiment_id": "c1-bounds", "knobs": knobs}),
+        encoding="utf-8",
+    )
+    (exp_dir / "c1-control.json").write_text(
+        __import__("json").dumps(
+            {
+                "experiment_id": "c1-control",
+                "knobs": {**knobs, "grammar_completion_bounds": False, "steps": 40},
+            }
+        ),
+        encoding="utf-8",
+    )
+    delivery = {
+        "positive": True,
+        "campaign_id": "continuous-loop-c1",
+        "cycle_index": 1,
+        "cycle_role": "screening",
+        "candidate_id": "c1-bounds",
+        "control_id": "c1-control",
+        "control_metrics": {"latency_ms_p50": 10000.0, "meaningful_program_rate": 1.0},
+        "candidate_metrics": {"latency_ms_p50": 8000.0, "meaningful_program_rate": 1.0},
+        "reasons": [
+            "primary_metric_win:smoke.latency_ms_p50:10000->8000",
+            "quality_held:parse=1.0 mpr=1.0",
+        ],
+    }
+    entry = _mod._enqueue_champion(
+        root=root, loop_id=loop_id, delivery=delivery, camp_dir=camp
+    )
+    assert entry is not None
+    _mod._update_champion_status(
+        root=root,
+        loop_id=loop_id,
+        entry_id=entry["entry_id"],
+        status="rejected",
+        resolve_reasons=["confirmation_rejected:primary_quality_not_reheld"],
+    )
+    again = _mod._enqueue_champion(
+        root=root,
+        loop_id=loop_id,
+        delivery={**delivery, "cycle_index": 4, "campaign_id": "continuous-loop-c4"},
+        camp_dir=camp,
+    )
+    assert again is None
+    entries = _mod._load_champion_queue(_mod._champion_queue_path(root, loop_id))
+    assert len(entries) == 1
+    assert entries[0]["status"] == "rejected"
+
+
 def test_champion_incomplete_confirmation_stays_retryable(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     loop_id = "loop-incomplete-confirm"
