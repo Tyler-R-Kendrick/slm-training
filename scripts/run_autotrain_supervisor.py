@@ -175,6 +175,17 @@ def main(argv: list[str] | None = None) -> int:
         help="0 = unbounded supervised restarts",
     )
     parser.add_argument(
+        "--park-backoff-seconds",
+        type=float,
+        default=300.0,
+        help="Sleep between park re-checks (park is a wait state, not exit)",
+    )
+    parser.add_argument(
+        "--exit-on-park",
+        action="store_true",
+        help="Legacy: exit 0 on regime park instead of waiting for recovery",
+    )
+    parser.add_argument(
         "--max-heal-attempts",
         type=int,
         default=2,
@@ -221,7 +232,9 @@ def main(argv: list[str] | None = None) -> int:
         except Exception as exc:  # noqa: BLE001
             log_event({"event": "pre_cycle_unblock_error", "error": repr(exc)})
             report = {}
-        parked = continuous._check_regime_parked(root=root, loop_id=args.loop_id)
+        parked = continuous._check_regime_parked(
+            root=root, loop_id=args.loop_id, cwd=cwd
+        )
         if parked:
             log_event(
                 {
@@ -231,7 +244,14 @@ def main(argv: list[str] | None = None) -> int:
                     "soft_healed": list(report.get("soft_healed") or []),
                 }
             )
-            return 0
+            if args.exit_on_park:
+                return 0
+            # Park is a wait state, never process exit: the pre-cycle unblock
+            # above can complete a local rebuild_data heal, and the park check
+            # itself recovers lost heal arms / resumes on fingerprint movement.
+            # Exiting here is what made the loop depend on an external agent.
+            time.sleep(max(1.0, float(args.park_backoff_seconds)))
+            continue
         if report.get("hard_pending"):
             outcome = _handle_hard_pending(
                 report["hard_pending"],

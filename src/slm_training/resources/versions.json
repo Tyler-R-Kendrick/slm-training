@@ -72,6 +72,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-08-19",
+          "note": "no-bump: test_run_autotrain_supervisor gained park-wait coverage (park sleeps --park-backoff-seconds and re-checks; --exit-on-park legacy) for the supervisor component; heal classify/playbook/escalation behavior is unchanged.",
+          "version": "v1"
+        },
+        {
           "date": "2026-08-16",
           "note": "no-bump: extract_test_cases moved the traversal/absolute-prefix parameter table into the mirrored external case file; assertions and covered cases are unchanged.",
           "version": "v1"
@@ -4972,6 +4977,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v243",
+          "date": "2026-08-19",
+          "note": "hands-off supervisor: regime park is a wait state, not process exit \u2014 run_autotrain_supervisor sleeps --park-backoff-seconds (default 300) and re-checks (pre-cycle unblock can complete a local rebuild_data heal; _check_regime_parked recovers lost heal arms and resumes on fingerprint movement) instead of returning 0, which made every resume depend on an external agent relaunch; legacy --exit-on-park keeps the old single-check behavior; park check now passes cwd for correct snapshot recovery."
+        },
+        {
           "version": "v242",
           "date": "2026-08-19",
           "note": "null-tally honors snapshot identity: complete non-positives on arms with a non-default train_version count against the version only, not the slug spelling. The shared current-rung-data-heal slug was being permanently closed after two measured snapshots, causing an endless park/resume ping-pong instead of measuring the next fresh snapshot."
@@ -6707,7 +6717,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v242"
+      "version": "v243"
     },
     "harness.autoresearch.formal": {
       "history": [
