@@ -5794,9 +5794,13 @@ def _recent_completed_nonpositive_slugs(
             if train_version and train_version != default_tv:
                 tv_null_seeds[train_version] = set()
             continue
-        null_seeds.setdefault(slug, set()).add(seed)
         if train_version and train_version != default_tv:
+            # Snapshot close is by train_version identity, not slug spelling:
+            # every heal snapshot shares the resume slug, so slug-level nulls
+            # would permanently close all future (distinct) snapshots.
             tv_null_seeds.setdefault(train_version, set()).add(seed)
+        else:
+            null_seeds.setdefault(slug, set()).add(seed)
 
     closed = {slug for slug, seeds in null_seeds.items() if len(seeds) >= required}
     # Snapshot clones share a train_version but differ by slug spelling. Close

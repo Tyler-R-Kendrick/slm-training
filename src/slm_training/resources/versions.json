@@ -4972,6 +4972,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v242",
+          "date": "2026-08-19",
+          "note": "null-tally honors snapshot identity: complete non-positives on arms with a non-default train_version count against the version only, not the slug spelling. The shared current-rung-data-heal slug was being permanently closed after two measured snapshots, causing an endless park/resume ping-pong instead of measuring the next fresh snapshot."
+        },
+        {
           "version": "v241",
           "date": "2026-08-19",
           "note": "park recovery for lost heal arms: _check_regime_parked re-registers the heal-resume arm from a completed on-disk rebuild_data snapshot (receipts present under outputs/data/train/continuous_i10_*) when no process arm is registered, so an acked heal never parks forever; _retire_i10_heal_arm tombstones retired train_versions (loops/<id>/heal_retired_versions.jsonl) so recovery never resurrects a measured snapshot."
@@ -6702,7 +6707,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v241"
+      "version": "v242"
     },
     "harness.autoresearch.formal": {
       "history": [
