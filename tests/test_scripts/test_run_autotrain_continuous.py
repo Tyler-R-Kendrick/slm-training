@@ -9377,6 +9377,17 @@ def test_is_continuous_closeout_path_allowlist() -> None:
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
 
 
+def test_serena_local_dirt_is_not_foreign() -> None:
+    assert _mod._normalize_repo_relpath(".serena/memories/note.md") == ".serena/memories/note.md"
+    assert _mod._normalize_repo_relpath("./docs/design/x.json") == "docs/design/x.json"
+    assert not _mod._is_foreign_dirty_path(".serena/memories/note.md")
+    assert not _mod._is_foreign_dirty_path("./.serena/cache/index")
+    assert not _mod._is_foreign_dirty_path(".serena")
+    assert not _mod._is_foreign_dirty_path(".pytest_cache/v/cache")
+    assert _mod._is_foreign_dirty_path(".serena/project.yml")
+    assert _mod._is_foreign_dirty_path(".serena/.gitignore")
+
+
 def test_loop_owned_generated_path_is_not_foreign() -> None:
     path = "src/slm_training/resources/evidence_store/local_index.jsonl"
     assert _mod._is_loop_owned_generated_path(path)

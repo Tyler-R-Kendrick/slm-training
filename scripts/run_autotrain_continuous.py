@@ -2693,9 +2693,15 @@ _HARD_PREREQUISITE_ACTION_KINDS = frozenset(
 )
 
 
+def _normalize_repo_relpath(rel: str) -> str:
+    """POSIX repo-relative path: strip a ``./`` prefix, keep leading-dot files."""
+    # ponytail: str.lstrip("./" ) is a charset strip and would turn ".serena" into "serena".
+    return rel.replace("\\", "/").lstrip().removeprefix("./")
+
+
 def _is_continuous_closeout_path(rel: str) -> bool:
     """True when a dirty path is continuous-driver closeout material only."""
-    path = rel.replace("\\", "/").lstrip("./")
+    path = _normalize_repo_relpath(rel)
     if path in {"docs/MODEL_CARD.md", "README.md"}:
         return True
     # Family closures are append-only machine-written science (WP-4): the
@@ -2726,7 +2732,7 @@ _LOOP_OWNED_GENERATED_SUFFIXES = ("/evidence_store/local_index.jsonl",)
 
 def _is_loop_owned_generated_path(rel: str) -> bool:
     """True when the continuous driver is allowed to dirty this tracked path."""
-    path = rel.replace("\\", "/").lstrip("./")
+    path = _normalize_repo_relpath(rel)
     if path in _LOOP_OWNED_GENERATED_PATHS:
         return True
     return any(path.endswith(suffix) for suffix in _LOOP_OWNED_GENERATED_SUFFIXES)
@@ -2734,7 +2740,7 @@ def _is_loop_owned_generated_path(rel: str) -> bool:
 
 def _is_foreign_dirty_path(rel: str) -> bool:
     """True when porcelain path should hard-block continuous thrash."""
-    path = rel.replace("\\", "/").lstrip("./")
+    path = _normalize_repo_relpath(rel)
     if _is_continuous_closeout_path(path):
         return False
     if _is_loop_owned_generated_path(path):
@@ -2744,6 +2750,9 @@ def _is_foreign_dirty_path(rel: str) -> bool:
         return False
     if path.startswith(".pytest_cache/") or path == ".pytest_cache":
         return False
+    # Serena cache/memories are local agent state; tracked config still blocks.
+    if path == ".serena" or path.startswith(".serena/"):
+        return path in {".serena/project.yml", ".serena/.gitignore"}
     return True
 
 
