@@ -2023,6 +2023,38 @@ def _git_is_ancestor(
         return False
 
 
+def _upstream_commit_for_init(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    upstream: str,
+    integration: str,
+    deadline: float | None = None,
+) -> str:
+    """origin/main when it is in HEAD; otherwise HEAD so init can proceed.
+
+    After SELF_HEAL_GIT_ANCESTRY_SKIP the worktree has diverged from squash-
+    merged main; passing origin/main as --upstream-commit fails
+    ``integration_commit does not contain upstream_commit``. Do not rewrite
+    upstream when HEAD already contains main.
+    """
+    if _git_is_ancestor(
+        upstream,
+        integration,
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        deadline=deadline,
+    ):
+        return upstream
+    print(
+        "CYCLE_COMMITS reason=diverged_unmergeable upstream=HEAD",
+        flush=True,
+    )
+    return integration
+
+
 def _integrate_origin_main(
     *,
     cwd: Path,
@@ -12906,6 +12938,14 @@ def run_cycle(
         root=root,
         loop_id=loop_id,
         stage="sync-current-head",
+    )
+    upstream = _upstream_commit_for_init(
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        upstream=upstream,
+        integration=integration,
+        deadline=deadline,
     )
 
     # Terminal governance: a parked regime verdict short-circuits the cycle

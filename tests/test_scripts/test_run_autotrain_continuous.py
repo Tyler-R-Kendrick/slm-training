@@ -10563,6 +10563,80 @@ def test_integrate_origin_main_skips_diverged_unmergeable(
     assert _mod._merge_head_path(repo) is None
 
 
+def test_upstream_commit_for_init_uses_head_when_diverged(tmp_path: Path) -> None:
+    origin = tmp_path / "origin"
+    repo = tmp_path / "work"
+    origin.mkdir()
+    _init_git_repo(origin)
+    subprocess.check_call(
+        ["git", "branch", "-M", "main"], cwd=origin, stdout=subprocess.DEVNULL
+    )
+    subprocess.check_call(
+        ["git", "clone", str(origin), str(repo)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "config", "user.email", "test@example.com"], cwd=repo
+    )
+    subprocess.check_call(["git", "config", "user.name", "test"], cwd=repo)
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+    main = subprocess.check_output(
+        ["git", "rev-parse", "origin/main"], cwd=repo, text=True
+    ).strip()
+    assert (
+        _mod._upstream_commit_for_init(
+            cwd=repo,
+            root=root,
+            loop_id="loop-1",
+            upstream=main,
+            integration=head,
+        )
+        == main
+    )
+    (repo / "conflict.txt").write_text("loop\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "conflict.txt"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "loop diverge"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    (origin / "conflict.txt").write_text("main\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "conflict.txt"], cwd=origin)
+    subprocess.check_call(
+        ["git", "commit", "-m", "main diverge"],
+        cwd=origin,
+        stdout=subprocess.DEVNULL,
+    )
+    subprocess.check_call(
+        ["git", "fetch", "origin", "main"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+    main = subprocess.check_output(
+        ["git", "rev-parse", "origin/main"], cwd=repo, text=True
+    ).strip()
+    assert head != main
+    assert (
+        _mod._upstream_commit_for_init(
+            cwd=repo,
+            root=root,
+            loop_id="loop-1",
+            upstream=main,
+            integration=head,
+        )
+        == head
+    )
+
+
 def _write_registry(path: Path, *, paths: list[str], version: str = "v3") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

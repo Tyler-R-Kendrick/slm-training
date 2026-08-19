@@ -127,17 +127,32 @@ def _validate_continuous_commits(upstream: str, integration: str) -> None:
         "rev-parse", "--verify", "origin/main^{commit}"
     ).stdout.strip()
     current_head = _git("rev-parse", "--verify", "HEAD^{commit}").stdout.strip()
-    if resolved_upstream != current_upstream:
-        raise ValueError("upstream_commit is stale; fetch origin/main before the cycle")
     if resolved_integration != current_head:
         raise ValueError("integration_commit must be the current checked-out HEAD")
-    if _git(
-        "merge-base",
-        "--is-ancestor",
-        resolved_upstream,
-        resolved_integration,
-        check=False,
-    ).returncode:
+    main_in_head = (
+        _git(
+            "merge-base",
+            "--is-ancestor",
+            current_upstream,
+            current_head,
+            check=False,
+        ).returncode
+        == 0
+    )
+    if main_in_head:
+        if resolved_upstream != current_upstream:
+            raise ValueError(
+                "upstream_commit is stale; fetch origin/main before the cycle"
+            )
+        if _git(
+            "merge-base",
+            "--is-ancestor",
+            resolved_upstream,
+            resolved_integration,
+            check=False,
+        ).returncode:
+            raise ValueError("integration_commit does not contain upstream_commit")
+    elif resolved_upstream != current_head:
         raise ValueError("integration_commit does not contain upstream_commit")
     if _git("status", "--porcelain", "--untracked-files=no").stdout.strip():
         raise ValueError("continuous cycle requires a clean tracked worktree")
