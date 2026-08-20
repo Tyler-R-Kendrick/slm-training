@@ -1644,6 +1644,30 @@ def _is_process_arm(extras: Mapping[str, Any] | None) -> bool:
     return isinstance(role, str) and role in _PROCESS_ROLES
 
 
+def _train_version_has_complete_nonpositive(
+    root: Path, predecessor_campaign_id: str | None, train_version: str
+) -> bool:
+    """True when this exact heal snapshot already has a complete non-positive."""
+    if not predecessor_campaign_id or not train_version:
+        return False
+    for camp_id in _lineage_campaign_ids(root, predecessor_campaign_id):
+        camp_dir = root / camp_id
+        delivery = _read_json(camp_dir / "sdlc_delivery.json")
+        if delivery.get("positive") is not False:
+            continue
+        if delivery.get("measurement_complete") is not True:
+            continue
+        candidate_id = str(delivery.get("candidate_id") or "")
+        knobs = _load_experiment_knobs(camp_dir, candidate_id) if candidate_id else {}
+        if not knobs:
+            knobs = _matrix_experiment_knobs(
+                _read_json(camp_dir / "matrix-proposal.json"), candidate_id
+            )
+        if str((knobs or {}).get("train_version") or "") == train_version:
+            return True
+    return False
+
+
 def _selectable_process_arm(
     root: Path, loop_id: str, *, predecessor_campaign_id: str | None
 ) -> bool:
@@ -1667,7 +1691,10 @@ def _selectable_process_arm(
         if version and version in retired:
             continue
         if slug in closed:
-            continue
+            if not version or _train_version_has_complete_nonpositive(
+                root, predecessor_campaign_id, version
+            ):
+                continue
         return True
     return False
 

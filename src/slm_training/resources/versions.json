@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "A reused heal slug on an unretired train_version is still selectable; closed slug spelling must not hide a new I10 snapshot.",
+          "version": "v259"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Saturation park must not skip a selectable I10 process arm (do not subtract skip_slugs; empty pending uses heal_open instead of pending[0]).",
           "version": "v258"
         },
@@ -6830,7 +6835,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v258"
+      "version": "v259"
     },
     "harness.autoresearch.formal": {
       "history": [
