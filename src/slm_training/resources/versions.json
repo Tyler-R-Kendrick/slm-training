@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Saturation park must not skip a selectable I10 process arm (do not subtract skip_slugs; empty pending uses heal_open instead of pending[0]).",
+          "version": "v258"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Do not treat an empty leftover set as snapshot leftovers when a selectable I10 process arm is open; REGIME_RESUMED must reach select.",
           "version": "v257"
         },
@@ -6825,7 +6830,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v257"
+      "version": "v258"
     },
     "harness.autoresearch.formal": {
       "history": [

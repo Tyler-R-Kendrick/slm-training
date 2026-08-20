@@ -13943,13 +13943,11 @@ def run_cycle(
         )
         if saturation_state is not None:
             pending = list(saturation_state["pending_regimes"])
-            heal_open = {
-                slug
-                for slug, _, extras in _all_screening_arm_bank()
-                if _is_process_arm(extras)
-            } - skip_slugs
+            heal_open = _selectable_process_arm(
+                root, loop_id, predecessor_campaign_id=pred
+            )
             if not pending and not heal_open:
-                return _park_screening_saturation(
+                parked = _park_screening_saturation(
                     root=root,
                     loop_id=loop_id,
                     campaign_id=str(pred or "screening-saturation"),
@@ -13958,23 +13956,32 @@ def run_cycle(
                     ranked_regimes=saturation_state["ranked_regimes"],
                     cwd=cwd,
                 )
-            selected = pending[0]
-            skip_slugs = (
-                {
-                    slug
-                    for slug, _hypothesis, _extras in _all_screening_arm_bank()
-                    if slug != selected
-                }
-                | timeout_retired
-                | set(extra_skip_slugs)
-            )
-            print(
-                "SCREENING_SATURATION_RECOVERY "
-                f"streak={saturation_state['tie_streak']} "
-                f"trigger_cycle={saturation_state['trigger_cycle']} "
-                f"selected={selected} pending={pending}",
-                flush=True,
-            )
+                if parked:
+                    return parked
+            elif pending:
+                selected = pending[0]
+                skip_slugs = (
+                    {
+                        slug
+                        for slug, _hypothesis, _extras in _all_screening_arm_bank()
+                        if slug != selected
+                    }
+                    | timeout_retired
+                    | set(extra_skip_slugs)
+                )
+                print(
+                    "SCREENING_SATURATION_RECOVERY "
+                    f"streak={saturation_state['tie_streak']} "
+                    f"trigger_cycle={saturation_state['trigger_cycle']} "
+                    f"selected={selected} pending={pending}",
+                    flush=True,
+                )
+            elif heal_open:
+                print(
+                    "SCREENING_SATURATION_HEAL_OPEN "
+                    f"streak={saturation_state['tie_streak']}",
+                    flush=True,
+                )
     if cycle_intent == "screening" and replay is None:
         smoke_n, ss_report = _screening_n_report(policy)
         if isinstance(ss_report, dict) and (
