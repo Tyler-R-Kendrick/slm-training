@@ -51,6 +51,10 @@ __all__ = [
     "improvement_signed",
     "record_null_from_knob_signature_json",
     "HillClimbError",
+    "HILLCLIMB_STAGNATION_CADENCE",
+    "hillclimb_iteration_report",
+    "assess_hillclimb_speculation",
+    "stagnation_review",
 ]
 
 CLIMB_CLAIM_CLASSES: frozenset[str] = frozenset(
@@ -931,3 +935,159 @@ def record_null_from_knob_signature_json(
         reason=reason,
         note=note,
     )
+
+
+# --- per-cycle hill-climb reports + stagnation review (continuous loop) ---
+
+HILLCLIMB_STAGNATION_CADENCE = 10
+
+# Speculations that would weaken ship gates, Lean floors, or decode invariants.
+_UNVIABLE_SPECULATION_IDS = frozenset(
+    {
+        "weaken_ship_gates",
+        "screen_below_lean_floor",
+        "allow_unconstrained_fallback",
+        "grow_capacity_to_green_gate",
+    }
+)
+
+_VIABLE_AUTO_APPLY = {
+    "retire_knob_do_not_confirm": "skip_identical_quality_confirms",
+    "keep_ship_gates_do_not_enqueue_confirm": "skip_volume_gate_confirms",
+    "fit_decode_timeout_to_n_times_p50": "refit_screening_decode",
+    "execute_i10_heal_then_process_arm_not_rematch": "prefer_process_arm",
+    "must_generate_screening_n": "generate_lean_floor_eval",
+    "replay_frozen_or_fit_decode_to_wall": "refit_screening_decode",
+}
+
+
+def hillclimb_iteration_report(
+    *,
+    campaign_id: str,
+    cycle_index: int | None,
+    positive: bool,
+    measurement_complete: bool | None,
+    reasons: Sequence[str],
+    control_metrics: Mapping[str, Any] | None = None,
+    candidate_metrics: Mapping[str, Any] | None = None,
+    primary_metric: str = "",
+) -> dict[str, Any]:
+    """Compact well / wrong / speculate payload for one cycle."""
+    well: list[str] = []
+    wrong: list[str] = []
+    speculate: list[str] = []
+    if measurement_complete:
+        well.append("measurement_complete")
+    elif measurement_complete is False:
+        wrong.append("measurement_incomplete")
+        speculate.append("replay_frozen_or_fit_decode_to_wall")
+    if positive:
+        well.append("quality_aware_positive")
+    else:
+        wrong.append("non_positive")
+        speculate.append("keep_rotating_size_matched_arms")
+    joined = " ".join(str(r) for r in reasons)
+    for reason in reasons:
+        text = str(reason)
+        if text.startswith("mechanism_no_effect"):
+            wrong.append(text)
+            speculate.append("retire_knob_do_not_confirm")
+        if "fixture_insufficient_n_alone" in text or "fixture_volume_gate_ship_only" in text:
+            wrong.append(text)
+            speculate.append("keep_ship_gates_do_not_enqueue_confirm")
+        if "must_generate" in text or "screening_n_infeasible" in text:
+            wrong.append(text)
+            speculate.append("must_generate_screening_n")
+        if "decode" in text.lower() or "timeout" in text.lower() or "wall_" in text:
+            speculate.append("fit_decode_timeout_to_n_times_p50")
+        if "rebuild_data" in text or "heal_resume" in text or "park" in text.lower():
+            speculate.append("execute_i10_heal_then_process_arm_not_rematch")
+    if "weaken" in joined.lower() and "gate" in joined.lower():
+        speculate.append("weaken_ship_gates")
+    # Dedupe while preserving order.
+    def _uniq(items: list[str]) -> list[str]:
+        seen: set[str] = set()
+        out: list[str] = []
+        for item in items:
+            if item in seen:
+                continue
+            seen.add(item)
+            out.append(item)
+        return out
+
+    deltas: dict[str, Any] = {}
+    if isinstance(control_metrics, Mapping) and isinstance(candidate_metrics, Mapping):
+        keys = set(control_metrics) | set(candidate_metrics)
+        for key in sorted(keys):
+            c0, c1 = control_metrics.get(key), candidate_metrics.get(key)
+            if isinstance(c0, (int, float)) and isinstance(c1, (int, float)):
+                deltas[str(key)] = float(c1) - float(c0)
+    return {
+        "schema": "hillclimb_iteration/v1",
+        "campaign_id": campaign_id,
+        "cycle_index": cycle_index,
+        "positive": bool(positive),
+        "progress": bool(positive),
+        "measurement_complete": measurement_complete,
+        "primary_metric": primary_metric,
+        "deltas": deltas,
+        "went_well": _uniq(well),
+        "went_wrong": _uniq(wrong),
+        "speculate": _uniq(speculate),
+        "reasons": [str(r) for r in reasons],
+    }
+
+
+def assess_hillclimb_speculation(speculation_id: str) -> dict[str, Any]:
+    """Viability of a hill-climb speculation. Weakening gates is never viable."""
+    sid = str(speculation_id)
+    if sid in _UNVIABLE_SPECULATION_IDS:
+        return {
+            "id": sid,
+            "viable": False,
+            "auto_apply": None,
+            "reason": "rejects_invariant_or_ship_gate_weakening",
+        }
+    apply_kind = _VIABLE_AUTO_APPLY.get(sid)
+    return {
+        "id": sid,
+        "viable": True,
+        "auto_apply": apply_kind,
+        "reason": "matches_recorded_fail_closed_repair",
+    }
+
+
+def stagnation_review(
+    iterations: Sequence[Mapping[str, Any]],
+    *,
+    cadence: int = HILLCLIMB_STAGNATION_CADENCE,
+) -> dict[str, Any] | None:
+    """If the last ``cadence`` iterations made no progress, emit a review plan."""
+    rows = [dict(item) for item in iterations if isinstance(item, Mapping)]
+    if len(rows) < cadence:
+        return None
+    tail = rows[-cadence:]
+    if any(bool(item.get("progress") or item.get("positive")) for item in tail):
+        return None
+    counts: dict[str, int] = {}
+    for item in tail:
+        for spec in item.get("speculate") or []:
+            counts[str(spec)] = counts.get(str(spec), 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    assessments = [assess_hillclimb_speculation(sid) for sid, _n in ranked]
+    viable = [a for a in assessments if a["viable"] and a.get("auto_apply")]
+    rejected = [a for a in assessments if not a["viable"]]
+    return {
+        "schema": "hillclimb_stagnation_review/v1",
+        "cadence": cadence,
+        "no_progress_streak": cadence,
+        "campaign_ids": [str(item.get("campaign_id") or "") for item in tail],
+        "speculation_counts": dict(ranked),
+        "viable_applies": [a["auto_apply"] for a in viable],
+        "rejected": rejected,
+        "assessments": assessments,
+        "plan": (
+            "Apply viable fail-closed repairs from the last "
+            f"{cadence} no-progress cycles; never weaken ship gates."
+        ),
+    }

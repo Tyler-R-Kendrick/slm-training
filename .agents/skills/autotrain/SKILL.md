@@ -59,7 +59,7 @@ before continuous or multi-run work.
 | Between-iteration land | Every tick: address PR comments, fix CI, **squash-merge green bottom positive layers**, sync stack — do not defer merges to stop |
 | Remote compute default | No paid GPU / HF write without prior user authority |
 | Training stopped | Residual `sdlc` bottom-up closeout of any still-open positive layers (review → CI → squash-merge) — not a resume paste |
-| **Matrix to the user** | After every cycle (and whenever reporting status): paste the compact four-table view (liveness, results, diagnostics, priorities) from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat. **Never** claim progress without it |
+| **Matrix to the user** | After every cycle (and whenever reporting status): paste the compact four-table view (liveness, results, diagnostics, priorities) from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat, plus the cycle's went-well / went-wrong / speculate lines (`HILLCLIMB_ITERATION` / `measured-results-continuous.md`). **Never** claim progress without the matrix |
 | **Liveness proof** | Prove state with the host goal plus `loops/<loop-id>/state.json` heartbeat, phase, next action, and child PID. Legacy drivers may also use `/tmp/autotrain-loop-status.txt`. **Never** use Grok “background ops” UI as liveness |
 | **Never kill the loop** | Do **not** `kill`/`pkill`/`kill -9` `run_autotrain_continuous`, its children, or the continuous worktree processes to ship skills, fix CI, merge PRs, or “restart cleanly.” Side work uses another worktree/branch |
 

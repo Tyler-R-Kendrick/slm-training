@@ -5003,6 +5003,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Bake per-cycle hillclimb well/wrong/speculate+deltas into Phase A closeout jsonl and docs; after 10 no-progress cycles review viable speculations and skip spent OFAT slugs (never weaken ship gates).",
+          "version": "v253"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Hill-climb: Lean-floor complete screens do not get fixture_insufficient_n_alone; identical SS/MPR/binder is mechanism_no_effect; n=3 SS ticks and MPR=0 wins do not enqueue confirms.",
           "version": "v252"
         },
@@ -6795,7 +6800,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v252"
+      "version": "v253"
     },
     "harness.autoresearch.formal": {
       "history": [

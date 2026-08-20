@@ -42,6 +42,16 @@ persistence is the host goal and the append-only campaign event chains.
      `document` receipt (`SELF_HEAL_DOCUMENT`). End-of-cycle, pre-gate, cycle
      error, and startup all run this heal so thrash never blocks on
      “please document and restart.”
+   - **hill-climb iteration outputs** → every Phase A closeout appends
+     `loops/<id>/hillclimb_iterations.jsonl` and prints `HILLCLIMB_ITERATION`
+     with went-well / went-wrong / speculate plus metric deltas. Cycle
+     markdown (`measured-results-continuous.md` and design closeout) carries
+     the same three-part section. After **10 consecutive no-progress**
+     cycles the driver writes
+     `loops/<id>/hillclimb_stagnation_review.json`, assesses each
+     speculation (gate-weakening is never viable), applies fail-closed
+     repairs (skip identical-quality confirms / spent OFAT slugs), then
+     continues. Never a parent halt.
    - **continuous-only dirty tree** → if porcelain is only
      `docs/design/continuous-*` closeout files (plus optional MODEL_CARD /
      README checkpoint notes), auto-commit (`SELF_HEAL_DIRTY_TREE`); foreign

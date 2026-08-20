@@ -3357,10 +3357,173 @@ def _render_continuous_cycle_docs(
         f"- reasons: {', '.join(str(r) for r in reasons) or '—'}\n"
         f"- control_metrics: `{payload['control_metrics']}`\n"
         f"- candidate_metrics: `{payload['candidate_metrics']}`\n\n"
+    )
+    from slm_training.autoresearch.hillclimb import hillclimb_iteration_report
+
+    hill = hillclimb_iteration_report(
+        campaign_id=campaign_id,
+        cycle_index=handoff.cycle_index,
+        positive=bool(payload["positive"]),
+        measurement_complete=payload.get("measurement_complete"),
+        reasons=reasons,
+        control_metrics=payload.get("control_metrics")
+        if isinstance(payload.get("control_metrics"), dict)
+        else None,
+        candidate_metrics=payload.get("candidate_metrics")
+        if isinstance(payload.get("candidate_metrics"), dict)
+        else None,
+        primary_metric=str(handoff.primary_metric or ""),
+    )
+    payload["hillclimb"] = hill
+    md += (
+        "## Hill-climb this cycle\n\n"
+        f"- went well: {', '.join(hill['went_well']) or '—'}\n"
+        f"- went wrong: {', '.join(hill['went_wrong']) or '—'}\n"
+        f"- speculate: {', '.join(hill['speculate']) or '—'}\n"
+        f"- deltas: `{hill.get('deltas')}`\n\n"
         "Auto-documented by the continuous driver self-heal closeout. "
         "Fixture screening only — not a ship claim.\n"
     )
     return md, payload
+
+
+def _hillclimb_iteration_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "hillclimb_iterations.jsonl"
+
+
+def _hillclimb_review_path(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id / "hillclimb_stagnation_review.json"
+
+
+def _append_hillclimb_iteration(
+    root: Path,
+    loop_id: str,
+    report: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Append one cycle report; return the loaded ledger (including this row)."""
+    path = _hillclimb_iteration_path(root, loop_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(dict(report), sort_keys=True) + "\n")
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(item, dict):
+            rows.append(item)
+    return rows
+
+
+def _stagnation_skip_slugs(root: Path, loop_id: str) -> set[str]:
+    path = _hillclimb_review_path(root, loop_id)
+    if not path.is_file():
+        return set()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return set()
+    if not isinstance(payload, dict):
+        return set()
+    slugs = payload.get("skip_slugs") or []
+    return {str(s) for s in slugs if s}
+
+
+def _apply_stagnation_review(
+    *,
+    root: Path,
+    loop_id: str,
+    iterations: Sequence[Mapping[str, Any]],
+    campaign_id: str,
+) -> dict[str, Any] | None:
+    from slm_training.autoresearch.hillclimb import (
+        HILLCLIMB_STAGNATION_CADENCE,
+        stagnation_review,
+    )
+
+    review = stagnation_review(iterations, cadence=HILLCLIMB_STAGNATION_CADENCE)
+    if review is None:
+        return None
+    prior_path = _hillclimb_review_path(root, loop_id)
+    prior: dict[str, Any] = {}
+    if prior_path.is_file():
+        try:
+            loaded = json.loads(prior_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                prior = loaded
+        except json.JSONDecodeError:
+            prior = {}
+    if prior.get("campaign_ids") == review.get("campaign_ids"):
+        return prior
+    skip: set[str] = set(prior.get("skip_slugs") or [])
+    for cid in review.get("campaign_ids") or []:
+        camp = root / str(cid)
+        delivery = _read_json(camp / "sdlc_delivery.json") if camp.is_dir() else {}
+        cand = str(delivery.get("candidate_id") or "")
+        slug = _slug_from_candidate_id(cand) if cand else None
+        if slug:
+            skip.add(slug)
+    review["skip_slugs"] = sorted(skip)
+    review["applied_at_campaign"] = campaign_id
+    review["applied"] = list(review.get("viable_applies") or [])
+    prior_path.parent.mkdir(parents=True, exist_ok=True)
+    prior_path.write_text(
+        json.dumps(review, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        "HILLCLIMB_STAGNATION_REVIEW "
+        f"loop={loop_id} cadence={review.get('cadence')} "
+        f"applied={review.get('applied')} skip_n={len(skip)}",
+        flush=True,
+    )
+    return review
+
+
+def _persist_hillclimb_cycle_outputs(
+    *,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    delivery: Mapping[str, Any],
+    cycle_index: int | None,
+    primary_metric: str,
+) -> dict[str, Any]:
+    from slm_training.autoresearch.hillclimb import hillclimb_iteration_report
+
+    report = hillclimb_iteration_report(
+        campaign_id=campaign_id,
+        cycle_index=cycle_index,
+        positive=bool(delivery.get("positive")),
+        measurement_complete=delivery.get("measurement_complete"),
+        reasons=list(delivery.get("reasons") or []),
+        control_metrics=delivery.get("control_metrics")
+        if isinstance(delivery.get("control_metrics"), dict)
+        else None,
+        candidate_metrics=delivery.get("candidate_metrics")
+        if isinstance(delivery.get("candidate_metrics"), dict)
+        else None,
+        primary_metric=primary_metric,
+    )
+    rows = _append_hillclimb_iteration(root, loop_id, report)
+    print(
+        "HILLCLIMB_ITERATION "
+        f"campaign={campaign_id} progress={report['progress']} "
+        f"well={';'.join(report['went_well']) or '—'} "
+        f"wrong={';'.join(report['went_wrong']) or '—'} "
+        f"speculate={';'.join(report['speculate']) or '—'}",
+        flush=True,
+    )
+    _apply_stagnation_review(
+        root=root,
+        loop_id=loop_id,
+        iterations=rows,
+        campaign_id=campaign_id,
+    )
+    return report
 
 
 def _git_commit_paths(
@@ -9968,6 +10131,15 @@ def _phase_a_delivery(
 
     # Optional design-doc closeout for the cycle (iron law); keep under campaign
     # root so the git worktree stays clean for the next fetch/merge.
+    hill = _persist_hillclimb_cycle_outputs(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        delivery=record,
+        cycle_index=cycle_index,
+        primary_metric=primary_metric,
+    )
+    record["hillclimb"] = hill
     note_path = camp_dir / "measured-results-continuous.md"
     note = (
         f"# Continuous cycle {campaign_id}\n\n"
@@ -9980,6 +10152,11 @@ def _phase_a_delivery(
         f"- control: `{control_run}` metrics={record.get('control_metrics')}\n"
         f"- candidate: `{candidate_run}` metrics={record.get('candidate_metrics')}\n"
         f"- skipped arms: `{record.get('arm_skipped')}`\n\n"
+        "## Hill-climb this cycle\n\n"
+        f"- went well: {', '.join(hill.get('went_well') or []) or '—'}\n"
+        f"- went wrong: {', '.join(hill.get('went_wrong') or []) or '—'}\n"
+        f"- speculate: {', '.join(hill.get('speculate') or []) or '—'}\n"
+        f"- deltas: `{hill.get('deltas')}`\n\n"
         "Non-positive cycles do not open stacked PRs "
         "(sdlc autotrain-iteration-delivery).\n"
     )
@@ -13618,6 +13795,7 @@ def run_cycle(
         | recent_exhausted
         | timeout_retired
         | extra_skip_slugs
+        | _stagnation_skip_slugs(root, loop_id)
     )
     # Causal-family CAP must not hard-kill thrash when multi-seed-open arms
     # remain (confirm rejects on noisy fixture burned literal-close CAP while
@@ -13633,6 +13811,7 @@ def run_cycle(
             | recent_exhausted
             | timeout_retired
             | extra_skip_slugs
+            | _stagnation_skip_slugs(root, loop_id)
         )
         if thrash_open - soft_skip:
             relaxed = sorted(thrash_open - soft_skip)
