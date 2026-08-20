@@ -112,7 +112,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "2e425878e167d3ee643f5426124b8b1fa1d85eee",
+    "code_commit": "c36df520bffcca5404c6b4c9f10873140d191489",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -121,6 +121,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-20T09:18:42.057874+00:00"
+    "stamped_at": "2026-08-20T09:20:55.785460+00:00"
   }
 }
