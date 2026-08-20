@@ -4979,6 +4979,11 @@
         {
           "version": "v248",
           "date": "2026-08-20",
+          "note": "no-bump: rebuild evidence_ledger.v1.json scanned count 2181 -> 2218 after c420 cycle docs on main; deterministic fold only, FROZEN_TRAIN_REUSE_SKIP behavior unchanged."
+        },
+        {
+          "version": "v248",
+          "date": "2026-08-20",
           "note": "Fail-closed FROZEN_TRAIN_REUSE_SKIP when the frozen-replay source arm finalized with decode_timeout_count>0 (or measurement_incomplete…decode_timeout_count=) so successors force a fresh control/candidate eval instead of replaying a timeout-incomplete train."
         },
         {
