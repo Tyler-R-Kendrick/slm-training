@@ -5003,6 +5003,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Hill-climb: Lean-floor complete screens do not get fixture_insufficient_n_alone; identical SS/MPR/binder is mechanism_no_effect; n=3 SS ticks and MPR=0 wins do not enqueue confirms.",
+          "version": "v252"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Empty screening-n range with suite_volume must_generate: skip n=3 screens, append smoke fixtures, build_test_data+publish+commit eval snapshot, resume at Lean n_min.",
           "version": "v251"
         },
@@ -6790,7 +6795,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v251"
+      "version": "v252"
     },
     "harness.autoresearch.formal": {
       "history": [

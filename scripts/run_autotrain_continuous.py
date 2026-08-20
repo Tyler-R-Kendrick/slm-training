@@ -5962,6 +5962,7 @@ def _is_decisive_causal_terminal(row: dict[str, Any]) -> bool:
         "promotion_primary",
         "eg_params_block",
         "primary_metric_win_rejected",
+        "mechanism_no_effect:",
     )
     if any(any(marker in r for marker in decisive_markers) for r in reasons):
         return True
@@ -7272,6 +7273,89 @@ def _quality_held_reasons(reasons: list[str] | None) -> bool:
     )
 
 
+def _metric_leaf(row: Mapping[str, Any], name: str) -> float | None:
+    raw = row.get(name)
+    if raw is None:
+        raw = row.get(f"smoke.{name}")
+    return _finite_metric(raw)
+
+
+def _arm_completed_n(metrics: Mapping[str, Any] | None) -> int | None:
+    if not isinstance(metrics, Mapping):
+        return None
+    for key in (
+        "completed_document_n",
+        "smoke.completed_document_n",
+        "n",
+        "smoke.n",
+    ):
+        raw = metrics.get(key)
+        if raw is None:
+            continue
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _lean_floor_n() -> int | None:
+    """Certified screening n when auto mode is feasible; else None."""
+    try:
+        n, report = _screening_n_report()
+    except Exception:  # noqa: BLE001
+        return None
+    if isinstance(report, dict) and report.get("verdict") == "feasible":
+        chosen = int(report.get("chosen_n") or n or 0)
+        return chosen if chosen > 0 else None
+    return None
+
+
+def _lean_floor_measurement(delivery: Mapping[str, Any]) -> bool:
+    """True when both arms completed at the certified screening n."""
+    floor = _lean_floor_n()
+    if not floor:
+        return False
+    control = delivery.get("control_metrics") or {}
+    candidate = delivery.get("candidate_metrics") or {}
+    cn, tn = _arm_completed_n(control), _arm_completed_n(candidate)
+    if cn is not None and tn is not None:
+        return cn >= floor and tn >= floor
+    suite = _screening_suite_records()
+    return bool(
+        delivery.get("measurement_complete") is True
+        and suite is not None
+        and int(suite) >= floor
+    )
+
+
+def _quality_metrics_identical(delivery: Mapping[str, Any]) -> bool:
+    """True when SS, MPR, and binder match (mechanism-no-effect on this snapshot)."""
+    control = delivery.get("control_metrics") or {}
+    candidate = delivery.get("candidate_metrics") or {}
+    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
+        return False
+    for name in (
+        "structural_similarity",
+        "meaningful_program_rate",
+        "binder_reference_f1",
+    ):
+        c_val, t_val = _metric_leaf(control, name), _metric_leaf(candidate, name)
+        if c_val is None or t_val is None:
+            return False
+        if abs(float(c_val) - float(t_val)) > _EPS:
+            return False
+    return True
+
+
+def _candidate_mpr_positive(delivery: Mapping[str, Any]) -> bool:
+    candidate = delivery.get("candidate_metrics") or {}
+    if not isinstance(candidate, Mapping):
+        return False
+    mpr = _metric_leaf(candidate, "meaningful_program_rate")
+    return mpr is not None and float(mpr) > _EPS
+
+
 def _delivery_parse_mpr_held(delivery: dict[str, Any]) -> bool:
     """Parse/MPR non-regression from delivery metrics (fixture SS wins omit quality_held)."""
     control = delivery.get("control_metrics") or {}
@@ -7279,16 +7363,13 @@ def _delivery_parse_mpr_held(delivery: dict[str, Any]) -> bool:
     if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
         return False
 
-    def _leaf(row: Mapping[str, Any], name: str) -> float | None:
-        raw = row.get(name)
-        if raw is None:
-            raw = row.get(f"smoke.{name}")
-        return _finite_metric(raw)
-
-    c_pr, t_pr = _leaf(control, "parse_rate"), _leaf(candidate, "parse_rate")
+    c_pr, t_pr = (
+        _metric_leaf(control, "parse_rate"),
+        _metric_leaf(candidate, "parse_rate"),
+    )
     c_mpr, t_mpr = (
-        _leaf(control, "meaningful_program_rate"),
-        _leaf(candidate, "meaningful_program_rate"),
+        _metric_leaf(control, "meaningful_program_rate"),
+        _metric_leaf(candidate, "meaningful_program_rate"),
     )
     # Missing metrics must not invent a quality hold.
     if None in (c_pr, t_pr, c_mpr, t_mpr):
@@ -7322,13 +7403,17 @@ def _has_primary_metric_win(delivery: dict[str, Any], reasons: list[str]) -> boo
 def _is_confirm_candidate_win(delivery: dict[str, Any]) -> bool:
     """Screening primary quality win worth confirming (fixture-n may keep positive=False).
 
-    Smoke n=3 cannot mint climb ``positive`` / stack layers, but a held-quality
-    primary win must still enter the champion queue and must not tally as a
-    thrash null seed. Confirmation/promotion escalate suites and n.
+    Smoke below the Lean floor cannot mint climb ``positive`` / stack layers.
+    A held-quality primary win at certified n may enter the champion queue.
+    n=3 fixture SS spikes must not enqueue.
     """
     if delivery.get("measurement_complete") is False:
         return False
     reasons = [str(reason) for reason in delivery.get("reasons") or []]
+    if any(r.startswith("fixture_insufficient_n_alone") for r in reasons):
+        return False
+    if any(r.startswith("mechanism_no_effect:") for r in reasons):
+        return False
     if _confirm_candidate_blocked(reasons):
         return False
     if not _has_primary_metric_win(delivery, reasons):
@@ -7336,6 +7421,8 @@ def _is_confirm_candidate_win(delivery: dict[str, Any]) -> bool:
     primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
     if primary_leaf == "latency_ms_p50":
         return _quality_held_reasons(reasons)
+    if not _candidate_mpr_positive(delivery):
+        return False
     return _quality_held_reasons(reasons) or _delivery_parse_mpr_held(delivery)
 
 
@@ -9598,13 +9685,32 @@ def _classify_positive(
     ):
         decision["positive"] = False
         decision["stack_layer"] = False
+    delivery_view = {
+        "control_metrics": control if isinstance(control, dict) else {},
+        "candidate_metrics": candidate if isinstance(candidate, dict) else {},
+        "measurement_complete": True,
+        "reasons": reasons,
+    }
+    if _quality_metrics_identical(delivery_view) and not any(
+        str(reason).startswith("mechanism_no_effect:") for reason in reasons
+    ):
+        reasons.append("mechanism_no_effect:quality_metrics_identical")
+        decision["positive"] = False
+        decision["stack_layer"] = False
     if fixture_only_fails or any(
         str(reason).startswith("fixture_insufficient_n") for reason in reasons
     ):
-        # Tradeoff / primary_metric_win must not re-green fixture n.
+        # Tradeoff / primary_metric_win must not re-green fixture ship volume.
         decision["positive"] = False
         decision["stack_layer"] = False
-        if not any(
+        lean_ok = _lean_floor_measurement(delivery_view)
+        if lean_ok:
+            if not any(
+                str(reason).startswith("fixture_volume_gate_ship_only")
+                for reason in reasons
+            ):
+                reasons.append("fixture_volume_gate_ship_only")
+        elif not any(
             str(reason).startswith("fixture_insufficient_n_alone") for reason in reasons
         ):
             reasons.append("fixture_insufficient_n_alone")

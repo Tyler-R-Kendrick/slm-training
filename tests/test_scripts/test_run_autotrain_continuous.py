@@ -6581,7 +6581,7 @@ def test_should_enqueue_rejects_fixture_volume_win() -> None:
 
 
 def test_should_enqueue_fixture_volume_structural_win() -> None:
-    """Smoke n=3 SS wins enqueue as confirm candidates (positive stays False)."""
+    """Smoke below Lean floor must not enqueue, even with an SS tick."""
     delivery = {
         "positive": False,
         "primary_metric": "smoke.structural_similarity",
@@ -6608,8 +6608,84 @@ def test_should_enqueue_fixture_volume_structural_win() -> None:
         "candidate_id": "c159-typed-family-balance",
         "control_id": "c159-control",
     }
+    assert not _mod._is_confirm_candidate_win(delivery)
+    assert not _mod._should_enqueue_champion(delivery)
+
+
+def test_should_enqueue_lean_floor_ss_win_with_held_mpr() -> None:
+    delivery = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": [
+            "fixture_insufficient_n:c-control",
+            "primary_metric_win:smoke.structural_similarity:0.13->0.20:improvement=0.07",
+            "fixture_volume_gate_ship_only",
+        ],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.13,
+            "binder_reference_f1": 0.53,
+            "n": 6,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.20,
+            "binder_reference_f1": 0.53,
+            "n": 6,
+        },
+    }
     assert _mod._is_confirm_candidate_win(delivery)
     assert _mod._should_enqueue_champion(delivery)
+
+
+def test_should_not_enqueue_mpr_zero_or_quality_identity() -> None:
+    mpr0 = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": [
+            "primary_metric_win:smoke.structural_similarity:0.11->0.20:improvement=0.09",
+            "fixture_volume_gate_ship_only",
+        ],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.11,
+            "binder_reference_f1": 0.53,
+            "n": 6,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.20,
+            "binder_reference_f1": 0.0,
+            "n": 6,
+        },
+    }
+    assert not _mod._should_enqueue_champion(mpr0)
+    ident = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": ["mechanism_no_effect:quality_metrics_identical"],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.13,
+            "binder_reference_f1": 0.53,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.13,
+            "binder_reference_f1": 0.53,
+        },
+    }
+    assert _mod._quality_metrics_identical(ident)
+    assert not _mod._should_enqueue_champion(ident)
 
 
 def test_handoff_parks_exhausted_bank_despite_experiment_next(
