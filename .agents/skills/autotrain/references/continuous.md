@@ -470,6 +470,9 @@ Owner skills (invoke; do not reimplement):
   missing suite, set `eval_version` explicitly.
 - Ship gates stay on for honesty. Fixture quality/volume gate fails are
   **expected diagnostics**, not loop terminators.
+- **`parse_rate` on completed docs is 1.0 or the arm is invalid (I6).** Not a
+  lever. `invalid_grammar:` rejects the hypothesis; do not confirm or climb
+  it. Never bargain the floor down.
 - Size-match comparative arms; charge capacity growth with `EG_params`.
 
 ### Lean / formal

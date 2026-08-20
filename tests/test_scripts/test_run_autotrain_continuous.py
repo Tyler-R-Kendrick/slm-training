@@ -88,6 +88,17 @@ def _arms(
     return control, candidate
 
 
+def test_parse_rate_below_perfect_is_never_positive() -> None:
+    control, candidate = _arms(
+        c_lat=5000.0, t_lat=4000.0, c_pr=1.0, t_pr=0.0, c_mpr=0.0, t_mpr=1.0
+    )
+    positive, reasons = _classify(
+        control=control, candidate=candidate, primary_metric=_PRIMARY
+    )
+    assert positive is False
+    assert any(r.startswith("invalid_grammar:") for r in reasons)
+
+
 def test_naive_latency_win_with_zero_mpr_is_not_positive() -> None:
     control, candidate = _arms(c_lat=10000.0, t_lat=9000.0, c_mpr=0.0, t_mpr=0.0)
     positive, reasons = _classify(
@@ -4032,7 +4043,7 @@ def test_dispose_champion_promote_parse_regression_not_promoted() -> None:
         candidate_metrics=candidate,
     )
     assert d["status"] == "promotion_failed"
-    assert any("promote_parse_regression" in r for r in d["reasons"])
+    assert any("invalid_grammar:" in r or "promote_parse_regression" in r for r in d["reasons"])
 
 
 def test_dispose_champion_promote_assumption_miss_five_lane() -> None:

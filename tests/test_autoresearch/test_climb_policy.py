@@ -192,6 +192,23 @@ def test_classify_positive_screening_quality_win_and_regression() -> None:
     assert bad["positive"] is False
     assert any("null_or_worse" in r for r in bad["reasons"])
 
+    illegal = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.9,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 0.0,
+        },
+    )
+    assert illegal["positive"] is False
+    assert any(r.startswith("invalid_grammar:") for r in illegal["reasons"])
+
 
 def test_classify_positive_capacity_growth_without_eg_params() -> None:
     policy = load_climb_policy()

@@ -17,6 +17,9 @@ from slm_training.autoresearch.hillclimb import (
     ExhaustedKnobLedger,
     HILLCLIMB_STAGNATION_CADENCE,
     HillClimbError,
+    PARSE_RATE_PERFECT,
+    invalid_grammar_reasons,
+    parse_rate_illegal,
     assert_capacity_growth_allowed,
     assert_climb_label_allowed,
     assert_matrix_knobs_not_exhausted,
@@ -796,6 +799,17 @@ def test_evaluate_promotion_passes_eg_params_to_governance(tmp_path: Path) -> No
     gov = out["checks"]["campaign_governance"]
     assert gov["pass"] is False
     assert any("eg_params" in f for f in gov["failures"])
+
+
+def test_parse_rate_below_perfect_is_illegal() -> None:
+    assert PARSE_RATE_PERFECT == 1.0
+    assert parse_rate_illegal(0.0) is True
+    assert parse_rate_illegal(0.999) is True
+    assert parse_rate_illegal(1.0) is False
+    assert parse_rate_illegal(None) is False
+    reasons = invalid_grammar_reasons({"parse_rate": 0.0}, arm="candidate")
+    assert reasons and reasons[0].startswith("invalid_grammar:candidate")
+    assert invalid_grammar_reasons({"parse_rate": 1.0}, arm="candidate") == []
 
 
 def test_hillclimb_iteration_report_names_no_effect_and_deltas() -> None:

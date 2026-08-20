@@ -208,6 +208,14 @@ Fail-closed points:
 An empty legal domain is a constrained dead end, never a full-vocabulary
 fallback.
 
+**Parse rate on completed documents is perfect or the decode is invalid.**
+`parse_rate < 1` on any completed suite is not a quality tradeoff — it is an
+I6 failure. Autotrain (`PARSE_RATE_PERFECT` in `hillclimb.py`) rejects the
+arm, will not enqueue a confirm, and will not treat that hypothesis as a
+climb step. That floor is not a lever and must not be lowered. Unmeasured
+parse (timeout / incomplete) stays incomplete, never a fabricated 0 that
+greens a hill.
+
 **A certified substitute is not a successful decode.** ONNX satisfies I6 by
 returning a certified deterministic program when its own decode cannot be
 certified. That program parses, so a caller that only checks "does it parse"

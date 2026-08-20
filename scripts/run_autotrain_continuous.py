@@ -7550,6 +7550,7 @@ def _confirm_candidate_blocked(reasons: list[str]) -> bool:
         "empty_metrics:",
         "harness_failure:",
         "primary_quality_win_rejected",
+        "invalid_grammar:",
     )
     return any(reason.startswith(blocked_prefixes) for reason in reasons)
 
@@ -7578,6 +7579,22 @@ def _is_confirm_candidate_win(delivery: dict[str, Any]) -> bool:
     if any(r.startswith("mechanism_no_effect:") for r in reasons):
         return False
     if _confirm_candidate_blocked(reasons):
+        return False
+    if any(r.startswith("invalid_grammar:") for r in reasons):
+        return False
+    from slm_training.autoresearch.hillclimb import invalid_grammar_reasons
+
+    if invalid_grammar_reasons(
+        delivery.get("candidate_metrics")
+        if isinstance(delivery.get("candidate_metrics"), dict)
+        else {},
+        arm="candidate",
+    ) or invalid_grammar_reasons(
+        delivery.get("control_metrics")
+        if isinstance(delivery.get("control_metrics"), dict)
+        else {},
+        arm="control",
+    ):
         return False
     if not _has_primary_metric_win(delivery, reasons):
         return False
@@ -9416,7 +9433,16 @@ def _classify_metric_tradeoff(
     c_mpr = _finite_metric(control.get("meaningful_program_rate"))
     t_mpr = _finite_metric(candidate.get("meaningful_program_rate"))
 
-    parse_held = t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
+    from slm_training.autoresearch.hillclimb import invalid_grammar_reasons
+
+    grammar_fail = invalid_grammar_reasons(control, arm="control") + invalid_grammar_reasons(
+        candidate, arm="candidate"
+    )
+    reasons.extend(grammar_fail)
+    parse_perfect = not grammar_fail
+    parse_held = parse_perfect and (
+        t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
+    )
     mpr_held = t_mpr is None or c_mpr is None or t_mpr + _EPS >= c_mpr
     mpr_improved = t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
     lat_improved = t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
@@ -9527,6 +9553,8 @@ def _classify_metric_tradeoff(
                 f"{minimum_efficiency_gain_fraction:.8g}"
             )
 
+    if grammar_fail:
+        positive = False
     return positive, reasons
 
 
@@ -9842,7 +9870,12 @@ def _classify_positive(
             reasons.append("no_positive_signal")
     if any(
         str(reason).startswith(
-            ("measurement_incomplete:", "wall_timeout:", "empty_metrics:")
+            (
+                "measurement_incomplete:",
+                "wall_timeout:",
+                "empty_metrics:",
+                "invalid_grammar:",
+            )
         )
         for reason in reasons
     ):

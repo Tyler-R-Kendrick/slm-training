@@ -25,6 +25,7 @@ from slm_training.autoresearch.hillclimb import (
     data_generation_sha256,
     improvement_signed,
     infer_metric_direction,
+    invalid_grammar_reasons,
     is_measured_null_feedback,
     knob_signature_sha256,
 )
@@ -811,6 +812,12 @@ def promotion_primary_effect_met(
     raw = t_val - c_val
     improvement = float(improvement_signed(raw, direction))  # type: ignore[arg-type]
 
+    grammar_fail = invalid_grammar_reasons(control, arm="control") + invalid_grammar_reasons(
+        candidate, arm="candidate"
+    )
+    if grammar_fail:
+        reasons.extend(grammar_fail)
+        return False, reasons, improvement
     if require_parse_non_regression:
         c_pr = _metric_from_map(control, "parse_rate")
         t_pr = _metric_from_map(candidate, "parse_rate")
@@ -854,6 +861,9 @@ def classify_positive_metrics(
     minimum_effect = float(primary.get("minimum_effect") or 0.0)
     reasons: list[str] = []
     positive = False
+    reasons.extend(invalid_grammar_reasons(control_metrics, arm="control"))
+    reasons.extend(invalid_grammar_reasons(candidate_metrics, arm="candidate"))
+    grammar_illegal = any(r.startswith("invalid_grammar:") for r in reasons)
 
     c_val = _metric_from_map(control_metrics, metric)
     t_val = _metric_from_map(candidate_metrics, metric)
@@ -900,7 +910,7 @@ def classify_positive_metrics(
                 f"control_completed={c_completed}/{c_n}:"
                 f"candidate_completed={t_completed}/{t_n}"
             )
-        elif improvement > minimum_effect and non_reg_ok:
+        elif improvement > minimum_effect and non_reg_ok and not grammar_illegal:
             positive = True
             reasons.append(
                 f"primary_metric_win:{metric}:{c_val}->{t_val}"
@@ -913,7 +923,11 @@ def classify_positive_metrics(
             )
 
     pos_cfg = policy.positive_classification
-    if executable_unblock and pos_cfg.get("allow_executable_unblock", True):
+    if (
+        executable_unblock
+        and pos_cfg.get("allow_executable_unblock", True)
+        and not grammar_illegal
+    ):
         positive = True
         reasons.append("executable_unblock:candidate_completed_after_control_error")
 
@@ -944,6 +958,9 @@ def classify_positive_metrics(
             except HillClimbError as exc:
                 positive = False
                 reasons.append(f"eg_params_block:{exc}")
+
+    if grammar_illegal:
+        positive = False
 
     if not any(
         r.startswith("primary_metric_win") or r.startswith("executable_unblock")

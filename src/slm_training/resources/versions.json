@@ -930,6 +930,11 @@
     "decode.invariants": {
       "history": [
         {
+          "date": "2026-08-20",
+          "note": "I6: completed-document parse_rate is perfect (1.0) or the decode is invalid; autotrain PARSE_RATE_PERFECT is not a lever.",
+          "version": "v9"
+        },
+        {
           "date": "2026-07-30",
           "note": "I3 rebranded to forest-verified speculative completion (not LAVE-as-primary); cross-link ADR constrained-diffusion topology split",
           "version": "v8"
@@ -981,7 +986,7 @@
         "scripts/verify_decode_invariants.py",
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
-      "version": "v8"
+      "version": "v9"
     },
     "dsl.abstract_plan": {
       "history": [
@@ -5003,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "I6 hard floor: measured parse_rate < 1 is invalid_grammar; autotrain rejects the arm and will not confirm or climb it. PARSE_RATE_PERFECT is not a lever.",
+          "version": "v254"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Bake per-cycle hillclimb well/wrong/speculate+deltas into Phase A closeout jsonl and docs; after 10 no-progress cycles review viable speculations and skip spent OFAT slugs (never weaken ship gates).",
           "version": "v253"
         },
@@ -6800,7 +6810,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v253"
+      "version": "v254"
     },
     "harness.autoresearch.formal": {
       "history": [

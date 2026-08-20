@@ -51,6 +51,9 @@ __all__ = [
     "improvement_signed",
     "record_null_from_knob_signature_json",
     "HillClimbError",
+    "PARSE_RATE_PERFECT",
+    "invalid_grammar_reasons",
+    "parse_rate_illegal",
     "HILLCLIMB_STAGNATION_CADENCE",
     "hillclimb_iteration_report",
     "assess_hillclimb_speculation",
@@ -64,6 +67,35 @@ NON_CLIMB_CLAIM_CLASSES: frozenset[str] = frozenset(
     {"wiring", "fixture", "diagnostic", "screening"}
 )
 MIN_CLIMB_SEEDS = 2
+# I6: completed documents must parse. Not a lever; never < 1 in autotrain.
+PARSE_RATE_PERFECT = 1.0
+
+
+def parse_rate_illegal(value: Any) -> bool:
+    """True when a measured parse_rate is below perfect (unmeasured is not illegal)."""
+    if value is None:
+        return False
+    try:
+        return float(value) + 1e-12 < PARSE_RATE_PERFECT
+    except (TypeError, ValueError):
+        return True
+
+
+def invalid_grammar_reasons(
+    metrics: Mapping[str, Any] | None, *, arm: str
+) -> list[str]:
+    """I6: any measured parse_rate < 1 on completed docs is invalid grammar."""
+    if not isinstance(metrics, Mapping):
+        return []
+    reasons: list[str] = []
+    for key, raw in metrics.items():
+        if str(key).split(".")[-1] != "parse_rate":
+            continue
+        if parse_rate_illegal(raw):
+            reasons.append(
+                f"invalid_grammar:{arm}:{key}={raw}<{PARSE_RATE_PERFECT:g}"
+            )
+    return reasons
 
 _SYNTHESIS_ACTION_NAMES = (
     "synthesis_feedback_actions.json",
@@ -948,6 +980,7 @@ _UNVIABLE_SPECULATION_IDS = frozenset(
         "screen_below_lean_floor",
         "allow_unconstrained_fallback",
         "grow_capacity_to_green_gate",
+        "allow_parse_rate_below_perfect",
     }
 )
 
@@ -1004,6 +1037,10 @@ def hillclimb_iteration_report(
             speculate.append("execute_i10_heal_then_process_arm_not_rematch")
     if "weaken" in joined.lower() and "gate" in joined.lower():
         speculate.append("weaken_ship_gates")
+    if any(str(r).startswith("invalid_grammar:") for r in reasons):
+        wrong.append("invalid_grammar")
+        speculate.append("reject_illegal_completions")
+        speculate.append("allow_parse_rate_below_perfect")
     # Dedupe while preserving order.
     def _uniq(items: list[str]) -> list[str]:
         seen: set[str] = set()
