@@ -7079,9 +7079,27 @@ def _select_recommended_slug(
     candidates (boost interesting residuals; still never reopen skipped arms).
     """
     skip = skip or set()
+    pred = (
+        _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
+    )
     for slug, _, extras in _all_screening_arm_bank():
-        if slug not in skip and _is_process_arm(extras):
+        if not _is_process_arm(extras):
+            continue
+        if slug not in skip:
             print(f"HEAL_RESUME_SELECT cycle={cycle} slug={slug}", flush=True)
+            return slug
+        if (
+            root is not None
+            and loop_id
+            and _selectable_process_arm(
+                root, loop_id, predecessor_campaign_id=pred
+            )
+        ):
+            print(
+                f"HEAL_RESUME_SELECT cycle={cycle} slug={slug} "
+                "reason=unused_train_version",
+                flush=True,
+            )
             return slug
     # Evidence-triggered and successor quality arms do not perturb the stable
     # cycle-number rotation of the original screening bank. They become the

@@ -7234,6 +7234,10 @@ def test_thrash_bank_exhaust_does_not_park_selectable_heal(
         skip=closed,
         predecessor_campaign_id="cycle-509",
     )
+    assert (
+        _mod._select_recommended_slug(512, skip=closed, root=root, loop_id=loop)
+        == _mod._HEAL_RESUME_SLUG
+    )
 
 
 def _write_heal_snapshot(cwd: Path, version: str) -> Path:

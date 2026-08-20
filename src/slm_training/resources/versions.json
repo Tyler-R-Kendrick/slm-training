@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Select the I10 process arm when its slug is skip-closed but the train_version is still unused.",
+          "version": "v261"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Thrash bank exhaust must not park on snapshot leftovers while a process arm is still selectable.",
           "version": "v260"
         },
@@ -6840,7 +6845,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v260"
+      "version": "v261"
     },
     "harness.autoresearch.formal": {
       "history": [
