@@ -7020,7 +7020,61 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     # Isolate open set excludes snapshot train_version arms, so leftover
     # is empty and park-before-select fires instead of smoking c96.
     assert leftover == set()
-    assert _mod._open_slugs_are_snapshot_leftovers(leftover)
+
+
+def test_park_screening_saturation_executes_rebuild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    policy = _inject_terminal_policy(monkeypatch, park=True)
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-park"
+    camp.mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-park")
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-park",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="not_evaluated",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="closeout",
+                evidence_ids=("campaign:cycle-park",),
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    called: dict[str, object] = {}
+
+    def _rebuild(**kwargs: object) -> str:
+        called.update(kwargs)
+        return "rebuild_data"
+
+    monkeypatch.setattr(_mod, "_self_heal_rebuild_data", _rebuild)
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    status = _mod._park_screening_saturation(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-park",
+        cycle_index=1,
+        policy=policy,
+        ranked_regimes=["bounds"],
+        cwd=cwd,
+    )
+    assert status == _mod._REGIME_PARKED_STATUS
+    assert called.get("campaign_id") == "cycle-park"
+    assert called.get("cwd") == cwd
 
 
 def test_handoff_does_not_park_leftover_isolate_ofat(

@@ -81,7 +81,8 @@ persistence is the host goal and the append-only campaign event chains.
      multi-seed close still wins. Interesting ≠ promotable; mine offline via
      `python -m scripts.mine_continuous_residuals --write-ledger`.
    - **Local-CPU `rebuild_data`** (I10 / bank-exhaust park) → driver runs a
-     wall-capped `build_train_data` (`SELF_HEAL_REBUILD_DATA`), requires
+     wall-capped `build_train_data` (`SELF_HEAL_REBUILD_DATA` /
+     `SELF_HEAL_REBUILD_DATA_ON_PARK` when park writes the action), requires
      `quality_report.json` + `synthesis_feedback.json` + `data_manifest.json`,
      acks the action, and registers an I10 `_heal_resume` arm so park
      resumes. Never fake those artifacts. Paid GPU / HF write is still

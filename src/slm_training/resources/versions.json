@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Park executes pending local rebuild_data in-process (SELF_HEAL_REBUILD_DATA_ON_PARK) so bank-exhaust is not a report-only sleep.",
+          "version": "v255"
+        },
+        {
+          "date": "2026-08-20",
           "note": "I6 hard floor: measured parse_rate < 1 is invalid_grammar; autotrain rejects the arm and will not confirm or climb it. PARSE_RATE_PERFECT is not a lever.",
           "version": "v254"
         },
@@ -6810,7 +6815,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v254"
+      "version": "v255"
     },
     "harness.autoresearch.formal": {
       "history": [

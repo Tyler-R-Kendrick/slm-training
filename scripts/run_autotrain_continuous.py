@@ -1731,6 +1731,7 @@ def _park_screening_saturation(
     cycle_index: int,
     policy: Any,
     ranked_regimes: Sequence[str],
+    cwd: Path | None = None,
 ) -> str:
     """Persist the typed terminal verdict once bounded residual recovery closes."""
 
@@ -1796,6 +1797,23 @@ def _park_screening_saturation(
         "constraint=screening_objective_saturated",
         flush=True,
     )
+    # Park is not a report-only stop: execute the just-queued local rebuild
+    # in this process so the next cycle has a process arm instead of sleeping.
+    if cwd is not None:
+        try:
+            kind = _self_heal_rebuild_data(
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                campaign_id=campaign_id,
+            )
+            if kind:
+                print(
+                    f"SELF_HEAL_REBUILD_DATA_ON_PARK campaign={campaign_id} kind={kind}",
+                    flush=True,
+                )
+        except Exception as exc:  # noqa: BLE001 — park already persisted
+            print(f"SELF_HEAL_REBUILD_DATA_ON_PARK_WARN err={exc!r}", flush=True)
     return _REGIME_PARKED_STATUS
 
 
@@ -4109,6 +4127,11 @@ def _self_heal_rebuild_data(
         if action.kind == "rebuild_data"
     ]
     if not pending:
+        print(
+            f"SELF_HEAL_REBUILD_DATA_SKIP campaign={campaign_id} "
+            "reason=no_pending_rebuild_data",
+            flush=True,
+        )
         return None
     if any("screening suite" in action.reason for _i, action in pending):
         return _self_heal_rebuild_screening_eval(
@@ -13916,6 +13939,7 @@ def run_cycle(
                     cycle_index=idx,
                     policy=policy,
                     ranked_regimes=saturation_state["ranked_regimes"],
+                    cwd=cwd,
                 )
             selected = pending[0]
             skip_slugs = (
@@ -13991,6 +14015,7 @@ def run_cycle(
                 cycle_index=idx,
                 policy=policy,
                 ranked_regimes=sorted(recent_exhausted | leftover),
+                cwd=cwd,
             )
         try:
             _select_recommended_slug(cycle, skip=skip_slugs, root=root, loop_id=loop_id)
@@ -14029,6 +14054,7 @@ def run_cycle(
                         cycle_index=idx,
                         policy=policy,
                         ranked_regimes=sorted(recent_exhausted),
+                        cwd=cwd,
                     )
                 except RuntimeError:
                     raise RuntimeError(_BANK_EXHAUST_MSG) from exc
