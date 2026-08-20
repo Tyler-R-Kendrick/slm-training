@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -49,6 +50,7 @@ __all__ = [
     "stage_wall_minutes_for_role",
     "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
+    "screening_smoke_n_for_policy",
     "eval_suites_for_role",
     "classify_positive_metrics",
     "promotion_primary_effect_met",
@@ -384,6 +386,79 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
     if value <= 0:
         raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")
     return value
+
+
+def screening_smoke_n_for_policy(
+    policy: ClimbPolicy,
+    *,
+    arm_wall_seconds: float | None = None,
+    per_record_decode_floor_seconds: float | None = None,
+    suite_records: int | None = None,
+) -> tuple[int, Mapping[str, Any] | None]:
+    """Resolve the screening smoke n; ``auto`` mode computes the certified range.
+
+    Returns ``(n, report)``. In the default ``fixed`` mode (or on any
+    computation failure) this fails closed to the configured
+    ``measurement.screening_smoke_n`` fallback with ``report=None``. In
+    ``auto`` mode the per-cycle ``screening_sample_size/v1`` report decides:
+    ``feasible`` climbs at the certified ``chosen_n`` (the smallest n clearing
+    the exact sign-test decidability floor that also fits the arm-wall budget
+    and suite-volume ceilings); ``infeasible_range_empty`` /
+    ``insufficient_evidence`` keep the fallback n and the report records the
+    typed binding constraints instead of a silent fixture screen.
+    """
+
+    measurement = getattr(policy, "measurement", None) or {}
+    if not isinstance(measurement, Mapping):
+        measurement = {}
+    configured = max(1, int(measurement.get("screening_smoke_n") or 3))
+    if str(measurement.get("screening_smoke_n_mode") or "fixed") != "auto":
+        return configured, None
+    try:
+        from slm_training.autoresearch import evidence_ledger as _ev
+        from slm_training.autoresearch.screening_sample_size import (
+            ScreeningSampleSizeObservation,
+            compute_screening_sample_size,
+        )
+
+        block = measurement.get("screening_sample_size")
+        block = dict(block) if isinstance(block, Mapping) else {}
+        gate = (getattr(policy, "payload", None) or {}).get("power_gate")
+        alpha = _ev.parse_alpha(gate.get("alpha") if isinstance(gate, Mapping) else None)
+        thrash = measurement.get("thrash_timing")
+        thrash = dict(thrash) if isinstance(thrash, Mapping) else {}
+        decode_floor = per_record_decode_floor_seconds
+        if decode_floor is None:
+            decode_floor = block.get("default_decode_floor_seconds")
+        if arm_wall_seconds is None or suite_records is None:
+            # Budget ceiling is undecidable without the arm wall, and the
+            # suite-volume ceiling without the resolved suite: report the
+            # exact floor only (insufficient_evidence), never a fake empty
+            # range from zeroed inputs.
+            decode_floor = None
+        report = compute_screening_sample_size(
+            ScreeningSampleSizeObservation(
+                alpha=str(alpha),
+                max_candidate_n=max(1, int(block.get("max_candidate_n") or 64)),
+                suite_records=max(0, int(suite_records or 0)),
+                arm_wall_seconds=max(0, math.ceil(float(arm_wall_seconds or 0))),
+                min_train_floor_seconds=max(
+                    0, math.ceil(float(thrash.get("min_train_floor_seconds") or 20.0))
+                ),
+                suite_overhead_seconds=max(
+                    0, math.ceil(float(thrash.get("eval_overhead_seconds") or 8.0))
+                ),
+                per_record_decode_floor_seconds=(
+                    max(1, math.ceil(float(decode_floor))) if decode_floor else None
+                ),
+            )
+        )
+    except Exception:  # noqa: BLE001 — resolution failure never breaks the loop
+        return configured, None
+    payload = report.model_dump(mode="json")
+    if report.verdict == "feasible" and report.chosen_n is not None:
+        return max(1, int(report.chosen_n)), payload
+    return configured, payload
 
 
 def eval_suites_for_role(policy: ClimbPolicy, role: str) -> tuple[str, ...]:

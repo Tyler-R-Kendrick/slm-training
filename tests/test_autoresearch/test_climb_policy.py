@@ -22,6 +22,7 @@ from slm_training.autoresearch.climb_policy import (
     primary_for_role,
     promotion_primary_effect_met,
     save_loop_exhausted_ledger,
+    screening_smoke_n_for_policy,
 )
 from slm_training.autoresearch.hillclimb import (
     ExhaustedKnobLedger,
@@ -782,3 +783,68 @@ def test_classify_positive_rejects_partial_suite_completion() -> None:
     )
     assert full["positive"] is True
     assert any(r.startswith("primary_metric_win") for r in full["reasons"])
+
+
+class _StubPolicy:
+    def __init__(self, measurement: dict, payload: dict | None = None) -> None:
+        self._measurement = measurement
+        self.payload = payload or {}
+
+    @property
+    def measurement(self) -> dict:
+        return dict(self._measurement)
+
+
+def test_screening_smoke_n_fixed_mode_returns_configured_without_report() -> None:
+    policy = _StubPolicy({"screening_smoke_n": 5})
+    n, report = screening_smoke_n_for_policy(policy)
+    assert n == 5
+    assert report is None
+
+
+def test_screening_smoke_n_auto_mode_feasible_climbs_at_floor() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+            },
+        },
+        payload={"power_gate": {"enabled": True, "alpha": "1/20"}},
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=70.0, suite_records=24
+    )
+    assert n == 6  # exact sign-test floor at alpha=1/20, smallest sufficient
+    assert report is not None
+    assert report["verdict"] == "feasible"
+    assert report["promotion_authority"] is False
+
+
+def test_screening_smoke_n_auto_mode_infeasible_fails_closed_to_fallback() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {"default_decode_floor_seconds": 2},
+        }
+    )
+    # The committed 3-record smoke suite: range is empty, suite volume binds.
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=70.0, suite_records=3
+    )
+    assert n == 3
+    assert report is not None
+    assert report["verdict"] == "infeasible_range_empty"
+    assert "suite_volume" in report["binding_constraints"]
+
+
+def test_screening_smoke_n_live_policy_is_auto_with_fallback() -> None:
+    policy = load_climb_policy()
+    assert policy.measurement.get("screening_smoke_n_mode") == "auto"
+    n, report = screening_smoke_n_for_policy(policy)
+    assert n == int(policy.measurement["screening_smoke_n"])
+    assert report is not None
+    assert report["verdict"] == "insufficient_evidence"

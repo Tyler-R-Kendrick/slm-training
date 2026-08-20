@@ -255,6 +255,21 @@ Policy v7 adds two optional blocks (see
   Current values (2 seeds × 3 docs, alpha 1/20) already satisfy it; the
   gate guards that consistency against future drift and never lowers
   `min_complete_null_seeds`.
+- **`screening_sample_size`** (policy v10/v12) — `screening_smoke_n_mode:
+  "auto"` resolves the screening n per cycle from the certified range
+  (`screening_sample_size/v1`): exact sign-test decidability floor at
+  `power_gate.alpha`, arm-wall budget ceiling, and smoke-suite volume
+  ceiling, computed by `climb_policy.screening_smoke_n_for_policy` and
+  recorded in the cycle's `thrash_timing.json` decode-fit meta.
+  `screening_smoke_n` is the fail-closed fallback only; an infeasible range
+  keeps the fallback and records the typed binding constraint. See
+  [`screening-sample-size-bounds.md`](screening-sample-size-bounds.md).
+- **`latency_probe`** (policy v10/v12) — per-arm latency pre-check: a
+  `probe_records`-record eval runs before the full screening eval under a
+  `-latprobe` run id; an over-budget projection (`probe_wall × planned_n` vs
+  the remaining eval wall) or a probe timeout skips the full eval as a typed
+  `latency_preflight` measurement-incomplete, never a model verdict. Probe
+  metrics never merge into arm metrics.
 
 A bank-exhausted handoff now also carries a typed
 `terminal_verdict` (`regime_exhausted_verdict/v1`) naming the binding

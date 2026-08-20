@@ -9170,6 +9170,25 @@ def test_fit_screening_decode_fits_arm_wall() -> None:
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
 
+def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
+    """Auto policy mode embeds the screening_sample_size/v1 verdict in meta."""
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
+    report = meta["screening_sample_size"]
+    assert report is not None
+    assert report["schema_version"] == "screening_sample_size/v1"
+    assert report["decidability_floor_n"] == 6  # exact sign-test floor, alpha=1/20
+    # Committed 3-record smoke suite: the certified range is empty and the
+    # smoke n fails closed to the configured fallback.
+    assert report["suite_ceiling_n"] == 3
+    assert report["verdict"] == "infeasible_range_empty"
+    assert "suite_volume" in report["binding_constraints"]
+    assert int(meta["smoke_n"]) == 3
+    assert report["promotion_authority"] is False
+
+
 def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-timing-c1",
@@ -10798,3 +10817,62 @@ def test_auto_no_bump_version_registry_noop_without_owning_component(
         campaign_id="continuous-loop-20260808-c1",
     )
     assert result is None
+
+
+def test_screening_matrix_sets_latency_probe_knobs() -> None:
+    """Policy latency_probe block compiles per-arm probe knobs (screening)."""
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-latprobe-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=4,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    knobs = matrix["hypotheses"][0]["experiment"]["knobs"]
+    assert knobs["latency_probe_records"] == 1
+    assert knobs["latency_probe_planned_n"] >= 1
+
+
+def test_classify_positive_types_latency_preflight_missing_scoreboard(
+    tmp_path: Path,
+) -> None:
+    """A probe-skipped eval reads as its typed cause, not a bare missing file."""
+    camp = tmp_path / "camp"
+    (camp / "artifacts" / "outcomes").mkdir(parents=True)
+    (camp / "runs").mkdir()
+    outcome = {
+        "experiment_id": "c-candidate",
+        "status": "completed",
+        "metrics": {},
+        "stage_telemetry": [
+            {
+                "command": ["python", "-m", "scripts.evaluate_model"],
+                "skipped": True,
+                "latency_preflight": {
+                    "schema": "latency_preflight/v1",
+                    "verdict": "latency_preflight_infeasible",
+                },
+            }
+        ],
+    }
+    (camp / "artifacts" / "outcomes" / "o1.json").write_text(json.dumps(outcome))
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert (
+        "measurement_incomplete:c-candidate:latency_preflight_infeasible"
+        in result["reasons"]
+    )
+    # Still a harness-incomplete reason: never a model reject.
+    assert _mod._reason_is_harness_incomplete(
+        "measurement_incomplete:c-candidate:latency_preflight_infeasible"
+    )

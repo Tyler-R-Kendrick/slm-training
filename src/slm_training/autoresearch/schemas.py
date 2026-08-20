@@ -728,6 +728,13 @@ class ExperimentKnobs(StrictModel):
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
         pattern=r"^[A-Za-z0-9_,]+$",
     )
+    # Latency pre-check probe: a small eval (probe_records) runs before the
+    # full eval; the full eval is skipped with a typed latency_preflight
+    # verdict when the probe times out at the fitted per-record decode budget
+    # or projects past the remaining eval wall (probe_wall x planned_n). The
+    # probe is a screening aid — never a gate and never a model verdict.
+    latency_probe_records: int | None = Field(default=None, ge=1, le=8)
+    latency_probe_planned_n: int | None = Field(default=None, ge=1)
     action_embedding_init: (
         Literal[
             "none",

@@ -5316,3 +5316,244 @@ def test_hypothesize_after_block_experiment_does_not_raise(tmp_path: Path) -> No
         )
         == 0
     )
+
+
+def test_compile_commands_inserts_latency_probe_stage() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            steps=2, latency_probe_records=1, latency_probe_planned_n=3
+        )
+    )
+    commands = compile_commands(campaign(), spec)
+    evals = [c for c in commands if "scripts.evaluate_model" in c]
+    assert len(evals) == 2
+    probe, full = evals
+    # Probe runs immediately before the full eval, cloned apart from the
+    # distinct run id and the record limit.
+    assert commands.index(probe) == commands.index(full) - 1
+    assert probe[probe.index("--run-id") + 1].endswith("-latprobe")
+    assert probe[probe.index("--eval-limit") + 1] == "1"
+
+    def _flags(cmd: list[str]) -> list[str]:
+        out = list(cmd)
+        i = out.index("--run-id")
+        del out[i : i + 2]
+        if "--eval-limit" in out:
+            j = out.index("--eval-limit")
+            del out[j : j + 2]
+        return out
+
+    assert _flags(probe) == _flags(full)
+    # Default: no probe stage.
+    plain = compile_commands(campaign(), experiment())
+    assert (
+        len([c for c in plain if "scripts.evaluate_model" in c]) == 1
+    )
+
+
+def _probe_eval_commands(tmp_path: Path) -> tuple[list[str], list[str]]:
+    probe = [
+        "python",
+        "-m",
+        "scripts.evaluate_model",
+        "--run-root",
+        str(tmp_path / "runs"),
+        "--run-id",
+        "exp-latprobe",
+        "--eval-limit",
+        "1",
+    ]
+    full = [
+        "python",
+        "-m",
+        "scripts.evaluate_model",
+        "--run-root",
+        str(tmp_path / "runs"),
+        "--run-id",
+        "exp",
+    ]
+    return probe, full
+
+
+def test_execute_latency_probe_skips_full_eval_over_budget(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+    from slm_training.autoresearch.schemas import ExperimentKnobs
+
+    calls: list[list[str]] = []
+
+    def fake_runner(command, **_kwargs):
+        calls.append(list(command))
+
+        def _result(duration: float) -> BoundedProcessResult:
+            return BoundedProcessResult(
+                command=tuple(command),
+                outcome=ProcessOutcome.COMPLETED,
+                returncode=0,
+                stdout="",
+                stderr="",
+                duration_seconds=duration,
+            )
+
+        if "scripts.evaluate_model" in command:
+            # Probe reports 100s wall for one record; planned n=3 projects
+            # 300s, far past the remaining eval wall.
+            return _result(100.0)
+        return _result(1.0)
+
+    monkeypatch.setattr(engine, "run_bounded_process", fake_runner)
+    probe, full = _probe_eval_commands(tmp_path)
+    spec = experiment(
+        knobs=ExperimentKnobs(steps=2, latency_probe_planned_n=3)
+    )
+    outcome = execute_commands(
+        spec, [probe, full], cwd=tmp_path, timeout_seconds=60.0
+    )
+    assert calls == [probe]  # full eval never ran
+    assert outcome.status == "completed"
+    probe_stage, skipped_stage = outcome.stage_telemetry
+    assert probe_stage["latency_probe"] is True
+    assert probe_stage["latency_preflight"]["verdict"] == (
+        "latency_preflight_infeasible"
+    )
+    assert probe_stage["latency_preflight"]["projected_seconds"] == 300.0
+    assert skipped_stage["skipped"] is True
+    assert skipped_stage["measurement_complete"] is False
+    # Probe metrics never merge into arm metrics.
+    assert outcome.metrics == {}
+
+
+def test_execute_latency_probe_feasible_runs_full_eval(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+    from slm_training.autoresearch.schemas import ExperimentKnobs
+
+    def fake_runner(command, **_kwargs):
+        run_id = command[command.index("--run-id") + 1]
+        root = Path(command[command.index("--run-root") + 1])
+        (root / run_id).mkdir(parents=True, exist_ok=True)
+        (root / run_id / "scoreboard.json").write_text(
+            json.dumps({"metrics": {"latency_ms_p50": 5.0}})
+        )
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout="",
+            stderr="",
+            duration_seconds=1.0,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", fake_runner)
+    probe, full = _probe_eval_commands(tmp_path)
+    spec = experiment(
+        knobs=ExperimentKnobs(steps=2, latency_probe_planned_n=3)
+    )
+    outcome = execute_commands(
+        spec, [probe, full], cwd=tmp_path, timeout_seconds=300.0
+    )
+    assert outcome.status == "completed"
+    probe_stage = outcome.stage_telemetry[0]
+    assert probe_stage["latency_preflight"]["verdict"] == (
+        "latency_preflight_feasible"
+    )
+    assert not any(
+        stage.get("skipped") for stage in outcome.stage_telemetry
+    )
+    # Full-eval metrics merged; probe metrics excluded.
+    assert outcome.metrics
+    assert all(
+        not key.startswith("metrics.latency") or key == "metrics.latency_ms_p50"
+        for key in outcome.metrics
+    )
+
+
+def test_execute_latency_probe_failure_fails_open(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+    from slm_training.autoresearch.schemas import ExperimentKnobs
+
+    calls: list[list[str]] = []
+
+    def fake_runner(command, **_kwargs):
+        calls.append(list(command))
+        is_probe = str(command[command.index("--run-id") + 1]).endswith(
+            "-latprobe"
+        )
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=1 if is_probe else 0,
+            stdout="",
+            stderr="probe exploded" if is_probe else "",
+            duration_seconds=1.0,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", fake_runner)
+    probe, full = _probe_eval_commands(tmp_path)
+    spec = experiment(
+        knobs=ExperimentKnobs(steps=2, latency_probe_planned_n=3)
+    )
+    outcome = execute_commands(
+        spec, [probe, full], cwd=tmp_path, timeout_seconds=300.0
+    )
+    # Pre-check failure never blocks the full measurement.
+    assert calls == [probe, full]
+    assert outcome.status == "completed"
+    assert outcome.stage_telemetry[0]["latency_preflight"]["verdict"] == (
+        "latency_preflight_probe_failed"
+    )
+
+
+def test_execute_latency_probe_timeout_stops_before_full_eval(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+    from slm_training.autoresearch.schemas import ExperimentKnobs
+
+    calls: list[list[str]] = []
+
+    def fake_runner(command, **_kwargs):
+        calls.append(list(command))
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.INTERRUPTED,
+            returncode=130,
+            stdout="",
+            stderr="interrupted",
+            duration_seconds=12.0,
+            timed_out=True,
+            interrupted=True,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", fake_runner)
+    probe, full = _probe_eval_commands(tmp_path)
+    spec = experiment(
+        knobs=ExperimentKnobs(steps=2, latency_probe_planned_n=3)
+    )
+    outcome = execute_commands(
+        spec, [probe, full], cwd=tmp_path, timeout_seconds=300.0
+    )
+    # Probe timeout stops the arm at one record: the full eval never starts.
+    assert calls == [probe]
+    assert outcome.status == "stopped"
+    assert outcome.stage_telemetry[0]["latency_probe"] is True

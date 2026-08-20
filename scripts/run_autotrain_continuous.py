@@ -290,12 +290,36 @@ def _arm_wall_seconds(*, policy_minutes: float, formal_required: bool) -> float:
     )
 
 
+def _screening_suite_records() -> int | None:
+    """Record count of the resolved smoke screening suite (volume ceiling)."""
+
+    try:
+        from slm_training.autoresearch.engine import default_eval_version
+        from slm_training.data.store import DataStore
+
+        records = (
+            DataStore().resolve_path("eval", default_eval_version())
+            / "suites"
+            / "smoke"
+            / "records.jsonl"
+        )
+        if records.is_file():
+            return sum(
+                1
+                for line in records.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+    except Exception:  # noqa: BLE001 — telemetry input only, never fatal
+        return None
+    return None
+
+
 def _fit_screening_decode_timeout_seconds(
     policy: Any,
     *,
     arm_wall_seconds: float | None = None,
     formal_required: bool = False,
-) -> tuple[float, dict[str, float]]:
+) -> tuple[float, dict[str, Any]]:
     """Clamp screening decode so n×decode + train floor fits the arm wall.
 
     Timeouts are optima: if this clamp always binds, either the arm share model
@@ -303,6 +327,7 @@ def _fit_screening_decode_timeout_seconds(
     """
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
+        screening_smoke_n_for_policy,
         stage_wall_minutes_for_role,
     )
 
@@ -312,15 +337,19 @@ def _fit_screening_decode_timeout_seconds(
     thrash = measurement.get("thrash_timing") or {}
     if not isinstance(thrash, dict):
         thrash = {}
-    smoke_n = max(1, int(measurement.get("screening_smoke_n") or 3))
-    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
-    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
     configured = float(decode_timeout_seconds_for_role(policy, "screening"))
     if arm_wall_seconds is None:
         arm_wall_seconds = _arm_wall_seconds(
             policy_minutes=float(stage_wall_minutes_for_role(policy, "screening")),
             formal_required=formal_required,
         )
+    smoke_n, sample_size_report = screening_smoke_n_for_policy(
+        policy,
+        arm_wall_seconds=arm_wall_seconds,
+        suite_records=_screening_suite_records(),
+    )
+    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
+    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
     # Max per-record decode that still leaves train floor + overhead.
     usable = float(arm_wall_seconds) - min_train - overhead
     max_decode = max(1.0, usable / float(smoke_n))
@@ -334,6 +363,11 @@ def _fit_screening_decode_timeout_seconds(
         "eval_overhead_seconds": overhead,
         "eval_budget_seconds": float(fitted) * float(smoke_n),
         "clamp_bound": 1.0 if fitted + 1e-9 < configured else 0.0,
+        # Certified screening-n range (screening_sample_size/v1) when the
+        # policy runs screening_smoke_n_mode=auto; None in fixed mode.
+        "screening_sample_size": (
+            dict(sample_size_report) if sample_size_report else None
+        ),
     }
     return float(fitted), meta
 
@@ -361,7 +395,7 @@ def _write_thrash_timing(
     role: str,
     measurement_complete: bool,
     arm_wall_seconds: float | None,
-    decode_fit: dict[str, float] | None,
+    decode_fit: dict[str, Any] | None,
     reasons: list[str],
     control_metrics: dict[str, Any] | None,
     candidate_metrics: dict[str, Any] | None,
@@ -1738,7 +1772,15 @@ def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
         k: v
         for k, v in (extras or {}).items()
         if not str(k).startswith("_")
-        and k not in {"seed", "steps", "decode_timeout_seconds", "generate_batch_size"}
+        and k
+        not in {
+            "seed",
+            "steps",
+            "decode_timeout_seconds",
+            "generate_batch_size",
+            "latency_probe_records",
+            "latency_probe_planned_n",
+        }
     }
     # Prefer registered lever subset when present so static/dynamic arms align.
     levers = _lever_knobs(raw)
@@ -5764,7 +5806,16 @@ def _arm_close_min_null_seeds(policy: Any | None = None) -> int:
             measurement = (
                 payload.get("measurement") if isinstance(payload, dict) else None
             )
-            per_cycle_n = int((measurement or {}).get("screening_smoke_n") or 0)
+            # Auto mode resolves the certified screening-n range; unset stays 0
+            # so power_scaled_null_seeds keeps its no-op fallback.
+            if (measurement or {}).get("screening_smoke_n"):
+                from slm_training.autoresearch.climb_policy import (
+                    screening_smoke_n_for_policy,
+                )
+
+                per_cycle_n = screening_smoke_n_for_policy(pol)[0]
+            else:
+                per_cycle_n = 0
             base = _ev.power_scaled_null_seeds(
                 base, per_cycle_n, _ev.parse_alpha(gate.get("alpha"))
             )
@@ -9023,10 +9074,32 @@ def _classify_positive(
         }
 
     reasons_pre: list[str] = []
+    outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
+    # Latency pre-check verdicts per arm (probe timeout / over-budget skip) so
+    # a probe-skipped eval reads as its typed cause, not a bare missing file.
+    preflight_by_run: dict[str, str] = {}
+    for path in outcomes:
+        out = _read_json(path)
+        eid = str(out.get("experiment_id") or path.stem)
+        for stage in out.get("stage_telemetry") or []:
+            if not isinstance(stage, dict):
+                continue
+            preflight = stage.get("latency_preflight")
+            if (
+                isinstance(preflight, dict)
+                and str(preflight.get("verdict") or "")
+                == "latency_preflight_infeasible"
+            ):
+                preflight_by_run[eid] = "latency_preflight_infeasible"
+            elif stage.get("latency_probe") and stage.get("timed_out"):
+                preflight_by_run[eid] = "latency_preflight_probe_timeout"
     for run_id in (control_id, candidate_id):
         scoreboard_path = camp_dir / "runs" / run_id / "scoreboard.json"
         if not scoreboard_path.is_file():
-            reasons_pre.append(f"measurement_incomplete:{run_id}:missing_scoreboard")
+            reasons_pre.append(
+                f"measurement_incomplete:{run_id}:"
+                f"{preflight_by_run.get(run_id) or 'missing_scoreboard'}"
+            )
             continue
         scoreboard = _read_json(scoreboard_path)
         suites = scoreboard.get("suites")
@@ -9077,7 +9150,6 @@ def _classify_positive(
                     f"incomplete_document_n={incomplete_n}:"
                     f"decode_timeout_count={timeout_n}"
                 )
-    outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     for path in outcomes:
         out = _read_json(path)
         experiment_id = str(out.get("experiment_id") or path.stem)
@@ -11783,9 +11855,23 @@ def _matrix(
     # (Pareto: incomplete rate drives recalibration of these, not wall++).
     if role == "screening":
         steps = _screening_thrash_steps(pol, steps)
-        decode_timeout, _decode_fit = _fit_screening_decode_timeout_seconds(pol)
+        decode_timeout, decode_fit = _fit_screening_decode_timeout_seconds(pol)
     else:
         decode_timeout = decode_timeout_seconds_for_role(pol, role)
+        decode_fit = None
+    # Latency pre-check (policy measurement.latency_probe): a probe eval runs
+    # before the full screening eval; over-budget projections skip the full
+    # eval with a typed verdict instead of burning n x decode-timeout.
+    probe_block = pol.measurement.get("latency_probe")
+    probe_block = dict(probe_block) if isinstance(probe_block, Mapping) else {}
+    latency_probe_knobs: dict[str, int] = {}
+    if role == "screening" and probe_block.get("enabled"):
+        latency_probe_knobs = {
+            "latency_probe_records": max(1, int(probe_block.get("probe_records") or 1)),
+            "latency_probe_planned_n": max(
+                1, int((decode_fit or {}).get("smoke_n") or 1)
+            ),
+        }
     steps = int(steps) + (cycle % 3)  # slight variation avoids knob-signature collision
     eval_suites = ",".join(eval_suites_for_role(pol, role))
 
@@ -11918,6 +12004,7 @@ def _matrix(
             # every document into one decode chunk, defeating per-record
             # fair-share timeout redistribution.
             base["generate_batch_size"] = 1
+            base.update(latency_probe_knobs)
         base.update(extra_map)
         return base
 
