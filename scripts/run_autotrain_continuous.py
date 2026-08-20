@@ -1886,19 +1886,36 @@ def _park_screening_n_deficit(
 def _latest_hypothesis_feedback(
     root: Path, campaign_id: str
 ) -> HypothesisFeedback:
-    """Load the terminal typed feedback that grounds an objective change."""
+    """Load the terminal typed feedback that grounds an objective change.
 
-    store = CampaignStore(campaign_id, root)
-    for event in reversed(store.verify_event_chain()):
-        if event.get("event_type") != "hypothesizer_feedback_recorded":
-            continue
-        digest = str(event.get("artifact_sha256") or "")
-        path = store.root / "artifacts" / "hypothesizer_feedback" / f"{digest}.json"
-        feedback = HypothesisFeedback.model_validate_json(
-            path.read_text(encoding="utf-8")
-        )
-        if feedback.campaign_id == campaign_id:
-            return feedback
+    Incomplete retries may have no hypothesizer event; walk predecessor
+    campaigns until a recorded feedback exists.
+    """
+
+    seen: set[str] = set()
+    current: str | None = campaign_id
+    while current and current not in seen:
+        seen.add(current)
+        store = CampaignStore(current, root)
+        try:
+            events = store.verify_event_chain()
+        except Exception:  # noqa: BLE001 — missing/broken chain, try predecessor
+            events = []
+        for event in reversed(events):
+            if event.get("event_type") != "hypothesizer_feedback_recorded":
+                continue
+            digest = str(event.get("artifact_sha256") or "")
+            path = store.root / "artifacts" / "hypothesizer_feedback" / f"{digest}.json"
+            if not path.is_file():
+                continue
+            feedback = HypothesisFeedback.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+            if feedback.campaign_id == current:
+                return feedback
+        spec = _read_json(root / current / "campaign.json")
+        nxt = str(spec.get("predecessor_campaign_id") or "") if spec else ""
+        current = nxt or None
     raise RuntimeError(
         "screening objective change requires terminal HypothesisFeedback"
     )

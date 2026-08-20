@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Park after an incomplete retry walks predecessor HypothesisFeedback so screening_objective_saturated can queue rebuild_data.",
+          "version": "v256"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Park executes pending local rebuild_data in-process (SELF_HEAL_REBUILD_DATA_ON_PARK) so bank-exhaust is not a report-only sleep.",
           "version": "v255"
         },
@@ -6815,7 +6820,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v255"
+      "version": "v256"
     },
     "harness.autoresearch.formal": {
       "history": [
