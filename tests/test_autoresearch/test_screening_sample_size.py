@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from slm_training.autoresearch.power import min_attainable_n, required_n_for_effect
+from slm_training.autoresearch.schemas import DEFAULT_ALLOWED_KNOBS
 from slm_training.autoresearch.screening_sample_size import (
     FINDING_RANGE_EMPTY,
     SCREENING_SAMPLE_SIZE_SCHEMA,
@@ -26,6 +27,11 @@ def _obs(**overrides: object) -> ScreeningSampleSizeObservation:
     }
     base.update(overrides)
     return ScreeningSampleSizeObservation(**base)
+
+
+def test_latency_probe_knobs_are_allowed() -> None:
+    assert "latency_probe_records" in DEFAULT_ALLOWED_KNOBS
+    assert "latency_probe_planned_n" in DEFAULT_ALLOWED_KNOBS
 
 
 def test_decidability_floor_matches_power_module_exact_search() -> None:

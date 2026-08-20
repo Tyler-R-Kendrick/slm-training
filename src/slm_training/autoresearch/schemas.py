@@ -338,6 +338,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_draft_window",
         "decode_timeout_seconds",
         "eval_suites",
+        "latency_probe_records",
+        "latency_probe_planned_n",
         "action_embedding_init",
         "action_embedding_train",
         "action_alias_mode",

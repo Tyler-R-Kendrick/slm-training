@@ -4993,6 +4993,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Allow latency_probe_records and latency_probe_planned_n on CampaignSpec.allowed_knobs so screening matrices with latency_preflight/v1 validate instead of CYCLE_ERROR forbidden knobs.",
+          "version": "v250"
+        },
+        {
+          "date": "2026-08-20",
           "note": "screening_sample_size/v1: certified per-cycle screening-n range (exact decidability floor + budget/suite ceilings); climb policy screening_smoke_n_mode=auto (policy v1 v9->v10, v2 v11->v12) resolves n via screening_smoke_n_for_policy with fail-closed fallback; continuous decode-fit meta embeds the typed verdict. Latency pre-check (latency_preflight/v1): per-arm probe eval (-latprobe run id, probe_records=1) before the full screening eval; over-budget projection (probe_wall x planned_n) or probe timeout skips the full eval as typed measurement-incomplete, never a model verdict; probe metrics never merge",
           "version": "v249"
         },
@@ -6770,7 +6775,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v249"
+      "version": "v250"
     },
     "harness.autoresearch.formal": {
       "history": [
