@@ -14,6 +14,7 @@ from slm_training.autoresearch.screening_sample_size import (
     SCREENING_SAMPLE_SIZE_SCHEMA,
     ScreeningSampleSizeObservation,
     compute_screening_sample_size,
+    extra_smoke_fixtures_for_deficit,
 )
 
 
@@ -27,6 +28,20 @@ def _obs(**overrides: object) -> ScreeningSampleSizeObservation:
     }
     base.update(overrides)
     return ScreeningSampleSizeObservation(**base)
+
+
+def test_extra_smoke_fixtures_cover_deficit_without_duplicates() -> None:
+    extras = extra_smoke_fixtures_for_deficit(existing_ids=set(), need=3)
+    assert len(extras) == 3
+    assert {row["id"] for row in extras} == {
+        "smoke_tabs_01",
+        "smoke_form_01",
+        "smoke_switch_01",
+    }
+    again = extra_smoke_fixtures_for_deficit(
+        existing_ids={row["id"] for row in extras}, need=3
+    )
+    assert again == []
 
 
 def test_latency_probe_knobs_are_allowed() -> None:
@@ -75,7 +90,8 @@ def test_today_fixture_ceiling_is_suite_bound() -> None:
     assert "suite_volume" in report.binding_constraints
     finding = next(f for f in report.findings if f["code"] == FINDING_RANGE_EMPTY)
     assert finding["authority"] == "climb_signal_not_gate"
-    assert "grow the screening suite" in finding["suggestion"]
+    assert report.must_generate is True
+    assert "do not screen" in finding["suggestion"]
 
 
 def test_wall_budget_binding_when_decode_is_expensive() -> None:
@@ -85,6 +101,7 @@ def test_wall_budget_binding_when_decode_is_expensive() -> None:
     assert report.verdict == "infeasible_range_empty"
     assert report.budget_ceiling_n == 3
     assert report.binding_constraints == ("wall_budget",)
+    assert report.must_generate is False
 
 
 def test_both_axes_binding() -> None:

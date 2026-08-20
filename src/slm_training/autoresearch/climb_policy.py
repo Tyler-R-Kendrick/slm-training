@@ -403,9 +403,10 @@ def screening_smoke_n_for_policy(
     ``auto`` mode the per-cycle ``screening_sample_size/v1`` report decides:
     ``feasible`` climbs at the certified ``chosen_n`` (the smallest n clearing
     the exact sign-test decidability floor that also fits the arm-wall budget
-    and suite-volume ceilings); ``infeasible_range_empty`` /
-    ``insufficient_evidence`` keep the fallback n and the report records the
-    typed binding constraints instead of a silent fixture screen.
+    and suite-volume ceilings); ``infeasible_range_empty`` returns ``n=0``
+    (not a runnable screen) with the typed report so the driver can generate
+    missing suite records or park on a wall bind; ``insufficient_evidence``
+    keeps the configured fallback n only as an advisory default.
     """
 
     measurement = getattr(policy, "measurement", None) or {}
@@ -458,6 +459,9 @@ def screening_smoke_n_for_policy(
     payload = report.model_dump(mode="json")
     if report.verdict == "feasible" and report.chosen_n is not None:
         return max(1, int(report.chosen_n)), payload
+    if report.verdict == "infeasible_range_empty":
+        # Not a legal screen size. suite_volume → generate; wall_budget → park.
+        return 0, payload
     return configured, payload
 
 

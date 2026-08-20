@@ -823,7 +823,7 @@ def test_screening_smoke_n_auto_mode_feasible_climbs_at_floor() -> None:
     assert report["promotion_authority"] is False
 
 
-def test_screening_smoke_n_auto_mode_infeasible_fails_closed_to_fallback() -> None:
+def test_screening_smoke_n_auto_mode_infeasible_does_not_return_fallback_n() -> None:
     policy = _StubPolicy(
         {
             "screening_smoke_n": 3,
@@ -831,14 +831,14 @@ def test_screening_smoke_n_auto_mode_infeasible_fails_closed_to_fallback() -> No
             "screening_sample_size": {"default_decode_floor_seconds": 2},
         }
     )
-    # The committed 3-record smoke suite: range is empty, suite volume binds.
     n, report = screening_smoke_n_for_policy(
         policy, arm_wall_seconds=70.0, suite_records=3
     )
-    assert n == 3
+    assert n == 0
     assert report is not None
     assert report["verdict"] == "infeasible_range_empty"
     assert "suite_volume" in report["binding_constraints"]
+    assert report["must_generate"] is True
 
 
 def test_screening_smoke_n_live_policy_is_auto_with_fallback() -> None:

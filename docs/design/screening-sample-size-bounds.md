@@ -82,9 +82,15 @@ full report in the `thrash_timing.json` `decode_fit` meta) and at the
 power-gate arm-closure calculation:
 
 - `feasible` → screen at `chosen_n`.
-- `infeasible_range_empty` / `insufficient_evidence` → keep the fallback n
-  (current behavior) and record the typed verdict; any resolution failure
-  returns the fallback with no report.
+- `infeasible_range_empty` + `suite_volume` → **do not screen**. Set
+  `must_generate`, append smoke fixtures, `build_test_data` + `DataStore.publish`
+  a new eval snapshot under `resources/data/eval/`, commit it, then resume at
+  `n_min`. Fallback n=3 is not a runnable screen size.
+- `infeasible_range_empty` + `wall_budget` only → park; recalibrate decode/steps
+  (never silent wall++).
+- `insufficient_evidence` → advisory fallback n until wall/suite/decode inputs
+  exist; not promotion authority.
+- Resolution failure returns the configured fallback with no report.
 
 ### 5. Latency pre-check probe (`latency_preflight/v1`)
 

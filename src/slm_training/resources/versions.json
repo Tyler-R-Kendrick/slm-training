@@ -29,6 +29,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "no-bump: policy.v2 screening_sample_size description now generate-and-persist on suite_volume; conclusion criteria and conclusions.py unchanged.",
+          "version": "v5"
+        },
+        {
+          "date": "2026-08-20",
           "note": "policy.v2.json gains screening_sample_size block in lockstep with v1 (superset parity preserved)",
           "version": "v5"
         },
@@ -869,6 +874,11 @@
     "data.test_build": {
       "history": [
         {
+          "date": "2026-08-20",
+          "note": "Add three Lean-floor smoke fixtures (tabs/form/switch) so screening can publish n>=6 instead of screening at undecidable n=3.",
+          "version": "v7"
+        },
+        {
           "date": "2026-07-30",
           "note": "no-bump: make the test-data fixture assert the live registered component version instead of stale v10",
           "version": "v6"
@@ -915,7 +925,7 @@
         "src/slm_training/harnesses/test_data/",
         "src/slm_training/resources/test_seeds.jsonl"
       ],
-      "version": "v6"
+      "version": "v7"
     },
     "decode.invariants": {
       "history": [
@@ -4993,6 +5003,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Empty screening-n range with suite_volume must_generate: skip n=3 screens, append smoke fixtures, build_test_data+publish+commit eval snapshot, resume at Lean n_min.",
+          "version": "v251"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Allow latency_probe_records and latency_probe_planned_n on CampaignSpec.allowed_knobs so screening matrices with latency_preflight/v1 validate instead of CYCLE_ERROR forbidden knobs.",
           "version": "v250"
         },
@@ -6775,7 +6790,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v250"
+      "version": "v251"
     },
     "harness.autoresearch.formal": {
       "history": [

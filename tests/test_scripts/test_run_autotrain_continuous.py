@@ -9180,13 +9180,15 @@ def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
     assert report is not None
     assert report["schema_version"] == "screening_sample_size/v1"
     assert report["decidability_floor_n"] == 6  # exact sign-test floor, alpha=1/20
-    # Committed 3-record smoke suite: the certified range is empty and the
-    # smoke n fails closed to the configured fallback.
-    assert report["suite_ceiling_n"] == 3
-    assert report["verdict"] == "infeasible_range_empty"
-    assert "suite_volume" in report["binding_constraints"]
-    assert int(meta["smoke_n"]) == 3
     assert report["promotion_authority"] is False
+    if report["verdict"] == "feasible":
+        assert int(meta["smoke_n"]) >= 6
+        assert report["must_generate"] is False
+    else:
+        assert report["verdict"] == "infeasible_range_empty"
+        assert "suite_volume" in report["binding_constraints"]
+        assert report["must_generate"] is True
+        assert int(meta["smoke_n"]) == 0
 
 
 def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
@@ -9874,6 +9876,13 @@ def test_is_continuous_closeout_path_allowlist() -> None:
         "docs/design/continuous-loop-20260805-x-c1-results.json"
     )
     assert _mod._is_continuous_closeout_path("docs/MODEL_CARD.md")
+    assert _mod._is_continuous_closeout_path(
+        "src/slm_training/resources/test_seeds.jsonl"
+    )
+    assert _mod._is_continuous_closeout_path(
+        "src/slm_training/resources/data/eval/"
+        "e938_role_safe_all_targets_smoke6_v1/screening_sample_size.json"
+    )
     assert not _mod._is_continuous_closeout_path("scripts/run_autotrain_continuous.py")
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
 

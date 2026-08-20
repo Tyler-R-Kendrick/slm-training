@@ -1,0 +1,46 @@
+{
+  "eval_version": "e938_role_safe_all_targets_smoke6_v1",
+  "report": {
+    "alpha": "1/20",
+    "binding_constraints": [],
+    "bounds": [
+      {
+        "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim",
+        "authority": "theorem_backed_exact",
+        "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+        "env": {
+          "alpha_den": 20,
+          "alpha_num": 1,
+          "n_candidate": 6,
+          "two_pow_n_candidate": 64
+        },
+        "value": "64"
+      },
+      {
+        "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits",
+        "authority": "theorem_backed_exact",
+        "bound_ast_id": "bound.screening_n.budget_upper.v1",
+        "env": {
+          "min_decode_seconds": 2,
+          "usable_wall_seconds": 42
+        },
+        "value": "21"
+      }
+    ],
+    "budget_ceiling_n": 21,
+    "chosen_n": 6,
+    "decidability_floor_n": 6,
+    "findings": [],
+    "max_candidate_n": 64,
+    "must_generate": false,
+    "n_max": 6,
+    "n_min": 6,
+    "power_floor_n": null,
+    "promotion_authority": false,
+    "schema_version": "screening_sample_size/v1",
+    "suite_ceiling_n": 6,
+    "verdict": "feasible"
+  },
+  "schema_version": "screening_sample_size/v1",
+  "smoke_n": 6
+}

@@ -1,6 +1,6 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v10",
+  "version": "v11",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout→decode residual routing.",
   "screening_primary": {
     "metric": "smoke.structural_similarity",
@@ -43,7 +43,7 @@
     "screening_smoke_n_mode": "auto",
     "screening_sample_size": {
       "schema": "screening_sample_size_policy/v1",
-      "description": "screening_smoke_n is the fail-closed fallback only. In auto mode the loop computes the certified range per cycle (screening_sample_size/v1): exact sign-test decidability floor at power_gate.alpha (bound.screening_n.decidability_lower.v1), budget ceiling from the arm wall (bound.screening_n.budget_upper.v1), and the smoke-suite volume ceiling. Feasible range -> climb at n_min; infeasible -> fallback n with a typed binding-constraints verdict, never a silent fixture screen.",
+      "description": "screening_smoke_n is advisory only when evidence is missing. In auto mode the loop computes the certified range per cycle (screening_sample_size/v1): exact sign-test decidability floor at power_gate.alpha (bound.screening_n.decidability_lower.v1), budget ceiling from the arm wall (bound.screening_n.budget_upper.v1), and the smoke-suite volume ceiling. Feasible range -> climb at n_min. Infeasible suite_volume -> generate and persist smoke records (must_generate), never screen at the undecidable fallback n. Infeasible wall_budget -> park and recalibrate decode/steps.",
       "default_decode_floor_seconds": 2,
       "max_candidate_n": 64
     },

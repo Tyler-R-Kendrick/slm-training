@@ -314,6 +314,187 @@ def _screening_suite_records() -> int | None:
     return None
 
 
+def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] | None]:
+    from slm_training.autoresearch.climb_policy import (
+        load_climb_policy,
+        screening_smoke_n_for_policy,
+        stage_wall_minutes_for_role,
+    )
+
+    pol = policy if policy is not None else load_climb_policy()
+    arm = _arm_wall_seconds(
+        policy_minutes=float(stage_wall_minutes_for_role(pol, "screening")),
+        formal_required=False,
+    )
+    return screening_smoke_n_for_policy(
+        pol, arm_wall_seconds=arm, suite_records=_screening_suite_records()
+    )
+
+
+def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
+    """Append unused extra smoke fixtures to the tracked seed file."""
+    from slm_training.autoresearch.screening_sample_size import (
+        extra_smoke_fixtures_for_deficit,
+    )
+
+    seed_path = cwd / "src/slm_training/resources/test_seeds.jsonl"
+    lines = seed_path.read_text(encoding="utf-8").splitlines()
+    existing: set[str] = set()
+    smoke_n = 0
+    for line in lines:
+        if not line.strip():
+            continue
+        rec = json.loads(line)
+        existing.add(str(rec.get("id") or ""))
+        suite = str((rec.get("meta") or {}).get("suite") or rec.get("split") or "")
+        if suite == "smoke":
+            smoke_n += 1
+    need = max(0, int(n_min) - smoke_n)
+    extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
+    if not extras:
+        return []
+    with seed_path.open("a", encoding="utf-8") as fh:
+        if lines and lines[-1].strip():
+            fh.write("\n")
+        for rec in extras:
+            fh.write(json.dumps(rec, sort_keys=True) + "\n")
+    return [seed_path]
+
+
+def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
+    return [
+        sys.executable,
+        "-m",
+        "scripts.build_test_data",
+        "--source",
+        "fixture",
+        "--version",
+        eval_version,
+        "--train-manifest",
+        str(train_manifest),
+    ]
+
+
+def _self_heal_rebuild_screening_eval(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str | None,
+) -> str | None:
+    """Grow smoke to the Lean floor, publish under resources/, commit."""
+    from slm_training.autoresearch.screening_sample_size import (
+        SCREENING_SMOKE6_EVAL_VERSION,
+    )
+    from slm_training.data.store import DataStore
+    from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+
+    n, report = _screening_n_report()
+    if not isinstance(report, dict) or not report.get("must_generate"):
+        return None
+    n_min = int(report.get("n_min") or 6)
+    _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    eval_version = SCREENING_SMOKE6_EVAL_VERSION
+    train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
+    out_dir = cwd / "outputs" / "data" / "eval" / eval_version
+    published = cwd / "src/slm_training/resources/data/eval" / eval_version
+    if not (out_dir / "manifest.json").is_file() and not (
+        published / "suites" / "smoke" / "records.jsonl"
+    ).is_file():
+        argv = _local_rebuild_screening_eval_argv(
+            eval_version=eval_version, train_manifest=train_manifest
+        )
+        print(
+            f"SELF_HEAL_REBUILD_SCREENING_EVAL start version={eval_version} "
+            f"n_min={n_min} argv={argv}",
+            flush=True,
+        )
+        result = run_bounded_process(
+            argv,
+            interrupt_after_seconds=float(INTERRUPT_AFTER_SECONDS),
+            kill_grace_seconds=float(KILL_GRACE_SECONDS),
+            cwd=str(cwd),
+        )
+        if result.outcome != ProcessOutcome.COMPLETED or result.returncode != 0:
+            print(
+                f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL outcome={result.outcome} "
+                f"code={result.returncode}",
+                flush=True,
+            )
+            return None
+    store = DataStore(root=cwd)
+    if not (published / "suites" / "smoke" / "records.jsonl").is_file():
+        try:
+            store.publish("eval", eval_version)
+        except FileExistsError:
+            pass
+        except Exception as exc:  # noqa: BLE001
+            print(f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL publish={exc!r}", flush=True)
+            return None
+    smoke = published / "suites" / "smoke" / "records.jsonl"
+    if not smoke.is_file():
+        return None
+    sidecar = published / "screening_sample_size.json"
+    n_after, report_after = _screening_n_report()
+    sidecar.write_text(
+        json.dumps(
+            {
+                "schema_version": "screening_sample_size/v1",
+                "eval_version": eval_version,
+                "smoke_n": n_after,
+                "report": report_after,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    commit_paths = [
+        cwd / "src/slm_training/resources/test_seeds.jsonl",
+        sidecar,
+        *sorted(p for p in published.rglob("*") if p.is_file()),
+    ]
+    _git_commit_paths(
+        cwd,
+        commit_paths,
+        message=(
+            f"data(eval): persist screening smoke n>={n_min} ({eval_version})"
+        ),
+        root=root,
+        loop_id=loop_id,
+        stage="self-heal-screening-eval",
+    )
+    if campaign_id:
+        handoff_path = root / campaign_id / "cycle_handoff.json"
+        if handoff_path.is_file():
+            handoff = AutotrainCycleHandoffV1.model_validate_json(
+                handoff_path.read_text(encoding="utf-8")
+            )
+            pending = [
+                (index, action)
+                for index, action in pending_autotrain_actions(root, handoff)
+                if action.kind == "rebuild_data"
+                and "screening suite" in action.reason
+            ]
+            for index, _action in pending:
+                _ack_rebuild_data_action(
+                    root,
+                    handoff,
+                    action_index=index,
+                    evidence_uris=[
+                        f"src/slm_training/resources/data/eval/{eval_version}/"
+                        "screening_sample_size.json"
+                    ],
+                )
+    print(
+        f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
+        f"smoke_n={n_after}",
+        flush=True,
+    )
+    return "rebuild_screening_eval"
+
+
 def _fit_screening_decode_timeout_seconds(
     policy: Any,
     *,
@@ -352,7 +533,10 @@ def _fit_screening_decode_timeout_seconds(
     overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
     # Max per-record decode that still leaves train floor + overhead.
     usable = float(arm_wall_seconds) - min_train - overhead
-    max_decode = max(1.0, usable / float(smoke_n))
+    if int(smoke_n) <= 0:
+        max_decode = max(1.0, usable)
+    else:
+        max_decode = max(1.0, usable / float(smoke_n))
     fitted = min(configured, max_decode)
     meta = {
         "arm_wall_seconds": float(arm_wall_seconds),
@@ -1613,6 +1797,72 @@ def _park_screening_saturation(
         flush=True,
     )
     return _REGIME_PARKED_STATUS
+
+
+def _park_screening_n_deficit(
+    *,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    cycle_index: int,
+    report: dict[str, Any],
+) -> str:
+    """Skip screening until smoke records exist; queue rebuild_data."""
+
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    if not handoff_path.is_file():
+        raise RuntimeError(
+            "screening n deficit without a typed predecessor handoff"
+        )
+    handoff = AutotrainCycleHandoffV1.model_validate_json(
+        handoff_path.read_text(encoding="utf-8")
+    )
+    evidence_ids = (f"campaign:{campaign_id}",)
+    actions = (
+        AutotrainActionV1(
+            kind="rebuild_data",
+            owner="synthesis-feedback",
+            reason=(
+                "screening suite_volume binds: generate and persist smoke "
+                f"n>={report.get('n_min') or 6} instead of screening at an "
+                "undecidable n"
+            ),
+            evidence_ids=evidence_ids,
+        ),
+        AutotrainActionV1(
+            kind="next_experiment",
+            owner="autotrain",
+            reason="resume screening only after the published smoke suite meets n_min",
+            evidence_ids=evidence_ids,
+        ),
+    )
+    handoff_path.write_text(
+        handoff.model_copy(update={"actions": actions}).model_dump_json(indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="BLOCKED",
+            phase="blocked",
+            active_campaign_id=None,
+            last_completed_campaign_id=campaign_id,
+            cycle_index=cycle_index,
+            next_action="rebuild_data",
+            blocker_fingerprint="screening_n_suite_volume",
+            blocker_count=1,
+            pid=os.getpid(),
+        ),
+    )
+    print(
+        f"SCREENING_N_PARK loop={loop_id} campaign={campaign_id} "
+        f"must_generate={report.get('must_generate')} "
+        f"binding={report.get('binding_constraints')}",
+        flush=True,
+    )
+    return "screening-n-deficit"
 
 
 def _latest_hypothesis_feedback(
@@ -2973,6 +3223,12 @@ def _is_continuous_closeout_path(rel: str) -> bool:
         "closed_approaches.v1.json"
     ):
         return True
+    if path == "src/slm_training/resources/test_seeds.jsonl":
+        return True
+    if path.startswith(
+        "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/"
+    ):
+        return True
     if not path.startswith("docs/design/"):
         return False
     name = path[len("docs/design/") :]
@@ -3691,6 +3947,10 @@ def _self_heal_rebuild_data(
     ]
     if not pending:
         return None
+    if any("screening suite" in action.reason for _i, action in pending):
+        return _self_heal_rebuild_screening_eval(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
+        )
     cycle_index = int(handoff.cycle_index or 0)
     train_version = _local_i10_train_version(loop_id, cycle_index)
     train_dir = cwd / "outputs" / "data" / "train" / train_version
@@ -4232,6 +4492,16 @@ def self_heal_unblock_loop(
                 soft_healed.append(bank_kind)
         except Exception as exc:  # noqa: BLE001
             print(f"SELF_HEAL_UNBLOCK bank_repair_warn={exc!r}", flush=True)
+
+    # 2c0) Screening-n suite deficit: generate/publish smoke, never screen at 3.
+    try:
+        screen_kind = _self_heal_rebuild_screening_eval(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+        )
+        if screen_kind:
+            soft_healed.append(screen_kind)
+    except Exception as exc:  # noqa: BLE001
+        print(f"SELF_HEAL_UNBLOCK screening_eval_warn={exc!r}", flush=True)
 
     # 2c) Local CPU rebuild_data (I10 / bank-exhaust park). Never fake.
     try:
@@ -13345,6 +13615,34 @@ def run_cycle(
                 f"trigger_cycle={saturation_state['trigger_cycle']} "
                 f"selected={selected} pending={pending}",
                 flush=True,
+            )
+    if cycle_intent == "screening" and replay is None:
+        smoke_n, ss_report = _screening_n_report(policy)
+        if isinstance(ss_report, dict) and (
+            ss_report.get("must_generate") or int(smoke_n) <= 0
+        ):
+            print(
+                "SCREENING_N_DEFICIT "
+                f"smoke_n={smoke_n} n_min={ss_report.get('n_min')} "
+                f"binding={ss_report.get('binding_constraints')}",
+                flush=True,
+            )
+            _self_heal_rebuild_screening_eval(
+                cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
+            )
+            smoke_n, ss_report = _screening_n_report(policy)
+        if int(smoke_n) <= 0:
+            if not pred:
+                raise RuntimeError(
+                    "screening n infeasible (empty certified range); "
+                    "generate smoke records before the first cycle"
+                )
+            return _park_screening_n_deficit(
+                root=root,
+                loop_id=loop_id,
+                campaign_id=pred,
+                cycle_index=idx,
+                report=ss_report if isinstance(ss_report, dict) else {},
             )
     # When multi-seed thrash bank is empty but a retryable promote head still
     # exists (confirmed / promotion_inconclusive / harness_failure), do not hard

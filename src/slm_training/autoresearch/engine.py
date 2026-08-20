@@ -89,6 +89,7 @@ RESULT_EVIDENCE_KINDS = {
 }
 
 _DEFAULT_EVAL_VERSION_CANDIDATES = (
+    "e938_role_safe_all_targets_smoke6_v1",
     "e938_role_safe_all_targets_v2",
     "e842_harness_owned_slots_v1",
     "e827_target_slots_only_v4",

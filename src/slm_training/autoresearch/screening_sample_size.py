@@ -27,9 +27,9 @@ Verdicts:
   smallest sufficient n, mirroring the parameter-efficiency law: size is a
   budget, never a free knob).
 * ``infeasible_range_empty`` — the floor clears neither ceiling;
-  ``binding_constraints`` names ``wall_budget`` and/or ``suite_volume`` so the
-  loop records *why* screening stays fixture-class instead of recycling the
-  bare ``fixture_insufficient_n`` noise.
+  ``binding_constraints`` names ``wall_budget`` and/or ``suite_volume``.
+  ``suite_volume`` is a generate-and-publish signal (``must_generate``), not a
+  license to screen at an undecidable fallback n.
 * ``insufficient_evidence`` — no decode-cost observation yet; the caller
   keeps its configured fallback n and the report is advisory only.
 
@@ -42,9 +42,9 @@ Design rules (docs/design/screening-sample-size-bounds.md):
   are theorem-backed exact arithmetic; the power floor is an explicitly
   declared normal approximation (``improve-lean-optimums`` discipline: Lean
   proves arithmetic, not calibration).
-* **Fail closed.** Degenerate inputs (zero/negative budgets, alpha outside
-  (0,1), floor beyond the search cap) produce infeasible/insufficient
-  verdicts with reasons, never an exception and never a silent n=3.
+* **Fail closed.** Degenerate inputs produce infeasible/insufficient
+  verdicts with reasons, never an exception. An empty range never authorizes
+  screening at a known-undecidable n.
 """
 
 from __future__ import annotations
@@ -150,6 +150,8 @@ class ScreeningSampleSizeReport(StrictModel):
     verdict: ScreeningSampleSizeVerdict
     bounds: tuple[BoundEvaluation, ...]
     findings: tuple[dict[str, Any], ...]
+    # True when suite_volume binds: grow and persist smoke records, do not screen.
+    must_generate: bool = False
     # Climb verdicts recommend; they never gate admission or promotion.
     promotion_authority: Literal[False] = False
 
@@ -312,8 +314,8 @@ def compute_screening_sample_size(
             suggestions = []
             if "suite_volume" in binding:
                 suggestions.append(
-                    f"grow the screening suite past {suite_ceiling} records "
-                    f"(floor is {n_min}) — a data/lever action, not a config bump"
+                    f"generate and persist {n_min - suite_ceiling} smoke "
+                    f"records (floor is {n_min}); do not screen at {suite_ceiling}"
                 )
             if "wall_budget" in binding:
                 suggestions.append(
@@ -347,10 +349,97 @@ def compute_screening_sample_size(
         n_max=n_max,
         chosen_n=chosen,
         binding_constraints=tuple(binding),
+        must_generate="suite_volume" in binding,
         verdict=verdict,
         bounds=tuple(bounds),
         findings=tuple(findings),
     )
+
+
+SCREENING_SMOKE6_EVAL_VERSION = "e938_role_safe_all_targets_smoke6_v1"
+
+# Extra smoke programs (I9 grammar + placeholders only). Appended when Lean n
+# exceeds the committed smoke count; never duplicates of the original 3.
+_EXTRA_SMOKE_FIXTURES: tuple[dict[str, Any], ...] = (
+    {
+        "id": "smoke_tabs_01",
+        "prompt": "Two-tab panel with overview and details placeholders.",
+        "openui": (
+            "root = Stack([panel], \"column\")\n"
+            "overview = TextContent(\":smoke.tabs.overview\")\n"
+            "details = TextContent(\":smoke.tabs.details\")\n"
+            "tab1 = TabItem(\"$0\", \":smoke.tabs.tab1\", [overview])\n"
+            "tab2 = TabItem(\"$1\", \":smoke.tabs.tab2\", [details])\n"
+            "panel = Tabs([tab1, tab2])"
+        ),
+        "placeholders": [
+            ":smoke.tabs.overview",
+            ":smoke.tabs.details",
+            ":smoke.tabs.tab1",
+            ":smoke.tabs.tab2",
+        ],
+        "split": "smoke",
+        "source": "fixture",
+        "meta": {"suite": "smoke"},
+    },
+    {
+        "id": "smoke_form_01",
+        "prompt": "Email field with label and submit button.",
+        "openui": (
+            "root = Stack([field, actions], \"column\")\n"
+            "email = Input(\"$0\", \":smoke.form.email\", \"email\")\n"
+            "field = FormControl(\":smoke.form.email.label\", email)\n"
+            "submit = Button(\":smoke.form.submit\")\n"
+            "actions = Buttons([submit])"
+        ),
+        "placeholders": [
+            ":smoke.form.email",
+            ":smoke.form.email.label",
+            ":smoke.form.submit",
+        ],
+        "split": "smoke",
+        "source": "fixture",
+        "meta": {"suite": "smoke"},
+    },
+    {
+        "id": "smoke_switch_01",
+        "prompt": "Settings switch with a supporting note.",
+        "openui": (
+            "root = Stack([notify, note], \"column\")\n"
+            "notify = SwitchItem(\":smoke.settings.notify\", "
+            "\":smoke.settings.notify.desc\", \"$0\")\n"
+            "note = Callout(\"info\", \":smoke.settings.hint.title\", "
+            "\":smoke.settings.hint.body\")"
+        ),
+        "placeholders": [
+            ":smoke.settings.notify",
+            ":smoke.settings.notify.desc",
+            ":smoke.settings.hint.title",
+            ":smoke.settings.hint.body",
+        ],
+        "split": "smoke",
+        "source": "fixture",
+        "meta": {"suite": "smoke"},
+    },
+)
+
+
+def extra_smoke_fixtures_for_deficit(
+    *, existing_ids: set[str], need: int
+) -> list[dict[str, Any]]:
+    """Return unused extra smoke fixtures, up to ``need`` records."""
+
+    out: list[dict[str, Any]] = []
+    for fixture in _EXTRA_SMOKE_FIXTURES:
+        if need <= 0:
+            break
+        fid = str(fixture["id"])
+        if fid in existing_ids:
+            continue
+        out.append(dict(fixture))
+        existing_ids.add(fid)
+        need -= 1
+    return out
 
 
 __all__ = [
@@ -364,4 +453,6 @@ __all__ = [
     "ScreeningSampleSizeReport",
     "ScreeningSampleSizeVerdict",
     "compute_screening_sample_size",
+    "SCREENING_SMOKE6_EVAL_VERSION",
+    "extra_smoke_fixtures_for_deficit",
 ]
