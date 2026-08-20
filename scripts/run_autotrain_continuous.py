@@ -11373,6 +11373,70 @@ def _load_frozen_replay(
     return replay
 
 
+def _arm_decode_timeout_count(camp_dir: Path, experiment_id: str) -> int:
+    """Max decode_timeout_count for a finalized arm run (0 if unknown/clean)."""
+
+    timeout_n = 0
+    run_dir = camp_dir / "runs" / experiment_id
+    for name in ("eval_smoke.json", "eval.json", "scoreboard.json"):
+        path = run_dir / name
+        if not path.is_file():
+            continue
+        try:
+            payload = _read_json(path)
+        except Exception:  # noqa: BLE001 — best-effort signal only
+            continue
+        try:
+            timeout_n = max(
+                timeout_n,
+                int(payload.get("decode_timeout_count") or 0),
+                int(payload.get("decode_timeout_document_count") or 0),
+            )
+        except (TypeError, ValueError):
+            pass
+        suites = payload.get("suites")
+        if isinstance(suites, dict):
+            suite_rows: list[Any] = list(suites.values())
+        elif isinstance(suites, list):
+            suite_rows = list(suites)
+        else:
+            suite_rows = []
+        for suite in suite_rows:
+            if not isinstance(suite, dict):
+                continue
+            try:
+                suite_timeout = suite.get("decode_timeout_document_count")
+                if type(suite_timeout) is not int:
+                    suite_timeout = suite.get("decode_timeout_count")
+                timeout_n = max(timeout_n, int(suite_timeout or 0))
+            except (TypeError, ValueError):
+                pass
+    if timeout_n > 0:
+        return timeout_n
+    delivery_path = camp_dir / "sdlc_delivery.json"
+    if not delivery_path.is_file():
+        return 0
+    try:
+        delivery = _read_json(delivery_path)
+    except Exception:  # noqa: BLE001 — best-effort signal only
+        return 0
+    marker = f"measurement_incomplete:{experiment_id}:"
+    for reason in delivery.get("reasons") or []:
+        text = str(reason)
+        if marker not in text or "decode_timeout_count=" not in text:
+            continue
+        try:
+            raw = text.rsplit("decode_timeout_count=", 1)[1]
+            digits = "".join(itertools.takewhile(str.isdigit, raw))
+            if digits:
+                timeout_n = max(timeout_n, int(digits))
+            else:
+                timeout_n = max(timeout_n, 1)
+        except (TypeError, ValueError, IndexError):
+            timeout_n = max(timeout_n, 1)
+    return timeout_n
+
+
 def _completed_frozen_train_source(
     *,
     root: Path,
@@ -11381,6 +11445,17 @@ def _completed_frozen_train_source(
     manifest_path: Path,
 ) -> dict[str, Any] | None:
     """Find a completed train stage along a hash-linked frozen replay chain."""
+
+    # Fail-closed: a source arm that finalized with decode timeouts must not
+    # reuse train (force a fresh control/candidate eval on the successor).
+    timeout_n = _arm_decode_timeout_count(campaign_dir, manifest.experiment_id)
+    if timeout_n > 0:
+        print(
+            "FROZEN_TRAIN_REUSE_SKIP reason=decode_timeout "
+            f"experiment={manifest.experiment_id} decode_timeout_count={timeout_n}",
+            flush=True,
+        )
+        return None
 
     lineage: list[Path] = []
     visited: set[str] = set()
