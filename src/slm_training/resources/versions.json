@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Do not treat an empty leftover set as snapshot leftovers when a selectable I10 process arm is open; REGIME_RESUMED must reach select.",
+          "version": "v257"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Park after an incomplete retry walks predecessor HypothesisFeedback so screening_objective_saturated can queue rebuild_data.",
           "version": "v256"
         },
@@ -6820,7 +6825,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v256"
+      "version": "v257"
     },
     "harness.autoresearch.formal": {
       "history": [

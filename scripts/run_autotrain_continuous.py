@@ -14010,21 +14010,28 @@ def run_cycle(
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
         leftover = _thrash_bank_open_slugs(recent_exhausted) - skip_slugs
-        if _terminal_park_on_exhaust() and pred and _open_slugs_are_snapshot_leftovers(
-            leftover
+        heal_open = _selectable_process_arm(
+            root, loop_id, predecessor_campaign_id=pred
+        )
+        if (
+            _terminal_park_on_exhaust()
+            and pred
+            and _open_slugs_are_snapshot_leftovers(leftover)
+            and not heal_open
         ):
             # Isolate OFAT is done. Do not smoke-screen unused snapshot slugs
-            # (c96/c120/c78) as if they were a new hill.
+            # (c96/c120/c78) as if they were a new hill. Do not tombstone a
+            # just-registered unused I10 process arm (empty leftover used to
+            # count as snapshot leftovers and killed the resume arm).
             print(
                 "SELF_HEAL_BANK_EXHAUST parked reason=snapshot_leftovers_before_select "
                 f"leftover={sorted(leftover)}",
                 flush=True,
             )
-            # Tombstone before the verdict fingerprint is written so park
-            # recovery cannot treat this spent snapshot as a resume reason.
-            _retire_i10_heal_arm(
-                root, loop_id, reason="snapshot_leftovers_before_select"
-            )
+            if leftover:
+                _retire_i10_heal_arm(
+                    root, loop_id, reason="snapshot_leftovers_before_select"
+                )
             return _park_screening_saturation(
                 root=root,
                 loop_id=loop_id,
