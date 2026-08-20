@@ -7203,6 +7203,39 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     assert _mod._select_recommended_slug(197, skip=set()) == _mod._HEAL_RESUME_SLUG
 
 
+def test_thrash_bank_exhaust_does_not_park_selectable_heal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Closed heal slug + unused train_version is not snapshot leftover park."""
+    _inject_terminal_policy(monkeypatch, park=True)
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c509_harness"
+    _mod._register_i10_heal_arm(root, loop, train_version=version)
+    closed = {_mod._HEAL_RESUME_SLUG} | {
+        slug for slug, _, _ in _mod._SCREENING_ARM_BANK
+    }
+    monkeypatch.setattr(
+        _mod,
+        "_train_version_has_complete_nonpositive",
+        lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        _mod, "_latest_cycle", lambda *args, **kwargs: (509, "cycle-509")
+    )
+    assert _mod._selectable_process_arm(
+        root, loop, predecessor_campaign_id="cycle-509"
+    )
+    assert _mod._self_heal_thrash_bank_exhaust(
+        root,
+        loop,
+        closed=closed,
+        skip=closed,
+        predecessor_campaign_id="cycle-509",
+    )
+
+
 def _write_heal_snapshot(cwd: Path, version: str) -> Path:
     train_dir = cwd / "outputs" / "data" / "train" / version
     train_dir.mkdir(parents=True)

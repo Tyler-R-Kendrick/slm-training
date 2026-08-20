@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Thrash bank exhaust must not park on snapshot leftovers while a process arm is still selectable.",
+          "version": "v260"
+        },
+        {
+          "date": "2026-08-20",
           "note": "A reused heal slug on an unretired train_version is still selectable; closed slug spelling must not hide a new I10 snapshot.",
           "version": "v259"
         },
@@ -6835,7 +6840,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v259"
+      "version": "v260"
     },
     "harness.autoresearch.formal": {
       "history": [

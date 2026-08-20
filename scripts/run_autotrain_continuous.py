@@ -2183,6 +2183,7 @@ def _self_heal_thrash_bank_exhaust(
     *,
     closed: set[str],
     skip: set[str],
+    predecessor_campaign_id: str | None = None,
 ) -> bool:
     """Ensure thrash can continue after static bank multi-seed exhaust.
 
@@ -2192,9 +2193,20 @@ def _self_heal_thrash_bank_exhaust(
     bank = _all_screening_arm_bank()
     known = {slug for slug, _, _ in bank}
     open_now = {slug for slug, _, _ in bank if slug not in closed and slug not in skip}
+    pred = predecessor_campaign_id or _latest_cycle(root, loop_id)[1]
     if _terminal_park_on_exhaust() and _open_slugs_are_snapshot_leftovers(open_now):
         # Isolate OFAT bank is done. Remaining snapshot slugs are I10
-        # leftovers, not compose fodder.
+        # leftovers, not compose fodder — unless a process arm is still
+        # selectable (closed slug spelling hides an unused train_version).
+        if _selectable_process_arm(
+            root, loop_id, predecessor_campaign_id=pred
+        ):
+            print(
+                "SELF_HEAL_BANK_EXHAUST heal_open "
+                "reason=selectable_process_arm",
+                flush=True,
+            )
+            return True
         print(
             "SELF_HEAL_BANK_EXHAUST parked reason=snapshot_leftovers",
             flush=True,
@@ -3147,7 +3159,11 @@ def _self_heal_cycle_error(
             entries, integration_commit=integration_commit, include_causal_cap=False
         )
         if _self_heal_thrash_bank_exhaust(
-            root, loop_id, closed=closed, skip=skip | closed
+            root,
+            loop_id,
+            closed=closed,
+            skip=skip | closed,
+            predecessor_campaign_id=pred,
         ):
             return "thrash_bank_compose"
         if _queue_head_confirmed(entries) is not None:
@@ -4768,7 +4784,11 @@ def self_heal_unblock_loop(
                 entries, integration_commit=integration_commit, include_causal_cap=False
             )
             if _self_heal_thrash_bank_exhaust(
-                root, loop_id, closed=closed, skip=skip | closed
+                root,
+                loop_id,
+                closed=closed,
+                skip=skip | closed,
+                predecessor_campaign_id=pred,
             ):
                 # Only record as heal when bank was empty before (heuristic: open_now
                 # was empty). The helper returns True also when arms already open;
@@ -14097,6 +14117,7 @@ def run_cycle(
                 loop_id,
                 closed=recent_exhausted,
                 skip=skip_slugs,
+                predecessor_campaign_id=pred,
             ):
                 # Dynamic thrash successors now in the process bank — continue
                 # screening without a human re-prompt.
