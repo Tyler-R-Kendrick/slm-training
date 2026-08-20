@@ -1,0 +1,206 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c427",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 5417.03,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 5417.03,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.17416666666666666,
+    "structural_similarity": 0.17416666666666666
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 2846.08,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 2846.08,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.17416666666666666,
+    "structural_similarity": 0.17416666666666666
+  },
+  "cycle_index": 427,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260820-continuous-openui-local-8c0b60dd-c427-control": 0,
+      "c20260820-continuous-openui-local-8c0b60dd-c427-current-rung-data-heal": 0
+    },
+    "arm_order": [
+      "c20260820-continuous-openui-local-8c0b60dd-c427-control",
+      "c20260820-continuous-openui-local-8c0b60dd-c427-current-rung-data-heal"
+    ],
+    "arm_seed": 100427,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1608962,
+    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c427",
+    "candidate_id": "c20260820-continuous-openui-local-8c0b60dd-c427-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 5417.03,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.6333333333333333,
+      "smoke.latency_ms_p50": 5417.03,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.17416666666666666,
+      "structural_similarity": 0.17416666666666666
+    },
+    "candidate_trainable_params": 1599618,
+    "climb_policy_sha256": "b1a34d8527ae8b78930cdd5b6592d1ae1eebf2b018d2192e30aa46971566ee4c",
+    "control_id": "c20260820-continuous-openui-local-8c0b60dd-c427-control",
+    "control_metrics": {
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 2846.08,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.6333333333333333,
+      "smoke.latency_ms_p50": 2846.08,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.17416666666666666,
+      "structural_similarity": 0.17416666666666666
+    },
+    "cycle_index": 427,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "increase",
+    "finished_at": "2026-08-20T09:38:20Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": true,
+    "policy_sha256": "b1a34d8527ae8b78930cdd5b6592d1ae1eebf2b018d2192e30aa46971566ee4c",
+    "policy_version": "v9",
+    "positive": false,
+    "preflight": {
+      "blocked_slugs": [],
+      "schema": "autotrain_preflight/v1",
+      "selected_slug": "current-rung-data-heal",
+      "verdicts": {
+        "current-rung-data-heal": [
+          {
+            "check_id": "concluded_family",
+            "data": {
+              "family_key": "heal-resume+process-arm+process-role+train-version"
+            },
+            "reasons": [
+              "family 'heal-resume+process-arm+process-role+train-version' has no binding closure record"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_dominance",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism dominance check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_no_effect",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism no-effect check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "power_decidability",
+            "data": {
+              "alpha": 0.05,
+              "config_fingerprint": "821e4419a0c13528",
+              "endpoint_metric": "smoke.structural_similarity",
+              "max_reasonable_n": 64,
+              "min_attainable_p": 1.0,
+              "min_detectable_effect": 0.0868422259909196,
+              "minimum_effect": 0.01,
+              "n_seeds": 1,
+              "paired": true,
+              "process_arm": true,
+              "required_n_for_effect": 76,
+              "sd": 0.03099753147948608,
+              "sd_source": "evidence_ledger.v1.json pooled delta sd (dof=167)",
+              "steps": 20
+            },
+            "reasons": [
+              "min_attainable_p=1 > alpha=0.05 at n=1 (paired sign test): no result at this n can ever reject",
+              "min_detectable_effect=0.0868422 > minimum_effect=0.01 at n=1, sd=0.0309975: required_n_for_effect=76",
+              "sd=0.0309975 from evidence_ledger.v1.json pooled delta sd (dof=167)",
+              "required_n_for_effect=76 exceeds the reasonable screening ceiling (64); this design cannot become decidable through realistic accumulation",
+              "process/heal arm is not a confirmatory design; power decidability warns instead of blocking first execution"
+            ],
+            "verdict": "warn"
+          },
+          {
+            "check_id": "prior_attempts",
+            "data": {
+              "config_fingerprint": "821e4419a0c13528",
+              "matched": 0,
+              "source": "evidence_store"
+            },
+            "reasons": [
+              "no matching prior attempt (source=evidence_store)"
+            ],
+            "verdict": "pass"
+          }
+        ]
+      }
+    },
+    "primary_metric": "smoke.structural_similarity",
+    "reasons": [
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c427-current-rung-data-heal",
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c427-control",
+      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.17416666666666666 candidate=0.17416666666666666 improvement=0.0",
+      "fixture_insufficient_n_alone"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": true,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c427-current-rung-data-heal",
+    "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c427-control",
+    "primary_metric_null_or_worse:smoke.structural_similarity:control=0.17416666666666666 candidate=0.17416666666666666 improvement=0.0",
+    "fixture_insufficient_n_alone"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "e6fbfb9ea84a6dc61960df75d3fca09f0f6be120",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-20T09:38:30.659383+00:00"
+  }
+}
