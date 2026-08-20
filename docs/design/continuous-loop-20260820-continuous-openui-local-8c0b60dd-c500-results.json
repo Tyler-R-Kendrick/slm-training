@@ -89,6 +89,37 @@
     "stack_layer": false
   },
   "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c500",
+    "cycle_index": 500,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.structural_similarity",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260820-continuous-openui-local-8c0b60dd-c500-confirm-latprobe:missing_scoreboard",
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c500-confirm",
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c500-control",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms",
+      "keep_ship_gates_do_not_enqueue_confirm"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ]
+  },
   "honesty": "fixture_screening_only_not_ship",
   "loop_id": "continuous-openui-local",
   "measurement_complete": false,
@@ -106,7 +137,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "9edc9a317d95eb3a7f50c9f640c98930ac629ed8",
+    "code_commit": "daea5d0be66ad31a13cec5636bcafdb3b816a4e9",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -115,6 +146,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-20T19:59:02.683920+00:00"
+    "stamped_at": "2026-08-20T20:05:45.256974+00:00"
   }
 }
