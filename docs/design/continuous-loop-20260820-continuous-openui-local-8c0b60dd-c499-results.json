@@ -1,0 +1,118 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.5333333333333333,
+    "latency_ms_p50": 3285.47,
+    "meaningful_program_rate": 0.16666666666666666,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.5333333333333333,
+    "smoke.latency_ms_p50": 3285.47,
+    "smoke.meaningful_program_rate": 0.16666666666666666,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.11561666666666666,
+    "structural_similarity": 0.11561666666666666
+  },
+  "cycle_index": 499,
+  "cycle_intent": "confirm",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260820-continuous-openui-local-8c0b60dd-c499-confirm": 0,
+      "c20260820-continuous-openui-local-8c0b60dd-c499-control": 0
+    },
+    "arm_order": [
+      "c20260820-continuous-openui-local-8c0b60dd-c499-control",
+      "c20260820-continuous-openui-local-8c0b60dd-c499-confirm"
+    ],
+    "arm_seed": 100499,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1608962,
+    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499",
+    "candidate_id": "c20260820-continuous-openui-local-8c0b60dd-c499-confirm-latprobe",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": null,
+    "climb_policy_sha256": "47e1ef9acc16adad6c5f1907371ab85f7f421d3b7ffdce761c37c8baeb643561",
+    "control_id": "c20260820-continuous-openui-local-8c0b60dd-c499-control",
+    "control_metrics": {
+      "binder_reference_f1": 0.5333333333333333,
+      "latency_ms_p50": 3285.47,
+      "meaningful_program_rate": 0.16666666666666666,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.5333333333333333,
+      "smoke.latency_ms_p50": 3285.47,
+      "smoke.meaningful_program_rate": 0.16666666666666666,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.11561666666666666,
+      "structural_similarity": 0.11561666666666666
+    },
+    "cycle_index": 499,
+    "cycle_intent": "confirm",
+    "cycle_role": "screening",
+    "direction": "increase",
+    "finished_at": "2026-08-20T19:41:03Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "47e1ef9acc16adad6c5f1907371ab85f7f421d3b7ffdce761c37c8baeb643561",
+    "policy_version": "v11",
+    "positive": false,
+    "primary_metric": "smoke.structural_similarity",
+    "reasons": [
+      "measurement_incomplete:c20260820-continuous-openui-local-8c0b60dd-c499-confirm-latprobe:missing_scoreboard",
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c499-control",
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c499-confirm",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone",
+      "confirmation_rejected:primary_quality_not_reheld"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false
+  },
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "measurement_incomplete:c20260820-continuous-openui-local-8c0b60dd-c499-confirm-latprobe:missing_scoreboard",
+    "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c499-control",
+    "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c499-confirm",
+    "primary_metric_unavailable",
+    "fixture_insufficient_n_alone",
+    "confirmation_rejected:primary_quality_not_reheld"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "c19b04ac12bf3f38c62500d084b388788bc59f0b",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-20T19:41:03.091818+00:00"
+  }
+}
