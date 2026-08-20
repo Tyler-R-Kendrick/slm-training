@@ -8232,6 +8232,64 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     assert reuse["manifest_paths"] == (retry_path, source_path)
 
 
+def test_frozen_train_reuse_skipped_when_source_has_decode_timeouts(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Fail-closed: do not reuse train when the frozen source eval timed out."""
+
+    root = tmp_path / "autoresearch"
+    source_campaign = "cycle-timeout"
+    source_dir = root / source_campaign
+    source_experiment = {
+        "experiment_id": "source-control",
+        "campaign_id": source_campaign,
+        "hypothesis": "Timeout incomplete control must force a fresh eval.",
+        "rationale": "Reuse would re-run the same timed-out measurement.",
+        "expected_effect": "Successor trains and evaluates without frozen reuse.",
+        "falsification_criteria": ["Train reuse is offered despite decode timeouts."],
+        "stop_conditions": ["Stop after the bounded evaluation."],
+        "citations": ["fixture://timeout-source"],
+        "knobs": {"steps": 1, "batch_size": 1, "seed": 7},
+    }
+    source_manifest = _mod._manifest(source_campaign, source_experiment, "a" * 40)
+    source_path = source_dir / "manifests" / "source-control.json"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_text(source_manifest.model_dump_json(indent=2) + "\n")
+    checkpoint = source_dir / "runs" / "source-control" / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (checkpoint.parents[1] / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "run_id": "source-control",
+                "stopped_on": "steps",
+                "steps": 1,
+                "checkpoint": str(checkpoint),
+            }
+        )
+    )
+    (checkpoint.parents[1] / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "decode_timeout_count": 3,
+                "document_n": 3,
+                "completed_document_n": 0,
+                "incomplete_document_n": 3,
+            }
+        )
+    )
+
+    reuse = _mod._completed_frozen_train_source(
+        root=root,
+        campaign_dir=source_dir,
+        manifest=source_manifest,
+        manifest_path=source_path,
+    )
+
+    assert reuse is None
+    assert "FROZEN_TRAIN_REUSE_SKIP reason=decode_timeout" in capsys.readouterr().out
+
+
 def test_digestless_frozen_retry_does_not_stall_cycle(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

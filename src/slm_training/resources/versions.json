@@ -4977,6 +4977,16 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "version": "v248",
+          "date": "2026-08-20",
+          "note": "no-bump: rebuild evidence_ledger.v1.json scanned count 2181 -> 2218 after c420 cycle docs on main; deterministic fold only, FROZEN_TRAIN_REUSE_SKIP behavior unchanged."
+        },
+        {
+          "version": "v248",
+          "date": "2026-08-20",
+          "note": "Fail-closed FROZEN_TRAIN_REUSE_SKIP when the frozen-replay source arm finalized with decode_timeout_count>0 (or measurement_incomplete…decode_timeout_count=) so successors force a fresh control/candidate eval instead of replaying a timeout-incomplete train."
+        },
+        {
           "version": "v247",
           "date": "2026-08-19",
           "note": "after ancestry skip, autoresearch init uses HEAD as both --upstream-commit and --integration-commit when origin/main is not contained in HEAD; _validate_continuous_commits still requires origin/main when HEAD contains it."
@@ -6737,7 +6747,7 @@
         "docs/design/integ-03-campaign-formal-evidence.md",
         "src/slm_training/autoresearch/sample_adequacy.py"
       ],
-      "version": "v247"
+      "version": "v248"
     },
     "harness.autoresearch.formal": {
       "history": [
