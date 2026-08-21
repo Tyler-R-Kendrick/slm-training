@@ -12,11 +12,4 @@
 - control_metrics: `{'latency_ms_p50': 3678.24, 'parse_rate': 1.0, 'meaningful_program_rate': 0.0, 'structural_similarity': 0.07285, 'binder_reference_f1': 0.0, 'smoke.latency_ms_p50': 3678.24, 'smoke.parse_rate': 1.0, 'smoke.meaningful_program_rate': 0.0, 'smoke.structural_similarity': 0.07285, 'smoke.binder_reference_f1': 0.0}`
 - candidate_metrics: `{'latency_ms_p50': 22390.69, 'parse_rate': 1.0, 'meaningful_program_rate': 0.0, 'structural_similarity': 0.19336666666666666, 'binder_reference_f1': 0.7666666666666666, 'smoke.latency_ms_p50': 22390.69, 'smoke.parse_rate': 1.0, 'smoke.meaningful_program_rate': 0.0, 'smoke.structural_similarity': 0.19336666666666666, 'smoke.binder_reference_f1': 0.7666666666666666}`
 
-## Hill-climb this cycle
-
-- went well: measurement_complete
-- went wrong: non_positive, fixture_insufficient_n_alone, fixture_volume_gate_ship_only
-- speculate: keep_rotating_size_matched_arms, keep_ship_gates_do_not_enqueue_confirm
-- deltas: `{'binder_reference_f1': 0.7666666666666666, 'latency_ms_p50': 18712.449999999997, 'meaningful_program_rate': 0.0, 'parse_rate': 0.0, 'smoke.binder_reference_f1': 0.7666666666666666, 'smoke.latency_ms_p50': 18712.449999999997, 'smoke.meaningful_program_rate': 0.0, 'smoke.parse_rate': 0.0, 'smoke.structural_similarity': 0.12051666666666666, 'structural_similarity': 0.12051666666666666}`
-
 Auto-documented by the continuous driver self-heal closeout. Fixture screening only — not a ship claim.
