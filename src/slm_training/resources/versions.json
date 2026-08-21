@@ -5008,6 +5008,11 @@
       "history": [
         {
           "date": "2026-08-20",
+          "note": "Frozen-train reuse with a command list that is not one train plus one eval skips reuse instead of crashing the successor cycle.",
+          "version": "v262"
+        },
+        {
+          "date": "2026-08-20",
           "note": "Select the I10 process arm when its slug is skip-closed but the train_version is still unused.",
           "version": "v261"
         },
@@ -6845,7 +6850,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v261"
+      "version": "v262"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -17018,6 +17023,11 @@
     },
     "harness.preference.remine_campaign": {
       "history": [
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: frozen-train reuse skips instead of raising when compile_commands is not one train plus one eval; remine campaign behavior unchanged.",
+          "version": "v6"
+        },
         {
           "date": "2026-08-19",
           "note": "continuous init on a squash-diverged worktree: _validate_continuous_commits accepts upstream=HEAD when origin/main is not contained in HEAD (driver passes HEAD for both commits); contained-main still requires origin/main.",

@@ -1143,6 +1143,69 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
         )
 
 
+def test_frozen_training_reuse_skips_when_eval_stage_missing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from scripts.autoresearch import _prepare_reused_training
+
+    spec = experiment()
+    train_only = [["python", "-m", "scripts.train_model", "--steps", "1"]]
+    source_manifest = experiment_campaign(experiment_id="source-run")
+    source_manifest_path = tmp_path / "source-manifest.json"
+    source_manifest_path.write_text(
+        source_manifest.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    source_sha = hashlib.sha256(source_manifest_path.read_bytes()).hexdigest()
+    target_manifest = experiment_campaign(
+        experiment_id=spec.experiment_id,
+        replay_of_manifest_sha256=source_sha,
+        replay_reason="Retry only the incomplete evaluation stage.",
+    )
+    run_dir = tmp_path / "source-run"
+    checkpoint = run_dir / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    for suffix in (".meta.json", ".tokenizer.json", ".context.tokenizer.json"):
+        checkpoint.with_suffix(suffix).write_text("{}\n", encoding="utf-8")
+    (run_dir / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "run_id": "source-run",
+                "stopped_on": "steps",
+                "steps": 1,
+                "checkpoint": str(checkpoint),
+                "track": {"trainable_params": 1234},
+                "version_stamp": {
+                    "code_commit": source_manifest.source_commit,
+                    "code_dirty": False,
+                },
+                "recipe": {
+                    "steps_requested": 1,
+                    "batch_size": 1,
+                    "seed": 1,
+                    "learning_rate": 0.001,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    prepared, receipt = _prepare_reused_training(
+        campaign=campaign(),
+        experiment=spec,
+        target_manifest=target_manifest,
+        commands=train_only,
+        source_run=run_dir,
+        lineage_paths=(source_manifest_path,),
+    )
+
+    assert prepared == train_only
+    assert receipt is None
+    assert "FROZEN_TRAIN_REUSE_SKIP reason=missing_train_or_eval_stage" in (
+        capsys.readouterr().out
+    )
+
+
 def test_execution_budget_counts_started_experiments_not_matrix_rows(
     tmp_path: Path,
 ) -> None:

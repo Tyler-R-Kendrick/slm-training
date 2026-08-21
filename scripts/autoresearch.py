@@ -1043,7 +1043,12 @@ def _prepare_reused_training(
     train_commands = [item for item in commands if "scripts.train_model" in item]
     eval_commands = [item for item in commands if "scripts.evaluate_model" in item]
     if len(train_commands) != 1 or len(eval_commands) != 1:
-        raise ValueError("training reuse requires one train and one evaluation stage")
+        print(
+            "FROZEN_TRAIN_REUSE_SKIP reason=missing_train_or_eval_stage "
+            f"train_n={len(train_commands)} eval_n={len(eval_commands)}",
+            flush=True,
+        )
+        return commands, None
     train = train_commands[0]
     recipe = summary.get("recipe") or {}
     expected_recipe = {
