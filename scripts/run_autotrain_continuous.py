@@ -32,9 +32,22 @@ import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from slm_training.autoresearch.engine import default_eval_version
+from slm_training.autoresearch.hillclimb import (
+    CHAMPION_EPOCHS_EXHAUSTED,
+    DEFAULT_MAX_CUMULATIVE_EPOCHS,
+    HillClimbError,
+    assert_champion_eval_disjoint,
+    assert_warm_start_launch,
+    champion_epoch_park_reason,
+    climb_champion_checkpoint_path,
+    load_climb_champion,
+    maybe_advance_climb_champion,
+    seed_climb_champion,
+)
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
     CampaignArmV1,
@@ -43,6 +56,8 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignGateV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
+    select_best_by_primary_then_smallest,
 )
 from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.thrash_regime import (
@@ -100,11 +115,13 @@ from slm_training.harness_core.bounded_process import (
 )
 from slm_training.harness_core.versioning import build_version_stamp
 from slm_training.levers import (
+    CAPACITY_SCALING_LEVERS,
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
     MAX_HARNESS_WALL_SECONDS,
     MAX_RUN_SECONDS,
+    require_size_matched_arms,
 )
 
 # Locked continuous promote metric programs (SHA bound on campaign lock).
@@ -814,6 +831,7 @@ _METRIC_LEAVES = (
     "meaningful_program_rate",
     "structural_similarity",
     "binder_reference_f1",
+    "eval_nll",
 )
 
 
@@ -852,7 +870,102 @@ def _run_metrics(
                 out[f"held_out.{leaf}"] = val
                 if prefer_held_out:
                     out[leaf] = val
+    scoreboard = run_dir / "scoreboard.json"
+    if scoreboard.is_file():
+        suites = _read_json(scoreboard).get("suites")
+        smoke_sb = suites.get("smoke") if isinstance(suites, dict) else None
+        if isinstance(smoke_sb, dict) and isinstance(
+            smoke_sb.get("eval_nll"), (int, float)
+        ):
+            nll = float(smoke_sb["eval_nll"])
+            out["eval_nll"] = nll
+            out["smoke.eval_nll"] = nll
     return out
+
+
+def _run_arm_eval_nll(
+    run_dir: Path,
+    *,
+    test_dir: Path | None = None,
+    checkpoint: Path | None = None,
+    model: Any = None,
+    nll_config: Any = None,
+    eval_nll: float | None = None,
+    definition_hash: str | None = None,
+) -> dict[str, Any]:
+    """Write canonical ``suites.smoke.eval_nll`` (arm loss weights ignored).
+
+    Diagnostic only: does not touch ship gates. Uses
+    ``evaluate_loss_suites`` with a cycle-shared baseline ``nll_config``.
+    """
+    from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
+
+    digest = definition_hash or screening_nll_definition_hash()
+    value = eval_nll
+    report: dict[str, Any] | None = None
+    if value is None:
+        from slm_training.evals.denoising_nll import DenoisingNLLConfig
+        from slm_training.evals.loss_suites import (
+            LOSS_SUITE_VERSION,
+            evaluate_loss_suites,
+            load_suite_spec,
+        )
+
+        if model is None:
+            if checkpoint is None:
+                raise ValueError("eval_nll requires model, checkpoint, or eval_nll")
+            from slm_training.models.twotower import TwoTowerModel
+
+            model = TwoTowerModel.from_checkpoint(checkpoint, device="cpu")
+        if test_dir is None:
+            raise ValueError("eval_nll compute path requires test_dir")
+        spec = load_suite_spec(LOSS_SUITE_VERSION)
+        cfg = nll_config or DenoisingNLLConfig(
+            suite_version=LOSS_SUITE_VERSION,
+            mask_rates=tuple(
+                float(r)
+                for r in (spec.get("mask_rates") or [0.15, 0.30, 0.50, 0.70, 0.85])
+            ),
+            mask_seed=int(spec.get("mask_seed", 0) or 0),
+            compute_legal_support=False,
+        )
+        report = evaluate_loss_suites(
+            model,
+            Path(test_dir),
+            nll_config=cfg,
+            base_suite="smoke",
+            ood_suite="smoke",
+        )
+        broad = (report.get("categories") or {}).get("broad") or {}
+        mean = (broad.get("aggregate") or {}).get("mean_nll")
+        if mean is None:
+            mean = (report.get("aggregate") or {}).get("weighted_nll")
+        if not isinstance(mean, (int, float)):
+            raise ValueError("evaluate_loss_suites did not yield a finite smoke NLL")
+        value = float(mean)
+    scoreboard_path = Path(run_dir) / "scoreboard.json"
+    scoreboard = _read_json(scoreboard_path)
+    suites = scoreboard.get("suites")
+    if not isinstance(suites, dict):
+        suites = {}
+        scoreboard["suites"] = suites
+    smoke = suites.get("smoke")
+    if not isinstance(smoke, dict):
+        smoke = {}
+        suites["smoke"] = smoke
+    smoke["eval_nll"] = float(value)
+    smoke["eval_nll_definition_hash"] = digest
+    smoke["eval_nll_claim_class"] = "diagnostic"
+    Path(run_dir).mkdir(parents=True, exist_ok=True)
+    scoreboard_path.write_text(
+        json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
+    )
+    return {
+        "eval_nll": float(value),
+        "definition_hash": digest,
+        "scoreboard": str(scoreboard_path),
+        "report": report,
+    }
 
 
 # Phase A positive classification: latency is never a free win over quality.
@@ -7325,6 +7438,8 @@ def _screening_regime_decision(
     *,
     queue_entries: Sequence[Mapping[str, Any]] | None,
     compiler_ms_timeout: bool,
+    root: Path | None = None,
+    loop_id: str | None = None,
 ) -> ThrashRegimeDecision:
     """Decide isolate / climb / timeout residual for the next screening thrash."""
 
@@ -7334,9 +7449,17 @@ def _screening_regime_decision(
         raw = baseline_entry.get("knobs")
         if isinstance(raw, dict) and raw:
             climb_knobs = _lever_knobs(raw)
+    champion_ok = False
+    if root is not None and loop_id:
+        loop_dir = root / "loops" / loop_id
+        sidecar = load_climb_champion(loop_dir)
+        champion_ok = climb_champion_checkpoint_path(loop_dir).is_file()
+        if climb_knobs is None and sidecar is not None and sidecar.knobs:
+            climb_knobs = _lever_knobs(sidecar.knobs)
     return decide_screening_regime(
         climb_baseline_knobs=climb_knobs,
         compiler_ms_timeout=compiler_ms_timeout,
+        climb_champion_available=champion_ok,
     )
 
 
@@ -12526,6 +12649,7 @@ def _matrix(
     recommended_slug: str | None = None,
     skip_slugs: set[str] | None = None,
     thrash_regime: ThrashRegimeDecision | None = None,
+    initialize_from: str | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -12697,6 +12821,8 @@ def _matrix(
             base["generate_batch_size"] = 1
             base.update(latency_probe_knobs)
         base.update(extra_map)
+        if initialize_from:
+            base["initialize_from"] = initialize_from
         return base
 
     def exp(
@@ -13063,8 +13189,8 @@ def _matrix(
         }
         if rec_slug not in bank_by_slug:
             rec_slug = _all_screening_arm_bank()[0][0]
-        climb_active = regime.base_regime == REGIME_CLIMB and bool(
-            regime.climb_baseline
+        climb_active = regime.base_regime == REGIME_CLIMB and (
+            regime.climb_baseline is not None
         )
         control_extra: dict[str, Any] = {}
         treatment_key = {

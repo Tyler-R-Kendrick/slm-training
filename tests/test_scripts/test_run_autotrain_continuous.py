@@ -11063,3 +11063,27 @@ def test_classify_positive_types_latency_preflight_missing_scoreboard(
     assert _mod._reason_is_harness_incomplete(
         "measurement_incomplete:c-candidate:latency_preflight_infeasible"
     )
+
+
+def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
+    from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
+
+    run_dir = tmp_path / "runs" / "arm"
+    run_dir.mkdir(parents=True)
+    (run_dir / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"n": 6, "structural_similarity": 0.1}}}),
+        encoding="utf-8",
+    )
+    out = _mod._run_arm_eval_nll(run_dir, eval_nll=3.25)
+    assert out["eval_nll"] == 3.25
+    scoreboard = json.loads((run_dir / "scoreboard.json").read_text(encoding="utf-8"))
+    assert scoreboard["suites"]["smoke"]["eval_nll"] == 3.25
+    assert scoreboard["suites"]["smoke"]["eval_nll_claim_class"] == "diagnostic"
+    assert scoreboard["suites"]["smoke"]["eval_nll_definition_hash"] == (
+        screening_nll_definition_hash(
+            arm_loss_weights={"binder_arity_loss_weight": 7.0}
+        )
+    )
+    metrics = _mod._run_metrics(tmp_path, "arm")
+    assert metrics["smoke.eval_nll"] == 3.25
+    assert metrics["eval_nll"] == 3.25
