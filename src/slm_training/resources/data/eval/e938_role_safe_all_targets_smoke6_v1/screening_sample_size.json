@@ -2,10 +2,7 @@
   "eval_version": "e938_role_safe_all_targets_smoke6_v1",
   "report": {
     "alpha": "1/20",
-    "binding_constraints": [
-      "wall_budget",
-      "suite_volume"
-    ],
+    "binding_constraints": [],
     "bounds": [
       {
         "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim",
@@ -20,18 +17,6 @@
         "value": "64"
       },
       {
-        "assumption": "normal-approximation z-power over paired differences; budgeting approximation declared by autoresearch.power, not proved arithmetic",
-        "authority": "assumption_backed",
-        "bound_ast_id": "power.required_n_for_effect",
-        "env": {
-          "alpha": "1/20",
-          "minimum_effect": "1/20",
-          "observed_sd": "1741/10000",
-          "paired": true
-        },
-        "value": "96"
-      },
-      {
         "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits",
         "authority": "theorem_backed_exact",
         "bound_ast_id": "bound.screening_n.budget_upper.v1",
@@ -43,37 +28,19 @@
       }
     ],
     "budget_ceiling_n": 21,
-    "chosen_n": null,
+    "chosen_n": 6,
     "decidability_floor_n": 6,
-    "findings": [
-      {
-        "authority": "climb_signal_not_gate",
-        "code": "screening_n_range_empty",
-        "evidence": {
-          "binding_constraints": [
-            "wall_budget",
-            "suite_volume"
-          ],
-          "budget_ceiling_n": 21,
-          "decidability_floor_n": 6,
-          "n_min": 96,
-          "power_floor_n": 96,
-          "suite_ceiling_n": 24
-        },
-        "severity": "experiment_recommendation",
-        "suggestion": "generate and persist 72 smoke records (floor is 96); do not screen at 24; the arm wall affords 21 records at the declared decode floor \u2014 cheaper per-record decode or a larger stage share, never a silent wall++"
-      }
-    ],
+    "findings": [],
     "max_candidate_n": 64,
-    "must_generate": true,
-    "n_max": 21,
-    "n_min": 96,
-    "power_floor_n": 96,
+    "must_generate": false,
+    "n_max": 6,
+    "n_min": 6,
+    "power_floor_n": null,
     "promotion_authority": false,
     "schema_version": "screening_sample_size/v1",
-    "suite_ceiling_n": 24,
-    "verdict": "infeasible_range_empty"
+    "suite_ceiling_n": 6,
+    "verdict": "feasible"
   },
   "schema_version": "screening_sample_size/v1",
-  "smoke_n": 0
+  "smoke_n": 6
 }

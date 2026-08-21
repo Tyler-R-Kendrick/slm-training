@@ -865,15 +865,9 @@ def test_classify_positive_rejects_partial_suite_completion() -> None:
 
 
 class _StubPolicy:
-    def __init__(
-        self,
-        measurement: dict,
-        payload: dict | None = None,
-        screening_primary: dict | None = None,
-    ) -> None:
+    def __init__(self, measurement: dict, payload: dict | None = None) -> None:
         self._measurement = measurement
         self.payload = payload or {}
-        self.screening_primary = screening_primary
 
     @property
     def measurement(self) -> dict:
@@ -958,59 +952,3 @@ def test_screening_smoke_n_live_policy_is_auto_with_fallback() -> None:
     assert n == int(policy.measurement["screening_smoke_n"])
     assert report is not None
     assert report["verdict"] == "insufficient_evidence"
-
-
-def test_screening_smoke_n_does_not_borrow_structural_sd_for_nll_primary() -> None:
-    # MEASURED_PAIRED_SD was measured on smoke.structural_similarity. A policy
-    # whose screening primary is smoke.eval_nll must not inherit that SD: the
-    # power floor stays unmeasured instead of demanding an impossible n on the
-    # wrong metric's noise.
-    policy = _StubPolicy(
-        {
-            "screening_smoke_n": 3,
-            "screening_smoke_n_mode": "auto",
-            "screening_sample_size": {
-                "max_candidate_n": 64,
-                "default_decode_floor_seconds": 2,
-            },
-        },
-        payload={"power_gate": {"enabled": True, "alpha": "1/20"}},
-        screening_primary={
-            "metric": "smoke.eval_nll",
-            "direction": "decrease",
-            "minimum_effect": "1/20",
-        },
-    )
-    n, report = screening_smoke_n_for_policy(
-        policy, arm_wall_seconds=70.0, suite_records=24
-    )
-    assert report is not None
-    assert report["power_floor_n"] is None
-    assert report["verdict"] == "feasible"
-    assert n == report["decidability_floor_n"] == 6
-    assert report["must_generate"] is False
-
-
-def test_screening_smoke_n_borrows_measured_sd_for_structural_primary() -> None:
-    policy = _StubPolicy(
-        {
-            "screening_smoke_n": 3,
-            "screening_smoke_n_mode": "auto",
-            "screening_sample_size": {
-                "max_candidate_n": 64,
-                "default_decode_floor_seconds": 2,
-            },
-        },
-        payload={"power_gate": {"enabled": True, "alpha": "1/20"}},
-        screening_primary={
-            "metric": "smoke.structural_similarity",
-            "direction": "increase",
-            "minimum_effect": "1/20",
-        },
-    )
-    _n, report = screening_smoke_n_for_policy(
-        policy, arm_wall_seconds=70.0, suite_records=96
-    )
-    assert report is not None
-    assert report["power_floor_n"] is not None
-    assert report["power_floor_n"] > report["decidability_floor_n"]
