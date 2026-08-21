@@ -5007,6 +5007,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-08-21",
+          "note": "Continuous skill: supervisor owns persistence; agent --max-cycles 1 must not compete with a live supervisor or treat DRIVER_ALREADY_RUNNING as a halt.",
+          "version": "v263"
+        },
+        {
           "date": "2026-08-20",
           "note": "Frozen-train reuse with a command list that is not one train plus one eval skips reuse instead of crashing the successor cycle.",
           "version": "v262"
@@ -6850,7 +6855,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v262"
+      "version": "v263"
     },
     "harness.autoresearch.formal": {
       "history": [

@@ -62,6 +62,7 @@ before continuous or multi-run work.
 | **Matrix to the user** | After every cycle (and whenever reporting status): paste the compact four-table view (liveness, results, diagnostics, priorities) from `status --loop-id <id> --matrix --last 5` (or `/tmp/autotrain-report.sh` / `/tmp/autotrain-loop-dashboard.md`) into the chat, plus the cycle's went-well / went-wrong / speculate lines (`HILLCLIMB_ITERATION` / `measured-results-continuous.md`). **Never** claim progress without the matrix |
 | **Liveness proof** | Prove state with the host goal plus `loops/<loop-id>/state.json` heartbeat, phase, next action, and child PID. Legacy drivers may also use `/tmp/autotrain-loop-status.txt`. **Never** use Grok “background ops” UI as liveness |
 | **Never kill the loop** | Do **not** `kill`/`pkill`/`kill -9` `run_autotrain_continuous`, its children, or the continuous worktree processes to ship skills, fix CI, merge PRs, or “restart cleanly.” Side work uses another worktree/branch |
+| **Supervisor owns persistence** | Bare `/autotrain` persistence is `run_autotrain_supervisor`, not agent `--max-cycles 1`. If a supervisor PID is live, **do not** launch a competing driver. `DRIVER_ALREADY_RUNNING` is liveness, not a halt. A background `--max-cycles 1` finishing is **not** the loop ending. If the supervisor is dead, **restart the supervisor in the same turn** — never report park/lock and stop |
 
 After each supervised cycle, validate `cycle_handoff.json` and execute its typed
 actions in order: theorem stop → harness repair → formal repair → data repair →
