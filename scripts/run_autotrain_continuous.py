@@ -15487,6 +15487,7 @@ def run_cycle(
         else None,
         skip_slugs=skip_slugs,
         thrash_regime=thrash_regime,
+        initialize_from=initialize_from,
         telemetry_root=root,
     )
     if saturation_state is not None:
@@ -15849,8 +15850,11 @@ def run_cycle(
         is_promote_arm = cycle_intent == "promote" and (
             eid.endswith("-promote") or "-promote" in eid
         )
+        prelocked = camp_dir / "manifests" / f"{eid}.json"
         if eid in replay_manifest_paths:
             man_path = replay_manifest_paths[eid]
+        elif screening_multi and eid == candidate_eid and prelocked.is_file():
+            man_path = prelocked
         else:
             man = _manifest(
                 campaign_id,
@@ -15951,6 +15955,68 @@ def run_cycle(
         "arm_exits": arm_exits,
         "arm_skipped": arm_skipped,
     }
+    if screening_multi:
+        direction = str(role_primary.get("direction") or "increase")
+        scored: list[tuple[str, float, int]] = []
+        per_arm: dict[str, float | None] = {}
+        for eid in screening_candidate_ids:
+            metrics = _run_metrics(camp_dir, eid)
+            leaf = str(effective_primary).rsplit(".", 1)[-1]
+            val = metrics.get(effective_primary)
+            if val is None:
+                val = metrics.get(leaf)
+            per_arm[eid] = float(val) if isinstance(val, (int, float)) else None
+            if per_arm[eid] is None:
+                continue
+            scored.append(
+                (eid, float(per_arm[eid]), _arm_trainable_params(camp_dir, eid))
+            )
+        winner = None
+        if scored:
+            winner = select_best_by_primary_then_smallest(
+                scored, direction=direction  # type: ignore[arg-type]
+            )
+            ctrl_metrics = _run_metrics(camp_dir, control_eid)
+            ctrl_val = ctrl_metrics.get(effective_primary)
+            if ctrl_val is None:
+                ctrl_val = ctrl_metrics.get(str(effective_primary).rsplit(".", 1)[-1])
+            win_val = per_arm.get(winner)
+            min_eff = float(role_primary.get("minimum_effect") or 0.0)
+            beats = False
+            if isinstance(ctrl_val, (int, float)) and isinstance(win_val, (int, float)):
+                if direction == "decrease":
+                    beats = float(ctrl_val) - float(win_val) >= min_eff
+                else:
+                    beats = float(win_val) - float(ctrl_val) >= min_eff
+            if not beats:
+                winner = None
+        if winner:
+            candidate_eid = winner
+            delivery["candidate_id"] = winner
+        losers = [eid for eid in screening_candidate_ids if eid != winner]
+        _exhaust_screening_losers(
+            root=root,
+            loop_id=loop_id,
+            policy=policy,
+            matrix=matrix,
+            control_id=control_eid,
+            loser_ids=losers,
+            claim_class=claim_for_role,
+            primary_metric=effective_primary,
+            direction=direction,
+            train_version=train_version,
+            eval_version=eval_version,
+        )
+        delivery["multi_arm"] = {
+            "max_arms_per_cycle": int(multi_arm_cfg["max_arms_per_cycle"]),
+            "fitted_candidates": fitted_candidate_count,
+            "scheduled_candidates": list(screening_candidate_ids),
+            "constraint": multi_arm_constraint,
+            "selection_rule": selection_rule_locked,
+            "winner_id": winner,
+            "per_arm_primary": per_arm,
+            "size_skipped": multi_arm_skip,
+        }
     if (
         replay is not None
         and set(arm_exits) == set(replay_manifests)
