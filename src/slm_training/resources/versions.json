@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "Screening data heal allocates a new versioned smoke suite instead of reusing the frozen smoke6 snapshot when n must grow.",
+          "version": "v270"
+        },
+        {
+          "date": "2026-08-21",
           "note": "Fail-closed continuous driver records pass outcomes and the supervisor watchdog escalates repeated no-campaign passes.",
           "version": "v269"
         },
@@ -6915,7 +6920,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v269"
+      "version": "v270"
     },
     "harness.autoresearch.formal": {
       "history": [
