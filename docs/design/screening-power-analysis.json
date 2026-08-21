@@ -1,0 +1,49 @@
+{
+  "schema": "screening_power_analysis/v1",
+  "claim_class": "diagnostic",
+  "honesty": "fixture_demo_not_ship",
+  "recipe": {
+    "device": "cpu",
+    "source": "outputs/autoresearch/continuous-loop-20260820-*/runs/*/eval_smoke.json",
+    "metric": "smoke.structural_similarity",
+    "paired": true,
+    "control_eval_smoke_files": 144,
+    "paired_cycles": 109,
+    "n_deltas": 405,
+    "tie_share": 0.316,
+    "alpha": "1/20",
+    "power": 0.8,
+    "backend": "scratch",
+    "suite_n_source": 6
+  },
+  "variance": {
+    "per_record_sd": 0.1193,
+    "mean_per_id_sd": 0.1004,
+    "between_cycle_mean_sd": 0.0769,
+    "paired_delta_sd": 0.1741,
+    "cycle_delta_mean_sd": 0.1314
+  },
+  "mde_at_n": {
+    "6": 0.19912554764130833,
+    "12": 0.14080302504465406,
+    "24": 0.09956277382065416,
+    "48": 0.07040151252232703
+  },
+  "mde_at_budget_ceiling_21": 0.10643708231821537,
+  "required_n_for_effect_0_01": 2380,
+  "required_n_for_effect_0_05": 96,
+  "required_n_for_effect_0_10": 24,
+  "recommended_screening_n": 21,
+  "recommended_promotion_suite_n": 24,
+  "recommended_minimum_effect": 0.10643708231821537,
+  "note": "Policy minimum_effect 0.01 is ~20x below paired MDE at n=6. Suite grown to 24; arm-wall budget at 2s/record caps n at 21. Do not weaken gates.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "02b3428b6509c08e1af7ed9b059e58e329f5766c",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v7"
+    },
+    "stamped_at": "2026-08-21T03:19:31.183940+00:00"
+  }
+}

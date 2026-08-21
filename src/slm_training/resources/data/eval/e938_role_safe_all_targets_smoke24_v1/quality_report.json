@@ -1,0 +1,27 @@
+{
+  "schema": "eval_quality_report/v1",
+  "dataset_id": "e938_role_safe_all_targets_smoke24_v1",
+  "suite_counts": {
+    "smoke": 24,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 0
+  },
+  "leakage_rejected": 0,
+  "error_count": 0,
+  "errors": [],
+  "warnings": [],
+  "recommendations": [
+    "keep strict leakage gates; do not weaken"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "138249602612fbc0e472341d14bf1fd96177ad41",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v7"
+    },
+    "stamped_at": "2026-08-21T03:19:05.628488+00:00"
+  }
+}

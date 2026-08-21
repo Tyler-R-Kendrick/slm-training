@@ -182,6 +182,31 @@ def test_chosen_n_is_max_of_decidability_and_power_floors() -> None:
     assert report.n_min == max(report.decidability_floor_n, report.power_floor_n)
 
 
+def test_published_smoke24_is_disjoint_and_does_not_mutate_frozen() -> None:
+    from pathlib import Path
+
+    from slm_training.dsl.schema import load_jsonl
+
+    published = Path(
+        "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke24_v1"
+    )
+    frozen = Path(
+        "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1"
+    )
+    smoke = list(load_jsonl(published / "suites" / "smoke" / "records.jsonl"))
+    frozen_smoke = list(load_jsonl(frozen / "suites" / "smoke" / "records.jsonl"))
+    assert len(smoke) >= TARGET_SMOKE_N
+    assert len(frozen_smoke) == 6
+    assert frozen.is_dir()
+    train_ids = {
+        rec.id
+        for rec in load_jsonl(
+            Path("src/slm_training/resources/data/train/wf_smoke_v2/records.jsonl")
+        )
+    }
+    assert train_ids.isdisjoint({rec.id for rec in smoke})
+
+
 def test_publish_refuses_frozen_eval_dirs() -> None:
     with pytest.raises(FrozenEvalSnapshotError):
         assert_eval_publish_target_writable(SCREENING_SMOKE6_EVAL_VERSION)

@@ -467,18 +467,18 @@ _EXTRA_SMOKE_FIXTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "smoke_image_01",
-        "prompt": "Image block with caption and CTA.",
+        "prompt": "Image block with a supporting informational note.",
         "openui": (
-            "root = Stack([shot, caption, cta], \"column\")\n"
+            "root = Stack([shot, note], \"column\")\n"
             "shot = ImageBlock(\":smoke.image.src\", \":smoke.image.alt\")\n"
-            "caption = TextContent(\":smoke.image.caption\")\n"
-            "cta = Button(\":smoke.image.cta\")"
+            "note = Callout(\"info\", \":smoke.image.hint.title\", "
+            "\":smoke.image.hint.body\")"
         ),
         "placeholders": [
             ":smoke.image.src",
             ":smoke.image.alt",
-            ":smoke.image.caption",
-            ":smoke.image.cta",
+            ":smoke.image.hint.title",
+            ":smoke.image.hint.body",
         ],
         "split": "smoke",
         "source": "fixture",
