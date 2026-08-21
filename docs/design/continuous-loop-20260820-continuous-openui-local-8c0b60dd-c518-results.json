@@ -167,30 +167,6 @@
     }
   },
   "evidence_class": "fixture",
-  "hillclimb": {
-    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c518",
-    "cycle_index": 518,
-    "deltas": {},
-    "measurement_complete": false,
-    "positive": false,
-    "primary_metric": "smoke.structural_similarity",
-    "progress": false,
-    "reasons": [
-      "measurement_incomplete:c20260820-continuous-openui-local-8c0b60dd-c518-control:missing_scoreboard",
-      "measurement_incomplete:c20260820-continuous-openui-local-8c0b60dd-c518-current-rung-data-heal:missing_scoreboard",
-      "primary_metric_unavailable"
-    ],
-    "schema": "hillclimb_iteration/v1",
-    "speculate": [
-      "replay_frozen_or_fit_decode_to_wall",
-      "keep_rotating_size_matched_arms"
-    ],
-    "went_well": [],
-    "went_wrong": [
-      "measurement_incomplete",
-      "non_positive"
-    ]
-  },
   "honesty": "fixture_screening_only_not_ship",
   "loop_id": "continuous-openui-local",
   "measurement_complete": false,
@@ -204,7 +180,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "ebe24d232bbead43583b81745a4e8bb15fbbff5b",
+    "code_commit": "c36df520bffcca5404c6b4c9f10873140d191489",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -213,6 +189,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-21T00:43:21.163162+00:00"
+    "stamped_at": "2026-08-21T00:43:24.829635+00:00"
   }
 }
