@@ -484,13 +484,23 @@ def screening_smoke_n_for_policy(
         minimum_effect = primary.get("minimum_effect")
         if minimum_effect is None:
             minimum_effect = block.get("minimum_effect")
-        observed_sd = block.get("observed_sd")
+        observed_sd = primary.get("observed_sd")
+        if observed_sd is None:
+            observed_sd = block.get("observed_sd")
         if observed_sd is None and minimum_effect is not None:
-            from slm_training.autoresearch.screening_sample_size import (
-                MEASURED_PAIRED_SD,
-            )
+            # MEASURED_PAIRED_SD is the paired-delta SD of
+            # smoke.structural_similarity (see screening_sample_size). It is a
+            # valid budgeting prior only when that metric is the screening
+            # primary; borrowing it for any other primary prices the power
+            # floor on the wrong metric's noise. Leave the floor unmeasured
+            # (insufficient evidence) instead of demanding an impossible n.
+            primary_metric = str(primary.get("metric") or "")
+            if primary_metric in ("", "smoke.structural_similarity"):
+                from slm_training.autoresearch.screening_sample_size import (
+                    MEASURED_PAIRED_SD,
+                )
 
-            observed_sd = MEASURED_PAIRED_SD
+                observed_sd = MEASURED_PAIRED_SD
         power_kwargs: dict[str, Any] = {}
         if minimum_effect is not None and observed_sd is not None:
             power_kwargs["minimum_effect"] = str(minimum_effect)

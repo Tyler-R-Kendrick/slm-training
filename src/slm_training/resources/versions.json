@@ -5023,6 +5023,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "climb_policy stops borrowing MEASURED_PAIRED_SD (measured on smoke.structural_similarity) for a non-structural screening primary such as smoke.eval_nll; the power floor stays unmeasured instead of demanding an impossible n and livelocking the generate-and-persist heal.",
+          "version": "v268"
+        },
+        {
+          "date": "2026-08-21",
           "note": "CampaignLockV1.verify_digest accepts any subset of legacy default-valued fields (intermediate-schema locks hashed with some but not all of them, e.g. c531's power_feasibility-only variant); content edits still fail closed.",
           "version": "v267"
         },
@@ -6895,7 +6900,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v267"
+      "version": "v268"
     },
     "harness.autoresearch.formal": {
       "history": [
