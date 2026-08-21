@@ -1,0 +1,514 @@
+{
+  "schema_version": 1,
+  "version": "hillclimb_strict_v1",
+  "profile": "strict",
+  "built_at": "2026-08-21T03:14:52.324071+00:00",
+  "counts": {
+    "seeds": 1410,
+    "candidates": 2478,
+    "collected": 2396,
+    "admitted": 976,
+    "rejected_total": 1513,
+    "source_errors": 23,
+    "by_stage": {
+      "decontamination": 104,
+      "dedup": 1061,
+      "normalize": 82,
+      "quality": 174,
+      "verification": 92
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 82,
+    "parse_rate": 0.9669,
+    "tier_histogram": {
+      "Bronze": 248,
+      "Gold": 6,
+      "Silver": 722
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 92,
+    "placeholder_contract_violations": 171,
+    "judge_contract_violations": 3,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 174,
+    "reason_histogram": {
+      "identity_echo_mismatch": 3,
+      "too_few_placeholders": 171,
+      "unknown_components": 113
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 976
+    },
+    "mean_quality_score": 0.9756,
+    "min_quality_score": 0.85
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 755,
+      "fuzzy_minhash": 70,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 236,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 941,
+      "records_per_cluster": {
+        "max": 2,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "03d8ead4d2e6aacd|7e3eefe6214c9c5f99be12ae15ffabd71c34e1366f428d895dadbc6e90fdb6d1|e85911d23eed9457",
+        "count": 2,
+        "sample_ids": [
+          "program_6e67c87e24f49b91",
+          "program_6e67c87e24f49b91_syn_0"
+        ]
+      },
+      {
+        "cluster": "0b32681d5ab98007|9cc5efad9499e513552b20a9f33963155f8422ddd83e8f9bc626d555f6da1c3f|619332d6f812f745",
+        "count": 2,
+        "sample_ids": [
+          "f54e21396cd63a50_scope",
+          "f54e21396cd63a50_scope"
+        ]
+      },
+      {
+        "cluster": "0c10c1d5791fb352|8c31f0597d15694c94472d57411fdbaab1cb28ca3fd563cd5c4c54f9198115dc|da7d8faa439371b7",
+        "count": 2,
+        "sample_ids": [
+          "program_e87037b0946465bd",
+          "program_e87037b0946465bd_syn_0"
+        ]
+      },
+      {
+        "cluster": "1248da28b7a2e845|2ebb8b3c142a618461b5349a2a5d29e83e3cd9d97b9d4fec24ee909381c5dbf4|63c61732d255b296",
+        "count": 2,
+        "sample_ids": [
+          "program_7082de60f3e3b948",
+          "program_7082de60f3e3b948_syn_0"
+        ]
+      },
+      {
+        "cluster": "12ad48287e86ed8f|2efe2bda287c60ec3fc11890c67dd819bab15a627645fa19fde993328e5a2a18|4bc67ec3527f6e38",
+        "count": 2,
+        "sample_ids": [
+          "1ab9cd62f437e0c4_scope",
+          "1ab9cd62f437e0c4_scope"
+        ]
+      },
+      {
+        "cluster": "17750296bfbf3247|88f40137d05d1366f757a1e107ad585048dd82c27a6eb6e9eb548703d9095ed4|0b8997c384367f32",
+        "count": 2,
+        "sample_ids": [
+          "program_69d255ce0e119687",
+          "program_69d255ce0e119687_syn_0"
+        ]
+      },
+      {
+        "cluster": "19714be6927e6cd5|f045f9bd8431cbb7d39e03f1c222c6f95460fa41ccdba34d3711224ed4ced62d|8fdc97d61c591600",
+        "count": 2,
+        "sample_ids": [
+          "program_048d117ccdb610b5",
+          "program_048d117ccdb610b5_syn_0"
+        ]
+      },
+      {
+        "cluster": "1cf0811b179a6ebb|8bb16d78139c76cff537f9c6f814ab17b5afe97af38141dbe8878666c948357f|4b9c3851508f3bb8",
+        "count": 2,
+        "sample_ids": [
+          "68611cce6a769df0_scope",
+          "68611cce6a769df0_scope"
+        ]
+      },
+      {
+        "cluster": "25405270b3b6ff2b|20c13368070ccc2da6f999df2a787416cc733b8e82544fc189b0ad2250f6428f|d7221d0e7f61753f",
+        "count": 2,
+        "sample_ids": [
+          "1b3236a766ecac4a_scope",
+          "1b3236a766ecac4a_scope"
+        ]
+      },
+      {
+        "cluster": "2901b780c942ceb4|44e521280698a8e93b19af922142e12bd769d2f7cb78de7e13228f65f2e1f548|a367cd601ad837f0",
+        "count": 2,
+        "sample_ids": [
+          "program_0548e34a41793f00",
+          "program_0548e34a41793f00_syn_0"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 104,
+    "ngram_flagged": 102,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_smoke6_v1/adversarial",
+      "e938_role_safe_all_targets_smoke6_v1/held_out",
+      "e938_role_safe_all_targets_smoke6_v1/ood",
+      "e938_role_safe_all_targets_smoke6_v1/rico_held",
+      "e938_role_safe_all_targets_smoke6_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 2396,
+    "changed": 1512,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 1734,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 233,
+      "flatten_opportunities": 581
+    },
+    "literals_templatized": 35,
+    "records_templatized": 30,
+    "fallbacks": 48,
+    "fallback_reasons": {
+      "ValueError": 48
+    },
+    "cache": {
+      "hits": 1007,
+      "misses": 544
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "abstraction_ladder",
+      "record_count": 5,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 5
+      }
+    },
+    {
+      "source_family": "corruption_repair",
+      "record_count": 28,
+      "root_parent_count": 28,
+      "mean_quality_score": 0.942857,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 28
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 61,
+      "root_parent_count": 30,
+      "mean_quality_score": 0.944262,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 30,
+        "generation": 1,
+        "patch": 30
+      }
+    },
+    {
+      "source_family": "frontier_described",
+      "record_count": 3,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 3
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 41,
+      "root_parent_count": 21,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 41
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 71,
+      "root_parent_count": 70,
+      "mean_quality_score": 0.985915,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 63,
+        "repair": 8
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 167,
+      "root_parent_count": 105,
+      "mean_quality_score": 0.958982,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 167
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 52,
+      "root_parent_count": 30,
+      "mean_quality_score": 0.942308,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 52
+      }
+    },
+    {
+      "source_family": "prompt_paraphrase",
+      "record_count": 157,
+      "root_parent_count": 58,
+      "mean_quality_score": 0.967516,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 157
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    },
+    {
+      "source_family": "rico_real",
+      "record_count": 11,
+      "root_parent_count": 7,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 11
+      }
+    },
+    {
+      "source_family": "scope_canonical_document",
+      "record_count": 22,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.913636,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 22
+      }
+    },
+    {
+      "source_family": "scope_canonical_expression",
+      "record_count": 49,
+      "root_parent_count": 25,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 49
+      }
+    },
+    {
+      "source_family": "scope_canonical_lexical",
+      "record_count": 16,
+      "root_parent_count": 14,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 16
+      }
+    },
+    {
+      "source_family": "scope_canonical_statement",
+      "record_count": 39,
+      "root_parent_count": 23,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 39
+      }
+    },
+    {
+      "source_family": "scope_identity_document",
+      "record_count": 14,
+      "root_parent_count": 14,
+      "mean_quality_score": 0.932143,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 14
+      }
+    },
+    {
+      "source_family": "scope_identity_expression",
+      "record_count": 70,
+      "root_parent_count": 25,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 70
+      }
+    },
+    {
+      "source_family": "scope_identity_lexical",
+      "record_count": 25,
+      "root_parent_count": 19,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 25
+      }
+    },
+    {
+      "source_family": "scope_identity_statement",
+      "record_count": 49,
+      "root_parent_count": 25,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 49
+      }
+    },
+    {
+      "source_family": "scope_repair_expression",
+      "record_count": 41,
+      "root_parent_count": 25,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 41
+      }
+    },
+    {
+      "source_family": "scope_repair_lexical",
+      "record_count": 11,
+      "root_parent_count": 11,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 11
+      }
+    },
+    {
+      "source_family": "scope_repair_statement",
+      "record_count": 41,
+      "root_parent_count": 25,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 41
+      }
+    },
+    {
+      "source_family": "web_distilled",
+      "record_count": 2,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 2
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.3939,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "eval_overlap_flagged",
+      "value": 102,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 171,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    },
+    {
+      "code": "sanitize_fallbacks",
+      "value": 48,
+      "message": "sanitization fell back to unchanged targets for some records; inspect sanitization.fallback_reasons"
+    }
+  ],
+  "source_anchors": {
+    "unique_roots": 149,
+    "trusted_roots": 28,
+    "trusted_root_fraction": 0.1879,
+    "promotion_authoritative": true,
+    "deficit": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "96f2fdc12110e61d71ce339a0c08eefdcc2773d2",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v32"
+    },
+    "stamped_at": "2026-08-21T03:14:52.350832+00:00"
+  }
+}
