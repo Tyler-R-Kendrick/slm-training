@@ -28,6 +28,11 @@
     "autoresearch.conclusions": {
       "history": [
         {
+          "date": "2026-08-21",
+          "note": "policy.v14 screening primary smoke.eval_nll (diagnostic); conclusions.py criteria unchanged.",
+          "version": "v6"
+        },
+        {
           "date": "2026-08-20",
           "note": "no-bump: policy.v2 screening_sample_size description now generate-and-persist on suite_volume; conclusion criteria and conclusions.py unchanged.",
           "version": "v5"
@@ -77,7 +82,7 @@
         "docs/design/hypothesis-family-conclusions.md",
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
-      "version": "v5"
+      "version": "v6"
     },
     "autoresearch.heal": {
       "history": [
@@ -874,6 +879,11 @@
     "data.test_build": {
       "history": [
         {
+          "date": "2026-08-21",
+          "note": "Publish e938_role_safe_all_targets_smoke24_v1 for powered screening; frozen e938_* snapshots unchanged.",
+          "version": "v8"
+        },
+        {
           "date": "2026-08-20",
           "note": "Add three Lean-floor smoke fixtures (tabs/form/switch) so screening can publish n>=6 instead of screening at undecidable n=3.",
           "version": "v7"
@@ -925,7 +935,7 @@
         "src/slm_training/harnesses/test_data/",
         "src/slm_training/resources/test_seeds.jsonl"
       ],
-      "version": "v7"
+      "version": "v8"
     },
     "decode.invariants": {
       "history": [
@@ -5008,6 +5018,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "Hill-climb recovery: NLL screening primary, fitted steps, warm-start champion, paired Wilcoxon, k-arm screening, Serena/compose ops.",
+          "version": "v264"
+        },
+        {
+          "date": "2026-08-21",
           "note": "Continuous skill: supervisor owns persistence; agent --max-cycles 1 must not compete with a live supervisor or treat DRIVER_ALREADY_RUNNING as a halt.",
           "version": "v263"
         },
@@ -6855,7 +6870,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v263"
+      "version": "v264"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -19008,6 +19023,11 @@
     "model.twotower": {
       "history": [
         {
+          "date": "2026-08-21",
+          "note": "Domain-restricted speculative rank backoff and regenerated train-only n-gram table; I2 singleton bypass unchanged.",
+          "version": "v319"
+        },
+        {
           "date": "2026-08-12",
           "note": "Add default-off ambiguity_only_loss wiring: the existing complete completion-domain authority suppresses reconstruction loss only for gold-matching deterministic singleton positions; ambiguous, partial, unsupported, and mismatched domains remain scored, with excluded/retained token telemetry. No training result or promotion claim.",
           "version": "v318"
@@ -20986,7 +21006,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v318"
+      "version": "v319"
     },
     "ops.vocab": {
       "history": [

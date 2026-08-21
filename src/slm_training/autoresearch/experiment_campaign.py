@@ -52,7 +52,10 @@ _LEGACY_DIGEST_DEFAULTS = {
     "replicate_ledger_schema": None,
     "replicate_seed_floor": None,
     "power_feasibility": None,
+    "selection_rule": None,
 }
+SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST = "best_by_primary_then_smallest"
+_SELECTION_RULES = frozenset({SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST})
 _POWER_FEASIBILITY_SCHEMA = "power_feasibility/v1"
 
 
@@ -189,6 +192,8 @@ class ExperimentCampaignV1(StrictModel):
     # measurement geometry (``evidence_ledger.power_feasibility_report``).
     # Optional; when present it must carry the power_feasibility/v1 shape.
     power_feasibility: dict[str, Any] | None = None
+    # Static screening selection (locked before outcomes). None = pairwise default.
+    selection_rule: str | None = None
 
     @field_validator("seeds", mode="before")
     @classmethod
@@ -269,6 +274,16 @@ class ExperimentCampaignV1(StrictModel):
             raise ValueError("at least one control arm is required")
         if not any(item.role == "candidate" for item in self.arms):
             raise ValueError("at least one candidate arm is required")
+        n_candidates = sum(item.role == "candidate" for item in self.arms)
+        if n_candidates > 1 and not self.selection_rule:
+            raise ValueError(
+                "multi-candidate campaigns require a locked selection_rule"
+            )
+        if self.selection_rule is not None and self.selection_rule not in _SELECTION_RULES:
+            raise ValueError(
+                f"unknown selection_rule {self.selection_rule!r}; "
+                f"allowed={sorted(_SELECTION_RULES)}"
+            )
         negative_control_ids = {
             item.control_id for item in self.controls if item.kind == "negative"
         }
@@ -463,6 +478,30 @@ def _campaign_payload_sha256(payload: dict[str, Any]) -> str:
 
 def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
     return _campaign_payload_sha256(manifest.model_dump(mode="json"))
+
+
+def select_best_by_primary_then_smallest(
+    scored: Sequence[tuple[str, float, int]],
+    *,
+    direction: Literal["increase", "decrease"],
+) -> str:
+    """Lock-time selection rule: best primary, then fewest trainable params.
+
+    ``scored`` is ``(arm_id, primary_value, trainable_params)``. Ties on both
+    scores break on arm_id for determinism.
+    """
+
+    if not scored:
+        raise ValueError("select_best_by_primary_then_smallest requires scored arms")
+    if direction not in {"increase", "decrease"}:
+        raise ValueError(f"unknown primary direction {direction!r}")
+
+    def _key(row: tuple[str, float, int]) -> tuple[float, int, str]:
+        arm_id, value, params = row
+        quality = -float(value) if direction == "increase" else float(value)
+        return (quality, int(params), str(arm_id))
+
+    return min(scored, key=_key)[0]
 
 
 def load_ap001_certification(path: Path | None) -> AP001CertificationV1 | None:

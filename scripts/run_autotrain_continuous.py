@@ -39,7 +39,6 @@ from slm_training.autoresearch.engine import default_eval_version
 from slm_training.autoresearch.hillclimb import (
     CHAMPION_EPOCHS_EXHAUSTED,
     DEFAULT_MAX_CUMULATIVE_EPOCHS,
-    HillClimbError,
     assert_champion_eval_disjoint,
     assert_warm_start_launch,
     champion_epoch_park_reason,
@@ -14396,6 +14395,11 @@ def _manifest(
             ),
         ),
         arms=tuple(arms),
+        selection_rule=(
+            SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST
+            if sum(arm.role == "candidate" for arm in arms) > 1
+            else None
+        ),
         seeds=seeds,
         budget=CampaignBudget(
             max_experiments=1,

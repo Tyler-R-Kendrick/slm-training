@@ -21,7 +21,7 @@
     "min_seeds": 2
   },
   "defaults": {
-    "train_version": "wf_smoke_v2",
+    "train_version": "hillclimb_strict_v1",
     "eval_version_resolve": "published_smoke",
     "claim_class_screening": "diagnostic",
     "claim_class_promotion": "promotion_candidate",
@@ -46,8 +46,7 @@
       "enabled": true,
       "probe_records": 1
     },
-    "promotion_suite_n": 6,
-    "promotion_suite_n_note": "placeholder until SWARM-STATS power_floor_n; keep current n when STATS is unmerged",
+    "promotion_suite_n": 24,
     "warm_start": {
       "enabled": true,
       "source": "climb_champion",

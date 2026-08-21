@@ -1,0 +1,19 @@
+{
+  "schema": "measured_results/v1",
+  "title": "Hill-climb recovery integrator",
+  "honesty": "fixture",
+  "date": "2026-08-21",
+  "max_run_minutes": 3,
+  "scratch_cycles_run": 0,
+  "scratch_cycles_skipped_reason": "live supervisor holds driver.lock",
+  "policy_version": "v14",
+  "train_version": "hillclimb_strict_v1",
+  "eval_smoke": "e938_role_safe_all_targets_smoke24_v1",
+  "screening_primary": "smoke.eval_nll",
+  "components": {
+    "harness.autoresearch.experiment_campaign": "v264",
+    "autoresearch.conclusions": "v6",
+    "data.test_build": "v8",
+    "model.twotower": "v319"
+  }
+}
