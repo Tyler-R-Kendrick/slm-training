@@ -9,7 +9,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import dataclass, field
+import shutil
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Mapping, Sequence
 
@@ -58,6 +59,22 @@ __all__ = [
     "hillclimb_iteration_report",
     "assess_hillclimb_speculation",
     "stagnation_review",
+    "CLIMB_CHAMPION_SCHEMA",
+    "CHAMPION_EPOCHS_EXHAUSTED",
+    "DEFAULT_MAX_CUMULATIVE_EPOCHS",
+    "ClimbChampionSidecar",
+    "climb_champion_dir",
+    "climb_champion_checkpoint_path",
+    "climb_champion_sidecar_path",
+    "dump_climb_champion",
+    "load_climb_champion",
+    "attach_initialize_from",
+    "assert_warm_start_launch",
+    "assert_champion_eval_disjoint",
+    "champion_epoch_park_reason",
+    "write_climb_champion",
+    "maybe_advance_climb_champion",
+    "seed_climb_champion",
 ]
 
 CLIMB_CLAIM_CLASSES: frozenset[str] = frozenset(
@@ -103,8 +120,248 @@ _SYNTHESIS_ACTION_NAMES = (
 )
 
 
+CLIMB_CHAMPION_SCHEMA = "climb_champion/v1"
+CHAMPION_EPOCHS_EXHAUSTED = "champion_epochs_exhausted"
+DEFAULT_MAX_CUMULATIVE_EPOCHS = 50
+
+
 class HillClimbError(ValueError):
     """A hill-climb governance gate refused the requested action."""
+
+
+@dataclass
+class ClimbChampionSidecar:
+    """Lineage for ``loops/<id>/champion/last.pt``."""
+
+    source_campaign: str
+    cumulative_steps: int
+    train_data_manifest_sha: str
+    cumulative_epochs: float
+    trainable_params: int | None = None
+    knobs: dict[str, Any] = field(default_factory=dict)
+    schema: str = CLIMB_CHAMPION_SCHEMA
+
+    def as_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["schema"] = self.schema
+        return payload
+
+
+def climb_champion_dir(loop_dir: Path) -> Path:
+    return Path(loop_dir) / "champion"
+
+
+def climb_champion_checkpoint_path(loop_dir: Path) -> Path:
+    return climb_champion_dir(loop_dir) / "last.pt"
+
+
+def climb_champion_sidecar_path(loop_dir: Path) -> Path:
+    return climb_champion_dir(loop_dir) / "last.json"
+
+
+def dump_climb_champion(sidecar: ClimbChampionSidecar, loop_dir: Path) -> Path:
+    path = climb_champion_sidecar_path(loop_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(sidecar.as_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def load_climb_champion(loop_dir: Path) -> ClimbChampionSidecar | None:
+    path = climb_champion_sidecar_path(loop_dir)
+    ckpt = climb_champion_checkpoint_path(loop_dir)
+    if not path.is_file() or not ckpt.is_file():
+        return None
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise HillClimbError("champion_sidecar:invalid")
+    return ClimbChampionSidecar(
+        source_campaign=str(raw.get("source_campaign") or ""),
+        cumulative_steps=int(raw.get("cumulative_steps") or 0),
+        train_data_manifest_sha=str(raw.get("train_data_manifest_sha") or ""),
+        cumulative_epochs=float(raw.get("cumulative_epochs") or 0.0),
+        trainable_params=(
+            int(raw["trainable_params"])
+            if raw.get("trainable_params") is not None
+            else None
+        ),
+        knobs=dict(raw.get("knobs") or {}),
+        schema=str(raw.get("schema") or CLIMB_CHAMPION_SCHEMA),
+    )
+
+
+def assert_warm_start_launch(
+    control_knobs: Mapping[str, Any],
+    candidate_knobs: Mapping[str, Any],
+    *,
+    trainable_params: tuple[int | None, int | None] | None = None,
+) -> None:
+    """Identical K, data, checkpoint, and params for paired warm-start arms."""
+
+    if control_knobs.get("steps") != candidate_knobs.get("steps"):
+        raise HillClimbError("warm_start:unequal_extra_steps")
+    if control_knobs.get("initialize_from") != candidate_knobs.get("initialize_from"):
+        raise HillClimbError("warm_start:unequal_checkpoint")
+    if control_knobs.get("train_version") != candidate_knobs.get("train_version"):
+        raise HillClimbError("warm_start:unequal_train_data")
+    if control_knobs.get("seed") != candidate_knobs.get("seed"):
+        raise HillClimbError("warm_start:unequal_seed")
+    from slm_training.levers import require_size_matched_arms
+
+    require_size_matched_arms(
+        control_knobs, candidate_knobs, context="warm_start"
+    )
+    if trainable_params is not None:
+        left, right = trainable_params
+        if left is not None and right is not None and int(left) != int(right):
+            raise HillClimbError("warm_start:unequal_params")
+
+
+def attach_initialize_from(
+    control_knobs: Mapping[str, Any],
+    candidate_knobs: Mapping[str, Any],
+    checkpoint: Path | str | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    control = dict(control_knobs)
+    candidate = dict(candidate_knobs)
+    if checkpoint is not None:
+        path = str(checkpoint)
+        control["initialize_from"] = path
+        candidate["initialize_from"] = path
+    assert_warm_start_launch(control, candidate)
+    return control, candidate
+
+
+def assert_champion_eval_disjoint(
+    *,
+    train_data_manifest_sha: str | None,
+    eval_data_manifest_sha: str | None,
+) -> None:
+    """Fail closed: missing or colliding train/eval identities are leakage."""
+
+    train = str(train_data_manifest_sha or "").strip()
+    eval_sha = str(eval_data_manifest_sha or "").strip()
+    if not train:
+        raise HillClimbError("champion_leakage:missing_train_manifest")
+    if not eval_sha:
+        raise HillClimbError("champion_leakage:missing_eval_manifest")
+    if train == eval_sha:
+        raise HillClimbError("champion_leakage:train_eval_manifest_collision")
+
+
+def champion_epoch_park_reason(
+    sidecar: ClimbChampionSidecar | None,
+    *,
+    max_cumulative_epochs: float = DEFAULT_MAX_CUMULATIVE_EPOCHS,
+) -> str | None:
+    if sidecar is None:
+        return None
+    if float(sidecar.cumulative_epochs) > float(max_cumulative_epochs):
+        return CHAMPION_EPOCHS_EXHAUSTED
+    return None
+
+
+def write_climb_champion(
+    loop_dir: Path,
+    *,
+    checkpoint: Path,
+    sidecar: ClimbChampionSidecar,
+) -> ClimbChampionSidecar:
+    dest = climb_champion_checkpoint_path(loop_dir)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    src = Path(checkpoint)
+    if not src.is_file():
+        raise HillClimbError(f"champion_checkpoint_missing:{src}")
+    if src.resolve() != dest.resolve():
+        shutil.copy2(src, dest)
+    dump_climb_champion(sidecar, loop_dir)
+    return sidecar
+
+
+def maybe_advance_climb_champion(
+    loop_dir: Path,
+    *,
+    confirmed: bool,
+    checkpoint: Path | None,
+    source_campaign: str,
+    extra_steps: int,
+    train_data_manifest_sha: str,
+    record_count: int,
+    knobs: Mapping[str, Any] | None = None,
+    trainable_params: int | None = None,
+) -> ClimbChampionSidecar | None:
+    """Replace persistent champion only after a confirmed win."""
+
+    current = load_climb_champion(loop_dir)
+    if not confirmed or checkpoint is None:
+        return current
+    n = max(int(record_count) or 1, 1)
+    prior_steps = current.cumulative_steps if current else 0
+    prior_epochs = current.cumulative_epochs if current else 0.0
+    sidecar = ClimbChampionSidecar(
+        source_campaign=str(source_campaign),
+        cumulative_steps=prior_steps + int(extra_steps),
+        train_data_manifest_sha=str(train_data_manifest_sha),
+        cumulative_epochs=prior_epochs + (float(extra_steps) / n),
+        trainable_params=trainable_params,
+        knobs=dict(knobs or {}),
+    )
+    return write_climb_champion(loop_dir, checkpoint=checkpoint, sidecar=sidecar)
+
+
+def seed_climb_champion(
+    loop_dir: Path,
+    *,
+    confirmed_artifacts: Sequence[Mapping[str, Any]] | None = None,
+    baseline_checkpoint: Path | None = None,
+    source_campaign: str = "",
+    extra_steps: int = 0,
+    train_data_manifest_sha: str = "",
+    record_count: int = 1,
+    knobs: Mapping[str, Any] | None = None,
+    trainable_params: int | None = None,
+) -> ClimbChampionSidecar | None:
+    """Seed from best confirmed artifact, else one baseline train checkpoint."""
+
+    existing = load_climb_champion(loop_dir)
+    if existing is not None:
+        return existing
+    chosen: Path | None = None
+    campaign = source_campaign
+    artifact_knobs = dict(knobs or {})
+    for row in reversed(list(confirmed_artifacts or ())):
+        if str(row.get("status") or "") not in {
+            "confirmed",
+            "climb_accepted",
+            "promoted",
+        }:
+            continue
+        raw = row.get("checkpoint") or row.get("checkpoint_path")
+        if not raw:
+            continue
+        path = Path(str(raw))
+        if path.is_file():
+            chosen = path
+            campaign = str(row.get("campaign_id") or campaign)
+            if isinstance(row.get("knobs"), dict):
+                artifact_knobs = dict(row["knobs"])
+            break
+    if chosen is None and baseline_checkpoint is not None:
+        if Path(baseline_checkpoint).is_file():
+            chosen = Path(baseline_checkpoint)
+    if chosen is None:
+        return None
+    sidecar = ClimbChampionSidecar(
+        source_campaign=campaign,
+        cumulative_steps=int(extra_steps),
+        train_data_manifest_sha=str(train_data_manifest_sha),
+        cumulative_epochs=float(extra_steps) / max(int(record_count) or 1, 1),
+        trainable_params=trainable_params,
+        knobs=artifact_knobs,
+    )
+    return write_climb_champion(loop_dir, checkpoint=chosen, sidecar=sidecar)
 
 
 @dataclass(frozen=True)
