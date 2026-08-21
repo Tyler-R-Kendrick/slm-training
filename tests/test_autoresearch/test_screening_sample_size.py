@@ -9,10 +9,16 @@ from pydantic import ValidationError
 
 from slm_training.autoresearch.power import min_attainable_n, required_n_for_effect
 from slm_training.autoresearch.schemas import DEFAULT_ALLOWED_KNOBS
+from slm_training.autoresearch.power import min_detectable_effect
 from slm_training.autoresearch.screening_sample_size import (
     FINDING_RANGE_EMPTY,
+    FROZEN_EVAL_SNAPSHOTS,
+    FrozenEvalSnapshotError,
     SCREENING_SAMPLE_SIZE_SCHEMA,
+    SCREENING_SMOKE6_EVAL_VERSION,
     ScreeningSampleSizeObservation,
+    TARGET_SMOKE_N,
+    assert_eval_publish_target_writable,
     compute_screening_sample_size,
     extra_smoke_fixtures_for_deficit,
 )
@@ -38,10 +44,30 @@ def test_extra_smoke_fixtures_cover_deficit_without_duplicates() -> None:
         "smoke_form_01",
         "smoke_switch_01",
     }
-    again = extra_smoke_fixtures_for_deficit(
-        existing_ids={row["id"] for row in extras}, need=3
+    used = {row["id"] for row in extras}
+    more = extra_smoke_fixtures_for_deficit(existing_ids=set(used), need=3)
+    assert more
+    assert used.isdisjoint({row["id"] for row in more})
+    exhausted = extra_smoke_fixtures_for_deficit(
+        existing_ids={row["id"] for row in extras + more}, need=0
     )
-    assert again == []
+    assert exhausted == []
+
+
+def test_extra_smoke_fixtures_can_fill_target_24() -> None:
+    seeded = {
+        "smoke_hero_01",
+        "smoke_button_01",
+        "smoke_callout_01",
+        "smoke_tabs_01",
+        "smoke_form_01",
+        "smoke_switch_01",
+    }
+    extras = extra_smoke_fixtures_for_deficit(
+        existing_ids=set(seeded), need=TARGET_SMOKE_N - len(seeded)
+    )
+    assert len(seeded) + len(extras) >= TARGET_SMOKE_N
+    assert seeded.isdisjoint({row["id"] for row in extras})
 
 
 def test_latency_probe_knobs_are_allowed() -> None:
@@ -120,6 +146,49 @@ def test_insufficient_evidence_without_decode_observation() -> None:
     assert report.budget_ceiling_n is None
     assert report.chosen_n is None
     assert report.n_min == 6  # the exact floor is still computed
+
+
+def test_power_floor_mde_is_monotone_decreasing_in_n() -> None:
+    sd = 0.1741
+    mdes = [
+        min_detectable_effect(n, sd, 0.05, 0.8, paired=True)
+        for n in (6, 12, 24, 48)
+    ]
+    assert mdes == sorted(mdes, reverse=True)
+    floors = [
+        compute_screening_sample_size(
+            _obs(minimum_effect=str(mdes[0]), observed_sd=str(sd))
+        ).power_floor_n
+    ]
+    # Larger declared effect cannot raise the power floor.
+    smaller = compute_screening_sample_size(
+        _obs(minimum_effect=str(mdes[-1]), observed_sd=str(sd))
+    )
+    larger = compute_screening_sample_size(
+        _obs(minimum_effect=str(mdes[0]), observed_sd=str(sd))
+    )
+    assert smaller.power_floor_n is not None
+    assert larger.power_floor_n is not None
+    assert smaller.power_floor_n >= larger.power_floor_n
+    assert floors[0] == larger.power_floor_n
+
+
+def test_chosen_n_is_max_of_decidability_and_power_floors() -> None:
+    report = compute_screening_sample_size(
+        _obs(minimum_effect="1/100", observed_sd="1/10", suite_records=64)
+    )
+    assert report.decidability_floor_n == 6
+    assert report.power_floor_n is not None
+    assert report.n_min == max(report.decidability_floor_n, report.power_floor_n)
+
+
+def test_publish_refuses_frozen_eval_dirs() -> None:
+    with pytest.raises(FrozenEvalSnapshotError):
+        assert_eval_publish_target_writable(SCREENING_SMOKE6_EVAL_VERSION)
+    for frozen in FROZEN_EVAL_SNAPSHOTS:
+        with pytest.raises(FrozenEvalSnapshotError):
+            assert_eval_publish_target_writable(frozen)
+    assert_eval_publish_target_writable("e938_role_safe_all_targets_smoke24_v1")
 
 
 def test_power_floor_is_assumption_backed_and_dominates() -> None:

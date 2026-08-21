@@ -884,6 +884,31 @@ def test_screening_smoke_n_fixed_mode_returns_configured_without_report() -> Non
     assert report is None
 
 
+def test_screening_smoke_n_auto_mode_uses_max_of_floors() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+                "minimum_effect": "1/100",
+                "observed_sd": "1/10",
+            },
+        },
+        payload={"power_gate": {"enabled": True, "alpha": "1/20"}},
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=70.0, suite_records=64
+    )
+    assert report is not None
+    assert report["power_floor_n"] is not None
+    assert report["decidability_floor_n"] == 6
+    if report["verdict"] == "feasible":
+        assert n == max(report["decidability_floor_n"], report["power_floor_n"])
+        assert n == report["chosen_n"]
+
+
 def test_screening_smoke_n_auto_mode_feasible_climbs_at_floor() -> None:
     policy = _StubPolicy(
         {

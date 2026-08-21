@@ -72,7 +72,8 @@ CLIMB_RESOURCE_DIR = _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_cl
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
 CLIMB_POLICY_SCHEMA = "autotrain_climb_policy/v1"
 PROMOTE_AUTHORITY_SCHEMA = "autotrain_promote_authority/v1"
-_DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
+_DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v2.json"
+_POLICY_V1_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
 _PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
 
 
@@ -263,7 +264,12 @@ def promote_authority_sha256(
 def load_climb_policy(path: str | None = None) -> ClimbPolicy:
     """Load and validate the committed climb-policy resource."""
 
-    policy_path = Path(path) if path else _DEFAULT_POLICY_PATH
+    if path:
+        policy_path = Path(path)
+    elif _DEFAULT_POLICY_PATH.is_file():
+        policy_path = _DEFAULT_POLICY_PATH
+    else:
+        policy_path = _POLICY_V1_PATH
     payload = _read_json(policy_path)
     schema = str(payload.get("schema") or "")
     version = str(payload.get("version") or "")
