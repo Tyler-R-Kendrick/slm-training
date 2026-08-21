@@ -488,7 +488,7 @@
   ],
   "file_counts": {
     "observations": 382,
-    "scanned": 2331,
+    "scanned": 2294,
     "unreadable": 0
   },
   "generated_from": "docs/design",

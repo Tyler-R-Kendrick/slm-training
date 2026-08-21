@@ -1375,6 +1375,45 @@ def _run_arm_eval_nll(
     }
 
 
+def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
+    """Compute canonical smoke.eval_nll after quality eval when missing."""
+
+    scoreboard_path = Path(run_dir) / "scoreboard.json"
+    if not scoreboard_path.is_file():
+        return None
+    suites = _read_json(scoreboard_path).get("suites")
+    smoke = suites.get("smoke") if isinstance(suites, dict) else None
+    if isinstance(smoke, dict) and isinstance(smoke.get("eval_nll"), (int, float)):
+        return None
+    summary = _read_json(Path(run_dir) / "train_summary.json")
+    checkpoint = Path(str(summary.get("checkpoint") or ""))
+    if not checkpoint.is_file():
+        print(
+            f"EVAL_NLL_SKIP run={Path(run_dir).name} reason=missing_checkpoint",
+            flush=True,
+        )
+        return None
+    from slm_training.data.store import DataStore
+
+    eval_id = default_eval_version()
+    test_dir = DataStore().resolve_path("eval", eval_id)
+    try:
+        out = _run_arm_eval_nll(
+            Path(run_dir), test_dir=test_dir, checkpoint=checkpoint
+        )
+    except Exception as exc:  # noqa: BLE001 — NLL is diagnostic, never abort quality
+        print(
+            f"EVAL_NLL_SKIP run={Path(run_dir).name} err={exc!r}",
+            flush=True,
+        )
+        return None
+    print(
+        f"EVAL_NLL run={Path(run_dir).name} nll={out.get('eval_nll')}",
+        flush=True,
+    )
+    return out
+
+
 # Phase A positive classification: latency is never a free win over quality.
 _EPS = 1e-12
 # Smoke fixture n≈3 → one meaningful program is ~1/3. Below that a latency
@@ -6816,7 +6855,11 @@ def _slug_is_snapshot_arm(slug: str, extras: Mapping[str, Any] | None = None) ->
     if _is_process_arm(extras):
         return False
     train_version = str(extras.get("train_version") or "")
-    return bool(train_version) and train_version != _default_screening_train_version()
+    if not train_version:
+        return False
+    if train_version in {"wf_smoke_v2", "hillclimb_strict_v1"}:
+        return False
+    return train_version != _default_screening_train_version()
 
 
 def _open_slugs_are_snapshot_leftovers(open_slugs: set[str]) -> bool:
@@ -7174,7 +7217,9 @@ def _recent_completed_nonpositive_slugs(
         except (TypeError, ValueError):
             seed = None
         train_version = str(knobs.get("train_version") or "")
-        default_tv = _default_screening_train_version()
+        snapshot_tv = _slug_is_snapshot_arm(
+            slug, {"train_version": train_version}
+        )
         # Incomplete / harness outcomes never close a thrash approach — even if
         # a buggy delivery marked measurement_complete or positive=False.
         if not runtime_terminal and (
@@ -7206,10 +7251,10 @@ def _recent_completed_nonpositive_slugs(
         if stored_positive is True or confirm_win:
             # Win re-opens the approach; clear prior null tally for this slug.
             null_seeds[slug] = set()
-            if train_version and train_version != default_tv:
+            if snapshot_tv:
                 tv_null_seeds[train_version] = set()
             continue
-        if train_version and train_version != default_tv:
+        if snapshot_tv:
             # Snapshot close is by train_version identity, not slug spelling:
             # every heal snapshot shares the resume slug, so slug-level nulls
             # would permanently close all future (distinct) snapshots.
@@ -10483,6 +10528,11 @@ def _classify_positive(
     )
     control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
     candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
+    if role == "screening":
+        _attach_screening_eval_nll(camp_dir / "runs" / control_id)
+        _attach_screening_eval_nll(camp_dir / "runs" / candidate_id)
+        control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
+        candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
     # Merge full primary metric keys when leaf-only maps were collected.
     if (
         effective_metric not in control
@@ -15933,6 +15983,8 @@ def run_cycle(
             code = int(result.returncode or 0)
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
+        if int(code) == 0:
+            _attach_screening_eval_nll(camp_dir / "runs" / eid)
 
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     delivery = _phase_a_delivery(
@@ -16284,7 +16336,7 @@ def main(argv: list[str] | None = None) -> int:
             "the current certified OpenUI quality primary without lowering parse_rate."
         ),
     )
-    parser.add_argument("--primary-metric", default="smoke.latency_ms_p50")
+    parser.add_argument("--primary-metric", default="smoke.eval_nll")
     parser.add_argument(
         "--skip-slugs",
         default="",
