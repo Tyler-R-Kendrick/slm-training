@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import math
 from pathlib import Path
@@ -391,17 +392,27 @@ class CampaignLockV1(StrictModel):
     @model_validator(mode="after")
     def verify_digest(self) -> CampaignLockV1:
         payload = self.manifest.model_dump(mode="json")
-        actual = _campaign_payload_sha256(payload)
-        if actual == self.manifest_sha256:
+        if _campaign_payload_sha256(payload) == self.manifest_sha256:
             return self
 
-        legacy_payload = dict(payload)
-        for field, default in _LEGACY_DIGEST_DEFAULTS.items():
-            if legacy_payload.get(field) == default:
-                legacy_payload.pop(field, None)
-        if _campaign_payload_sha256(legacy_payload) != self.manifest_sha256:
-            raise ValueError("campaign manifest digest mismatch")
-        return self
+        # Historical locks were digested with every subset of the legacy
+        # default-valued fields included or omitted (the schema grew one field
+        # at a time). Accept any subset; any real content edit still fails.
+        droppable = [
+            field
+            for field, default in _LEGACY_DIGEST_DEFAULTS.items()
+            if payload.get(field) == default
+        ]
+        for drop_count in range(1, len(droppable) + 1):
+            for dropped in itertools.combinations(droppable, drop_count):
+                variant = {
+                    key: value
+                    for key, value in payload.items()
+                    if key not in dropped
+                }
+                if _campaign_payload_sha256(variant) == self.manifest_sha256:
+                    return self
+        raise ValueError("campaign manifest digest mismatch")
 
 
 class CampaignDeviationV1(StrictModel):

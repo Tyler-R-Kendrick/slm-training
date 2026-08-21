@@ -372,6 +372,26 @@ def test_lock_accepts_digest_from_before_optional_replicate_fields() -> None:
     assert restored == lock
 
 
+def test_lock_accepts_digest_with_any_subset_of_legacy_default_fields() -> None:
+    # Intermediate-schema locks were digested with *some* legacy default-valued
+    # fields present and others absent (the schema grew one field at a time).
+    # Every subset must validate; only real content edits fail.
+    base = _manifest().model_dump(mode="json")
+    base.pop("replicate_ledger_schema")
+    digest = hashlib.sha256(canonical_json(base).encode("utf-8")).hexdigest()
+
+    lock = CampaignLockV1.model_validate(
+        {
+            "manifest_sha256": digest,
+            "manifest": base,
+            "locked_at": "2026-08-21T02:46:23Z",
+        }
+    )
+    restored = CampaignLockV1.model_validate_json(lock.model_dump_json())
+
+    assert restored == lock
+
+
 def test_legacy_lock_digest_still_rejects_manifest_mutation() -> None:
     payload = _manifest().model_dump(mode="json")
     payload.pop("replicate_ledger_schema")
