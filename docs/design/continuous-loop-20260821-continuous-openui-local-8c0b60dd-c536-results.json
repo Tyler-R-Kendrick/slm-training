@@ -163,32 +163,6 @@
     }
   },
   "evidence_class": "fixture",
-  "hillclimb": {
-    "campaign_id": "continuous-loop-20260821-continuous-openui-local-8c0b60dd-c536",
-    "cycle_index": 536,
-    "deltas": {},
-    "measurement_complete": false,
-    "positive": false,
-    "primary_metric": "smoke.eval_nll",
-    "progress": false,
-    "reasons": [
-      "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c536-control:missing_scoreboard",
-      "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c536-current-rung-data-heal:missing_scoreboard",
-      "harness_failure:c20260821-continuous-openui-local-8c0b60dd-c536-control:experiment_failed",
-      "empty_metrics:ee7d05d8b187918221d03afb191ab22a594bab67e510499683541dc200a4ac34",
-      "primary_metric_unavailable"
-    ],
-    "schema": "hillclimb_iteration/v1",
-    "speculate": [
-      "replay_frozen_or_fit_decode_to_wall",
-      "keep_rotating_size_matched_arms"
-    ],
-    "went_well": [],
-    "went_wrong": [
-      "measurement_incomplete",
-      "non_positive"
-    ]
-  },
   "honesty": "fixture_screening_only_not_ship",
   "loop_id": "continuous-openui-local",
   "measurement_complete": false,
@@ -204,7 +178,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "3b00d1a5d67cd5b7e7e8c74b1f5c16e4f78d654b",
+    "code_commit": "c36df520bffcca5404c6b4c9f10873140d191489",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -213,6 +187,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-21T18:58:46.925559+00:00"
+    "stamped_at": "2026-08-21T18:58:57.319410+00:00"
   }
 }
