@@ -35,18 +35,74 @@ ROOT = Path(__file__).resolve().parents[1]
 CERTIFIED_CORPUS = (
     ROOT / "src/slm_training/resources/data/train/openui_verified_v1/records.jsonl"
 )
+WF_SMOKE_V2 = (
+    ROOT / "src/slm_training/resources/data/train/wf_smoke_v2/records.jsonl"
+)
+_EVAL_SPLITS = frozenset({"held_out", "smoke", "adversarial", "ood", "rico_held"})
+
+
+def _manifest_kind(source: Path) -> str | None:
+    candidates = []
+    if source.is_dir():
+        candidates.append(source / "manifest.json")
+    else:
+        candidates.append(source.parent / "manifest.json")
+        if source.parent.name == "suites" or source.parent.parent.name == "suites":
+            candidates.append(source.parents[2] / "manifest.json")
+            candidates.append(source.parents[3] / "manifest.json")
+    for path in candidates:
+        if path.is_file():
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            kind = payload.get("kind")
+            if kind:
+                return str(kind)
+    return None
+
+
+def _reject_eval_leakage(source: Path, records: list[ExampleRecord]) -> None:
+    """Train-only prior: an eval manifest must never become the decode table."""
+    posix = source.resolve().as_posix()
+    kind = _manifest_kind(source)
+    if kind == "eval" or "/data/eval/" in posix or posix.endswith("/eval"):
+        raise SystemExit(
+            f"refusing to build speculative n-gram table from eval corpus {source}"
+        )
+    if records and all(record.split in _EVAL_SPLITS for record in records):
+        raise SystemExit(
+            f"refusing to build speculative n-gram table from eval-split records in {source}"
+        )
 
 
 def _records(source: Path) -> list[ExampleRecord]:
-    if source.is_dir():
-        shards = sorted(source.glob("*.jsonl"))
+    if source.is_dir() and (source / "manifest.json").is_file():
+        kind = _manifest_kind(source)
+        if kind == "eval":
+            raise SystemExit(
+                f"refusing to build speculative n-gram table from eval corpus {source}"
+            )
+        shards = [source / "records.jsonl"]
+        if not shards[0].is_file():
+            shards = sorted(source.glob("*.jsonl"))
         if not shards:
             raise SystemExit(f"no .jsonl shards under {source}")
         records: list[ExampleRecord] = []
         for shard in shards:
+            if shard.name == "rejected.jsonl":
+                continue
+            records.extend(load_jsonl(shard))
+    elif source.is_dir():
+        shards = sorted(source.glob("*.jsonl"))
+        if not shards:
+            raise SystemExit(f"no .jsonl shards under {source}")
+        records = []
+        for shard in shards:
             records.extend(load_jsonl(shard))
     else:
         records = load_jsonl(source)
+    _reject_eval_leakage(source, records)
     train_only = [record for record in records if record.split in {"train", ""}]
     if not train_only:
         raise SystemExit(f"{source} contains no train-split records")
@@ -89,16 +145,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--records",
         type=Path,
-        default=CERTIFIED_CORPUS,
-        help="Train records .jsonl (or a directory of shards). Default: the "
-        "immutable certified corpus.",
+        default=WF_SMOKE_V2 if WF_SMOKE_V2.is_file() else CERTIFIED_CORPUS,
+        help="Train records .jsonl (or a directory of shards). Default: "
+        "wf_smoke_v2 (train-only).",
     )
     parser.add_argument(
         "--codec",
         default="lexer",
         help="Decoder codec the table is keyed on (only 'lexer' is supported).",
     )
-    parser.add_argument("--order", type=int, default=3, help="Back-off n-gram order.")
+    parser.add_argument("--order", type=int, default=4, help="Back-off n-gram order.")
     parser.add_argument(
         "--output",
         type=Path,
