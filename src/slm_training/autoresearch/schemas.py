@@ -308,6 +308,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "sync_checkpoints",
         "steps",
         "synthesizer",
+        "initialize_from",
         "train_version",
         "topology_actions",
         "topology_bounded_buffer",
@@ -608,6 +609,7 @@ class ExperimentKnobs(StrictModel):
     ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
     ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
+    initialize_from: str | None = Field(default=None, min_length=1, max_length=4096)
     # Historical continuous field (regime-epoch reopen was removed). Accepted
     # read-only for old matrices; not used for thrash identity or bank close.
     screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)

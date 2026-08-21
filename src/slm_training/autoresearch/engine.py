@@ -578,6 +578,8 @@ def compile_commands(
         train.extend(["--train-dir", str(train_dir)])
     if knobs.local_files_only:
         train.append("--local-files-only")
+    if getattr(knobs, "initialize_from", None):
+        train.extend(["--initialize-from", str(knobs.initialize_from)])
     if knobs.sync_checkpoints is not None:
         train.append(
             "--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints"
