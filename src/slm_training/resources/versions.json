@@ -5018,6 +5018,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "Call _attach_screening_eval_nll after each screening arm so smoke.eval_nll is written, not only defined.",
+          "version": "v265"
+        },
+        {
+          "date": "2026-08-21",
           "note": "no-bump: regenerate evidence_ledger.v1.json after hill-climb recovery measured-results docs; campaign contract unchanged.",
           "version": "v264"
         },
@@ -6875,7 +6880,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v264"
+      "version": "v265"
     },
     "harness.autoresearch.formal": {
       "history": [

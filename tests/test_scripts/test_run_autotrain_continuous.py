@@ -5067,6 +5067,14 @@ def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> N
             latency_ms_p50=latency,
         )
         _write_complete_scoreboard(run, "smoke")
+        scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
+        # Candidate is the quality regression: higher NLL (worse) + lower SS.
+        scoreboard["suites"]["smoke"]["eval_nll"] = (
+            2.0 if arm == "c-control" else 4.0
+        )
+        (run / "scoreboard.json").write_text(
+            json.dumps(scoreboard), encoding="utf-8"
+        )
 
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -5083,7 +5091,8 @@ def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> N
         for reason in result["reasons"]
     )
     assert any(
-        reason.startswith("non_regression_fail:binder_reference_f1:")
+        "primary_metric_null_or_worse:smoke.eval_nll" in reason
+        or reason.startswith("non_regression_fail:binder_reference_f1:")
         for reason in result["reasons"]
     )
 
@@ -5107,6 +5116,13 @@ def test_classify_positive_rejects_quality_win_with_unbounded_latency_cost(
             latency_ms_p50=latency,
         )
         _write_complete_scoreboard(run, "smoke")
+        scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
+        scoreboard["suites"]["smoke"]["eval_nll"] = (
+            4.0 if arm == "c-control" else 2.0
+        )
+        (run / "scoreboard.json").write_text(
+            json.dumps(scoreboard), encoding="utf-8"
+        )
 
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -5141,6 +5157,13 @@ def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> No
             latency_ms_p50=latency,
         )
         _write_complete_scoreboard(run, "smoke")
+        scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
+        scoreboard["suites"]["smoke"]["eval_nll"] = (
+            4.0 if arm == "c-control" else 2.0
+        )
+        (run / "scoreboard.json").write_text(
+            json.dumps(scoreboard), encoding="utf-8"
+        )
     (camp / "cycle_handoff.json").write_text(
         json.dumps(
             {
@@ -7847,7 +7870,7 @@ def test_promotion_manifest_embeds_locked_power_feasibility() -> None:
     assert report["schema"] == "power_feasibility/v1"
     # Policy v8 sets measurement.promotion_suite_n to the exact sign-test
     # floor, so promote campaigns lock a decisive feasibility report.
-    assert report["n"] == 6
+    assert report["n"] == 24
     assert report["required_n"] == 6
     assert report["decisive"] is True
     screening = _mod._manifest("cycle-1", experiment, "a" * 40)
@@ -11286,6 +11309,17 @@ def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
     assert metrics["eval_nll"] == 3.25
 
 
+def test_attach_screening_eval_nll_skips_without_checkpoint(tmp_path: Path) -> None:
+    run_dir = tmp_path / "runs" / "arm"
+    run_dir.mkdir(parents=True)
+    (run_dir / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"n": 6}}}), encoding="utf-8"
+    )
+    assert _mod._attach_screening_eval_nll(run_dir) is None
+    scoreboard = json.loads((run_dir / "scoreboard.json").read_text(encoding="utf-8"))
+    assert "eval_nll" not in scoreboard["suites"]["smoke"]
+
+
 def test_fit_screening_candidate_count_never_kills_for_k() -> None:
     n, reason = _mod._fit_screening_candidate_count(
         max_candidates=6,
@@ -11325,7 +11359,10 @@ def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> 
         ExperimentCampaignV1,
         MultiplicityFamilyV1,
     )
-    from slm_training.autoresearch.schemas import ArtifactRequirementV1, CampaignBudget
+    from slm_training.autoresearch.experiment_campaign import (
+        ArtifactRequirementV1,
+    )
+    from slm_training.autoresearch.schemas import CampaignBudget
 
     campaign_id = "campaign-multiarm"
     campaign = _mod.CampaignSpec(
