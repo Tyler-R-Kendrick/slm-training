@@ -51,6 +51,32 @@ class TestGovernor:
 
 
 class TestLedger:
+    def test_save_rewrites_same_fingerprint(self, tmp_path: Path) -> None:
+        ledger = EscalationLedger.load(tmp_path, "loop-1")
+        first = ledger.observe(
+            kind="foreign_dirty_tree",
+            reason="non-closeout dirty paths: ['.serena/project.yml']",
+            blocker_class="dirty_tree",
+            campaign_id="c1",
+        )
+        ledger.escalate(first.fingerprint, note="first")
+        ledger.save()
+        ledger.observe(
+            kind="foreign_dirty_tree",
+            reason="non-closeout dirty paths: ['.serena/project.yml']",
+            blocker_class="dirty_tree",
+            campaign_id="c2",
+        )
+        ledger.save()
+        path = EscalationLedger.path_for(tmp_path, "loop-1")
+        lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        assert len(lines) == 1
+        folded = EscalationLedger.load(tmp_path, "loop-1").records
+        assert len(folded) == 1
+        record = next(iter(folded.values()))
+        assert record.seen_count == 2
+        assert record.campaign_ids == ("c1", "c2")
+
     def test_observe_dedups_and_accumulates(self, tmp_path: Path) -> None:
         ledger = EscalationLedger.load(tmp_path, "loop-1")
         first = ledger.observe(

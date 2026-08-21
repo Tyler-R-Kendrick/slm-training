@@ -221,11 +221,16 @@ class EscalationLedger:
     def save(self) -> Path:
         path = self.path_for(self.root, self.loop_id)
         path.parent.mkdir(parents=True, exist_ok=True)
-        if self._dirty:
-            with path.open("a", encoding="utf-8") as stream:
-                for record in self._dirty:
-                    stream.write(record.model_dump_json() + "\n")
-            self._dirty.clear()
+        if not self._dirty:
+            return path
+        # One row per fingerprint: resightings update last_seen_at/count in
+        # place instead of appending a duplicate escalation line.
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        with tmp.open("w", encoding="utf-8") as stream:
+            for record in self.records.values():
+                stream.write(record.model_dump_json() + "\n")
+        tmp.replace(path)
+        self._dirty.clear()
         return path
 
 

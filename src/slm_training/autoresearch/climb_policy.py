@@ -48,6 +48,8 @@ __all__ = [
     "cycle_role_for_index",
     "assert_cycle_cadence",
     "primary_for_role",
+    "canonical_screening_nll_definition",
+    "screening_nll_definition_hash",
     "stage_wall_minutes_for_role",
     "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
@@ -135,6 +137,11 @@ class ClimbPolicy:
     @property
     def promotion_primary(self) -> Mapping[str, Any]:
         return dict(self.payload["promotion_primary"])
+
+    @property
+    def screening_quality_secondary(self) -> Mapping[str, Any] | None:
+        raw = self.payload.get("screening_quality_secondary")
+        return dict(raw) if isinstance(raw, Mapping) else None
 
     @property
     def defaults(self) -> Mapping[str, Any]:
@@ -334,7 +341,34 @@ def primary_for_role(policy: ClimbPolicy, role: str) -> Mapping[str, Any]:
         return policy.promotion_primary
     if role == "screening":
         return policy.screening_primary
+    if role == "confirm":
+        return policy.promotion_primary
     raise ClimbPolicyError(f"unknown cycle role: {role!r}")
+
+
+def canonical_screening_nll_definition() -> dict[str, Any]:
+    """Arm-independent NLL identity (loss-weight knobs must not appear)."""
+
+    return {
+        "metric": "smoke.eval_nll",
+        "source": "slm_training.evals.loss_suites.evaluate_loss_suites",
+        "base_suite": "smoke",
+        "ood_suite": "smoke",
+        "loss_suite_version": "v1",
+        "mask_rates": [0.15, 0.30, 0.50, 0.70, 0.85],
+        "mask_seed": 0,
+        "ignore_arm_loss_weights": True,
+    }
+
+
+def screening_nll_definition_hash(
+    *, arm_loss_weights: Mapping[str, Any] | None = None
+) -> str:
+    """Hash of the canonical NLL definition; arm loss weights are ignored."""
+
+    del arm_loss_weights
+    body = canonical_screening_nll_definition()
+    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
 def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
@@ -438,6 +472,23 @@ def screening_smoke_n_for_policy(
             # exact floor only (insufficient_evidence), never a fake empty
             # range from zeroed inputs.
             decode_floor = None
+        primary = getattr(policy, "screening_primary", None)
+        if not isinstance(primary, Mapping):
+            primary = {}
+        minimum_effect = primary.get("minimum_effect")
+        if minimum_effect is None:
+            minimum_effect = block.get("minimum_effect")
+        observed_sd = block.get("observed_sd")
+        if observed_sd is None and minimum_effect is not None:
+            from slm_training.autoresearch.screening_sample_size import (
+                MEASURED_PAIRED_SD,
+            )
+
+            observed_sd = MEASURED_PAIRED_SD
+        power_kwargs: dict[str, Any] = {}
+        if minimum_effect is not None and observed_sd is not None:
+            power_kwargs["minimum_effect"] = str(minimum_effect)
+            power_kwargs["observed_sd"] = str(observed_sd)
         report = compute_screening_sample_size(
             ScreeningSampleSizeObservation(
                 alpha=str(alpha),
@@ -453,6 +504,7 @@ def screening_smoke_n_for_policy(
                 per_record_decode_floor_seconds=(
                     max(1, math.ceil(float(decode_floor))) if decode_floor else None
                 ),
+                **power_kwargs,
             )
         )
     except Exception:  # noqa: BLE001 — resolution failure never breaks the loop
@@ -921,6 +973,16 @@ def classify_positive_metrics(
                 f"primary_metric_null_or_worse:{metric}:"
                 f"control={c_val} candidate={t_val} improvement={improvement}"
             )
+        if role == "screening":
+            secondary = policy.screening_quality_secondary
+            if isinstance(secondary, Mapping) and secondary.get("metric"):
+                sec_id = str(secondary["metric"])
+                c_sec = _metric_from_map(control_metrics, sec_id)
+                t_sec = _metric_from_map(candidate_metrics, sec_id)
+                reasons.append(
+                    f"screening_quality_secondary:{sec_id}:"
+                    f"control={c_sec} candidate={t_sec}:recorded_not_verdict"
+                )
 
     pos_cfg = policy.positive_classification
     if (
