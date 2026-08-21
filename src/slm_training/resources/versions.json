@@ -4119,6 +4119,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-08-21",
+          "note": "no-bump: check_changed maps loop-owned eval-data resources (resources/data/eval/**, test_seeds.jsonl) to narrow data-integrity suites instead of the full-tests fallback; unlivelocks wall-clock-capped autotrain closeout commits. Ownership map and contract-version checks unchanged.",
+          "version": "v27"
+        },
+        {
           "date": "2026-08-13",
           "note": "no-bump: exact-path check_changed mapping for verify_checkpoint_references.py; ownership map and contract-version checks unchanged",
           "version": "v27"

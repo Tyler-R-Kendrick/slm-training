@@ -251,6 +251,24 @@ SUITES_BY_PREFIX = (
         ),
     ),
     ("src/slm_training/autoresearch/", ("tests/test_autoresearch",)),
+    # Loop-owned eval-data artifacts (suite heals, screening sidecars) must not
+    # fall through to the full "tests" fallback: an autotrain closeout commit
+    # is wall-clock capped, and a full pytest run never fits. Map them to the
+    # narrow data-integrity suites that actually read these resources.
+    (
+        "src/slm_training/resources/data/eval/",
+        (
+            "tests/test_data/test_locked_eval_manifest.py",
+            "tests/test_autoresearch/test_screening_sample_size.py",
+        ),
+    ),
+    (
+        "src/slm_training/resources/test_seeds.jsonl",
+        (
+            "tests/test_data/test_locked_eval_manifest.py",
+            "tests/test_harnesses/test_data/test_structure_disjoint.py",
+        ),
+    ),
     ("src/slm_training/dsl/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
     (
         "src/slm_training/evals/learnability_diagnostics.py",

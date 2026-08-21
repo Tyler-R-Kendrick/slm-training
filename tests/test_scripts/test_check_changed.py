@@ -128,6 +128,33 @@ def test_runtime_eval_resources_select_their_consumers() -> None:
     ]
 
 
+def test_loop_owned_eval_data_selects_narrow_integrity_suites() -> None:
+    # Autotrain closeout/heal commits are wall-clock capped; these resources
+    # must never fall through to the full "tests" fallback.
+    assert select_tests(
+        [
+            "src/slm_training/resources/data/eval/"
+            "e938_role_safe_all_targets_smoke6_v1/screening_sample_size.json"
+        ]
+    ) == [
+        "tests/test_autoresearch/test_screening_sample_size.py",
+        "tests/test_data/test_locked_eval_manifest.py",
+    ]
+    assert select_tests(
+        [
+            "src/slm_training/resources/data/eval/"
+            "e938_role_safe_all_targets_smoke6_v1/records.jsonl"
+        ]
+    ) == [
+        "tests/test_autoresearch/test_screening_sample_size.py",
+        "tests/test_data/test_locked_eval_manifest.py",
+    ]
+    assert select_tests(["src/slm_training/resources/test_seeds.jsonl"]) == [
+        "tests/test_data/test_locked_eval_manifest.py",
+        "tests/test_harnesses/test_data/test_structure_disjoint.py",
+    ]
+
+
 def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
     commands = []
 
