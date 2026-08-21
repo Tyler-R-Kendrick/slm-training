@@ -399,9 +399,7 @@ def _self_heal_rebuild_screening_eval(
     campaign_id: str | None,
 ) -> str | None:
     """Grow smoke to the Lean floor, publish under resources/, commit."""
-    from slm_training.autoresearch.screening_sample_size import (
-        SCREENING_SMOKE6_EVAL_VERSION,
-    )
+    from slm_training.autoresearch.heal.fail_closed import allocate_screening_suite_id
     from slm_training.data.store import DataStore
     from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
 
@@ -410,7 +408,8 @@ def _self_heal_rebuild_screening_eval(
         return None
     n_min = int(report.get("n_min") or 6)
     _append_deficit_smoke_seeds(cwd, n_min=n_min)
-    eval_version = SCREENING_SMOKE6_EVAL_VERSION
+    eval_root = cwd / "src/slm_training/resources/data/eval"
+    eval_version = allocate_screening_suite_id(eval_root, n_min)
     train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
     out_dir = cwd / "outputs" / "data" / "eval" / eval_version
     published = cwd / "src/slm_training/resources/data/eval" / eval_version
