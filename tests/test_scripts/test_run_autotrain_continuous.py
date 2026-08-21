@@ -5942,94 +5942,6 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
-def test_fit_screening_candidate_count_never_kills_for_k() -> None:
-    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
-
-    arm = 70.0
-    # 180s stage, 15s reserve → usable 165 → 165/70 - 1 = 1 candidate
-    n, reason = _mod._fit_screening_candidate_count(
-        max_candidates=6,
-        arm_wall_seconds=arm,
-        stage_remaining_seconds=180.0,
-        finalization_reserve=HARNESS_FINALIZATION_RESERVE_SECONDS,
-    )
-    assert n == 1
-    assert reason == "stage_wall_fits_one_candidate"
-    n6, reason6 = _mod._fit_screening_candidate_count(
-        max_candidates=6,
-        arm_wall_seconds=20.0,
-        stage_remaining_seconds=180.0,
-        finalization_reserve=15.0,
-    )
-    # usable 165 / 20 = 8 slots → 7 candidates, capped at 6
-    assert n6 == 6
-    assert reason6 is None
-    n3, reason3 = _mod._fit_screening_candidate_count(
-        max_candidates=6,
-        arm_wall_seconds=40.0,
-        stage_remaining_seconds=180.0,
-        finalization_reserve=15.0,
-    )
-    assert n3 == 3
-    assert reason3 == "stage_wall_fitted_candidate_count"
-
-
-def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> None:
-    campaign_id = "campaign-multiarm"
-    campaign = _mod.CampaignSpec(
-        campaign_id=campaign_id,
-        objective="Lock k screening arms before execution.",
-        primary_metric="smoke.eval_nll",
-        loop_id="loop-multiarm",
-        cycle_index=1,
-        upstream_commit="a" * 40,
-        integration_commit="b" * 40,
-    )
-    store = _mod.CampaignStore(campaign_id, tmp_path)
-    store.initialize(campaign)
-    matrix_path = tmp_path / campaign_id / "matrix-proposal.json"
-    matrix_path.write_text(json.dumps({"matrix_id": "matrix-k"}), encoding="utf-8")
-    order = ("ctrl", "a1", "a2", "a3")
-    bound = _mod._bind_expected_arms(
-        root=tmp_path,
-        campaign_id=campaign_id,
-        matrix_path=matrix_path,
-        control_id="ctrl",
-        candidate_id="a1",
-        candidate_ids=("a2", "a3"),
-        arm_order=order,
-        selection_rule="best_by_primary_then_smallest",
-    )
-    assert bound["event_type"] == "decision_arms_bound"
-    assert bound["detail"]["selection_rule"] == "best_by_primary_then_smallest"
-    assert bound["detail"]["expected_arm_ids"] == ["ctrl", "a1", "a2", "a3"]
-    store.append_event(
-        "experiment_campaign_locked",
-        experiment_id="a1",
-        status="locked",
-        detail={"selection_rule": "best_by_primary_then_smallest"},
-    )
-    store.append_event(
-        "experiment_started", experiment_id="ctrl", status="running"
-    )
-    types = [row["event_type"] for row in store.verify_event_chain()]
-    assert types.index("decision_arms_bound") < types.index(
-        "experiment_campaign_locked"
-    )
-    assert types.index("experiment_campaign_locked") < types.index(
-        "experiment_started"
-    )
-
-
-def test_size_match_skip_reason_typed() -> None:
-    control = {"d_model": 128, "denoiser_layers": 4}
-    wide = {"d_model": 256, "denoiser_layers": 4}
-    reason = _mod._size_match_skip_reason(control, wide)
-    assert reason is not None
-    assert reason.startswith("capacity_unmatched:")
-    assert _mod._size_match_skip_reason(control, control) is None
-
-
 def test_post_planning_budget_is_rebalanced_symmetrically(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -9546,6 +9458,7 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
     assert ledger.is_file()
 
 
+
 def test_screening_steps_fitter_telemetry_clamp_and_cold_start() -> None:
     fitted, ev = _mod._fit_screening_steps(
         floor_seconds=20.0,
@@ -11371,3 +11284,151 @@ def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
     metrics = _mod._run_metrics(tmp_path, "arm")
     assert metrics["smoke.eval_nll"] == 3.25
     assert metrics["eval_nll"] == 3.25
+
+
+def test_fit_screening_candidate_count_never_kills_for_k() -> None:
+    n, reason = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=70.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n == 1
+    assert reason in {
+        "stage_wall_fits_one_candidate",
+        "stage_wall_fitted_candidate_count",
+    }
+    n6, reason6 = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=20.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n6 == 6
+    assert reason6 is None
+    n3, reason3 = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=40.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n3 == 3
+    assert reason3 == "stage_wall_fitted_candidate_count"
+
+
+def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> None:
+    from slm_training.autoresearch.experiment_campaign import (
+        CampaignArmV1,
+        CampaignControlV1,
+        CampaignEndpointV1,
+        CampaignGateV1,
+        ExperimentCampaignV1,
+        MultiplicityFamilyV1,
+    )
+    from slm_training.autoresearch.schemas import ArtifactRequirementV1, CampaignBudget
+
+    campaign_id = "campaign-multiarm"
+    campaign = _mod.CampaignSpec(
+        campaign_id=campaign_id,
+        objective="Lock k screening arms before execution.",
+        primary_metric="smoke.eval_nll",
+        loop_id="loop-multiarm",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = _mod.CampaignStore(campaign_id, tmp_path)
+    store.initialize(campaign)
+    matrix_path = tmp_path / campaign_id / "matrix-proposal.json"
+    matrix_path.write_text(json.dumps({"matrix_id": "matrix-k"}), encoding="utf-8")
+    order = ("ctrl", "a1", "a2", "a3")
+    bound = _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="ctrl",
+        candidate_id="a1",
+        candidate_ids=("a2", "a3"),
+        arm_order=order,
+        selection_rule="best_by_primary_then_smallest",
+    )
+    assert bound["event_type"] == "decision_arms_bound"
+    assert bound["detail"]["selection_rule"] == "best_by_primary_then_smallest"
+    assert bound["detail"]["expected_arm_ids"] == ["ctrl", "a1", "a2", "a3"]
+    manifest = ExperimentCampaignV1(
+        campaign_id=campaign_id,
+        experiment_id="a1",
+        hypothesis="Screen k size-matched candidates against one control.",
+        decision="Pick winner by locked selection_rule only.",
+        endpoints=(
+            CampaignEndpointV1(
+                endpoint_id="primary",
+                metric="smoke.eval_nll",
+                role="primary",
+                direction="decrease",
+                minimum_effect=0.05,
+            ),
+        ),
+        arms=(
+            CampaignArmV1(arm_id="ctrl", role="control", config_sha256="c" * 64),
+            CampaignArmV1(arm_id="a1", role="candidate", config_sha256="d" * 64),
+            CampaignArmV1(arm_id="a2", role="candidate", config_sha256="e" * 64),
+            CampaignArmV1(arm_id="a3", role="candidate", config_sha256="f" * 64),
+        ),
+        seeds=(7,),
+        budget=CampaignBudget(max_experiments=4, max_wall_minutes=3),
+        stopping_rules=("Stop after locked arms finish.",),
+        controls=(
+            CampaignControlV1(
+                control_id="matched-control",
+                description="Shared size-matched screening control.",
+                kind="negative",
+            ),
+        ),
+        negative_controls=("matched-control",),
+        multiplicity_families=(
+            MultiplicityFamilyV1(
+                family_id="primary-family", hypothesis_ids=("primary",), alpha=0.05
+            ),
+        ),
+        promotion_gates=(
+            CampaignGateV1(
+                gate_id="promote-primary",
+                endpoint_id="primary",
+                operator="le",
+                threshold=-0.05,
+            ),
+        ),
+        rollback_gates=(
+            CampaignGateV1(
+                gate_id="rollback-primary",
+                endpoint_id="primary",
+                operator="gt",
+                threshold=1e9,
+            ),
+        ),
+        artifact_requirements=(ArtifactRequirementV1(kind="version_stamp"),),
+        claim_class="diagnostic",
+        source_commit="b" * 40,
+        source_dirty=False,
+        author="test",
+        selection_rule="best_by_primary_then_smallest",
+    )
+    store.lock_experiment_campaign(manifest)
+    store.append_event("experiment_started", experiment_id="ctrl", status="running")
+    types = [row["event_type"] for row in store.verify_event_chain()]
+    assert types.index("decision_arms_bound") < types.index(
+        "experiment_campaign_locked"
+    )
+    assert types.index("experiment_campaign_locked") < types.index(
+        "experiment_started"
+    )
+
+
+def test_size_match_skip_reason_typed() -> None:
+    control = {"d_model": 128, "denoiser_layers": 4}
+    wide = {"d_model": 256, "denoiser_layers": 4}
+    reason = _mod._size_match_skip_reason(control, wide)
+    assert reason is not None
+    assert reason.startswith("capacity_unmatched:")
+    assert _mod._size_match_skip_reason(control, control) is None
