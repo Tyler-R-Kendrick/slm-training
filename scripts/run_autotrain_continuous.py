@@ -33,7 +33,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, NamedTuple
 
 from slm_training.autoresearch.engine import default_eval_version
 from slm_training.autoresearch.hillclimb import (
@@ -512,16 +512,180 @@ def _self_heal_rebuild_screening_eval(
     return "rebuild_screening_eval"
 
 
+# Conservative CPU prior until a train_summary exists (c527 ~6.5 steps/s).
+_COLD_START_STEPS_PER_SEC = 5.0
+_STEPS_PER_SEC_SAFETY = 0.9
+_SCREENING_THRASH_STEPS_MAX_DEFAULT = 400
+
+
+def _thrash_timing_block(policy: Any) -> dict[str, Any]:
+    measurement = getattr(policy, "measurement", None) or {}
+    if not isinstance(measurement, dict):
+        return {}
+    thrash = measurement.get("thrash_timing") or {}
+    return dict(thrash) if isinstance(thrash, dict) else {}
+
+
+def _screening_thrash_steps_max(thrash: Mapping[str, Any] | None) -> int:
+    raw = (thrash or {}).get("screening_thrash_steps_max")
+    if raw is None:
+        return int(_SCREENING_THRASH_STEPS_MAX_DEFAULT)
+    try:
+        return max(1, int(raw))
+    except (TypeError, ValueError):
+        return int(_SCREENING_THRASH_STEPS_MAX_DEFAULT)
+
+
+def _screening_train_device() -> str:
+    """CUDA at train launch when present; CPU fallback. Never raises."""
+    try:
+        import torch
+
+        return "cuda" if bool(torch.cuda.is_available()) else "cpu"
+    except Exception:  # noqa: BLE001 — missing torch / driver is CPU
+        return "cpu"
+
+
+def _screening_max_gpu_hours(*, role: str, device: str | None = None) -> float:
+    """Engine routes ``--device auto`` iff max_gpu_hours > 0."""
+    if role != "screening":
+        return 0.0
+    chosen = device if device is not None else _screening_train_device()
+    if chosen != "cuda":
+        return 0.0
+    return float(MAX_RUN_SECONDS) / 3600.0
+
+
+def _steps_per_sec_from_train_payload(payload: Mapping[str, Any]) -> float | None:
+    try:
+        steps = int(payload.get("steps") or 0)
+    except (TypeError, ValueError):
+        return None
+    wall = payload.get("elapsed_wall_seconds")
+    if wall is None:
+        total_ms = payload.get("total_ms")
+        if total_ms is not None:
+            try:
+                wall = float(total_ms) / 1000.0
+            except (TypeError, ValueError):
+                wall = None
+    try:
+        wall_s = float(wall or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if steps <= 0 or wall_s <= 0.0:
+        return None
+    return float(steps) / wall_s
+
+
+def _latest_train_telemetry_payload(root: Path | None) -> dict[str, Any] | None:
+    if root is None or not root.is_dir():
+        return None
+    newest: Path | None = None
+    newest_mtime = -1.0
+    try:
+        summaries = root.glob("*/runs/*/train_summary.json")
+    except OSError:
+        return None
+    for path in summaries:
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            continue
+        if mtime > newest_mtime:
+            newest_mtime = mtime
+            newest = path
+    if newest is None:
+        return None
+    try:
+        payload = json.loads(newest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    payload["_telemetry_path"] = str(newest)
+    tel_path = newest.parent / "train_telemetry.json"
+    if tel_path.is_file() and payload.get("elapsed_wall_seconds") is None:
+        try:
+            tel = json.loads(tel_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            tel = None
+        if isinstance(tel, dict) and tel.get("total_ms") is not None:
+            payload["total_ms"] = tel.get("total_ms")
+    return payload
+
+
+def _fit_screening_steps(
+    *,
+    floor_seconds: float,
+    measured_steps_per_sec: float | None,
+    steps_max: int,
+) -> tuple[int, dict[str, Any]]:
+    cold = measured_steps_per_sec is None or measured_steps_per_sec <= 0.0
+    sps = _COLD_START_STEPS_PER_SEC if cold else float(measured_steps_per_sec)
+    raw = float(floor_seconds) * float(sps) * float(_STEPS_PER_SEC_SAFETY)
+    fitted = max(1, min(int(raw), int(steps_max)))
+    evidence = {
+        "floor_seconds": float(floor_seconds),
+        "measured_steps_per_sec": None if cold else float(measured_steps_per_sec),
+        "steps_per_sec_used": float(sps),
+        "safety": float(_STEPS_PER_SEC_SAFETY),
+        "raw_steps": float(raw),
+        "fitted_steps": int(fitted),
+        "steps_max": int(steps_max),
+        "cold_start": bool(cold),
+    }
+    return int(fitted), evidence
+
+
+def _screening_thrash_steps(
+    policy: Any,
+    requested_steps: int,
+    *,
+    floor_seconds: float | None = None,
+    measured_steps_per_sec: float | None = None,
+    telemetry_root: Path | None = None,
+) -> int:
+    """Fit screening train steps to the (grown) train floor.
+
+    ``steps = clamp(floor * measured_sps * 0.9, 1, screening_thrash_steps_max)``.
+    Cold-start uses ``_COLD_START_STEPS_PER_SEC`` when no telemetry exists.
+    """
+    thrash = _thrash_timing_block(policy)
+    steps_max = _screening_thrash_steps_max(thrash)
+    floor = (
+        float(floor_seconds)
+        if floor_seconds is not None
+        else float(thrash.get("min_train_floor_seconds") or 20.0)
+    )
+    sps = measured_steps_per_sec
+    if sps is None:
+        payload = _latest_train_telemetry_payload(telemetry_root)
+        if payload is not None:
+            sps = _steps_per_sec_from_train_payload(payload)
+    fitted, _evidence = _fit_screening_steps(
+        floor_seconds=floor,
+        measured_steps_per_sec=sps,
+        steps_max=steps_max,
+    )
+    del requested_steps
+    return int(fitted)
+
+
 def _fit_screening_decode_timeout_seconds(
     policy: Any,
     *,
     arm_wall_seconds: float | None = None,
     formal_required: bool = False,
+    telemetry_root: Path | None = None,
+    requested_steps: int = 20,
 ) -> tuple[float, dict[str, Any]]:
     """Clamp screening decode so n×decode + train floor fits the arm wall.
 
     Timeouts are optima: if this clamp always binds, either the arm share model
     or the thrash recipe (steps/n) needs recalibration — not silent wall++.
+    After decode fit, unused eval allocation is reassigned to the train floor
+    (never past the arm wall).
     """
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -529,12 +693,7 @@ def _fit_screening_decode_timeout_seconds(
         stage_wall_minutes_for_role,
     )
 
-    measurement = getattr(policy, "measurement", None) or {}
-    if not isinstance(measurement, dict):
-        measurement = {}
-    thrash = measurement.get("thrash_timing") or {}
-    if not isinstance(thrash, dict):
-        thrash = {}
+    thrash = _thrash_timing_block(policy)
     configured = float(decode_timeout_seconds_for_role(policy, "screening"))
     if arm_wall_seconds is None:
         arm_wall_seconds = _arm_wall_seconds(
@@ -548,43 +707,52 @@ def _fit_screening_decode_timeout_seconds(
     )
     min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
     overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
-    # Max per-record decode that still leaves train floor + overhead.
     usable = float(arm_wall_seconds) - min_train - overhead
     if int(smoke_n) <= 0:
         max_decode = max(1.0, usable)
     else:
         max_decode = max(1.0, usable / float(smoke_n))
     fitted = min(configured, max_decode)
+    projected_eval = float(fitted) * float(max(int(smoke_n), 0))
+    allocated_eval = max(0.0, float(arm_wall_seconds) - min_train - overhead)
+    residual = max(0.0, allocated_eval - projected_eval)
+    grown_floor = min_train + residual
+    wall_headroom = max(0.0, float(arm_wall_seconds) - overhead - projected_eval)
+    grown_floor = min(grown_floor, wall_headroom)
+    if grown_floor + projected_eval + overhead > float(arm_wall_seconds) + 1e-9:
+        grown_floor = max(0.0, float(arm_wall_seconds) - overhead - projected_eval)
+    train_device = _screening_train_device()
+    payload = _latest_train_telemetry_payload(telemetry_root)
+    sps = _steps_per_sec_from_train_payload(payload) if payload else None
+    fitted_steps, steps_fit = _fit_screening_steps(
+        floor_seconds=grown_floor,
+        measured_steps_per_sec=sps,
+        steps_max=_screening_thrash_steps_max(thrash),
+    )
+    steps_fit["telemetry_path"] = (
+        None if payload is None else payload.get("_telemetry_path")
+    )
+    steps_fit["requested_steps"] = int(requested_steps)
     meta = {
         "arm_wall_seconds": float(arm_wall_seconds),
         "configured_decode_timeout_seconds": configured,
         "fitted_decode_timeout_seconds": float(fitted),
         "smoke_n": float(smoke_n),
         "min_train_floor_seconds": min_train,
+        "grown_train_floor_seconds": float(grown_floor),
         "eval_overhead_seconds": overhead,
-        "eval_budget_seconds": float(fitted) * float(smoke_n),
+        "eval_budget_seconds": projected_eval,
+        "allocated_eval_seconds": float(allocated_eval),
+        "eval_slack_reassigned_seconds": float(residual),
         "clamp_bound": 1.0 if fitted + 1e-9 < configured else 0.0,
-        # Certified screening-n range (screening_sample_size/v1) when the
-        # policy runs screening_smoke_n_mode=auto; None in fixed mode.
+        "train_device": train_device,
+        "fitted_steps": int(fitted_steps),
+        "steps_fit": steps_fit,
         "screening_sample_size": (
             dict(sample_size_report) if sample_size_report else None
         ),
     }
     return float(fitted), meta
-
-
-def _screening_thrash_steps(policy: Any, requested_steps: int) -> int:
-    """Cap thrash train steps so micro-train fits the arm budget."""
-    measurement = getattr(policy, "measurement", None) or {}
-    if not isinstance(measurement, dict):
-        return max(1, int(requested_steps))
-    thrash = measurement.get("thrash_timing") or {}
-    if not isinstance(thrash, dict):
-        return max(1, int(requested_steps))
-    cap = thrash.get("screening_thrash_steps")
-    if cap is None:
-        return max(1, int(requested_steps))
-    return max(1, min(int(requested_steps), int(cap)))
 
 
 def _write_thrash_timing(
@@ -632,6 +800,15 @@ def _write_thrash_timing(
         "has_dual_arm_ss": has_ss,
         "arm_wall_seconds": arm_wall_seconds,
         "decode_fit": decode_fit,
+        "fitted_steps": (decode_fit or {}).get("fitted_steps")
+        if isinstance(decode_fit, dict)
+        else None,
+        "steps_fit": (decode_fit or {}).get("steps_fit")
+        if isinstance(decode_fit, dict)
+        else None,
+        "train_device": (decode_fit or {}).get("train_device")
+        if isinstance(decode_fit, dict)
+        else None,
         "incomplete_reasons": incomplete_reasons,
         "thrash_regime": dict(thrash_regime) if thrash_regime else None,
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -755,6 +932,70 @@ def _counterbalanced_arm_order(
     return order
 
 
+def _multi_arm_measurement(policy: Any | None) -> dict[str, Any]:
+    """Read C2 ``measurement.multi_arm``; default when METRIC swarm is unmerged."""
+
+    block: dict[str, Any] = {}
+    measurement = getattr(policy, "measurement", None) if policy is not None else None
+    if isinstance(measurement, Mapping):
+        raw = measurement.get("multi_arm")
+        if isinstance(raw, Mapping):
+            block = dict(raw)
+    max_arms = max(1, int(block.get("max_arms_per_cycle") or 6))
+    return {
+        "max_arms_per_cycle": max_arms,
+        "shared_control": bool(block.get("shared_control", True)),
+        "selection_rule": str(
+            block.get("selection_rule") or SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST
+        ),
+    }
+
+
+def _fit_screening_candidate_count(
+    *,
+    max_candidates: int,
+    arm_wall_seconds: float,
+    stage_remaining_seconds: float,
+    finalization_reserve: float = HARNESS_FINALIZATION_RESERVE_SECONDS,
+) -> tuple[int, str | None]:
+    """Fit k candidates beside one control; never shrink a running arm wall."""
+
+    requested = max(1, int(max_candidates))
+    wall = float(arm_wall_seconds)
+    usable = float(stage_remaining_seconds) - float(finalization_reserve)
+    if wall <= 0:
+        return 1, "invalid_arm_wall"
+    fit = int(usable // wall) - 1
+    if fit < 1:
+        return 1, "stage_wall_fits_one_candidate"
+    if fit < requested:
+        return fit, "stage_wall_fitted_candidate_count"
+    return requested, None
+
+
+def _capacity_view(knobs: Mapping[str, Any]) -> SimpleNamespace:
+    return SimpleNamespace(
+        **{
+            name: knobs[name] if name in knobs else spec["baseline_value"]
+            for name, spec in CAPACITY_SCALING_LEVERS.items()
+        }
+    )
+
+
+def _size_match_skip_reason(
+    control_knobs: Mapping[str, Any], candidate_knobs: Mapping[str, Any]
+) -> str | None:
+    try:
+        require_size_matched_arms(
+            _capacity_view(control_knobs),
+            _capacity_view(candidate_knobs),
+            context="screening-multi-arm",
+        )
+    except ValueError as exc:
+        return f"capacity_unmatched:{exc}"
+    return None
+
+
 def _bind_expected_arms(
     *,
     root: Path,
@@ -763,6 +1004,8 @@ def _bind_expected_arms(
     control_id: str,
     candidate_id: str,
     arm_order: Sequence[str],
+    candidate_ids: Sequence[str] | None = None,
+    selection_rule: str | None = None,
 ) -> dict[str, Any]:
     """Bind the exact paired decision arms before execution starts.
 
@@ -771,8 +1014,13 @@ def _bind_expected_arms(
     result when a bounded cycle runs out of wall time.
     """
 
-    expected = (str(control_id), str(candidate_id))
-    if not all(expected) or len(set(expected)) != 2:
+    extras = [str(item) for item in (candidate_ids or ()) if str(item)]
+    seen: list[str] = []
+    for arm_id in (str(control_id), str(candidate_id), *extras):
+        if arm_id and arm_id not in seen:
+            seen.append(arm_id)
+    expected = tuple(seen)
+    if len(expected) < 2 or str(control_id) not in expected:
         raise ValueError("decision arms must contain distinct control/candidate ids")
     order = tuple(str(item) for item in arm_order)
     if set(order) != set(expected) or len(order) != len(expected):
@@ -781,12 +1029,16 @@ def _bind_expected_arms(
     matrix_id = str(matrix_payload.get("matrix_id") or "")
     if not matrix_id:
         raise ValueError("hypothesis matrix is missing matrix_id")
-    detail = {
+    detail: dict[str, Any] = {
         "matrix_id": matrix_id,
         "matrix_sha256": hashlib.sha256(matrix_path.read_bytes()).hexdigest(),
         "expected_arm_ids": list(expected),
         "arm_order": list(order),
     }
+    if len(expected) > 2:
+        detail["shared_control"] = True
+    if selection_rule:
+        detail["selection_rule"] = str(selection_rule)
     store = CampaignStore(campaign_id, root)
     for event in reversed(store.verify_event_chain()):
         if event.get("event_type") != "decision_arms_bound":
@@ -801,6 +1053,162 @@ def _bind_expected_arms(
         status="bound",
         detail=detail,
     )
+
+
+def _screening_multi_arm_ids(
+    *,
+    matrix: Mapping[str, Any],
+    control_id: str,
+    recommended_id: str,
+    fitted_candidates: int,
+    by_id: Mapping[str, Path],
+) -> tuple[list[str], list[dict[str, str]]]:
+    skipped: list[dict[str, str]] = []
+    control_knobs = _matrix_experiment_knobs(matrix, control_id)
+    ordered: list[str] = []
+    if recommended_id and recommended_id != control_id:
+        ordered.append(str(recommended_id))
+    for row in matrix.get("hypotheses") or []:
+        if not isinstance(row, dict):
+            continue
+        eid = str((row.get("experiment") or {}).get("experiment_id") or "")
+        if not eid or eid == control_id or eid in ordered or eid not in by_id:
+            continue
+        ordered.append(eid)
+    picked: list[str] = []
+    for eid in ordered:
+        if len(picked) >= fitted_candidates:
+            break
+        reason = _size_match_skip_reason(
+            control_knobs, _matrix_experiment_knobs(matrix, eid)
+        )
+        if reason:
+            skipped.append({"arm_id": eid, "reason": reason})
+            continue
+        picked.append(eid)
+    if not picked and recommended_id and recommended_id != control_id:
+        picked = [str(recommended_id)]
+    return picked, skipped
+
+
+def _lock_screening_multi_arm_campaign(
+    *,
+    root: Path,
+    campaign_id: str,
+    experiments: Sequence[Mapping[str, Any]],
+    control_id: str,
+    candidate_ids: Sequence[str],
+    seeds: Sequence[int],
+    selection_rule: str,
+    commit: str,
+    role: str,
+    policy: Any,
+) -> ExperimentCampaignV1:
+    by_eid = {str(exp["experiment_id"]): dict(exp) for exp in experiments}
+    rec = str(candidate_ids[0])
+    base = _manifest(
+        campaign_id, by_eid[rec], commit, role=role, policy=policy
+    )
+    arms = [
+        CampaignArmV1(
+            arm_id=control_id,
+            role="control",
+            config_sha256=hashlib.sha256(
+                json.dumps(
+                    by_eid[control_id].get("knobs") or {},
+                    sort_keys=True,
+                    default=str,
+                ).encode()
+            ).hexdigest(),
+        )
+    ]
+    for eid in candidate_ids:
+        arms.append(
+            CampaignArmV1(
+                arm_id=eid,
+                role="candidate",
+                config_sha256=hashlib.sha256(
+                    json.dumps(
+                        by_eid[eid].get("knobs") or {},
+                        sort_keys=True,
+                        default=str,
+                    ).encode()
+                ).hexdigest(),
+            )
+        )
+    locked = base.model_copy(
+        update={
+            "experiment_id": rec,
+            "arms": tuple(arms),
+            "seeds": tuple(int(s) for s in seeds),
+            "selection_rule": selection_rule,
+            "stopping_rules": (
+                *base.stopping_rules,
+                f"Select winner by {selection_rule} after locked arms finish.",
+            ),
+        }
+    )
+    store = CampaignStore(campaign_id, root)
+    store.lock_experiment_campaign(locked)
+    man_path = store.root / "manifests" / f"{rec}.json"
+    man_path.parent.mkdir(parents=True, exist_ok=True)
+    man_path.write_text(locked.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    return locked
+
+
+def _arm_trainable_params(camp_dir: Path, run_id: str) -> int:
+    summary = _read_json(camp_dir / "runs" / run_id / "train_summary.json")
+    for key in ("trainable_params", "n_params", "parameter_count"):
+        raw = summary.get(key)
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+            return int(raw)
+    return 0
+
+
+def _exhaust_screening_losers(
+    *,
+    root: Path,
+    loop_id: str,
+    policy: Any,
+    matrix: Mapping[str, Any],
+    control_id: str,
+    loser_ids: Sequence[str],
+    claim_class: str,
+    primary_metric: str,
+    direction: str,
+    train_version: str,
+    eval_version: str,
+) -> None:
+    from slm_training.autoresearch.climb_policy import (
+        load_loop_exhausted_ledger,
+        loop_data_eval_identity,
+        save_loop_exhausted_ledger,
+    )
+
+    if not loser_ids:
+        return
+    ledger = load_loop_exhausted_ledger(root, loop_id, policy)
+    for eid in loser_ids:
+        knobs = _matrix_experiment_knobs(matrix, eid)
+        signature = _matrix_treatment_signature(matrix, eid, control_id)
+        if not signature:
+            continue
+        identity = loop_data_eval_identity(
+            policy,
+            claim_class=claim_class,
+            train_version=str(knobs.get("train_version") or train_version),
+            eval_version=str(knobs.get("eval_version") or eval_version),
+            primary_metric=primary_metric,
+            direction=direction,
+        )
+        ledger.record_null(
+            knob_signature_sha256=signature,
+            data_eval_identity=identity,
+            claim_class=claim_class,
+            reason="multi_arm_screening_loser",
+            note=f"arm={eid}",
+        )
+    save_loop_exhausted_ledger(ledger, root, loop_id, policy)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -2290,6 +2698,19 @@ def _synthesize_thrash_arms(
     return out
 
 
+class _ThrashBankHeal(NamedTuple):
+    """Bank-heal outcome. Truthy iff at least one open arm remains.
+
+    ``composed`` is True only when new dynamic successors were written.
+    """
+
+    available: bool
+    composed: bool = False
+
+    def __bool__(self) -> bool:
+        return self.available
+
+
 def _self_heal_thrash_bank_exhaust(
     root: Path,
     loop_id: str,
@@ -2297,10 +2718,11 @@ def _self_heal_thrash_bank_exhaust(
     closed: set[str],
     skip: set[str],
     predecessor_campaign_id: str | None = None,
-) -> bool:
+) -> _ThrashBankHeal:
     """Ensure thrash can continue after static bank multi-seed exhaust.
 
-    Returns True when at least one new open arm is available after heal.
+    Truthy when at least one open arm is available. ``composed`` is set only
+    when this call wrote new successors.
     """
     _load_dynamic_thrash_arms(root, loop_id)
     bank = _all_screening_arm_bank()
@@ -2319,14 +2741,14 @@ def _self_heal_thrash_bank_exhaust(
                 "reason=selectable_process_arm",
                 flush=True,
             )
-            return True
+            return _ThrashBankHeal(True, False)
         print(
             "SELF_HEAL_BANK_EXHAUST parked reason=snapshot_leftovers",
             flush=True,
         )
-        return False
+        return _ThrashBankHeal(False)
     if open_now:
-        return True
+        return _ThrashBankHeal(True, False)
     if _terminal_park_on_exhaust():
         # Terminal policy retires compose filler: an exhausted bank concludes
         # with the typed regime_exhausted verdict instead of synthetic arms.
@@ -2334,7 +2756,7 @@ def _self_heal_thrash_bank_exhaust(
             "SELF_HEAL_BANK_EXHAUST parked reason=terminal_park_on_exhaust",
             flush=True,
         )
-        return False
+        return _ThrashBankHeal(False)
     synthesized = _synthesize_thrash_arms(
         known_slugs=known | closed | skip, closed=closed
     )
@@ -2344,7 +2766,7 @@ def _self_heal_thrash_bank_exhaust(
             "reason=no_untried_size_matched_compose_pairs",
             flush=True,
         )
-        return False
+        return _ThrashBankHeal(False)
     _append_dynamic_thrash_arms(root, loop_id, synthesized)
     print(
         "SELF_HEAL_BANK_EXHAUST "
@@ -2357,7 +2779,7 @@ def _self_heal_thrash_bank_exhaust(
         for slug, _, _ in _all_screening_arm_bank()
         if slug not in closed and slug not in skip
     }
-    return bool(open_after)
+    return _ThrashBankHeal(bool(open_after), True)
 
 
 def _last_cycle_failure_message(root: Path, loop_id: str) -> str | None:
@@ -3244,6 +3666,29 @@ def _self_heal_cycle_error(
             owned_kind = None
         if owned_kind:
             return owned_kind
+        try:
+            porcelain = _git(
+                "status",
+                "--porcelain",
+                cwd=work_cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-serena-dirty",
+            )
+            serena_kind = _maybe_restore_serena_project_yml(
+                cwd=work_cwd,
+                paths=_porcelain_paths(porcelain),
+                git_kw={
+                    "cwd": work_cwd,
+                    "root": root,
+                    "loop_id": loop_id,
+                    "stage": "self-heal-serena-yml",
+                },
+            )
+            if serena_kind:
+                return serena_kind
+        except Exception:  # noqa: BLE001 — fall through to closeout heal
+            pass
         dirty_kind = _self_heal_continuous_dirty_tree(
             cwd=work_cwd, root=root, loop_id=loop_id
         )
@@ -3458,10 +3903,60 @@ def _is_foreign_dirty_path(rel: str) -> bool:
         return False
     if path.startswith(".pytest_cache/") or path == ".pytest_cache":
         return False
-    # Serena cache/memories are local agent state; tracked config still blocks.
+    # Serena cache/memories are local agent state; tracked config still blocks
+    # unless the project.yml rewrite is a comment/whitespace-only strip.
     if path == ".serena" or path.startswith(".serena/"):
         return path in {".serena/project.yml", ".serena/.gitignore"}
     return True
+
+
+_SERENA_PROJECT_YML = ".serena/project.yml"
+
+
+def _yaml_mapping_equal(left: str, right: str) -> bool:
+    """True when both texts parse to the same YAML value (comments ignored)."""
+    try:
+        import yaml
+    except ImportError:  # pragma: no cover — PyYAML is a repo dep
+        return False
+    try:
+        return yaml.safe_load(left) == yaml.safe_load(right)
+    except yaml.YAMLError:
+        return False
+
+
+def _maybe_restore_serena_project_yml(
+    *,
+    cwd: Path,
+    paths: Sequence[str],
+    git_kw: Mapping[str, Any],
+) -> str | None:
+    """Restore comment-stripped Serena project.yml; semantic edits stay parked."""
+    foreign = [_normalize_repo_relpath(p) for p in paths if _is_foreign_dirty_path(p)]
+    if foreign != [_SERENA_PROJECT_YML]:
+        return None
+    work = cwd / _SERENA_PROJECT_YML
+    if not work.is_file():
+        return None
+    try:
+        head = _git("show", f"HEAD:{_SERENA_PROJECT_YML}", **git_kw)
+    except Exception:  # noqa: BLE001 — missing HEAD path is not this heal
+        return None
+    work_text = work.read_text(encoding="utf-8")
+    if not _yaml_mapping_equal(head, work_text):
+        return None
+    _git(
+        "restore",
+        "--source=HEAD",
+        "--worktree",
+        "--staged",
+        "--",
+        _SERENA_PROJECT_YML,
+        stage="self-heal-serena-yml" if git_kw.get("root") is not None else None,
+        **{k: v for k, v in git_kw.items() if k != "stage"},
+    )
+    print("SELF_HEAL_SERENA_PROJECT_YML reason=comment_whitespace_strip", flush=True)
+    return "serena_project_yml_comment_strip"
 
 
 def _porcelain_paths(porcelain: str) -> list[str]:
@@ -4674,6 +5169,21 @@ def _self_heal_continuous_dirty_tree(
     paths = _porcelain_paths(porcelain)
     if not paths:
         return None
+    serena_kind = _maybe_restore_serena_project_yml(
+        cwd=cwd, paths=paths, git_kw=git_kw
+    )
+    if serena_kind:
+        porcelain = _git(
+            "status",
+            "--porcelain",
+            stage="self-heal-dirty-status" if root is not None else None,
+            **git_kw,
+        )
+        if not porcelain.strip():
+            return serena_kind
+        paths = _porcelain_paths(porcelain)
+        if not paths:
+            return serena_kind
     closeout = [p for p in paths if _is_continuous_closeout_path(p)]
     foreign = [p for p in paths if _is_foreign_dirty_path(p)]
     if foreign and not closeout:
@@ -4804,7 +5314,29 @@ def self_heal_unblock_loop(
     except Exception:  # noqa: BLE001
         porcelain = ""
     if porcelain.strip():
-        foreign = [p for p in _porcelain_paths(porcelain) if _is_foreign_dirty_path(p)]
+        paths = _porcelain_paths(porcelain)
+        serena_kind = _maybe_restore_serena_project_yml(
+            cwd=cwd,
+            paths=paths,
+            git_kw={
+                "cwd": cwd,
+                "root": root,
+                "loop_id": loop_id,
+                "stage": "self-heal-serena-yml",
+            },
+        )
+        if serena_kind:
+            soft_healed.append(serena_kind)
+            porcelain = _git(
+                "status",
+                "--porcelain",
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-unblock-dirty-check",
+            )
+            paths = _porcelain_paths(porcelain) if porcelain.strip() else []
+        foreign = [p for p in paths if _is_foreign_dirty_path(p)]
         if foreign:
             hard_pending.append(
                 {
@@ -4896,16 +5428,14 @@ def self_heal_unblock_loop(
             skip = _skip_arm_slugs(
                 entries, integration_commit=integration_commit, include_causal_cap=False
             )
-            if _self_heal_thrash_bank_exhaust(
+            bank_heal = _self_heal_thrash_bank_exhaust(
                 root,
                 loop_id,
                 closed=closed,
                 skip=skip | closed,
                 predecessor_campaign_id=pred,
-            ):
-                # Only record as heal when bank was empty before (heuristic: open_now
-                # was empty). The helper returns True also when arms already open;
-                # still safe to note compose path.
+            )
+            if bank_heal.composed:
                 soft_healed.append("thrash_bank_compose")
         except Exception as exc:  # noqa: BLE001
             print(f"SELF_HEAL_UNBLOCK bank_warn={exc!r}", flush=True)
@@ -7463,6 +7993,81 @@ def _screening_regime_decision(
     )
 
 
+def _loop_champion_dir(root: Path, loop_id: str) -> Path:
+    return root / "loops" / loop_id
+
+
+def _warm_start_policy(policy: Any) -> dict[str, Any]:
+    measurement = getattr(policy, "measurement", None)
+    if not isinstance(measurement, Mapping):
+        measurement = {}
+    raw = measurement.get("warm_start") if isinstance(measurement, Mapping) else None
+    block = dict(raw) if isinstance(raw, Mapping) else {}
+    block.setdefault("enabled", True)
+    block.setdefault("max_cumulative_epochs", DEFAULT_MAX_CUMULATIVE_EPOCHS)
+    return block
+
+
+def _ensure_climb_champion(
+    *,
+    root: Path,
+    loop_id: str,
+    queue_entries: Sequence[Mapping[str, Any]] | None,
+    eval_data_manifest_sha: str | None,
+) -> str | None:
+    """Seed champion from confirmed artifact; park if epochs exhausted.
+
+    Returns a park reason or None to continue.
+    """
+    loop_dir = _loop_champion_dir(root, loop_id)
+    artifacts: list[dict[str, Any]] = []
+    for row in queue_entries or ():
+        if str(row.get("status") or "") not in {
+            "confirmed",
+            "climb_accepted",
+            "promoted",
+        }:
+            continue
+        item = dict(row)
+        camp = str(row.get("confirm_campaign_id") or row.get("campaign_id") or "")
+        cand = str(row.get("candidate_id") or "")
+        ckpt = _checkpoint_path_for_candidate(root, camp, cand) if camp else None
+        if ckpt is not None:
+            item["checkpoint"] = str(ckpt)
+        artifacts.append(item)
+    seed_climb_champion(loop_dir, confirmed_artifacts=artifacts)
+    sidecar = load_climb_champion(loop_dir)
+    if (
+        sidecar is not None
+        and sidecar.train_data_manifest_sha
+        and eval_data_manifest_sha
+    ):
+        assert_champion_eval_disjoint(
+            train_data_manifest_sha=sidecar.train_data_manifest_sha,
+            eval_data_manifest_sha=eval_data_manifest_sha,
+        )
+    return None
+
+
+def _park_champion_epochs_if_needed(policy: Any, loop_dir: Path) -> str | None:
+    warm = _warm_start_policy(policy)
+    sidecar = load_climb_champion(loop_dir)
+    reason = champion_epoch_park_reason(
+        sidecar,
+        max_cumulative_epochs=float(
+            warm.get("max_cumulative_epochs") or DEFAULT_MAX_CUMULATIVE_EPOCHS
+        ),
+    )
+    if reason:
+        print(
+            f"REGIME_PARKED reason={CHAMPION_EPOCHS_EXHAUSTED} "
+            f"epochs={sidecar.cumulative_epochs if sidecar else None}",
+            flush=True,
+        )
+        return _REGIME_PARKED_STATUS
+    return None
+
+
 def _select_cycle_slug(
     cycle: int,
     *,
@@ -8201,7 +8806,7 @@ def _resolve_confirm_result(
     if not ok:
         reasons.append("confirmation_rejected:primary_quality_not_reheld")
     status = "confirmed" if ok else "rejected"
-    return _update_champion_status(
+    updated = _update_champion_status(
         root=root,
         loop_id=loop_id,
         entry_id=str(entry["entry_id"]),
@@ -8210,6 +8815,54 @@ def _resolve_confirm_result(
         confirm_cycle_index=cycle_index,
         resolve_reasons=reasons,
     )
+    if ok:
+        cand_id = str(delivery.get("candidate_id") or "")
+        ckpt = _checkpoint_path_for_candidate(root, campaign_id, cand_id)
+        summary: dict[str, Any] = {}
+        if cand_id:
+            summary_path = (
+                root / campaign_id / "runs" / cand_id / "train_summary.json"
+            )
+            if summary_path.is_file():
+                try:
+                    loaded = _read_json(summary_path)
+                    if isinstance(loaded, dict):
+                        summary = loaded
+                except Exception:  # noqa: BLE001
+                    summary = {}
+        knobs = dict(entry.get("knobs") or {})
+        try:
+            extra_steps = int(knobs.get("steps") or summary.get("steps") or 0)
+        except (TypeError, ValueError):
+            extra_steps = 0
+        try:
+            record_count = int(summary.get("record_count") or 1)
+        except (TypeError, ValueError):
+            record_count = 1
+        train_sha = str(
+            summary.get("train_data_manifest_sha")
+            or summary.get("data_manifest_sha")
+            or ""
+        )
+        params = summary.get("trainable_params")
+        if params is None:
+            params = (summary.get("track") or {}).get("trainable_params")
+        try:
+            trainable = int(params) if params is not None else None
+        except (TypeError, ValueError):
+            trainable = None
+        maybe_advance_climb_champion(
+            _loop_champion_dir(root, loop_id),
+            confirmed=True,
+            checkpoint=ckpt,
+            source_campaign=campaign_id,
+            extra_steps=extra_steps,
+            train_data_manifest_sha=train_sha,
+            record_count=record_count,
+            knobs=knobs,
+            trainable_params=trainable,
+        )
+    return updated
 
 
 def promote_expectations_path() -> Path:
@@ -10348,7 +11001,9 @@ def _phase_a_delivery(
         decode_fit = None
         if role == "screening":
             _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
-                policy, arm_wall_seconds=arm_s
+                policy,
+                arm_wall_seconds=arm_s,
+                telemetry_root=root,
             )
         matrix_regime = None
         matrix_path = camp_dir / "matrix-proposal.json"
@@ -12650,6 +13305,7 @@ def _matrix(
     skip_slugs: set[str] | None = None,
     thrash_regime: ThrashRegimeDecision | None = None,
     initialize_from: str | None = None,
+    telemetry_root: Path | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -12669,8 +13325,20 @@ def _matrix(
     # Thrash: micro-steps + decode fit so n×decode + train floor ≤ arm wall
     # (Pareto: incomplete rate drives recalibration of these, not wall++).
     if role == "screening":
-        steps = _screening_thrash_steps(pol, steps)
-        decode_timeout, decode_fit = _fit_screening_decode_timeout_seconds(pol)
+        decode_timeout, decode_fit = _fit_screening_decode_timeout_seconds(
+            pol,
+            telemetry_root=telemetry_root,
+            requested_steps=int(steps),
+        )
+        steps = int(
+            (decode_fit or {}).get("fitted_steps")
+            or _screening_thrash_steps(
+                pol,
+                steps,
+                floor_seconds=(decode_fit or {}).get("grown_train_floor_seconds"),
+                telemetry_root=telemetry_root,
+            )
+        )
     else:
         decode_timeout = decode_timeout_seconds_for_role(pol, role)
         decode_fit = None
@@ -13378,6 +14046,11 @@ def _matrix(
                 }
             )
         rec = f"{prefix}-{rec_slug}"
+        if initialize_from and len(candidates) >= 2:
+            assert_warm_start_launch(
+                candidates[0]["experiment"]["knobs"],
+                candidates[1]["experiment"]["knobs"],
+            )
         candidate_ids = {
             str((row.get("experiment") or {}).get("experiment_id") or "")
             for row in candidates
@@ -13727,6 +14400,7 @@ def _manifest(
         budget=CampaignBudget(
             max_experiments=1,
             max_wall_minutes=stage_wall_minutes_for_role(pol, role),
+            max_gpu_hours=_screening_max_gpu_hours(role=str(role)),
         ),
         stopping_rules=(
             "Stop after the declared seeds finish or the wall cap is hit.",
@@ -14440,6 +15114,20 @@ def run_cycle(
         initial_arm_wall_minutes=arm_wall_minutes,
         formal_completed=formal_lane_required,
     )
+    multi_arm_cfg = _multi_arm_measurement(policy)
+    multi_arm_constraint: str | None = None
+    fitted_candidate_count = 1
+    if cycle_intent == "screening" and replay is None:
+        fitted_candidate_count, multi_arm_constraint = _fit_screening_candidate_count(
+            max_candidates=int(multi_arm_cfg["max_arms_per_cycle"]),
+            arm_wall_seconds=float(arm_wall_minutes) * 60.0,
+            stage_remaining_seconds=max(0.0, deadline - time.monotonic()),
+        )
+    campaign_max_experiments = (
+        1 + fitted_candidate_count
+        if cycle_intent == "screening" and replay is None
+        else 3
+    )
     claim_for_role = (
         str(policy.defaults.get("claim_class_promotion") or "promotion_candidate")
         if role == "promotion"
@@ -14520,7 +15208,7 @@ def run_cycle(
         "--track",
         "twotower",
         "--max-experiments",
-        "3",
+        str(campaign_max_experiments),
         "--max-wall-minutes",
         str(campaign_wall_minutes),
         "--notes",
@@ -14690,10 +15378,28 @@ def run_cycle(
             ]
     # Dual-regime thrash decision (screening only). Confirm/promote freeze levers.
     thrash_regime: ThrashRegimeDecision | None = None
+    initialize_from: str | None = None
     if confirm_levers is None and promote_levers is None and replay is None:
+        loop_dir = _loop_champion_dir(root, loop_id)
+        _ensure_climb_champion(
+            root=root,
+            loop_id=loop_id,
+            queue_entries=queue_entries,
+            eval_data_manifest_sha=None,
+        )
+        parked_epochs = _park_champion_epochs_if_needed(policy, loop_dir)
+        if parked_epochs:
+            return parked_epochs
+        warm = _warm_start_policy(policy)
+        ckpt = climb_champion_checkpoint_path(loop_dir)
+        sidecar = load_climb_champion(loop_dir)
+        if sidecar is not None and ckpt.is_file() and warm.get("enabled", True):
+            initialize_from = str(ckpt)
         thrash_regime = _screening_regime_decision(
             queue_entries=queue_entries,
             compiler_ms_timeout=_predecessor_compiler_ms_timeout(root, pred),
+            root=root,
+            loop_id=loop_id,
         )
         print(
             "THRASH_REGIME "
@@ -14781,6 +15487,7 @@ def run_cycle(
         else None,
         skip_slugs=skip_slugs,
         thrash_regime=thrash_regime,
+        telemetry_root=root,
     )
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
@@ -14927,13 +15634,37 @@ def run_cycle(
         if cycle_intent == "promote" and promoting_champion is not None
         else None
     )
-    order = _counterbalanced_arm_order(
-        control_eid,
-        candidate_eid,
-        cycle_index=cycle,
-        seed=arm_seed,
-        promotion_replicate_index=promotion_replicate_index,
+    multi_arm_skip: list[dict[str, str]] = []
+    screening_candidate_ids: list[str] = [candidate_eid]
+    selection_rule_locked: str | None = None
+    screening_multi = (
+        cycle_intent == "screening"
+        and replay is None
+        and confirm_levers is None
+        and promote_levers is None
+        and fitted_candidate_count > 1
     )
+    if screening_multi:
+        screening_candidate_ids, multi_arm_skip = _screening_multi_arm_ids(
+            matrix=matrix,
+            control_id=control_eid,
+            recommended_id=candidate_eid,
+            fitted_candidates=fitted_candidate_count,
+            by_id=by_id,
+        )
+        if not screening_candidate_ids:
+            screening_candidate_ids = [candidate_eid]
+        candidate_eid = screening_candidate_ids[0]
+        order = [control_eid, *screening_candidate_ids]
+        selection_rule_locked = str(multi_arm_cfg["selection_rule"])
+    else:
+        order = _counterbalanced_arm_order(
+            control_eid,
+            candidate_eid,
+            cycle_index=cycle,
+            seed=arm_seed,
+            promotion_replicate_index=promotion_replicate_index,
+        )
     scheduled_order = list(order)
     _bind_expected_arms(
         root=root,
@@ -14942,7 +15673,28 @@ def run_cycle(
         control_id=control_eid,
         candidate_id=candidate_eid,
         arm_order=scheduled_order,
+        candidate_ids=screening_candidate_ids[1:] if screening_multi else None,
+        selection_rule=selection_rule_locked,
     )
+    if screening_multi:
+        swarm_exps = [
+            json.loads(by_id[eid].read_text(encoding="utf-8"))
+            for eid in (control_eid, *screening_candidate_ids)
+            if eid in by_id
+        ]
+        _lock_screening_multi_arm_campaign(
+            root=root,
+            campaign_id=campaign_id,
+            experiments=swarm_exps,
+            control_id=control_eid,
+            candidate_ids=screening_candidate_ids,
+            seeds=(arm_seed,),
+            selection_rule=selection_rule_locked
+            or SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
+            commit=integration,
+            role=role,
+            policy=policy,
+        )
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
     if cycle_intent == "promote" and promoting_champion is not None:
@@ -15015,7 +15767,7 @@ def run_cycle(
         order = []
 
     arm_count = len({eid for eid in order if eid in by_id})
-    if arm_count:
+    if arm_count and not screening_multi:
         requested_arm_wall_minutes = _post_formal_arm_budget_request(
             policy_minutes=stage_wall_minutes_for_role(policy, role),
             initial_arm_wall_minutes=arm_wall_minutes,
@@ -15039,7 +15791,9 @@ def run_cycle(
             )
     seen: set[str] = set()
     arm_exits: dict[str, int] = {}
-    arm_skipped: dict[str, dict[str, Any]] = {}
+    arm_skipped: dict[str, dict[str, Any]] = {
+        row["arm_id"]: {"reason": row["reason"]} for row in multi_arm_skip
+    }
     for eid in order:
         if eid in seen or eid not in by_id:
             continue
@@ -15055,8 +15809,9 @@ def run_cycle(
             pending_seen.add(pending_id)
             pending.append(pending_id)
         remaining_seconds = max(0.0, deadline - time.monotonic())
+        pending_count = 1 if screening_multi else len(pending)
         required_seconds = (
-            len(pending) * arm_wall_minutes * 60.0
+            pending_count * arm_wall_minutes * 60.0
             + HARNESS_FINALIZATION_RESERVE_SECONDS
         )
         # Epsilon after schedule-margin fit: never skip when remaining is

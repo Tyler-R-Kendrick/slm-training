@@ -6551,6 +6551,44 @@ def test_screening_bank_fingerprint_tracks_bank_identity() -> None:
     assert fingerprint != _mod._screening_bank_fingerprint(policy_sha256="s")
 
 
+def test_self_heal_unblock_does_not_tag_compose_when_bank_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Open bank is not a thrash_bank_compose recovery (root-cause of 3377 heals)."""
+    _inject_terminal_policy(monkeypatch, park=False)
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id="L")
+    assert "thrash_bank_compose" not in (report.get("soft_healed") or [])
+    assert not _mod._DYNAMIC_THRASH_ARMS
+
+
+def test_self_heal_thrash_bank_compose_only_when_exhausted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _inject_terminal_policy(monkeypatch, park=False)
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    root = tmp_path / "ar"
+    loop = "L"
+    closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    result = _mod._self_heal_thrash_bank_exhaust(
+        root, loop, closed=closed, skip=set()
+    )
+    assert result.composed
+    assert result.available
+    already = _mod._self_heal_thrash_bank_exhaust(
+        root, loop, closed=set(), skip=set()
+    )
+    assert already.available
+    assert not already.composed
+
+
 def test_park_policy_retires_confirm_fallback_and_compose_synthesis(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10063,6 +10101,51 @@ def test_is_continuous_closeout_path_allowlist() -> None:
     )
     assert not _mod._is_continuous_closeout_path("scripts/run_autotrain_continuous.py")
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
+
+
+def test_serena_comment_strip_restores_and_continues(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    yml = repo / ".serena" / "project.yml"
+    yml.parent.mkdir()
+    yml.write_text("# tracked comment\nlanguage: python\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", ".serena/project.yml"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "serena"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    yml.write_text("language: python\n", encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id="L")
+    assert "serena_project_yml_comment_strip" in (report.get("soft_healed") or [])
+    assert not any(
+        item.get("kind") == "foreign_dirty_tree"
+        for item in report.get("hard_pending") or []
+    )
+    assert yml.read_text(encoding="utf-8") == "# tracked comment\nlanguage: python\n"
+
+
+def test_serena_semantic_edit_still_parks(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    yml = repo / ".serena" / "project.yml"
+    yml.parent.mkdir()
+    yml.write_text("language: python\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", ".serena/project.yml"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "serena"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    yml.write_text("language: typescript\n", encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id="L")
+    assert "serena_project_yml_comment_strip" not in (report.get("soft_healed") or [])
+    assert any(
+        item.get("kind") == "foreign_dirty_tree"
+        for item in report.get("hard_pending") or []
+    )
 
 
 def test_serena_local_dirt_is_not_foreign() -> None:

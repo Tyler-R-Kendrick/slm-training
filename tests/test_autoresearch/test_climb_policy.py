@@ -38,11 +38,8 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert policy.schema == "autotrain_climb_policy/v1"
     assert policy.version
     assert len(policy.sha256) == 64
-    assert policy.screening_primary["metric"] == "smoke.structural_similarity"
-    assert {
-        item["metric_leaf"]
-        for item in policy.screening_primary["require_non_regression_metrics"]
-    } == {"parse_rate", "binder_reference_f1"}
+    assert policy.screening_primary["metric"] == "smoke.eval_nll"
+    assert policy.screening_primary["direction"] == "decrease"
     assert policy.promotion_primary["metric"]
     assert policy.promotion_dispose["require_primary_win"] is True
     assert policy.positive_classification["minimum_efficiency_gain_fraction"] == 0.05
@@ -138,7 +135,7 @@ def test_cycle_cadence_screening_then_promotion() -> None:
 
 
 def test_classify_positive_screening_quality_win_and_regression() -> None:
-    policy = load_climb_policy()
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v1.json"))
     # Structure is the primary; parse and binder correctness must not regress.
     win = classify_positive_metrics(
         policy,
@@ -213,7 +210,7 @@ def test_classify_positive_screening_quality_win_and_regression() -> None:
 
 
 def test_classify_positive_capacity_growth_without_eg_params() -> None:
-    policy = load_climb_policy()
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v1.json"))
     result = classify_positive_metrics(
         policy,
         role="screening",
@@ -236,7 +233,7 @@ def test_classify_positive_capacity_growth_without_eg_params() -> None:
 
 
 def test_classify_positive_capacity_growth_with_eg_params() -> None:
-    policy = load_climb_policy()
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v1.json"))
     result = classify_positive_metrics(
         policy,
         role="screening",
