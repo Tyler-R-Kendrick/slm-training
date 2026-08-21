@@ -21,7 +21,7 @@
     "min_seeds": 2
   },
   "defaults": {
-    "train_version": "hillclimb_strict_v1",
+    "train_version": "hillclimb_strict_v2",
     "eval_version_resolve": "published_smoke",
     "claim_class_screening": "diagnostic",
     "claim_class_promotion": "promotion_candidate",

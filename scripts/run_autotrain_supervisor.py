@@ -218,6 +218,8 @@ def main(argv: list[str] | None = None) -> int:
 
     py = sys.executable
     cycle = 0
+    passes_without_campaign = 0
+    no_campaign_threshold = 5
     while args.max_cycles == 0 or cycle < args.max_cycles:
         cycle += 1
         # Heal first (including local-CPU rebuild_data). Park is not a stop
@@ -314,6 +316,7 @@ def main(argv: list[str] | None = None) -> int:
                 if not env.get("PYTHONPATH")
                 else f"{src}{os.pathsep}{env['PYTHONPATH']}"
             )
+        before_campaign = continuous._latest_cycle(root, args.loop_id)[1]
         log_event({"event": "start_driver", "cycle": cycle, "cmd": cmd})
         proc = subprocess.run(cmd, cwd=cwd, env=env, check=False)
         log_event(
@@ -323,6 +326,25 @@ def main(argv: list[str] | None = None) -> int:
                 "returncode": int(proc.returncode),
             }
         )
+        after_campaign = continuous._latest_cycle(root, args.loop_id)[1]
+        passes_without_campaign = passes_without_campaign + 1 if after_campaign == before_campaign else 0
+        if passes_without_campaign >= no_campaign_threshold:
+            try:
+                from slm_training.autoresearch.heal.escalation import EscalationLedger
+                ledger = EscalationLedger.load(root, args.loop_id)
+                fingerprint = ledger.observe(
+                    kind="loop_stalled_no_campaign",
+                    reason=f"{passes_without_campaign} supervised passes without a new campaign",
+                    blocker_class="unknown",
+                    campaign_id=after_campaign or "unknown",
+                    owner_skill="autotrain",
+                ).fingerprint
+                ledger.escalate(fingerprint, note="supervisor watchdog threshold reached")
+                ledger.save()
+                log_event({"event": "loop_stalled_no_campaign", "passes": passes_without_campaign})
+            except Exception as exc:  # noqa: BLE001
+                log_event({"event": "watchdog_error", "error": repr(exc)})
+            passes_without_campaign = 0
         # Post-cycle unblock regardless of exit code.
         _write_family_closures(log_event)
         try:

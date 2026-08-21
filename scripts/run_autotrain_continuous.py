@@ -5378,6 +5378,15 @@ def self_heal_unblock_loop(
             )
             paths = _porcelain_paths(porcelain) if porcelain.strip() else []
         foreign = [p for p in paths if _is_foreign_dirty_path(p)]
+        try:
+            from slm_training.autoresearch.heal.fail_closed import lease_covers
+            lease = root / "loops" / loop_id / "wip_lease.json"
+            leased = [p for p in foreign if lease_covers(lease, p)]
+            if leased:
+                soft_healed.append("wip_lease_deferred")
+                foreign = [p for p in foreign if p not in leased]
+        except Exception as exc:  # noqa: BLE001
+            print(f"SELF_HEAL_UNBLOCK lease_warn={exc!r}", flush=True)
         if foreign:
             hard_pending.append(
                 {
@@ -12649,6 +12658,46 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     return best_idx, completed_id or best_id
 
 
+def _record_pass_outcome(
+    *, root: Path, loop_id: str, before_campaign: str | None,
+    before_receipts: int, typed_action: bool = False,
+) -> str:
+    """Classify one driver pass; a clean no-op is a counted hard failure."""
+    _idx, after_campaign = _latest_cycle(root, loop_id)
+    receipts_path = root / "loops" / loop_id / "heal_receipts.jsonl"
+    after_receipts = len(receipts_path.read_text(encoding="utf-8").splitlines()) if receipts_path.is_file() else 0
+    if after_campaign and after_campaign != before_campaign:
+        outcome = "campaign_initialized"
+    elif after_receipts > before_receipts:
+        outcome = "verified_heal" if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:] else "heal_attempted"
+    elif typed_action:
+        outcome = "typed_park_or_escalation"
+    else:
+        outcome = "vacuous_pass"
+    path = root / "loops" / loop_id / "pass_outcomes.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    prior = [r for r in path.read_text(encoding="utf-8").splitlines() if r] if path.is_file() else []
+    previous_vacuous = 0
+    for raw in reversed(prior):
+        try:
+            previous = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if previous.get("outcome") == "vacuous_pass":
+            previous_vacuous += 1
+        else:
+            break
+    row = {"schema": "pass_outcome/v1", "loop_id": loop_id, "outcome": outcome,
+           "campaign_before": before_campaign, "campaign_after": after_campaign,
+           "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
+           "recorded_at": utc_now()}
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, sort_keys=True) + "\n")
+    if row["consecutive_vacuous"] >= 3:
+        raise RuntimeError("vacuous_pass: loop_stalled_no_campaign")
+    return outcome
+
+
 def _campaign_at_cycle(root: Path, loop_id: str, cycle_index: int) -> str | None:
     matches: list[str] = []
     for path in root.glob("*/campaign.json"):
@@ -16402,6 +16451,9 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"=== continuous cycle pass {pass_no}/{total} ===", flush=True)
             try:
+                _before_cycle, before_campaign = _latest_cycle(root, args.loop_id)
+                _receipts_path = root / "loops" / args.loop_id / "heal_receipts.jsonl"
+                before_receipts = len(_receipts_path.read_text(encoding="utf-8").splitlines()) if _receipts_path.is_file() else 0
                 run_cycle(
                     cwd=cwd,
                     root=root,
@@ -16415,6 +16467,10 @@ def main(argv: list[str] | None = None) -> int:
                     require_action_receipts=args.supervised,
                     extra_skip_slugs=extra_skip_slugs,
                 )
+                print("PASS_OUTCOME " + _record_pass_outcome(
+                    root=root, loop_id=args.loop_id, before_campaign=before_campaign,
+                    before_receipts=before_receipts,
+                ), flush=True)
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -16429,6 +16485,15 @@ def main(argv: list[str] | None = None) -> int:
                     loop_id=args.loop_id,
                     integration_commit=code_sha,
                 )
+                try:
+                    _record_pass_outcome(
+                        root=root, loop_id=args.loop_id,
+                        before_campaign=before_campaign if "before_campaign" in locals() else None,
+                        before_receipts=before_receipts if "before_receipts" in locals() else 0,
+                        typed_action=bool(report.get("hard_pending")),
+                    )
+                except RuntimeError:
+                    raise
                 # Legacy string heal for bank/soft identity / document / residual.
                 heal_kind = _self_heal_cycle_error(
                     root=root,

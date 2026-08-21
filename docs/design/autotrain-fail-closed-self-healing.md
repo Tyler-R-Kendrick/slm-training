@@ -1,6 +1,8 @@
 # Fail-closed self-healing for hands-off hill-climbing
 
-Design record, 2026-08-21. Status: **proposed** (not yet implemented). Owner:
+Design record, 2026-08-21. Status: **implementation in progress** (the working
+tree changes are validated; landing and loop execution are blocked by read-only
+Git metadata). Owner:
 autotrain continuous loop (`scripts/run_autotrain_continuous.py`,
 `scripts/run_autotrain_supervisor.py`, `src/slm_training/autoresearch/heal/`).
 

@@ -29,6 +29,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "autotrain climb policy now consumes the fail-closed hillclimb_strict_v2 train snapshot.",
+          "version": "v7"
+        },
+        {
+          "date": "2026-08-21",
           "note": "policy.v14 screening primary smoke.eval_nll (diagnostic); conclusions.py criteria unchanged.",
           "version": "v6"
         },
@@ -82,10 +87,15 @@
         "docs/design/hypothesis-family-conclusions.md",
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
-      "version": "v6"
+      "version": "v7"
     },
     "autoresearch.heal": {
       "history": [
+        {
+          "date": "2026-08-21",
+          "note": "Fail-closed loop primitives: typed pass outcomes, watchdog blocker catalog, WIP leases, and per-metric power evidence helpers.",
+          "version": "v2"
+        },
         {
           "date": "2026-08-19",
           "note": "no-bump: test_run_autotrain_supervisor gained park-wait coverage (park sleeps --park-backoff-seconds and re-checks; --exit-on-park legacy) for the supervisor component; heal classify/playbook/escalation behavior is unchanged.",
@@ -125,7 +135,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5023,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "Fail-closed continuous driver records pass outcomes and the supervisor watchdog escalates repeated no-campaign passes.",
+          "version": "v269"
+        },
+        {
+          "date": "2026-08-21",
           "note": "climb_policy stops borrowing MEASURED_PAIRED_SD (measured on smoke.structural_similarity) for a non-structural screening primary such as smoke.eval_nll; the power floor stays unmeasured instead of demanding an impossible n and livelocking the generate-and-persist heal.",
           "version": "v268"
         },
@@ -6900,7 +6915,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v268"
+      "version": "v269"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -17798,6 +17813,11 @@
     "harness.train_data": {
       "history": [
         {
+          "date": "2026-08-21",
+          "note": "Train-data admission now applies the symbol-only Harness round-trip contract and records visible rejection reasons.",
+          "version": "v33"
+        },
+        {
           "date": "2026-08-16",
           "note": "component-coverage-minimum CLI/knob plumbing for targeted until_coverage rebuilds; adequacy finding codes map to targeted knobs",
           "version": "v32"
@@ -17992,7 +18012,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v32"
+      "version": "v33"
     },
     "harness_core.evidence_bundle": {
       "history": [

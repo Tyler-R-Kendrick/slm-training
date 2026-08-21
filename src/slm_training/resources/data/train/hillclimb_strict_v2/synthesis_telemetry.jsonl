@@ -1,0 +1,21 @@
+{"max_quality_score": 1.0, "mean_quality_score": 0.954, "min_quality_score": 0.85, "record_count": 50, "root_parent_count": 29, "source_family": "corruption_repair", "task_counts": {"repair": 50}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.958228, "min_quality_score": 0.85, "record_count": 79, "root_parent_count": 44, "source_family": "edit_trajectory", "task_counts": {"edit": 15, "generation": 13, "patch": 51}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 30, "root_parent_count": 21, "source_family": "human_curated", "task_counts": {"generation": 30}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.985714, "min_quality_score": 0.85, "record_count": 70, "root_parent_count": 70, "source_family": "language_contract", "task_counts": {"generation": 62, "repair": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.967917, "min_quality_score": 0.85, "record_count": 120, "root_parent_count": 108, "source_family": "layout_augment", "task_counts": {"generation": 120}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.940909, "min_quality_score": 0.85, "record_count": 22, "root_parent_count": 22, "source_family": "programspec_generated", "task_counts": {"generation": 22}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.975313, "min_quality_score": 0.9, "record_count": 160, "root_parent_count": 59, "source_family": "prompt_paraphrase", "task_counts": {"generation": 160}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "renderer_visual", "task_counts": {"edit": 1}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 9, "root_parent_count": 6, "source_family": "rico_real", "task_counts": {"generation": 9}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.894444, "min_quality_score": 0.85, "record_count": 9, "root_parent_count": 5, "source_family": "scope_canonical_document", "task_counts": {"edit": 9}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 21, "root_parent_count": 17, "source_family": "scope_canonical_expression", "task_counts": {"edit": 21}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 4, "root_parent_count": 4, "source_family": "scope_canonical_lexical", "task_counts": {"edit": 4}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 8, "root_parent_count": 8, "source_family": "scope_canonical_statement", "task_counts": {"edit": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.9, "min_quality_score": 0.85, "record_count": 6, "root_parent_count": 6, "source_family": "scope_identity_document", "task_counts": {"identity": 6}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 24, "root_parent_count": 17, "source_family": "scope_identity_expression", "task_counts": {"identity": 24}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 11, "root_parent_count": 9, "source_family": "scope_identity_lexical", "task_counts": {"identity": 11}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 22, "root_parent_count": 15, "source_family": "scope_identity_statement", "task_counts": {"identity": 22}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 13, "root_parent_count": 12, "source_family": "scope_repair_expression", "task_counts": {"repair": 13}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 8, "root_parent_count": 8, "source_family": "scope_repair_lexical", "task_counts": {"repair": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 8, "root_parent_count": 8, "source_family": "scope_repair_statement", "task_counts": {"repair": 8}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "web_distilled", "task_counts": {"generation": 1}}
