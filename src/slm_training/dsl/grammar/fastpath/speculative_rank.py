@@ -98,15 +98,38 @@ class NgramTableV1:
         Unseen everywhere returns ``_MIN_LOG_PROB`` rather than ``-inf`` so a
         margin stays finite and comparisons stay total.
         """
+        return self.log_prob_in_domain(context, token_id, domain=None)
+
+    def log_prob_in_domain(
+        self,
+        context: Sequence[int],
+        token_id: int,
+        domain: set[int] | None,
+    ) -> float:
+        """Score ``token_id``; when ``domain`` is set, ignore out-of-domain mass.
+
+        Leaf unigrams (``TextContent``) dominate a raw table. Ranking a *legal
+        domain* must not back off onto that mass while a longer context still
+        separates the live candidates — otherwise ``root =`` always picks a
+        leaf and ``ast_edge_f1`` stays 0.
+        """
         trimmed = tuple(int(item) for item in context)[-(self.order - 1) :]
         penalty = 0.0
+        want = int(token_id)
         while True:
             row = self.counts.get(trimmed)
             if row:
-                hit = row.get(int(token_id))
-                if hit:
-                    total = sum(row.values())
-                    return math.log(hit / total) + penalty
+                if domain is None:
+                    hit = row.get(want)
+                    if hit:
+                        return math.log(hit / sum(row.values())) + penalty
+                else:
+                    hits = {tok: cnt for tok, cnt in row.items() if tok in domain}
+                    if hits:
+                        hit = hits.get(want)
+                        if hit:
+                            return math.log(hit / sum(hits.values())) + penalty
+                        return _MIN_LOG_PROB + penalty
             if not trimmed:
                 return _MIN_LOG_PROB + penalty
             trimmed = trimmed[1:]
@@ -252,20 +275,30 @@ class SpeculativeRankerV1:
     ) -> dict[PathKey, float]:
         """Score each legal path. Membership is untouched — this only orders."""
         scored: dict[PathKey, float] = {}
-        for path in paths:
-            key = tuple(int(token) for token in path.token_ids)
-            scored[key] = self._score_span(prefix, key)
+        keys = [tuple(int(token) for token in path.token_ids) for path in paths]
+        first_domain = {key[0] for key in keys if key}
+        for key in keys:
+            scored[key] = self._score_span(prefix, key, first_domain)
         return scored
 
-    def _score_span(self, prefix: Sequence[int], span: Sequence[int]) -> float:
+    def _score_span(
+        self,
+        prefix: Sequence[int],
+        span: Sequence[int],
+        first_domain: set[int] | None = None,
+    ) -> float:
+        ids = [int(token) for token in span]
+        if not ids:
+            return _MIN_LOG_PROB
         context = list(int(token) for token in prefix)
-        total = 0.0
-        for token in span:
-            total += self.table.log_prob(context, int(token))
-            context.append(int(token))
+        total = self.table.log_prob_in_domain(context, ids[0], first_domain)
+        context.append(ids[0])
+        for token in ids[1:]:
+            total += self.table.log_prob(context, token)
+            context.append(token)
         # Length-normalize so a long forced suffix does not out-vote a short
         # action purely by accumulating more (negative) mass.
-        return total / max(1, len(tuple(span)))
+        return total / len(ids)
 
     def choose(
         self, prefix: Sequence[int], paths: Sequence[CompletionPath]
@@ -274,7 +307,8 @@ class SpeculativeRankerV1:
         if not paths:
             return None
         keys = [tuple(int(token) for token in path.token_ids) for path in paths]
-        scores = [self._score_span(prefix, key) for key in keys]
+        first_domain = {key[0] for key in keys if key}
+        scores = [self._score_span(prefix, key, first_domain) for key in keys]
         # Total order: score desc, then the path key itself, so the decision is
         # reproducible for a given (prefix, domain) regardless of input order.
         order = tuple(

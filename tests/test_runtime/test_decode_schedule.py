@@ -167,6 +167,7 @@ def test_record_plan_folds_counters_into_decode_stats() -> None:
     assert stats.scheduled_rows_skipped == 2
     assert stats.scheduled_prefill_tokens_saved == 10
     assert stats.schedule_checkpoint_hits == 1
+    assert stats.forwards_avoided == 2
 
 
 def test_record_plan_ignores_a_step_with_no_forward() -> None:
@@ -178,6 +179,7 @@ def test_record_plan_ignores_a_step_with_no_forward() -> None:
         ),
     )
     assert stats.scheduled_prefills == 0
+    assert stats.forwards_avoided >= 1
 
 
 def test_schedule_backend_never_raises() -> None:

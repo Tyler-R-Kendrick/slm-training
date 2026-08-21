@@ -233,6 +233,89 @@ def test_committed_table_matches_its_builder() -> None:
     assert build(["--check"]) == 0
 
 
+def test_ranker_beats_uniform_on_known_continuations() -> None:
+    """Better-than-uniform: the corpus continuation outranks the rare sibling."""
+    ranker = SpeculativeRankerV1(table=_table())
+    paths = (
+        CompletionPath(token_ids=(9,), kind="rare"),
+        CompletionPath(token_ids=(3,), kind="habit"),
+    )
+    choice = ranker.choose([1, 2], paths)
+    assert choice is not None
+    scores = choice.scores
+    assert scores[choice.best_index] > sum(scores) / len(scores)
+    assert paths[choice.best_index].token_ids == (3,)
+
+
+def test_domain_restricted_backoff_does_not_let_leaf_unigrams_win() -> None:
+    """c527 failure mode: TextContent unigrams beat a rare-but-contextual container."""
+    table = build_ngram_table(
+        [[1, 2, 7]] * 4 + [[9]] * 40,  # 9 is a frequent leaf; 7 follows 1,2
+        order=3,
+    )
+    ranker = SpeculativeRankerV1(table=table)
+    choice = ranker.choose(
+        [1, 2],
+        (
+            CompletionPath(token_ids=(9,), kind="leaf"),
+            CompletionPath(token_ids=(7,), kind="container"),
+        ),
+    )
+    assert choice is not None
+    assert choice.order[0] == 1  # token 7
+
+
+def test_builder_rejects_eval_manifest(tmp_path) -> None:
+    from scripts.build_speculative_ngram_table import main as build
+
+    eval_dir = tmp_path / "eval_suite"
+    eval_dir.mkdir()
+    (eval_dir / "manifest.json").write_text(
+        json.dumps({"kind": "eval", "version": "leak"}), encoding="utf-8"
+    )
+    (eval_dir / "records.jsonl").write_text(
+        json.dumps(
+            {
+                "id": "smoke_x",
+                "prompt": "p",
+                "openui": "root = TextContent(\":slot_0\")",
+                "split": "smoke",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit, match="eval"):
+        build(["--records", str(eval_dir), "--output", str(tmp_path / "out.json")])
+
+
+def test_builder_is_deterministic_from_a_fixed_manifest(tmp_path) -> None:
+    from scripts.build_speculative_ngram_table import main as build
+
+    src = tmp_path / "train"
+    src.mkdir()
+    (src / "manifest.json").write_text(
+        json.dumps({"kind": "train", "version": "fixture"}), encoding="utf-8"
+    )
+    program = (
+        "root = Stack([v0])\nv0 = TextContent(\":slot_0\")\n"
+    )
+    line = json.dumps(
+        {
+            "id": "train_a",
+            "prompt": "p",
+            "openui": program,
+            "split": "train",
+        }
+    )
+    (src / "records.jsonl").write_text(line + "\n" + line + "\n", encoding="utf-8")
+    a = tmp_path / "a.json"
+    b = tmp_path / "b.json"
+    assert build(["--records", str(src), "--output", str(a), "--order", "3"]) == 0
+    assert build(["--records", str(src), "--output", str(b), "--order", "3"]) == 0
+    assert json.loads(a.read_text()) == json.loads(b.read_text())
+
+
 def test_committed_table_ranks_real_branch_points_confidently() -> None:
     """The point of I3: pick the next-most-likely legal symbol, no forward."""
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
