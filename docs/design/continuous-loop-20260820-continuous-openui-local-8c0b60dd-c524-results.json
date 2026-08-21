@@ -105,46 +105,6 @@
     }
   },
   "evidence_class": "fixture",
-  "hillclimb": {
-    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c524",
-    "cycle_index": 524,
-    "deltas": {
-      "binder_reference_f1": 0.39523809523809517,
-      "latency_ms_p50": 16285.740000000002,
-      "meaningful_program_rate": 0.0,
-      "parse_rate": 0.0,
-      "smoke.binder_reference_f1": 0.39523809523809517,
-      "smoke.latency_ms_p50": 16285.740000000002,
-      "smoke.meaningful_program_rate": 0.0,
-      "smoke.parse_rate": 0.0,
-      "smoke.structural_similarity": 0.21665,
-      "structural_similarity": 0.21665
-    },
-    "measurement_complete": true,
-    "positive": false,
-    "primary_metric": "smoke.structural_similarity",
-    "progress": false,
-    "reasons": [
-      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c524-current-rung-data-heal",
-      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c524-control",
-      "primary_metric_win:smoke.structural_similarity:0.0534->0.27005:improvement=0.21665",
-      "fixture_insufficient_n_alone",
-      "fixture_volume_gate_ship_only"
-    ],
-    "schema": "hillclimb_iteration/v1",
-    "speculate": [
-      "keep_rotating_size_matched_arms",
-      "keep_ship_gates_do_not_enqueue_confirm"
-    ],
-    "went_well": [
-      "measurement_complete"
-    ],
-    "went_wrong": [
-      "non_positive",
-      "fixture_insufficient_n_alone",
-      "fixture_volume_gate_ship_only"
-    ]
-  },
   "honesty": "fixture_screening_only_not_ship",
   "loop_id": "continuous-openui-local",
   "measurement_complete": true,
@@ -160,7 +120,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "4de9af01498c5b3694f9c90997d108f1487a26a2",
+    "code_commit": "c36df520bffcca5404c6b4c9f10873140d191489",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -169,6 +129,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-21T01:10:18.443954+00:00"
+    "stamped_at": "2026-08-21T01:13:44.336470+00:00"
   }
 }
