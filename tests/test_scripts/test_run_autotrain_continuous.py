@@ -5942,6 +5942,94 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
+def test_fit_screening_candidate_count_never_kills_for_k() -> None:
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    arm = 70.0
+    # 180s stage, 15s reserve → usable 165 → 165/70 - 1 = 1 candidate
+    n, reason = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=arm,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=HARNESS_FINALIZATION_RESERVE_SECONDS,
+    )
+    assert n == 1
+    assert reason == "stage_wall_fits_one_candidate"
+    n6, reason6 = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=20.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    # usable 165 / 20 = 8 slots → 7 candidates, capped at 6
+    assert n6 == 6
+    assert reason6 is None
+    n3, reason3 = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=40.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n3 == 3
+    assert reason3 == "stage_wall_fitted_candidate_count"
+
+
+def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> None:
+    campaign_id = "campaign-multiarm"
+    campaign = _mod.CampaignSpec(
+        campaign_id=campaign_id,
+        objective="Lock k screening arms before execution.",
+        primary_metric="smoke.eval_nll",
+        loop_id="loop-multiarm",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = _mod.CampaignStore(campaign_id, tmp_path)
+    store.initialize(campaign)
+    matrix_path = tmp_path / campaign_id / "matrix-proposal.json"
+    matrix_path.write_text(json.dumps({"matrix_id": "matrix-k"}), encoding="utf-8")
+    order = ("ctrl", "a1", "a2", "a3")
+    bound = _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="ctrl",
+        candidate_id="a1",
+        candidate_ids=("a2", "a3"),
+        arm_order=order,
+        selection_rule="best_by_primary_then_smallest",
+    )
+    assert bound["event_type"] == "decision_arms_bound"
+    assert bound["detail"]["selection_rule"] == "best_by_primary_then_smallest"
+    assert bound["detail"]["expected_arm_ids"] == ["ctrl", "a1", "a2", "a3"]
+    store.append_event(
+        "experiment_campaign_locked",
+        experiment_id="a1",
+        status="locked",
+        detail={"selection_rule": "best_by_primary_then_smallest"},
+    )
+    store.append_event(
+        "experiment_started", experiment_id="ctrl", status="running"
+    )
+    types = [row["event_type"] for row in store.verify_event_chain()]
+    assert types.index("decision_arms_bound") < types.index(
+        "experiment_campaign_locked"
+    )
+    assert types.index("experiment_campaign_locked") < types.index(
+        "experiment_started"
+    )
+
+
+def test_size_match_skip_reason_typed() -> None:
+    control = {"d_model": 128, "denoiser_layers": 4}
+    wide = {"d_model": 256, "denoiser_layers": 4}
+    reason = _mod._size_match_skip_reason(control, wide)
+    assert reason is not None
+    assert reason.startswith("capacity_unmatched:")
+    assert _mod._size_match_skip_reason(control, control) is None
+
+
 def test_post_planning_budget_is_rebalanced_symmetrically(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -9427,7 +9515,9 @@ def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     )
     knobs = cand["knobs"]
     assert float(knobs["decode_timeout_seconds"]) <= 12.0  # policy.v1.json v5
-    assert int(knobs["steps"]) <= 43  # thrash cap 40 + cycle%3
+    # Floor-fit steps (cold-start 5 sps × 0.9 × grown floor) + cycle%3.
+    assert int(knobs["steps"]) >= 50
+    assert int(knobs["steps"]) <= 403
 
 
 def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
@@ -9454,6 +9544,117 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
     assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
     ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
     assert ledger.is_file()
+
+
+def test_screening_steps_fitter_telemetry_clamp_and_cold_start() -> None:
+    fitted, ev = _mod._fit_screening_steps(
+        floor_seconds=20.0,
+        measured_steps_per_sec=6.5,
+        steps_max=400,
+    )
+    assert fitted == min(400, int(20.0 * 6.5 * 0.9))  # 117
+    assert ev["cold_start"] is False
+    clamped, clamp_ev = _mod._fit_screening_steps(
+        floor_seconds=20.0,
+        measured_steps_per_sec=100.0,
+        steps_max=40,
+    )
+    assert clamped == 40
+    assert clamp_ev["steps_max"] == 40
+    cold, cold_ev = _mod._fit_screening_steps(
+        floor_seconds=20.0,
+        measured_steps_per_sec=None,
+        steps_max=400,
+    )
+    assert cold_ev["cold_start"] is True
+    assert cold == min(400, int(20.0 * _mod._COLD_START_STEPS_PER_SEC * 0.9))
+    policy = SimpleNamespace(
+        measurement={"thrash_timing": {"min_train_floor_seconds": 20}}
+    )
+    assert _mod._screening_thrash_steps(policy, 22) == cold
+
+
+def test_screening_steps_from_train_summary_telemetry(tmp_path: Path) -> None:
+    camp = tmp_path / "continuous-loop-x" / "runs" / "arm"
+    camp.mkdir(parents=True)
+    (camp / "train_summary.json").write_text(
+        json.dumps({"steps": 22, "elapsed_wall_seconds": 3.36, "device": "cpu"}),
+        encoding="utf-8",
+    )
+    policy = SimpleNamespace(
+        measurement={"thrash_timing": {"min_train_floor_seconds": 20}}
+    )
+    steps = _mod._screening_thrash_steps(
+        policy, 22, telemetry_root=tmp_path, floor_seconds=20.0
+    )
+    assert steps == min(400, int(20.0 * (22 / 3.36) * 0.9))
+
+
+def test_write_thrash_timing_includes_steps_fit(tmp_path: Path) -> None:
+    camp = tmp_path / "c-fit"
+    camp.mkdir(parents=True)
+    path = _mod._write_thrash_timing(
+        camp,
+        loop_id="loop-t",
+        campaign_id="c-fit",
+        cycle_index=1,
+        role="screening",
+        measurement_complete=True,
+        arm_wall_seconds=70.0,
+        decode_fit={
+            "fitted_decode_timeout_seconds": 7.0,
+            "fitted_steps": 117,
+            "steps_fit": {"cold_start": False, "fitted_steps": 117},
+            "train_device": "cpu",
+        },
+        reasons=[],
+        control_metrics={"structural_similarity": 0.1},
+        candidate_metrics={"structural_similarity": 0.2},
+    )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["fitted_steps"] == 117
+    assert data["train_device"] == "cpu"
+    assert data["steps_fit"]["fitted_steps"] == 117
+
+
+def test_grown_train_floor_never_exceeds_arm_wall() -> None:
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        policy, arm_wall_seconds=70.0
+    )
+    wall = float(meta["arm_wall_seconds"])
+    floor = float(meta["grown_train_floor_seconds"])
+    eval_s = float(meta["eval_budget_seconds"])
+    overhead = float(meta["eval_overhead_seconds"])
+    assert floor + eval_s + overhead <= wall + 1e-9
+    assert eval_s == pytest.approx(fitted * float(meta["smoke_n"]))
+    assert floor >= float(meta["min_train_floor_seconds"]) - 1e-9
+
+
+def test_screening_cuda_device_falls_back_to_cpu(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    assert _mod._screening_max_gpu_hours(role="screening", device="cpu") == 0.0
+    assert _mod._screening_max_gpu_hours(role="screening", device="cuda") > 0.0
+    assert _mod._screening_max_gpu_hours(role="confirm", device="cuda") == 0.0
+
+    class _Boom:
+        @staticmethod
+        def is_available() -> bool:
+            raise RuntimeError("driver missing")
+
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=_Boom))
+    assert _mod._screening_train_device() == "cpu"
+
+    class _NoCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return False
+
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=_NoCuda))
+    assert _mod._screening_train_device() == "cpu"
 
 
 def test_semantic_contrast_thrash_arm_uses_batch_size_at_least_3() -> None:
