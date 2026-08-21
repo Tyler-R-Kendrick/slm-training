@@ -106,47 +106,6 @@
     }
   },
   "evidence_class": "fixture",
-  "hillclimb": {
-    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c519",
-    "cycle_index": 519,
-    "deltas": {
-      "binder_reference_f1": -0.5333333333333333,
-      "latency_ms_p50": -11108.85,
-      "meaningful_program_rate": -0.16666666666666666,
-      "parse_rate": 0.0,
-      "smoke.binder_reference_f1": -0.5333333333333333,
-      "smoke.latency_ms_p50": -11108.85,
-      "smoke.meaningful_program_rate": -0.16666666666666666,
-      "smoke.parse_rate": 0.0,
-      "smoke.structural_similarity": -0.07778333333333334,
-      "structural_similarity": -0.07778333333333334
-    },
-    "measurement_complete": true,
-    "positive": false,
-    "primary_metric": "smoke.structural_similarity",
-    "progress": false,
-    "reasons": [
-      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c519-control",
-      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c519-current-rung-data-heal",
-      "non_regression_fail:binder_reference_f1:0.5333333333333333->0.0",
-      "primary_metric_null_or_worse:smoke.structural_similarity:control=0.13118333333333335 candidate=0.0534 improvement=-0.07778333333333334",
-      "fixture_insufficient_n_alone",
-      "fixture_volume_gate_ship_only"
-    ],
-    "schema": "hillclimb_iteration/v1",
-    "speculate": [
-      "keep_rotating_size_matched_arms",
-      "keep_ship_gates_do_not_enqueue_confirm"
-    ],
-    "went_well": [
-      "measurement_complete"
-    ],
-    "went_wrong": [
-      "non_positive",
-      "fixture_insufficient_n_alone",
-      "fixture_volume_gate_ship_only"
-    ]
-  },
   "honesty": "fixture_screening_only_not_ship",
   "loop_id": "continuous-openui-local",
   "measurement_complete": true,
@@ -163,7 +122,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "640d3eb4378f5ea37aa20cd0d37eb3414a97523a",
+    "code_commit": "c36df520bffcca5404c6b4c9f10873140d191489",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -172,6 +131,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-21T00:46:44.965475+00:00"
+    "stamped_at": "2026-08-21T00:49:45.761537+00:00"
   }
 }
