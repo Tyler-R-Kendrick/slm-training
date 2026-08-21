@@ -219,6 +219,90 @@
       "lean_module": "LeverProofLean.SampleAdequacy",
       "lean_def": "capacityUpperBound",
       "lean_guard": "capacityUpperBound 1000 6 60 = 100"
+    },
+    {
+      "id": "screening_decidability_alpha_twentieth_at_six",
+      "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+      "env": {
+        "alpha_num": 1,
+        "alpha_den": 20,
+        "n_candidate": 6,
+        "two_pow_n_candidate": 64
+      },
+      "expected_value": "64",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "signTestDecidabilityFloor",
+      "lean_guard": "signTestDecidabilityFloor 1 20 64 = some 6"
+    },
+    {
+      "id": "screening_decidability_alpha_twentieth_at_five",
+      "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+      "env": {
+        "alpha_num": 1,
+        "alpha_den": 20,
+        "n_candidate": 5,
+        "two_pow_n_candidate": 32
+      },
+      "expected_value": "32",
+      "expected_predicate": false,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "signTestDecidabilityFloor",
+      "lean_guard": "signTestDecidabilityFloor 1 20 5 = none"
+    },
+    {
+      "id": "screening_decidability_alpha_quarter_at_three",
+      "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+      "env": {
+        "alpha_num": 1,
+        "alpha_den": 4,
+        "n_candidate": 3,
+        "two_pow_n_candidate": 8
+      },
+      "expected_value": "8",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "signTestDecidabilityFloor",
+      "lean_guard": "signTestDecidabilityFloor 1 4 64 = some 3"
+    },
+    {
+      "id": "screening_budget_fitted_decode_ceiling",
+      "bound_ast_id": "bound.screening_n.budget_upper.v1",
+      "env": {
+        "usable_wall_seconds": 42,
+        "min_decode_seconds": 14
+      },
+      "expected_value": "3",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "screeningBudgetUpperBound",
+      "lean_guard": "screeningBudgetUpperBound 70 20 8 14 = 3"
+    },
+    {
+      "id": "screening_budget_cheap_decode_ceiling",
+      "bound_ast_id": "bound.screening_n.budget_upper.v1",
+      "env": {
+        "usable_wall_seconds": 42,
+        "min_decode_seconds": 2
+      },
+      "expected_value": "21",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "screeningBudgetUpperBound",
+      "lean_guard": "screeningBudgetUpperBound 70 20 8 2 = 21"
+    },
+    {
+      "id": "screening_budget_saturated_wall",
+      "bound_ast_id": "bound.screening_n.budget_upper.v1",
+      "env": {
+        "usable_wall_seconds": 0,
+        "min_decode_seconds": 2
+      },
+      "expected_value": "0",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "screeningBudgetUpperBound",
+      "lean_guard": "screeningBudgetUpperBound 10 20 8 2 = 0"
     }
   ]
 }

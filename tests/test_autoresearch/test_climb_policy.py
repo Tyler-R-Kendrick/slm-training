@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.autoresearch.climb_policy import (
+    CLIMB_RESOURCE_DIR,
     assert_cycle_cadence,
     assert_recipe_null_regime_pressure,
     assert_rung_allows_promotion,
@@ -22,6 +23,8 @@ from slm_training.autoresearch.climb_policy import (
     primary_for_role,
     promotion_primary_effect_met,
     save_loop_exhausted_ledger,
+    screening_nll_definition_hash,
+    screening_smoke_n_for_policy,
 )
 from slm_training.autoresearch.hillclimb import (
     ExhaustedKnobLedger,
@@ -35,11 +38,8 @@ def test_load_climb_policy_has_volatile_fields_and_digest() -> None:
     assert policy.schema == "autotrain_climb_policy/v1"
     assert policy.version
     assert len(policy.sha256) == 64
-    assert policy.screening_primary["metric"] == "smoke.structural_similarity"
-    assert {
-        item["metric_leaf"]
-        for item in policy.screening_primary["require_non_regression_metrics"]
-    } == {"parse_rate", "binder_reference_f1"}
+    assert policy.screening_primary["metric"] == "smoke.eval_nll"
+    assert policy.screening_primary["direction"] == "decrease"
     assert policy.promotion_primary["metric"]
     assert policy.promotion_dispose["require_primary_win"] is True
     assert policy.positive_classification["minimum_efficiency_gain_fraction"] == 0.05
@@ -135,7 +135,7 @@ def test_cycle_cadence_screening_then_promotion() -> None:
 
 
 def test_classify_positive_screening_quality_win_and_regression() -> None:
-    policy = load_climb_policy()
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v1.json"))
     # Structure is the primary; parse and binder correctness must not regress.
     win = classify_positive_metrics(
         policy,
@@ -191,9 +191,26 @@ def test_classify_positive_screening_quality_win_and_regression() -> None:
     assert bad["positive"] is False
     assert any("null_or_worse" in r for r in bad["reasons"])
 
+    illegal = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics={
+            "structural_similarity": 0.4,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "structural_similarity": 0.9,
+            "binder_reference_f1": 1.0,
+            "parse_rate": 0.0,
+        },
+    )
+    assert illegal["positive"] is False
+    assert any(r.startswith("invalid_grammar:") for r in illegal["reasons"])
+
 
 def test_classify_positive_capacity_growth_without_eg_params() -> None:
-    policy = load_climb_policy()
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v1.json"))
     result = classify_positive_metrics(
         policy,
         role="screening",
@@ -216,7 +233,7 @@ def test_classify_positive_capacity_growth_without_eg_params() -> None:
 
 
 def test_classify_positive_capacity_growth_with_eg_params() -> None:
-    policy = load_climb_policy()
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v1.json"))
     result = classify_positive_metrics(
         policy,
         role="screening",
@@ -538,6 +555,69 @@ def test_primary_for_role_differs() -> None:
     assert p.get("require_locked_eval") is True
 
 
+def test_policy_v14_screening_primary_is_smoke_eval_nll() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    assert policy.version == "v14"
+    screening = primary_for_role(policy, "screening")
+    assert screening["metric"] == "smoke.eval_nll"
+    assert screening["direction"] == "decrease"
+    assert policy.defaults.get("claim_class_screening") == "diagnostic"
+    assert policy.promotion_primary["metric"] == "held_out.structural_similarity"
+    secondary = policy.screening_quality_secondary
+    assert secondary is not None
+    assert secondary["metric"] == "smoke.structural_similarity"
+    meas = policy.measurement
+    assert meas["thrash_timing"]["screening_thrash_steps"] == "fit_to_train_floor"
+    assert meas["thrash_timing"]["screening_thrash_steps_max"] == 400
+    assert meas["warm_start"]["enabled"] is True
+    assert meas["paired_test"]["kind"] == "wilcoxon_signed_rank"
+    assert meas["multi_arm"]["max_arms_per_cycle"] == 6
+
+
+@pytest.mark.parametrize(
+    "control_nll,candidate_nll,expect_positive",
+    [
+        (2.0, 1.9, True),
+        (2.0, 2.1, False),
+        (2.0, 1.96, False),
+    ],
+)
+def test_classify_positive_screening_nll_direction_decrease(
+    control_nll: float, candidate_nll: float, expect_positive: bool
+) -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    result = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics={
+            "smoke.eval_nll": control_nll,
+            "smoke.structural_similarity": 0.1,
+            "parse_rate": 1.0,
+        },
+        candidate_metrics={
+            "smoke.eval_nll": candidate_nll,
+            "smoke.structural_similarity": 0.1,
+            "parse_rate": 1.0,
+        },
+    )
+    assert result["positive"] is expect_positive
+    if expect_positive:
+        assert any(r.startswith("primary_metric_win:smoke.eval_nll") for r in result["reasons"])
+    else:
+        assert any("primary_metric_null_or_worse:smoke.eval_nll" in r for r in result["reasons"])
+    assert any("screening_quality_secondary:smoke.structural_similarity" in r for r in result["reasons"])
+    assert any("recorded_not_verdict" in r for r in result["reasons"])
+
+
+def test_screening_nll_definition_hash_ignores_arm_loss_weights() -> None:
+    control = screening_nll_definition_hash()
+    candidate = screening_nll_definition_hash(
+        arm_loss_weights={"binder_arity_loss_weight": 1.0}
+    )
+    assert control == candidate
+    assert len(control) == 64
+
+
 def test_train_eval_identity_differs_when_versions_change() -> None:
     from slm_training.autoresearch.climb_policy import train_eval_from_knobs
 
@@ -782,3 +862,93 @@ def test_classify_positive_rejects_partial_suite_completion() -> None:
     )
     assert full["positive"] is True
     assert any(r.startswith("primary_metric_win") for r in full["reasons"])
+
+
+class _StubPolicy:
+    def __init__(self, measurement: dict, payload: dict | None = None) -> None:
+        self._measurement = measurement
+        self.payload = payload or {}
+
+    @property
+    def measurement(self) -> dict:
+        return dict(self._measurement)
+
+
+def test_screening_smoke_n_fixed_mode_returns_configured_without_report() -> None:
+    policy = _StubPolicy({"screening_smoke_n": 5})
+    n, report = screening_smoke_n_for_policy(policy)
+    assert n == 5
+    assert report is None
+
+
+def test_screening_smoke_n_auto_mode_uses_max_of_floors() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+                "minimum_effect": "1/100",
+                "observed_sd": "1/10",
+            },
+        },
+        payload={"power_gate": {"enabled": True, "alpha": "1/20"}},
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=70.0, suite_records=64
+    )
+    assert report is not None
+    assert report["power_floor_n"] is not None
+    assert report["decidability_floor_n"] == 6
+    if report["verdict"] == "feasible":
+        assert n == max(report["decidability_floor_n"], report["power_floor_n"])
+        assert n == report["chosen_n"]
+
+
+def test_screening_smoke_n_auto_mode_feasible_climbs_at_floor() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+            },
+        },
+        payload={"power_gate": {"enabled": True, "alpha": "1/20"}},
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=70.0, suite_records=24
+    )
+    assert n == 6  # exact sign-test floor at alpha=1/20, smallest sufficient
+    assert report is not None
+    assert report["verdict"] == "feasible"
+    assert report["promotion_authority"] is False
+
+
+def test_screening_smoke_n_auto_mode_infeasible_does_not_return_fallback_n() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {"default_decode_floor_seconds": 2},
+        }
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=70.0, suite_records=3
+    )
+    assert n == 0
+    assert report is not None
+    assert report["verdict"] == "infeasible_range_empty"
+    assert "suite_volume" in report["binding_constraints"]
+    assert report["must_generate"] is True
+
+
+def test_screening_smoke_n_live_policy_is_auto_with_fallback() -> None:
+    policy = load_climb_policy()
+    assert policy.measurement.get("screening_smoke_n_mode") == "auto"
+    n, report = screening_smoke_n_for_policy(policy)
+    assert n == int(policy.measurement["screening_smoke_n"])
+    assert report is not None
+    assert report["verdict"] == "insufficient_evidence"

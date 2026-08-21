@@ -15,7 +15,11 @@ from slm_training.autoresearch.experiment_campaign import (
 )
 from slm_training.autoresearch.hillclimb import (
     ExhaustedKnobLedger,
+    HILLCLIMB_STAGNATION_CADENCE,
     HillClimbError,
+    PARSE_RATE_PERFECT,
+    invalid_grammar_reasons,
+    parse_rate_illegal,
     assert_capacity_growth_allowed,
     assert_climb_label_allowed,
     assert_matrix_knobs_not_exhausted,
@@ -25,6 +29,9 @@ from slm_training.autoresearch.hillclimb import (
     knob_signature_sha256,
     open_synthesis_recommendations,
     record_null_outcome,
+    assess_hillclimb_speculation,
+    hillclimb_iteration_report,
+    stagnation_review,
     validate_causal_campaign_shape,
 )
 from tests.test_autoresearch.test_experiment_campaign import (
@@ -792,3 +799,57 @@ def test_evaluate_promotion_passes_eg_params_to_governance(tmp_path: Path) -> No
     gov = out["checks"]["campaign_governance"]
     assert gov["pass"] is False
     assert any("eg_params" in f for f in gov["failures"])
+
+
+def test_parse_rate_below_perfect_is_illegal() -> None:
+    assert PARSE_RATE_PERFECT == 1.0
+    assert parse_rate_illegal(0.0) is True
+    assert parse_rate_illegal(0.999) is True
+    assert parse_rate_illegal(1.0) is False
+    assert parse_rate_illegal(None) is False
+    reasons = invalid_grammar_reasons({"parse_rate": 0.0}, arm="candidate")
+    assert reasons and reasons[0].startswith("invalid_grammar:candidate")
+    assert invalid_grammar_reasons({"parse_rate": 1.0}, arm="candidate") == []
+
+
+def test_hillclimb_iteration_report_names_no_effect_and_deltas() -> None:
+    report = hillclimb_iteration_report(
+        campaign_id="loop-c1",
+        cycle_index=1,
+        positive=False,
+        measurement_complete=True,
+        reasons=["mechanism_no_effect:quality_metrics_identical"],
+        control_metrics={"smoke.structural_similarity": 0.1},
+        candidate_metrics={"smoke.structural_similarity": 0.1},
+        primary_metric="smoke.structural_similarity",
+    )
+    assert report["progress"] is False
+    assert "measurement_complete" in report["went_well"]
+    assert any("mechanism_no_effect" in item for item in report["went_wrong"])
+    assert "retire_knob_do_not_confirm" in report["speculate"]
+    assert report["deltas"]["smoke.structural_similarity"] == pytest.approx(0.0)
+
+
+def test_weaken_gates_speculation_is_not_viable() -> None:
+    verdict = assess_hillclimb_speculation("weaken_ship_gates")
+    assert verdict["viable"] is False
+    assert verdict["auto_apply"] is None
+
+
+def test_stagnation_review_fires_after_cadence_without_progress() -> None:
+    rows = [
+        hillclimb_iteration_report(
+            campaign_id=f"loop-c{i}",
+            cycle_index=i,
+            positive=False,
+            measurement_complete=True,
+            reasons=["mechanism_no_effect:quality_metrics_identical"],
+        )
+        for i in range(1, HILLCLIMB_STAGNATION_CADENCE + 1)
+    ]
+    review = stagnation_review(rows)
+    assert review is not None
+    assert "skip_identical_quality_confirms" in review["viable_applies"]
+    assert stagnation_review(rows[:-1]) is None
+    rows[5]["progress"] = True
+    assert stagnation_review(rows) is None

@@ -588,6 +588,158 @@
       "lean_module": "LeverProofLean.SampleAdequacy",
       "lean_def": "capacityUpperBound",
       "digest_sha256": "d9eb5e1e28c5c4a17c68486d9950dcffa8c989db05a40b056f2ac8b77435ffc9"
+    },
+    {
+      "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+      "meaning": "Attainability check for one candidate per-arm screening n under the paired two-sided sign test: rejection at alpha_num/alpha_den is attainable iff 2*alpha_den <= alpha_num*2^n_candidate. two_pow_n_candidate is 2^n_candidate computed by the caller with exact integer exponentiation, mirrored by Lean's 2^n inside ScreeningSampleSize.signTestFloorFrom; the upward least-n search and its soundness/minimality are proved (signTestFloorFrom_sound, signTestFloorFrom_minimal). Attainability combinatorics, not an empirical power claim.",
+      "variables": [
+        {
+          "name": "alpha_num",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "probability-numerator",
+          "meaning": "Numerator of the declared sign-test alpha (policy power_gate.alpha)"
+        },
+        {
+          "name": "alpha_den",
+          "kind": "scalar",
+          "domain": "pos_rat",
+          "unit": "probability-denominator",
+          "meaning": "Denominator of the declared sign-test alpha (must be positive)"
+        },
+        {
+          "name": "n_candidate",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "record",
+          "meaning": "Candidate per-arm screening record count under test"
+        },
+        {
+          "name": "two_pow_n_candidate",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "arrangement",
+          "meaning": "2^n_candidate, the sign-arrangement count, supplied by the caller with exact integer exponentiation"
+        }
+      ],
+      "expression": {
+        "op": "mul",
+        "args": [
+          {
+            "op": "var",
+            "name": "alpha_num"
+          },
+          {
+            "op": "var",
+            "name": "two_pow_n_candidate"
+          }
+        ]
+      },
+      "predicate": {
+        "op": "le",
+        "left": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "const_int",
+              "value": 2
+            },
+            {
+              "op": "var",
+              "name": "alpha_den"
+            }
+          ]
+        },
+        "right": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "var",
+              "name": "alpha_num"
+            },
+            {
+              "op": "var",
+              "name": "two_pow_n_candidate"
+            }
+          ]
+        }
+      },
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "signTestDecidabilityFloor",
+      "digest_sha256": "892691eb4b07d6a73ea6599a3288d48b2eb91293860e66e641275451c0a2846c"
+    },
+    {
+      "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.screening_n.budget_upper.v1",
+      "meaning": "Most screening records whose decode fits the arm wall beside the train floor and suite overhead: floor(usable_wall_seconds/min_decode_seconds). usable_wall_seconds is arm_wall - train_floor - overhead, derived by the caller with the saturating subtraction mirrored by Nat subtraction in ScreeningSampleSize.screeningBudgetUpperBound; fitness of every n under the ceiling is proved (screeningBudgetUpperBound_fits). The declared second budgets are caller inputs; only the arithmetic is proved. Not a quality claim.",
+      "variables": [
+        {
+          "name": "usable_wall_seconds",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "second",
+          "meaning": "Arm wall minus train floor and suite overhead (caller-derived, saturating)"
+        },
+        {
+          "name": "min_decode_seconds",
+          "kind": "scalar",
+          "domain": "pos_rat",
+          "unit": "second/record",
+          "meaning": "Declared per-record decode floor (must be positive)"
+        }
+      ],
+      "expression": {
+        "op": "floor",
+        "arg": {
+          "op": "div",
+          "numerator": {
+            "op": "var",
+            "name": "usable_wall_seconds"
+          },
+          "denominator": {
+            "op": "var",
+            "name": "min_decode_seconds"
+          }
+        }
+      },
+      "predicate": {
+        "op": "le",
+        "left": {
+          "op": "mul",
+          "args": [
+            {
+              "op": "floor",
+              "arg": {
+                "op": "div",
+                "numerator": {
+                  "op": "var",
+                  "name": "usable_wall_seconds"
+                },
+                "denominator": {
+                  "op": "var",
+                  "name": "min_decode_seconds"
+                }
+              }
+            },
+            {
+              "op": "var",
+              "name": "min_decode_seconds"
+            }
+          ]
+        },
+        "right": {
+          "op": "var",
+          "name": "usable_wall_seconds"
+        }
+      },
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "screeningBudgetUpperBound",
+      "digest_sha256": "883e9ce1abd1b4a9f62daf88dc73eb6f875f13b7256809038bb1cd3fc8b5c311"
     }
   ]
 }

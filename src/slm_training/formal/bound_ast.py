@@ -48,6 +48,8 @@ BOUND_EVENT_TRACE_COMPOSE = "bound.event_trace.compose.v1"
 BOUND_PLACEHOLDER_PENDING = "bound.placeholder.pending_evid04.v1"
 BOUND_SAMPLE_SIZE_COVERAGE_LOWER = "bound.sample_size.coverage_lower.v1"
 BOUND_SAMPLE_SIZE_CAPACITY_UPPER = "bound.sample_size.capacity_upper.v1"
+BOUND_SCREENING_N_DECIDABILITY_LOWER = "bound.screening_n.decidability_lower.v1"
+BOUND_SCREENING_N_BUDGET_UPPER = "bound.screening_n.budget_upper.v1"
 
 REGISTERED_BOUND_AST_IDS: frozenset[str] = frozenset(
     {
@@ -61,6 +63,8 @@ REGISTERED_BOUND_AST_IDS: frozenset[str] = frozenset(
         BOUND_PLACEHOLDER_PENDING,
         BOUND_SAMPLE_SIZE_COVERAGE_LOWER,
         BOUND_SAMPLE_SIZE_CAPACITY_UPPER,
+        BOUND_SCREENING_N_DECIDABILITY_LOWER,
+        BOUND_SCREENING_N_BUDGET_UPPER,
     }
 )
 
@@ -657,6 +661,8 @@ __all__ = [
     "BOUND_PLACEHOLDER_PENDING",
     "BOUND_SAMPLE_SIZE_CAPACITY_UPPER",
     "BOUND_SAMPLE_SIZE_COVERAGE_LOWER",
+    "BOUND_SCREENING_N_BUDGET_UPPER",
+    "BOUND_SCREENING_N_DECIDABILITY_LOWER",
     "REGISTERED_BOUND_AST_IDS",
     "Add",
     "BoundAstDocumentV1",

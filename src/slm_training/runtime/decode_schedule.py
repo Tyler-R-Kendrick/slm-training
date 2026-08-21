@@ -194,10 +194,18 @@ def plan_prefill(
 
 def record_plan(stats: Any | None, plan: PrefillPlanV1) -> None:
     """Fold one plan into ``DecodeStats`` so utilization stays measurable."""
-    if stats is None or not plan.needs_forward:
+    if stats is None:
+        return
+    skipped = int(plan.rows_skipped)
+    # I2/I4: committed rows never take a forward. ``forwards_avoided`` is an
+    # alias some DecodeStats versions lack — setattr keeps this file the owner.
+    stats.forwards_avoided = int(getattr(stats, "forwards_avoided", 0)) + skipped
+    if not plan.needs_forward:
+        if plan.reason == "fully_committed" and skipped == 0:
+            stats.forwards_avoided = int(stats.forwards_avoided) + 1
         return
     stats.scheduled_prefills += 1
-    stats.scheduled_rows_skipped += plan.rows_skipped
+    stats.scheduled_rows_skipped += skipped
     stats.scheduled_prefill_tokens_saved += plan.tokens_saved
     if plan.reason == "grammar_checkpoint":
         stats.schedule_checkpoint_hits += 1

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -24,6 +25,7 @@ from slm_training.autoresearch.hillclimb import (
     data_generation_sha256,
     improvement_signed,
     infer_metric_direction,
+    invalid_grammar_reasons,
     is_measured_null_feedback,
     knob_signature_sha256,
 )
@@ -46,9 +48,12 @@ __all__ = [
     "cycle_role_for_index",
     "assert_cycle_cadence",
     "primary_for_role",
+    "canonical_screening_nll_definition",
+    "screening_nll_definition_hash",
     "stage_wall_minutes_for_role",
     "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
+    "screening_smoke_n_for_policy",
     "eval_suites_for_role",
     "classify_positive_metrics",
     "promotion_primary_effect_met",
@@ -67,7 +72,8 @@ CLIMB_RESOURCE_DIR = _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_cl
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
 CLIMB_POLICY_SCHEMA = "autotrain_climb_policy/v1"
 PROMOTE_AUTHORITY_SCHEMA = "autotrain_promote_authority/v1"
-_DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
+_DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v2.json"
+_POLICY_V1_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
 _PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
 
 
@@ -132,6 +138,11 @@ class ClimbPolicy:
     @property
     def promotion_primary(self) -> Mapping[str, Any]:
         return dict(self.payload["promotion_primary"])
+
+    @property
+    def screening_quality_secondary(self) -> Mapping[str, Any] | None:
+        raw = self.payload.get("screening_quality_secondary")
+        return dict(raw) if isinstance(raw, Mapping) else None
 
     @property
     def defaults(self) -> Mapping[str, Any]:
@@ -253,7 +264,12 @@ def promote_authority_sha256(
 def load_climb_policy(path: str | None = None) -> ClimbPolicy:
     """Load and validate the committed climb-policy resource."""
 
-    policy_path = Path(path) if path else _DEFAULT_POLICY_PATH
+    if path:
+        policy_path = Path(path)
+    elif _DEFAULT_POLICY_PATH.is_file():
+        policy_path = _DEFAULT_POLICY_PATH
+    else:
+        policy_path = _POLICY_V1_PATH
     payload = _read_json(policy_path)
     schema = str(payload.get("schema") or "")
     version = str(payload.get("version") or "")
@@ -331,7 +347,34 @@ def primary_for_role(policy: ClimbPolicy, role: str) -> Mapping[str, Any]:
         return policy.promotion_primary
     if role == "screening":
         return policy.screening_primary
+    if role == "confirm":
+        return policy.promotion_primary
     raise ClimbPolicyError(f"unknown cycle role: {role!r}")
+
+
+def canonical_screening_nll_definition() -> dict[str, Any]:
+    """Arm-independent NLL identity (loss-weight knobs must not appear)."""
+
+    return {
+        "metric": "smoke.eval_nll",
+        "source": "slm_training.evals.loss_suites.evaluate_loss_suites",
+        "base_suite": "smoke",
+        "ood_suite": "smoke",
+        "loss_suite_version": "v1",
+        "mask_rates": [0.15, 0.30, 0.50, 0.70, 0.85],
+        "mask_seed": 0,
+        "ignore_arm_loss_weights": True,
+    }
+
+
+def screening_nll_definition_hash(
+    *, arm_loss_weights: Mapping[str, Any] | None = None
+) -> str:
+    """Hash of the canonical NLL definition; arm loss weights are ignored."""
+
+    del arm_loss_weights
+    body = canonical_screening_nll_definition()
+    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
 def stage_wall_minutes_for_role(policy: ClimbPolicy, role: str) -> int:
@@ -384,6 +427,101 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
     if value <= 0:
         raise ClimbPolicyError(f"measurement.{key} must be > 0, got {value}")
     return value
+
+
+def screening_smoke_n_for_policy(
+    policy: ClimbPolicy,
+    *,
+    arm_wall_seconds: float | None = None,
+    per_record_decode_floor_seconds: float | None = None,
+    suite_records: int | None = None,
+) -> tuple[int, Mapping[str, Any] | None]:
+    """Resolve the screening smoke n; ``auto`` mode computes the certified range.
+
+    Returns ``(n, report)``. In the default ``fixed`` mode (or on any
+    computation failure) this fails closed to the configured
+    ``measurement.screening_smoke_n`` fallback with ``report=None``. In
+    ``auto`` mode the per-cycle ``screening_sample_size/v1`` report decides:
+    ``feasible`` climbs at the certified ``chosen_n`` (the smallest n clearing
+    the exact sign-test decidability floor that also fits the arm-wall budget
+    and suite-volume ceilings); ``infeasible_range_empty`` returns ``n=0``
+    (not a runnable screen) with the typed report so the driver can generate
+    missing suite records or park on a wall bind; ``insufficient_evidence``
+    keeps the configured fallback n only as an advisory default.
+    """
+
+    measurement = getattr(policy, "measurement", None) or {}
+    if not isinstance(measurement, Mapping):
+        measurement = {}
+    configured = max(1, int(measurement.get("screening_smoke_n") or 3))
+    if str(measurement.get("screening_smoke_n_mode") or "fixed") != "auto":
+        return configured, None
+    try:
+        from slm_training.autoresearch import evidence_ledger as _ev
+        from slm_training.autoresearch.screening_sample_size import (
+            ScreeningSampleSizeObservation,
+            compute_screening_sample_size,
+        )
+
+        block = measurement.get("screening_sample_size")
+        block = dict(block) if isinstance(block, Mapping) else {}
+        gate = (getattr(policy, "payload", None) or {}).get("power_gate")
+        alpha = _ev.parse_alpha(gate.get("alpha") if isinstance(gate, Mapping) else None)
+        thrash = measurement.get("thrash_timing")
+        thrash = dict(thrash) if isinstance(thrash, Mapping) else {}
+        decode_floor = per_record_decode_floor_seconds
+        if decode_floor is None:
+            decode_floor = block.get("default_decode_floor_seconds")
+        if arm_wall_seconds is None or suite_records is None:
+            # Budget ceiling is undecidable without the arm wall, and the
+            # suite-volume ceiling without the resolved suite: report the
+            # exact floor only (insufficient_evidence), never a fake empty
+            # range from zeroed inputs.
+            decode_floor = None
+        primary = getattr(policy, "screening_primary", None)
+        if not isinstance(primary, Mapping):
+            primary = {}
+        minimum_effect = primary.get("minimum_effect")
+        if minimum_effect is None:
+            minimum_effect = block.get("minimum_effect")
+        observed_sd = block.get("observed_sd")
+        if observed_sd is None and minimum_effect is not None:
+            from slm_training.autoresearch.screening_sample_size import (
+                MEASURED_PAIRED_SD,
+            )
+
+            observed_sd = MEASURED_PAIRED_SD
+        power_kwargs: dict[str, Any] = {}
+        if minimum_effect is not None and observed_sd is not None:
+            power_kwargs["minimum_effect"] = str(minimum_effect)
+            power_kwargs["observed_sd"] = str(observed_sd)
+        report = compute_screening_sample_size(
+            ScreeningSampleSizeObservation(
+                alpha=str(alpha),
+                max_candidate_n=max(1, int(block.get("max_candidate_n") or 64)),
+                suite_records=max(0, int(suite_records or 0)),
+                arm_wall_seconds=max(0, math.ceil(float(arm_wall_seconds or 0))),
+                min_train_floor_seconds=max(
+                    0, math.ceil(float(thrash.get("min_train_floor_seconds") or 20.0))
+                ),
+                suite_overhead_seconds=max(
+                    0, math.ceil(float(thrash.get("eval_overhead_seconds") or 8.0))
+                ),
+                per_record_decode_floor_seconds=(
+                    max(1, math.ceil(float(decode_floor))) if decode_floor else None
+                ),
+                **power_kwargs,
+            )
+        )
+    except Exception:  # noqa: BLE001 — resolution failure never breaks the loop
+        return configured, None
+    payload = report.model_dump(mode="json")
+    if report.verdict == "feasible" and report.chosen_n is not None:
+        return max(1, int(report.chosen_n)), payload
+    if report.verdict == "infeasible_range_empty":
+        # Not a legal screen size. suite_volume → generate; wall_budget → park.
+        return 0, payload
+    return configured, payload
 
 
 def eval_suites_for_role(policy: ClimbPolicy, role: str) -> tuple[str, ...]:
@@ -732,6 +870,12 @@ def promotion_primary_effect_met(
     raw = t_val - c_val
     improvement = float(improvement_signed(raw, direction))  # type: ignore[arg-type]
 
+    grammar_fail = invalid_grammar_reasons(control, arm="control") + invalid_grammar_reasons(
+        candidate, arm="candidate"
+    )
+    if grammar_fail:
+        reasons.extend(grammar_fail)
+        return False, reasons, improvement
     if require_parse_non_regression:
         c_pr = _metric_from_map(control, "parse_rate")
         t_pr = _metric_from_map(candidate, "parse_rate")
@@ -775,6 +919,9 @@ def classify_positive_metrics(
     minimum_effect = float(primary.get("minimum_effect") or 0.0)
     reasons: list[str] = []
     positive = False
+    reasons.extend(invalid_grammar_reasons(control_metrics, arm="control"))
+    reasons.extend(invalid_grammar_reasons(candidate_metrics, arm="candidate"))
+    grammar_illegal = any(r.startswith("invalid_grammar:") for r in reasons)
 
     c_val = _metric_from_map(control_metrics, metric)
     t_val = _metric_from_map(candidate_metrics, metric)
@@ -821,7 +968,7 @@ def classify_positive_metrics(
                 f"control_completed={c_completed}/{c_n}:"
                 f"candidate_completed={t_completed}/{t_n}"
             )
-        elif improvement > minimum_effect and non_reg_ok:
+        elif improvement > minimum_effect and non_reg_ok and not grammar_illegal:
             positive = True
             reasons.append(
                 f"primary_metric_win:{metric}:{c_val}->{t_val}"
@@ -832,9 +979,23 @@ def classify_positive_metrics(
                 f"primary_metric_null_or_worse:{metric}:"
                 f"control={c_val} candidate={t_val} improvement={improvement}"
             )
+        if role == "screening":
+            secondary = policy.screening_quality_secondary
+            if isinstance(secondary, Mapping) and secondary.get("metric"):
+                sec_id = str(secondary["metric"])
+                c_sec = _metric_from_map(control_metrics, sec_id)
+                t_sec = _metric_from_map(candidate_metrics, sec_id)
+                reasons.append(
+                    f"screening_quality_secondary:{sec_id}:"
+                    f"control={c_sec} candidate={t_sec}:recorded_not_verdict"
+                )
 
     pos_cfg = policy.positive_classification
-    if executable_unblock and pos_cfg.get("allow_executable_unblock", True):
+    if (
+        executable_unblock
+        and pos_cfg.get("allow_executable_unblock", True)
+        and not grammar_illegal
+    ):
         positive = True
         reasons.append("executable_unblock:candidate_completed_after_control_error")
 
@@ -865,6 +1026,9 @@ def classify_positive_metrics(
             except HillClimbError as exc:
                 positive = False
                 reasons.append(f"eg_params_block:{exc}")
+
+    if grammar_illegal:
+        positive = False
 
     if not any(
         r.startswith("primary_metric_win") or r.startswith("executable_unblock")

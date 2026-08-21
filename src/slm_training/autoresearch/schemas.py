@@ -308,6 +308,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "sync_checkpoints",
         "steps",
         "synthesizer",
+        "initialize_from",
         "train_version",
         "topology_actions",
         "topology_bounded_buffer",
@@ -338,6 +339,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_draft_window",
         "decode_timeout_seconds",
         "eval_suites",
+        "latency_probe_records",
+        "latency_probe_planned_n",
         "action_embedding_init",
         "action_embedding_train",
         "action_alias_mode",
@@ -606,6 +609,7 @@ class ExperimentKnobs(StrictModel):
     ltr_prefix_loss_weight: float | None = Field(default=None, ge=0, le=20)
     ltr_tail_loss_weight: float | None = Field(default=None, ge=0, le=20)
     seed: int | None = Field(default=None, ge=0)
+    initialize_from: str | None = Field(default=None, min_length=1, max_length=4096)
     # Historical continuous field (regime-epoch reopen was removed). Accepted
     # read-only for old matrices; not used for thrash identity or bank close.
     screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)
@@ -728,6 +732,13 @@ class ExperimentKnobs(StrictModel):
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
         pattern=r"^[A-Za-z0-9_,]+$",
     )
+    # Latency pre-check probe: a small eval (probe_records) runs before the
+    # full eval; the full eval is skipped with a typed latency_preflight
+    # verdict when the probe times out at the fitted per-record decode budget
+    # or projects past the remaining eval wall (probe_wall x planned_n). The
+    # probe is a screening aid — never a gate and never a model verdict.
+    latency_probe_records: int | None = Field(default=None, ge=1, le=8)
+    latency_probe_planned_n: int | None = Field(default=None, ge=1)
     action_embedding_init: (
         Literal[
             "none",

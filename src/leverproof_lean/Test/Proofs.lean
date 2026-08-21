@@ -221,6 +221,13 @@ open LeverProofLean
 -- Training-sample adequacy bounds (data-volume climb signal)
 #print axioms SampleAdequacy.coverageLowerBound_covers
 #print axioms SampleAdequacy.capacityUpperBound_within_budget
+-- Screening sample-size range (eval-side n for the climb loop)
+#print axioms ScreeningSampleSize.signTestFloorFrom_sound
+#print axioms ScreeningSampleSize.signTestFloorFrom_minimal
+#print axioms ScreeningSampleSize.signTestDecidabilityFloor_sound
+#print axioms ScreeningSampleSize.signTestDecidabilityFloor_minimal
+#print axioms ScreeningSampleSize.screeningBudgetUpperBound_fits
+#print axioms ScreeningSampleSize.screeningRangeFeasible_fits_budget
 #print axioms Judgment.skipped_replay_never_authorizes_removal
 #print axioms Judgment.classification_exhaustive
 #print axioms Judgment.classified_payload_matches

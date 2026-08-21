@@ -48,6 +48,23 @@ RESEARCH_SOURCE_KINDS = {
     "researcher",
 }
 
+#: Run-id suffix marking a latency pre-check probe stage (small-n eval that
+#: runs before the full eval; its verdict may skip the full eval, never a
+#: model judgment).
+LATENCY_PROBE_RUN_ID_SUFFIX = "-latprobe"
+LATENCY_PREFLIGHT_SCHEMA = "latency_preflight/v1"
+
+
+def is_latency_probe_command(command: list[str]) -> bool:
+    """True for the latency pre-check probe eval stage of an arm."""
+
+    return (
+        "scripts.evaluate_model" in command
+        and (_command_value(command, "--run-id") or "").endswith(
+            LATENCY_PROBE_RUN_ID_SUFFIX
+        )
+    )
+
 
 def _stage_environment(
     experiment: ExperimentSpec, command: list[str]
@@ -72,6 +89,8 @@ RESULT_EVIDENCE_KINDS = {
 }
 
 _DEFAULT_EVAL_VERSION_CANDIDATES = (
+    "e938_role_safe_all_targets_smoke24_v1",
+    "e938_role_safe_all_targets_smoke6_v1",
     "e938_role_safe_all_targets_v2",
     "e842_harness_owned_slots_v1",
     "e827_target_slots_only_v4",
@@ -560,6 +579,8 @@ def compile_commands(
         train.extend(["--train-dir", str(train_dir)])
     if knobs.local_files_only:
         train.append("--local-files-only")
+    if getattr(knobs, "initialize_from", None):
+        train.extend(["--initialize-from", str(knobs.initialize_from)])
     if knobs.sync_checkpoints is not None:
         train.append(
             "--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints"
@@ -976,6 +997,15 @@ def compile_commands(
             evaluate.append("--slot-contract-in-context")
         if knobs.design_md_context is False:
             evaluate.append("--no-design-md-context")
+    if knobs.latency_probe_records and "scripts.evaluate_model" in commands[-1]:
+        # Latency pre-check: clone the completed eval command at a small
+        # record limit under a distinct run id; execute_commands compares the
+        # probe against the calculated budget before spending the full eval.
+        probe = list(commands[-1])
+        run_id_index = probe.index("--run-id") + 1
+        probe[run_id_index] = f"{probe[run_id_index]}{LATENCY_PROBE_RUN_ID_SUFFIX}"
+        probe.extend(["--eval-limit", str(int(knobs.latency_probe_records))])
+        commands.insert(len(commands) - 1, probe)
     return commands
 
 
@@ -995,7 +1025,26 @@ def execute_commands(
     stages: list[dict[str, object]] = []
     metrics: dict[str, float] = {}
     data_metrics: dict[str, float] = {}
+    latency_preflight: dict[str, object] | None = None
     for command in commands:
+        is_probe = is_latency_probe_command(command)
+        if (
+            latency_preflight is not None
+            and "scripts.evaluate_model" in command
+            and not is_probe
+        ):
+            # The probe projected the full eval over budget: skip it with the
+            # typed verdict. Never a model judgment — the arm is measured
+            # incomplete, not rejected.
+            stages.append(
+                {
+                    "command": command,
+                    "skipped": True,
+                    "latency_preflight": latency_preflight,
+                    "measurement_complete": False,
+                }
+            )
+            continue
         remaining_seconds = (
             max(0.0, deadline - time.monotonic()) if deadline is not None else None
         )
@@ -1048,6 +1097,9 @@ def execute_commands(
             interrupt_after_seconds=interrupt_after,
             kill_grace_seconds=grace,
         )
+        # Runner-measured stage wall (0.0 when the runner does not report one;
+        # only consumed by the latency-probe projection).
+        stage_wall = float(getattr(completed, "duration_seconds", None) or 0.0)
         if getattr(completed, "timed_out", False):
             stage: dict[str, object] = {
                 "command": command,
@@ -1059,6 +1111,10 @@ def execute_commands(
                 "stderr": completed.stderr,
                 "measurement_complete": False,
             }
+            if is_probe:
+                # The probe record alone hit the stage wall: the full eval
+                # would burn n x that budget for the same incomplete result.
+                stage["latency_probe"] = True
             partial = _read_changed_json(progress_artifact, progress_revision_before)
             run_id = _command_value(command, "--run-id")
             if (
@@ -1158,23 +1214,84 @@ def execute_commands(
             trainable_params = flattened.get("track.trainable_params")
             if trainable_params is not None:
                 metrics["trainable_params"] = trainable_params
-        elif "scripts.evaluate_model" in command:
+        elif "scripts.evaluate_model" in command and not is_probe:
             metrics.update(flattened)
+        probe_payload: dict[str, object] | None = None
+        if is_probe:
+            # Latency pre-check verdict: the probe wall projects the full
+            # eval's per-record cost. probe_wall x planned_n past the wall the
+            # full eval would get -> skip the full eval (typed, incomplete —
+            # never a model judgment). One-record projection is a declared
+            # assumption, not proved arithmetic.
+            planned_n = getattr(experiment.knobs, "latency_probe_planned_n", None)
+            probe_payload = {
+                "schema": LATENCY_PREFLIGHT_SCHEMA,
+                "probe_run_id": _command_value(command, "--run-id"),
+                "probe_exit_code": completed.returncode,
+                "probe_wall_seconds": stage_wall,
+                "planned_n": planned_n,
+                "authority": "climb_signal_not_gate",
+                "assumption": (
+                    "one probe record projects per-record decode cost at the "
+                    "planned n; assumption-backed budgeting, not proved "
+                    "arithmetic and never a promotion/shipping signal"
+                ),
+            }
+            if completed.returncode:
+                probe_payload["verdict"] = "latency_preflight_probe_failed"
+            elif planned_n:
+                projected = stage_wall * int(planned_n)
+                remaining = (
+                    max(0.0, deadline - time.monotonic())
+                    if deadline is not None
+                    else None
+                )
+                projected_total = (
+                    min(float(MAX_RUN_SECONDS), remaining)
+                    if remaining is not None
+                    else float(MAX_RUN_SECONDS)
+                )
+                projected_grace = min(
+                    float(KILL_GRACE_SECONDS), projected_total * 0.1
+                )
+                projected_interrupt = min(
+                    float(INTERRUPT_AFTER_SECONDS),
+                    max(0.001, projected_total - projected_grace),
+                )
+                projected_reserve = min(
+                    _EVALUATION_POSTPROCESS_RESERVE_SECONDS,
+                    projected_interrupt * 0.2,
+                )
+                eval_wall = max(0.1, projected_interrupt - projected_reserve)
+                probe_payload["projected_seconds"] = projected
+                probe_payload["eval_wall_seconds"] = eval_wall
+                if projected > eval_wall:
+                    probe_payload["verdict"] = "latency_preflight_infeasible"
+                    latency_preflight = probe_payload
+                else:
+                    probe_payload["verdict"] = "latency_preflight_feasible"
+            else:
+                probe_payload["verdict"] = "latency_preflight_measured"
         expected_gate_rejection = _expected_gate_rejection(
             command, completed.returncode, parsed, artifact_root=Path(cwd)
         )
-        stages.append(
-            {
-                "command": command,
-                "exit_code": completed.returncode,
-                "stdout": completed.stdout[-8000:],
-                "stderr": completed.stderr[-8000:],
-                "parsed_output": parsed,
-                "parsed_output_source": parsed_source,
-                "expected_gate_rejection": expected_gate_rejection,
-            }
-        )
+        stage_entry: dict[str, object] = {
+            "command": command,
+            "exit_code": completed.returncode,
+            "stdout": completed.stdout[-8000:],
+            "stderr": completed.stderr[-8000:],
+            "parsed_output": parsed,
+            "parsed_output_source": parsed_source,
+            "expected_gate_rejection": expected_gate_rejection,
+        }
+        if probe_payload is not None:
+            stage_entry["latency_probe"] = True
+            stage_entry["latency_preflight"] = probe_payload
+        stages.append(stage_entry)
         if completed.returncode and not expected_gate_rejection:
+            if is_probe:
+                # Pre-check failure fails open: run the full measurement.
+                continue
             return ExperimentOutcome(
                 experiment_id=experiment.experiment_id,
                 campaign_id=experiment.campaign_id,

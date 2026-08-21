@@ -88,6 +88,17 @@ def _arms(
     return control, candidate
 
 
+def test_parse_rate_below_perfect_is_never_positive() -> None:
+    control, candidate = _arms(
+        c_lat=5000.0, t_lat=4000.0, c_pr=1.0, t_pr=0.0, c_mpr=0.0, t_mpr=1.0
+    )
+    positive, reasons = _classify(
+        control=control, candidate=candidate, primary_metric=_PRIMARY
+    )
+    assert positive is False
+    assert any(r.startswith("invalid_grammar:") for r in reasons)
+
+
 def test_naive_latency_win_with_zero_mpr_is_not_positive() -> None:
     control, candidate = _arms(c_lat=10000.0, t_lat=9000.0, c_mpr=0.0, t_mpr=0.0)
     positive, reasons = _classify(
@@ -4032,7 +4043,7 @@ def test_dispose_champion_promote_parse_regression_not_promoted() -> None:
         candidate_metrics=candidate,
     )
     assert d["status"] == "promotion_failed"
-    assert any("promote_parse_regression" in r for r in d["reasons"])
+    assert any("invalid_grammar:" in r or "promote_parse_regression" in r for r in d["reasons"])
 
 
 def test_dispose_champion_promote_assumption_miss_five_lane() -> None:
@@ -6540,6 +6551,44 @@ def test_screening_bank_fingerprint_tracks_bank_identity() -> None:
     assert fingerprint != _mod._screening_bank_fingerprint(policy_sha256="s")
 
 
+def test_self_heal_unblock_does_not_tag_compose_when_bank_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Open bank is not a thrash_bank_compose recovery (root-cause of 3377 heals)."""
+    _inject_terminal_policy(monkeypatch, park=False)
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id="L")
+    assert "thrash_bank_compose" not in (report.get("soft_healed") or [])
+    assert not _mod._DYNAMIC_THRASH_ARMS
+
+
+def test_self_heal_thrash_bank_compose_only_when_exhausted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _inject_terminal_policy(monkeypatch, park=False)
+    _mod._DYNAMIC_THRASH_ARMS.clear()
+    _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    root = tmp_path / "ar"
+    loop = "L"
+    closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    result = _mod._self_heal_thrash_bank_exhaust(
+        root, loop, closed=closed, skip=set()
+    )
+    assert result.composed
+    assert result.available
+    already = _mod._self_heal_thrash_bank_exhaust(
+        root, loop, closed=set(), skip=set()
+    )
+    assert already.available
+    assert not already.composed
+
+
 def test_park_policy_retires_confirm_fallback_and_compose_synthesis(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -6581,7 +6630,7 @@ def test_should_enqueue_rejects_fixture_volume_win() -> None:
 
 
 def test_should_enqueue_fixture_volume_structural_win() -> None:
-    """Smoke n=3 SS wins enqueue as confirm candidates (positive stays False)."""
+    """Smoke below Lean floor must not enqueue, even with an SS tick."""
     delivery = {
         "positive": False,
         "primary_metric": "smoke.structural_similarity",
@@ -6608,8 +6657,84 @@ def test_should_enqueue_fixture_volume_structural_win() -> None:
         "candidate_id": "c159-typed-family-balance",
         "control_id": "c159-control",
     }
+    assert not _mod._is_confirm_candidate_win(delivery)
+    assert not _mod._should_enqueue_champion(delivery)
+
+
+def test_should_enqueue_lean_floor_ss_win_with_held_mpr() -> None:
+    delivery = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": [
+            "fixture_insufficient_n:c-control",
+            "primary_metric_win:smoke.structural_similarity:0.13->0.20:improvement=0.07",
+            "fixture_volume_gate_ship_only",
+        ],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.13,
+            "binder_reference_f1": 0.53,
+            "n": 6,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.20,
+            "binder_reference_f1": 0.53,
+            "n": 6,
+        },
+    }
     assert _mod._is_confirm_candidate_win(delivery)
     assert _mod._should_enqueue_champion(delivery)
+
+
+def test_should_not_enqueue_mpr_zero_or_quality_identity() -> None:
+    mpr0 = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": [
+            "primary_metric_win:smoke.structural_similarity:0.11->0.20:improvement=0.09",
+            "fixture_volume_gate_ship_only",
+        ],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.11,
+            "binder_reference_f1": 0.53,
+            "n": 6,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.0,
+            "structural_similarity": 0.20,
+            "binder_reference_f1": 0.0,
+            "n": 6,
+        },
+    }
+    assert not _mod._should_enqueue_champion(mpr0)
+    ident = {
+        "positive": False,
+        "primary_metric": "smoke.structural_similarity",
+        "measurement_complete": True,
+        "reasons": ["mechanism_no_effect:quality_metrics_identical"],
+        "control_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.13,
+            "binder_reference_f1": 0.53,
+        },
+        "candidate_metrics": {
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.167,
+            "structural_similarity": 0.13,
+            "binder_reference_f1": 0.53,
+        },
+    }
+    assert _mod._quality_metrics_identical(ident)
+    assert not _mod._should_enqueue_champion(ident)
 
 
 def test_handoff_parks_exhausted_bank_despite_experiment_next(
@@ -6933,7 +7058,61 @@ def test_handoff_parks_when_only_snapshot_leftovers_remain(
     # Isolate open set excludes snapshot train_version arms, so leftover
     # is empty and park-before-select fires instead of smoking c96.
     assert leftover == set()
-    assert _mod._open_slugs_are_snapshot_leftovers(leftover)
+
+
+def test_park_screening_saturation_executes_rebuild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    policy = _inject_terminal_policy(monkeypatch, park=True)
+    root = tmp_path / "autoresearch"
+    camp = root / "cycle-park"
+    camp.mkdir(parents=True)
+    _write_terminal_feedback(root, "cycle-park")
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-park",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="rejected",
+        ship_state="not_evaluated",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="document",
+                owner="documenting-experiment-results",
+                reason="closeout",
+                evidence_ids=("campaign:cycle-park",),
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(
+        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    called: dict[str, object] = {}
+
+    def _rebuild(**kwargs: object) -> str:
+        called.update(kwargs)
+        return "rebuild_data"
+
+    monkeypatch.setattr(_mod, "_self_heal_rebuild_data", _rebuild)
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    status = _mod._park_screening_saturation(
+        root=root,
+        loop_id="loop-1",
+        campaign_id="cycle-park",
+        cycle_index=1,
+        policy=policy,
+        ranked_regimes=["bounds"],
+        cwd=cwd,
+    )
+    assert status == _mod._REGIME_PARKED_STATUS
+    assert called.get("campaign_id") == "cycle-park"
+    assert called.get("cwd") == cwd
 
 
 def test_handoff_does_not_park_leftover_isolate_ofat(
@@ -7060,6 +7239,43 @@ def test_heal_resume_arm_stays_open_when_snapshots_are_excluded() -> None:
     assert leftover == {_mod._HEAL_RESUME_SLUG}
     assert not _mod._open_slugs_are_snapshot_leftovers(leftover)
     assert _mod._select_recommended_slug(197, skip=set()) == _mod._HEAL_RESUME_SLUG
+
+
+def test_thrash_bank_exhaust_does_not_park_selectable_heal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Closed heal slug + unused train_version is not snapshot leftover park."""
+    _inject_terminal_policy(monkeypatch, park=True)
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c509_harness"
+    _mod._register_i10_heal_arm(root, loop, train_version=version)
+    closed = {_mod._HEAL_RESUME_SLUG} | {
+        slug for slug, _, _ in _mod._SCREENING_ARM_BANK
+    }
+    monkeypatch.setattr(
+        _mod,
+        "_train_version_has_complete_nonpositive",
+        lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        _mod, "_latest_cycle", lambda *args, **kwargs: (509, "cycle-509")
+    )
+    assert _mod._selectable_process_arm(
+        root, loop, predecessor_campaign_id="cycle-509"
+    )
+    assert _mod._self_heal_thrash_bank_exhaust(
+        root,
+        loop,
+        closed=closed,
+        skip=closed,
+        predecessor_campaign_id="cycle-509",
+    )
+    assert (
+        _mod._select_recommended_slug(512, skip=closed, root=root, loop_id=loop)
+        == _mod._HEAL_RESUME_SLUG
+    )
 
 
 def _write_heal_snapshot(cwd: Path, version: str) -> Path:
@@ -9170,6 +9386,27 @@ def test_fit_screening_decode_fits_arm_wall() -> None:
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
 
+def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
+    """Auto policy mode embeds the screening_sample_size/v1 verdict in meta."""
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
+    report = meta["screening_sample_size"]
+    assert report is not None
+    assert report["schema_version"] == "screening_sample_size/v1"
+    assert report["decidability_floor_n"] == 6  # exact sign-test floor, alpha=1/20
+    assert report["promotion_authority"] is False
+    if report["verdict"] == "feasible":
+        assert int(meta["smoke_n"]) >= 6
+        assert report["must_generate"] is False
+    else:
+        assert report["verdict"] == "infeasible_range_empty"
+        assert "suite_volume" in report["binding_constraints"]
+        assert report["must_generate"] is True
+        assert int(meta["smoke_n"]) == 0
+
+
 def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-timing-c1",
@@ -9190,7 +9427,9 @@ def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
     )
     knobs = cand["knobs"]
     assert float(knobs["decode_timeout_seconds"]) <= 12.0  # policy.v1.json v5
-    assert int(knobs["steps"]) <= 43  # thrash cap 40 + cycle%3
+    # Floor-fit steps (cold-start 5 sps × 0.9 × grown floor) + cycle%3.
+    assert int(knobs["steps"]) >= 50
+    assert int(knobs["steps"]) <= 403
 
 
 def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
@@ -9217,6 +9456,118 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
     assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
     ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
     assert ledger.is_file()
+
+
+
+def test_screening_steps_fitter_telemetry_clamp_and_cold_start() -> None:
+    fitted, ev = _mod._fit_screening_steps(
+        floor_seconds=20.0,
+        measured_steps_per_sec=6.5,
+        steps_max=400,
+    )
+    assert fitted == min(400, int(20.0 * 6.5 * 0.9))  # 117
+    assert ev["cold_start"] is False
+    clamped, clamp_ev = _mod._fit_screening_steps(
+        floor_seconds=20.0,
+        measured_steps_per_sec=100.0,
+        steps_max=40,
+    )
+    assert clamped == 40
+    assert clamp_ev["steps_max"] == 40
+    cold, cold_ev = _mod._fit_screening_steps(
+        floor_seconds=20.0,
+        measured_steps_per_sec=None,
+        steps_max=400,
+    )
+    assert cold_ev["cold_start"] is True
+    assert cold == min(400, int(20.0 * _mod._COLD_START_STEPS_PER_SEC * 0.9))
+    policy = SimpleNamespace(
+        measurement={"thrash_timing": {"min_train_floor_seconds": 20}}
+    )
+    assert _mod._screening_thrash_steps(policy, 22) == cold
+
+
+def test_screening_steps_from_train_summary_telemetry(tmp_path: Path) -> None:
+    camp = tmp_path / "continuous-loop-x" / "runs" / "arm"
+    camp.mkdir(parents=True)
+    (camp / "train_summary.json").write_text(
+        json.dumps({"steps": 22, "elapsed_wall_seconds": 3.36, "device": "cpu"}),
+        encoding="utf-8",
+    )
+    policy = SimpleNamespace(
+        measurement={"thrash_timing": {"min_train_floor_seconds": 20}}
+    )
+    steps = _mod._screening_thrash_steps(
+        policy, 22, telemetry_root=tmp_path, floor_seconds=20.0
+    )
+    assert steps == min(400, int(20.0 * (22 / 3.36) * 0.9))
+
+
+def test_write_thrash_timing_includes_steps_fit(tmp_path: Path) -> None:
+    camp = tmp_path / "c-fit"
+    camp.mkdir(parents=True)
+    path = _mod._write_thrash_timing(
+        camp,
+        loop_id="loop-t",
+        campaign_id="c-fit",
+        cycle_index=1,
+        role="screening",
+        measurement_complete=True,
+        arm_wall_seconds=70.0,
+        decode_fit={
+            "fitted_decode_timeout_seconds": 7.0,
+            "fitted_steps": 117,
+            "steps_fit": {"cold_start": False, "fitted_steps": 117},
+            "train_device": "cpu",
+        },
+        reasons=[],
+        control_metrics={"structural_similarity": 0.1},
+        candidate_metrics={"structural_similarity": 0.2},
+    )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["fitted_steps"] == 117
+    assert data["train_device"] == "cpu"
+    assert data["steps_fit"]["fitted_steps"] == 117
+
+
+def test_grown_train_floor_never_exceeds_arm_wall() -> None:
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy = load_climb_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        policy, arm_wall_seconds=70.0
+    )
+    wall = float(meta["arm_wall_seconds"])
+    floor = float(meta["grown_train_floor_seconds"])
+    eval_s = float(meta["eval_budget_seconds"])
+    overhead = float(meta["eval_overhead_seconds"])
+    assert floor + eval_s + overhead <= wall + 1e-9
+    assert eval_s == pytest.approx(fitted * float(meta["smoke_n"]))
+    assert floor >= float(meta["min_train_floor_seconds"]) - 1e-9
+
+
+def test_screening_cuda_device_falls_back_to_cpu(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    assert _mod._screening_max_gpu_hours(role="screening", device="cpu") == 0.0
+    assert _mod._screening_max_gpu_hours(role="screening", device="cuda") > 0.0
+    assert _mod._screening_max_gpu_hours(role="confirm", device="cuda") == 0.0
+
+    class _Boom:
+        @staticmethod
+        def is_available() -> bool:
+            raise RuntimeError("driver missing")
+
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=_Boom))
+    assert _mod._screening_train_device() == "cpu"
+
+    class _NoCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return False
+
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=_NoCuda))
+    assert _mod._screening_train_device() == "cpu"
 
 
 def test_semantic_contrast_thrash_arm_uses_batch_size_at_least_3() -> None:
@@ -9855,8 +10206,60 @@ def test_is_continuous_closeout_path_allowlist() -> None:
         "docs/design/continuous-loop-20260805-x-c1-results.json"
     )
     assert _mod._is_continuous_closeout_path("docs/MODEL_CARD.md")
+    assert _mod._is_continuous_closeout_path(
+        "src/slm_training/resources/test_seeds.jsonl"
+    )
+    assert _mod._is_continuous_closeout_path(
+        "src/slm_training/resources/data/eval/"
+        "e938_role_safe_all_targets_smoke6_v1/screening_sample_size.json"
+    )
     assert not _mod._is_continuous_closeout_path("scripts/run_autotrain_continuous.py")
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
+
+
+def test_serena_comment_strip_restores_and_continues(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    yml = repo / ".serena" / "project.yml"
+    yml.parent.mkdir()
+    yml.write_text("# tracked comment\nlanguage: python\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", ".serena/project.yml"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "serena"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    yml.write_text("language: python\n", encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id="L")
+    assert "serena_project_yml_comment_strip" in (report.get("soft_healed") or [])
+    assert not any(
+        item.get("kind") == "foreign_dirty_tree"
+        for item in report.get("hard_pending") or []
+    )
+    assert yml.read_text(encoding="utf-8") == "# tracked comment\nlanguage: python\n"
+
+
+def test_serena_semantic_edit_still_parks(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    yml = repo / ".serena" / "project.yml"
+    yml.parent.mkdir()
+    yml.write_text("language: python\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", ".serena/project.yml"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "serena"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    yml.write_text("language: typescript\n", encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    root.mkdir(parents=True)
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id="L")
+    assert "serena_project_yml_comment_strip" not in (report.get("soft_healed") or [])
+    assert any(
+        item.get("kind") == "foreign_dirty_tree"
+        for item in report.get("hard_pending") or []
+    )
 
 
 def test_serena_local_dirt_is_not_foreign() -> None:
@@ -10798,3 +11201,234 @@ def test_auto_no_bump_version_registry_noop_without_owning_component(
         campaign_id="continuous-loop-20260808-c1",
     )
     assert result is None
+
+
+def test_screening_matrix_sets_latency_probe_knobs() -> None:
+    """Policy latency_probe block compiles per-arm probe knobs (screening)."""
+    matrix = _mod._matrix(
+        campaign_id="continuous-loop-latprobe-c1",
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=80,
+        cycle=4,
+        role="screening",
+        recommended_slug="bounds",
+    )
+    knobs = matrix["hypotheses"][0]["experiment"]["knobs"]
+    assert knobs["latency_probe_records"] == 1
+    assert knobs["latency_probe_planned_n"] >= 1
+
+
+def test_classify_positive_types_latency_preflight_missing_scoreboard(
+    tmp_path: Path,
+) -> None:
+    """A probe-skipped eval reads as its typed cause, not a bare missing file."""
+    camp = tmp_path / "camp"
+    (camp / "artifacts" / "outcomes").mkdir(parents=True)
+    (camp / "runs").mkdir()
+    outcome = {
+        "experiment_id": "c-candidate",
+        "status": "completed",
+        "metrics": {},
+        "stage_telemetry": [
+            {
+                "command": ["python", "-m", "scripts.evaluate_model"],
+                "skipped": True,
+                "latency_preflight": {
+                    "schema": "latency_preflight/v1",
+                    "verdict": "latency_preflight_infeasible",
+                },
+            }
+        ],
+    }
+    (camp / "artifacts" / "outcomes" / "o1.json").write_text(json.dumps(outcome))
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c-control",
+        candidate_id="c-candidate",
+    )
+    assert result["positive"] is False
+    assert (
+        "measurement_incomplete:c-candidate:latency_preflight_infeasible"
+        in result["reasons"]
+    )
+    # Still a harness-incomplete reason: never a model reject.
+    assert _mod._reason_is_harness_incomplete(
+        "measurement_incomplete:c-candidate:latency_preflight_infeasible"
+    )
+
+
+def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
+    from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
+
+    run_dir = tmp_path / "runs" / "arm"
+    run_dir.mkdir(parents=True)
+    (run_dir / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"n": 6, "structural_similarity": 0.1}}}),
+        encoding="utf-8",
+    )
+    out = _mod._run_arm_eval_nll(run_dir, eval_nll=3.25)
+    assert out["eval_nll"] == 3.25
+    scoreboard = json.loads((run_dir / "scoreboard.json").read_text(encoding="utf-8"))
+    assert scoreboard["suites"]["smoke"]["eval_nll"] == 3.25
+    assert scoreboard["suites"]["smoke"]["eval_nll_claim_class"] == "diagnostic"
+    assert scoreboard["suites"]["smoke"]["eval_nll_definition_hash"] == (
+        screening_nll_definition_hash(
+            arm_loss_weights={"binder_arity_loss_weight": 7.0}
+        )
+    )
+    metrics = _mod._run_metrics(tmp_path, "arm")
+    assert metrics["smoke.eval_nll"] == 3.25
+    assert metrics["eval_nll"] == 3.25
+
+
+def test_fit_screening_candidate_count_never_kills_for_k() -> None:
+    n, reason = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=70.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n == 1
+    assert reason in {
+        "stage_wall_fits_one_candidate",
+        "stage_wall_fitted_candidate_count",
+    }
+    n6, reason6 = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=20.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n6 == 6
+    assert reason6 is None
+    n3, reason3 = _mod._fit_screening_candidate_count(
+        max_candidates=6,
+        arm_wall_seconds=40.0,
+        stage_remaining_seconds=180.0,
+        finalization_reserve=15.0,
+    )
+    assert n3 == 3
+    assert reason3 == "stage_wall_fitted_candidate_count"
+
+
+def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> None:
+    from slm_training.autoresearch.experiment_campaign import (
+        CampaignArmV1,
+        CampaignControlV1,
+        CampaignEndpointV1,
+        CampaignGateV1,
+        ExperimentCampaignV1,
+        MultiplicityFamilyV1,
+    )
+    from slm_training.autoresearch.schemas import ArtifactRequirementV1, CampaignBudget
+
+    campaign_id = "campaign-multiarm"
+    campaign = _mod.CampaignSpec(
+        campaign_id=campaign_id,
+        objective="Lock k screening arms before execution.",
+        primary_metric="smoke.eval_nll",
+        loop_id="loop-multiarm",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+    )
+    store = _mod.CampaignStore(campaign_id, tmp_path)
+    store.initialize(campaign)
+    matrix_path = tmp_path / campaign_id / "matrix-proposal.json"
+    matrix_path.write_text(json.dumps({"matrix_id": "matrix-k"}), encoding="utf-8")
+    order = ("ctrl", "a1", "a2", "a3")
+    bound = _mod._bind_expected_arms(
+        root=tmp_path,
+        campaign_id=campaign_id,
+        matrix_path=matrix_path,
+        control_id="ctrl",
+        candidate_id="a1",
+        candidate_ids=("a2", "a3"),
+        arm_order=order,
+        selection_rule="best_by_primary_then_smallest",
+    )
+    assert bound["event_type"] == "decision_arms_bound"
+    assert bound["detail"]["selection_rule"] == "best_by_primary_then_smallest"
+    assert bound["detail"]["expected_arm_ids"] == ["ctrl", "a1", "a2", "a3"]
+    manifest = ExperimentCampaignV1(
+        campaign_id=campaign_id,
+        experiment_id="a1",
+        hypothesis="Screen k size-matched candidates against one control.",
+        decision="Pick winner by locked selection_rule only.",
+        endpoints=(
+            CampaignEndpointV1(
+                endpoint_id="primary",
+                metric="smoke.eval_nll",
+                role="primary",
+                direction="decrease",
+                minimum_effect=0.05,
+            ),
+        ),
+        arms=(
+            CampaignArmV1(arm_id="ctrl", role="control", config_sha256="c" * 64),
+            CampaignArmV1(arm_id="a1", role="candidate", config_sha256="d" * 64),
+            CampaignArmV1(arm_id="a2", role="candidate", config_sha256="e" * 64),
+            CampaignArmV1(arm_id="a3", role="candidate", config_sha256="f" * 64),
+        ),
+        seeds=(7,),
+        budget=CampaignBudget(max_experiments=4, max_wall_minutes=3),
+        stopping_rules=("Stop after locked arms finish.",),
+        controls=(
+            CampaignControlV1(
+                control_id="matched-control",
+                description="Shared size-matched screening control.",
+                kind="negative",
+            ),
+        ),
+        negative_controls=("matched-control",),
+        multiplicity_families=(
+            MultiplicityFamilyV1(
+                family_id="primary-family", hypothesis_ids=("primary",), alpha=0.05
+            ),
+        ),
+        promotion_gates=(
+            CampaignGateV1(
+                gate_id="promote-primary",
+                endpoint_id="primary",
+                operator="le",
+                threshold=-0.05,
+            ),
+        ),
+        rollback_gates=(
+            CampaignGateV1(
+                gate_id="rollback-primary",
+                endpoint_id="primary",
+                operator="gt",
+                threshold=1e9,
+            ),
+        ),
+        artifact_requirements=(ArtifactRequirementV1(kind="version_stamp"),),
+        claim_class="diagnostic",
+        source_commit="b" * 40,
+        source_dirty=False,
+        author="test",
+        selection_rule="best_by_primary_then_smallest",
+    )
+    store.lock_experiment_campaign(manifest)
+    store.append_event("experiment_started", experiment_id="ctrl", status="running")
+    types = [row["event_type"] for row in store.verify_event_chain()]
+    assert types.index("decision_arms_bound") < types.index(
+        "experiment_campaign_locked"
+    )
+    assert types.index("experiment_campaign_locked") < types.index(
+        "experiment_started"
+    )
+
+
+def test_size_match_skip_reason_typed() -> None:
+    control = {"d_model": 128, "denoiser_layers": 4}
+    wide = {"d_model": 256, "denoiser_layers": 4}
+    reason = _mod._size_match_skip_reason(control, wide)
+    assert reason is not None
+    assert reason.startswith("capacity_unmatched:")
+    assert _mod._size_match_skip_reason(control, control) is None

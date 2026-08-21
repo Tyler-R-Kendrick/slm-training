@@ -1,0 +1,431 @@
+{
+  "schema": "hillclimb_strict_train_build/v1",
+  "honesty": "fixture-scale strict snapshot; not a production HF ship corpus",
+  "train_version": "hillclimb_strict_v1",
+  "record_count": 976,
+  "target_record_count": 1000,
+  "short_of_target": 24,
+  "recipe": {
+    "command": "python -m scripts.build_train_data --profile strict --source all --version hillclimb_strict_v1 --immutable --synthesizer quality --programspec-count 48 --max-children 6 --ngram-decontam --decontam-eval-root src/slm_training/resources/data/eval --publish --register-lineage",
+    "profile": "strict",
+    "source": "all",
+    "synthesizer": "quality",
+    "programspec_count": 48,
+    "max_children": 6,
+    "device": "cpu",
+    "MAX_RUN_MINUTES": 3,
+    "ngram_decontam": true,
+    "publish": true
+  },
+  "quality": {
+    "mean_quality_score": 0.9756,
+    "parse_rate": 0.9669,
+    "judge_pass_rate": 1.0,
+    "admitted": 976,
+    "rejected_total": 1513,
+    "candidates": 2478,
+    "decontam_ngram_flagged": 102,
+    "warnings": [
+      {
+        "code": "high_rejection_rate",
+        "value": 0.3939,
+        "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+      },
+      {
+        "code": "eval_overlap_flagged",
+        "value": 102,
+        "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+      },
+      {
+        "code": "placeholder_contract_violations",
+        "value": 171,
+        "message": "records breached the placeholder/template contract at the quality gate"
+      },
+      {
+        "code": "sanitize_fallbacks",
+        "value": 48,
+        "message": "sanitization fell back to unchanged targets for some records; inspect sanitization.fallback_reasons"
+      }
+    ],
+    "redundancy_dropped": {
+      "exact_pair": 755,
+      "fuzzy_minhash": 70,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 236,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    }
+  },
+  "wf_smoke_v2_intact": true,
+  "integrator_policy_request": "defaults.train_version: \"hillclimb_strict_v1\"",
+  "top_named_synthesizer": {
+    "name": "template",
+    "yield": 0.2712,
+    "candidates": 579,
+    "admitted": 157,
+    "top_reason": "exact_pair_duplicate",
+    "action": "exclusive SWARM-DATA ownership forbids editing synth.py/climb_policy/versions.json; named synthesizer is template (yield 0.2712, exact_pair_duplicate dominant). Follow-up: reduce template expansion counts / diversify namespaces in harnesses/train_data/synth.py. This snapshot kept quality=layout+template admits (157 template rows survived)."
+  },
+  "recommendations_head": [
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 12
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards+aug",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 12
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards+design_md_contrastive",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 12
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards+template",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 36
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "human_curated",
+      "evidence": {
+        "decontamination_drops": 1
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 19
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "lexical_typed_map",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 82
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "programspec_generated+aug",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quality_gate_failed",
+        "candidates": 18
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quality_gate_failed) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 12}",
+      "expected_effect": "family:awwwards yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards+aug raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 12}",
+      "expected_effect": "family:awwwards+aug yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards+design_md_contrastive raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 12}",
+      "expected_effect": "family:awwwards+design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards+template raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 36}",
+      "expected_effect": "family:awwwards+template yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:human_curated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 1}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 19}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:lexical_typed_map raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'parse_or_contract_error', 'candidates': 82}",
+      "expected_effect": "family:lexical_typed_map yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated+aug raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quality_gate_failed', 'candidates': 18}",
+      "expected_effect": "family:programspec_generated+aug yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated+design_md_contrastive raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quality_gate_failed', 'candidates': 18}",
+      "expected_effect": "family:programspec_generated+design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated+template raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.0, 'top_reason': 'quality_gate_failed', 'candidates': 54}",
+      "expected_effect": "family:programspec_generated+template yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:prompt_paraphrase inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 53}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:prompt_paraphrase raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.5625, 'candidates': 480}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:rico_real inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 31}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:rico_real raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.7308, 'candidates': 156}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_document raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.5, 'candidates': 86}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.7746, 'candidates': 71}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_document raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.1867, 'top_reason': 'semantic_cosine', 'candidates': 75}",
+      "expected_effect": "family:scope_identity_document yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_expression raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.5333, 'candidates': 150}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.8288, 'candidates': 146}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_statement raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.6573, 'candidates': 143}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_repair_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v1: {'dup_share': 0.78, 'candidates': 50}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:design_md_contrastive inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 14}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for synthesizer:design_md_contrastive raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.3109, 'top_reason': 'exact_pair_duplicate', 'candidates': 193}",
+      "expected_effect": "synthesizer:design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 19}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:template inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v1: {'decontamination_drops': 53}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for synthesizer:template raises its yield above 0.4",
+      "rationale": "build hillclimb_strict_v1: {'yield': 0.2712, 'top_reason': 'exact_pair_duplicate', 'candidates': 579}",
+      "expected_effect": "synthesizer:template yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    }
+  ],
+  "leakage_check": {
+    "suites": [
+      "e938_role_safe_all_targets_smoke6_v1",
+      "e938_role_safe_all_targets_v2"
+    ],
+    "exact_pair_hits": 0,
+    "id_hits": 0,
+    "verdict": "PASS fail-closed"
+  },
+  "content_fingerprint": "30c506878cb275151d11295e147dfdd8a40e563abe05c0eca0860717e7f4e085",
+  "lineage_snapshot": "6756265c921271e9413feb42b35833ed5b33eea75b7d1a22a546eb3b1fe718b4",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "96f2fdc12110e61d71ce339a0c08eefdcc2773d2",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v32"
+    },
+    "stamped_at": "2026-08-21T03:14:52.350832+00:00"
+  },
+  "built_at": "2026-08-21T03:14:52.324071+00:00"
+}

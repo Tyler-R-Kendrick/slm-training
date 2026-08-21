@@ -12,9 +12,13 @@ persistence is the host goal and the append-only campaign event chains.
    never wait for another `/autotrain`, never treat a finished cycle as done.
 2. **Never end a bare `/autotrain` turn with only a resume command.** After
    every cycle: **print the four-table liveness/result/diagnostic/priority view to the user**, then
-   **immediately start the next cycle** in the same turn (or the next agent
-   step without user input when the host supports autonomous continuation /
-   persistent goals).
+   **prove supervisor liveness** (`pgrep run_autotrain_supervisor` plus
+   `loops/<id>/state.json` heartbeat). If the supervisor is alive, **do not**
+   start a competing `--max-cycles 1` (that is `DRIVER_ALREADY_RUNNING`, which
+   is liveness, not a halt). If the supervisor is dead, **restart
+   `run_autotrain_supervisor` in the same turn**. Persistence is the
+   supervisor, not agent one-shots. A host “background `--max-cycles 1`
+   completed” notification is **not** the loop ending.
 3. **Self-heal failures in the pipeline.** Path errors, missing suites, dirty
    trees, merge conflicts, bad matrices, failed gates, **thrash bank exhaust**,
    harness incompletes, and feedback identity races are inputs to the next
@@ -42,6 +46,16 @@ persistence is the host goal and the append-only campaign event chains.
      `document` receipt (`SELF_HEAL_DOCUMENT`). End-of-cycle, pre-gate, cycle
      error, and startup all run this heal so thrash never blocks on
      “please document and restart.”
+   - **hill-climb iteration outputs** → every Phase A closeout appends
+     `loops/<id>/hillclimb_iterations.jsonl` and prints `HILLCLIMB_ITERATION`
+     with went-well / went-wrong / speculate plus metric deltas. Cycle
+     markdown (`measured-results-continuous.md` and design closeout) carries
+     the same three-part section. After **10 consecutive no-progress**
+     cycles the driver writes
+     `loops/<id>/hillclimb_stagnation_review.json`, assesses each
+     speculation (gate-weakening is never viable), applies fail-closed
+     repairs (skip identical-quality confirms / spent OFAT slugs), then
+     continues. Never a parent halt.
    - **continuous-only dirty tree** → if porcelain is only
      `docs/design/continuous-*` closeout files (plus optional MODEL_CARD /
      README checkpoint notes), auto-commit (`SELF_HEAL_DIRTY_TREE`); foreign
@@ -71,7 +85,8 @@ persistence is the host goal and the append-only campaign event chains.
      multi-seed close still wins. Interesting ≠ promotable; mine offline via
      `python -m scripts.mine_continuous_residuals --write-ledger`.
    - **Local-CPU `rebuild_data`** (I10 / bank-exhaust park) → driver runs a
-     wall-capped `build_train_data` (`SELF_HEAL_REBUILD_DATA`), requires
+     wall-capped `build_train_data` (`SELF_HEAL_REBUILD_DATA` /
+     `SELF_HEAL_REBUILD_DATA_ON_PARK` when park writes the action), requires
      `quality_report.json` + `synthesis_feedback.json` + `data_manifest.json`,
      acks the action, and registers an I10 `_heal_resume` arm so park
      resumes. Never fake those artifacts. Paid GPU / HF write is still
@@ -227,12 +242,20 @@ python -m scripts.run_autotrain_supervisor \
 ```
 
 Each supervised cycle is still one `run_autotrain_continuous --supervised
---max-cycles 1` invocation. Before and after every cycle the supervisor runs
+--max-cycles 1` invocation **owned by the supervisor**, not by the parent
+agent. Before and after every cycle the supervisor runs
 `self_heal_unblock_loop`. Soft failures heal and continue; only typed
 `hard_pending` (true AgentV/npm crash, formal, deliver_stack, foreign dirty
 WIP) backs off without a human chat prompt.
 
-Single-cycle manual invoke remains available:
+**Do not** use single-cycle invoke as the persistence mechanism for bare
+`/autotrain`. That is how agents stop: they wait on one `--max-cycles 1`,
+treat its exit as “the loop finished,” then `DRIVER_ALREADY_RUNNING` when
+they try another, then report and halt. The supervisor already chains
+cycles. Agent `--max-cycles 1` is only for a dead supervisor (start the
+supervisor instead) or an explicit `--once` / finite phase.
+
+Single-cycle manual invoke remains available for finite `--once` work:
 
 ```bash
 python -m scripts.run_autotrain_continuous \
@@ -460,6 +483,9 @@ Owner skills (invoke; do not reimplement):
   missing suite, set `eval_version` explicitly.
 - Ship gates stay on for honesty. Fixture quality/volume gate fails are
   **expected diagnostics**, not loop terminators.
+- **`parse_rate` on completed docs is 1.0 or the arm is invalid (I6).** Not a
+  lever. `invalid_grammar:` rejects the hypothesis; do not confirm or climb
+  it. Never bargain the floor down.
 - Size-match comparative arms; charge capacity growth with `EG_params`.
 
 ### Lean / formal
@@ -524,6 +550,9 @@ Do **not** treat Phase B as the first time merges happen — that is an A5 miss.
 ## Forbidden continuous-mode behaviors
 
 - Stopping after one cycle to “report status and wait”
+- Treating `DRIVER_ALREADY_RUNNING` or a finished agent `--max-cycles 1` as
+  the continuous loop stopping (check supervisor PID; restart supervisor if
+  dead; never compete for the driver lock)
 - Asking the user to re-invoke `/autotrain`
 - Treating ship-gate fails on fixture `n` as terminal
 - Treating “not hill-climbing” / screening saturation / snapshot rematch as a

@@ -1,23 +1,16 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v11",
+  "version": "v14",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout\u2192decode residual routing.",
   "screening_primary": {
+    "metric": "smoke.eval_nll",
+    "direction": "decrease",
+    "minimum_effect": 0.05,
+    "claim_class": "diagnostic"
+  },
+  "screening_quality_secondary": {
     "metric": "smoke.structural_similarity",
-    "direction": "increase",
-    "minimum_effect": 0.01,
-    "require_non_regression_metrics": [
-      {
-        "metric_leaf": "parse_rate",
-        "direction": "increase",
-        "minimum_effect": 0.0
-      },
-      {
-        "metric_leaf": "binder_reference_f1",
-        "direction": "increase",
-        "minimum_effect": 0.0
-      }
-    ]
+    "direction": "increase"
   },
   "promotion_primary": {
     "metric": "held_out.structural_similarity",
@@ -28,7 +21,7 @@
     "min_seeds": 2
   },
   "defaults": {
-    "train_version": "wf_smoke_v2",
+    "train_version": "hillclimb_strict_v1",
     "eval_version_resolve": "published_smoke",
     "claim_class_screening": "diagnostic",
     "claim_class_promotion": "promotion_candidate",
@@ -40,7 +33,36 @@
     "screening_decode_timeout_seconds": 12,
     "promotion_decode_timeout_seconds": 24,
     "screening_smoke_n": 3,
-    "promotion_suite_n": 6,
+    "screening_smoke_n_mode": "auto",
+    "screening_sample_size": {
+      "schema": "screening_sample_size_policy/v1",
+      "description": "screening_smoke_n is advisory only when evidence is missing. In auto mode the loop computes the certified range per cycle (screening_sample_size/v1): exact sign-test decidability floor at power_gate.alpha (bound.screening_n.decidability_lower.v1), budget ceiling from the arm wall (bound.screening_n.budget_upper.v1), and the smoke-suite volume ceiling. Feasible range -> climb at n_min. Infeasible suite_volume -> generate and persist smoke records (must_generate), never screen at the undecidable fallback n. Infeasible wall_budget -> park and recalibrate decode/steps.",
+      "default_decode_floor_seconds": 2,
+      "max_candidate_n": 64
+    },
+    "latency_probe": {
+      "schema": "latency_probe_policy/v1",
+      "description": "Per-arm latency pre-check (screening only): a probe eval of probe_records records runs before the full eval under a -latprobe run id. The full eval is skipped with a typed latency_preflight verdict (measurement incomplete, never a model verdict) when the probe projects past the remaining eval wall (probe_wall x planned_n, planned_n = resolved screening n); a probe timeout stops the arm at one record instead of n. Probe metrics never merge into arm metrics.",
+      "enabled": true,
+      "probe_records": 1
+    },
+    "promotion_suite_n": 24,
+    "warm_start": {
+      "enabled": true,
+      "source": "climb_champion",
+      "equal_extra_steps": true,
+      "max_cumulative_epochs": 50
+    },
+    "paired_test": {
+      "kind": "wilcoxon_signed_rank",
+      "min_nontied_pairs": 5,
+      "alpha": "1/20"
+    },
+    "multi_arm": {
+      "max_arms_per_cycle": 6,
+      "shared_control": true,
+      "selection_rule": "best_by_primary_then_smallest"
+    },
     "max_consecutive_frozen_replays": 1,
     "screening_suites": [
       "smoke"
@@ -57,7 +79,8 @@
       "p95_margin": 0.15,
       "min_train_floor_seconds": 20,
       "eval_overhead_seconds": 8,
-      "screening_thrash_steps": 40
+      "screening_thrash_steps": "fit_to_train_floor",
+      "screening_thrash_steps_max": 400
     },
     "thrash_regimes": {
       "schema": "thrash_regimes_policy/v1",

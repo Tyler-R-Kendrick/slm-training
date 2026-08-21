@@ -137,16 +137,22 @@ def decide_screening_regime(
     *,
     climb_baseline_knobs: Mapping[str, Any] | None,
     compiler_ms_timeout: bool,
+    climb_champion_available: bool = False,
 ) -> ThrashRegimeDecision:
     """Decide isolate vs climb vs timeout residual routing for screening thrash."""
 
-    has_climb = bool(climb_baseline_knobs)
+    has_climb = bool(climb_baseline_knobs) or bool(climb_champion_available)
+    climb_payload = (
+        dict(climb_baseline_knobs)
+        if isinstance(climb_baseline_knobs, Mapping)
+        else ({} if climb_champion_available else None)
+    )
     base = REGIME_CLIMB if has_climb else REGIME_ISOLATE
     if compiler_ms_timeout:
         return ThrashRegimeDecision(
             regime=REGIME_TIMEOUT_DECODE_RESIDUAL,
             base_regime=base,
-            climb_baseline=dict(climb_baseline_knobs) if has_climb else None,
+            climb_baseline=climb_payload if has_climb else None,
             timeout_residual=True,
             reason=(
                 "prior_incomplete_compiler_ms_timeout;"
@@ -154,12 +160,17 @@ def decide_screening_regime(
             ),
         )
     if has_climb:
+        reason = (
+            "sticky_champion_baseline_available"
+            if climb_baseline_knobs
+            else "climb_champion_checkpoint_available"
+        )
         return ThrashRegimeDecision(
             regime=REGIME_CLIMB,
             base_regime=REGIME_CLIMB,
-            climb_baseline=dict(climb_baseline_knobs),
+            climb_baseline=climb_payload,
             timeout_residual=False,
-            reason="sticky_champion_baseline_available",
+            reason=reason,
         )
     return ThrashRegimeDecision(
         regime=REGIME_ISOLATE,

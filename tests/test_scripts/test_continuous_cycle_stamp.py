@@ -55,6 +55,9 @@ def test_cycle_record_carries_eval_stamp() -> None:
         delivery=_delivery(),
     )
     assert payload["schema"] == "continuous_cycle_results/v1"
+    hill = payload.get("hillclimb")
+    assert isinstance(hill, dict)
+    assert "went_well" in hill and "went_wrong" in hill and "speculate" in hill
     stamp = payload.get("version_stamp")
     assert isinstance(stamp, dict), "cycle record must carry a version_stamp"
     assert stamp.get("stamp_schema")

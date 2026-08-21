@@ -1,0 +1,89 @@
+{
+  "version": "e938_role_safe_all_targets_smoke6_v1",
+  "kind": "eval",
+  "source": "fixture",
+  "suites": {
+    "smoke": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/suites/smoke/records.jsonl",
+    "held_out": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/suites/held_out/records.jsonl",
+    "adversarial": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/suites/adversarial/records.jsonl",
+    "ood": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/suites/ood/records.jsonl",
+    "rico_held": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/suites/rico_held/records.jsonl"
+  },
+  "stats": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/stats.json",
+  "ids": [
+    "smoke_hero_01",
+    "smoke_button_01",
+    "smoke_callout_01",
+    "smoke_tabs_01",
+    "smoke_form_01",
+    "smoke_switch_01",
+    "held_out_form_01",
+    "held_out_dual_card_01",
+    "held_out_input_01",
+    "held_out_tabs_01",
+    "held_out_settings_01",
+    "adv_empty_prompt_01",
+    "adv_dual_card_01",
+    "adv_deep_nest_01",
+    "adv_many_buttons_01",
+    "ood_dashboard_01",
+    "ood_gallery_01",
+    "ood_modal_01",
+    "ood_auth_01"
+  ],
+  "suite_counts": {
+    "smoke": 6,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 0
+  },
+  "content_fingerprint": "c4a80986fc8ece106f1c5accc6980d18db8f68c0b8468bddf07e3257264917d1",
+  "train_manifest": "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2/manifest.json",
+  "built_at": "2026-08-20T18:46:23.926927+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f25d8c14a5e0427cc47e642225d75c4783c171bb",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v7"
+    },
+    "stamped_at": "2026-08-20T18:46:23.966481+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e938_role_safe_all_targets_smoke6_v1",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "stats.json",
+      "sha256": "959e72a8d911a045295a0469c9a45628804781200f348497fd92fc3206a60474",
+      "size": 1384
+    },
+    {
+      "path": "suites/adversarial/records.jsonl",
+      "sha256": "8d7543071f3f78493c570fab1d288b9bd8f4f3f97f993a4983e5a20e3e512ebc",
+      "size": 17942
+    },
+    {
+      "path": "suites/held_out/records.jsonl",
+      "sha256": "a49736da572ae4cb1414fa37f183fe8b07593d3e8273c6550b843b911756f5e9",
+      "size": 22673
+    },
+    {
+      "path": "suites/ood/records.jsonl",
+      "sha256": "2ae106e32879607419b8839d7bd60066f1b2566c5cf4ce13b4111a0e9f0e3cfe",
+      "size": 18164
+    },
+    {
+      "path": "suites/rico_held/records.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "suites/smoke/records.jsonl",
+      "sha256": "6535de61bea78a1c9616ba402d795ac918e660b4a4c47b8773d0660f79c95e60",
+      "size": 26753
+    }
+  ]
+}

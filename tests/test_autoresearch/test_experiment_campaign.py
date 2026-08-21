@@ -53,6 +53,7 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
             },
         ],
         "seeds": [7, 11],
+        "selection_rule": "best_by_primary_then_smallest",
         "budget": {
             "max_experiments": 2,
             "max_gpu_hours": 0,
@@ -688,3 +689,48 @@ def test_ship_gate_claim_requires_ship_gates_to_pass(tmp_path: Path) -> None:
 
     failures = validate_result_claim(manifest, result, artifact_root=tmp_path)
     assert "ship_gates_not_passed" in failures
+
+
+def test_multi_candidate_manifest_requires_locked_selection_rule() -> None:
+    extra = {
+        "arm_id": "candidate-b",
+        "role": "candidate",
+        "config_sha256": "e" * 64,
+    }
+    payload = _manifest_payload(
+        claim_class="diagnostic",
+        locked_eval_manifest_sha256=None,
+        artifact_requirements=[{"kind": "version_stamp", "minimum_count": 1}],
+        mechanism_off_arm_ids=[],
+        executable_kill_criteria=[],
+        seeds=[7],
+    )
+    payload["arms"] = list(payload["arms"]) + [extra]
+    payload.pop("selection_rule", None)
+    with pytest.raises(ValidationError, match="selection_rule"):
+        ExperimentCampaignV1.model_validate(payload)
+    payload["selection_rule"] = "best_by_primary_then_smallest"
+    locked = ExperimentCampaignV1.model_validate(payload)
+    assert locked.selection_rule == "best_by_primary_then_smallest"
+    assert sum(arm.role == "candidate" for arm in locked.arms) >= 2
+
+
+def test_best_by_primary_then_smallest_is_deterministic() -> None:
+    from slm_training.autoresearch.experiment_campaign import (
+        select_best_by_primary_then_smallest,
+    )
+
+    scored = (
+        ("wide", 0.40, 2000),
+        ("small", 0.40, 1000),
+        ("mid", 0.39, 500),
+    )
+    assert (
+        select_best_by_primary_then_smallest(scored, direction="increase") == "small"
+    )
+    decrease = (
+        ("wide", 1.10, 2000),
+        ("tiny", 1.10, 800),
+        ("worse", 1.20, 100),
+    )
+    assert select_best_by_primary_then_smallest(decrease, direction="decrease") == "tiny"

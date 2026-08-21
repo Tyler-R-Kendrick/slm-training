@@ -29,3 +29,5 @@ import LeverProofLean.ProofTraceRefinement
 import LeverProofLean.VerifiedEncoding
 -- Training-sample adequacy bounds (data-volume climb signal)
 import LeverProofLean.SampleAdequacy
+-- Screening sample-size range (eval-side n for the climb loop)
+import LeverProofLean.ScreeningSampleSize

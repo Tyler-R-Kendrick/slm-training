@@ -150,4 +150,7 @@ recursive part.
 
 Eval-side sample floors remain owned by `autoresearch/power.py`,
 `default_min_suite_n`, and the `rico_held` floor; the ladder consumes that
-machinery rather than duplicating it.
+machinery rather than duplicating it. The eval-side *range* for the climb
+loop's screening n (exact decidability floor + budget/suite ceilings) is now
+computed by the same bound pattern in
+[screening-sample-size-bounds.md](screening-sample-size-bounds.md).

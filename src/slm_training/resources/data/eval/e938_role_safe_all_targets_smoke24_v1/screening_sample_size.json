@@ -1,0 +1,153 @@
+{
+  "eval_version": "e938_role_safe_all_targets_smoke24_v1",
+  "schema_version": "screening_sample_size/v1",
+  "smoke_n": 24,
+  "report": {
+    "schema_version": "screening_sample_size/v1",
+    "alpha": "1/20",
+    "max_candidate_n": 64,
+    "decidability_floor_n": 6,
+    "power_floor_n": 24,
+    "n_min": 24,
+    "budget_ceiling_n": 21,
+    "suite_ceiling_n": 24,
+    "n_max": 21,
+    "chosen_n": null,
+    "binding_constraints": [
+      "wall_budget"
+    ],
+    "verdict": "infeasible_range_empty",
+    "bounds": [
+      {
+        "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+        "env": {
+          "alpha_num": 1,
+          "alpha_den": 20,
+          "n_candidate": 6,
+          "two_pow_n_candidate": 64
+        },
+        "value": "64",
+        "authority": "theorem_backed_exact",
+        "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+      },
+      {
+        "bound_ast_id": "power.required_n_for_effect",
+        "env": {
+          "minimum_effect": "1244534672758177/12500000000000000",
+          "observed_sd": "1741/10000",
+          "alpha": "1/20",
+          "paired": true
+        },
+        "value": "24",
+        "authority": "assumption_backed",
+        "assumption": "normal-approximation z-power over paired differences; budgeting approximation declared by autoresearch.power, not proved arithmetic"
+      },
+      {
+        "bound_ast_id": "bound.screening_n.budget_upper.v1",
+        "env": {
+          "usable_wall_seconds": 42,
+          "min_decode_seconds": 2
+        },
+        "value": "21",
+        "authority": "theorem_backed_exact",
+        "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+      }
+    ],
+    "findings": [
+      {
+        "code": "screening_n_range_empty",
+        "severity": "experiment_recommendation",
+        "authority": "climb_signal_not_gate",
+        "evidence": {
+          "n_min": 24,
+          "decidability_floor_n": 6,
+          "power_floor_n": 24,
+          "budget_ceiling_n": 21,
+          "suite_ceiling_n": 24,
+          "binding_constraints": [
+            "wall_budget"
+          ]
+        },
+        "suggestion": "the arm wall affords 21 records at the declared decode floor \u2014 cheaper per-record decode or a larger stage share, never a silent wall++"
+      }
+    ],
+    "must_generate": false,
+    "promotion_authority": false
+  },
+  "legacy_minimum_effect_0_01": {
+    "schema_version": "screening_sample_size/v1",
+    "alpha": "1/20",
+    "max_candidate_n": 64,
+    "decidability_floor_n": 6,
+    "power_floor_n": 2380,
+    "n_min": 2380,
+    "budget_ceiling_n": 21,
+    "suite_ceiling_n": 24,
+    "n_max": 21,
+    "chosen_n": null,
+    "binding_constraints": [
+      "wall_budget",
+      "suite_volume"
+    ],
+    "verdict": "infeasible_range_empty",
+    "bounds": [
+      {
+        "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+        "env": {
+          "alpha_num": 1,
+          "alpha_den": 20,
+          "n_candidate": 6,
+          "two_pow_n_candidate": 64
+        },
+        "value": "64",
+        "authority": "theorem_backed_exact",
+        "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+      },
+      {
+        "bound_ast_id": "power.required_n_for_effect",
+        "env": {
+          "minimum_effect": "1/100",
+          "observed_sd": "1741/10000",
+          "alpha": "1/20",
+          "paired": true
+        },
+        "value": "2380",
+        "authority": "assumption_backed",
+        "assumption": "normal-approximation z-power over paired differences; budgeting approximation declared by autoresearch.power, not proved arithmetic"
+      },
+      {
+        "bound_ast_id": "bound.screening_n.budget_upper.v1",
+        "env": {
+          "usable_wall_seconds": 42,
+          "min_decode_seconds": 2
+        },
+        "value": "21",
+        "authority": "theorem_backed_exact",
+        "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+      }
+    ],
+    "findings": [
+      {
+        "code": "screening_n_range_empty",
+        "severity": "experiment_recommendation",
+        "authority": "climb_signal_not_gate",
+        "evidence": {
+          "n_min": 2380,
+          "decidability_floor_n": 6,
+          "power_floor_n": 2380,
+          "budget_ceiling_n": 21,
+          "suite_ceiling_n": 24,
+          "binding_constraints": [
+            "wall_budget",
+            "suite_volume"
+          ]
+        },
+        "suggestion": "generate and persist 2356 smoke records (floor is 2380); do not screen at 24; the arm wall affords 21 records at the declared decode floor \u2014 cheaper per-record decode or a larger stage share, never a silent wall++"
+      }
+    ],
+    "must_generate": true,
+    "promotion_authority": false
+  },
+  "measured_paired_sd": 0.1741,
+  "honest_minimum_effect": 0.09956277382065416
+}

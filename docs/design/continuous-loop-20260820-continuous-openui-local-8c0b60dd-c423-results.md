@@ -1,0 +1,15 @@
+# Continuous cycle `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c423`
+
+- loop_id: `continuous-openui-local`
+- cycle_index: `423`
+- role/intent: `screening` / `screening`
+- primary_metric: `smoke.structural_similarity`
+- positive: **False**
+- stack_layer: **False**
+- measurement_complete: `True`
+- evidence_class: `fixture`
+- reasons: fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c423-current-rung-data-heal, fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c423-control, primary_metric_win:smoke.structural_similarity:0.16583333333333333->0.1925:improvement=0.026666666666666672, fixture_insufficient_n_alone
+- control_metrics: `{'latency_ms_p50': 5581.93, 'parse_rate': 1.0, 'meaningful_program_rate': 0.0, 'structural_similarity': 0.16583333333333333, 'binder_reference_f1': 0.6333333333333333, 'smoke.latency_ms_p50': 5581.93, 'smoke.parse_rate': 1.0, 'smoke.meaningful_program_rate': 0.0, 'smoke.structural_similarity': 0.16583333333333333, 'smoke.binder_reference_f1': 0.6333333333333333}`
+- candidate_metrics: `{'latency_ms_p50': 6309.51, 'parse_rate': 1.0, 'meaningful_program_rate': 0.0, 'structural_similarity': 0.1925, 'binder_reference_f1': 0.9523809523809524, 'smoke.latency_ms_p50': 6309.51, 'smoke.parse_rate': 1.0, 'smoke.meaningful_program_rate': 0.0, 'smoke.structural_similarity': 0.1925, 'smoke.binder_reference_f1': 0.9523809523809524}`
+
+Auto-documented by the continuous driver self-heal closeout. Fixture screening only — not a ship claim.

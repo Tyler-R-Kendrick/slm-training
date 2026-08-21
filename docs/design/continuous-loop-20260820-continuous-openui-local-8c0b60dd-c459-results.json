@@ -1,0 +1,134 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c459",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 27228.21,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 27228.21,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.16419999999999998,
+    "structural_similarity": 0.16419999999999998
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.6333333333333333,
+    "latency_ms_p50": 3211.37,
+    "meaningful_program_rate": 0.0,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.6333333333333333,
+    "smoke.latency_ms_p50": 3211.37,
+    "smoke.meaningful_program_rate": 0.0,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.057499999999999996,
+    "structural_similarity": 0.057499999999999996
+  },
+  "cycle_index": 459,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260820-continuous-openui-local-8c0b60dd-c459-control": 0,
+      "c20260820-continuous-openui-local-8c0b60dd-c459-current-rung-data-heal": 0
+    },
+    "arm_order": [
+      "c20260820-continuous-openui-local-8c0b60dd-c459-control",
+      "c20260820-continuous-openui-local-8c0b60dd-c459-current-rung-data-heal"
+    ],
+    "arm_seed": 100458,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1608962,
+    "campaign_id": "continuous-loop-20260820-continuous-openui-local-8c0b60dd-c459",
+    "candidate_id": "c20260820-continuous-openui-local-8c0b60dd-c459-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 27228.21,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.6333333333333333,
+      "smoke.latency_ms_p50": 27228.21,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.16419999999999998,
+      "structural_similarity": 0.16419999999999998
+    },
+    "candidate_trainable_params": 1599618,
+    "climb_policy_sha256": "b1a34d8527ae8b78930cdd5b6592d1ae1eebf2b018d2192e30aa46971566ee4c",
+    "control_id": "c20260820-continuous-openui-local-8c0b60dd-c459-control",
+    "control_metrics": {
+      "binder_reference_f1": 0.6333333333333333,
+      "latency_ms_p50": 3211.37,
+      "meaningful_program_rate": 0.0,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.6333333333333333,
+      "smoke.latency_ms_p50": 3211.37,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.057499999999999996,
+      "structural_similarity": 0.057499999999999996
+    },
+    "cycle_index": 459,
+    "cycle_intent": "retry_measurement",
+    "cycle_role": "screening",
+    "direction": "increase",
+    "finished_at": "2026-08-20T11:51:56Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": true,
+    "policy_sha256": "b1a34d8527ae8b78930cdd5b6592d1ae1eebf2b018d2192e30aa46971566ee4c",
+    "policy_version": "v9",
+    "positive": false,
+    "primary_metric": "smoke.structural_similarity",
+    "reasons": [
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c459-control",
+      "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c459-current-rung-data-heal",
+      "quality_win_rejected_latency_budget:mpr=0.0->0.3333333333333333 lat=3211.37->27228.21",
+      "primary_metric_win:smoke.structural_similarity:0.057499999999999996->0.16419999999999998:improvement=0.10669999999999999",
+      "fixture_insufficient_n_alone"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": true,
+  "positive": false,
+  "primary_metric": "smoke.structural_similarity",
+  "reasons": [
+    "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c459-control",
+    "fixture_insufficient_n:c20260820-continuous-openui-local-8c0b60dd-c459-current-rung-data-heal",
+    "quality_win_rejected_latency_budget:mpr=0.0->0.3333333333333333 lat=3211.37->27228.21",
+    "primary_metric_win:smoke.structural_similarity:0.057499999999999996->0.16419999999999998:improvement=0.10669999999999999",
+    "fixture_insufficient_n_alone"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "33348b7199c7c04ca37e4d84ac42a6433e444d00",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-20T11:51:56.494930+00:00"
+  }
+}

@@ -9,7 +9,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import dataclass, field
+import shutil
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Mapping, Sequence
 
@@ -51,6 +52,29 @@ __all__ = [
     "improvement_signed",
     "record_null_from_knob_signature_json",
     "HillClimbError",
+    "PARSE_RATE_PERFECT",
+    "invalid_grammar_reasons",
+    "parse_rate_illegal",
+    "HILLCLIMB_STAGNATION_CADENCE",
+    "hillclimb_iteration_report",
+    "assess_hillclimb_speculation",
+    "stagnation_review",
+    "CLIMB_CHAMPION_SCHEMA",
+    "CHAMPION_EPOCHS_EXHAUSTED",
+    "DEFAULT_MAX_CUMULATIVE_EPOCHS",
+    "ClimbChampionSidecar",
+    "climb_champion_dir",
+    "climb_champion_checkpoint_path",
+    "climb_champion_sidecar_path",
+    "dump_climb_champion",
+    "load_climb_champion",
+    "attach_initialize_from",
+    "assert_warm_start_launch",
+    "assert_champion_eval_disjoint",
+    "champion_epoch_park_reason",
+    "write_climb_champion",
+    "maybe_advance_climb_champion",
+    "seed_climb_champion",
 ]
 
 CLIMB_CLAIM_CLASSES: frozenset[str] = frozenset(
@@ -60,6 +84,35 @@ NON_CLIMB_CLAIM_CLASSES: frozenset[str] = frozenset(
     {"wiring", "fixture", "diagnostic", "screening"}
 )
 MIN_CLIMB_SEEDS = 2
+# I6: completed documents must parse. Not a lever; never < 1 in autotrain.
+PARSE_RATE_PERFECT = 1.0
+
+
+def parse_rate_illegal(value: Any) -> bool:
+    """True when a measured parse_rate is below perfect (unmeasured is not illegal)."""
+    if value is None:
+        return False
+    try:
+        return float(value) + 1e-12 < PARSE_RATE_PERFECT
+    except (TypeError, ValueError):
+        return True
+
+
+def invalid_grammar_reasons(
+    metrics: Mapping[str, Any] | None, *, arm: str
+) -> list[str]:
+    """I6: any measured parse_rate < 1 on completed docs is invalid grammar."""
+    if not isinstance(metrics, Mapping):
+        return []
+    reasons: list[str] = []
+    for key, raw in metrics.items():
+        if str(key).split(".")[-1] != "parse_rate":
+            continue
+        if parse_rate_illegal(raw):
+            reasons.append(
+                f"invalid_grammar:{arm}:{key}={raw}<{PARSE_RATE_PERFECT:g}"
+            )
+    return reasons
 
 _SYNTHESIS_ACTION_NAMES = (
     "synthesis_feedback_actions.json",
@@ -67,8 +120,248 @@ _SYNTHESIS_ACTION_NAMES = (
 )
 
 
+CLIMB_CHAMPION_SCHEMA = "climb_champion/v1"
+CHAMPION_EPOCHS_EXHAUSTED = "champion_epochs_exhausted"
+DEFAULT_MAX_CUMULATIVE_EPOCHS = 50
+
+
 class HillClimbError(ValueError):
     """A hill-climb governance gate refused the requested action."""
+
+
+@dataclass
+class ClimbChampionSidecar:
+    """Lineage for ``loops/<id>/champion/last.pt``."""
+
+    source_campaign: str
+    cumulative_steps: int
+    train_data_manifest_sha: str
+    cumulative_epochs: float
+    trainable_params: int | None = None
+    knobs: dict[str, Any] = field(default_factory=dict)
+    schema: str = CLIMB_CHAMPION_SCHEMA
+
+    def as_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["schema"] = self.schema
+        return payload
+
+
+def climb_champion_dir(loop_dir: Path) -> Path:
+    return Path(loop_dir) / "champion"
+
+
+def climb_champion_checkpoint_path(loop_dir: Path) -> Path:
+    return climb_champion_dir(loop_dir) / "last.pt"
+
+
+def climb_champion_sidecar_path(loop_dir: Path) -> Path:
+    return climb_champion_dir(loop_dir) / "last.json"
+
+
+def dump_climb_champion(sidecar: ClimbChampionSidecar, loop_dir: Path) -> Path:
+    path = climb_champion_sidecar_path(loop_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(sidecar.as_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def load_climb_champion(loop_dir: Path) -> ClimbChampionSidecar | None:
+    path = climb_champion_sidecar_path(loop_dir)
+    ckpt = climb_champion_checkpoint_path(loop_dir)
+    if not path.is_file() or not ckpt.is_file():
+        return None
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise HillClimbError("champion_sidecar:invalid")
+    return ClimbChampionSidecar(
+        source_campaign=str(raw.get("source_campaign") or ""),
+        cumulative_steps=int(raw.get("cumulative_steps") or 0),
+        train_data_manifest_sha=str(raw.get("train_data_manifest_sha") or ""),
+        cumulative_epochs=float(raw.get("cumulative_epochs") or 0.0),
+        trainable_params=(
+            int(raw["trainable_params"])
+            if raw.get("trainable_params") is not None
+            else None
+        ),
+        knobs=dict(raw.get("knobs") or {}),
+        schema=str(raw.get("schema") or CLIMB_CHAMPION_SCHEMA),
+    )
+
+
+def assert_warm_start_launch(
+    control_knobs: Mapping[str, Any],
+    candidate_knobs: Mapping[str, Any],
+    *,
+    trainable_params: tuple[int | None, int | None] | None = None,
+) -> None:
+    """Identical K, data, checkpoint, and params for paired warm-start arms."""
+
+    if control_knobs.get("steps") != candidate_knobs.get("steps"):
+        raise HillClimbError("warm_start:unequal_extra_steps")
+    if control_knobs.get("initialize_from") != candidate_knobs.get("initialize_from"):
+        raise HillClimbError("warm_start:unequal_checkpoint")
+    if control_knobs.get("train_version") != candidate_knobs.get("train_version"):
+        raise HillClimbError("warm_start:unequal_train_data")
+    if control_knobs.get("seed") != candidate_knobs.get("seed"):
+        raise HillClimbError("warm_start:unequal_seed")
+    from slm_training.levers import require_size_matched_arms
+
+    require_size_matched_arms(
+        control_knobs, candidate_knobs, context="warm_start"
+    )
+    if trainable_params is not None:
+        left, right = trainable_params
+        if left is not None and right is not None and int(left) != int(right):
+            raise HillClimbError("warm_start:unequal_params")
+
+
+def attach_initialize_from(
+    control_knobs: Mapping[str, Any],
+    candidate_knobs: Mapping[str, Any],
+    checkpoint: Path | str | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    control = dict(control_knobs)
+    candidate = dict(candidate_knobs)
+    if checkpoint is not None:
+        path = str(checkpoint)
+        control["initialize_from"] = path
+        candidate["initialize_from"] = path
+    assert_warm_start_launch(control, candidate)
+    return control, candidate
+
+
+def assert_champion_eval_disjoint(
+    *,
+    train_data_manifest_sha: str | None,
+    eval_data_manifest_sha: str | None,
+) -> None:
+    """Fail closed: missing or colliding train/eval identities are leakage."""
+
+    train = str(train_data_manifest_sha or "").strip()
+    eval_sha = str(eval_data_manifest_sha or "").strip()
+    if not train:
+        raise HillClimbError("champion_leakage:missing_train_manifest")
+    if not eval_sha:
+        raise HillClimbError("champion_leakage:missing_eval_manifest")
+    if train == eval_sha:
+        raise HillClimbError("champion_leakage:train_eval_manifest_collision")
+
+
+def champion_epoch_park_reason(
+    sidecar: ClimbChampionSidecar | None,
+    *,
+    max_cumulative_epochs: float = DEFAULT_MAX_CUMULATIVE_EPOCHS,
+) -> str | None:
+    if sidecar is None:
+        return None
+    if float(sidecar.cumulative_epochs) > float(max_cumulative_epochs):
+        return CHAMPION_EPOCHS_EXHAUSTED
+    return None
+
+
+def write_climb_champion(
+    loop_dir: Path,
+    *,
+    checkpoint: Path,
+    sidecar: ClimbChampionSidecar,
+) -> ClimbChampionSidecar:
+    dest = climb_champion_checkpoint_path(loop_dir)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    src = Path(checkpoint)
+    if not src.is_file():
+        raise HillClimbError(f"champion_checkpoint_missing:{src}")
+    if src.resolve() != dest.resolve():
+        shutil.copy2(src, dest)
+    dump_climb_champion(sidecar, loop_dir)
+    return sidecar
+
+
+def maybe_advance_climb_champion(
+    loop_dir: Path,
+    *,
+    confirmed: bool,
+    checkpoint: Path | None,
+    source_campaign: str,
+    extra_steps: int,
+    train_data_manifest_sha: str,
+    record_count: int,
+    knobs: Mapping[str, Any] | None = None,
+    trainable_params: int | None = None,
+) -> ClimbChampionSidecar | None:
+    """Replace persistent champion only after a confirmed win."""
+
+    current = load_climb_champion(loop_dir)
+    if not confirmed or checkpoint is None:
+        return current
+    n = max(int(record_count) or 1, 1)
+    prior_steps = current.cumulative_steps if current else 0
+    prior_epochs = current.cumulative_epochs if current else 0.0
+    sidecar = ClimbChampionSidecar(
+        source_campaign=str(source_campaign),
+        cumulative_steps=prior_steps + int(extra_steps),
+        train_data_manifest_sha=str(train_data_manifest_sha),
+        cumulative_epochs=prior_epochs + (float(extra_steps) / n),
+        trainable_params=trainable_params,
+        knobs=dict(knobs or {}),
+    )
+    return write_climb_champion(loop_dir, checkpoint=checkpoint, sidecar=sidecar)
+
+
+def seed_climb_champion(
+    loop_dir: Path,
+    *,
+    confirmed_artifacts: Sequence[Mapping[str, Any]] | None = None,
+    baseline_checkpoint: Path | None = None,
+    source_campaign: str = "",
+    extra_steps: int = 0,
+    train_data_manifest_sha: str = "",
+    record_count: int = 1,
+    knobs: Mapping[str, Any] | None = None,
+    trainable_params: int | None = None,
+) -> ClimbChampionSidecar | None:
+    """Seed from best confirmed artifact, else one baseline train checkpoint."""
+
+    existing = load_climb_champion(loop_dir)
+    if existing is not None:
+        return existing
+    chosen: Path | None = None
+    campaign = source_campaign
+    artifact_knobs = dict(knobs or {})
+    for row in reversed(list(confirmed_artifacts or ())):
+        if str(row.get("status") or "") not in {
+            "confirmed",
+            "climb_accepted",
+            "promoted",
+        }:
+            continue
+        raw = row.get("checkpoint") or row.get("checkpoint_path")
+        if not raw:
+            continue
+        path = Path(str(raw))
+        if path.is_file():
+            chosen = path
+            campaign = str(row.get("campaign_id") or campaign)
+            if isinstance(row.get("knobs"), dict):
+                artifact_knobs = dict(row["knobs"])
+            break
+    if chosen is None and baseline_checkpoint is not None:
+        if Path(baseline_checkpoint).is_file():
+            chosen = Path(baseline_checkpoint)
+    if chosen is None:
+        return None
+    sidecar = ClimbChampionSidecar(
+        source_campaign=campaign,
+        cumulative_steps=int(extra_steps),
+        train_data_manifest_sha=str(train_data_manifest_sha),
+        cumulative_epochs=float(extra_steps) / max(int(record_count) or 1, 1),
+        trainable_params=trainable_params,
+        knobs=artifact_knobs,
+    )
+    return write_climb_champion(loop_dir, checkpoint=chosen, sidecar=sidecar)
 
 
 @dataclass(frozen=True)
@@ -931,3 +1224,164 @@ def record_null_from_knob_signature_json(
         reason=reason,
         note=note,
     )
+
+
+# --- per-cycle hill-climb reports + stagnation review (continuous loop) ---
+
+HILLCLIMB_STAGNATION_CADENCE = 10
+
+# Speculations that would weaken ship gates, Lean floors, or decode invariants.
+_UNVIABLE_SPECULATION_IDS = frozenset(
+    {
+        "weaken_ship_gates",
+        "screen_below_lean_floor",
+        "allow_unconstrained_fallback",
+        "grow_capacity_to_green_gate",
+        "allow_parse_rate_below_perfect",
+    }
+)
+
+_VIABLE_AUTO_APPLY = {
+    "retire_knob_do_not_confirm": "skip_identical_quality_confirms",
+    "keep_ship_gates_do_not_enqueue_confirm": "skip_volume_gate_confirms",
+    "fit_decode_timeout_to_n_times_p50": "refit_screening_decode",
+    "execute_i10_heal_then_process_arm_not_rematch": "prefer_process_arm",
+    "must_generate_screening_n": "generate_lean_floor_eval",
+    "replay_frozen_or_fit_decode_to_wall": "refit_screening_decode",
+}
+
+
+def hillclimb_iteration_report(
+    *,
+    campaign_id: str,
+    cycle_index: int | None,
+    positive: bool,
+    measurement_complete: bool | None,
+    reasons: Sequence[str],
+    control_metrics: Mapping[str, Any] | None = None,
+    candidate_metrics: Mapping[str, Any] | None = None,
+    primary_metric: str = "",
+) -> dict[str, Any]:
+    """Compact well / wrong / speculate payload for one cycle."""
+    well: list[str] = []
+    wrong: list[str] = []
+    speculate: list[str] = []
+    if measurement_complete:
+        well.append("measurement_complete")
+    elif measurement_complete is False:
+        wrong.append("measurement_incomplete")
+        speculate.append("replay_frozen_or_fit_decode_to_wall")
+    if positive:
+        well.append("quality_aware_positive")
+    else:
+        wrong.append("non_positive")
+        speculate.append("keep_rotating_size_matched_arms")
+    joined = " ".join(str(r) for r in reasons)
+    for reason in reasons:
+        text = str(reason)
+        if text.startswith("mechanism_no_effect"):
+            wrong.append(text)
+            speculate.append("retire_knob_do_not_confirm")
+        if "fixture_insufficient_n_alone" in text or "fixture_volume_gate_ship_only" in text:
+            wrong.append(text)
+            speculate.append("keep_ship_gates_do_not_enqueue_confirm")
+        if "must_generate" in text or "screening_n_infeasible" in text:
+            wrong.append(text)
+            speculate.append("must_generate_screening_n")
+        if "decode" in text.lower() or "timeout" in text.lower() or "wall_" in text:
+            speculate.append("fit_decode_timeout_to_n_times_p50")
+        if "rebuild_data" in text or "heal_resume" in text or "park" in text.lower():
+            speculate.append("execute_i10_heal_then_process_arm_not_rematch")
+    if "weaken" in joined.lower() and "gate" in joined.lower():
+        speculate.append("weaken_ship_gates")
+    if any(str(r).startswith("invalid_grammar:") for r in reasons):
+        wrong.append("invalid_grammar")
+        speculate.append("reject_illegal_completions")
+        speculate.append("allow_parse_rate_below_perfect")
+    # Dedupe while preserving order.
+    def _uniq(items: list[str]) -> list[str]:
+        seen: set[str] = set()
+        out: list[str] = []
+        for item in items:
+            if item in seen:
+                continue
+            seen.add(item)
+            out.append(item)
+        return out
+
+    deltas: dict[str, Any] = {}
+    if isinstance(control_metrics, Mapping) and isinstance(candidate_metrics, Mapping):
+        keys = set(control_metrics) | set(candidate_metrics)
+        for key in sorted(keys):
+            c0, c1 = control_metrics.get(key), candidate_metrics.get(key)
+            if isinstance(c0, (int, float)) and isinstance(c1, (int, float)):
+                deltas[str(key)] = float(c1) - float(c0)
+    return {
+        "schema": "hillclimb_iteration/v1",
+        "campaign_id": campaign_id,
+        "cycle_index": cycle_index,
+        "positive": bool(positive),
+        "progress": bool(positive),
+        "measurement_complete": measurement_complete,
+        "primary_metric": primary_metric,
+        "deltas": deltas,
+        "went_well": _uniq(well),
+        "went_wrong": _uniq(wrong),
+        "speculate": _uniq(speculate),
+        "reasons": [str(r) for r in reasons],
+    }
+
+
+def assess_hillclimb_speculation(speculation_id: str) -> dict[str, Any]:
+    """Viability of a hill-climb speculation. Weakening gates is never viable."""
+    sid = str(speculation_id)
+    if sid in _UNVIABLE_SPECULATION_IDS:
+        return {
+            "id": sid,
+            "viable": False,
+            "auto_apply": None,
+            "reason": "rejects_invariant_or_ship_gate_weakening",
+        }
+    apply_kind = _VIABLE_AUTO_APPLY.get(sid)
+    return {
+        "id": sid,
+        "viable": True,
+        "auto_apply": apply_kind,
+        "reason": "matches_recorded_fail_closed_repair",
+    }
+
+
+def stagnation_review(
+    iterations: Sequence[Mapping[str, Any]],
+    *,
+    cadence: int = HILLCLIMB_STAGNATION_CADENCE,
+) -> dict[str, Any] | None:
+    """If the last ``cadence`` iterations made no progress, emit a review plan."""
+    rows = [dict(item) for item in iterations if isinstance(item, Mapping)]
+    if len(rows) < cadence:
+        return None
+    tail = rows[-cadence:]
+    if any(bool(item.get("progress") or item.get("positive")) for item in tail):
+        return None
+    counts: dict[str, int] = {}
+    for item in tail:
+        for spec in item.get("speculate") or []:
+            counts[str(spec)] = counts.get(str(spec), 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    assessments = [assess_hillclimb_speculation(sid) for sid, _n in ranked]
+    viable = [a for a in assessments if a["viable"] and a.get("auto_apply")]
+    rejected = [a for a in assessments if not a["viable"]]
+    return {
+        "schema": "hillclimb_stagnation_review/v1",
+        "cadence": cadence,
+        "no_progress_streak": cadence,
+        "campaign_ids": [str(item.get("campaign_id") or "") for item in tail],
+        "speculation_counts": dict(ranked),
+        "viable_applies": [a["auto_apply"] for a in viable],
+        "rejected": rejected,
+        "assessments": assessments,
+        "plan": (
+            "Apply viable fail-closed repairs from the last "
+            f"{cadence} no-progress cycles; never weaken ship gates."
+        ),
+    }
