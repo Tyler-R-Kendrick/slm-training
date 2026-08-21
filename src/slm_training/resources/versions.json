@@ -5018,6 +5018,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after hill-climb recovery measured-results docs; campaign contract unchanged.",
+          "version": "v264"
+        },
+        {
+          "date": "2026-08-21",
           "note": "Hill-climb recovery: NLL screening primary, fitted steps, warm-start champion, paired Wilcoxon, k-arm screening, Serena/compose ops.",
           "version": "v264"
         },

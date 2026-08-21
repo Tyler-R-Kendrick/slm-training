@@ -256,6 +256,16 @@
       "n_obs": 1,
       "n_positive": 0
     },
+    "confirm-latprobe": {
+      "by_eval_key": {},
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 0,
+      "n_delta": 0,
+      "n_null": 0,
+      "n_obs": 4,
+      "n_positive": 0
+    },
     "constraint-graph": {
       "by_eval_key": {
         "unstamped": {
@@ -288,6 +298,22 @@
       "n_obs": 1,
       "n_positive": 0
     },
+    "current-rung-data-heal": {
+      "by_eval_key": {
+        "evals.scoring=v26|evals.meaningful_program=2.13.0|harness.model_build.eval=v101|gates.ship=openui_ship_gates_v6": {
+          "n": 75,
+          "sum": 2.6372166666666663,
+          "sumsq": 1.3219771130555558
+        }
+      },
+      "m2_delta": 1.2292449564296297,
+      "mean_delta": 0.03516288888888889,
+      "n_complete": 75,
+      "n_delta": 75,
+      "n_null": 75,
+      "n_obs": 92,
+      "n_positive": 0
+    },
     "edge-alignment": {
       "by_eval_key": {
         "unstamped": {
@@ -318,6 +344,22 @@
       "n_delta": 4,
       "n_null": 4,
       "n_obs": 4,
+      "n_positive": 0
+    },
+    "literal-margin": {
+      "by_eval_key": {
+        "evals.scoring=v26|evals.meaningful_program=2.13.0|harness.model_build.eval=v101|gates.ship=openui_ship_gates_v6": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        }
+      },
+      "m2_delta": 0.0,
+      "mean_delta": 0.0,
+      "n_complete": 1,
+      "n_delta": 1,
+      "n_null": 1,
+      "n_obs": 1,
       "n_positive": 0
     },
     "mixed-mask": {
@@ -370,18 +412,23 @@
     },
     "slot-augmentation": {
       "by_eval_key": {
+        "evals.scoring=v26|evals.meaningful_program=2.13.0|harness.model_build.eval=v101|gates.ship=openui_ship_gates_v6": {
+          "n": 1,
+          "sum": 0.0,
+          "sumsq": 0.0
+        },
         "unstamped": {
           "n": 2,
           "sum": 0.029333333333333378,
           "sumsq": 0.0008604444444444471
         }
       },
-      "m2_delta": 0.00043022222222222355,
-      "mean_delta": 0.014666666666666689,
-      "n_complete": 2,
-      "n_delta": 2,
-      "n_null": 1,
-      "n_obs": 2,
+      "m2_delta": 0.0005736296296296313,
+      "mean_delta": 0.009777777777777793,
+      "n_complete": 3,
+      "n_delta": 3,
+      "n_null": 2,
+      "n_obs": 3,
       "n_positive": 1
     },
     "slot-component-fidelity-coupling": {
@@ -440,8 +487,8 @@
     "gates.ship"
   ],
   "file_counts": {
-    "observations": 284,
-    "scanned": 2218,
+    "observations": 382,
+    "scanned": 2331,
     "unreadable": 0
   },
   "generated_from": "docs/design",
