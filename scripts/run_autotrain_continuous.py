@@ -3918,7 +3918,10 @@ _LOOP_OWNED_GENERATED_PATHS = frozenset(
         "src/slm_training/resources/evidence_store/local_index.jsonl",
     }
 )
-_LOOP_OWNED_GENERATED_SUFFIXES = ("/evidence_store/local_index.jsonl",)
+_LOOP_OWNED_GENERATED_SUFFIXES = (
+    "/evidence_store/local_index.jsonl",
+    "/screening_sample_size.json",
+)
 
 
 def _is_loop_owned_generated_path(rel: str) -> bool:

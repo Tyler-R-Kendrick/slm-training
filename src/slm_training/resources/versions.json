@@ -5018,6 +5018,11 @@
       "history": [
         {
           "date": "2026-08-21",
+          "note": "Treat screening_sample_size.json as loop-owned generated dirt so a timed-out n-persist commit cannot park the continuous supervisor.",
+          "version": "v266"
+        },
+        {
+          "date": "2026-08-21",
           "note": "Call _attach_screening_eval_nll after each screening arm so smoke.eval_nll is written, not only defined.",
           "version": "v265"
         },
@@ -6880,7 +6885,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v265"
+      "version": "v266"
     },
     "harness.autoresearch.formal": {
       "history": [
