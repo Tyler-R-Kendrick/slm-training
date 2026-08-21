@@ -1,0 +1,925 @@
+{
+  "schema_version": 2,
+  "version": "hillclimb_strict_v2",
+  "profile": "strict",
+  "built_at": "2026-08-21T19:38:21.146346+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "corruption_repair": {
+      "admitted": 50,
+      "rejected": 413,
+      "by_stage": {
+        "decontamination": 9,
+        "dedup": 299,
+        "exposure": 105
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 266,
+        "max_records_per_parent": 105,
+        "semantic_cosine": 33,
+        "ngram_overlap": 9
+      },
+      "candidates": 463,
+      "yield": 0.108
+    },
+    "edit_trajectory": {
+      "admitted": 79,
+      "rejected": 1287,
+      "by_stage": {
+        "decontamination": 5,
+        "dedup": 1033,
+        "exposure": 244,
+        "verification": 5
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 850,
+        "max_records_per_parent": 244,
+        "semantic_cosine": 172,
+        "fuzzy_minhash": 11,
+        "quarantine": 5,
+        "ngram_overlap": 5
+      },
+      "candidates": 1366,
+      "yield": 0.0578
+    },
+    "frontier_described": {
+      "admitted": 0,
+      "rejected": 3,
+      "by_stage": {
+        "exposure": 3
+      },
+      "by_reason": {
+        "max_records_per_parent": 3
+      },
+      "candidates": 3,
+      "yield": 0.0
+    },
+    "human_curated": {
+      "admitted": 30,
+      "rejected": 11,
+      "by_stage": {
+        "exposure": 11
+      },
+      "by_reason": {
+        "max_records_per_parent": 11
+      },
+      "candidates": 41,
+      "yield": 0.7317
+    },
+    "language_contract": {
+      "admitted": 70,
+      "rejected": 4,
+      "by_stage": {
+        "quality": 3,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 3,
+        "quarantine": 1
+      },
+      "candidates": 74,
+      "yield": 0.9459
+    },
+    "layout_augment": {
+      "admitted": 120,
+      "rejected": 738,
+      "by_stage": {
+        "decontamination": 6,
+        "dedup": 551,
+        "exposure": 181
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 334,
+        "max_records_per_parent": 181,
+        "semantic_cosine": 134,
+        "fuzzy_minhash": 83,
+        "test_fixture_structure": 6
+      },
+      "candidates": 858,
+      "yield": 0.1399
+    },
+    "programspec_generated": {
+      "admitted": 22,
+      "rejected": 30,
+      "by_stage": {
+        "dedup": 30
+      },
+      "by_reason": {
+        "fuzzy_minhash": 16,
+        "semantic_cosine": 14
+      },
+      "candidates": 52,
+      "yield": 0.4231
+    },
+    "prompt_paraphrase": {
+      "admitted": 160,
+      "rejected": 1299,
+      "by_stage": {
+        "dedup": 725,
+        "exposure": 574
+      },
+      "by_reason": {
+        "max_records_per_parent": 574,
+        "fuzzy_minhash": 357,
+        "exact_pair_duplicate": 290,
+        "semantic_cosine": 78
+      },
+      "candidates": 1459,
+      "yield": 0.1097
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "rico_real": {
+      "admitted": 9,
+      "rejected": 2,
+      "by_stage": {
+        "exposure": 2
+      },
+      "by_reason": {
+        "max_records_per_parent": 2
+      },
+      "candidates": 11,
+      "yield": 0.8182
+    },
+    "scope_canonical_document": {
+      "admitted": 9,
+      "rejected": 21,
+      "by_stage": {
+        "dedup": 9,
+        "exposure": 12
+      },
+      "by_reason": {
+        "max_records_per_parent": 12,
+        "semantic_cosine": 9
+      },
+      "candidates": 30,
+      "yield": 0.3
+    },
+    "scope_canonical_expression": {
+      "admitted": 21,
+      "rejected": 28,
+      "by_stage": {
+        "exposure": 28
+      },
+      "by_reason": {
+        "max_records_per_parent": 28
+      },
+      "candidates": 49,
+      "yield": 0.4286
+    },
+    "scope_canonical_lexical": {
+      "admitted": 4,
+      "rejected": 12,
+      "by_stage": {
+        "exposure": 12
+      },
+      "by_reason": {
+        "max_records_per_parent": 12
+      },
+      "candidates": 16,
+      "yield": 0.25
+    },
+    "scope_canonical_statement": {
+      "admitted": 8,
+      "rejected": 31,
+      "by_stage": {
+        "exposure": 31
+      },
+      "by_reason": {
+        "max_records_per_parent": 31
+      },
+      "candidates": 39,
+      "yield": 0.2051
+    },
+    "scope_identity_document": {
+      "admitted": 6,
+      "rejected": 8,
+      "by_stage": {
+        "exposure": 8
+      },
+      "by_reason": {
+        "max_records_per_parent": 8
+      },
+      "candidates": 14,
+      "yield": 0.4286
+    },
+    "scope_identity_expression": {
+      "admitted": 24,
+      "rejected": 46,
+      "by_stage": {
+        "exposure": 46
+      },
+      "by_reason": {
+        "max_records_per_parent": 46
+      },
+      "candidates": 70,
+      "yield": 0.3429
+    },
+    "scope_identity_lexical": {
+      "admitted": 11,
+      "rejected": 14,
+      "by_stage": {
+        "exposure": 14
+      },
+      "by_reason": {
+        "max_records_per_parent": 14
+      },
+      "candidates": 25,
+      "yield": 0.44
+    },
+    "scope_identity_statement": {
+      "admitted": 22,
+      "rejected": 27,
+      "by_stage": {
+        "exposure": 27
+      },
+      "by_reason": {
+        "max_records_per_parent": 27
+      },
+      "candidates": 49,
+      "yield": 0.449
+    },
+    "scope_repair_expression": {
+      "admitted": 13,
+      "rejected": 28,
+      "by_stage": {
+        "exposure": 28
+      },
+      "by_reason": {
+        "max_records_per_parent": 28
+      },
+      "candidates": 41,
+      "yield": 0.3171
+    },
+    "scope_repair_lexical": {
+      "admitted": 8,
+      "rejected": 3,
+      "by_stage": {
+        "exposure": 3
+      },
+      "by_reason": {
+        "max_records_per_parent": 3
+      },
+      "candidates": 11,
+      "yield": 0.7273
+    },
+    "scope_repair_statement": {
+      "admitted": 8,
+      "rejected": 33,
+      "by_stage": {
+        "exposure": 33
+      },
+      "by_reason": {
+        "max_records_per_parent": 33
+      },
+      "candidates": 41,
+      "yield": 0.1951
+    },
+    "unknown": {
+      "admitted": 0,
+      "rejected": 2,
+      "by_stage": {
+        "harness_contract": 2
+      },
+      "by_reason": {
+        "symbol_only_contract_violation": 2
+      },
+      "candidates": 2,
+      "yield": 0.0
+    },
+    "web_distilled": {
+      "admitted": 1,
+      "rejected": 1,
+      "by_stage": {
+        "dedup": 1
+      },
+      "by_reason": {
+        "fuzzy_minhash": 1
+      },
+      "candidates": 2,
+      "yield": 0.5
+    }
+  },
+  "synthesizers": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "corruption_repair": {
+      "admitted": 50,
+      "rejected": 413,
+      "by_stage": {
+        "decontamination": 9,
+        "dedup": 299,
+        "exposure": 105
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 266,
+        "max_records_per_parent": 105,
+        "semantic_cosine": 33,
+        "ngram_overlap": 9
+      },
+      "candidates": 463,
+      "yield": 0.108
+    },
+    "design_md_contrastive": {
+      "admitted": 15,
+      "rejected": 44,
+      "by_stage": {
+        "dedup": 31,
+        "exposure": 13
+      },
+      "by_reason": {
+        "fuzzy_minhash": 17,
+        "semantic_cosine": 14,
+        "max_records_per_parent": 13
+      },
+      "candidates": 59,
+      "yield": 0.2542
+    },
+    "frontier_described": {
+      "admitted": 0,
+      "rejected": 3,
+      "by_stage": {
+        "exposure": 3
+      },
+      "by_reason": {
+        "max_records_per_parent": 3
+      },
+      "candidates": 3,
+      "yield": 0.0
+    },
+    "layout_augment": {
+      "admitted": 120,
+      "rejected": 738,
+      "by_stage": {
+        "decontamination": 6,
+        "dedup": 551,
+        "exposure": 181
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 334,
+        "max_records_per_parent": 181,
+        "semantic_cosine": 134,
+        "fuzzy_minhash": 83,
+        "test_fixture_structure": 6
+      },
+      "candidates": 858,
+      "yield": 0.1399
+    },
+    "template": {
+      "admitted": 160,
+      "rejected": 1299,
+      "by_stage": {
+        "dedup": 725,
+        "exposure": 574
+      },
+      "by_reason": {
+        "max_records_per_parent": 574,
+        "fuzzy_minhash": 357,
+        "exact_pair_duplicate": 290,
+        "semantic_cosine": 78
+      },
+      "candidates": 1459,
+      "yield": 0.1097
+    }
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.1439,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "eval_overlap_flagged",
+      "value": 14,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 3,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    },
+    {
+      "code": "sanitize_fallbacks",
+      "value": 190,
+      "message": "sanitization fell back to unchanged targets for some records; inspect sanitization.fallback_reasons"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "corruption_repair",
+      "evidence": {
+        "decontamination_drops": 9
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "corruption_repair",
+      "evidence": {
+        "dup_share": 0.8726,
+        "candidates": 463
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "edit_trajectory",
+      "evidence": {
+        "decontamination_drops": 5
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "edit_trajectory",
+      "evidence": {
+        "dup_share": 0.9348,
+        "candidates": 1366
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 6
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "layout_augment",
+      "evidence": {
+        "dup_share": 0.8531,
+        "candidates": 858
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "dup_share": 0.5769,
+        "candidates": 52
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "evidence": {
+        "dup_share": 0.8903,
+        "candidates": 1459
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_canonical_document",
+      "evidence": {
+        "dup_share": 0.7,
+        "candidates": 30
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_canonical_expression",
+      "evidence": {
+        "dup_share": 0.5714,
+        "candidates": 49
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_canonical_lexical",
+      "evidence": {
+        "dup_share": 0.75,
+        "candidates": 16
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_canonical_statement",
+      "evidence": {
+        "dup_share": 0.7949,
+        "candidates": 39
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_identity_document",
+      "evidence": {
+        "dup_share": 0.5714,
+        "candidates": 14
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_identity_expression",
+      "evidence": {
+        "dup_share": 0.6571,
+        "candidates": 70
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_identity_lexical",
+      "evidence": {
+        "dup_share": 0.56,
+        "candidates": 25
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_identity_statement",
+      "evidence": {
+        "dup_share": 0.551,
+        "candidates": 49
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_repair_expression",
+      "evidence": {
+        "dup_share": 0.6829,
+        "candidates": 41
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_repair_statement",
+      "evidence": {
+        "dup_share": 0.8049,
+        "candidates": 41
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "corruption_repair",
+      "evidence": {
+        "decontamination_drops": 9
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "corruption_repair",
+      "evidence": {
+        "dup_share": 0.8726,
+        "candidates": 463
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "design_md_contrastive",
+      "evidence": {
+        "dup_share": 0.7458,
+        "candidates": 59
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 6
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "layout_augment",
+      "evidence": {
+        "dup_share": 0.8531,
+        "candidates": 858
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "evidence": {
+        "dup_share": 0.8903,
+        "candidates": 1459
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    }
+  ],
+  "findings": [],
+  "experiment_candidates": [
+    {
+      "hypothesis": "family:corruption_repair inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v2: {'decontamination_drops': 9}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:corruption_repair raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8726, 'candidates': 463}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:edit_trajectory inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v2: {'decontamination_drops': 5}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:edit_trajectory raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.9348, 'candidates': 1366}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v2: {'decontamination_drops': 6}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:layout_augment raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8531, 'candidates': 858}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:programspec_generated raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.5769, 'candidates': 52}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:prompt_paraphrase raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8903, 'candidates': 1459}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_document raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.7, 'candidates': 30}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_expression raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.5714, 'candidates': 49}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.75, 'candidates': 16}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_statement raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.7949, 'candidates': 39}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_document raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.5714, 'candidates': 14}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_expression raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.6571, 'candidates': 70}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.56, 'candidates': 25}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_statement raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.551, 'candidates': 49}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_repair_expression raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.6829, 'candidates': 41}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_repair_statement raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8049, 'candidates': 41}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:corruption_repair inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v2: {'decontamination_drops': 9}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:corruption_repair raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8726, 'candidates': 463}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:design_md_contrastive raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.7458, 'candidates': 59}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build hillclimb_strict_v2: {'decontamination_drops': 6}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:layout_augment raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8531, 'candidates': 858}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:template raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build hillclimb_strict_v2: {'dup_share': 0.8903, 'candidates': 1459}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    }
+  ],
+  "claim_class": "fixture_wiring",
+  "capability_certificate": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5652c1d8dd4fb3b7b79d2552bf83477922d24e3a",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v33"
+    },
+    "stamped_at": "2026-08-21T19:38:21.176795+00:00"
+  }
+}

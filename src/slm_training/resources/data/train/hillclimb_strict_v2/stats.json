@@ -1,0 +1,984 @@
+{
+  "version": "hillclimb_strict_v2",
+  "profile": "strict",
+  "source": "existing",
+  "derive_from": "src/slm_training/resources/data/train/hillclimb_strict_v1/records.jsonl",
+  "seed_path": null,
+  "rico_path": null,
+  "rico_hf_split": null,
+  "seed_count": 974,
+  "collected_count": 4697,
+  "verifier_rejected": 6,
+  "verifier_rejected_samples": [
+    {
+      "id": "lc_root_renderability_slice",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "program_bc71c7618fa1630f_generation_fc0158016789",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "program_bc71c7618fa1630f_generation_21dcaee9ac57",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "program_bc71c7618fa1630f_generation_21dcaee9ac57",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "program_bc71c7618fa1630f_generation_21dcaee9ac57",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "program_bc71c7618fa1630f_generation_21dcaee9ac57",
+      "failing_gate": "G11",
+      "governance_status": null
+    }
+  ],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 3,
+  "quality_rejected_samples": [
+    {
+      "id": "lc_root_renderability_point",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 3,
+      "n_placeholders": 0,
+      "component_diversity": 3,
+      "openui_chars": 57,
+      "design_lint_score": 1.0,
+      "components": {
+        "ScatterChart": 1,
+        "ScatterSeries": 1,
+        "Point": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "lc_root_renderability_scatterseries",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 3,
+      "n_placeholders": 0,
+      "component_diversity": 3,
+      "openui_chars": 57,
+      "design_lint_score": 1.0,
+      "components": {
+        "ScatterChart": 1,
+        "ScatterSeries": 1,
+        "Point": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "lc_root_renderability_switchitem",
+      "ok": false,
+      "score": 0.65,
+      "reasons": [
+        "too_few_placeholders"
+      ],
+      "n_components": 2,
+      "n_placeholders": 0,
+      "component_diversity": 2,
+      "openui_chars": 56,
+      "design_lint_score": 1.0,
+      "components": {
+        "SwitchGroup": 1,
+        "SwitchItem": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    }
+  ],
+  "record_count": 676,
+  "error_count": 2,
+  "errors": [
+    {
+      "id": "1dd2e550c00ebb87_scope",
+      "error": "Harness prompt round-trip failed: non-canonical Harness serialization"
+    },
+    {
+      "id": "aa4c64a9ef0e996d_scope",
+      "error": "Harness prompt round-trip failed: non-canonical Harness serialization"
+    }
+  ],
+  "rejected_total": 4046,
+  "rejected_path": "outputs/data/train/hillclimb_strict_v2/rejected.jsonl",
+  "quality_report_path": "outputs/data/train/hillclimb_strict_v2/quality_report.json",
+  "synthesis_feedback_path": "outputs/data/train/hillclimb_strict_v2/synthesis_feedback.json",
+  "synthesis_recommendations": 24,
+  "synthesizer": "quality",
+  "documentize_expressions": false,
+  "target_kinds": null,
+  "min_quality_score": 0.55,
+  "min_verification_tier": "Bronze",
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "prompt_component_contract": false,
+  "prompt_component_contract_mode": "counts",
+  "prompt_semantic_role_contract": false,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 4697,
+    "changed": 490,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 311,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 52,
+      "flatten_opportunities": 555
+    },
+    "literals_templatized": 35,
+    "records_templatized": 30,
+    "fallbacks": 190,
+    "fallback_reasons": {
+      "ValueError": 190
+    },
+    "cache": {
+      "hits": 3357,
+      "misses": 977
+    }
+  },
+  "structure_reserved_rejected": 6,
+  "structure_reserved_rejected_samples": [
+    {
+      "id": "program_4f6b1e588b811dcb_aug_dir",
+      "source": "programspec_generated+aug",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "program_4f6b1e588b811dcb_design_contrastive_aug_dir",
+      "source": "programspec_generated+design_md_contrastive+aug",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "program_4f6b1e588b811dcb_generation_427bfe2114ed_aug_dir",
+      "source": "edit_trajectory+aug",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "program_4f6b1e588b811dcb_syn_0_aug_dir",
+      "source": "programspec_generated+template+aug",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "program_4f6b1e588b811dcb_syn_1_aug_dir",
+      "source": "programspec_generated+template+aug",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "program_4f6b1e588b811dcb_syn_2_aug_dir",
+      "source": "programspec_generated+template+aug",
+      "reason": "test_fixture_structure"
+    }
+  ],
+  "max_records_per_parent": 6,
+  "parent_cap_dropped": 1367,
+  "parent_cap_dropped_samples": [
+    {
+      "id": "3e776f5a8e596308_scope",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "scope_identity_lexical",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "5508ccc83df1b10d_scope",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "scope_repair_lexical",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "55393b94f90c164f_scope",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "scope_canonical_lexical",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "5ef8589a8767e977_scope",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "scope_repair_statement",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "7e9216049f01a7c1_scope",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "scope_canonical_expression",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "8cce27ef29c93597_scope",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "scope_identity_expression",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_aug_cta_aug_dir",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "layout_augment",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_aug_cta_syn_0",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "prompt_paraphrase",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_aug_cta_syn_1",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "prompt_paraphrase",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_aug_cta_syn_2",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "prompt_paraphrase",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_edit_591b0fcb05c5",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "edit_trajectory",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_generation_bf2576710b29",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "edit_trajectory",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_patch_83c2630ce234",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "edit_trajectory",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "program_0e4371d3ce39e1b2_repair_e7dc15684178",
+      "root_parent_id": "program_0e4371d3ce39e1b2",
+      "source_family": "corruption_repair",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "9e4136d4757c5c35_scope",
+      "root_parent_id": "program_3f50e893b94a95c5",
+      "source_family": "scope_repair_statement",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "bc06729ac65a8b79_scope",
+      "root_parent_id": "program_3f50e893b94a95c5",
+      "source_family": "scope_canonical_statement",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "c126662ba7344e16_scope",
+      "root_parent_id": "program_3f50e893b94a95c5",
+      "source_family": "scope_identity_expression",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "f3c6475265feb00f_scope",
+      "root_parent_id": "program_3f50e893b94a95c5",
+      "source_family": "scope_repair_statement",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "f8b850d22472b740_scope",
+      "root_parent_id": "program_3f50e893b94a95c5",
+      "source_family": "scope_repair_expression",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "fad6ba24ada2000a_scope",
+      "root_parent_id": "program_3f50e893b94a95c5",
+      "source_family": "scope_identity_expression",
+      "reason": "max_records_per_parent"
+    }
+  ],
+  "fuzzy_dedup": true,
+  "fuzzy_dropped": 468,
+  "fuzzy_dropped_samples": [
+    {
+      "id": "program_3440f626b8cc736c_syn_0_syn_0",
+      "duplicate_of": "program_3440f626b8cc736c_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_syn_0_syn_1",
+      "duplicate_of": "program_3440f626b8cc736c_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_syn_1_syn_0",
+      "duplicate_of": "program_3440f626b8cc736c_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_syn_1_syn_1",
+      "duplicate_of": "program_3440f626b8cc736c_syn_1",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_syn_2_syn_0",
+      "duplicate_of": "program_3440f626b8cc736c_syn_0_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_syn_2_syn_1",
+      "duplicate_of": "program_3440f626b8cc736c_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_syn_2_syn_2",
+      "duplicate_of": "program_3440f626b8cc736c_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_3440f626b8cc736c_edit_e85585a52c32",
+      "duplicate_of": "program_3440f626b8cc736c_edit_8f87ec975cd8",
+      "source_family": "edit_trajectory",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_0_syn_0",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_0_syn_1",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_1_syn_0",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_1_syn_1",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_1",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_2_syn_0",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_0_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_2_syn_1",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_syn_2_syn_2",
+      "duplicate_of": "program_9a6207d507bb9d48_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_9a6207d507bb9d48_design_contrastive",
+      "duplicate_of": "program_9a6207d507bb9d48_design_contrastive_syn_1",
+      "source_family": "programspec_generated",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_d033d65fe79c9af2_syn_0_syn_0",
+      "duplicate_of": "program_d033d65fe79c9af2_syn_0",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_d033d65fe79c9af2_syn_1_syn_0",
+      "duplicate_of": "program_d033d65fe79c9af2_syn_0_syn_1",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_d033d65fe79c9af2_syn_1_syn_1",
+      "duplicate_of": "program_d033d65fe79c9af2_syn_1",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "program_d033d65fe79c9af2_syn_2_syn_0",
+      "duplicate_of": "program_d033d65fe79c9af2_syn_0_syn_2",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    }
+  ],
+  "semantic_cluster_cap": 8,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "semantic_dedup": true,
+  "semantic_dedup_engine": "lexical-tfidf",
+  "semantic_cosine_dropped": 440,
+  "semantic_cosine_dropped_samples": [
+    {
+      "id": "program_0548e34a41793f00_syn_2_syn_1",
+      "duplicate_of": "program_0548e34a41793f00_syn_1_syn_2",
+      "similarity": 0.9597,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_3e65a802b8d708fb_design_contrastive_syn_1",
+      "duplicate_of": "program_3e65a802b8d708fb_design_contrastive_syn_0",
+      "similarity": 0.9553,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_3e65a802b8d708fb_syn_0",
+      "duplicate_of": "program_3e65a802b8d708fb_aug_dir_syn_0",
+      "similarity": 0.9545,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_3e65a802b8d708fb_syn_1",
+      "duplicate_of": "program_3e65a802b8d708fb_aug_dir_syn_1",
+      "similarity": 0.9576,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_3e65a802b8d708fb_syn_2",
+      "duplicate_of": "program_3e65a802b8d708fb_syn_1_syn_2",
+      "similarity": 0.9633,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_4b089034ac9ab508_syn_2",
+      "duplicate_of": "program_4b089034ac9ab508_syn_1_syn_2",
+      "similarity": 0.9551,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_7082de60f3e3b948_syn_2_syn_2",
+      "duplicate_of": "program_7082de60f3e3b948_syn_2",
+      "similarity": 0.9608,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_864ff638660fa725_aug_cta_syn_1",
+      "duplicate_of": "program_864ff638660fa725_aug_cta_syn_0",
+      "similarity": 0.9512,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_864ff638660fa725_design_contrastive_syn_1",
+      "duplicate_of": "program_864ff638660fa725_design_contrastive_syn_0",
+      "similarity": 0.956,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_864ff638660fa725_syn_0",
+      "duplicate_of": "program_864ff638660fa725_aug_dir_syn_0",
+      "similarity": 0.9531,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_864ff638660fa725_syn_1",
+      "duplicate_of": "program_864ff638660fa725_syn_0_syn_1",
+      "similarity": 0.9571,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_864ff638660fa725_syn_2",
+      "duplicate_of": "program_864ff638660fa725_syn_1_syn_2",
+      "similarity": 0.9638,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_93d96fc8f1ef8ea3_syn_2_syn_2",
+      "duplicate_of": "program_93d96fc8f1ef8ea3_syn_2",
+      "similarity": 0.9644,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_b82584d0667bad94_syn_2_syn_1",
+      "duplicate_of": "program_b82584d0667bad94_syn_1_syn_2",
+      "similarity": 0.9599,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_bc71c7618fa1630f_aug_cta_syn_1",
+      "duplicate_of": "program_bc71c7618fa1630f_aug_cta_syn_0",
+      "similarity": 0.9547,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_bc71c7618fa1630f_aug_dir_syn_1",
+      "duplicate_of": "program_bc71c7618fa1630f_aug_dir_syn_0",
+      "similarity": 0.9542,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_bc71c7618fa1630f_design_contrastive_syn_1",
+      "duplicate_of": "program_bc71c7618fa1630f_design_contrastive_syn_0",
+      "similarity": 0.9594,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_bc71c7618fa1630f_syn_0",
+      "duplicate_of": "program_bc71c7618fa1630f_aug_dir_syn_0",
+      "similarity": 0.9586,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_bc71c7618fa1630f_syn_2",
+      "duplicate_of": "program_bc71c7618fa1630f_syn_1_syn_2",
+      "similarity": 0.9669,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "program_cb6917a7e7b6635f_design_contrastive_syn_1",
+      "duplicate_of": "program_cb6917a7e7b6635f_design_contrastive_syn_0",
+      "similarity": 0.9525,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    }
+  ],
+  "ngram_decontam": true,
+  "decontam_flagged": 14,
+  "decontam_flagged_samples": [
+    {
+      "id": "rico_train_0_patch_7ac74c717fb9",
+      "reason": "ngram_overlap",
+      "overlap": 0.5263,
+      "suite": "e938_role_safe_all_targets_v2/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_patch_7f813d376788",
+      "reason": "ngram_overlap",
+      "overlap": 0.5636,
+      "suite": "e938_role_safe_all_targets_v2/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_repair_4b0e666140f2",
+      "reason": "ngram_overlap",
+      "overlap": 0.5484,
+      "suite": "e938_role_safe_all_targets_v2/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_repair_8161ed9af29f",
+      "reason": "ngram_overlap",
+      "overlap": 0.6667,
+      "suite": "e827_target_slots_only_v4/adversarial",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_repair_91ba08fa19a4",
+      "reason": "ngram_overlap",
+      "overlap": 0.6071,
+      "suite": "e938_role_safe_all_targets_v2/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_199_repair_3d435e27d63a",
+      "reason": "ngram_overlap",
+      "overlap": 0.55,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_46_patch_a9c5ac387573",
+      "reason": "ngram_overlap",
+      "overlap": 0.5556,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_46_repair_0ea351ee89db",
+      "reason": "ngram_overlap",
+      "overlap": 0.6129,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "train_card_stack_01_repair_b508c17565e2",
+      "reason": "ngram_overlap",
+      "overlap": 0.5143,
+      "suite": "e938_role_safe_all_targets_v2/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "train_card_stack_01_repair_c7912eab8762",
+      "reason": "ngram_overlap",
+      "overlap": 0.5,
+      "suite": "e938_role_safe_all_targets_v2/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "train_metrics_01_patch_1a3fb99e4849",
+      "reason": "ngram_overlap",
+      "overlap": 0.5584,
+      "suite": "e827_target_slots_only_v4/held_out",
+      "ngram_size": 8
+    },
+    {
+      "id": "train_metrics_01_patch_577851f8c244",
+      "reason": "ngram_overlap",
+      "overlap": 0.5443,
+      "suite": "e827_target_slots_only_v4/held_out",
+      "ngram_size": 8
+    },
+    {
+      "id": "train_metrics_01_repair_26b00bdfb16a",
+      "reason": "ngram_overlap",
+      "overlap": 0.6053,
+      "suite": "e827_target_slots_only_v4/held_out",
+      "ngram_size": 8
+    },
+    {
+      "id": "train_metrics_01_repair_5f5075ed6dc4",
+      "reason": "ngram_overlap",
+      "overlap": 0.5897,
+      "suite": "e827_target_slots_only_v4/held_out",
+      "ngram_size": 8
+    }
+  ],
+  "dedup_against": [],
+  "cross_corpus_dropped": 0,
+  "cross_corpus_dropped_samples": [],
+  "difficulty_from": null,
+  "difficulty_scored": 0,
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "programspec_natural_prompts": false,
+    "language_contract": true,
+    "documentize_expressions": false,
+    "target_kinds": null,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": true,
+    "repairs_per_program": 1,
+    "edit_derivatives": true,
+    "scope_derivatives": false,
+    "design_md_contrastive": true,
+    "scope_corpus": true,
+    "scope_kinds": [
+      "document",
+      "statement",
+      "expression",
+      "lexical"
+    ],
+    "scope_identity_per_scope": 3,
+    "scope_canonical_pairs_per_scope": 3,
+    "scoped_repairs_per_scope": 2,
+    "typed_lexical_per_program": 4,
+    "operator_corpus": false,
+    "operator_corpus_max_roots": 8,
+    "operator_corpus_actions_per_state": 4,
+    "operator_corpus_max_combinations": 64,
+    "operator_corpus_sibling_forks": true
+  },
+  "operator_corpus": null,
+  "preference_pairs": 12,
+  "preference_pair_families": {
+    "root_renderability": 12
+  },
+  "preference_pairs_path": "outputs/data/train/hillclimb_strict_v2/preference_pairs.jsonl",
+  "mixture": {
+    "manifest": {
+      "mixture_id": "hillclimb_strict_v2-base",
+      "weights": {
+        "abstraction_ladder": 0.047430830039525695,
+        "awwwards_real": 0.0316205533596838,
+        "corruption_repair": 0.047430830039525695,
+        "diffusion_corruption": 0.0158102766798419,
+        "edit_trajectory": 0.047430830039525695,
+        "frontier_described": 0.00790513833992095,
+        "frontier_product": 0.00790513833992095,
+        "frontier_semantic": 0.00790513833992095,
+        "frontier_simplified": 0.00790513833992095,
+        "frontier_user": 0.00790513833992095,
+        "gold_correction": 0.011857707509881424,
+        "human_curated": 0.0632411067193676,
+        "human_feedback": 0.047430830039525695,
+        "language_contract": 0.0632411067193676,
+        "layout_augment": 0.019762845849802375,
+        "lexical_typed_map": 0.0158102766798419,
+        "programspec_generated": 0.09486166007905139,
+        "prompt_paraphrase": 0.023715415019762848,
+        "renderer_visual": 0.03952569169960475,
+        "rico_real": 0.09486166007905139,
+        "scope_canonical_document": 0.023715415019762848,
+        "scope_canonical_expression": 0.023715415019762848,
+        "scope_canonical_lexical": 0.023715415019762848,
+        "scope_canonical_statement": 0.023715415019762848,
+        "scope_contract": 0.0158102766798419,
+        "scope_identity_document": 0.0158102766798419,
+        "scope_identity_expression": 0.0158102766798419,
+        "scope_identity_lexical": 0.0158102766798419,
+        "scope_identity_statement": 0.0158102766798419,
+        "scope_repair_expression": 0.0158102766798419,
+        "scope_repair_lexical": 0.0158102766798419,
+        "scope_repair_statement": 0.0158102766798419,
+        "self_distilled_repair": 0.0158102766798419,
+        "self_distilled_success": 0.0158102766798419,
+        "stress_adversarial": 0.019762845849802375,
+        "web_distilled": 0.023715415019762848
+      },
+      "task_weights": {
+        "generation": 0.16666666666666666,
+        "identity_echo": 0.16666666666666666,
+        "noop_adversarial": 0.16666666666666666,
+        "patch_edit": 0.16666666666666666,
+        "repair_completion_inpaint": 0.16666666666666666,
+        "state_behavior": 0.16666666666666666
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "a5a28d24b4cc4867504edaf01a017caa369560e9543c2affde89086f0bd35cc4",
+    "diagnostics": {
+      "records": 676,
+      "family_counts": {
+        "corruption_repair": 50,
+        "edit_trajectory": 79,
+        "human_curated": 30,
+        "language_contract": 70,
+        "layout_augment": 120,
+        "programspec_generated": 22,
+        "prompt_paraphrase": 160,
+        "renderer_visual": 1,
+        "rico_real": 9,
+        "scope_canonical_document": 9,
+        "scope_canonical_expression": 21,
+        "scope_canonical_lexical": 4,
+        "scope_canonical_statement": 8,
+        "scope_identity_document": 6,
+        "scope_identity_expression": 24,
+        "scope_identity_lexical": 11,
+        "scope_identity_statement": 22,
+        "scope_repair_expression": 13,
+        "scope_repair_lexical": 8,
+        "scope_repair_statement": 8,
+        "web_distilled": 1
+      },
+      "task_counts": {
+        "edit": 58,
+        "generation": 417,
+        "identity": 63,
+        "patch": 51,
+        "repair": 87
+      },
+      "task_group_counts": {
+        "generation": 417,
+        "identity_echo": 63,
+        "patch_edit": 109,
+        "repair_completion_inpaint": 87
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 125,
+      "unique_structural_families": 319,
+      "observed_component_counts": {
+        "Accordion": 11,
+        "AccordionItem": 21,
+        "AreaChart": 31,
+        "BarChart": 8,
+        "Button": 364,
+        "Buttons": 33,
+        "Callout": 23,
+        "Card": 100,
+        "CardHeader": 26,
+        "Carousel": 15,
+        "CheckBoxGroup": 19,
+        "CheckBoxItem": 38,
+        "CodeBlock": 13,
+        "Col": 26,
+        "DatePicker": 19,
+        "Form": 28,
+        "FormControl": 59,
+        "HorizontalBarChart": 19,
+        "Image": 17,
+        "ImageBlock": 36,
+        "ImageGallery": 8,
+        "Input": 84,
+        "Label": 13,
+        "LineChart": 15,
+        "MarkDownRenderer": 23,
+        "Modal": 21,
+        "PieChart": 14,
+        "Point": 15,
+        "RadarChart": 7,
+        "RadialChart": 7,
+        "RadioGroup": 20,
+        "RadioItem": 39,
+        "ScatterChart": 17,
+        "ScatterSeries": 11,
+        "Select": 17,
+        "SelectItem": 39,
+        "Separator": 27,
+        "Series": 13,
+        "SingleStackedBarChart": 7,
+        "Slice": 7,
+        "Slider": 19,
+        "Stack": 773,
+        "Steps": 11,
+        "StepsItem": 47,
+        "SwitchGroup": 22,
+        "SwitchItem": 48,
+        "TabItem": 26,
+        "Table": 24,
+        "Tabs": 17,
+        "Tag": 19,
+        "TagBlock": 9,
+        "TextArea": 19,
+        "TextCallout": 15,
+        "TextContent": 339
+      },
+      "configured_but_absent_families": [
+        "abstraction_ladder",
+        "awwwards_real",
+        "diffusion_corruption",
+        "frontier_described",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_feedback",
+        "lexical_typed_map",
+        "scope_contract",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 0.9745,
+  "placeholder_vocab_size": 9,
+  "with_design_md": 496,
+  "component_histogram": {
+    "Accordion": 11,
+    "AccordionItem": 21,
+    "AreaChart": 31,
+    "BarChart": 8,
+    "Button": 364,
+    "Buttons": 33,
+    "Callout": 23,
+    "Card": 100,
+    "CardHeader": 26,
+    "Carousel": 15,
+    "CheckBoxGroup": 19,
+    "CheckBoxItem": 38,
+    "CodeBlock": 13,
+    "Col": 26,
+    "DatePicker": 19,
+    "Form": 28,
+    "FormControl": 59,
+    "HorizontalBarChart": 19,
+    "Image": 17,
+    "ImageBlock": 36,
+    "ImageGallery": 8,
+    "Input": 84,
+    "Label": 13,
+    "LineChart": 15,
+    "MarkDownRenderer": 23,
+    "Modal": 21,
+    "PieChart": 14,
+    "Point": 15,
+    "RadarChart": 7,
+    "RadialChart": 7,
+    "RadioGroup": 20,
+    "RadioItem": 39,
+    "ScatterChart": 17,
+    "ScatterSeries": 11,
+    "Select": 17,
+    "SelectItem": 39,
+    "Separator": 27,
+    "Series": 13,
+    "SingleStackedBarChart": 7,
+    "Slice": 7,
+    "Slider": 19,
+    "Stack": 773,
+    "Steps": 11,
+    "StepsItem": 47,
+    "SwitchGroup": 22,
+    "SwitchItem": 48,
+    "TabItem": 26,
+    "Table": 24,
+    "Tabs": 17,
+    "Tag": 19,
+    "TagBlock": 9,
+    "TextArea": 19,
+    "TextCallout": 15,
+    "TextContent": 339
+  },
+  "built_at": "2026-08-21T19:38:21.146346+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5652c1d8dd4fb3b7b79d2552bf83477922d24e3a",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v33"
+    },
+    "stamped_at": "2026-08-21T19:38:21.176795+00:00"
+  }
+}

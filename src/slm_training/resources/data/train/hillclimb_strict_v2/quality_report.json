@@ -1,0 +1,495 @@
+{
+  "schema_version": 1,
+  "version": "hillclimb_strict_v2",
+  "profile": "strict",
+  "built_at": "2026-08-21T19:38:21.146346+00:00",
+  "counts": {
+    "seeds": 974,
+    "candidates": 4697,
+    "collected": 4697,
+    "admitted": 676,
+    "rejected_total": 4046,
+    "source_errors": 0,
+    "by_stage": {
+      "decontamination": 20,
+      "dedup": 2648,
+      "exposure": 1367,
+      "harness_contract": 2,
+      "quality": 3,
+      "verification": 6
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 253,
+      "Gold": 6,
+      "Silver": 417
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 6,
+    "placeholder_contract_violations": 3,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 3,
+    "reason_histogram": {
+      "too_few_placeholders": 3,
+      "unknown_components": 2
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 676
+    },
+    "mean_quality_score": 0.9745,
+    "min_quality_score": 0.85
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 1740,
+      "fuzzy_minhash": 468,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 440,
+      "cross_corpus": 0,
+      "max_records_per_parent": 1367
+    },
+    "cluster_exposure": {
+      "unique_clusters": 668,
+      "records_per_cluster": {
+        "max": 2,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "12ad48287e86ed8f|2efe2bda287c60ec3fc11890c67dd819bab15a627645fa19fde993328e5a2a18|4bc67ec3527f6e38",
+        "count": 2,
+        "sample_ids": [
+          "1ab9cd62f437e0c4_scope",
+          "1ab9cd62f437e0c4_scope"
+        ]
+      },
+      {
+        "cluster": "904ff17e0f6496c5|56160f80da595e25b260da45681a7843a7f0b076988697b4220d3459c4bf55e0|b38c2f9966d40533",
+        "count": 2,
+        "sample_ids": [
+          "program_070d6bc4aff76b3d_aug_cta",
+          "program_070d6bc4aff76b3d_aug_cta_syn_0"
+        ]
+      },
+      {
+        "cluster": "973de73a71a4cca0|6d1398e01435055f9b7380b9050d7f0484671be7005f376d432f11d4f685d6f8|8904bef49788e1d7",
+        "count": 2,
+        "sample_ids": [
+          "program_1fda68c12f478536_aug_cta",
+          "program_1fda68c12f478536_aug_cta_syn_0"
+        ]
+      },
+      {
+        "cluster": "9ee83b634dacf189|b7ae1bd07f82fb278110ed6e78511945ef0c6f46f24dde843d147291d34febf9|86fcb246b1f314ac",
+        "count": 2,
+        "sample_ids": [
+          "07cde81f9e7d8ec9_scope",
+          "07cde81f9e7d8ec9_scope"
+        ]
+      },
+      {
+        "cluster": "bfb8f7fc268278d6|1b8054d5590f77eb2ad13ca034b782e8d6ac373718823fbc717259fd175caeff|6669c5e06f925844",
+        "count": 2,
+        "sample_ids": [
+          "program_f59bd77074496bda_aug_cta",
+          "program_f59bd77074496bda_aug_cta_syn_0"
+        ]
+      },
+      {
+        "cluster": "e2b915b2ee7fcae7|9b2c908fd5aa7c5027412dacb678d3c580ed64ddd99194fdb0c5c7ab5bf3b99e|c17b9d647f14af18",
+        "count": 2,
+        "sample_ids": [
+          "25e6488544e312df_scope",
+          "25e6488544e312df_scope"
+        ]
+      },
+      {
+        "cluster": "e5fa0f3c152279c8|9ebfc4fb6648da64ba976f64d3651a32068b57b1c1f1af315dfd023acc46169f|015bcb46fc9b861a",
+        "count": 2,
+        "sample_ids": [
+          "program_eac3e2f96bc1aa83_aug_cta",
+          "program_eac3e2f96bc1aa83_aug_cta_syn_0"
+        ]
+      },
+      {
+        "cluster": "f0ab6ef57cb9d0c6|42f8c3cbdf3d15bfd61630fc2891d5d4baf1be13da140eaeaf7bae5883f71bfe|2c3734a30ed7030e",
+        "count": 2,
+        "sample_ids": [
+          "1b910ea400d58901_scope",
+          "1b910ea400d58901_scope"
+        ]
+      },
+      {
+        "cluster": "00317fc1cd5b7a13|fcd478515416702c90abce652d2be1e48f91a88d3ad883b1dfadb212b2ba470c|7d4c790b42091a54",
+        "count": 1,
+        "sample_ids": [
+          "train_pricing_01_aug_dir_aug_dir"
+        ]
+      },
+      {
+        "cluster": "009d6e5806392fe4|08091fb04388a3771d5193c2eff07fe968d79e7dfaa4fafa049ea9826652406a|248cf32e32f08e0a",
+        "count": 1,
+        "sample_ids": [
+          "program_654ed3bd20ca5f72_generation_6aee0d24f92e_repair_3fc759fa5b4a"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 20,
+    "ngram_flagged": 14,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_smoke24_v1/adversarial",
+      "e938_role_safe_all_targets_smoke24_v1/held_out",
+      "e938_role_safe_all_targets_smoke24_v1/ood",
+      "e938_role_safe_all_targets_smoke24_v1/rico_held",
+      "e938_role_safe_all_targets_smoke24_v1/smoke",
+      "e938_role_safe_all_targets_smoke6_v1/adversarial",
+      "e938_role_safe_all_targets_smoke6_v1/held_out",
+      "e938_role_safe_all_targets_smoke6_v1/ood",
+      "e938_role_safe_all_targets_smoke6_v1/rico_held",
+      "e938_role_safe_all_targets_smoke6_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 4697,
+    "changed": 490,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 311,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 52,
+      "flatten_opportunities": 555
+    },
+    "literals_templatized": 35,
+    "records_templatized": 30,
+    "fallbacks": 190,
+    "fallback_reasons": {
+      "ValueError": 190
+    },
+    "cache": {
+      "hits": 3357,
+      "misses": 977
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 50,
+      "root_parent_count": 29,
+      "mean_quality_score": 0.954,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 50
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 79,
+      "root_parent_count": 44,
+      "mean_quality_score": 0.958228,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 15,
+        "generation": 13,
+        "patch": 51
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 30,
+      "root_parent_count": 21,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 30
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 70,
+      "root_parent_count": 70,
+      "mean_quality_score": 0.985714,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 62,
+        "repair": 8
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 120,
+      "root_parent_count": 108,
+      "mean_quality_score": 0.967917,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 120
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 22,
+      "root_parent_count": 22,
+      "mean_quality_score": 0.940909,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 22
+      }
+    },
+    {
+      "source_family": "prompt_paraphrase",
+      "record_count": 160,
+      "root_parent_count": 59,
+      "mean_quality_score": 0.975313,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 160
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    },
+    {
+      "source_family": "rico_real",
+      "record_count": 9,
+      "root_parent_count": 6,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 9
+      }
+    },
+    {
+      "source_family": "scope_canonical_document",
+      "record_count": 9,
+      "root_parent_count": 5,
+      "mean_quality_score": 0.894444,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 9
+      }
+    },
+    {
+      "source_family": "scope_canonical_expression",
+      "record_count": 21,
+      "root_parent_count": 17,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 21
+      }
+    },
+    {
+      "source_family": "scope_canonical_lexical",
+      "record_count": 4,
+      "root_parent_count": 4,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 4
+      }
+    },
+    {
+      "source_family": "scope_canonical_statement",
+      "record_count": 8,
+      "root_parent_count": 8,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 8
+      }
+    },
+    {
+      "source_family": "scope_identity_document",
+      "record_count": 6,
+      "root_parent_count": 6,
+      "mean_quality_score": 0.9,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 6
+      }
+    },
+    {
+      "source_family": "scope_identity_expression",
+      "record_count": 24,
+      "root_parent_count": 17,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 24
+      }
+    },
+    {
+      "source_family": "scope_identity_lexical",
+      "record_count": 11,
+      "root_parent_count": 9,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 11
+      }
+    },
+    {
+      "source_family": "scope_identity_statement",
+      "record_count": 22,
+      "root_parent_count": 15,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 22
+      }
+    },
+    {
+      "source_family": "scope_repair_expression",
+      "record_count": 13,
+      "root_parent_count": 12,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 13
+      }
+    },
+    {
+      "source_family": "scope_repair_lexical",
+      "record_count": 8,
+      "root_parent_count": 8,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 8
+      }
+    },
+    {
+      "source_family": "scope_repair_statement",
+      "record_count": 8,
+      "root_parent_count": 8,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 8
+      }
+    },
+    {
+      "source_family": "web_distilled",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 1
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.1439,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "eval_overlap_flagged",
+      "value": 14,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 3,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    },
+    {
+      "code": "sanitize_fallbacks",
+      "value": 190,
+      "message": "sanitization fell back to unchanged targets for some records; inspect sanitization.fallback_reasons"
+    }
+  ],
+  "source_anchors": {
+    "unique_roots": 176,
+    "trusted_roots": 27,
+    "trusted_root_fraction": 0.1534,
+    "promotion_authoritative": true,
+    "deficit": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5652c1d8dd4fb3b7b79d2552bf83477922d24e3a",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v33"
+    },
+    "stamped_at": "2026-08-21T19:38:21.176795+00:00"
+  }
+}

@@ -21,6 +21,8 @@ from slm_training.data.leakage import (
 )
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
+from slm_training.dsl.language_contract import assert_symbol_only_output
+from slm_training.dsl.harness_dsl import HARNESS_SCHEMA, is_harness_prompt, parse_harness_task
 from slm_training.dsl.parser import ParseError, validate, validate_output
 from slm_training.dsl.schema import (
     OUTPUT_KINDS,
@@ -1899,6 +1901,29 @@ def build_train_data(
         return detail
 
     def _accept_record(record: ExampleRecord) -> bool:
+        try:
+            harness_meta = (record.meta or {}).get("harness_dsl")
+            if harness_meta is not None or is_harness_prompt(record.prompt):
+                if not isinstance(harness_meta, dict):
+                    raise ValueError("symbolic Harness prompt lacks harness_dsl metadata")
+                task = parse_harness_task(record.prompt)
+                expected = {
+                    "schema": HARNESS_SCHEMA,
+                    "grammar_fingerprint": task.grammar_fingerprint,
+                    "operation": task.operation.value,
+                    "pack_id": task.pack_id,
+                    "payload_kind": task.payload_kind.value,
+                    "grammar_category": task.grammar_category,
+                }
+                if harness_meta != expected:
+                    raise ValueError("Harness prompt metadata mismatch")
+            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+        except ValueError as exc:
+            rejections.append(rejection_entry(
+                "symbol_only_contract", "non_canonical_harness_or_output", record_id=record.id,
+                detail={**_lineage_detail(record), "error": str(exc)},
+            ))
+            return False
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
             rejections.append(

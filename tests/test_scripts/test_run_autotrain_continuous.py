@@ -10300,6 +10300,12 @@ def test_loop_owned_generated_path_is_not_foreign() -> None:
     path = "src/slm_training/resources/evidence_store/local_index.jsonl"
     assert _mod._is_loop_owned_generated_path(path)
     assert not _mod._is_foreign_dirty_path(path)
+    sidecar = (
+        "src/slm_training/resources/data/eval/"
+        "e938_role_safe_all_targets_smoke6_v1/screening_sample_size.json"
+    )
+    assert _mod._is_loop_owned_generated_path(sidecar)
+    assert not _mod._is_foreign_dirty_path(sidecar)
     assert _mod._is_process_arm({"heal_resume": True})
     assert _mod._is_process_arm({"process_arm": True, "process_role": "first_snapshot"})
     assert not _mod._is_process_arm({"train_version": "wf_smoke_v2"})

@@ -124,6 +124,8 @@ def classify_blocker(kind: str, reason: str) -> BlockerClass:
         return "data"
     if kind_s == "foreign_dirty_tree":
         return "dirty_tree"
+    if kind_s in {"loop_stalled_no_campaign", "heal_postcondition_failed", "vacuous_pass"}:
+        return "unknown"
     if kind_s == "repair_harness":
         if any(tok in text for tok in _REPO_INTERNAL_TOKENS):
             return "code"
