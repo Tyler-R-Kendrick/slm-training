@@ -253,6 +253,26 @@ work — not only when the user types `sdlc`.
   fix all relevant status checks (billing/budget exceeded is the only allowed
   CI pause), then **squash-merge** every PR the parent opened unless the human
   explicitly said not to merge.
+
+### GitHub and shared-worktree Git authority
+
+The GitHub connector is the authority for remote Git operations and delivery:
+use it for branch/ref creation or updates, commits/trees, pull requests,
+reviews, checks, and squash merges. Local `git` is for inspection, tests, and
+working-tree edits only. Do not use shell `git push`, `git merge`, `git commit`,
+or manual ref surgery to work around shared-worktree metadata, hooks, or a
+read-only `.git` surface.
+
+When a loop or delivery step reports dirty-tree protection, diagnose the exact
+paths and owner first. Do not classify GitHub/metadata friction as a product
+failure and do not “self-heal” by creating local commits or merging stale
+branches. Remediation is: preserve the worktree, use the GitHub connector to
+publish the intended commit/branch/PR, wait for connector-reported checks and
+merge state, then refresh the local checkout and rerun the exact blocked step.
+If the connector is unavailable, report the delivery blocker explicitly rather
+than substituting shell Git mutations. A training/eval loop may proceed only
+after its canonical status confirms a new cycle; a generated artifact or local
+commit alone is not cycle evidence.
 - **Workspaces:** `scalar register` for scale Git settings (sparse-checkout,
   partial clones on new clones, background maintenance); prefer dedicated
   worktrees + cone sparse-checkout per task so agents do not collide.
@@ -598,3 +618,4 @@ This repository uses OpenWiki for recurring code documentation. Start with `docs
 The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
 
 <!-- OPENWIKI:END -->
+
