@@ -1,0 +1,160 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c577",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.5313492063492063,
+    "eval_nll": null,
+    "latency_ms_p50": 8645.02,
+    "meaningful_program_rate": 0.20833333333333334,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.5313492063492063,
+    "smoke.latency_ms_p50": 8645.02,
+    "smoke.meaningful_program_rate": 0.20833333333333334,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.1363875,
+    "structural_similarity": 0.1363875
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 577,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260826-continuous-openui-local-8c0b60dd-c577-control": 124,
+      "c20260826-continuous-openui-local-8c0b60dd-c577-current-rung-data-heal": 0
+    },
+    "arm_order": [
+      "c20260826-continuous-openui-local-8c0b60dd-c577-control",
+      "c20260826-continuous-openui-local-8c0b60dd-c577-current-rung-data-heal"
+    ],
+    "arm_seed": 100575,
+    "arm_skipped": {},
+    "baseline_trainable_params": null,
+    "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c577",
+    "candidate_id": "c20260826-continuous-openui-local-8c0b60dd-c577-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.5313492063492063,
+      "eval_nll": null,
+      "latency_ms_p50": 8645.02,
+      "meaningful_program_rate": 0.20833333333333334,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.5313492063492063,
+      "smoke.latency_ms_p50": 8645.02,
+      "smoke.meaningful_program_rate": 0.20833333333333334,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.1363875,
+      "structural_similarity": 0.1363875
+    },
+    "candidate_trainable_params": 1601794,
+    "climb_policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "control_id": "c20260826-continuous-openui-local-8c0b60dd-c577-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 577,
+    "cycle_intent": "retry_measurement",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-26T22:54:49Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "policy_version": "v14",
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c577-control:missing_scoreboard",
+      "fixture_insufficient_n:c20260826-continuous-openui-local-8c0b60dd-c577-current-rung-data-heal-latprobe",
+      "fixture_insufficient_n:c20260826-continuous-openui-local-8c0b60dd-c577-control-latprobe",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c577",
+    "cycle_index": 577,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c577-control:missing_scoreboard",
+      "fixture_insufficient_n:c20260826-continuous-openui-local-8c0b60dd-c577-current-rung-data-heal-latprobe",
+      "fixture_insufficient_n:c20260826-continuous-openui-local-8c0b60dd-c577-control-latprobe",
+      "primary_metric_unavailable",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms",
+      "keep_ship_gates_do_not_enqueue_confirm"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c577-control:missing_scoreboard",
+    "fixture_insufficient_n:c20260826-continuous-openui-local-8c0b60dd-c577-current-rung-data-heal-latprobe",
+    "fixture_insufficient_n:c20260826-continuous-openui-local-8c0b60dd-c577-control-latprobe",
+    "primary_metric_unavailable",
+    "fixture_insufficient_n_alone",
+    "fixture_volume_gate_ship_only"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "873b5ef31b9fe5994a047ce73207ae4a163c7262",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-26T22:55:51.767132+00:00"
+  }
+}
