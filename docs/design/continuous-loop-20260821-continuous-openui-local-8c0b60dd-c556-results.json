@@ -92,7 +92,7 @@
     }
   },
   "data_rebuild": {
-    "accepted": false,
+    "accepted": true,
     "attempts": [
       {
         "outcome": "failed_closed",
@@ -123,6 +123,35 @@
             "harness.train_data": "v33"
           },
           "stamped_at": "2026-08-26T15:54:36.996218+00:00"
+        }
+      },
+      {
+        "admitted_unique_roots": 8,
+        "artifact_paths": [
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/quality_report.json",
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/rejected.jsonl",
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/synthesis_feedback.json",
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/manifest.json"
+        ],
+        "capability_certificate": false,
+        "claim_class": "fixture_wiring",
+        "content_fingerprint": "8165130ad96924f6bccb2add922b8d4b813c842560f3eb4d210f2a50c42b8a0e",
+        "hard_findings": [
+          "synthetic_anchor_deficit"
+        ],
+        "mean_quality_score": 1.0,
+        "open_recommendations": 16,
+        "outcome": "fixture_rebuild_complete",
+        "record_count": 183,
+        "requested_unique_roots": 8,
+        "version_stamp": {
+          "stamp_schema": "version_stamp/v1",
+          "code_commit": "07e329de59150ffc92a01b7daee87cd7d85d4cf2",
+          "code_dirty": false,
+          "components": {
+            "harness.train_data": "v34"
+          },
+          "stamped_at": "2026-08-26T17:46:46.128010+00:00"
         }
       }
     ],

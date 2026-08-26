@@ -32,7 +32,14 @@
   dirty-stamped, admitted 0/8 requested ProgramSpec roots, retained 13 open
   synthesis recommendations, and reported hard `insufficient_unique_roots`
   plus `synthetic_anchor_deficit` findings
-- next: commit the plan-alias regression fix, replay the identical immutable
-  build clean, inspect feedback again, and only then bind the rebuild receipt
+- clean replay: **fixture rebuild complete** at `07e329de5`; 183 records,
+  mean quality 1.0, fingerprint `8165130a…c42b8a0e`, clean v34 stamp, and all
+  8/8 requested canonical ProgramSpec roots admitted
+- feedback disposition: `insufficient_unique_roots` is closed. The remaining
+  `prefix_concentration` / `template_concentration` recommendations and hard
+  `synthetic_anchor_deficit` remain recorded; this offline fixture has no
+  trusted anchors and therefore cannot support a capability or promotion claim
+- next: bind this fixture-only rebuild receipt, filter to admitted Harness V1
+  rows, and resume the canonical loop without weakening any gate
 
 Auto-documented by the continuous driver self-heal closeout. Fixture screening only — not a ship claim.
