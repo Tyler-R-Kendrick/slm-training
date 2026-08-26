@@ -3560,3 +3560,15 @@ Date (UTC) column). Do not delete history.
 - checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c565/runs/c20260826-continuous-openui-local-8c0b60dd-c565-{control,current-rung-data-heal}/checkpoints/last.pt`.
 - candidate failures include meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control has no scoreboard, so no matched comparison exists.
 - history: both checkpoints were created on 2026-08-26. They are fixture/scratch artifacts, intentionally local with no bucket sync, and are not promoted.
+
+## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c570)
+
+| Arm | Params | Suite n | Complete n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Gate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `c570-control` | 1,661,698 | smoke 24 | 0 | — | — | — | — | 4.418 | incomplete: 24 decode timeouts |
+| `c570-current-rung-data-heal` | 1,601,794 | smoke 24 | 24 | 1.000 | 0.208 | 0.136 | 0.531 | 8.454 | fail |
+
+- recipe: local CPU, scratch context, 173 steps, batch size 2, grammar-constrained, 70-second arm walls; control train `hillclimb_strict_v2_role_safe`, candidate train `continuous_i10_continuous_openui_local_c556_harness`.
+- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c570/runs/c20260826-continuous-openui-local-8c0b60dd-c570-{control,current-rung-data-heal}/checkpoints/last.pt`.
+- candidate failures include meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control completed no documents, so the matched comparison is incomplete and non-promotable.
+- history: both checkpoints were created on 2026-08-26. They are fixture/scratch artifacts, intentionally local with `sync_checkpoints=false`, no bucket sync, and no promotion.

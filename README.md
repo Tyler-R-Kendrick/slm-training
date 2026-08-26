@@ -2881,3 +2881,12 @@ tests/
 | `c565-current-rung-data-heal` | n=24; parse 1.000; meaningful 0.375; structural 0.299; binder F1 0.531; eval NLL 7.450 | ship gates failed |
 
 Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL_CARD.md). No promotion or bucket sync.
+
+## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c570)
+
+| Checkpoint | Smoke evidence | Status |
+| --- | --- | --- |
+| `c570-control` | n=24; complete n=0; 24 decode timeouts; eval NLL 4.418 | incomplete |
+| `c570-current-rung-data-heal` | n=24; parse 1.000; meaningful 0.208; structural 0.136; binder F1 0.531; eval NLL 8.454 | ship gates failed |
+
+Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL_CARD.md). No promotion or bucket sync.
