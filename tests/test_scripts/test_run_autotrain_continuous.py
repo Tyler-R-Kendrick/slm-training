@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +26,24 @@ _SPEC.loader.exec_module(_mod)
 
 _classify_metric_tradeoff = _mod._classify_metric_tradeoff
 _PRIMARY = "smoke.latency_ms_p50"
+
+
+def test_package_import_defers_dsl_but_preserves_legacy_exports() -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys, slm_training; "
+                "assert 'slm_training.dsl' not in sys.modules; "
+                "from slm_training import ExampleRecord, parse; "
+                "assert ExampleRecord.__module__ == 'slm_training.dsl.schema'; "
+                "assert callable(parse)"
+            ),
+        ],
+        check=True,
+        env={**os.environ, "PYTHONPATH": str(_SCRIPT.parents[1] / "src")},
+    )
 
 
 @pytest.fixture(autouse=True)
