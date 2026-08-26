@@ -3548,3 +3548,15 @@ Date (UTC) column). Do not delete history.
 - campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556`
 - checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c565)
+
+| Arm | Params | Suite n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Gate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `c565-control` | 1,601,794 | — | — | — | — | — | — | incomplete: evaluation timed out |
+| `c565-current-rung-data-heal` | 1,601,794 | smoke 24 | 1.000 | 0.375 | 0.299 | 0.531 | 7.450 | fail |
+
+- recipe: local CPU, scratch context, 401 requested steps, batch size 2, grammar-constrained, `design-md-context` honesty.
+- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c565/runs/c20260826-continuous-openui-local-8c0b60dd-c565-{control,current-rung-data-heal}/checkpoints/last.pt`.
+- candidate failures include meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control has no scoreboard, so no matched comparison exists.
+- history: both checkpoints were created on 2026-08-26. They are fixture/scratch artifacts, intentionally local with no bucket sync, and are not promoted.
