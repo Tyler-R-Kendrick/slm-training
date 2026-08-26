@@ -211,6 +211,7 @@
       "kept": 629,
       "source_rows": 676
     },
+    "document_action": "reuse clean tracked connector evidence; no writable index required",
     "gates_weakened": false,
     "validation": "load_train_records + role-safe output + synthesis-feedback clearance"
   },
@@ -226,14 +227,14 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "6efbd39977978d162e9bcda273b37d9afd7e9686",
-    "code_dirty": false,
+    "code_commit": "03f85369b75490fb4ff1d03244b453ae8cce3d2c",
+    "code_dirty": true,
     "components": {
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v26",
       "gates.ship": "openui_ship_gates_v6",
       "harness.model_build.eval": "v101",
-      "harness.autoresearch.experiment_campaign": "v285",
+      "harness.autoresearch.experiment_campaign": "v286",
       "model.twotower": "v321"
     },
     "stamp_schema": "version_stamp/v1",

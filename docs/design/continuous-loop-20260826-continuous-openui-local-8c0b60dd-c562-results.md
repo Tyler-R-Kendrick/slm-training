@@ -27,4 +27,5 @@ Auto-documented by the continuous driver self-heal closeout. Fixture screening o
 - Candidate failure: 15 of 106 historical harness rows violated the role-safe output contract; the repaired derivation now keeps 91/183 source rows after both harness and role checks.
 - Control failure: synthesis feedback was unacknowledged and 47/676 rows violated the same role contract; the repaired derivation keeps 629 rows.
 - Both derived snapshots pass `load_train_records`, role-safe validation, and synthesis-feedback clearance. Their receipts retain 19 and 24 emitted experiment candidates; gates were not weakened.
+- Pending document actions now reuse clean, tracked connector-published evidence instead of regenerating it and requiring a writable Git index.
 - The next cycle remains infrastructure repair evidence until both arms produce scoreboards.

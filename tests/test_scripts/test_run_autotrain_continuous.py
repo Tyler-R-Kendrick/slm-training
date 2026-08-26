@@ -10184,6 +10184,66 @@ def test_self_heal_document_actions_writes_commits_acks(
     _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
+def test_self_heal_document_actions_reuses_clean_connector_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-continuous-openui-local-c2"
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+    )
+    md, js = _mod._continuous_docs_paths(repo, campaign_id)
+    md.write_text(f"# {campaign_id}\n\nconnector evidence\n", encoding="utf-8")
+    js.write_text(
+        json.dumps(
+            {
+                "campaign_id": campaign_id,
+                "loop_id": loop_id,
+                "version_stamp": {"code_dirty": False},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    subprocess.check_call(["git", "add", "docs"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "connector docs"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    monkeypatch.setattr(
+        _mod,
+        "_git_commit_paths",
+        lambda *_args, **_kwargs: pytest.fail("clean connector docs were regenerated"),
+    )
+
+    assert (
+        _mod._self_heal_document_actions(
+            cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+        )
+        == "document_closeout"
+    )
+    assert "connector evidence" in md.read_text(encoding="utf-8")
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
 def test_self_heal_does_not_ack_repair_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

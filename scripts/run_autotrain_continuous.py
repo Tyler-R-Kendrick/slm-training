@@ -5094,6 +5094,58 @@ def _self_heal_document_actions(
     if not pending_docs:
         return None
 
+    md_path, json_path = _continuous_docs_paths(cwd, campaign_id)
+    rel_docs = [
+        str(md_path.relative_to(cwd)),
+        str(json_path.relative_to(cwd)),
+    ]
+    if md_path.is_file() and json_path.is_file():
+        try:
+            published = _read_json(json_path)
+            clean = not _git(
+                "status",
+                "--porcelain",
+                "--",
+                *rel_docs,
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-document-existing-status",
+            ).strip()
+            identity_matches = (
+                published.get("campaign_id") == campaign_id
+                and published.get("loop_id") == loop_id
+                and published.get("version_stamp", {}).get("code_dirty") is False
+            )
+            tracked = all(
+                _git(
+                    "ls-files",
+                    "--error-unmatch",
+                    rel,
+                    cwd=cwd,
+                    root=root,
+                    loop_id=loop_id,
+                    stage="self-heal-document-existing-tracked",
+                ).strip()
+                for rel in rel_docs
+            )
+        except Exception:  # noqa: BLE001 — fall through to normal regeneration
+            clean = identity_matches = tracked = False
+        if clean and identity_matches and tracked:
+            for index, _action in pending_docs:
+                _ack_document_action(
+                    root,
+                    handoff,
+                    action_index=index,
+                    evidence_uris=rel_docs,
+                )
+            print(
+                f"SELF_HEAL_DOCUMENT_REUSE campaign={campaign_id} "
+                f"files={rel_docs} acked={len(pending_docs)}",
+                flush=True,
+            )
+            return "document_closeout"
+
     delivery_path = root / campaign_id / "sdlc_delivery.json"
     delivery: dict[str, Any] = {}
     if delivery_path.is_file():
@@ -5104,7 +5156,6 @@ def _self_heal_document_actions(
         except Exception:  # noqa: BLE001 — still document what we have
             delivery = {}
 
-    md_path, json_path = _continuous_docs_paths(cwd, campaign_id)
     md_path.parent.mkdir(parents=True, exist_ok=True)
     md_text, payload = _render_continuous_cycle_docs(
         campaign_id=campaign_id,

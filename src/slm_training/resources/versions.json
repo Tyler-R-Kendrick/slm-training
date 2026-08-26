@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "A pending document action reuses clean tracked connector-published cycle evidence when campaign identity matches and code_dirty is false, avoiding regeneration and writable-index dependence.",
+          "version": "v286"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Prepare role-safe derived fixture snapshots for screening controls, retain emitted synthesis experiment candidates in action receipts, and reject role-unsafe records during historical I10 harness preparation.",
           "version": "v285"
         },
@@ -6995,7 +7000,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v285"
+      "version": "v286"
     },
     "harness.autoresearch.formal": {
       "history": [
