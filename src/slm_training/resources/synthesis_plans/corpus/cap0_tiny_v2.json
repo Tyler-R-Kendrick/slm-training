@@ -15,13 +15,13 @@
   "generators": [
     {
       "component_id": "pack.corpus_generator",
-      "version": "v32"
+      "version": "v34"
     }
   ],
   "validators": [
     {
       "component_id": "pack.oracle",
-      "version": "v32"
+      "version": "v34"
     },
     {
       "component_id": "symbolic_surface",
@@ -64,8 +64,17 @@
       "strategy": "coverage_guided_typed_ast",
       "max_depth": 2,
       "max_width": 3,
-      "components": [],
-      "required_component_groups": [],
+      "components": [
+        "TextContent",
+        "Button",
+        "Card",
+        "Input"
+      ],
+      "required_component_groups": [
+        [
+          "TextContent"
+        ]
+      ],
       "property_value_classes": [],
       "forward_reference_families": [],
       "required_coverage_axes": [

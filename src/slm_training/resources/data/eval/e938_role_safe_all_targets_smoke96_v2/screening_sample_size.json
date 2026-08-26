@@ -1,0 +1,79 @@
+{
+  "eval_version": "e938_role_safe_all_targets_smoke96_v2",
+  "report": {
+    "alpha": "1/20",
+    "binding_constraints": [
+      "wall_budget",
+      "suite_volume"
+    ],
+    "bounds": [
+      {
+        "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim",
+        "authority": "theorem_backed_exact",
+        "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+        "env": {
+          "alpha_den": 20,
+          "alpha_num": 1,
+          "n_candidate": 6,
+          "two_pow_n_candidate": 64
+        },
+        "value": "64"
+      },
+      {
+        "assumption": "normal-approximation z-power over paired differences; budgeting approximation declared by autoresearch.power, not proved arithmetic",
+        "authority": "assumption_backed",
+        "bound_ast_id": "power.required_n_for_effect",
+        "env": {
+          "alpha": "1/20",
+          "minimum_effect": "1/20",
+          "observed_sd": "1741/10000",
+          "paired": true
+        },
+        "value": "96"
+      },
+      {
+        "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits",
+        "authority": "theorem_backed_exact",
+        "bound_ast_id": "bound.screening_n.budget_upper.v1",
+        "env": {
+          "min_decode_seconds": 2,
+          "usable_wall_seconds": 42
+        },
+        "value": "21"
+      }
+    ],
+    "budget_ceiling_n": 21,
+    "chosen_n": null,
+    "decidability_floor_n": 6,
+    "findings": [
+      {
+        "authority": "climb_signal_not_gate",
+        "code": "screening_n_range_empty",
+        "evidence": {
+          "binding_constraints": [
+            "wall_budget",
+            "suite_volume"
+          ],
+          "budget_ceiling_n": 21,
+          "decidability_floor_n": 6,
+          "n_min": 96,
+          "power_floor_n": 96,
+          "suite_ceiling_n": 24
+        },
+        "severity": "experiment_recommendation",
+        "suggestion": "generate and persist 72 smoke records (floor is 96); do not screen at 24; the arm wall affords 21 records at the declared decode floor \u2014 cheaper per-record decode or a larger stage share, never a silent wall++"
+      }
+    ],
+    "max_candidate_n": 64,
+    "must_generate": true,
+    "n_max": 21,
+    "n_min": 96,
+    "power_floor_n": 96,
+    "promotion_authority": false,
+    "schema_version": "screening_sample_size/v1",
+    "suite_ceiling_n": 24,
+    "verdict": "infeasible_range_empty"
+  },
+  "schema_version": "screening_sample_size/v1",
+  "smoke_n": 0
+}

@@ -12,13 +12,13 @@ from slm_training.dsl.schema import ExampleRecord
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _ROOT_RE = re.compile(r"(?m)^root\s*=")
-_ASSIGNMENT_RE = re.compile(
-    r"(?m)^\s*([a-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$"
-)
+_ASSIGNMENT_RE = re.compile(r"(?m)^\s*([a-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$")
 _DECLARATION_COMPONENT_RE = re.compile(r"^\s*([A-Z][A-Za-z0-9]*)\s*\(")
 _IDENTIFIER_RE = re.compile(r"\b[a-z_][A-Za-z0-9_]*\b")
 _QUOTED_RE = re.compile(r'"(?:\\.|[^"\\])*"')
-_COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
+_COMPONENT_PROMPT_RE = re.compile(
+    r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I
+)
 _CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
 _SEMANTIC_ROLE_PROPERTY_ALIASES = {
     "action": {"label"},
@@ -132,7 +132,7 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
                 continue
-            if re.match(r"\s+like\b", normalized[span[1] :]):
+            if re.match(r"\s+(?:like|slot)\b", normalized[span[1] :]):
                 continue
             occupied.append(span)
             found.add(name)
@@ -280,9 +280,7 @@ def schema_placeholder_role_matches(
     )
 
 
-def semantic_role_contract(
-    placeholders: list[str], component_names: list[str]
-) -> str:
+def semantic_role_contract(placeholders: list[str], component_names: list[str]) -> str:
     """Describe visible slot roles using only visible schema component mentions."""
     candidates_by_slot = semantic_role_candidates(placeholders, component_names)
     groups: dict[str, dict[str, tuple[str, ...]]] = {}
@@ -426,8 +424,7 @@ def _semantic_request(record: ExampleRecord) -> str:
 def semantic_contract_for_openui(openui: str) -> dict[str, Any]:
     """Build a deterministic semantic scaffold from an OpenUI document."""
     assignments = {
-        name: expression
-        for name, expression in _ASSIGNMENT_RE.findall(openui.strip())
+        name: expression for name, expression in _ASSIGNMENT_RE.findall(openui.strip())
     }
     if "root" not in assignments:
         raise ValueError("semantic contract requires a root declaration")
@@ -461,23 +458,17 @@ def render_semantic_contract_prompt(contract: dict[str, Any]) -> str:
     """Render the canonical prompt whose claims are independently judgeable."""
     components = ", ".join(
         f"{name} x{count}"
-        for name, count in sorted(
-            dict(contract.get("component_counts") or {}).items()
-        )
+        for name, count in sorted(dict(contract.get("component_counts") or {}).items())
     )
     declarations = "; ".join(
         f"{name} as {component}"
-        for name, component in sorted(
-            dict(contract.get("declarations") or {}).items()
-        )
+        for name, component in sorted(dict(contract.get("declarations") or {}).items())
     )
     references = "; ".join(
         f"{name} references {', '.join(str(ref) for ref in refs)}"
         for name, refs in sorted(dict(contract.get("references") or {}).items())
     )
-    placeholders = ", ".join(
-        str(value) for value in contract.get("placeholders") or ()
-    )
+    placeholders = ", ".join(str(value) for value in contract.get("placeholders") or ())
     return (
         "Create an OpenUI program. "
         f"Component inventory: {components or 'none'}. "
@@ -548,12 +539,24 @@ def _matches_schema_value(
             inferred = (
                 "number"
                 if value.get("name")
-                in {"Count", "Sum", "Avg", "Min", "Max", "Round", "Abs", "Ceil", "Floor"}
+                in {
+                    "Count",
+                    "Sum",
+                    "Avg",
+                    "Min",
+                    "Max",
+                    "Round",
+                    "Abs",
+                    "Ceil",
+                    "Floor",
+                }
                 else None
             )
         elif kind == "BinOp" and value.get("op") == "+":
             left = value.get("left")
-            inferred = "string" if isinstance(left, dict) and left.get("k") == "Str" else None
+            inferred = (
+                "string" if isinstance(left, dict) and left.get("k") == "Str" else None
+            )
         if "anyOf" in spec:
             return any(
                 _matches_schema_value(value, branch, definitions)
@@ -645,7 +648,9 @@ def _schema_semantic_reasons(openui: str) -> list[str]:
         if isinstance(value, dict):
             component = value.get("typeName")
             props = value.get("props")
-            definition = definitions.get(component) if isinstance(component, str) else None
+            definition = (
+                definitions.get(component) if isinstance(component, str) else None
+            )
             if isinstance(definition, dict) and isinstance(props, dict):
                 property_specs = definition.get("properties") or {}
                 required = set(definition.get("required") or ())
@@ -730,9 +735,10 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
             reasons.append("prompt_boolean_missing_from_output")
         if len(components) > 1:
             reasons.append("prompt_lexical_target_wrapped_in_unrelated_layout")
-    if (
-        str((record.meta or {}).get("source_family") or "") == "language_contract"
-        and lowered_prompt.startswith("emit the openui construct:")
+    if str(
+        (record.meta or {}).get("source_family") or ""
+    ) == "language_contract" and lowered_prompt.startswith(
+        "emit the openui construct:"
     ):
         reasons.append("prompt_under_specified_for_layout")
     if (
@@ -769,7 +775,11 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
     reasons.extend(_semantic_contract_reasons(record))
     if record.target_kind == "document":
         reasons.extend(_schema_semantic_reasons(openui))
-    return {"ok": not reasons, "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4), "reasons": reasons}
+    return {
+        "ok": not reasons,
+        "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4),
+        "reasons": reasons,
+    }
 
 
 def component_counts(openui: str) -> dict[str, int]:

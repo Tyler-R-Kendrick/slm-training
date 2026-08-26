@@ -136,6 +136,9 @@ def test_both_axes_binding() -> None:
     )
     assert report.verdict == "infeasible_range_empty"
     assert set(report.binding_constraints) == {"wall_budget", "suite_volume"}
+    # Generation cannot beat a wall bind: must_generate=True here commanded
+    # an unwinnable heal loop (18 consecutive vacuous passes, 2026-08-22).
+    assert report.must_generate is False
 
 
 def test_insufficient_evidence_without_decode_observation() -> None:

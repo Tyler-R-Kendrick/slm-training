@@ -310,21 +310,17 @@ def _screening_suite_records() -> int | None:
     """Record count of the resolved smoke screening suite (volume ceiling)."""
 
     try:
-        from slm_training.autoresearch.engine import default_eval_version
         from slm_training.data.store import DataStore
-
-        records = (
-            DataStore().resolve_path("eval", default_eval_version())
-            / "suites"
-            / "smoke"
-            / "records.jsonl"
-        )
-        if records.is_file():
-            return sum(
-                1
-                for line in records.read_text(encoding="utf-8").splitlines()
-                if line.strip()
-            )
+        store = DataStore()
+        candidates = list((store.published_root / "eval").glob("*/suites/smoke/records.jsonl"))
+        candidates += list((store.local_root / "eval").glob("*/suites/smoke/records.jsonl"))
+        counts = [
+            sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+            for path in candidates
+            if path.is_file()
+        ]
+        if counts:
+            return max(counts)
     except Exception:  # noqa: BLE001 — telemetry input only, never fatal
         return None
     return None
@@ -347,8 +343,8 @@ def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] 
     )
 
 
-def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
-    """Append unused extra smoke fixtures to the tracked seed file."""
+def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> tuple[list[Path], int]:
+    """Append unused extra smoke fixtures; return (paths, resulting smoke n)."""
     from slm_training.autoresearch.screening_sample_size import (
         extra_smoke_fixtures_for_deficit,
     )
@@ -368,13 +364,13 @@ def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
     need = max(0, int(n_min) - smoke_n)
     extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
     if not extras:
-        return []
+        return [], smoke_n
     with seed_path.open("a", encoding="utf-8") as fh:
         if lines and lines[-1].strip():
             fh.write("\n")
         for rec in extras:
             fh.write(json.dumps(rec, sort_keys=True) + "\n")
-    return [seed_path]
+    return [seed_path], smoke_n + len(extras)
 
 
 def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
@@ -407,7 +403,18 @@ def _self_heal_rebuild_screening_eval(
     if not isinstance(report, dict) or not report.get("must_generate"):
         return None
     n_min = int(report.get("n_min") or 6)
-    _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    _seed_paths, achievable_smoke_n = _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    if achievable_smoke_n < n_min:
+        # Fail closed: the fixture pool cannot reach n_min. Publishing a
+        # smaller (or empty) suite under a new id and claiming success is a
+        # vacuous heal; refuse so the pass is classified/escalated instead.
+        print(
+            "SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL "
+            f"reason=fixture_pool_short achievable={achievable_smoke_n} "
+            f"n_min={n_min}",
+            flush=True,
+        )
+        return None
     eval_root = cwd / "src/slm_training/resources/data/eval"
     eval_version = allocate_screening_suite_id(eval_root, n_min)
     train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
@@ -451,6 +458,19 @@ def _self_heal_rebuild_screening_eval(
         return None
     sidecar = published / "screening_sample_size.json"
     n_after, report_after = _screening_n_report()
+    if n_after <= 0 or (
+        isinstance(report_after, dict) and report_after.get("must_generate")
+    ):
+        # Postcondition: the rebuild must yield a runnable screen. A pass
+        # that still resolves n=0 / must_generate is a failed heal, never a
+        # "soft_healed" success (the 18-vacuous-pass livelock signature).
+        print(
+            "SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL "
+            f"reason=postcondition_unrunnable n_after={n_after} "
+            f"version={eval_version}",
+            flush=True,
+        )
+        return None
     sidecar.write_text(
         json.dumps(
             {
@@ -492,15 +512,17 @@ def _self_heal_rebuild_screening_eval(
                 if action.kind == "rebuild_data"
                 and "screening suite" in action.reason
             ]
+            campaign_manifest = root / campaign_id / "data_manifest.json"
+            campaign_manifest.parent.mkdir(parents=True, exist_ok=True)
+            campaign_manifest.write_bytes(
+                (published / "manifest.json").read_bytes()
+            )
             for index, _action in pending:
                 _ack_rebuild_data_action(
                     root,
                     handoff,
                     action_index=index,
-                    evidence_uris=[
-                        f"src/slm_training/resources/data/eval/{eval_version}/"
-                        "screening_sample_size.json"
-                    ],
+                    evidence_uris=["data_manifest.json"],
                 )
     print(
         f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
@@ -3960,7 +3982,13 @@ def _yaml_mapping_equal(left: str, right: str) -> bool:
     except ImportError:  # pragma: no cover — PyYAML is a repo dep
         return False
     try:
-        return yaml.safe_load(left) == yaml.safe_load(right)
+        left_value = yaml.safe_load(left)
+        right_value = yaml.safe_load(right)
+        for value in (left_value, right_value):
+            if isinstance(value, dict) and "languages" in value:
+                value.setdefault("language_servers", value["languages"])
+                value.pop("languages", None)
+        return left_value == right_value
     except yaml.YAMLError:
         return False
 
@@ -3979,21 +4007,30 @@ def _maybe_restore_serena_project_yml(
     if not work.is_file():
         return None
     try:
-        head = _git("show", f"HEAD:{_SERENA_PROJECT_YML}", **git_kw)
+        head = subprocess.run(
+            ["git", "show", f"HEAD:{_SERENA_PROJECT_YML}"],
+            cwd=cwd,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
     except Exception:  # noqa: BLE001 — missing HEAD path is not this heal
         return None
     work_text = work.read_text(encoding="utf-8")
     if not _yaml_mapping_equal(head, work_text):
         return None
-    _git(
-        "restore",
-        "--source=HEAD",
-        "--worktree",
-        "--staged",
-        "--",
-        _SERENA_PROJECT_YML,
-        stage="self-heal-serena-yml" if git_kw.get("root") is not None else None,
-        **{k: v for k, v in git_kw.items() if k != "stage"},
+    subprocess.run(
+        [
+            "git",
+            "restore",
+            "--source=HEAD",
+            "--worktree",
+            "--staged",
+            "--",
+            _SERENA_PROJECT_YML,
+        ],
+        cwd=cwd,
+        check=True,
     )
     print("SELF_HEAL_SERENA_PROJECT_YML reason=comment_whitespace_strip", flush=True)
     return "serena_project_yml_comment_strip"
@@ -5213,14 +5250,7 @@ def _self_heal_continuous_dirty_tree(
         cwd=cwd, paths=paths, git_kw=git_kw
     )
     if serena_kind:
-        porcelain = _git(
-            "status",
-            "--porcelain",
-            stage="self-heal-dirty-status" if root is not None else None,
-            **git_kw,
-        )
-        if not porcelain.strip():
-            return serena_kind
+        return serena_kind
         paths = _porcelain_paths(porcelain)
         if not paths:
             return serena_kind

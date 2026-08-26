@@ -75,7 +75,11 @@ def test_v2_plan_loader_does_not_require_staged_graph(tmp_path: Path) -> None:
     assert manifest["corpus_generation"]["unique_root_targets"] == [4]
     assert result["quality_report"]["claim_class"] == "fixture_wiring"
     assert result["quality_report"]["capability_certificate"] is False
-    assert result["quality_report"]["unique_roots"]["prompt_provider_authoritative"] is False
+    assert (
+        result["quality_report"]["unique_roots"]["prompt_provider_authoritative"]
+        is False
+    )
+    assert result["quality_report"]["unique_roots"]["admitted"] == 4
     assert "pair_quality" in result["quality_report"]
     assert "source_anchors" in result["quality_report"]
     assert result["synthesis_feedback"]["capability_certificate"] is False
@@ -164,7 +168,11 @@ def test_v2_prompt_stamps_pair_quality_provenance(monkeypatch) -> None:
         cue_intervention=None,
         invariance_group_id="inv-1",
         provider_id="offline",
-        provenance={},
+        provenance={
+            "required_fact_phrases": ["title"],
+            "target_fact_phrases": ["title"],
+            "forbidden_fact_phrases": ["sidebar"],
+        },
     )
     monkeypatch.setattr("slm_training.dsl.parser.validate", lambda source: object())
     monkeypatch.setattr(
@@ -186,8 +194,13 @@ def test_v2_prompt_stamps_pair_quality_provenance(monkeypatch) -> None:
     assert rendered.prompt == chosen.prompt_text
     assert rendered.provenance["renderer_family"] == "concise_intent"
     assert rendered.provenance["template_id"] == "inv-1"
-    assert rendered.provenance["required_facts"] == ["title"]
-    assert rendered.provenance["forbidden_facts"] == ["sidebar"]
+    assert rendered.provenance["required_fact_ids"] == ["title"]
+    assert rendered.provenance["forbidden_fact_ids"] == ["sidebar"]
+    assert rendered.provenance["pair_required_facts"] == ["title"]
+    assert rendered.provenance["pair_target_facts"] == ["title"]
+    assert rendered.provenance["pair_forbidden_facts"] == ["sidebar"]
+    assert "required_facts" not in rendered.provenance
+    assert "forbidden_facts" not in rendered.provenance
     assert len(rendered.items) == 1
 
 
@@ -298,7 +311,9 @@ def test_counterfactual_failure_keeps_repairs(monkeypatch) -> None:
         lambda spec, config: _ProgramspecPrompt("Need a title.", {}),
     )
     monkeypatch.setattr("slm_training.data.progspec.emit_record", lambda *a, **k: gold)
-    monkeypatch.setattr("slm_training.data.verify.stamp_record", lambda record, ctx: record)
+    monkeypatch.setattr(
+        "slm_training.data.verify.stamp_record", lambda record, ctx: record
+    )
     monkeypatch.setattr(
         "slm_training.evals.learnability_diagnostics.make_interventions",
         lambda *a, **k: (),

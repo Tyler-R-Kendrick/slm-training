@@ -1,0 +1,53 @@
+{
+  "version": "e938_role_safe_all_targets_smoke96_v1",
+  "source": "fixture",
+  "seed_path": "src/slm_training/resources/test_seeds.jsonl",
+  "rico_path": null,
+  "rico_hf_split": null,
+  "rico_limit": null,
+  "rico_hf_cache_path": "src/slm_training/resources/rico/hf_test_cache.jsonl",
+  "target_records": null,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 37,
+    "changed": 37,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 35,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 2
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 0,
+      "misses": 37
+    }
+  },
+  "suite_counts": {
+    "smoke": 24,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 0
+  },
+  "total_records": 37,
+  "error_count": 0,
+  "errors": [],
+  "leakage_rejected": 0,
+  "train_manifest": "/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/src/slm_training/resources/data/train/e937_role_safe_all_targets_v2/manifest.json",
+  "built_at": "2026-08-21T23:48:33.366642+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3ff5e71106b48e71629267b13176dbb8f5c7d857",
+    "code_dirty": false,
+    "components": {
+      "data.test_build": "v8"
+    },
+    "stamped_at": "2026-08-21T23:48:33.401832+00:00"
+  }
+}

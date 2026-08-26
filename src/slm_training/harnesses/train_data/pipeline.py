@@ -22,7 +22,11 @@ from slm_training.data.leakage import (
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.language_contract import assert_symbol_only_output
-from slm_training.dsl.harness_dsl import HARNESS_SCHEMA, is_harness_prompt, parse_harness_task
+from slm_training.dsl.harness_dsl import (
+    HARNESS_SCHEMA,
+    is_harness_prompt,
+    parse_harness_task,
+)
 from slm_training.dsl.parser import ParseError, validate, validate_output
 from slm_training.dsl.schema import (
     OUTPUT_KINDS,
@@ -712,15 +716,17 @@ class _ProgramspecPrompt:
 
 
 def _prompt_provenance(candidate: Any) -> dict[str, Any]:
+    provenance = dict(candidate.provenance)
     return {
         "renderer_family": candidate.renderer_family,
         "renderer_id": candidate.renderer_family,
         "invariance_group_id": candidate.invariance_group_id,
         "template_id": candidate.invariance_group_id,
         "required_fact_ids": list(candidate.required_fact_ids),
-        "required_facts": list(candidate.required_fact_ids),
         "forbidden_fact_ids": list(candidate.forbidden_fact_ids),
-        "forbidden_facts": list(candidate.forbidden_fact_ids),
+        "pair_required_facts": list(provenance.get("required_fact_phrases") or ()),
+        "pair_target_facts": list(provenance.get("target_fact_phrases") or ()),
+        "pair_forbidden_facts": list(provenance.get("forbidden_fact_phrases") or ()),
     }
 
 
@@ -781,7 +787,10 @@ def _counterfactual_records(
     spec: Any, config: TrainDataConfig, context: Any
 ) -> list[ExampleRecord]:
     policy = config.corpus_generation
-    if policy is None or policy.derivatives.semantic_counterfactuals_per_eligible_root < 1:
+    if (
+        policy is None
+        or policy.derivatives.semantic_counterfactuals_per_eligible_root < 1
+    ):
         return []
     from slm_training.data.progspec import emit_record
     from slm_training.data.verify import stamp_record
@@ -1600,8 +1609,8 @@ def build_train_data(
         seeds.extend(records)
         errors.extend(source_errors)
     if source in {"language_contract", "integrated", "all", "existing"}:
-        records, source_errors, root_renderability_pairs = _records_from_language_contract(
-            config
+        records, source_errors, root_renderability_pairs = (
+            _records_from_language_contract(config)
         )
         seeds.extend(records)
         errors.extend(source_errors)
@@ -1905,7 +1914,9 @@ def build_train_data(
             harness_meta = (record.meta or {}).get("harness_dsl")
             if harness_meta is not None or is_harness_prompt(record.prompt):
                 if not isinstance(harness_meta, dict):
-                    raise ValueError("symbolic Harness prompt lacks harness_dsl metadata")
+                    raise ValueError(
+                        "symbolic Harness prompt lacks harness_dsl metadata"
+                    )
                 task = parse_harness_task(record.prompt)
                 expected = {
                     "schema": HARNESS_SCHEMA,
@@ -1919,10 +1930,14 @@ def build_train_data(
                     raise ValueError("Harness prompt metadata mismatch")
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
         except ValueError as exc:
-            rejections.append(rejection_entry(
-                "symbol_only_contract", "non_canonical_harness_or_output", record_id=record.id,
-                detail={**_lineage_detail(record), "error": str(exc)},
-            ))
+            rejections.append(
+                rejection_entry(
+                    "symbol_only_contract",
+                    "non_canonical_harness_or_output",
+                    record_id=record.id,
+                    detail={**_lineage_detail(record), "error": str(exc)},
+                )
+            )
             return False
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:

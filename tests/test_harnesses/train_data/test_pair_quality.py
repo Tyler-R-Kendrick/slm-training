@@ -185,6 +185,24 @@ def test_prompt_target_contradiction_fails_pair_audit() -> None:
     assert "prompt_target_contradiction" in audit.reasons
 
 
+def test_namespaced_pair_facts_take_precedence_over_semantic_ids() -> None:
+    record = _record(
+        prompt="Need a title.",
+        root_id="root-namespaced",
+        split_family_id="family_a",
+        required_facts=["component_type@typeName=Stack"],
+        target_facts=["component_type@typeName=Stack"],
+    )
+    record["meta"].update(
+        pair_required_facts=["title"],
+        pair_target_facts=["title"],
+        pair_forbidden_facts=[],
+    )
+    audit = audit_pair(record, record["meta"])
+    assert audit.accepted is True
+    assert audit.required_fact_coverage == 1.0
+
+
 def test_complete_inventory_prose_leak_fails_pair_audit() -> None:
     record = _record(
         prompt="Use Card, Button, and Avatar together.",

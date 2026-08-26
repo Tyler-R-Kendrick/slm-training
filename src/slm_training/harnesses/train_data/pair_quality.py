@@ -35,9 +35,7 @@ _EVIDENCE = frozenset({"verified", "partially_verified", "unverified"})
 
 @lru_cache(maxsize=1)
 def _default_prompt_cues() -> tuple[tuple[str, ...], tuple[str, ...]]:
-    prompts = tiny_corpus_generation_policy(
-        capability=Capability.CAP0_GRAMMAR
-    ).prompts
+    prompts = tiny_corpus_generation_policy(capability=Capability.CAP0_GRAMMAR).prompts
     return prompts.hard_forbidden_cues, prompts.balanced_generic_cues
 
 
@@ -231,9 +229,7 @@ def _pair_ids(
 ) -> dict[str, str | None]:
     invariance = _lookup(record, provenance, "invariance_group_id")
     return {
-        "renderer_id": _lookup(
-            record, provenance, "renderer_id", "renderer_family"
-        ),
+        "renderer_id": _lookup(record, provenance, "renderer_id", "renderer_family"),
         "source_id": _lookup(
             record,
             provenance,
@@ -251,19 +247,37 @@ def _pair_ids(
     }
 
 
-def audit_pair(
-    record: Mapping[str, Any], provenance: Mapping[str, Any]
-) -> PairAudit:
+def audit_pair(record: Mapping[str, Any], provenance: Mapping[str, Any]) -> PairAudit:
     prompt = _as_text(record.get("prompt"))
     meta = _meta(record)
     required = _as_str_tuple(
-        provenance.get("required_facts", meta.get("required_facts"))
+        provenance.get(
+            "pair_required_facts",
+            provenance.get(
+                "required_facts",
+                meta.get("pair_required_facts", meta.get("required_facts")),
+            ),
+        )
     )
     target_facts = set(
-        _as_str_tuple(provenance.get("target_facts", meta.get("target_facts")))
+        _as_str_tuple(
+            provenance.get(
+                "pair_target_facts",
+                provenance.get(
+                    "target_facts",
+                    meta.get("pair_target_facts", meta.get("target_facts")),
+                ),
+            )
+        )
     )
     forbidden = _as_str_tuple(
-        provenance.get("forbidden_facts", meta.get("forbidden_facts"))
+        provenance.get(
+            "pair_forbidden_facts",
+            provenance.get(
+                "forbidden_facts",
+                meta.get("pair_forbidden_facts", meta.get("forbidden_facts")),
+            ),
+        )
     )
     inventory = _as_str_tuple(
         provenance.get("component_inventory", meta.get("component_inventory"))
@@ -272,13 +286,13 @@ def audit_pair(
 
     hits = sum(1 for fact in required if _contains_phrase(prompt, fact))
     coverage = 1.0 if not required else hits / len(required)
-    forbidden_in_prompt = tuple(fact for fact in forbidden if _contains_phrase(prompt, fact))
+    forbidden_in_prompt = tuple(
+        fact for fact in forbidden if _contains_phrase(prompt, fact)
+    )
     forbidden_in_target = tuple(fact for fact in forbidden if fact in target_facts)
     missing_required = tuple(fact for fact in required if fact not in target_facts)
     both = tuple(fact for fact in required if fact in set(forbidden))
-    contradiction_count = (
-        len(missing_required) + len(forbidden_in_target) + len(both)
-    )
+    contradiction_count = len(missing_required) + len(forbidden_in_target) + len(both)
     forbidden_absent = not forbidden_in_prompt and not forbidden_in_target
     leaks = _surface_leak_count(prompt)
     inventory_leaks = _inventory_leak_count(prompt, inventory)
@@ -568,9 +582,15 @@ def _provenance_from_record(record: Mapping[str, Any]) -> dict[str, Any]:
         "topology_id": _first(meta.get("topology_id")),
         "split_family_id": _first(meta.get("split_family_id")),
         "invariance_group_id": _first(meta.get("invariance_group_id")) or None,
-        "required_facts": list(_as_str_tuple(meta.get("required_facts"))),
-        "target_facts": list(_as_str_tuple(meta.get("target_facts"))),
-        "forbidden_facts": list(_as_str_tuple(meta.get("forbidden_facts"))),
+        "required_facts": list(
+            _as_str_tuple(meta.get("pair_required_facts", meta.get("required_facts")))
+        ),
+        "target_facts": list(
+            _as_str_tuple(meta.get("pair_target_facts", meta.get("target_facts")))
+        ),
+        "forbidden_facts": list(
+            _as_str_tuple(meta.get("pair_forbidden_facts", meta.get("forbidden_facts")))
+        ),
         "component_inventory": list(_as_str_tuple(meta.get("component_inventory"))),
         "provider_id": _first(meta.get("provider_id")),
         "source_family": _first(meta.get("source_family")),
@@ -631,7 +651,9 @@ def audit_corpus(
     templates = [audit.template_id for audit in pair_audits]
     prefix_concentration = _share_report(prefixes)
     template_concentration = _share_report(templates)
-    root_ids = [audit.root_id or f"row-{index}" for index, audit in enumerate(pair_audits)]
+    root_ids = [
+        audit.root_id or f"row-{index}" for index, audit in enumerate(pair_audits)
+    ]
     folds = _grouped_folds(root_ids)
     support = len(set(root_ids))
     family_labels = [audit.split_family_id or audit.root_id for audit in pair_audits]
@@ -646,8 +668,7 @@ def audit_corpus(
         for record, audit in zip(ordered, pair_audits)
     ]
     source_features = [
-        _source_features(record, audit)
-        for record, audit in zip(ordered, pair_audits)
+        _source_features(record, audit) for record, audit in zip(ordered, pair_audits)
     ]
     prompt_features = [_prompt_features(record) for record in ordered]
     cue_only = _classifier_report(
@@ -681,9 +702,8 @@ def audit_corpus(
         blocking.append("hard_forbidden_cue")
     if simplified and any(audit.target_surface_leak_count for audit in pair_audits):
         blocking.append("target_surface_leak")
-    if (
-        policy.reject_target_surface_leaks
-        and any(audit.complete_inventory_leak_count for audit in pair_audits)
+    if policy.reject_target_surface_leaks and any(
+        audit.complete_inventory_leak_count for audit in pair_audits
     ):
         blocking.append("complete_inventory_leak")
     if any("prompt_target_contradiction" in audit.reasons for audit in pair_audits):

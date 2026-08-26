@@ -18,6 +18,7 @@ from slm_training.data.progspec.generate import (
     TypedStatement,
     generate_program_specs,
 )
+from slm_training.dsl.language_contract import assert_symbol_only_output
 from slm_training.data.verify import Tier, VerificationContext, verify_record
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.parser import validate
@@ -109,6 +110,7 @@ def test_every_generated_root_is_split_safe_and_f2_silver(small_result) -> None:
         assert spec.facts["depth"] <= SMALL_CONFIG.max_depth
         assert spec.facts["width"] <= SMALL_CONFIG.max_width
         assert spec.facts["content_class"] in SMALL_CONFIG.content_classes
+        assert_symbol_only_output(spec.canonical_openui)
         record = emit_record(
             spec,
             prompt="Generate this typed program.",
@@ -244,7 +246,9 @@ def test_required_content_properties_force_the_direct_settings_slot_shape() -> N
     assert all("SwitchGroup(" not in source for source in sources)
     assert all('SwitchItem(":slot_' in source for source in sources)
     assert all('Slider("' in source and ":slot_" in source for source in sources)
-    assert all(len(extract_placeholders(source)) == 3 for source in sources)
+    assert all(len(extract_placeholders(source)) >= 3 for source in sources)
+    for source in sources:
+        assert_symbol_only_output(source)
 
 
 def test_required_form_topology_resolves_anyof_input_refs() -> None:
@@ -272,7 +276,9 @@ def test_required_form_topology_resolves_anyof_input_refs() -> None:
     assert arities == {1, 2, 3}
 
 
-def test_forward_reference_patterns_pair_slot_ownership_with_slot_free_sharing() -> None:
+def test_forward_reference_patterns_pair_slot_ownership_with_slot_free_sharing() -> (
+    None
+):
     config = GeneratorConfig(
         components=("Stack", "Input", "TextContent"),
         forward_reference_patterns=(

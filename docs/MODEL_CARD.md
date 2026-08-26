@@ -3524,3 +3524,27 @@ Date (UTC) column). Do not delete history.
 - campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535`
 - checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c535-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c535-current-rung-data-heal/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c546)
+
+- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c546`
+- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c546-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c548)
+
+- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c548`
+- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c548-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c554)
+
+- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c554`
+- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c554-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556)
+
+- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556`
+- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

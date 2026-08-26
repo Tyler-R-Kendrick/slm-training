@@ -382,6 +382,9 @@ def _candidate(
     required_ids: tuple[str, ...],
     house_ids: tuple[str, ...],
     forbidden_ids: tuple[str, ...],
+    required_fact_phrases: tuple[str, ...],
+    target_fact_phrases: tuple[str, ...],
+    forbidden_fact_phrases: tuple[str, ...],
     root_identity: str,
     seed: int,
     intervention: str | None = None,
@@ -406,6 +409,9 @@ def _candidate(
             "renderer_family": family.value,
             "renderer_version": RENDERER_VERSION,
             "provider_id": PROVIDER_ID,
+            "required_fact_phrases": list(required_fact_phrases),
+            "target_fact_phrases": list(target_fact_phrases),
+            "forbidden_fact_phrases": list(forbidden_fact_phrases),
             "canonical": canonical_json(
                 {"root_identity": root_identity, "surface": surface}
             ),
@@ -438,11 +444,14 @@ def render_prompt_candidates(
     root_identity: str,
     seed: int = 0,
 ) -> PromptRenderResult:
-    required_ids = tuple(_fact_id(fact) for fact in frame.facts_by_category("required"))
-    house_ids = tuple(_fact_id(fact) for fact in frame.facts_by_category("optional"))
-    forbidden_ids = tuple(
-        _fact_id(fact) for fact in frame.facts_by_category("forbidden")
-    )
+    required_facts = frame.facts_by_category("required")
+    house_facts = frame.facts_by_category("optional")
+    forbidden_facts = frame.facts_by_category("forbidden")
+    required_ids = tuple(_fact_id(fact) for fact in required_facts)
+    house_ids = tuple(_fact_id(fact) for fact in house_facts)
+    forbidden_ids = tuple(_fact_id(fact) for fact in forbidden_facts)
+    target_fact_phrases = tuple(render_fact_phrase(fact) for fact in required_facts)
+    forbidden_fact_phrases = tuple(render_fact_phrase(fact) for fact in forbidden_facts)
     detector = FrameLeakDetectorV1.from_frame(frame)
     allowed = [
         family
@@ -491,6 +500,13 @@ def render_prompt_candidates(
                 required_ids=required_ids,
                 house_ids=house_ids,
                 forbidden_ids=forbidden_ids,
+                required_fact_phrases=tuple(
+                    phrase
+                    for phrase in target_fact_phrases
+                    if phrase.casefold() in text.casefold()
+                ),
+                target_fact_phrases=target_fact_phrases,
+                forbidden_fact_phrases=forbidden_fact_phrases,
                 root_identity=root_identity,
                 seed=seed,
             )
@@ -524,6 +540,13 @@ def render_prompt_candidates(
                 required_ids=required_ids,
                 house_ids=house_ids,
                 forbidden_ids=forbidden_ids,
+                required_fact_phrases=tuple(
+                    phrase
+                    for phrase in target_fact_phrases
+                    if phrase.casefold() in text.casefold()
+                ),
+                target_fact_phrases=target_fact_phrases,
+                forbidden_fact_phrases=forbidden_fact_phrases,
                 root_identity=root_identity,
                 seed=seed,
             )

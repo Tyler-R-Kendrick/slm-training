@@ -20,7 +20,7 @@ from slm_training.dsl.canonicalize import canonicalize
 from slm_training.dsl.lang_core import library_schema
 from slm_training.harness_core.lineage.records import content_sha
 
-GENERATOR_VERSION = 2
+GENERATOR_VERSION = 3
 PROGRAM_FAMILY = "programspec_generated"
 _PROP_ORDER_PATH = (
     repo_root() / "src" / "slm_training" / "dsl" / "grammars" / "openui_prop_order.json"
@@ -276,7 +276,9 @@ class ProgramPoolResult:
             "row_count": len(self.programs),
             "coverage": self.coverage,
             "rejections": list(self.rejections),
-            "ladder": {str(size): list(ids) for size, ids in sorted(self.ladder.items())},
+            "ladder": {
+                str(size): list(ids) for size, ids in sorted(self.ladder.items())
+            },
             "shard_index": self.shard_index,
             "shard_count": self.shard_count,
             "exhausted": self.exhausted,
@@ -423,7 +425,7 @@ class _TypedBuilder:
             return str(enum[-1] if variant == "last" else enum[0])
         kind = schema.get("type")
         if kind == "string":
-            return "item" if prop in _LITERAL_STRING_PROPS else self._placeholder()
+            return self._placeholder()
         if kind == "boolean":
             return variant == "true"
         if kind == "number":
@@ -1178,13 +1180,19 @@ class ProgramGenerator:
         groups = self._groups_for_width(width)
         if not groups:
             groups = ((self.components[0],),)
-        group = groups[(index // (self.config.max_width * self.config.max_depth)) % len(groups)]
+        group = groups[
+            (index // (self.config.max_width * self.config.max_depth)) % len(groups)
+        ]
         # Rotate the selected group so sibling order is a coverage axis, not a
         # new semantic root unless the typed AST actually changes.
-        rotated = tuple(group[(offset + index) % len(group)] for offset in range(len(group)))
+        rotated = tuple(
+            group[(offset + index) % len(group)] for offset in range(len(group))
+        )
         prop_targets = self._prop_targets()
         prop_target = (
-            prop_targets[index % len(prop_targets)] if prop_targets and index % 5 == 0 else None
+            prop_targets[index % len(prop_targets)]
+            if prop_targets and index % 5 == 0
+            else None
         )
         pattern = None
         if self.config.forward_reference_patterns and index % 11 == 0:
@@ -1288,9 +1296,11 @@ def _config_from_policy(policy: Any) -> GeneratorConfig:
     components = generator.components or None
     required: tuple[str, ...] = ()
     if generator.required_component_groups:
-        required = tuple(dict.fromkeys(
-            name for group in generator.required_component_groups for name in group
-        ))
+        required = tuple(
+            dict.fromkeys(
+                name for group in generator.required_component_groups for name in group
+            )
+        )
     return GeneratorConfig(
         components=components or None,
         required_components=required,
@@ -1332,7 +1342,9 @@ def generate_program_pool(policy: Any) -> ProgramPoolResult:
             else:
                 spec = generator._materialize(generator.candidate_from_index(attempts))
         except ValueError as exc:
-            rejections.append({"stage": "generate", "reason": str(exc), "attempt": attempts})
+            rejections.append(
+                {"stage": "generate", "reason": str(exc), "attempt": attempts}
+            )
             attempts += 1
             if str(exc) == "candidate grid exhausted":
                 continue
@@ -1349,7 +1361,11 @@ def generate_program_pool(policy: Any) -> ProgramPoolResult:
             continue
         if root_id in seen:
             rejections.append(
-                {"stage": "canonical_duplicate", "reason": "alpha_or_serialize_equivalent", "id": spec.id}
+                {
+                    "stage": "canonical_duplicate",
+                    "reason": "alpha_or_serialize_equivalent",
+                    "id": spec.id,
+                }
             )
             continue
         bucket = int(root_id[:8], 16) % policy.shard_count

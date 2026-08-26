@@ -82,6 +82,12 @@ def test_schema_and_provider_are_offline() -> None:
         assert candidate.provider_id == PROVIDER_ID == "offline_fixture_renderer"
         assert candidate.provenance["root_identity"] == "root-fixture"
         assert candidate.required_fact_ids
+        asserted = candidate.provenance["required_fact_phrases"]
+        target = candidate.provenance["target_fact_phrases"]
+        assert set(asserted) <= set(target)
+        assert all(
+            phrase.casefold() in candidate.prompt_text.casefold() for phrase in asserted
+        )
         assert "generation_policy" not in candidate.provenance
         assert candidate.sha == candidate.sha
         payload = candidate.to_dict()
@@ -192,6 +198,9 @@ def test_grammar_schema_may_mention_technical_terms() -> None:
         _frame(), grammar, root_identity="root-fixture", seed=0
     )
     assert technical.candidates
+    assert all(
+        item.provenance["required_fact_phrases"] for item in technical.candidates
+    )
     assert any(
         "openui" in item.prompt_text.lower() or "Stack" in item.prompt_text
         for item in technical.candidates

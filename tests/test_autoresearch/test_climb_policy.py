@@ -865,9 +865,16 @@ def test_classify_positive_rejects_partial_suite_completion() -> None:
 
 
 class _StubPolicy:
-    def __init__(self, measurement: dict, payload: dict | None = None) -> None:
+    def __init__(
+        self,
+        measurement: dict,
+        payload: dict | None = None,
+        screening_primary: dict | None = None,
+    ) -> None:
         self._measurement = measurement
         self.payload = payload or {}
+        if screening_primary is not None:
+            self.screening_primary = screening_primary
 
     @property
     def measurement(self) -> dict:
@@ -925,6 +932,52 @@ def test_screening_smoke_n_auto_mode_feasible_climbs_at_floor() -> None:
     assert report is not None
     assert report["verdict"] == "feasible"
     assert report["promotion_authority"] is False
+
+
+def test_screening_smoke_n_no_sd_borrow_across_metrics() -> None:
+    """The measured paired SD applies only to the metric it was measured on.
+
+    Borrowing the structural-similarity SD for eval_nll produced
+    power_floor_n=96 against a wall ceiling of 21 — a permanently empty
+    range and an 18-pass vacuous-heal livelock (2026-08-22).
+    """
+
+    measurement = {
+        "screening_smoke_n": 3,
+        "screening_smoke_n_mode": "auto",
+        "screening_sample_size": {
+            "max_candidate_n": 64,
+            "default_decode_floor_seconds": 2,
+        },
+    }
+    payload = {"power_gate": {"enabled": True, "alpha": "1/20"}}
+
+    foreign = _StubPolicy(
+        dict(measurement),
+        payload=dict(payload),
+        screening_primary={"metric": "smoke.eval_nll", "minimum_effect": 0.05},
+    )
+    n, report = screening_smoke_n_for_policy(
+        foreign, arm_wall_seconds=70.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_n"] is None
+    assert report["verdict"] == "feasible"
+    assert n == report["chosen_n"] == 6
+
+    matching = _StubPolicy(
+        dict(measurement),
+        payload=dict(payload),
+        screening_primary={
+            "metric": "smoke.structural_similarity",
+            "minimum_effect": 0.05,
+        },
+    )
+    _n, report = screening_smoke_n_for_policy(
+        matching, arm_wall_seconds=70.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_n"] is not None
 
 
 def test_screening_smoke_n_auto_mode_infeasible_does_not_return_fallback_n() -> None:

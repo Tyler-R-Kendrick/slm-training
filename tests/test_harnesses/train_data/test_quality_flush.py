@@ -58,7 +58,10 @@ def test_quality_fixture_build_is_deterministic(tmp_path: Path) -> None:
     second = build_train_data(
         TrainDataConfig(output_root=tmp_path / "b", version="v1", **cfg_kwargs)
     )
-    assert first["manifest"]["content_fingerprint"] == second["manifest"]["content_fingerprint"]
+    assert (
+        first["manifest"]["content_fingerprint"]
+        == second["manifest"]["content_fingerprint"]
+    )
     assert first["stats"]["record_count"] == second["stats"]["record_count"]
     assert first["stats"]["record_count"] >= 20
     assert first["stats"]["error_count"] == 0
@@ -117,7 +120,9 @@ def test_independent_judge_reads_ordinary_component_mentions_from_schema(
     monkeypatch.setattr(
         quality,
         "_official_component_names",
-        lambda: frozenset({"Button", "Buttons", "Callout", "TextContent"}),
+        lambda: frozenset(
+            {"Button", "Buttons", "Callout", "Label", "Series", "Stack", "TextContent"}
+        ),
     )
     record = ExampleRecord(
         id="judge-prose",
@@ -138,11 +143,21 @@ def test_independent_judge_reads_ordinary_component_mentions_from_schema(
     )
     assert quality.independent_judge(plural_record)["ok"]
 
+    schema_slot_record = ExampleRecord(
+        id="judge-schema-slot",
+        prompt=(
+            "OpenUI grammar schema: a stack component; "
+            "exactly 0 items in the labels slot; exactly 0 items in the series slot."
+        ),
+        openui="root = Stack([])",
+    )
+    assert quality.independent_judge(schema_slot_record)["ok"]
+
     edit_record = ExampleRecord(
         id="judge-embedded-program",
         prompt=(
             "Current program:\n"
-            'root = Callout(\":title\", [label])\nlabel = Label(\":label\")'
+            'root = Callout(":title", [label])\nlabel = Label(":label")'
         ),
         openui='root = TextContent(":title")',
         placeholders=[":title"],
@@ -196,9 +211,10 @@ def test_independent_judge_enforces_ast_semantic_contract() -> None:
             "openui": 'root = Button(":label")',
         }
     )
-    assert "semantic_contract_output_mismatch" in independent_judge(wrong_output)[
-        "reasons"
-    ]
+    assert (
+        "semantic_contract_output_mismatch"
+        in independent_judge(wrong_output)["reasons"]
+    )
 
     wrong_prompt = ExampleRecord(
         **{
@@ -206,9 +222,10 @@ def test_independent_judge_enforces_ast_semantic_contract() -> None:
             "prompt": "Create a button.",
         }
     )
-    assert "semantic_contract_prompt_mismatch" in independent_judge(wrong_prompt)[
-        "reasons"
-    ]
+    assert (
+        "semantic_contract_prompt_mismatch"
+        in independent_judge(wrong_prompt)["reasons"]
+    )
 
 
 def test_independent_judge_checks_generated_schema_value_roles() -> None:
@@ -216,8 +233,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
         id="judge-schema-valid",
         prompt="Build an email form control with an input.",
         openui=(
-            'root = FormControl(":label", input)\n'
-            'input = Input("$0", ":placeholder")'
+            'root = FormControl(":label", input)\ninput = Input("$0", ":placeholder")'
         ),
         placeholders=[":label", ":placeholder"],
         meta={"task": "edit"},
@@ -238,10 +254,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
     optional_omission = ExampleRecord(
         id="judge-schema-optional-null",
         prompt="Build a Modal component with body text.",
-        openui=(
-            'root = Modal(":title", null, [body])\n'
-            'body = TextContent(":body")'
-        ),
+        openui=('root = Modal(":title", null, [body])\nbody = TextContent(":body")'),
         placeholders=[":title", ":body"],
         meta={"task": "edit"},
     )
@@ -326,9 +339,7 @@ def test_pipeline_remediates_edit_instruction_generation_prompt() -> None:
     )
     normalized = _normalize_record(record)
     assert normalized.prompt != record.prompt
-    assert normalized.meta["prompt_remediation"]["kind"] == (
-        "ast_semantic_contract_v1"
-    )
+    assert normalized.meta["prompt_remediation"]["kind"] == ("ast_semantic_contract_v1")
     assert normalized.meta["semantic_contract"] == semantic_contract_for_openui(
         normalized.openui
     )

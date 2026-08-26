@@ -149,3 +149,41 @@ backoff). New kinds: `loop_stalled_no_campaign`, `heal_postcondition_failed`,
 
 Raising `MAX_RUN_MINUTES`; changing ship gates or promotion criteria; the
 n=96 quality-decode question (superseded by per-metric floors, component 5).
+
+## Measured results — 2026-08-22 vacuous-heal livelock (18 passes)
+
+Diagnosis of the 2026-08-22 stall (supervisor killed by an operator session
+after 18 consecutive `vacuous_pass` records and a
+`loop_stalled_no_campaign` escalation; final park was
+`loop worktree is dirty` from an uncommitted operator `AGENTS.md` edit):
+
+- **Root cause (recurrence of the cross-metric SD borrow):**
+  `climb_policy.screening_smoke_n_for_policy` borrowed
+  `MEASURED_PAIRED_SD = 0.1741` (measured on `smoke.structural_similarity`,
+  n_deltas=405) for the policy-v14 screening primary `smoke.eval_nll`
+  (MDE 0.05), manufacturing `power_floor_n = 96` against
+  `budget_ceiling_n = 21` / `suite_ceiling_n = 24` — a permanently empty
+  range (`SCREENING_N_DEFICIT smoke_n=0 n_min=96
+  binding=['wall_budget','suite_volume']`, reproduced live from one driver
+  pass, exit 0, ~130 s).
+- **Livelock amplifiers:** `must_generate` was raised even when
+  `wall_budget` also bound (generation can never make that range
+  non-empty), and `_self_heal_rebuild_screening_eval` published
+  `e938_role_safe_all_targets_smoke96_v2` with an unreachable target
+  (fixture pool caps at 24 smoke records), then reported soft-heal success
+  on a screen that still resolved `n=0`.
+- **Fixes (component `harness.autoresearch.experiment_campaign` v279):**
+  1. SD borrow is metric-scoped (`MEASURED_PAIRED_SD_METRIC`); without a
+     measured SD for the primary, the exact decidability floor governs.
+  2. `must_generate = suite_volume binds AND wall_budget does not`.
+  3. `_self_heal_rebuild_screening_eval` fails closed on fixture-pool
+     shortfall (`reason=fixture_pool_short`) and on an unrunnable
+     post-rebuild screen (`reason=postcondition_unrunnable`), so the pass
+     classifies as failed/vacuous and escalates instead of looping.
+- **Verification:** resolver now returns `feasible, chosen_n=6,
+  power_floor_n=None, budget_ceiling_n=21, suite_ceiling_n=24` for policy
+  v14; `tests/test_autoresearch/test_climb_policy.py::
+  test_screening_smoke_n_no_sd_borrow_across_metrics` pins the class;
+  316 tests pass in `tests/test_scripts/test_run_autotrain_continuous.py`;
+  `.githooks/check-changed` green. Positive-control driver pass recorded
+  below after commit.

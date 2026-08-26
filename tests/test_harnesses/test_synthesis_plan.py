@@ -225,6 +225,7 @@ def test_no_plan_default_preserves_the_existing_config_path() -> None:
 def test_checked_in_v2_tiny_plan_loads_without_touching_v1_registry() -> None:
     plan = load_synthesis_plan(V2_PLAN_PATH)
     assert isinstance(plan, SynthesisPlanV2)
+    plan.require_executable()
     assert plan.plan_id == "cap0-tiny-corpus-v2"
     assert plan.corpus_generation.requested_unique_roots == 4
     # The v1 registry loader is non-recursive; a v2 file in a subdirectory

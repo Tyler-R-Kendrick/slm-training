@@ -1,0 +1,196 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": 10.538305744332844,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "smoke.eval_nll": 10.538305744332844,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 556,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260821-continuous-openui-local-8c0b60dd-c556-control": 2,
+      "c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal": 124
+    },
+    "arm_order": [
+      "c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal",
+      "c20260821-continuous-openui-local-8c0b60dd-c556-control"
+    ],
+    "arm_seed": 100555,
+    "arm_skipped": {},
+    "baseline_trainable_params": null,
+    "campaign_id": "continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556",
+    "candidate_id": "c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": 10.538305744332844,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "smoke.eval_nll": 10.538305744332844,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": 1599618,
+    "climb_policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "control_id": "c20260821-continuous-openui-local-8c0b60dd-c556-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 556,
+    "cycle_intent": "retry_measurement",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-22T02:30:59Z",
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "policy_version": "v14",
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c556-control:missing_scoreboard",
+      "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal:smoke:incomplete_document_n=24:decode_timeout_count=24",
+      "harness_failure:c20260821-continuous-openui-local-8c0b60dd-c556-control:experiment_failed",
+      "empty_metrics:e68c9c0b45b9f6329249daf52458979e1659f99ad4ca1ccc1f5c48b7df0dbe2d",
+      "executable_unblock_rejected_low_mpr:mpr=None",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "data_rebuild": {
+    "accepted": false,
+    "attempts": [
+      {
+        "outcome": "failed_closed",
+        "reason": "generator version mismatch for 'pack.corpus_generator': plan='v32', active='v33'"
+      },
+      {
+        "artifact_paths": [
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/quality_report.json",
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/synthesis_feedback.json",
+          "outputs/data/train/continuous_i10_continuous_openui_local_c556/manifest.json"
+        ],
+        "content_fingerprint": "6fe6c65a60af453636e909ce5138cab4fdb04935d396cba8229b3e25e3b9eaab",
+        "hard_findings": [
+          "insufficient_unique_roots",
+          "synthetic_anchor_deficit"
+        ],
+        "mean_quality_score": 0.9769,
+        "open_recommendations": 13,
+        "outcome": "diagnostic_incomplete",
+        "record_count": 80,
+        "requested_unique_roots": 8,
+        "admitted_unique_roots": 0,
+        "version_stamp": {
+          "stamp_schema": "version_stamp/v1",
+          "code_commit": "5afd8dacbdc485f3762044e9a7889a66ee92d673",
+          "code_dirty": true,
+          "components": {
+            "harness.train_data": "v33"
+          },
+          "stamped_at": "2026-08-26T15:54:36.996218+00:00"
+        }
+      }
+    ],
+    "claim_class": "fixture_wiring",
+    "recipe": {
+      "device": "local_cpu",
+      "profile": "strict",
+      "programspec_count": 8,
+      "publish": false,
+      "source": "programspec",
+      "synthesis_plan": "src/slm_training/resources/synthesis_plans/corpus/cap0_tiny_v2.json",
+      "unique_root_target": 8
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556",
+    "cycle_index": 556,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c556-control:missing_scoreboard",
+      "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal:smoke:incomplete_document_n=24:decode_timeout_count=24",
+      "harness_failure:c20260821-continuous-openui-local-8c0b60dd-c556-control:experiment_failed",
+      "empty_metrics:e68c9c0b45b9f6329249daf52458979e1659f99ad4ca1ccc1f5c48b7df0dbe2d",
+      "executable_unblock_rejected_low_mpr:mpr=None",
+      "primary_metric_unavailable"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms",
+      "fit_decode_timeout_to_n_times_p50"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c556-control:missing_scoreboard",
+    "measurement_incomplete:c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal:smoke:incomplete_document_n=24:decode_timeout_count=24",
+    "harness_failure:c20260821-continuous-openui-local-8c0b60dd-c556-control:experiment_failed",
+    "empty_metrics:e68c9c0b45b9f6329249daf52458979e1659f99ad4ca1ccc1f5c48b7df0dbe2d",
+    "executable_unblock_rejected_low_mpr:mpr=None",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "5029fbc0189d6b4413739ebd5de56f20a0031f19",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-22T02:37:53.362754+00:00"
+  }
+}
