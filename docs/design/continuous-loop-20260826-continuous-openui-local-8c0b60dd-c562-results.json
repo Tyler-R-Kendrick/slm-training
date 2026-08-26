@@ -227,8 +227,8 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "03f85369b75490fb4ff1d03244b453ae8cce3d2c",
-    "code_dirty": true,
+    "code_commit": "05e2907b8320e29e170de58ca3f49469af02d95c",
+    "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v26",
