@@ -15159,7 +15159,7 @@ def run_cycle(
         else:
             cycle_intent = "screening"
     saturation_state: dict[str, Any] | None = None
-    if cycle_intent in {"screening", "retry_measurement"}:
+    if cycle_intent == "screening" and replay is None:
         saturation_state = _screening_saturation_state(
             root,
             loop_id,
@@ -15207,7 +15207,7 @@ def run_cycle(
                     f"streak={saturation_state['tie_streak']}",
                     flush=True,
                 )
-    if cycle_intent == "screening" and replay is None:
+    if cycle_intent in {"screening", "retry_measurement"}:
         smoke_n, ss_report = _screening_n_report(policy)
         if isinstance(ss_report, dict) and (
             ss_report.get("must_generate") or int(smoke_n) <= 0

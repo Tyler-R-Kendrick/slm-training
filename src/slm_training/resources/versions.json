@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Frozen TwoTower measurement replay now reuses a verified completed checkpoint across every declared evaluation stage, including latency probe plus full suite; correctly scope replay hypothesis trimming without changing screening saturation policy.",
+          "version": "v290"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Apply the required-hypothesis evidence floor to frozen measurement replays as well as new screening campaigns; replay still binds and executes the exact control and candidate manifests.",
           "version": "v289"
         },
@@ -7015,7 +7020,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v289"
+      "version": "v290"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -17318,6 +17323,11 @@
     },
     "harness.preference.remine_campaign": {
       "history": [
+        {
+          "date": "2026-08-26",
+          "note": "no-bump: support multiple evaluation stages in frozen TwoTower training reuse; preference remine campaign behavior is unchanged.",
+          "version": "v6"
+        },
         {
           "date": "2026-08-26",
           "note": "no-bump: use proposal events for autoresearch hypothesis-id lineage lookup; preference remine campaign behavior is unchanged.",

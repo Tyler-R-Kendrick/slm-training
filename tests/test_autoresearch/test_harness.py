@@ -1073,6 +1073,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
 
     spec = experiment()
     commands = compile_commands(campaign(), spec, output_root=tmp_path)
+    commands.append([*commands[-1], "--eval-limit", "1"])
     train = commands[0]
     source_manifest = experiment_campaign(experiment_id="source-run")
     source_manifest_path = tmp_path / "source-manifest.json"
@@ -1119,10 +1120,11 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
         lineage_paths=(source_manifest_path,),
     )
 
-    assert len(prepared) == 1
-    assert "scripts.evaluate_model" in prepared[0]
-    assert prepared[0][prepared[0].index("--checkpoint") + 1] == str(
-        checkpoint.resolve()
+    assert len(prepared) == 2
+    assert all("scripts.evaluate_model" in command for command in prepared)
+    assert all(
+        command[command.index("--checkpoint") + 1] == str(checkpoint.resolve())
+        for command in prepared
     )
     assert receipt["stage_kind"] == "reused_training"
     assert receipt["measurement_complete"] is True

@@ -1051,7 +1051,7 @@ def _prepare_reused_training(
 
     train_commands = [item for item in commands if "scripts.train_model" in item]
     eval_commands = [item for item in commands if "scripts.evaluate_model" in item]
-    if len(train_commands) != 1 or len(eval_commands) != 1:
+    if len(train_commands) != 1 or not eval_commands:
         print(
             "FROZEN_TRAIN_REUSE_SKIP reason=missing_train_or_eval_stage "
             f"train_n={len(train_commands)} eval_n={len(eval_commands)}",
@@ -1089,10 +1089,13 @@ def _prepare_reused_training(
                 f"training reuse checkpoint sidecar is missing: {sidecar.name}"
             )
 
-    evaluate = list(eval_commands[0])
-    if "--checkpoint" in evaluate:
-        raise ValueError("training reuse cannot override an existing checkpoint")
-    evaluate.extend(["--checkpoint", str(checkpoint)])
+    evaluations: list[list[str]] = []
+    for command in eval_commands:
+        evaluate = list(command)
+        if "--checkpoint" in evaluate:
+            raise ValueError("training reuse cannot override an existing checkpoint")
+        evaluate.extend(["--checkpoint", str(checkpoint)])
+        evaluations.append(evaluate)
     receipt: dict[str, object] = {
         "stage_kind": "reused_training",
         "measurement_complete": True,
@@ -1110,7 +1113,7 @@ def _prepare_reused_training(
             {"path": str(path), "sha256": digest} for path, _manifest, digest in lineage
         ],
     }
-    return [evaluate], receipt
+    return evaluations, receipt
 
 
 def cmd_run(args: argparse.Namespace) -> int:
