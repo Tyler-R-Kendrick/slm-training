@@ -141,6 +141,60 @@ def _write_family_closures(log_event) -> None:
         log_event({"event": "family_closures_error", "error": repr(exc)})
 
 
+def _print_iteration_summary(root: Path, campaign_id: str) -> None:
+    """Render the completed cycle after child logs, before the next iteration."""
+
+    path = root / campaign_id / "sdlc_delivery.json"
+    try:
+        delivery = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"AUTOTRAIN ITERATION SUMMARY unavailable: {exc}", flush=True)
+        return
+
+    def fmt(value) -> str:
+        return f"{value:.6g}" if isinstance(value, (int, float)) else "—"
+
+    control = delivery.get("control_metrics") or {}
+    candidate = delivery.get("candidate_metrics") or {}
+    print(
+        "\nAUTOTRAIN ITERATION SUMMARY "
+        f"| cycle={delivery.get('cycle_index', '—')} "
+        f"intent={delivery.get('cycle_intent', '—')} "
+        f"complete={bool(delivery.get('measurement_complete'))} "
+        f"positive={bool(delivery.get('positive'))}",
+        flush=True,
+    )
+    print("| metric | control | candidate | delta |", flush=True)
+    print("| --- | ---: | ---: | ---: |", flush=True)
+    for metric in (
+        "eval_nll",
+        "parse_rate",
+        "meaningful_program_rate",
+        "structural_similarity",
+        "binder_reference_f1",
+        "latency_ms_p50",
+    ):
+        before, after = control.get(metric), candidate.get(metric)
+        delta = (
+            after - before
+            if isinstance(before, (int, float)) and isinstance(after, (int, float))
+            else None
+        )
+        print(
+            f"| {metric} | {fmt(before)} | {fmt(after)} | {fmt(delta)} |",
+            flush=True,
+        )
+    exits = delivery.get("arm_exits") or {}
+    print(
+        "arms | "
+        f"control={exits.get(delivery.get('control_id'), '—')} "
+        f"candidate={exits.get(delivery.get('candidate_id'), '—')}",
+        flush=True,
+    )
+    reasons = "; ".join(str(reason) for reason in delivery.get("reasons") or [])
+    print(f"decision | {reasons or 'no recorded reason'}\n", flush=True)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--loop-id", default="continuous-openui-local")
@@ -327,6 +381,8 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
         after_campaign = continuous._latest_cycle(root, args.loop_id)[1]
+        if after_campaign and after_campaign != before_campaign:
+            _print_iteration_summary(root, after_campaign)
         passes_without_campaign = passes_without_campaign + 1 if after_campaign == before_campaign else 0
         if passes_without_campaign >= no_campaign_threshold:
             try:

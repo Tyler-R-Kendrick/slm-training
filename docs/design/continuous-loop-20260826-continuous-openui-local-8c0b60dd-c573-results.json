@@ -1,0 +1,221 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.5313492063492063,
+    "eval_nll": 9.288965547362642,
+    "latency_ms_p50": 10438.75,
+    "meaningful_program_rate": 0.20833333333333334,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.5313492063492063,
+    "smoke.eval_nll": 9.288965547362642,
+    "smoke.latency_ms_p50": 10438.75,
+    "smoke.meaningful_program_rate": 0.20833333333333334,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.1363875,
+    "structural_similarity": 0.1363875
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 573,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260826-continuous-openui-local-8c0b60dd-c573-control": 124,
+      "c20260826-continuous-openui-local-8c0b60dd-c573-current-rung-data-heal": 0
+    },
+    "arm_order": [
+      "c20260826-continuous-openui-local-8c0b60dd-c573-control",
+      "c20260826-continuous-openui-local-8c0b60dd-c573-current-rung-data-heal"
+    ],
+    "arm_seed": 100573,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1661698,
+    "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573",
+    "candidate_id": "c20260826-continuous-openui-local-8c0b60dd-c573-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.5313492063492063,
+      "eval_nll": 9.288965547362642,
+      "latency_ms_p50": 10438.75,
+      "meaningful_program_rate": 0.20833333333333334,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.5313492063492063,
+      "smoke.eval_nll": 9.288965547362642,
+      "smoke.latency_ms_p50": 10438.75,
+      "smoke.meaningful_program_rate": 0.20833333333333334,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.1363875,
+      "structural_similarity": 0.1363875
+    },
+    "candidate_trainable_params": 1601794,
+    "climb_policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "control_id": "c20260826-continuous-openui-local-8c0b60dd-c573-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 573,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-26T21:33:44Z",
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "policy_version": "v14",
+    "positive": false,
+    "preflight": {
+      "blocked_slugs": [],
+      "schema": "autotrain_preflight/v1",
+      "selected_slug": "current-rung-data-heal",
+      "verdicts": {
+        "current-rung-data-heal": [
+          {
+            "check_id": "concluded_family",
+            "data": {
+              "family_key": "heal-resume+process-arm+process-role+train-version"
+            },
+            "reasons": [
+              "family 'heal-resume+process-arm+process-role+train-version' has no binding closure record"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_dominance",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism dominance check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_no_effect",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism no-effect check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "power_decidability",
+            "data": {
+              "alpha": 0.05,
+              "config_fingerprint": "7392cd73e007ebd1",
+              "endpoint_metric": "smoke.eval_nll",
+              "max_reasonable_n": 64,
+              "min_attainable_p": 1.0,
+              "min_detectable_effect": 0.8087479899175992,
+              "minimum_effect": 0.05,
+              "n_seeds": 1,
+              "paired": true,
+              "process_arm": true,
+              "required_n_for_effect": 262,
+              "sd": 0.28867513459481287,
+              "sd_source": "conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "steps": 20
+            },
+            "reasons": [
+              "min_attainable_p=1 > alpha=0.05 at n=1 (paired sign test): no result at this n can ever reject",
+              "min_detectable_effect=0.808748 > minimum_effect=0.05 at n=1, sd=0.288675: required_n_for_effect=262",
+              "sd=0.288675 from conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "required_n_for_effect=262 exceeds the reasonable screening ceiling (64); this design cannot become decidable through realistic accumulation",
+              "process/heal arm is not a confirmatory design; power decidability warns instead of blocking first execution"
+            ],
+            "verdict": "warn"
+          },
+          {
+            "check_id": "prior_attempts",
+            "data": {
+              "config_fingerprint": "7392cd73e007ebd1",
+              "matched": 0,
+              "source": "evidence_store"
+            },
+            "reasons": [
+              "no matching prior attempt (source=evidence_store)"
+            ],
+            "verdict": "pass"
+          }
+        ]
+      }
+    },
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c573-control:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573",
+    "cycle_index": 573,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c573-control:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c573-control:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "832230a23b71cad2e37f4933e608fc8b20429a01",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-26T21:33:47.538734+00:00"
+  }
+}

@@ -92,6 +92,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-08-26",
+          "note": "no-bump: test_run_autotrain_supervisor covers the supervisor-owned console summary; heal classification, playbooks, escalation, and conclusion writing are unchanged.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-21",
           "note": "Fail-closed loop primitives: typed pass outcomes, watchdog blocker catalog, WIP leases, and per-metric power evidence helpers.",
           "version": "v2"
@@ -5033,6 +5038,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Render each completed cycle's compact control-versus-candidate metric matrix from sdlc_delivery.json at the supervisor boundary after child logs.",
+          "version": "v293"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Apply the existing five-hypothesis trim to retry_measurement campaigns after frozen replay binding; screening and replay retain the same evidence floor.",
           "version": "v292"
         },
@@ -7030,7 +7040,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v292"
+      "version": "v293"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -11603,6 +11613,11 @@
     },
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-26",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-26",

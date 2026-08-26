@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -25,6 +26,39 @@ _SPEC = importlib.util.spec_from_file_location("run_autotrain_supervisor", _SCRI
 assert _SPEC is not None and _SPEC.loader is not None
 _mod = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_mod)
+
+
+def test_iteration_summary_renders_after_child_logs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    campaign_id = "campaign-7"
+    campaign = tmp_path / campaign_id
+    campaign.mkdir()
+    (campaign / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "cycle_index": 7,
+                "cycle_intent": "screening",
+                "measurement_complete": True,
+                "positive": False,
+                "control_id": "control",
+                "candidate_id": "candidate",
+                "arm_exits": {"control": 0, "candidate": 0},
+                "control_metrics": {"eval_nll": 5.0, "parse_rate": 1.0},
+                "candidate_metrics": {"eval_nll": 4.0, "parse_rate": 1.0},
+                "reasons": ["primary_metric_win"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _mod._print_iteration_summary(tmp_path, campaign_id)
+
+    output = capsys.readouterr().out
+    assert "AUTOTRAIN ITERATION SUMMARY | cycle=7" in output
+    assert "| eval_nll | 5 | 4 | -1 |" in output
+    assert "arms | control=0 candidate=0" in output
+    assert output.rstrip().endswith("decision | primary_metric_win")
 
 
 def _git_repo(path: Path) -> Path:
