@@ -15159,7 +15159,7 @@ def run_cycle(
         else:
             cycle_intent = "screening"
     saturation_state: dict[str, Any] | None = None
-    if cycle_intent == "screening" and replay is None:
+    if cycle_intent in {"screening", "retry_measurement"}:
         saturation_state = _screening_saturation_state(
             root,
             loop_id,

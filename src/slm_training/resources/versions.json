@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Apply the required-hypothesis evidence floor to frozen measurement replays as well as new screening campaigns; replay still binds and executes the exact control and candidate manifests.",
+          "version": "v289"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Persist only the five required evidence-grounded hypotheses plus any explicitly prioritized members for two-arm screening campaigns, avoiding artifact work for arms that cannot execute under the locked campaign budget.",
           "version": "v288"
         },
@@ -7010,7 +7015,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v288"
+      "version": "v289"
     },
     "harness.autoresearch.formal": {
       "history": [
