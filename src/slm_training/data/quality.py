@@ -701,6 +701,12 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
     request = _semantic_request(record)
     lowered_prompt = request.lower()
     reasons: list[str] = []
+    from slm_training.dsl.analysis.templatize import assert_role_safe_output
+
+    try:
+        assert_role_safe_output(openui, output_kind=record.target_kind)
+    except ValueError as exc:
+        reasons.append(f"role_unsafe_output:{exc}")
     if record.target_kind != "document":
         from slm_training.dsl.parser import ParseError, validate_output
 

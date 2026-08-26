@@ -49,6 +49,49 @@ def test_package_import_defers_dsl_but_preserves_legacy_exports() -> None:
     )
 
 
+def test_prepare_control_snapshot_drops_role_unsafe_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "control"
+    source.mkdir()
+    rows = [
+        {
+            "id": "valid",
+            "prompt": "fixture",
+            "openui": 'root = TextContent(":slot_0")',
+            "placeholders": [":slot_0"],
+            "target_kind": "document",
+        },
+        {
+            "id": "unsafe",
+            "prompt": "fixture",
+            "openui": 'root = Input(":slot_0")',
+            "placeholders": [":slot_0"],
+            "target_kind": "document",
+        },
+    ]
+    (source / "records.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.model_build.data.load_train_records", lambda _path: []
+    )
+    monkeypatch.setattr(
+        "slm_training.autoresearch.hillclimb.assert_synthesis_feedback_cleared_for_sft",
+        lambda _path: None,
+    )
+
+    prepared = _mod._prepare_i10_train_dir_for_sft(
+        source, output_parent=tmp_path, require_harness_prompt=False
+    )
+
+    assert prepared.name == "control_role_safe"
+    assert [
+        json.loads(line)["id"]
+        for line in (prepared / "records.jsonl").read_text().splitlines()
+    ] == ["valid"]
+
+
 @pytest.fixture(autouse=True)
 def _clear_dynamic_thrash_bank_cache() -> None:
     """Isolate loop-local self-heal thrash arms across tests."""

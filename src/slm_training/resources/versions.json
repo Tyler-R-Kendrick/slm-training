@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Prepare role-safe derived fixture snapshots for screening controls, retain emitted synthesis experiment candidates in action receipts, and reject role-unsafe records during historical I10 harness preparation.",
+          "version": "v285"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Defer production-codec re-exports from the DSL package so data.contract may initialize before the codec imports it; preserve direct DSL package imports and the faster autoresearch startup path.",
           "version": "v284"
         },
@@ -6990,7 +6995,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v284"
+      "version": "v285"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -19199,6 +19204,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Training-data independent judging rejects outputs that place placeholders in schema-defined non-content properties before model construction.",
+          "version": "v321"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Independent data-quality judging no longer mistakes plural schema-field slot names for requested UI components.",
           "version": "v320"
         },
@@ -21186,7 +21196,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v320"
+      "version": "v321"
     },
     "ops.vocab": {
       "history": [

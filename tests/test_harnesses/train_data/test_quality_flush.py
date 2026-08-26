@@ -240,6 +240,17 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
     )
     assert independent_judge(valid)["ok"]
 
+    role_unsafe = ExampleRecord(
+        id="judge-schema-role-unsafe",
+        prompt="Build an input.",
+        openui='root = Input(":slot_0")',
+        placeholders=[":slot_0"],
+    )
+    assert any(
+        reason.startswith("role_unsafe_output:")
+        for reason in independent_judge(role_unsafe)["reasons"]
+    )
+
     for value in ('":input"', "[]"):
         invalid = ExampleRecord(
             id="judge-schema-invalid",

@@ -4712,7 +4712,12 @@ def _retire_i10_heal_arm(root: Path, loop_id: str, *, reason: str) -> bool:
     return True
 
 
-def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
+def _prepare_i10_train_dir_for_sft(
+    train_dir: Path,
+    *,
+    output_parent: Path | None = None,
+    require_harness_prompt: bool = True,
+) -> Path:
     """Filter NL/repair prompts and clear open synthesis feedback for SFT.
 
     ``train_model`` loads prompts via ``parse_harness_task``. Cap0 I10 rebuilds
@@ -4726,6 +4731,7 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
         open_synthesis_recommendations,
     )
     from slm_training.dsl.harness_dsl import parse_harness_task
+    from slm_training.dsl.analysis.templatize import assert_role_safe_output
     from slm_training.harnesses.model_build.data import load_train_records
 
     records_path = train_dir / "records.jsonl"
@@ -4738,14 +4744,20 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
             continue
         row = json.loads(line)
         try:
-            parse_harness_task(str(row.get("prompt") or ""))
+            if require_harness_prompt:
+                parse_harness_task(str(row.get("prompt") or ""))
+            assert_role_safe_output(
+                str(row.get("openui") or ""),
+                output_kind=str(row.get("target_kind") or "document"),
+            )
         except Exception:  # noqa: BLE001 — drop non-harness prompts for SFT
             dropped += 1
             continue
         kept.append(row)
     out_dir = train_dir
     if dropped:
-        out_dir = train_dir.parent / f"{train_dir.name}_harness"
+        suffix = "harness" if require_harness_prompt else "role_safe"
+        out_dir = (output_parent or train_dir.parent) / f"{train_dir.name}_{suffix}"
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "records.jsonl").write_text(
             "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in kept),
@@ -4783,7 +4795,7 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
         )
     feedback_path = out_dir / "synthesis_feedback.json"
     actions_path = out_dir / "synthesis_feedback_actions.json"
-    if feedback_path.is_file() and not actions_path.is_file():
+    if feedback_path.is_file():
         feedback = json.loads(feedback_path.read_text(encoding="utf-8"))
         seen: dict[str, dict[str, Any]] = {}
         for rec in open_synthesis_recommendations(feedback):
@@ -4814,7 +4826,10 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
                         "recorded_at": datetime.now(timezone.utc).isoformat(),
                         "honesty_mode": "fixture_or_scratch",
                         "actions": actions,
-                        "experiment_candidates_filed": [],
+                        "experiment_candidates_filed": feedback.get(
+                            "experiment_candidates"
+                        )
+                        or [],
                     },
                     indent=2,
                 )
@@ -14726,6 +14741,14 @@ def run_cycle(
     # Defaults from external policy when caller still uses legacy pins.
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
+    from slm_training.data.store import DataStore
+
+    control_dir = DataStore().resolve("train", train_version).path
+    train_version = _prepare_i10_train_dir_for_sft(
+        control_dir,
+        output_parent=cwd / "outputs" / "data" / "train",
+        require_harness_prompt=False,
+    ).name
 
     _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
     if sync_git and startup_commit is not None:
