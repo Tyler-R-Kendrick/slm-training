@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Persist the finalized-lineage exhaustion cache inside the existing slug-stats ledger so supervisor and driver processes share the policy-bound result; invalidate it on canonical hill-climb ledger change.",
+          "version": "v282"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Memoize completed-nonpositive lineage classification for a finalized predecessor until its canonical hill-climb ledger changes, avoiding repeated 25-second historical rescans within one cycle.",
           "version": "v281"
         },
@@ -6975,7 +6980,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v281"
+      "version": "v282"
     },
     "harness.autoresearch.formal": {
       "history": [

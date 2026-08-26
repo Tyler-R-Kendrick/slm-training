@@ -7168,6 +7168,8 @@ def _recent_completed_nonpositive_slugs(
         root, predecessor_campaign_id, max_cycles=max_cycles
     )
     cache_key: tuple[Any, ...] | None = None
+    persisted_cache_key: dict[str, Any] | None = None
+    stats_path: Path | None = None
     if predecessor_campaign_id:
         campaign = _read_json(root / predecessor_campaign_id / "campaign.json")
         loop_id = str(campaign.get("loop_id") or "")
@@ -7185,6 +7187,22 @@ def _recent_completed_nonpositive_slugs(
             cached = _RECENT_EXHAUSTION_CACHE.get(cache_key)
             if cached is not None:
                 return set(cached)
+            persisted_cache_key = {
+                "predecessor_campaign_id": predecessor_campaign_id,
+                "max_cycles": max_cycles,
+                "required_null_seeds": required,
+                "hillclimb_ledger_size": stat.st_size,
+                "hillclimb_ledger_mtime_ns": stat.st_mtime_ns,
+            }
+            stats_path = _slug_stats_path(root, loop_id)
+            persisted = _read_json(stats_path).get("lineage_exhaustion_cache")
+            if isinstance(persisted, dict) and all(
+                persisted.get(key) == value
+                for key, value in persisted_cache_key.items()
+            ):
+                closed = frozenset(map(str, persisted.get("closed_slugs") or ()))
+                _RECENT_EXHAUSTION_CACHE[cache_key] = closed
+                return set(closed)
 
     # slug -> set of seeds with complete non-positive (since last positive)
     null_seeds: dict[str, set[int | None]] = {}
@@ -7328,6 +7346,16 @@ def _recent_completed_nonpositive_slugs(
         if len(_RECENT_EXHAUSTION_CACHE) >= 8:
             _RECENT_EXHAUSTION_CACHE.pop(next(iter(_RECENT_EXHAUSTION_CACHE)))
         _RECENT_EXHAUSTION_CACHE[cache_key] = frozenset(closed)
+        if stats_path is not None and stats_path.is_file():
+            payload = _read_json(stats_path)
+            payload["lineage_exhaustion_cache"] = {
+                **(persisted_cache_key or {}),
+                "closed_slugs": sorted(closed),
+            }
+            stats_path.write_text(
+                json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
     return closed
 
 

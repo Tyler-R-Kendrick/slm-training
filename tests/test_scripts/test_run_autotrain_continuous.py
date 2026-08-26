@@ -3008,6 +3008,8 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
     ledger = root / "loops" / "loop-1" / "hillclimb_iterations.jsonl"
     ledger.parent.mkdir(parents=True)
     ledger.write_text("{}\n")
+    stats = ledger.with_name("slug_stats.json")
+    stats.write_text(json.dumps({"schema": "thrash_slug_stats/v1", "slugs": {}}))
     calls = 0
 
     def classify(**_kwargs: object) -> dict[str, object]:
@@ -3027,6 +3029,18 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
             root, campaign_id, min_null_seeds=1
         ) == {"steps"}
     assert calls == 1
+    _mod._RECENT_EXHAUSTION_CACHE.clear()
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"steps"}
+    assert calls == 1
+
+    ledger.write_text("{}\n{}\n")
+    _mod._RECENT_EXHAUSTION_CACHE.clear()
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"steps"}
+    assert calls == 2
 
 
 def test_completed_null_does_not_age_out_of_lineage_exhaustion(
