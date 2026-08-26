@@ -2899,3 +2899,12 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 | `c573-current-rung-data-heal` | n=24; parse 1.000; meaningful 0.208; structural 0.136; binder F1 0.531; eval NLL 9.289 | ship gates failed |
 
 Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL_CARD.md). No promotion or bucket sync.
+
+## Model card (summary) — continuous c575 fixture checkpoints
+
+| Checkpoint | Smoke evidence | Status |
+| --- | --- | --- |
+| `c575-control` | evaluation timed out; no scoreboard | incomplete, not promotable |
+| `c575-current-rung-data-heal` | n=24; parse 1.000; meaningful 0.208; structural 0.136; binder F1 0.531; eval NLL 9.259 | ship gates failed |
+
+Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL_CARD.md). No promotion or bucket sync.

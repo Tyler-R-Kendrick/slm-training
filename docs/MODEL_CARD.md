@@ -3586,3 +3586,17 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573` ran a 
 - checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573/runs/c20260826-continuous-openui-local-8c0b60dd-c573-{control,current-rung-data-heal}/checkpoints/last.pt`.
 - candidate failures: certified fallback, meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control produced no scoreboard, so the comparison is incomplete and non-promotable.
 - history: both checkpoints were created on 2026-08-26. They remain local fixture artifacts with no bucket sync and no promotion.
+
+## Continuous fixture checkpoints — c575 (2026-08-26)
+
+Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a size-matched local screening pair. Both artifacts are scratch checkpoints, not ship candidates.
+
+| Checkpoint | Params | Suite n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `c575-control` | 1,661,698 | 0 | — | — | — | — | — | evaluation timed out; incomplete |
+| `c575-current-rung-data-heal` | 1,601,794 | 24 | 1.000 | 0.208 | 0.136 | 0.531 | 9.259 | smoke and ship gates failed |
+
+- recipe: CPU, 374 steps, scratch context/denoiser, lexer output tokenizer, seed 100575, strict grammar-constrained tree decode, `sync_checkpoints=false`.
+- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575/runs/c20260826-continuous-openui-local-8c0b60dd-c575-{control,current-rung-data-heal}/checkpoints/last.pt`.
+- candidate failures: meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control produced no scoreboard, so the comparison is incomplete and non-promotable.
+- history: both checkpoints were created on 2026-08-26. They remain local fixture artifacts with no bucket sync and no promotion.
