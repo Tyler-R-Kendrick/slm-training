@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Reuse content-addressed role-safe SFT snapshots when source records, synthesis feedback, derived records, actions, and filter mode match, avoiding repeated grammar validation inside the symmetric decision-arm budget.",
+          "version": "v287"
+        },
+        {
+          "date": "2026-08-26",
           "note": "A pending document action reuses clean tracked connector-published cycle evidence when campaign identity matches and code_dirty is false, avoiding regeneration and writable-index dependence.",
           "version": "v286"
         },
@@ -7000,7 +7005,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v286"
+      "version": "v287"
     },
     "harness.autoresearch.formal": {
       "history": [

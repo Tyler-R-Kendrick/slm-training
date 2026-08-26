@@ -4737,9 +4737,48 @@ def _prepare_i10_train_dir_for_sft(
     records_path = train_dir / "records.jsonl"
     if not records_path.is_file():
         return train_dir
+    records_bytes = records_path.read_bytes()
+    source_sha256 = hashlib.sha256(records_bytes).hexdigest()
+    suffix = "harness" if require_harness_prompt else "role_safe"
+    derived_dir = (output_parent or train_dir.parent) / f"{train_dir.name}_{suffix}"
+    filter_mode = "harness_and_role_safe" if require_harness_prompt else "role_safe"
+    source_feedback_path = train_dir / "synthesis_feedback.json"
+    source_feedback_sha256 = (
+        hashlib.sha256(source_feedback_path.read_bytes()).hexdigest()
+        if source_feedback_path.is_file()
+        else None
+    )
+    cached_manifest_path = derived_dir / "manifest.json"
+    cached_records_path = derived_dir / "records.jsonl"
+    if cached_manifest_path.is_file() and cached_records_path.is_file():
+        try:
+            cached_manifest = json.loads(
+                cached_manifest_path.read_text(encoding="utf-8")
+            )
+        except json.JSONDecodeError:
+            cached_manifest = {}
+        cached_actions_path = derived_dir / "synthesis_feedback_actions.json"
+        actions_match = source_feedback_sha256 is None or (
+            cached_actions_path.is_file()
+            and cached_manifest.get("synthesis_feedback_actions_sha256")
+            == hashlib.sha256(cached_actions_path.read_bytes()).hexdigest()
+        )
+        if (
+            cached_manifest.get("sft_filter_schema") == "i10_sft_filter/v1"
+            and cached_manifest.get("derived_from") == train_dir.name
+            and cached_manifest.get("filter_mode") == filter_mode
+            and cached_manifest.get("source_records_sha256") == source_sha256
+            and cached_manifest.get("source_feedback_sha256")
+            == source_feedback_sha256
+            and cached_manifest.get("records_sha256")
+            == hashlib.sha256(cached_records_path.read_bytes()).hexdigest()
+            and actions_match
+        ):
+            print(f"I10_SFT_REUSE version={derived_dir.name}", flush=True)
+            return derived_dir
     kept: list[dict[str, Any]] = []
     dropped = 0
-    for line in records_path.read_text(encoding="utf-8").splitlines():
+    for line in records_bytes.decode("utf-8").splitlines():
         if not line.strip():
             continue
         row = json.loads(line)
@@ -4756,8 +4795,7 @@ def _prepare_i10_train_dir_for_sft(
         kept.append(row)
     out_dir = train_dir
     if dropped:
-        suffix = "harness" if require_harness_prompt else "role_safe"
-        out_dir = (output_parent or train_dir.parent) / f"{train_dir.name}_{suffix}"
+        out_dir = derived_dir
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "records.jsonl").write_text(
             "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in kept),
@@ -4775,20 +4813,20 @@ def _prepare_i10_train_dir_for_sft(
             if src.is_file():
                 (out_dir / name).write_bytes(src.read_bytes())
         man_path = out_dir / "manifest.json"
-        if man_path.is_file():
-            try:
-                man = json.loads(man_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                man = {}
-            man["version"] = out_dir.name
-            man["record_count"] = len(kept)
-            man["derived_from"] = train_dir.name
-            man["derive_note"] = (
-                "filtered to HARNESS_V1 prompts for symbol-only SFT loader; "
-                f"dropped={dropped}"
-            )
-            man["derived_at"] = datetime.now(timezone.utc).isoformat()
-            man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
+        try:
+            man = json.loads(man_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            man = {}
+        man["version"] = out_dir.name
+        man["record_count"] = len(kept)
+        man["derived_from"] = train_dir.name
+        man["filter_mode"] = filter_mode
+        man["derive_note"] = (
+            f"filtered to {filter_mode} outputs for symbol-only SFT loader; "
+            f"dropped={dropped}"
+        )
+        man["derived_at"] = datetime.now(timezone.utc).isoformat()
+        man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
         print(
             f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} dropped={dropped}",
             flush=True,
@@ -4842,6 +4880,18 @@ def _prepare_i10_train_dir_for_sft(
     except Exception as exc:  # noqa: BLE001 — keep original on prepare failure
         print(f"I10_SFT_PREPARE_WARN dir={out_dir} err={exc!r}", flush=True)
         return train_dir
+    if dropped:
+        man["sft_filter_schema"] = "i10_sft_filter/v1"
+        man["source_records_sha256"] = source_sha256
+        man["source_feedback_sha256"] = source_feedback_sha256
+        man["records_sha256"] = hashlib.sha256(
+            (out_dir / "records.jsonl").read_bytes()
+        ).hexdigest()
+        if actions_path.is_file():
+            man["synthesis_feedback_actions_sha256"] = hashlib.sha256(
+                actions_path.read_bytes()
+            ).hexdigest()
+        man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
     return out_dir
 
 

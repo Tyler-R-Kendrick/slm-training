@@ -50,7 +50,7 @@ def test_package_import_defers_dsl_but_preserves_legacy_exports() -> None:
 
 
 def test_prepare_control_snapshot_drops_role_unsafe_rows(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     source = tmp_path / "control"
     source.mkdir()
@@ -90,6 +90,16 @@ def test_prepare_control_snapshot_drops_role_unsafe_rows(
         json.loads(line)["id"]
         for line in (prepared / "records.jsonl").read_text().splitlines()
     ] == ["valid"]
+    records_mtime = (prepared / "records.jsonl").stat().st_mtime_ns
+
+    assert (
+        _mod._prepare_i10_train_dir_for_sft(
+            source, output_parent=tmp_path, require_harness_prompt=False
+        )
+        == prepared
+    )
+    assert (prepared / "records.jsonl").stat().st_mtime_ns == records_mtime
+    assert "I10_SFT_REUSE version=control_role_safe" in capsys.readouterr().out
 
 
 @pytest.fixture(autouse=True)
