@@ -13431,6 +13431,7 @@ def _apply_frozen_replay(
             "proposed_experiment_id": new_ids["candidate"],
         }
     )
+    matrix["hypotheses"] = _trim_unexecuted_hypotheses(matrix)["hypotheses"]
     HypothesisMatrix.model_validate(matrix)
     return {new_ids[role]: replay[role] for role in ("control", "candidate")}
 

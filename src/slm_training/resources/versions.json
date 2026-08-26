@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Apply the existing five-hypothesis trim to retry_measurement campaigns after frozen replay binding; screening and replay retain the same evidence floor.",
+          "version": "v292"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Trim frozen retry matrices to the required five hypotheses before persistence and reuse any hash-linked completed train checkpoint even when its prior evaluation timed out; every successor still reruns all declared evaluations.",
           "version": "v291"
         },
@@ -7025,7 +7030,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v291"
+      "version": "v292"
     },
     "harness.autoresearch.formal": {
       "history": [

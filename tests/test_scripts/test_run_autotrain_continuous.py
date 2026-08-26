@@ -8255,6 +8255,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     }
 
     replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+    assert len(matrix["hypotheses"]) == 5
     recommended = next(
         row["experiment"]
         for row in matrix["hypotheses"]
