@@ -70,6 +70,28 @@ def test_paraphrase_with_different_structure_collapses() -> None:
     assert drop["similarity"] >= 0.9
 
 
+def test_semantic_dedup_retains_canonical_program_root() -> None:
+    base = _record("root", _BASE_PROMPT, _BASE_OPENUI)
+    base.meta = {
+        "source_kind": "program-first",
+        "source_family": "programspec_generated",
+        "root_parent_id": "root",
+        "prompt_index": 0,
+    }
+    paraphrase = _record("root-p1_syn_0", _BASE_PROMPT, _BASE_OPENUI)
+    paraphrase.meta = {
+        "source_kind": "program-first",
+        "source_family": "prompt_paraphrase",
+        "root_parent_id": "root",
+        "prompt_index": 1,
+    }
+
+    kept, dropped = apply_semantic_dedup([paraphrase, base], threshold=0.9)
+
+    assert [record.id for record in kept] == ["root"]
+    assert dropped[0]["duplicate_of"] == "root"
+
+
 def test_deterministic_across_runs() -> None:
     records = [
         _record("r1", _BASE_PROMPT, _BASE_OPENUI),

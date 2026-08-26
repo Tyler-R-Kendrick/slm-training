@@ -50,6 +50,22 @@ def test_fuzzy_dedup_collapses_near_duplicates_preferring_priority() -> None:
     assert dropped and dropped[0]["reason"] == "fuzzy_minhash"
 
 
+def test_fuzzy_dedup_retains_canonical_program_root() -> None:
+    base = _rec("root", "Hero card layout", HERO, family="programspec_generated")
+    base.meta.update({"source_kind": "program-first", "prompt_index": 0})
+    paraphrase = _rec(
+        "root-p1_syn_0", "Hero card layout", HERO, family="prompt_paraphrase"
+    )
+    paraphrase.meta.update(
+        {"source_kind": "program-first", "prompt_index": 1, "root_parent_id": "root"}
+    )
+
+    kept, dropped = apply_fuzzy_dedup([paraphrase, base], threshold=0.92)
+
+    assert [record.id for record in kept] == ["root"]
+    assert dropped[0]["duplicate_of"] == "root"
+
+
 def test_semantic_cluster_cap_keeps_max() -> None:
     records = [
         _rec(f"r{i}", "Hero card layout", HERO, family="rico_real") for i in range(5)

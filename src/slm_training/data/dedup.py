@@ -87,11 +87,23 @@ def _record_family(record: ExampleRecord) -> str:
     return str(meta.get("source_family") or classify_source_family(record))
 
 
-def _keep_key(record: ExampleRecord) -> tuple[int, int, str]:
-    """Prefer higher-priority family, then root self, then sorted id."""
+def _keep_key(record: ExampleRecord) -> tuple[int, int, int, str]:
+    """Keep canonical program roots, then apply the normal family priority."""
+    meta = record.meta or {}
     family = _record_family(record)
-    root = str((record.meta or {}).get("root_parent_id") or record.id)
-    return (-family_priority(family), 0 if record.id == root else 1, record.id)
+    root = str(meta.get("root_parent_id") or record.id)
+    canonical_program_root = (
+        meta.get("source_kind") == "program-first"
+        and meta.get("prompt_index") in {None, 0, "0"}
+        and meta.get("derivation") != "semantic_counterfactual"
+        and record.id == root
+    )
+    return (
+        0 if canonical_program_root else 1,
+        -family_priority(family),
+        0 if record.id == root else 1,
+        record.id,
+    )
 
 
 def char_ngrams(text: str, n: int = 4) -> list[str]:
