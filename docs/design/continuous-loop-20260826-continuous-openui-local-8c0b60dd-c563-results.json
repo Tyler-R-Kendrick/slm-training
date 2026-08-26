@@ -1,0 +1,55 @@
+{
+  "schema": "continuous_cycle_results/v1",
+  "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c563",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 563,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "evidence_class": "fixture",
+  "honesty": "failed_fixture_infrastructure_only_not_ship",
+  "primary_metric": "smoke.eval_nll",
+  "measurement_complete": false,
+  "positive": false,
+  "stack_layer": false,
+  "failure_stage": "symmetric_decision_arm_preparation",
+  "failure": {
+    "kind": "TimeoutExpired",
+    "remaining_seconds": 143.93412298800104,
+    "required_seconds": 155.25,
+    "shortfall_seconds": 11.31587701199896,
+    "arms_launched": 0,
+    "scoreboards": 0,
+    "agentv_bundles": 0
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "backend": "fixture_twotower",
+    "max_wall_minutes": 1.1666666666666667,
+    "candidate_train_version": "continuous_i10_continuous_openui_local_c556_harness",
+    "control_train_version": "hillclimb_strict_v2_role_safe"
+  },
+  "repair_evidence": {
+    "component": "harness.autoresearch.experiment_campaign/v287",
+    "candidate_rows": 91,
+    "control_rows": 629,
+    "initial_prepare_seconds": 2.961,
+    "unchanged_reuse_seconds": 0.01,
+    "cache_contract": "source records + synthesis feedback + derived records + action receipts + filter mode",
+    "gates_weakened": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "fb26565c37640e81968679158c47f4e873e63726",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v287",
+      "harness.model_build.eval": "v101",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "model.twotower": "v321"
+    },
+    "stamped_at": "2026-08-26T20:00:49.325656+00:00"
+  }
+}
