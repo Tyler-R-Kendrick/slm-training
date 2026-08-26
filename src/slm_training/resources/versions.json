@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Memoize completed-nonpositive lineage classification for a finalized predecessor until its canonical hill-climb ledger changes, avoiding repeated 25-second historical rescans within one cycle.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Continuous cycles capture bounded predecessor and loop evidence, index prior hypothesis ids from append-only proposal events, and fail closed rather than shrinking frozen decision-arm budgets below their preregistered wall.",
           "version": "v280"
         },
@@ -6970,7 +6975,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v280"
+      "version": "v281"
     },
     "harness.autoresearch.formal": {
       "history": [

@@ -7134,6 +7134,9 @@ def _lineage_campaign_ids(
     return list(reversed(chain))
 
 
+_RECENT_EXHAUSTION_CACHE: dict[tuple[Any, ...], frozenset[str]] = {}
+
+
 def _recent_completed_nonpositive_slugs(
     root: Path,
     predecessor_campaign_id: str | None,
@@ -7161,13 +7164,33 @@ def _recent_completed_nonpositive_slugs(
         if min_null_seeds is not None
         else _arm_close_min_null_seeds()
     )
+    campaign_ids = _lineage_campaign_ids(
+        root, predecessor_campaign_id, max_cycles=max_cycles
+    )
+    cache_key: tuple[Any, ...] | None = None
+    if predecessor_campaign_id:
+        campaign = _read_json(root / predecessor_campaign_id / "campaign.json")
+        loop_id = str(campaign.get("loop_id") or "")
+        ledger = root / "loops" / loop_id / "hillclimb_iterations.jsonl"
+        if loop_id and ledger.is_file():
+            stat = ledger.stat()
+            cache_key = (
+                str(root.resolve()),
+                predecessor_campaign_id,
+                max_cycles,
+                required,
+                stat.st_size,
+                stat.st_mtime_ns,
+            )
+            cached = _RECENT_EXHAUSTION_CACHE.get(cache_key)
+            if cached is not None:
+                return set(cached)
+
     # slug -> set of seeds with complete non-positive (since last positive)
     null_seeds: dict[str, set[int | None]] = {}
     # train_version -> seeds; snapshot clones share identity, not slug spelling
     tv_null_seeds: dict[str, set[int | None]] = {}
-    for camp_id in _lineage_campaign_ids(
-        root, predecessor_campaign_id, max_cycles=max_cycles
-    ):
+    for camp_id in campaign_ids:
         camp_dir = root / camp_id
         handoff = _read_json(camp_dir / "cycle_handoff.json")
         delivery = _read_json(camp_dir / "sdlc_delivery.json")
@@ -7301,6 +7324,10 @@ def _recent_completed_nonpositive_slugs(
         for slug, _, extras in _all_screening_arm_bank():
             if extras.get("train_version") in exhausted_versions:
                 closed.add(slug)
+    if cache_key is not None:
+        if len(_RECENT_EXHAUSTION_CACHE) >= 8:
+            _RECENT_EXHAUSTION_CACHE.pop(next(iter(_RECENT_EXHAUSTION_CACHE)))
+        _RECENT_EXHAUSTION_CACHE[cache_key] = frozenset(closed)
     return closed
 
 

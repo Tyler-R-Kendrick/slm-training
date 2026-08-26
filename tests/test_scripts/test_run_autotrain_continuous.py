@@ -3005,20 +3005,28 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
     (camp / "cycle_handoff.json").write_text(
         json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
     )
-    monkeypatch.setattr(
-        _mod,
-        "_classify_positive",
-        lambda **_kwargs: {
+    ledger = root / "loops" / "loop-1" / "hillclimb_iterations.jsonl"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("{}\n")
+    calls = 0
+
+    def classify(**_kwargs: object) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return {
             "positive": False,
             "control_metrics": {"structural_similarity": 0.1},
             "candidate_metrics": {"structural_similarity": 0.2},
             "reasons": ["primary_quality_win_rejected_latency_budget"],
-        },
-    )
+        }
 
-    assert _mod._recent_completed_nonpositive_slugs(
-        root, campaign_id, min_null_seeds=1
-    ) == {"steps"}
+    monkeypatch.setattr(_mod, "_classify_positive", classify)
+
+    for _ in range(2):
+        assert _mod._recent_completed_nonpositive_slugs(
+            root, campaign_id, min_null_seeds=1
+        ) == {"steps"}
+    assert calls == 1
 
 
 def test_completed_null_does_not_age_out_of_lineage_exhaustion(

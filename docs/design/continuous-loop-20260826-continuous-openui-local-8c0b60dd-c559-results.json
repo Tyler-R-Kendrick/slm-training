@@ -1,0 +1,31 @@
+{
+  "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c559",
+  "cycle_index": 559,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "evidence_class": "fixture",
+  "honesty": "partial_orchestration_no_train_or_eval_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "primary_metric": "smoke.eval_nll",
+  "reason": "symmetric decision-arm budget had 33.69774649499959 seconds remaining for two frozen 70-second arms plus finalization",
+  "repair_evidence": {
+    "cache_invalidation": "canonical hillclimb_iterations.jsonl size and mtime",
+    "cached_lineage_seconds": 0.041,
+    "closed_families": 57,
+    "cold_lineage_seconds": 24.735,
+    "device": "cpu",
+    "focused_tests": "3 passed in 1.80 seconds"
+  },
+  "schema": "continuous_cycle_results/v1",
+  "scoreboards": [],
+  "version_stamp": {
+    "code_commit": "cc57f138c382e8857e3c49094ecfaa068b2fd530",
+    "code_dirty": true,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v281"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-26T18:47:28Z"
+  }
+}
