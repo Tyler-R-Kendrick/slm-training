@@ -28,7 +28,6 @@ from slm_training.autoresearch.formal import (
     run_formal_preflight,
     validate_formal_preflights,
 )
-from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
 from slm_training.autoresearch.literature import (
     HuggingFacePapersClient,
     categorical_discovery_source,
@@ -43,7 +42,6 @@ from slm_training.autoresearch.providers import (
     OpenAIResearchProvider,
 )
 from slm_training.autoresearch.researchers import RESEARCHERS, get_researcher
-from slm_training.autoresearch.researcher_eval import evaluate_researcher
 from slm_training.autoresearch.rl_gate import (
     assert_rl_ready,
     assess_rl_readiness,
@@ -75,13 +73,6 @@ from slm_training.autoresearch.storage import (
     render_loop_result_matrix,
 )
 from slm_training.autoresearch.telemetry import TrackioSink
-from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
-from slm_training.harnesses.experiments.verified_metrics import (
-    optimum_feedback,
-    sha256_file,
-    verify_metric_certificate,
-)
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -938,6 +929,12 @@ def _verified_optimum_feedback(
     campaign_manifest_sha256: str | None,
     metric_expectations_sha256: str | None,
 ) -> OptimumFeedbackV1 | None:
+    from slm_training.harnesses.experiments.verified_metrics import (
+        optimum_feedback,
+        sha256_file,
+        verify_metric_certificate,
+    )
+
     evidence = getattr(args, "metric_evidence", None)
     certificate = getattr(args, "metric_certificate", None)
     if evidence is None and certificate is None:
@@ -1001,6 +998,8 @@ def _prepare_reused_training(
     lineage_paths: tuple[Path, ...],
 ) -> tuple[list[list[str]], dict[str, object]]:
     """Replace a frozen replay's completed train stage with its bound checkpoint."""
+
+    from slm_training.harnesses.experiments.verified_metrics import sha256_file
 
     if campaign.track != "twotower":
         raise ValueError("training reuse currently supports only frozen TwoTower runs")
@@ -1683,6 +1682,8 @@ def cmd_validate_rl(args: argparse.Namespace) -> int:
 
 
 def cmd_evaluate_researcher(args: argparse.Namespace) -> int:
+    from slm_training.autoresearch.researcher_eval import evaluate_researcher
+
     report = evaluate_researcher(
         args.cases,
         args.predictions,
@@ -1698,6 +1699,8 @@ def cmd_evaluate_researcher(args: argparse.Namespace) -> int:
 
 
 def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
+    from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
+
     report = evaluate_hypothesizer(
         args.cases,
         args.predictions,
@@ -1803,6 +1806,8 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
 
 def cmd_materialize_mixture(args: argparse.Namespace) -> int:
+    from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
+
     weights = json.loads(args.weights_json)
     manifest = MixtureManifest(
         mixture_id=args.mixture_id,

@@ -17325,6 +17325,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "no-bump: defer command-specific evaluation, mixture, and verified-metric imports so continuous campaign orchestration preserves its symmetric arm budget; preference remine behavior is unchanged.",
+          "version": "v6"
+        },
+        {
+          "date": "2026-08-26",
           "note": "no-bump: support multiple evaluation stages in frozen TwoTower training reuse; preference remine campaign behavior is unchanged.",
           "version": "v6"
         },
