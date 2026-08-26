@@ -1000,6 +1000,40 @@ def _fit_screening_candidate_count(
     return requested, None
 
 
+def _trim_unexecuted_hypotheses(
+    matrix: dict[str, Any], *, minimum: int = 5
+) -> dict[str, Any]:
+    """Keep required matrix members plus the schema's evidence floor."""
+
+    hypotheses = list(matrix.get("hypotheses") or [])
+    required = {str(matrix.get("recommended_experiment_id") or "")}
+    if hypotheses:
+        required.add(
+            str((hypotheses[0].get("experiment") or {}).get("experiment_id") or "")
+        )
+    required.update(
+        str(priority.get("proposed_experiment_id") or "")
+        for priority in matrix.get("next_run_priorities") or []
+        if priority.get("proposed_experiment_id")
+    )
+    selected = set(required)
+    for item in hypotheses:
+        if len(selected) >= max(minimum, len(required)):
+            break
+        selected.add(str((item.get("experiment") or {}).get("experiment_id") or ""))
+    if len(selected) >= len(hypotheses):
+        return matrix
+    return {
+        **matrix,
+        "hypotheses": [
+            item
+            for item in hypotheses
+            if str((item.get("experiment") or {}).get("experiment_id") or "")
+            in selected
+        ],
+    }
+
+
 def _capacity_view(knobs: Mapping[str, Any]) -> SimpleNamespace:
     return SimpleNamespace(
         **{
@@ -15858,6 +15892,16 @@ def run_cycle(
             f"campaign={campaign_id} stripped_ids={stripped_ids}",
             flush=True,
         )
+    if cycle_intent == "screening" and replay is None:
+        hypothesis_count = len(matrix.get("hypotheses") or [])
+        matrix = _trim_unexecuted_hypotheses(matrix)
+        if len(matrix["hypotheses"]) < hypothesis_count:
+            print(
+                "HYPOTHESIS_MATRIX_TRIM "
+                f"kept={len(matrix['hypotheses'])} dropped="
+                f"{hypothesis_count - len(matrix['hypotheses'])}",
+                flush=True,
+            )
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")

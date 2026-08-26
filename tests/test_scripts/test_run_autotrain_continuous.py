@@ -102,6 +102,27 @@ def test_prepare_control_snapshot_drops_role_unsafe_rows(
     assert "I10_SFT_REUSE version=control_role_safe" in capsys.readouterr().out
 
 
+def test_trim_unexecuted_hypotheses_keeps_required_members() -> None:
+    hypotheses = [
+        {"experiment": {"experiment_id": f"e{index}"}} for index in range(8)
+    ]
+    matrix = {
+        "recommended_experiment_id": "e6",
+        "hypotheses": hypotheses,
+        "next_run_priorities": [{"proposed_experiment_id": "e7"}],
+    }
+
+    trimmed = _mod._trim_unexecuted_hypotheses(matrix)
+
+    assert [item["experiment"]["experiment_id"] for item in trimmed["hypotheses"]] == [
+        "e0",
+        "e1",
+        "e2",
+        "e6",
+        "e7",
+    ]
+
+
 @pytest.fixture(autouse=True)
 def _clear_dynamic_thrash_bank_cache() -> None:
     """Isolate loop-local self-heal thrash arms across tests."""

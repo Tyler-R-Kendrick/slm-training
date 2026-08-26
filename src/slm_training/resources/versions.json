@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Persist only the five required evidence-grounded hypotheses plus any explicitly prioritized members for two-arm screening campaigns, avoiding artifact work for arms that cannot execute under the locked campaign budget.",
+          "version": "v288"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Reuse content-addressed role-safe SFT snapshots when source records, synthesis feedback, derived records, actions, and filter mode match, avoiding repeated grammar validation inside the symmetric decision-arm budget.",
           "version": "v287"
         },
@@ -7005,7 +7010,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v287"
+      "version": "v288"
     },
     "harness.autoresearch.formal": {
       "history": [
