@@ -15,7 +15,9 @@ from slm_training.data.dedup import (
 from slm_training.dsl.schema import ExampleRecord
 
 
-def _rec(rid: str, prompt: str, openui: str, family: str = "rico_real") -> ExampleRecord:
+def _rec(
+    rid: str, prompt: str, openui: str, family: str = "rico_real"
+) -> ExampleRecord:
     return ExampleRecord(
         id=rid,
         prompt=prompt,

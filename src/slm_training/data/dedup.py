@@ -87,19 +87,24 @@ def _record_family(record: ExampleRecord) -> str:
     return str(meta.get("source_family") or classify_source_family(record))
 
 
-def _keep_key(record: ExampleRecord) -> tuple[int, int, int, str]:
-    """Keep canonical program roots, then apply the normal family priority."""
+def _is_canonical_program_root(record: ExampleRecord) -> bool:
     meta = record.meta or {}
-    family = _record_family(record)
     root = str(meta.get("root_parent_id") or record.id)
-    canonical_program_root = (
+    return (
         meta.get("source_kind") == "program-first"
         and meta.get("prompt_index") in {None, 0, "0"}
         and meta.get("derivation") != "semantic_counterfactual"
         and record.id == root
     )
+
+
+def _keep_key(record: ExampleRecord) -> tuple[int, int, int, str]:
+    """Keep canonical program roots, then apply the normal family priority."""
+    meta = record.meta or {}
+    family = _record_family(record)
+    root = str(meta.get("root_parent_id") or record.id)
     return (
-        0 if canonical_program_root else 1,
+        0 if _is_canonical_program_root(record) else 1,
         -family_priority(family),
         0 if record.id == root else 1,
         record.id,
@@ -177,7 +182,12 @@ def apply_fuzzy_dedup(
     for members in by_structure.values():
         ordered = sorted(members, key=_keep_key)
         signatures: list[tuple[ExampleRecord, tuple[int, ...]]] = [
-            (rec, minhash_signature(fuzzy_payload(rec), permutations=permutations, seed=seed))
+            (
+                rec,
+                minhash_signature(
+                    fuzzy_payload(rec), permutations=permutations, seed=seed
+                ),
+            )
             for rec in ordered
         ]
         survivors: list[tuple[ExampleRecord, tuple[int, ...]]] = []
@@ -208,11 +218,7 @@ def prompt_semantic_cluster(prompt: str) -> str:
     text = norm_text(prompt).lower()
     # Drop leading template boilerplate like "Create a UI for:".
     text = re.sub(r"^(create|build|make|design|show)\b[^:]*:\s*", "", text)
-    words = [
-        w
-        for w in _WORD_RE.findall(text)
-        if w not in _STOPWORDS and len(w) > 1
-    ]
+    words = [w for w in _WORD_RE.findall(text) if w not in _STOPWORDS and len(w) > 1]
     bag = " ".join(sorted(set(words)))
     return hashlib.sha256(bag.encode("utf-8")).hexdigest()[:16]
 

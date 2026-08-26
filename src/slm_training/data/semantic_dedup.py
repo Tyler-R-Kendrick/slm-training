@@ -23,7 +23,11 @@ from typing import Any
 
 import numpy as np
 
-from slm_training.data.dedup import _keep_key, _record_family
+from slm_training.data.dedup import (
+    _is_canonical_program_root,
+    _keep_key,
+    _record_family,
+)
 from slm_training.data.leakage import norm_text, normalize_openui_structure
 from slm_training.dsl.schema import ExampleRecord
 
@@ -122,7 +126,9 @@ def record_vectors(records: list[ExampleRecord]) -> tuple[np.ndarray, str]:
         embedder = _load_embedder()
         assert embedder is not None
         vectors = np.asarray(
-            embedder.encode(payloads, normalize_embeddings=True, show_progress_bar=False),
+            embedder.encode(
+                payloads, normalize_embeddings=True, show_progress_bar=False
+            ),
             dtype=np.float64,
         )
         return vectors, engine
@@ -155,10 +161,16 @@ def apply_semantic_dedup(
     if cutoff <= 0.0 or math.isnan(cutoff):
         return list(records), []
 
-    order = sorted(range(len(pool)), key=lambda i: _keep_key(pool[i]))
-    leader_rows: list[int] = []
-    leader_matrix: np.ndarray | None = None
-    kept_ids: set[str] = set(exempt_ids)
+    canonical_rows = [
+        i for i, record in enumerate(pool) if _is_canonical_program_root(record)
+    ]
+    order = sorted(
+        (i for i in range(len(pool)) if i not in canonical_rows),
+        key=lambda i: _keep_key(pool[i]),
+    )
+    leader_rows = list(canonical_rows)
+    leader_matrix: np.ndarray | None = vectors[leader_rows] if leader_rows else None
+    kept_ids: set[str] = exempt_ids | {pool[i].id for i in canonical_rows}
     dropped: list[dict[str, str]] = []
     for index in order:
         record = pool[index]

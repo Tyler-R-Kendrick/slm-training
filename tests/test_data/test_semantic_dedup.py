@@ -48,7 +48,9 @@ def test_paraphrase_with_different_structure_collapses() -> None:
     paraphrase = _record(
         "a2_paraphrase",
         _BASE_PROMPT.replace("short biography", "brief biography"),
-        _BASE_OPENUI.replace("card = Card([name, role, bio])", "card = Card([name, bio, role])"),
+        _BASE_OPENUI.replace(
+            "card = Card([name, role, bio])", "card = Card([name, bio, role])"
+        ),
     )
     distinct = _record(
         "b1_distinct",
@@ -57,9 +59,7 @@ def test_paraphrase_with_different_structure_collapses() -> None:
         'qty = Slider("$0", "continuous", 0, 100, 1, [40], ":cart.qty")\n'
         'pay = Button(":cart.pay")',
     )
-    kept, dropped = apply_semantic_dedup(
-        [base, paraphrase, distinct], threshold=0.9
-    )
+    kept, dropped = apply_semantic_dedup([base, paraphrase, distinct], threshold=0.9)
     assert [record.id for record in kept] == ["a1_base", "b1_distinct"]
     assert len(dropped) == 1
     drop = dropped[0]
@@ -85,11 +85,21 @@ def test_semantic_dedup_retains_canonical_program_root() -> None:
         "root_parent_id": "root",
         "prompt_index": 1,
     }
+    sibling = _record(
+        "root-two", _BASE_PROMPT, _BASE_OPENUI.replace('"column"', '"row"')
+    )
+    sibling.meta = {
+        "source_kind": "program-first",
+        "source_family": "programspec_generated",
+        "root_parent_id": "root-two",
+        "prompt_index": 0,
+    }
 
-    kept, dropped = apply_semantic_dedup([paraphrase, base], threshold=0.9)
+    kept, dropped = apply_semantic_dedup([paraphrase, sibling, base], threshold=0.9)
 
-    assert [record.id for record in kept] == ["root"]
-    assert dropped[0]["duplicate_of"] == "root"
+    assert [record.id for record in kept] == ["root-two", "root"]
+    assert dropped[0]["id"] == "root-p1_syn_0"
+    assert dropped[0]["duplicate_of"] in {"root", "root-two"}
 
 
 def test_deterministic_across_runs() -> None:
@@ -128,7 +138,9 @@ def test_lexical_engine_reported_with_default_threshold() -> None:
 
 def test_prohibited_named_variant_is_not_exempt() -> None:
     base = _record("a1_base", _BASE_PROMPT, _BASE_OPENUI)
-    augmented = _record("a2_ns", _BASE_PROMPT, _BASE_OPENUI.replace(":member.", ":acme."))
+    augmented = _record(
+        "a2_ns", _BASE_PROMPT, _BASE_OPENUI.replace(":member.", ":acme.")
+    )
     augmented.meta = {"source_family": "namespace_augment"}
     kept, dropped = apply_semantic_dedup([base, augmented], threshold=0.9)
     assert len(kept) == 1
