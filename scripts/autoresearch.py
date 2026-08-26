@@ -525,10 +525,9 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             for experiment in _finished_experiments(lineage_store)
         ),
         prior_experiment_ids=frozenset(
-            candidate.experiment.experiment_id
+            experiment_id
             for lineage_store in lineage_stores
-            for formed in _formed_matrices(lineage_store)
-            for candidate in formed.hypotheses
+            for experiment_id in _proposed_experiment_ids(lineage_store)
         ),
         feedback=feedback,
         previous_matrix=previous_matrix,
@@ -830,6 +829,16 @@ def _formed_matrices(store: CampaignStore) -> tuple[HypothesisMatrix, ...]:
             HypothesisMatrix.model_validate_json(path.read_text(encoding="utf-8"))
         )
     return tuple(matrices)
+
+
+def _proposed_experiment_ids(store: CampaignStore) -> frozenset[str]:
+    """Read matrix member ids from their authoritative append-only events."""
+
+    return frozenset(
+        str(row["experiment_id"])
+        for row in _events(store)
+        if row.get("event_type") == "experiment_proposed" and row.get("experiment_id")
+    )
 
 
 def _recorded_outcome_matches(
@@ -1383,7 +1392,6 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
         _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
     print(diagnosis.model_dump_json(indent=2))
     return 0
-
 
 
 def cmd_block_experiment(args: argparse.Namespace) -> int:

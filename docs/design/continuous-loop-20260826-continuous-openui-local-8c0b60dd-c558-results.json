@@ -1,0 +1,156 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c558",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 558,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260826-continuous-openui-local-8c0b60dd-c558-control": 124,
+      "c20260826-continuous-openui-local-8c0b60dd-c558-current-rung-data-heal": 124
+    },
+    "arm_order": [
+      "c20260826-continuous-openui-local-8c0b60dd-c558-current-rung-data-heal",
+      "c20260826-continuous-openui-local-8c0b60dd-c558-control"
+    ],
+    "arm_seed": 100557,
+    "arm_skipped": {},
+    "baseline_trainable_params": null,
+    "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c558",
+    "candidate_id": "c20260826-continuous-openui-local-8c0b60dd-c558-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": null,
+    "climb_policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "control_id": "c20260826-continuous-openui-local-8c0b60dd-c558-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 558,
+    "cycle_intent": "retry_measurement",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-26T18:10:36Z",
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "policy_version": "v14",
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c558-control:missing_scoreboard",
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c558-current-rung-data-heal:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260826-continuous-openui-local-8c0b60dd-c558",
+    "cycle_index": 558,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c558-control:missing_scoreboard",
+      "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c558-current-rung-data-heal:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "harness_followup": {
+    "broad_test_run": "interrupted_at_canonical_170_second_boundary_not_evidence",
+    "device": "cpu",
+    "evidence_capture_elapsed_seconds": 0.043,
+    "evidence_items": 14,
+    "focused_tests": "5 passed in 5.13 seconds",
+    "repair": [
+      "bound continuous evidence capture to authoritative predecessor and loop artifacts",
+      "read prior hypothesis ids from append-only experiment_proposed events",
+      "fail closed instead of shrinking frozen decision-arm budgets"
+    ],
+    "root_cause": "post-planning fitting shrank each frozen 70-second arm to 5.987 seconds, timing out during Torch import before scoreboards",
+    "verification": [
+      "ruff_check_passed",
+      "ruff_format_check_passed",
+      "version_stamps_passed"
+    ]
+  },
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c558-control:missing_scoreboard",
+    "measurement_incomplete:c20260826-continuous-openui-local-8c0b60dd-c558-current-rung-data-heal:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "cd523cb8f894d3d9460d43c13253481ab7b0d606",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-26T18:10:56.640183+00:00"
+  }
+}

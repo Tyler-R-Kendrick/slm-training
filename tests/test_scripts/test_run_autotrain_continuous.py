@@ -4043,7 +4043,9 @@ def test_dispose_champion_promote_parse_regression_not_promoted() -> None:
         candidate_metrics=candidate,
     )
     assert d["status"] == "promotion_failed"
-    assert any("invalid_grammar:" in r or "promote_parse_regression" in r for r in d["reasons"])
+    assert any(
+        "invalid_grammar:" in r or "promote_parse_regression" in r for r in d["reasons"]
+    )
 
 
 def test_dispose_champion_promote_assumption_miss_five_lane() -> None:
@@ -5069,12 +5071,8 @@ def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> N
         _write_complete_scoreboard(run, "smoke")
         scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
         # Candidate is the quality regression: higher NLL (worse) + lower SS.
-        scoreboard["suites"]["smoke"]["eval_nll"] = (
-            2.0 if arm == "c-control" else 4.0
-        )
-        (run / "scoreboard.json").write_text(
-            json.dumps(scoreboard), encoding="utf-8"
-        )
+        scoreboard["suites"]["smoke"]["eval_nll"] = 2.0 if arm == "c-control" else 4.0
+        (run / "scoreboard.json").write_text(json.dumps(scoreboard), encoding="utf-8")
 
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -5117,12 +5115,8 @@ def test_classify_positive_rejects_quality_win_with_unbounded_latency_cost(
         )
         _write_complete_scoreboard(run, "smoke")
         scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
-        scoreboard["suites"]["smoke"]["eval_nll"] = (
-            4.0 if arm == "c-control" else 2.0
-        )
-        (run / "scoreboard.json").write_text(
-            json.dumps(scoreboard), encoding="utf-8"
-        )
+        scoreboard["suites"]["smoke"]["eval_nll"] = 4.0 if arm == "c-control" else 2.0
+        (run / "scoreboard.json").write_text(json.dumps(scoreboard), encoding="utf-8")
 
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -5158,12 +5152,8 @@ def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> No
         )
         _write_complete_scoreboard(run, "smoke")
         scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
-        scoreboard["suites"]["smoke"]["eval_nll"] = (
-            4.0 if arm == "c-control" else 2.0
-        )
-        (run / "scoreboard.json").write_text(
-            json.dumps(scoreboard), encoding="utf-8"
-        )
+        scoreboard["suites"]["smoke"]["eval_nll"] = 4.0 if arm == "c-control" else 2.0
+        (run / "scoreboard.json").write_text(json.dumps(scoreboard), encoding="utf-8")
     (camp / "cycle_handoff.json").write_text(
         json.dumps(
             {
@@ -5965,27 +5955,16 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
-def test_post_planning_budget_is_rebalanced_symmetrically(
+def test_post_planning_budget_rejects_shrinking_frozen_arms(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
-
     monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
-    remaining = 149.0
-    fitted = _mod._fit_symmetric_arm_budget(
-        deadline=10.0 + remaining,
-        arm_count=2,
-        requested_arm_wall_minutes=70 / 60,
-    )
-
-    assert fitted * 60 == pytest.approx(
-        (
-            remaining
-            - HARNESS_FINALIZATION_RESERVE_SECONDS
-            - _mod._ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
+    with pytest.raises(subprocess.TimeoutExpired, match="symmetric decision-arm"):
+        _mod._fit_symmetric_arm_budget(
+            deadline=10.0 + 149.0,
+            arm_count=2,
+            requested_arm_wall_minutes=70 / 60,
         )
-        / 2
-    )
 
 
 def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
@@ -6001,7 +5980,7 @@ def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
     fitted = _mod._fit_symmetric_arm_budget(
         deadline=deadline,
         arm_count=2,
-        requested_arm_wall_minutes=3.0,
+        requested_arm_wall_minutes=1.2,
     )
     # Simulate a few μs of wall time between fit and execute check.
     monkeypatch.setattr(_mod.time, "monotonic", lambda: now + 1e-4)
@@ -6600,14 +6579,10 @@ def test_self_heal_thrash_bank_compose_only_when_exhausted(
     root = tmp_path / "ar"
     loop = "L"
     closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    result = _mod._self_heal_thrash_bank_exhaust(
-        root, loop, closed=closed, skip=set()
-    )
+    result = _mod._self_heal_thrash_bank_exhaust(root, loop, closed=closed, skip=set())
     assert result.composed
     assert result.available
-    already = _mod._self_heal_thrash_bank_exhaust(
-        root, loop, closed=set(), skip=set()
-    )
+    already = _mod._self_heal_thrash_bank_exhaust(root, loop, closed=set(), skip=set())
     assert already.available
     assert not already.composed
 
@@ -7146,8 +7121,9 @@ def test_handoff_does_not_park_leftover_isolate_ofat(
     monkeypatch.setattr(
         _mod,
         "_recent_completed_nonpositive_slugs",
-        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-        - {"legal-edit-hazard"},
+        lambda *args, **kwargs: (
+            {slug for slug, _, _ in _mod._SCREENING_ARM_BANK} - {"legal-edit-hazard"}
+        ),
     )
     root = tmp_path / "autoresearch"
     (root / "cycle-leftover").mkdir(parents=True)
@@ -7228,9 +7204,7 @@ def test_local_rebuild_argv_shaped_by_adequacy_stays_wall_capped() -> None:
 
 
 def test_sample_adequacy_report_reads_fixture_stats(tmp_path: Path) -> None:
-    stats_dir = (
-        tmp_path / "src/slm_training/resources/data/train/wf_smoke_v2"
-    )
+    stats_dir = tmp_path / "src/slm_training/resources/data/train/wf_smoke_v2"
     stats_dir.mkdir(parents=True)
     (stats_dir / "stats.json").write_text(
         json.dumps(
@@ -7285,9 +7259,7 @@ def test_thrash_bank_exhaust_does_not_park_selectable_heal(
     monkeypatch.setattr(
         _mod, "_latest_cycle", lambda *args, **kwargs: (509, "cycle-509")
     )
-    assert _mod._selectable_process_arm(
-        root, loop, predecessor_campaign_id="cycle-509"
-    )
+    assert _mod._selectable_process_arm(root, loop, predecessor_campaign_id="cycle-509")
     assert _mod._self_heal_thrash_bank_exhaust(
         root,
         loop,
@@ -7304,7 +7276,11 @@ def test_thrash_bank_exhaust_does_not_park_selectable_heal(
 def _write_heal_snapshot(cwd: Path, version: str) -> Path:
     train_dir = cwd / "outputs" / "data" / "train" / version
     train_dir.mkdir(parents=True)
-    for name in ("quality_report.json", "synthesis_feedback.json", "data_manifest.json"):
+    for name in (
+        "quality_report.json",
+        "synthesis_feedback.json",
+        "data_manifest.json",
+    ):
         (train_dir / name).write_text("{}\n", encoding="utf-8")
     return train_dir
 
@@ -7580,7 +7556,8 @@ def test_self_heal_rebuild_data_acks_local_artifacts(
     assert "rebuild_data" in receipts
     assert "sample_adequacy.json" not in receipts
     assert any(
-        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+        slug == _mod._HEAL_RESUME_SLUG
+        for slug, _, extras in _mod._all_screening_arm_bank()
     )
 
 
@@ -7625,16 +7602,21 @@ def test_self_heal_rebuild_data_skips_i10_arm_when_leftover_ofat(
         (train_dir / name).write_text(json.dumps({"ok": True, "name": name}) + "\n")
 
     monkeypatch.setattr(
-        _mod, "run_bounded_process", lambda *a, **k: (_ for _ in ()).throw(AssertionError())
+        _mod,
+        "run_bounded_process",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError()),
     )
-    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: {"legal-edit-hazard"})
+    monkeypatch.setattr(
+        _mod, "_thrash_bank_open_slugs", lambda closed: {"legal-edit-hazard"}
+    )
     monkeypatch.setattr(_mod, "_open_slugs_are_snapshot_leftovers", lambda slugs: False)
     kind = _mod._self_heal_rebuild_data(
         cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
     )
     assert kind == "rebuild_data"
     assert not any(
-        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+        slug == _mod._HEAL_RESUME_SLUG
+        for slug, _, extras in _mod._all_screening_arm_bank()
     )
 
 
@@ -8718,8 +8700,18 @@ def test_continuous_evidence_is_bounded_to_predecessor_and_loop(tmp_path: Path) 
         tmp_path / "autoresearch", "loop-1", "campaign-6"
     )
     assert roots == (
-        tmp_path / "autoresearch" / "campaign-6",
-        tmp_path / "autoresearch" / "loops" / "loop-1",
+        tmp_path / "autoresearch" / "campaign-6" / "cycle_handoff.json",
+        tmp_path / "autoresearch" / "campaign-6" / "measured-results-continuous.md",
+        tmp_path / "autoresearch" / "campaign-6" / "run_insights.json",
+        tmp_path
+        / "autoresearch"
+        / "campaign-6"
+        / "artifacts"
+        / "hypothesizer_feedback",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "hillclimb_iterations.jsonl",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "thrash_timing.jsonl",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "exhausted_knob_ledger.json",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "champion_queue.jsonl",
         tmp_path / "autoresearch" / "sdlc_delivery_ledger.jsonl",
     )
 
@@ -9481,7 +9473,6 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
     assert ledger.is_file()
 
 
-
 def test_screening_steps_fitter_telemetry_clamp_and_cold_start() -> None:
     fitted, ev = _mod._fit_screening_steps(
         floor_seconds=20.0,
@@ -9569,7 +9560,9 @@ def test_grown_train_floor_never_exceeds_arm_wall() -> None:
     assert floor >= float(meta["min_train_floor_seconds"]) - 1e-9
 
 
-def test_screening_cuda_device_falls_back_to_cpu(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_screening_cuda_device_falls_back_to_cpu(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import sys
 
     assert _mod._screening_max_gpu_hours(role="screening", device="cpu") == 0.0
@@ -10286,7 +10279,10 @@ def test_serena_semantic_edit_still_parks(tmp_path: Path) -> None:
 
 
 def test_serena_local_dirt_is_not_foreign() -> None:
-    assert _mod._normalize_repo_relpath(".serena/memories/note.md") == ".serena/memories/note.md"
+    assert (
+        _mod._normalize_repo_relpath(".serena/memories/note.md")
+        == ".serena/memories/note.md"
+    )
     assert _mod._normalize_repo_relpath("./docs/design/x.json") == "docs/design/x.json"
     assert not _mod._is_foreign_dirty_path(".serena/memories/note.md")
     assert not _mod._is_foreign_dirty_path("./.serena/cache/index")
@@ -10315,7 +10311,14 @@ def test_self_heal_restores_loop_owned_generated_dirt(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
     _init_git_repo(repo)
-    mirror = repo / "src" / "slm_training" / "resources" / "evidence_store" / "local_index.jsonl"
+    mirror = (
+        repo
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "evidence_store"
+        / "local_index.jsonl"
+    )
     mirror.parent.mkdir(parents=True)
     mirror.write_text('{"ok": true}\n', encoding="utf-8")
     subprocess.check_call(["git", "add", str(mirror.relative_to(repo))], cwd=repo)
@@ -11004,9 +11007,7 @@ def test_integrate_origin_main_skips_diverged_unmergeable(
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    subprocess.check_call(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo
-    )
+    subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=repo)
     subprocess.check_call(["git", "config", "user.name", "test"], cwd=repo)
     (repo / "conflict.txt").write_text("loop\n", encoding="utf-8")
     subprocess.check_call(["git", "add", "conflict.txt"], cwd=repo)
@@ -11066,9 +11067,7 @@ def test_upstream_commit_for_init_uses_head_when_diverged(tmp_path: Path) -> Non
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    subprocess.check_call(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo
-    )
+    subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=repo)
     subprocess.check_call(["git", "config", "user.name", "test"], cwd=repo)
     root = repo / "outputs" / "autoresearch"
     root.mkdir(parents=True)
@@ -11463,9 +11462,7 @@ def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> 
     assert types.index("decision_arms_bound") < types.index(
         "experiment_campaign_locked"
     )
-    assert types.index("experiment_campaign_locked") < types.index(
-        "experiment_started"
-    )
+    assert types.index("experiment_campaign_locked") < types.index("experiment_started")
 
 
 def test_size_match_skip_reason_typed() -> None:

@@ -311,11 +311,20 @@ def _screening_suite_records() -> int | None:
 
     try:
         from slm_training.data.store import DataStore
+
         store = DataStore()
-        candidates = list((store.published_root / "eval").glob("*/suites/smoke/records.jsonl"))
-        candidates += list((store.local_root / "eval").glob("*/suites/smoke/records.jsonl"))
+        candidates = list(
+            (store.published_root / "eval").glob("*/suites/smoke/records.jsonl")
+        )
+        candidates += list(
+            (store.local_root / "eval").glob("*/suites/smoke/records.jsonl")
+        )
         counts = [
-            sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+            sum(
+                1
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
             for path in candidates
             if path.is_file()
         ]
@@ -373,7 +382,9 @@ def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> tuple[list[Path], i
     return [seed_path], smoke_n + len(extras)
 
 
-def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
+def _local_rebuild_screening_eval_argv(
+    *, eval_version: str, train_manifest: Path
+) -> list[str]:
     return [
         sys.executable,
         "-m",
@@ -420,9 +431,10 @@ def _self_heal_rebuild_screening_eval(
     train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
     out_dir = cwd / "outputs" / "data" / "eval" / eval_version
     published = cwd / "src/slm_training/resources/data/eval" / eval_version
-    if not (out_dir / "manifest.json").is_file() and not (
-        published / "suites" / "smoke" / "records.jsonl"
-    ).is_file():
+    if (
+        not (out_dir / "manifest.json").is_file()
+        and not (published / "suites" / "smoke" / "records.jsonl").is_file()
+    ):
         argv = _local_rebuild_screening_eval_argv(
             eval_version=eval_version, train_manifest=train_manifest
         )
@@ -493,9 +505,7 @@ def _self_heal_rebuild_screening_eval(
     _git_commit_paths(
         cwd,
         commit_paths,
-        message=(
-            f"data(eval): persist screening smoke n>={n_min} ({eval_version})"
-        ),
+        message=(f"data(eval): persist screening smoke n>={n_min} ({eval_version})"),
         root=root,
         loop_id=loop_id,
         stage="self-heal-screening-eval",
@@ -509,14 +519,11 @@ def _self_heal_rebuild_screening_eval(
             pending = [
                 (index, action)
                 for index, action in pending_autotrain_actions(root, handoff)
-                if action.kind == "rebuild_data"
-                and "screening suite" in action.reason
+                if action.kind == "rebuild_data" and "screening suite" in action.reason
             ]
             campaign_manifest = root / campaign_id / "data_manifest.json"
             campaign_manifest.parent.mkdir(parents=True, exist_ok=True)
-            campaign_manifest.write_bytes(
-                (published / "manifest.json").read_bytes()
-            )
+            campaign_manifest.write_bytes((published / "manifest.json").read_bytes())
             for index, _action in pending:
                 _ack_rebuild_data_action(
                     root,
@@ -525,8 +532,7 @@ def _self_heal_rebuild_screening_eval(
                     evidence_uris=["data_manifest.json"],
                 )
     print(
-        f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
-        f"smoke_n={n_after}",
+        f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} smoke_n={n_after}",
         flush=True,
     )
     return "rebuild_screening_eval"
@@ -878,7 +884,7 @@ _ARM_BUDGET_SCHEDULE_MARGIN_SECONDS = 0.25
 def _fit_symmetric_arm_budget(
     *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
 ) -> float:
-    """Share the post-planning budget equally while preserving finalization."""
+    """Preserve the frozen arm budget or fail before starting either arm."""
 
     if arm_count <= 0:
         raise ValueError("arm_count must be positive")
@@ -888,9 +894,10 @@ def _fit_symmetric_arm_budget(
         - HARNESS_FINALIZATION_RESERVE_SECONDS
         - _ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
     )
-    if usable <= 0:
+    requested = float(requested_arm_wall_minutes)
+    if usable < arm_count * requested * 60:
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
-    return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
+    return requested
 
 
 def _post_formal_arm_budget_request(
@@ -1126,9 +1133,7 @@ def _lock_screening_multi_arm_campaign(
 ) -> ExperimentCampaignV1:
     by_eid = {str(exp["experiment_id"]): dict(exp) for exp in experiments}
     rec = str(candidate_ids[0])
-    base = _manifest(
-        campaign_id, by_eid[rec], commit, role=role, policy=policy
-    )
+    base = _manifest(campaign_id, by_eid[rec], commit, role=role, policy=policy)
     arms = [
         CampaignArmV1(
             arm_id=control_id,
@@ -1419,9 +1424,7 @@ def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
     eval_id = default_eval_version()
     test_dir = DataStore().resolve_path("eval", eval_id)
     try:
-        out = _run_arm_eval_nll(
-            Path(run_dir), test_dir=test_dir, checkpoint=checkpoint
-        )
+        out = _run_arm_eval_nll(Path(run_dir), test_dir=test_dir, checkpoint=checkpoint)
     except Exception as exc:  # noqa: BLE001 — NLL is diagnostic, never abort quality
         print(
             f"EVAL_NLL_SKIP run={Path(run_dir).name} err={exc!r}",
@@ -2297,15 +2300,11 @@ def _check_regime_parked(
     verdict = _read_json(path)
     predecessor = str(verdict.get("campaign_id") or "") or None
     _load_dynamic_thrash_arms(root, loop_id)
-    if not _selectable_process_arm(
-        root, loop_id, predecessor_campaign_id=predecessor
-    ):
+    if not _selectable_process_arm(root, loop_id, predecessor_campaign_id=predecessor):
         _recover_heal_resume_arm(
             root, loop_id, cwd=cwd, predecessor_campaign_id=predecessor
         )
-    if _selectable_process_arm(
-        root, loop_id, predecessor_campaign_id=predecessor
-    ):
+    if _selectable_process_arm(root, loop_id, predecessor_campaign_id=predecessor):
         resolved = path.with_name(
             f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
         )
@@ -2436,9 +2435,7 @@ def _park_screening_n_deficit(
 
     handoff_path = root / campaign_id / "cycle_handoff.json"
     if not handoff_path.is_file():
-        raise RuntimeError(
-            "screening n deficit without a typed predecessor handoff"
-        )
+        raise RuntimeError("screening n deficit without a typed predecessor handoff")
     handoff = AutotrainCycleHandoffV1.model_validate_json(
         handoff_path.read_text(encoding="utf-8")
     )
@@ -2490,9 +2487,7 @@ def _park_screening_n_deficit(
     return "screening-n-deficit"
 
 
-def _latest_hypothesis_feedback(
-    root: Path, campaign_id: str
-) -> HypothesisFeedback:
+def _latest_hypothesis_feedback(root: Path, campaign_id: str) -> HypothesisFeedback:
     """Load the terminal typed feedback that grounds an objective change.
 
     Incomplete retries may have no hypothesizer event; walk predecessor
@@ -2792,12 +2787,9 @@ def _self_heal_thrash_bank_exhaust(
         # Isolate OFAT bank is done. Remaining snapshot slugs are I10
         # leftovers, not compose fodder — unless a process arm is still
         # selectable (closed slug spelling hides an unused train_version).
-        if _selectable_process_arm(
-            root, loop_id, predecessor_campaign_id=pred
-        ):
+        if _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred):
             print(
-                "SELF_HEAL_BANK_EXHAUST heal_open "
-                "reason=selectable_process_arm",
+                "SELF_HEAL_BANK_EXHAUST heal_open reason=selectable_process_arm",
                 flush=True,
             )
             return _ThrashBankHeal(True, False)
@@ -3094,7 +3086,9 @@ def _integrate_origin_main(
             loop_id=loop_id,
             stage="self-heal-ancestry-ff",
         )
-        print("SELF_HEAL_GIT_ANCESTRY merged origin/main reason=fast_forward", flush=True)
+        print(
+            "SELF_HEAL_GIT_ANCESTRY merged origin/main reason=fast_forward", flush=True
+        )
         return "git_ancestry_fast_forward"
     try:
         _run(
@@ -4530,9 +4524,7 @@ def _ack_rebuild_data_action(
     )
 
 
-def _register_i10_heal_arm(
-    root: Path, loop_id: str, *, train_version: str
-) -> None:
+def _register_i10_heal_arm(root: Path, loop_id: str, *, train_version: str) -> None:
     """Add or refresh a selectable I10 successor so the park fingerprint moves."""
     global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
@@ -4565,9 +4557,7 @@ def _register_i10_heal_arm(
                         "slug": slug,
                         "hypothesis": h,
                         "extras": {
-                            k: v
-                            for k, v in ex.items()
-                            if not str(k).startswith("_")
+                            k: v for k, v in ex.items() if not str(k).startswith("_")
                         },
                         "created_at": time.strftime(
                             "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
@@ -4642,9 +4632,7 @@ def _recover_heal_resume_arm(
         ):
             _retire_i10_heal_arm(root, loop_id, reason="recovered_spent_snapshot")
             continue
-        print(
-            f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True
-        )
+        print(f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True)
         return True
     return False
 
@@ -4790,8 +4778,7 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
             man["derived_at"] = datetime.now(timezone.utc).isoformat()
             man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
         print(
-            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} "
-            f"dropped={dropped}",
+            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} dropped={dropped}",
             flush=True,
         )
     feedback_path = out_dir / "synthesis_feedback.json"
@@ -4900,9 +4887,7 @@ def _self_heal_rebuild_data(
         return None
     sources = _rebuild_data_artifact_sources(train_dir)
     if sources is None:
-        argv = _local_rebuild_data_argv(
-            train_version=train_version, adequacy=adequacy
-        )
+        argv = _local_rebuild_data_argv(train_version=train_version, adequacy=adequacy)
         print(
             f"SELF_HEAL_REBUILD_DATA start campaign={campaign_id} "
             f"version={train_version} argv={argv}",
@@ -5246,9 +5231,7 @@ def _self_heal_continuous_dirty_tree(
     paths = _porcelain_paths(porcelain)
     if not paths:
         return None
-    serena_kind = _maybe_restore_serena_project_yml(
-        cwd=cwd, paths=paths, git_kw=git_kw
-    )
+    serena_kind = _maybe_restore_serena_project_yml(cwd=cwd, paths=paths, git_kw=git_kw)
     if serena_kind:
         return serena_kind
         paths = _porcelain_paths(porcelain)
@@ -5409,6 +5392,7 @@ def self_heal_unblock_loop(
         foreign = [p for p in paths if _is_foreign_dirty_path(p)]
         try:
             from slm_training.autoresearch.heal.fail_closed import lease_covers
+
             lease = root / "loops" / loop_id / "wip_lease.json"
             leased = [p for p in foreign if lease_covers(lease, p)]
             if leased:
@@ -5480,7 +5464,9 @@ def self_heal_unblock_loop(
         )
         if rebuild_kind:
             soft_healed.append(rebuild_kind)
-            parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
+            parked = (
+                _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
+            )
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK rebuild_warn={exc!r}", flush=True)
 
@@ -7012,7 +6998,9 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
     technically open. A process/heal arm from a local rebuild_data heal is
     the I10 successor and stays selectable.
     """
-    open_slugs = {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
+    open_slugs = {
+        slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed
+    }
     if not _terminal_park_on_exhaust():
         return open_slugs
     extras_by_slug = {slug: extras for slug, _, extras in _all_screening_arm_bank()}
@@ -7258,9 +7246,7 @@ def _recent_completed_nonpositive_slugs(
         except (TypeError, ValueError):
             seed = None
         train_version = str(knobs.get("train_version") or "")
-        snapshot_tv = _slug_is_snapshot_arm(
-            slug, {"train_version": train_version}
-        )
+        snapshot_tv = _slug_is_snapshot_arm(slug, {"train_version": train_version})
         # Incomplete / harness outcomes never close a thrash approach — even if
         # a buggy delivery marked measurement_complete or positive=False.
         if not runtime_terminal and (
@@ -7807,9 +7793,7 @@ def _select_recommended_slug(
     candidates (boost interesting residuals; still never reopen skipped arms).
     """
     skip = skip or set()
-    pred = (
-        _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
-    )
+    pred = _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
     for slug, _, extras in _all_screening_arm_bank():
         if not _is_process_arm(extras):
             continue
@@ -7819,9 +7803,7 @@ def _select_recommended_slug(
         if (
             root is not None
             and loop_id
-            and _selectable_process_arm(
-                root, loop_id, predecessor_campaign_id=pred
-            )
+            and _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred)
         ):
             print(
                 f"HEAL_RESUME_SELECT cycle={cycle} slug={slug} "
@@ -8195,7 +8177,9 @@ def _select_cycle_slug(
     if predecessor_priority and predecessor_priority not in skip:
         # A leftover rematch (c78/c96 after a derailed heal) must not outrank
         # an open process/heal first-train.
-        if not process_open or _is_process_arm(extras_by_slug.get(predecessor_priority)):
+        if not process_open or _is_process_arm(
+            extras_by_slug.get(predecessor_priority)
+        ):
             return predecessor_priority
         print(
             f"PROCESS_ARM_OUTRANKS_PREDECESSOR process={process_open[0]} "
@@ -8905,9 +8889,7 @@ def _resolve_confirm_result(
         ckpt = _checkpoint_path_for_candidate(root, campaign_id, cand_id)
         summary: dict[str, Any] = {}
         if cand_id:
-            summary_path = (
-                root / campaign_id / "runs" / cand_id / "train_summary.json"
-            )
+            summary_path = root / campaign_id / "runs" / cand_id / "train_summary.json"
             if summary_path.is_file():
                 try:
                     loaded = _read_json(summary_path)
@@ -10401,14 +10383,12 @@ def _classify_metric_tradeoff(
 
     from slm_training.autoresearch.hillclimb import invalid_grammar_reasons
 
-    grammar_fail = invalid_grammar_reasons(control, arm="control") + invalid_grammar_reasons(
-        candidate, arm="candidate"
-    )
+    grammar_fail = invalid_grammar_reasons(
+        control, arm="control"
+    ) + invalid_grammar_reasons(candidate, arm="candidate")
     reasons.extend(grammar_fail)
     parse_perfect = not grammar_fail
-    parse_held = parse_perfect and (
-        t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
-    )
+    parse_held = parse_perfect and (t_pr is None or c_pr is None or t_pr + _EPS >= c_pr)
     mpr_held = t_mpr is None or c_mpr is None or t_mpr + _EPS >= c_mpr
     mpr_improved = t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
     lat_improved = t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
@@ -12688,24 +12668,40 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
 
 
 def _record_pass_outcome(
-    *, root: Path, loop_id: str, before_campaign: str | None,
-    before_receipts: int, typed_action: bool = False,
+    *,
+    root: Path,
+    loop_id: str,
+    before_campaign: str | None,
+    before_receipts: int,
+    typed_action: bool = False,
 ) -> str:
     """Classify one driver pass; a clean no-op is a counted hard failure."""
     _idx, after_campaign = _latest_cycle(root, loop_id)
     receipts_path = root / "loops" / loop_id / "heal_receipts.jsonl"
-    after_receipts = len(receipts_path.read_text(encoding="utf-8").splitlines()) if receipts_path.is_file() else 0
+    after_receipts = (
+        len(receipts_path.read_text(encoding="utf-8").splitlines())
+        if receipts_path.is_file()
+        else 0
+    )
     if after_campaign and after_campaign != before_campaign:
         outcome = "campaign_initialized"
     elif after_receipts > before_receipts:
-        outcome = "verified_heal" if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:] else "heal_attempted"
+        outcome = (
+            "verified_heal"
+            if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:]
+            else "heal_attempted"
+        )
     elif typed_action:
         outcome = "typed_park_or_escalation"
     else:
         outcome = "vacuous_pass"
     path = root / "loops" / loop_id / "pass_outcomes.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    prior = [r for r in path.read_text(encoding="utf-8").splitlines() if r] if path.is_file() else []
+    prior = (
+        [r for r in path.read_text(encoding="utf-8").splitlines() if r]
+        if path.is_file()
+        else []
+    )
     previous_vacuous = 0
     for raw in reversed(prior):
         try:
@@ -12716,10 +12712,15 @@ def _record_pass_outcome(
             previous_vacuous += 1
         else:
             break
-    row = {"schema": "pass_outcome/v1", "loop_id": loop_id, "outcome": outcome,
-           "campaign_before": before_campaign, "campaign_after": after_campaign,
-           "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
-           "recorded_at": utc_now()}
+    row = {
+        "schema": "pass_outcome/v1",
+        "loop_id": loop_id,
+        "outcome": outcome,
+        "campaign_before": before_campaign,
+        "campaign_after": after_campaign,
+        "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
+        "recorded_at": utc_now(),
+    }
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, sort_keys=True) + "\n")
     if row["consecutive_vacuous"] >= 3:
@@ -13376,9 +13377,22 @@ def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
 def _continuous_evidence_roots(
     root: Path, loop_id: str, predecessor_campaign_id: str | None
 ) -> tuple[Path, ...]:
-    roots = [root / "loops" / loop_id, root / "sdlc_delivery_ledger.jsonl"]
+    loop = root / "loops" / loop_id
+    roots = [
+        loop / "hillclimb_iterations.jsonl",
+        loop / "thrash_timing.jsonl",
+        loop / "exhausted_knob_ledger.json",
+        loop / "champion_queue.jsonl",
+        root / "sdlc_delivery_ledger.jsonl",
+    ]
     if predecessor_campaign_id:
-        roots.insert(0, root / predecessor_campaign_id)
+        predecessor = root / predecessor_campaign_id
+        roots[:0] = [
+            predecessor / "cycle_handoff.json",
+            predecessor / "measured-results-continuous.md",
+            predecessor / "run_insights.json",
+            predecessor / "artifacts" / "hypothesizer_feedback",
+        ]
     return tuple(roots)
 
 
@@ -14658,9 +14672,7 @@ def run_cycle(
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
 
-    _integrate_origin_main(
-        cwd=cwd, root=root, loop_id=loop_id, deadline=deadline
-    )
+    _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
     if sync_git and startup_commit is not None:
         integrated = _git(
             "rev-parse",
@@ -15017,9 +15029,7 @@ def run_cycle(
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
         leftover = _thrash_bank_open_slugs(recent_exhausted) - skip_slugs
-        heal_open = _selectable_process_arm(
-            root, loop_id, predecessor_campaign_id=pred
-        )
+        heal_open = _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred)
         if (
             _terminal_park_on_exhaust()
             and pred
@@ -16111,7 +16121,8 @@ def run_cycle(
         winner = None
         if scored:
             winner = select_best_by_primary_then_smallest(
-                scored, direction=direction  # type: ignore[arg-type]
+                scored,
+                direction=direction,  # type: ignore[arg-type]
             )
             ctrl_metrics = _run_metrics(camp_dir, control_eid)
             ctrl_val = ctrl_metrics.get(effective_primary)
@@ -16482,7 +16493,11 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 _before_cycle, before_campaign = _latest_cycle(root, args.loop_id)
                 _receipts_path = root / "loops" / args.loop_id / "heal_receipts.jsonl"
-                before_receipts = len(_receipts_path.read_text(encoding="utf-8").splitlines()) if _receipts_path.is_file() else 0
+                before_receipts = (
+                    len(_receipts_path.read_text(encoding="utf-8").splitlines())
+                    if _receipts_path.is_file()
+                    else 0
+                )
                 run_cycle(
                     cwd=cwd,
                     root=root,
@@ -16496,10 +16511,16 @@ def main(argv: list[str] | None = None) -> int:
                     require_action_receipts=args.supervised,
                     extra_skip_slugs=extra_skip_slugs,
                 )
-                print("PASS_OUTCOME " + _record_pass_outcome(
-                    root=root, loop_id=args.loop_id, before_campaign=before_campaign,
-                    before_receipts=before_receipts,
-                ), flush=True)
+                print(
+                    "PASS_OUTCOME "
+                    + _record_pass_outcome(
+                        root=root,
+                        loop_id=args.loop_id,
+                        before_campaign=before_campaign,
+                        before_receipts=before_receipts,
+                    ),
+                    flush=True,
+                )
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -16516,9 +16537,14 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 try:
                     _record_pass_outcome(
-                        root=root, loop_id=args.loop_id,
-                        before_campaign=before_campaign if "before_campaign" in locals() else None,
-                        before_receipts=before_receipts if "before_receipts" in locals() else 0,
+                        root=root,
+                        loop_id=args.loop_id,
+                        before_campaign=before_campaign
+                        if "before_campaign" in locals()
+                        else None,
+                        before_receipts=before_receipts
+                        if "before_receipts" in locals()
+                        else 0,
                         typed_action=bool(report.get("hard_pending")),
                     )
                 except RuntimeError:
