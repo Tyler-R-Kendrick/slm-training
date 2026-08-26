@@ -19,12 +19,12 @@
   "schema": "continuous_cycle_results/v1",
   "scoreboards": [],
   "version_stamp": {
-    "code_commit": "1728ffe42fed3617e1483cb9667114480a5b50a9",
-    "code_dirty": true,
+    "code_commit": "dd5b77cc53d55264e3eba2c37004535e87da5ccb",
+    "code_dirty": false,
     "components": {
       "harness.autoresearch.experiment_campaign": "v282"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-26T18:58:50Z"
+    "stamped_at": "2026-08-26T19:02:16Z"
   }
 }
