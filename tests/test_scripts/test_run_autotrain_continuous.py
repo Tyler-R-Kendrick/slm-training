@@ -8572,10 +8572,10 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     assert reuse["manifest_paths"] == (retry_path, source_path)
 
 
-def test_frozen_train_reuse_skipped_when_source_has_decode_timeouts(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+def test_frozen_train_reuse_keeps_completed_checkpoint_when_eval_timed_out(
+    tmp_path: Path,
 ) -> None:
-    """Fail-closed: do not reuse train when the frozen source eval timed out."""
+    """Training reuse skips only training; the successor still reruns evaluation."""
 
     root = tmp_path / "autoresearch"
     source_campaign = "cycle-timeout"
@@ -8626,8 +8626,10 @@ def test_frozen_train_reuse_skipped_when_source_has_decode_timeouts(
         manifest_path=source_path,
     )
 
-    assert reuse is None
-    assert "FROZEN_TRAIN_REUSE_SKIP reason=decode_timeout" in capsys.readouterr().out
+    assert reuse == {
+        "run_dir": checkpoint.parents[1],
+        "manifest_paths": (source_path,),
+    }
 
 
 def test_digestless_frozen_retry_does_not_stall_cycle(

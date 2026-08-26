@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Trim frozen retry matrices to the required five hypotheses before persistence and reuse any hash-linked completed train checkpoint even when its prior evaluation timed out; every successor still reruns all declared evaluations.",
+          "version": "v291"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Frozen TwoTower measurement replay now reuses a verified completed checkpoint across every declared evaluation stage, including latency probe plus full suite; correctly scope replay hypothesis trimming without changing screening saturation policy.",
           "version": "v290"
         },
@@ -7020,7 +7025,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v290"
+      "version": "v291"
     },
     "harness.autoresearch.formal": {
       "history": [
