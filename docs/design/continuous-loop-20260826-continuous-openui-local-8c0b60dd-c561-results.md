@@ -16,6 +16,8 @@
 - Profiling isolated three fresh Python processes paying the package root's eager DSL import cost.
 - Package-root legacy DSL exports now load on demand: plain startup measured 0.02 seconds versus 3.57-3.85 seconds before the repair; explicitly importing the legacy exports measured 2.50 seconds.
 - One subprocess regression check preserves `from slm_training import ExampleRecord, parse` while proving plain startup does not import `slm_training.dsl`.
+- The first supervised restart failed before campaign creation because the new import order exposed an eager `dsl.production_codec` / `data.contract` cycle; no c562 cycle was initialized.
+- Production-codec package exports now load only when requested. The regression check reproduces the supervisor order (`data.store` first) and then verifies both legacy root and production-codec exports.
 - Focused tests and Ruff passed; normalized version-stamp and repository-policy results are recorded with the repair commit.
 
 Partial fixture orchestration only. No train, eval, checkpoint, AgentEvals result, or ship claim was produced.

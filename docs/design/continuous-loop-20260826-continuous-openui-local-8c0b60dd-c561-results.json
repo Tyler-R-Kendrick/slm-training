@@ -10,6 +10,12 @@
   "primary_metric": "smoke.eval_nll",
   "reason": "symmetric decision-arm budget had 146.42093849699995 seconds remaining for two frozen 70-second arms plus finalization",
   "repair_evidence": {
+    "compatibility_followup": {
+      "failed_before_campaign_creation": true,
+      "failure": "data.contract / dsl.production_codec circular import after lazy package-root initialization",
+      "fix": "defer production-codec DSL package exports until requested",
+      "scoreboards": []
+    },
     "device": "cpu",
     "legacy_exports_seconds": 2.5,
     "plain_import_seconds_after": 0.02,
@@ -19,10 +25,10 @@
   "schema": "continuous_cycle_results/v1",
   "scoreboards": [],
   "version_stamp": {
-    "code_commit": "9f1ee8b97ad293e145b9482b7d818b37a9ff7639",
-    "code_dirty": false,
+    "code_commit": "43d66ae92a10c3c6cdfb48891ba5736271d9da42",
+    "code_dirty": true,
     "components": {
-      "harness.autoresearch.experiment_campaign": "v283"
+      "harness.autoresearch.experiment_campaign": "v284"
     },
     "stamp_schema": "version_stamp/v1",
     "stamped_at": "2026-08-26T19:09:24Z"

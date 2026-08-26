@@ -36,7 +36,10 @@ def test_package_import_defers_dsl_but_preserves_legacy_exports() -> None:
             (
                 "import sys, slm_training; "
                 "assert 'slm_training.dsl' not in sys.modules; "
+                "from slm_training.data.store import DataStore; "
                 "from slm_training import ExampleRecord, parse; "
+                "from slm_training.dsl import ProductionCodec; "
+                "assert DataStore and ProductionCodec; "
                 "assert ExampleRecord.__module__ == 'slm_training.dsl.schema'; "
                 "assert callable(parse)"
             ),

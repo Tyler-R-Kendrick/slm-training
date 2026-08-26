@@ -5033,6 +5033,11 @@
       "history": [
         {
           "date": "2026-08-26",
+          "note": "Defer production-codec re-exports from the DSL package so data.contract may initialize before the codec imports it; preserve direct DSL package imports and the faster autoresearch startup path.",
+          "version": "v284"
+        },
+        {
+          "date": "2026-08-26",
           "note": "Defer legacy package-root DSL exports until requested so every autoresearch subprocess avoids the 3.8-second eager DSL startup tax while preserving the public import contract.",
           "version": "v283"
         },
@@ -6985,7 +6990,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v283"
+      "version": "v284"
     },
     "harness.autoresearch.formal": {
       "history": [
