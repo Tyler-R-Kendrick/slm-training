@@ -2914,3 +2914,9 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 - campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578`
 - checkpoints: `runs/c20260826-continuous-openui-local-8c0b60dd-c578-current-rung-data-heal/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579`
+- checkpoint: `runs/c20260826-continuous-openui-local-8c0b60dd-c579-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

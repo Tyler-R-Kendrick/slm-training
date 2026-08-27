@@ -3606,3 +3606,11 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578`
 - checkpoints: `runs/c20260826-continuous-openui-local-8c0b60dd-c578-current-rung-data-heal/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579`
+- checkpoint: `runs/c20260826-continuous-openui-local-8c0b60dd-c579-current-rung-data-heal/checkpoints/last.pt` (local scratch only; 6,453,212 bytes)
+- recipe: TwoTower, 1,601,794 trainable parameters, CPU/scratch context, 328 steps, seed 100579, 90 records, 14.88 s train time.
+- smoke eval (`n=24`, AgentV): parse `1.0`, meaningful-program `0.208333`, structural `0.117875`, binder-reference F1 `0.531349`, eval NLL `8.687258`, latency p50 `6532.47 ms`; gates failed and the control timed out.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

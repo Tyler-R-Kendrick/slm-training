@@ -11615,6 +11615,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-08-27",
+          "note": "no-bump: record continuous-openui-local cycle 579 results, synthesis feedback, and scratch checkpoint documentation; behavior unchanged."
+        },
+        {
+          "version": "v3",
           "date": "2026-08-26",
           "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
