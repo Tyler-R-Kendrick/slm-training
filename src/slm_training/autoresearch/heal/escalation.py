@@ -205,11 +205,14 @@ class EscalationLedger:
             r for r in self.records.values() if r.status != "resolved"
         )
 
-    def sleep_seconds(self, *, default: float = 30.0) -> float:
-        """Governed supervisor backoff: the max open-record backoff, else default."""
-        open_backoffs = [
-            r.next_backoff_seconds for r in self.open_records()
-        ]
+    def sleep_seconds(
+        self, *, default: float = 30.0, fingerprints: set[str] | None = None
+    ) -> float:
+        """Return the max backoff for the requested open blockers."""
+        records = self.open_records()
+        if fingerprints is not None:
+            records = tuple(r for r in records if r.fingerprint in fingerprints)
+        open_backoffs = [r.next_backoff_seconds for r in records]
         if not open_backoffs:
             return float(default)
         return float(max(open_backoffs))

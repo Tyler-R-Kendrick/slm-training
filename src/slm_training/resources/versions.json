@@ -93,6 +93,11 @@
       "history": [
         {
           "date": "2026-08-27",
+          "note": "Scope governed supervisor backoff to the exact current blocker fingerprints while retaining unrelated historical escalation records unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-27",
           "note": "no-bump: supervisor regression coverage now proves governed hard backoff observes an externally cleared typed self-heal state; heal classification, playbooks, and escalation behavior are unchanged.",
           "version": "v2"
         },
@@ -145,7 +150,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v2"
+      "version": "v3"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5043,6 +5048,11 @@
       "history": [
         {
           "date": "2026-08-27",
+          "note": "Do not let unrelated historical escalation records force a current supervisor blocker dispatch to inherit their one-hour backoff ceiling.",
+          "version": "v296"
+        },
+        {
+          "date": "2026-08-27",
           "note": "Fit symmetric screening steps from the slower arm in the newest complete two-arm training pair, retaining both telemetry paths, instead of sizing both arms from one potentially fast candidate dataset.",
           "version": "v295"
         },
@@ -7055,7 +7065,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v295"
+      "version": "v296"
     },
     "harness.autoresearch.formal": {
       "history": [

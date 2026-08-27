@@ -88,6 +88,15 @@ def test_handle_hard_pending_records_escalation_and_governs_backoff(
 ) -> None:
     repo = _git_repo(tmp_path / "repo")
     root = tmp_path / "ar"
+    stale = EscalationLedger.load(root, "loop-1")
+    for _ in range(8):
+        stale.observe(
+            kind="repair_harness",
+            reason="historical unrelated blocker",
+            blocker_class="code",
+            campaign_id="old",
+        )
+    stale.save()
     events: list[dict] = []
     blocker = {
         "campaign_id": "c1",
@@ -107,10 +116,11 @@ def test_handle_hard_pending_records_escalation_and_governs_backoff(
         log_event=events.append,
     )
     assert outcome["any_healed"] is False
-    # Exact values pin the doubling contract (30 → 60), not just a floor.
+    # Exact values pin current-blocker doubling (30 → 60); the unrelated
+    # historical record at the one-hour cap must not govern this dispatch.
     assert outcome["sleep_seconds"] == 30.0
     ledger = EscalationLedger.load(root, "loop-1")
-    record = next(iter(ledger.records.values()))
+    record = next(r for r in ledger.records.values() if r.kind == "repair_formal")
     assert record.status == "escalated"
     assert record.owner_skill == "improve-lean-optimums"
     # Repeated sightings double the governed backoff (never a blind constant).

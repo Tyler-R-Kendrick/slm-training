@@ -55,7 +55,10 @@ def _handle_hard_pending(
     """
     try:
         from slm_training.autoresearch import heal
-        from slm_training.autoresearch.heal.escalation import EscalationLedger
+        from slm_training.autoresearch.heal.escalation import (
+            EscalationLedger,
+            blocker_fingerprint,
+        )
 
         blockers = [
             {**entry, "_root": root, "_loop_id": loop_id}
@@ -95,9 +98,17 @@ def _handle_hard_pending(
                     ),
                 )
         ledger.save()
+        current_fingerprints = {
+            blocker_fingerprint(
+                str(entry.get("kind") or ""), str(entry.get("reason") or "")
+            )
+            for entry in hard_pending
+        }
         return {
             "any_healed": any_healed,
-            "sleep_seconds": ledger.sleep_seconds(default=30.0),
+            "sleep_seconds": ledger.sleep_seconds(
+                default=30.0, fingerprints=current_fingerprints
+            ),
             "outcomes": [r.outcome for r in receipts],
             "open_escalations": len(ledger.open_records()),
         }

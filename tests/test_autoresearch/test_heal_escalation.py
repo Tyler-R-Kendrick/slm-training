@@ -148,8 +148,25 @@ class TestLedger:
             campaign_id="c1",
         )
         assert ledger.sleep_seconds() == 60.0
+        stale = ledger.observe(
+            kind="repair_harness",
+            reason="stale",
+            blocker_class="code",
+            campaign_id="old",
+        )
+        for _ in range(7):
+            stale = ledger.observe(
+                kind="repair_harness",
+                reason="stale",
+                blocker_class="code",
+                campaign_id="old",
+            )
+        assert ledger.sleep_seconds() == 3600.0
+        assert ledger.sleep_seconds(fingerprints={record.fingerprint}) == 60.0
         ledger.resolve(record.fingerprint)
-        assert ledger.sleep_seconds(default=9.0) == 9.0
+        assert ledger.sleep_seconds(
+            default=9.0, fingerprints={record.fingerprint}
+        ) == 9.0
 
     def test_malformed_rows_never_block_the_fold(self, tmp_path: Path) -> None:
         path = EscalationLedger.path_for(tmp_path, "loop-1")
