@@ -1447,7 +1447,9 @@ def _run_arm_eval_nll(
     }
 
 
-def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
+def _attach_screening_eval_nll(
+    run_dir: Path, *, checkpoint: Path | None = None
+) -> dict[str, Any] | None:
     """Compute canonical smoke.eval_nll after quality eval when missing."""
 
     scoreboard_path = Path(run_dir) / "scoreboard.json"
@@ -1457,8 +1459,9 @@ def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
     smoke = suites.get("smoke") if isinstance(suites, dict) else None
     if isinstance(smoke, dict) and isinstance(smoke.get("eval_nll"), (int, float)):
         return None
-    summary = _read_json(Path(run_dir) / "train_summary.json")
-    checkpoint = Path(str(summary.get("checkpoint") or ""))
+    if checkpoint is None:
+        summary = _read_json(Path(run_dir) / "train_summary.json")
+        checkpoint = Path(str(summary.get("checkpoint") or ""))
     if not checkpoint.is_file():
         print(
             f"EVAL_NLL_SKIP run={Path(run_dir).name} reason=missing_checkpoint",
@@ -16304,7 +16307,17 @@ def run_cycle(
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
         if int(code) == 0:
-            _attach_screening_eval_nll(camp_dir / "runs" / eid)
+            reuse_summary = (
+                _read_json(Path(reuse["run_dir"]) / "train_summary.json")
+                if reuse is not None
+                else {}
+            )
+            _attach_screening_eval_nll(
+                camp_dir / "runs" / eid,
+                checkpoint=Path(str(reuse_summary.get("checkpoint") or ""))
+                if reuse_summary
+                else None,
+            )
 
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     delivery = _phase_a_delivery(

@@ -11608,6 +11608,38 @@ def test_attach_screening_eval_nll_skips_without_checkpoint(tmp_path: Path) -> N
     assert "eval_nll" not in scoreboard["suites"]["smoke"]
 
 
+def test_attach_screening_eval_nll_uses_reused_checkpoint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "runs" / "arm"
+    run_dir.mkdir(parents=True)
+    (run_dir / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"n": 6}}}), encoding="utf-8"
+    )
+    checkpoint = tmp_path / "source" / "last.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.touch()
+    seen: dict[str, Path] = {}
+
+    monkeypatch.setattr(
+        "slm_training.data.store.DataStore.resolve_path",
+        lambda *_args: tmp_path / "eval",
+    )
+    monkeypatch.setattr(_mod, "default_eval_version", lambda: "test-eval")
+
+    def fake_eval(
+        target: Path, *, test_dir: Path, checkpoint: Path
+    ) -> dict[str, Any]:
+        seen.update(target=target, test_dir=test_dir, checkpoint=checkpoint)
+        return {"eval_nll": 1.25}
+
+    monkeypatch.setattr(_mod, "_run_arm_eval_nll", fake_eval)
+    assert _mod._attach_screening_eval_nll(
+        run_dir, checkpoint=checkpoint
+    ) == {"eval_nll": 1.25}
+    assert seen["checkpoint"] == checkpoint
+
+
 def test_fit_screening_candidate_count_never_kills_for_k() -> None:
     n, reason = _mod._fit_screening_candidate_count(
         max_candidates=6,

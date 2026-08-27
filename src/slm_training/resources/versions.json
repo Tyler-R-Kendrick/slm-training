@@ -5048,6 +5048,11 @@
       "history": [
         {
           "date": "2026-08-27",
+          "note": "Compute screening eval NLL from the already hash-verified source checkpoint when a frozen replay reuses training instead of looking only for a new target train summary.",
+          "version": "v298"
+        },
+        {
+          "date": "2026-08-27",
           "note": "Derive checkpoint recipes from canonical train summaries and checkpoint metadata during continuous closeout, retain them in result JSON/markdown, and recognize already-present README/model-card notes on clean-stamp reruns.",
           "version": "v297"
         },
@@ -7070,7 +7075,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v297"
+      "version": "v298"
     },
     "harness.autoresearch.formal": {
       "history": [
