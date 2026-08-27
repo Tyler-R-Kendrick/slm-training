@@ -3662,3 +3662,11 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - control checkpoint: none; the control arm timed out before writing one.
 - evaluation: both arms hit the 70 s cap before producing scoreboards or eval NLL; parse, meaningful, structural, binder, and latency metrics are unavailable, and the candidate checkpoint is not promotion evidence.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591)
+
+- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591`
+- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591/runs/c20260827-continuous-openui-local-8c0b60dd-c591-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 380 steps, seed 100590, 629 records, 40.11 s train, final loss 5.41978.
+- candidate checkpoint: reused `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590/runs/c20260827-continuous-openui-local-8c0b60dd-c590-current-rung-data-heal/checkpoints/last.pt`; no new candidate checkpoint was written.
+- evaluation: candidate smoke `n=24`, parse 1.0, meaningful-program rate 0.208333, structural similarity 0.136387, binder-reference F1 0.531349, p50 latency 7297.04 ms; honest smoke gates failed. The control timed out before evaluation, so comparison and eval NLL remain unavailable.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

@@ -2962,3 +2962,10 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 - checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590/runs/c20260827-continuous-openui-local-8c0b60dd-c590-current-rung-data-heal/checkpoints/last.pt`
 - status: candidate checkpoint created; control timed out before checkpoint; both arms timed out before scoreboards or eval NLL, so every quality metric and the comparison are unavailable.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591)
+
+- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591`
+- checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591/runs/c20260827-continuous-openui-local-8c0b60dd-c591-control/checkpoints/last.pt`
+- status: control checkpoint created but its arm timed out before evaluation; the candidate reused c590's checkpoint and completed smoke (`n=24`, parse 1.0, meaningful 0.208333, structural 0.136387, binder F1 0.531349, p50 latency 7297.04 ms), but no matched comparison or eval NLL exists.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
