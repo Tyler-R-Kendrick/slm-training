@@ -2927,3 +2927,10 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 - checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-control/checkpoints/last.pt`, `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-current-rung-data-heal/checkpoints/last.pt`
 - status: both arms timed out before scoreboards; checkpoints are unevaluated local artifacts.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583/runs/c20260826-continuous-openui-local-8c0b60dd-c583-control/checkpoints/last.pt`, `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583/runs/c20260826-continuous-openui-local-8c0b60dd-c583-current-rung-data-heal/checkpoints/last.pt`
+- status: control timed out before a scoreboard; candidate completed smoke `n=24` but failed ship gates (parse 1.0, meaningful 0.2083, structural 0.1364, eval NLL 8.3543).
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
