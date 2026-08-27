@@ -3600,3 +3600,9 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575/runs/c20260826-continuous-openui-local-8c0b60dd-c575-{control,current-rung-data-heal}/checkpoints/last.pt`.
 - candidate failures: meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control produced no scoreboard, so the comparison is incomplete and non-promotable.
 - history: both checkpoints were created on 2026-08-26. They remain local fixture artifacts with no bucket sync and no promotion.
+
+## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578`
+- checkpoints: `runs/c20260826-continuous-openui-local-8c0b60dd-c578-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

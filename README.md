@@ -2908,3 +2908,9 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 | `c575-current-rung-data-heal` | n=24; parse 1.000; meaningful 0.208; structural 0.136; binder F1 0.531; eval NLL 9.259 | ship gates failed |
 
 Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL_CARD.md). No promotion or bucket sync.
+
+## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578`
+- checkpoints: `runs/c20260826-continuous-openui-local-8c0b60dd-c578-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
