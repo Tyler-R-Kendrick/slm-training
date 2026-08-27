@@ -1,0 +1,35 @@
+{
+  "schema": "continuous_cycle_results/v1",
+  "campaign_id": "continuous-loop-20260827-continuous-openui-local-8c0b60dd-c589",
+  "loop_id": "continuous-openui-local",
+  "cycle_index": 589,
+  "cycle_role": "screening",
+  "cycle_intent": "screening",
+  "primary_metric": "smoke.eval_nll",
+  "measurement_complete": false,
+  "positive": false,
+  "stack_layer": false,
+  "evidence_class": "fixture",
+  "result": "pre_arm_infrastructure_failure",
+  "failure": "TimeoutExpired('symmetric decision-arm budget', 133.80726494999544)",
+  "arms_launched": false,
+  "scoreboards": null,
+  "agentv_bundles": null,
+  "checkpoint_recipe": null,
+  "repair": "restored only src/slm_training/resources/evidence_store/local_index.jsonl after dirty-tree retries",
+  "honesty": "fixture_failure_only_not_ship",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b9d3c1d1eec5099c3f7bad48f1b544675ac00346",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v290",
+      "harness.model_build.eval": "v101",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "model.twotower": "v321"
+    },
+    "stamped_at": "2026-08-27T10:50:04Z"
+  }
+}

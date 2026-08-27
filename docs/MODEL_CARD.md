@@ -3654,3 +3654,11 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 173 steps, seed 100587, 90 records, 8.23 s train, final loss 2.29963.
 - evaluation: both arms hit the 70 s cap before producing scoreboards or eval NLL; parse, meaningful, structural, binder, and latency metrics are unavailable, and neither checkpoint is promotion evidence.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590)
+
+- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590`
+- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590/runs/c20260827-continuous-openui-local-8c0b60dd-c590-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 380 steps, seed 100590, 90 records, 44.32 s train, final loss 0.595024.
+- control checkpoint: none; the control arm timed out before writing one.
+- evaluation: both arms hit the 70 s cap before producing scoreboards or eval NLL; parse, meaningful, structural, binder, and latency metrics are unavailable, and the candidate checkpoint is not promotion evidence.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
