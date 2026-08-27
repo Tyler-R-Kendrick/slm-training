@@ -5048,6 +5048,11 @@
       "history": [
         {
           "date": "2026-08-27",
+          "note": "Derive checkpoint recipes from canonical train summaries and checkpoint metadata during continuous closeout, retain them in result JSON/markdown, and recognize already-present README/model-card notes on clean-stamp reruns.",
+          "version": "v297"
+        },
+        {
+          "date": "2026-08-27",
           "note": "Do not let unrelated historical escalation records force a current supervisor blocker dispatch to inherit their one-hour backoff ceiling.",
           "version": "v296"
         },
@@ -7065,7 +7070,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v296"
+      "version": "v297"
     },
     "harness.autoresearch.formal": {
       "history": [

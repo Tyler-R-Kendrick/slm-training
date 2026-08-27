@@ -5123,6 +5123,7 @@ def _append_checkpoint_doc_notes(
     *,
     campaign_id: str,
     checkpoint_paths: Sequence[str],
+    checkpoint_recipes: Sequence[Mapping[str, Any]] = (),
     loop_id: str | None = None,
 ) -> list[Path]:
     """Minimal honesty-labeled checkpoint notes when handoff requires them."""
@@ -5130,10 +5131,19 @@ def _append_checkpoint_doc_notes(
     if not checkpoint_paths:
         return touched
     stamp = time.strftime("%Y-%m-%d", time.gmtime())
+    checkpoint_text = ", ".join(f"`{p}`" for p in checkpoint_paths)
+    if checkpoint_recipes:
+        checkpoint_text = "; ".join(
+            f"`{r['local_path']}` ({int(r.get('bytes') or 0):,} bytes; "
+            f"{r.get('model') or 'model'}, {int(r.get('trainable_params') or 0):,} "
+            f"trainable parameters, {int(r.get('steps') or 0)} steps, "
+            f"{int(r.get('records') or 0)} records)"
+            for r in checkpoint_recipes
+        )
     note = (
         f"\n## Continuous autotrain note ({stamp}, {campaign_id})\n\n"
         f"- campaign: `{campaign_id}`\n"
-        f"- checkpoints: {', '.join(f'`{p}`' for p in checkpoint_paths)}\n"
+        f"- checkpoints: {checkpoint_text}\n"
         "- honesty: fixture/scratch continuous cycle — **not** a ship promotion.\n"
     )
     touched_rel: list[str] = []
@@ -5144,6 +5154,7 @@ def _append_checkpoint_doc_notes(
         text = path.read_text(encoding="utf-8")
         marker = f"campaign: `{campaign_id}`"
         if marker in text:
+            touched.append(path)
             continue
         path.write_text(text.rstrip() + "\n" + note, encoding="utf-8")
         touched.append(path)
@@ -5158,6 +5169,48 @@ def _append_checkpoint_doc_notes(
         if registry_path is not None:
             touched.append(registry_path)
     return touched
+
+
+def _checkpoint_recipes(
+    *, cwd: Path, root: Path, handoff: AutotrainCycleHandoffV1
+) -> list[dict[str, Any]]:
+    recipes: list[dict[str, Any]] = []
+    for relative in handoff.checkpoint_paths or ():
+        checkpoint = root / handoff.campaign_id / relative
+        if not checkpoint.is_file():
+            continue
+        run_dir = checkpoint.parent.parent
+        summary_path = run_dir / "train_summary.json"
+        summary = _read_json(summary_path) if summary_path.is_file() else {}
+        meta_path = checkpoint.with_suffix(".meta.json")
+        meta = _read_json(meta_path) if meta_path.is_file() else {}
+        try:
+            local_path = str(checkpoint.relative_to(cwd))
+        except ValueError:
+            local_path = str(checkpoint)
+        recipe = summary.get("recipe") if isinstance(summary.get("recipe"), dict) else {}
+        telemetry = (
+            summary.get("telemetry")
+            if isinstance(summary.get("telemetry"), dict)
+            else {}
+        )
+        recipes.append(
+            {
+                "backend": "scratch",
+                "bytes": checkpoint.stat().st_size,
+                "device": summary.get("device"),
+                "elapsed_seconds": summary.get("elapsed_wall_seconds"),
+                "last_loss": summary.get("last_loss"),
+                "local_path": local_path,
+                "model": summary.get("model"),
+                "records": summary.get("record_count"),
+                "seed": recipe.get("seed"),
+                "steps": summary.get("steps"),
+                "trainable_params": meta.get("parameter_count")
+                or telemetry.get("trainable_params"),
+            }
+        )
+    return recipes
 
 
 def _self_heal_document_actions(
@@ -5259,6 +5312,20 @@ def _self_heal_document_actions(
         handoff=handoff,
         delivery=delivery,
     )
+    checkpoint_recipes = _checkpoint_recipes(cwd=cwd, root=root, handoff=handoff)
+    if checkpoint_recipes:
+        payload["checkpoint_recipe"] = {
+            "checkpoints": checkpoint_recipes,
+            "sync": "disabled_fixture_scratch",
+        }
+        md_text = md_text.rstrip() + "\n\n## Checkpoint recipe\n\n" + "\n".join(
+            f"- `{recipe['local_path']}` ({int(recipe['bytes']):,} bytes); "
+            f"{recipe.get('model') or 'model'}, "
+            f"{int(recipe.get('trainable_params') or 0):,} trainable parameters, "
+            f"{int(recipe.get('steps') or 0)} steps, "
+            f"{int(recipe.get('records') or 0)} records\n"
+            for recipe in checkpoint_recipes
+        )
     md_path.write_text(md_text, encoding="utf-8")
     json_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -5270,6 +5337,7 @@ def _self_heal_document_actions(
                 cwd,
                 campaign_id=campaign_id,
                 checkpoint_paths=tuple(handoff.checkpoint_paths or ()),
+                checkpoint_recipes=checkpoint_recipes,
                 loop_id=loop_id,
             )
         )

@@ -10307,6 +10307,78 @@ def test_self_heal_document_actions_reuses_clean_connector_evidence(
     _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
+def test_checkpoint_recipes_and_existing_notes_are_reusable(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / "docs").mkdir(parents=True)
+    (repo / "README.md").write_text("# test\n", encoding="utf-8")
+    (repo / "docs" / "MODEL_CARD.md").write_text("# card\n", encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    campaign_id = "continuous-loop-test-c3"
+    checkpoint = root / campaign_id / "runs" / "cand" / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (checkpoint.parent.parent / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "model": "twotower",
+                "device": "cpu",
+                "steps": 12,
+                "record_count": 34,
+                "elapsed_wall_seconds": 5.0,
+                "last_loss": 1.25,
+                "recipe": {"seed": 7},
+            }
+        ),
+        encoding="utf-8",
+    )
+    checkpoint.with_suffix(".meta.json").write_text(
+        json.dumps({"parameter_count": 1234}), encoding="utf-8"
+    )
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=3,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist checkpoint docs",
+                "evidence_ids": (f"campaign:{campaign_id}",),
+            },
+        ),
+        checkpoint_paths=("runs/cand/checkpoints/last.pt",),
+        checkpoint_documentation_required=True,
+    )
+
+    recipes = _mod._checkpoint_recipes(cwd=repo, root=root, handoff=handoff)
+    first = _mod._append_checkpoint_doc_notes(
+        repo,
+        campaign_id=campaign_id,
+        checkpoint_paths=handoff.checkpoint_paths,
+        checkpoint_recipes=recipes,
+    )
+    second = _mod._append_checkpoint_doc_notes(
+        repo,
+        campaign_id=campaign_id,
+        checkpoint_paths=handoff.checkpoint_paths,
+        checkpoint_recipes=recipes,
+    )
+
+    assert recipes[0]["trainable_params"] == 1234
+    assert recipes[0]["local_path"].endswith("runs/cand/checkpoints/last.pt")
+    assert {path.name for path in first} == {"README.md", "MODEL_CARD.md"}
+    assert {path.name for path in second} == {"README.md", "MODEL_CARD.md"}
+    assert "1,234 trainable parameters" in (repo / "README.md").read_text()
+
+
 def test_self_heal_does_not_ack_repair_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
