@@ -9639,6 +9639,35 @@ def test_screening_steps_from_train_summary_telemetry(tmp_path: Path) -> None:
     assert steps == min(400, int(20.0 * (22 / 3.36) * 0.9))
 
 
+def test_screening_steps_use_slower_arm_from_latest_complete_pair(
+    tmp_path: Path,
+) -> None:
+    older = tmp_path / "continuous-loop-paired" / "runs"
+    newer = tmp_path / "continuous-loop-incomplete" / "runs"
+    for arm, wall in (("control", 20.0), ("candidate", 10.0)):
+        run = older / arm
+        run.mkdir(parents=True)
+        (run / "train_summary.json").write_text(
+            json.dumps({"steps": 100, "elapsed_wall_seconds": wall}),
+            encoding="utf-8",
+        )
+    run = newer / "candidate"
+    run.mkdir(parents=True)
+    newest = run / "train_summary.json"
+    newest.write_text(
+        json.dumps({"steps": 100, "elapsed_wall_seconds": 5.0}),
+        encoding="utf-8",
+    )
+    newest.touch()
+
+    payload = _mod._latest_train_telemetry_payload(tmp_path)
+
+    assert payload is not None
+    assert str(payload["_telemetry_path"]).endswith("paired/runs/control/train_summary.json")
+    assert len(payload["_telemetry_paths"]) == 2
+    assert _mod._steps_per_sec_from_train_payload(payload) == 5.0
+
+
 def test_write_thrash_timing_includes_steps_fit(tmp_path: Path) -> None:
     camp = tmp_path / "c-fit"
     camp.mkdir(parents=True)

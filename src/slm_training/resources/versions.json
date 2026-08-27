@@ -5043,6 +5043,11 @@
       "history": [
         {
           "date": "2026-08-27",
+          "note": "Fit symmetric screening steps from the slower arm in the newest complete two-arm training pair, retaining both telemetry paths, instead of sizing both arms from one potentially fast candidate dataset.",
+          "version": "v295"
+        },
+        {
+          "date": "2026-08-27",
           "note": "Wake the continuous supervisor's governed hard backoff when canonical loop state records a typed external self-heal, instead of remaining blind in one uninterruptible sleep.",
           "version": "v294"
         },
@@ -7050,7 +7055,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v294"
+      "version": "v295"
     },
     "harness.autoresearch.formal": {
       "history": [

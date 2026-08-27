@@ -607,8 +607,7 @@ def _steps_per_sec_from_train_payload(payload: Mapping[str, Any]) -> float | Non
 def _latest_train_telemetry_payload(root: Path | None) -> dict[str, Any] | None:
     if root is None or not root.is_dir():
         return None
-    newest: Path | None = None
-    newest_mtime = -1.0
+    recent: list[tuple[float, Path]] = []
     try:
         summaries = root.glob("*/runs/*/train_summary.json")
     except OSError:
@@ -618,27 +617,37 @@ def _latest_train_telemetry_payload(root: Path | None) -> dict[str, Any] | None:
             mtime = path.stat().st_mtime
         except OSError:
             continue
-        if mtime > newest_mtime:
-            newest_mtime = mtime
-            newest = path
-    if newest is None:
-        return None
-    try:
-        payload = json.loads(newest.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    payload["_telemetry_path"] = str(newest)
-    tel_path = newest.parent / "train_telemetry.json"
-    if tel_path.is_file() and payload.get("elapsed_wall_seconds") is None:
+        recent.append((mtime, path))
+    campaigns: dict[Path, list[dict[str, Any]]] = {}
+    fallback: dict[str, Any] | None = None
+    for _mtime, path in sorted(recent, reverse=True)[:32]:
         try:
-            tel = json.loads(tel_path.read_text(encoding="utf-8"))
+            payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            tel = None
-        if isinstance(tel, dict) and tel.get("total_ms") is not None:
-            payload["total_ms"] = tel.get("total_ms")
-    return payload
+            continue
+        if not isinstance(payload, dict):
+            continue
+        payload["_telemetry_path"] = str(path)
+        tel_path = path.parent / "train_telemetry.json"
+        if tel_path.is_file() and payload.get("elapsed_wall_seconds") is None:
+            try:
+                tel = json.loads(tel_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                tel = None
+            if isinstance(tel, dict) and tel.get("total_ms") is not None:
+                payload["total_ms"] = tel.get("total_ms")
+        if fallback is None:
+            fallback = payload
+        campaigns.setdefault(path.parents[2], []).append(payload)
+    for payloads in campaigns.values():
+        valid = [p for p in payloads if _steps_per_sec_from_train_payload(p)]
+        if len(valid) >= 2:
+            selected = min(valid, key=lambda p: _steps_per_sec_from_train_payload(p) or 0.0)
+            selected["_telemetry_paths"] = [p["_telemetry_path"] for p in valid]
+            return selected
+    if fallback is not None:
+        fallback["_telemetry_paths"] = [fallback["_telemetry_path"]]
+    return fallback
 
 
 def _fit_screening_steps(
@@ -757,6 +766,9 @@ def _fit_screening_decode_timeout_seconds(
     )
     steps_fit["telemetry_path"] = (
         None if payload is None else payload.get("_telemetry_path")
+    )
+    steps_fit["telemetry_paths"] = (
+        [] if payload is None else list(payload.get("_telemetry_paths") or [])
     )
     steps_fit["requested_steps"] = int(requested_steps)
     meta = {
