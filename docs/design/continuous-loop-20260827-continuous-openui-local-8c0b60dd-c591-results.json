@@ -165,8 +165,8 @@
     "sync": "disabled_fixture_scratch"
   },
   "version_stamp": {
-    "code_commit": "873b5ef31b9fe5994a047ce73207ae4a163c7262",
-    "code_dirty": true,
+    "code_commit": "466e0035ee312e6fc4e0fa801a5b58a23f8266eb",
+    "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v26",
@@ -174,6 +174,6 @@
       "harness.model_build.eval": "v101"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-08-27T11:45:28.591283+00:00"
+    "stamped_at": "2026-08-27T11:50:59.657626+00:00"
   }
 }
