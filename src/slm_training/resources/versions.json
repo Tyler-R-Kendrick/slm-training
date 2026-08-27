@@ -11616,6 +11616,11 @@
         {
           "version": "v3",
           "date": "2026-08-27",
+          "note": "no-bump: record continuous-openui-local c585 checkpoint recipes and decode-timeout-incomplete fixture results; behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-08-27",
           "note": "no-bump: record continuous-openui-local c583 checkpoint recipes and incomplete fixture-screening results; behavior unchanged."
         },
         {

@@ -3630,3 +3630,11 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - candidate checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583/runs/c20260826-continuous-openui-local-8c0b60dd-c583-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 401 steps, seed 100583, 90 records, 16.48 s train, final loss 0.00275301.
 - evaluation: candidate smoke `n=24`, parse 1.0, meaningful-program rate 0.2083, structural similarity 0.1364, binder-reference F1 0.5313, eval NLL 8.3543, latency p50 6.686 s; AgentV 4/9 assertions passed and ship gates failed. Control timed out before a scoreboard, so the comparison is incomplete.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585)
+
+- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585`
+- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585/runs/c20260827-continuous-openui-local-8c0b60dd-c585-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 400 steps, seed 100585, 629 records, 42.28 s train, final loss 6.81211.
+- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585/runs/c20260827-continuous-openui-local-8c0b60dd-c585-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 400 steps, seed 100585, 90 records, 16.52 s train, final loss 0.000869098.
+- evaluation: both arms hit the 70 s cap. Candidate eval NLL was 9.0546, but smoke `n=24` had `incomplete_document_n=24` and `decode_timeout_count=24`; parse, meaningful, structural, binder, and latency metrics are unavailable, and this is not promotion evidence.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
