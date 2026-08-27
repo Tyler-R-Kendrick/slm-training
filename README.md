@@ -2920,3 +2920,10 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 - campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579`
 - checkpoint: `runs/c20260826-continuous-openui-local-8c0b60dd-c579-current-rung-data-heal/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-control/checkpoints/last.pt`, `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-current-rung-data-heal/checkpoints/last.pt`
+- status: both arms timed out before scoreboards; checkpoints are unevaluated local artifacts.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

@@ -3614,3 +3614,11 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - recipe: TwoTower, 1,601,794 trainable parameters, CPU/scratch context, 328 steps, seed 100579, 90 records, 14.88 s train time.
 - smoke eval (`n=24`, AgentV): parse `1.0`, meaningful-program `0.208333`, structural `0.117875`, binder-reference F1 `0.531349`, eval NLL `8.687258`, latency p50 `6532.47 ms`; gates failed and the control timed out.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581)
+
+- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581`
+- control checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 parameters, CPU, 398 steps, seed 100581, 629 records, 41.29 s train, final loss 5.94836.
+- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 parameters, CPU, 398 steps, seed 100581, 90 records, 16.06 s train, final loss 0.000115376.
+- evaluation: both arms hit the 70 s cap before producing scoreboards; every metric is unavailable and neither checkpoint is promotion evidence.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
