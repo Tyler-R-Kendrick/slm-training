@@ -3646,3 +3646,11 @@ Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a 
 - candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c586/runs/c20260827-continuous-openui-local-8c0b60dd-c586-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 401 steps, seed 100586, 90 records, 17.15 s train, final loss 0.00772793.
 - evaluation: both arms hit the 70 s cap. Candidate eval NLL was 7.2987, but smoke `n=24` had `incomplete_document_n=24` and `decode_timeout_count=24`; parse, meaningful, structural, binder, and latency metrics are unavailable, and this is not promotion evidence.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587)
+
+- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587`
+- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 173 steps, seed 100587, 629 records, 19.95 s train, final loss 8.51234.
+- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 173 steps, seed 100587, 90 records, 8.23 s train, final loss 2.29963.
+- evaluation: both arms hit the 70 s cap before producing scoreboards or eval NLL; parse, meaningful, structural, binder, and latency metrics are unavailable, and neither checkpoint is promotion evidence.
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

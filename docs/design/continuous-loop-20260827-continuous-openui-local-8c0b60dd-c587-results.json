@@ -1,0 +1,239 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 587,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260827-continuous-openui-local-8c0b60dd-c587-control": 124,
+      "c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal": 124
+    },
+    "arm_order": [
+      "c20260827-continuous-openui-local-8c0b60dd-c587-control",
+      "c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal"
+    ],
+    "arm_seed": 100587,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1661698,
+    "campaign_id": "continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587",
+    "candidate_id": "c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": 1601794,
+    "climb_policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "control_id": "c20260827-continuous-openui-local-8c0b60dd-c587-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 587,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-27T08:48:06Z",
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "42f1dcad56778b89a4a0da253380e52e2d5fd7e2ba02ec8805304728999bd636",
+    "policy_version": "v14",
+    "positive": false,
+    "preflight": {
+      "blocked_slugs": [],
+      "schema": "autotrain_preflight/v1",
+      "selected_slug": "current-rung-data-heal",
+      "verdicts": {
+        "current-rung-data-heal": [
+          {
+            "check_id": "concluded_family",
+            "data": {
+              "family_key": "heal-resume+process-arm+process-role+train-version"
+            },
+            "reasons": [
+              "family 'heal-resume+process-arm+process-role+train-version' has no binding closure record"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_dominance",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism dominance check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_no_effect",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism no-effect check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "power_decidability",
+            "data": {
+              "alpha": 0.05,
+              "config_fingerprint": "f8218deaff0fd126",
+              "endpoint_metric": "smoke.eval_nll",
+              "max_reasonable_n": 64,
+              "min_attainable_p": 1.0,
+              "min_detectable_effect": 0.8087479899175992,
+              "minimum_effect": 0.05,
+              "n_seeds": 1,
+              "paired": true,
+              "process_arm": true,
+              "required_n_for_effect": 262,
+              "sd": 0.28867513459481287,
+              "sd_source": "conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "steps": 20
+            },
+            "reasons": [
+              "min_attainable_p=1 > alpha=0.05 at n=1 (paired sign test): no result at this n can ever reject",
+              "min_detectable_effect=0.808748 > minimum_effect=0.05 at n=1, sd=0.288675: required_n_for_effect=262",
+              "sd=0.288675 from conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "required_n_for_effect=262 exceeds the reasonable screening ceiling (64); this design cannot become decidable through realistic accumulation",
+              "process/heal arm is not a confirmatory design; power decidability warns instead of blocking first execution"
+            ],
+            "verdict": "warn"
+          },
+          {
+            "check_id": "prior_attempts",
+            "data": {
+              "config_fingerprint": "f8218deaff0fd126",
+              "matched": 0,
+              "source": "evidence_store"
+            },
+            "reasons": [
+              "no matching prior attempt (source=evidence_store)"
+            ],
+            "verdict": "pass"
+          }
+        ]
+      }
+    },
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260827-continuous-openui-local-8c0b60dd-c587-control:missing_scoreboard",
+      "measurement_incomplete:c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "prior_incomplete_compiler_ms_timeout;baseline=isolate;prefer_decode_residual",
+      "regime": "timeout_decode_residual",
+      "timeout_residual": true
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587",
+    "cycle_index": 587,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260827-continuous-openui-local-8c0b60dd-c587-control:missing_scoreboard",
+      "measurement_incomplete:c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260827-continuous-openui-local-8c0b60dd-c587-control:missing_scoreboard",
+    "measurement_incomplete:c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "checkpoint_recipe": {
+    "control": {
+      "backend": "scratch",
+      "bytes": 6692828,
+      "device": "cpu",
+      "elapsed_wall_seconds": 19.954211529999156,
+      "last_loss": 8.512340545654297,
+      "local_path": "outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-control/checkpoints/last.pt",
+      "records": 629,
+      "seed": 100587,
+      "steps": 173,
+      "trainable_params": 1661698
+    },
+    "candidate": {
+      "backend": "scratch",
+      "bytes": 6453212,
+      "device": "cpu",
+      "elapsed_wall_seconds": 8.225382880002144,
+      "last_loss": 2.299626588821411,
+      "local_path": "outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal/checkpoints/last.pt",
+      "records": 90,
+      "seed": 100587,
+      "steps": 173,
+      "trainable_params": 1601794
+    },
+    "sync": "disabled_fixture_scratch"
+  },
+  "version_stamp": {
+    "code_commit": "873b5ef31b9fe5994a047ce73207ae4a163c7262",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-27T08:49:03.806713+00:00"
+  }
+}
