@@ -127,6 +127,38 @@ def test_handle_hard_pending_records_escalation_and_governs_backoff(
     assert second["sleep_seconds"] == 60.0
 
 
+def test_hard_backoff_wakes_when_typed_self_heal_clears_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    state_path = root / "loops" / "loop-1" / "state.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.write_text(
+        json.dumps({"blocker_count": 1, "next_action": "hard_pending"}),
+        encoding="utf-8",
+    )
+    sleeps: list[float] = []
+
+    def clear_during_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        state_path.write_text(
+            json.dumps(
+                {
+                    "blocker_count": 0,
+                    "next_action": "continue_after_self_heal:unblock:document_closeout",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(_mod.time, "sleep", clear_during_sleep)
+
+    assert _mod._sleep_hard_backoff(
+        root=root, loop_id="loop-1", seconds=3600
+    )
+    assert sleeps == [5.0]
+
+
 def _stub_continuous_parked():
     """Continuous-module stub whose park predicate always says parked."""
     import types

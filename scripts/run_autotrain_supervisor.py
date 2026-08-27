@@ -106,6 +106,26 @@ def _handle_hard_pending(
         return {"any_healed": False, "sleep_seconds": 30.0, "outcomes": []}
 
 
+def _sleep_hard_backoff(*, root: Path, loop_id: str, seconds: float) -> bool:
+    """Sleep in short polls so an external typed self-heal wakes supervision."""
+    deadline = time.monotonic() + max(0.0, float(seconds))
+    state_path = root / "loops" / loop_id / "state.json"
+    while time.monotonic() < deadline:
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            state = {}
+        if (
+            state.get("blocker_count") == 0
+            and str(state.get("next_action") or "").startswith(
+                "continue_after_self_heal:"
+            )
+        ):
+            return True
+        time.sleep(min(5.0, deadline - time.monotonic()))
+    return False
+
+
 def _stash_head_sha(cwd: Path) -> str | None:
     try:
         out = subprocess.run(
@@ -333,15 +353,18 @@ def main(argv: list[str] | None = None) -> int:
                 # not bound a heal-spin — never loop with zero delay.
                 time.sleep(max(0.5, float(args.soft_backoff_seconds)))
                 continue  # re-run the unblock loop
-            time.sleep(
-                max(
+            if _sleep_hard_backoff(
+                root=root,
+                loop_id=args.loop_id,
+                seconds=max(
                     1.0,
                     float(
                         outcome.get("sleep_seconds")
                         or args.hard_backoff_seconds
                     ),
-                )
-            )
+                ),
+            ):
+                log_event({"event": "hard_backoff_woken", "cycle": cycle})
             continue
 
         cmd = [
@@ -411,7 +434,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             log_event({"event": "post_cycle_unblock", "cycle": cycle, **report})
             if report.get("hard_pending"):
-                time.sleep(max(1.0, float(args.hard_backoff_seconds)))
+                if _sleep_hard_backoff(
+                    root=root,
+                    loop_id=args.loop_id,
+                    seconds=max(1.0, float(args.hard_backoff_seconds)),
+                ):
+                    log_event({"event": "hard_backoff_woken", "cycle": cycle})
             else:
                 time.sleep(max(0.5, float(args.soft_backoff_seconds)))
         except Exception as exc:  # noqa: BLE001
