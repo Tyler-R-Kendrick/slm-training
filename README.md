@@ -2969,3 +2969,9 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 - checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591/runs/c20260827-continuous-openui-local-8c0b60dd-c591-control/checkpoints/last.pt`
 - status: control checkpoint created but its arm timed out before evaluation; the candidate reused c590's checkpoint and completed smoke (`n=24`, parse 1.0, meaningful 0.208333, structural 0.136387, binder F1 0.531349, p50 latency 7297.04 ms), but no matched comparison or eval NLL exists.
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594/runs/c20260828-continuous-openui-local-8c0b60dd-c594-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 110 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594/runs/c20260828-continuous-openui-local-8c0b60dd-c594-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 110 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
