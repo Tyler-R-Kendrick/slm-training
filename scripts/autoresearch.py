@@ -659,19 +659,17 @@ def _recover_incomplete_handoff_feedback(
         )
     except ValueError:
         return None
-    incomplete = any(
-        reason.startswith(("measurement_incomplete:", "harness_failure:"))
-        for reason in handoff.reasons
-    )
-    # Gate recovery on the typed incomplete-measurement reason, not on which
-    # PriorityArea the diagnosis happened to tag the retry priority with —
-    # areas like "model_build" are a legitimate diagnosis of a wall/decode
-    # timeout and must recover the same as "harness"/"infrastructure".
     retry_priorities = tuple(
         priority
         for priority in handoff.priorities
         if priority.proposed_experiment_id is not None
     )
+    incomplete = any(
+        reason.startswith(("measurement_incomplete:", "harness_failure:"))
+        for reason in handoff.reasons
+    ) or (handoff.climb_state == "inconclusive" and bool(retry_priorities))
+    # Gate recovery on the typed incomplete disposition, not on which reason
+    # spelling or PriorityArea the driver used for the retry.
     if not incomplete or not retry_priorities:
         return None
     experiment_id = (

@@ -3167,15 +3167,13 @@ def test_feedback_context_recovers_typed_incomplete_handoff(
     )
 
 
-def test_feedback_context_recovers_model_build_incomplete_handoff(
+def test_feedback_context_recovers_inconclusive_retry_handoff(
     tmp_path: Path,
 ) -> None:
-    """A measurement_incomplete handoff recovers regardless of PriorityArea.
+    """A typed inconclusive retry recovers without a legacy reason prefix.
 
-    The continuous driver legitimately tags a wall/decode-timeout retry
-    priority ``area="model_build"`` (not "harness"/"infrastructure") — this
-    reproduces the exact shape emitted for a dual-arm decode timeout and
-    must recover the same as the "infrastructure"-tagged case above.
+    This reproduces c618: fixture-volume reasons plus an explicit retry
+    priority are incomplete even when ``measurement_incomplete:`` is absent.
     """
 
     from scripts.autoresearch import _feedback_context, _lineage_stores
@@ -3218,7 +3216,11 @@ def test_feedback_context_recovers_model_build_incomplete_handoff(
         climb_state="inconclusive",
         ship_state="blocked",
         primary_metric="score",
-        reasons=("measurement_incomplete:control:decode_timeout_count=3",),
+        reasons=(
+            "fixture_insufficient_n:control-latprobe",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n_alone",
+        ),
         priorities=(
             NextRunPriorityV1(
                 rank=1,

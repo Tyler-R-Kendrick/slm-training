@@ -2975,3 +2975,81 @@ Local CPU fixture/scratch checkpoints only; see [the full model card](docs/MODEL
 - campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594`
 - checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594/runs/c20260828-continuous-openui-local-8c0b60dd-c594-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 110 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594/runs/c20260828-continuous-openui-local-8c0b60dd-c594-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 110 steps, 90 records)
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c596)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c596`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c596/runs/c20260828-continuous-openui-local-8c0b60dd-c596-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 97 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c596/runs/c20260828-continuous-openui-local-8c0b60dd-c596-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 97 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c597)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c597`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c597/runs/c20260828-continuous-openui-local-8c0b60dd-c597-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 162 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c597/runs/c20260828-continuous-openui-local-8c0b60dd-c597-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 162 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c600)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c600`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c600/runs/c20260828-continuous-openui-local-8c0b60dd-c600-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 138 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c601)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c601`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c601/runs/c20260828-continuous-openui-local-8c0b60dd-c601-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 139 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c601/runs/c20260828-continuous-openui-local-8c0b60dd-c601-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 139 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c603)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c603`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c603/runs/c20260828-continuous-openui-local-8c0b60dd-c603-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 122 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c603/runs/c20260828-continuous-openui-local-8c0b60dd-c603-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 122 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c605)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c605`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c605/runs/c20260828-continuous-openui-local-8c0b60dd-c605-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 162 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c605/runs/c20260828-continuous-openui-local-8c0b60dd-c605-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 162 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c606)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c606`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c606/runs/c20260828-continuous-openui-local-8c0b60dd-c606-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 177 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c606/runs/c20260828-continuous-openui-local-8c0b60dd-c606-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 177 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c607)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c607`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c607/runs/c20260828-continuous-openui-local-8c0b60dd-c607-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 182 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c607/runs/c20260828-continuous-openui-local-8c0b60dd-c607-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 182 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c609)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c609`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c609/runs/c20260828-continuous-openui-local-8c0b60dd-c609-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 178 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c609/runs/c20260828-continuous-openui-local-8c0b60dd-c609-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 178 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c612)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c612`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c612/runs/c20260828-continuous-openui-local-8c0b60dd-c612-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 136 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c614)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c614`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c614/runs/c20260828-continuous-openui-local-8c0b60dd-c614-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 144 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c614/runs/c20260828-continuous-openui-local-8c0b60dd-c614-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 144 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c616)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c616`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c616/runs/c20260828-continuous-openui-local-8c0b60dd-c616-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 161 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c617)
+
+- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c617`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c617/runs/c20260828-continuous-openui-local-8c0b60dd-c617-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 162 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c617/runs/c20260828-continuous-openui-local-8c0b60dd-c617-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 162 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.

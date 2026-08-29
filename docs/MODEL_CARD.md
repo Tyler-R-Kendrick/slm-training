@@ -1,3678 +1,3206 @@
-# Model card â€” OpenUI TwoTower / grammar-diffusion
-
-Canonical card for checkpoints produced by this repo. Agents **must update
-this file whenever a new checkpoint is created or promoted** (full train,
-remote train, bootstrap demo, or matrix champion intended for reuse), then
-mirror a short summary into [`README.md`](../README.md) â†’ â€œModel card (summary)â€.
-
-Storage: durable full-run weights live in
-[`hf://buckets/TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI)
-(`checkpoints/<run_id>/`). Local/git fixture demo:
-`src/slm_training/resources/checkpoints/playground_demo/`.
-
-Provenance is **fail-closed**: a row citing a `frontier` / `ship_candidate`
-checkpoint must carry a verified `CheckpointReferenceV1` that resolves from a
-fresh clone (`python -m scripts.verify_checkpoint_references --check`).
-Gitignored `outputs/` rows below are honest **local / diagnostic** evidence, not
-frontier claims; see the migration record
-[checkpoint-reference-backfill-20260717.md](design/checkpoint-reference-backfill-20260717.md).
-
-Promotion provenance is also preregistered: new promotion candidates must bind
-their complete arm/seed, endpoint, multiplicity, AgentEvals/AgentV, rollback,
-and ship-gate evidence to the pre-start `ExperimentCampaignV1` digest. A model
-file or passing partial board cannot bypass this requirement. See
-[experiment-campaign-governance.md](design/experiment-campaign-governance.md).
-
-Semantic prediction/control claims have an additional fail-closed prerequisite:
-[`SemanticFloorGateV1`](design/semantic-floor-gate-v1.json), currently
-`inconclusive` at gate hash
-`7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d`.
-The SDE5 bundle contains fixture/proxy evidence but no durable checkpoint,
-preregistered strict meaning-v2 evaluation, executed anti-gaming result, paired
-semantic statistics, or AgentV bundle. Spectral and recurrent/latent work may
-continue as explicitly scoped diagnostics; `semantic_prediction`,
-`semantic_causal`, and `learned_latent` claims remain blocked. See the
-[generated closeout](design/semantic-floor-gate-v1.md).
-
-The SLM-216 fixed-token spectral-regime matrix is also diagnostic-only and
-`inconclusive`: it trained a bounded CPU scratch model, wrote no reusable
-checkpoint, and did not run a canonical model/AgentV evaluation. It therefore
-does not change this roster or authorize spectral optimizer, promotion, or ship
-claims. See the [measured result](design/iter-slm216-spectral-regime-20260723.md).
-The final SLM-228
-[SpectralDispositionV1](design/null-calibrated-spectral-learning-disposition.md)
-adopts only fail-closed diagnostics and adds promotion guards: raw-alpha claims,
-spectral training controls, causal spectral retention, Muon promotion, and
-WW-PGD/trace-log correction remain rejected or blocked. The disposition is an
-evidence synthesis, created no checkpoint, and makes no roster or README model
-table change.
-
-Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
-[checkpoint-provenance.md](design/checkpoint-provenance.md),
-[adversarial-review.md](design/adversarial-review.md),
-[quality-experiment-matrix.md](design/quality-experiment-matrix.md).
-
-## Capability ladder position (decode invariant I10)
-
-Every checkpoint in this card is claimed **at a rung**, and a rung is never
-credited by a lower rung's evidence. Goal law:
-[decode-invariants.md](design/decode-invariants.md).
-
-| Rung | Status | Note |
-| --- | --- | --- |
-| 1. AST â†’ AST | built | tree-edit diffusion + edit corpora |
-| 2. grammar â†’ AST | built | promptâ†’AST corpus |
-| 3. grammar+ops â†’ AST | built | `harnesses/train_data/operator_corpus.py` |
-| 4. simplified-NL â†’ AST | thin | frozen frontier families L3â€“L5, tiny inventory â€” the bridge to rung 5 |
-| 5. complex NL â†’ AST | **unbuilt** | fail-closed `nl_available=False` / `CERT_CAP1_unavailable` |
-
-Every checkpoint below is a rung-1â€“3 artifact. No row in this card claims rung 4
-or 5. Rung 5 is *unbuilt*, not abandoned: its successor approach is building out
-the simplified-NL inventory as the bridge, tracked in
-[decode-invariants.md Â§ I10](design/decode-invariants.md).
-
-Serving-side decode contract for every promoted checkpoint: grammar-constrained
-end to end, `allow_unconstrained_fallback=False`, deterministic singleton bypass
-on, and fail-closed certification in every backend (torch and ONNX). A
-checkpoint evaluated under a `weakens_constraint` lever is diagnostic evidence,
-never a ship claim.
-
----
-
-## Active reusable checkpoint status
-
-No checkpoint in this card is currently a ship-qualified champion; canonical
-champion pointers are empty. The TwoTower track is implemented, while the
-causal-LM track remains uninitialized until its pinned base bakeoff is run and
-locked. The table below is append-only checkpoint evidence and provenance, not
-an active deployment list.
-
-## Current checkpoint roster
-
-This compatibility-stable heading is retained for tooling. Rows may be local,
-rejected, incomplete, or superseded; use the active status above and canonical
-lineage pointers for current deployment truth.
-
-**Compatibility notice (2026-07-21):** output contract v2 permits only
-grammar/AST symbols and template placeholders. All pre-E714 checkpoints below
-were created under an earlier free-form-capable output contract and are
-intentionally incompatible with current loading, serving, resume, promotion,
-and evaluation paths. They remain provenance only; E714 is the first compatible
-scratch baseline.
-
-| Role | Run id | Kind | Location | Status |
-| --- | --- | --- | --- | --- |
-| SLM-303 tiny v2 fresh baseline | `slm303_tiny_v2_fresh` | CPU scratch output-contract-v2 lexer baseline on rebuilt strict fixture corpus `slm230_symbol_only_v2` (101 records); 4800 steps via capped chunked resumes, final loss 0.014, 1,608,962 params | `outputs/runs/slm303_tiny_v2_fresh/checkpoints/last.pt` (local, explicit no-sync) | Trained clean to `stopped_on: steps` under the run cap; smoke suite empty by construction (n=0, same as SLM-294 baseline) â€” **fixture_demo wiring only, not promotable or ship** ([results](design/iter-slm303-tiny-v2-20260728.md)) |
-| Autotrain c2 component-plan screen | `c20260803-continuous-openui-202607-98199209-c2-{control,component-plan}` | CPU scratch TwoTower, 20 steps, size-matched 1,755,764 params, strict compiler-tree smoke | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c2/runs/` (local, explicit no-sync) | Fixture structural win `.3267â†’.3828`, meaningful `0`, component recall `.1667`, parse `1.0`; candidate p50 `18,272.11` vs `23,124.96` ms. Smoke `n=3`, full suites missing. **Fresh-seed confirmation queued; not promotable/synced/ship-eligible** ([results](design/autotrain-cycle-20260803-c2-component-plan-screen.md)) |
-| Autotrain c1 bounds screen | `c20260803-continuous-openui-202607-98199209-c1-{control,bounds}` | CPU scratch TwoTower, 20 steps, size-matched 1,608,962 params, strict compiler-tree smoke | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1/runs/` (local, explicit no-sync) | Quality null: structure `.0575`, meaningful `0`, binder F1 `.6333`, parse `1.0`; candidate p50 `981.72` vs `971.56` ms. Smoke `n=3`, full suites missing. **Rejected; never promote/sync/ship** ([results](design/autotrain-cycle-20260803-c1-bounds-screen.md)) |
-| Autotrain c1863 semantic-contrast/compiler-margin confirmation rejected | `c20260803-continuous-openui-202607-98199209-c1863-{control,confirm}` | CPU scratch TwoTower, 20 steps, seed 101863, batch 2, one thread; fresh-seed matched replay; 1,608,962 params each | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1863/runs/ (local, explicit no-sync) | Structure `.1742â†’.2899`, MPR `.333` tie, recall `.25` tie, exact `0`; p50 `909â†’4875` ms and tokens `30â†’137`. **Rejected for cost; no promote/sync/ship** ([results](design/autotrain-cycle-1863-semantic-contrast-compiler-margin-confirmation-rejected.md)) |
-| Autotrain c1862 semantic-contrast/compiler-margin confirmation incomplete | `c20260803-continuous-openui-202607-98199209-c1862-confirm` | CPU scratch TwoTower, 20 steps, seed 101862, batch 2, one thread; fresh-seed candidate confirmation; 1,608,962 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1862/runs/ (local, explicit no-sync) | Candidate smoke `struct .4197`, MPR `.333`, recall `.167`, exact `0`, p50 `1821` ms; matched control had no scoreboard. **Inconclusive; no promote/sync/ship** ([results](design/autotrain-cycle-1862-semantic-contrast-compiler-margin-confirmation-incomplete.md)) |
-| Autotrain c1861 semantic-contrast/compiler-margin frozen replay | `c20260803-continuous-openui-202607-98199209-c1861-{control,semantic-contrast-compiler-margin}` | CPU scratch TwoTower replay, 20 steps, seed 101860, batch 2, one thread; reused size-matched c1860 checkpoints; 1,608,962 params each | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1861/runs/ (local, explicit no-sync) | Matched fixture signal: structure `.0575â†’.2742`, MPR `0â†’.333`, recall `0â†’.333`, p50 `16759â†’3626` ms; exact AST/canonical `0`, smoke `n=3`. **Not promotable; full-suite evidence missing** ([results](design/autotrain-cycle-1861-semantic-contrast-compiler-margin-replay.md)) |
-| Autotrain c1860 semantic-contrast/compiler-margin incomplete | `c20260803-continuous-openui-202607-98199209-c1860-{control,semantic-contrast-compiler-margin}` | CPU scratch TwoTower, 20 steps, seed 101860, batch 2, one thread; size-matched semantic-contrast + compiler-alignment screening; 1,608,962 params each | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1860/runs/ (local, explicit no-sync) | Candidate smoke `struct .2742`, MPR `.333`, recall `.333`, binder `.633`, exact `0`, p50 `3606` ms; control evaluation interrupted before scoreboard. **Incomplete; no attribution/promote/sync/ship** ([results](design/autotrain-cycle-1860-semantic-contrast-compiler-margin-incomplete.md)) |
-| Autotrain c1859 constraint-graph null | `c20260803-continuous-openui-202607-98199209-c1859-{control,constraint-graph}` | CPU scratch TwoTower, 22 steps, seed 101859, batch 2, one thread; size-matched grammar constraint-graph comparison; both 1,608,962 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1859/runs/ (local, explicit no-sync) | Quality/work tie, candidate p50 `2536â†’2623` ms, exact `0`, smoke `n=3`. **Rejected fixture null; next distinct objective required; no promote/sync/ship** ([results](design/autotrain-cycle-1859-constraint-graph-null.md)) |
-| Autotrain c1858 slot-contract context replay | `c20260803-continuous-openui-202607-98199209-c1858-{control,slot-contract-context}` | CPU scratch TwoTower, 20 steps, seed 101857, batch 2, one thread; exact current-main replay after c1857 harness repair; both 1,608,962 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1858/runs/ (local, explicit no-sync) | Quality is identical (structure `.1742`, MPR `.333`, recall `.25`, binder `.633`, fidelity `.528`, exact `0`); candidate p50 `942â†’871` ms is efficiency-only on smoke `n=3`. **Replay null; no champion/promote/sync/ship** ([results](design/autotrain-cycle-1858-slot-contract-context-replay-null.md)) |
-| Autotrain c1857 slot-contract context harness failure | `c20260803-continuous-openui-202607-98199209-c1857-{control,slot-contract-context}` | CPU scratch TwoTower, 20 steps, seed 101857, batch 2, one thread; control completed and candidate enabled `slot_contract_in_context` | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1857/runs/ (local, explicit no-sync) | Control checkpoint only (`765302d0...fe27`); candidate failed before scoreboard because incidental DESIGN.md `:slot_4` text violated inventory validation. **Incomplete; exact replay required; no model attribution/promote/sync/ship** ([results](design/autotrain-cycle-1857-slot-contract-context-harness-failure.md)) |
-| Autotrain c1855 exposure-cap fresh confirmation | `c20260803-continuous-openui-202607-98199209-c1855-{control,confirm}` | CPU scratch TwoTower, 21 steps, seed 101855, batch 2, one thread; fresh control vs exact exposure-cap confirmation; 1,608,962 vs 1,613,477 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1855/runs/ (local, explicit no-sync) | Structure `.230â†’.354`, MPR `0â†’.333`, recall `.333`, but exact AST/canonical `0`, p50 `2433â†’2574` ms, loss `10.20â†’18.46`; **confirmation rejected; no champion/promote/sync/ship** ([results](design/autotrain-cycle-1855-exposure-confirmation-null.md)) |
-| Autotrain c1854 slot-component exposure cap | `c20260803-continuous-openui-202607-98199209-c1854-{control,slot-component-exposure-cap}` | CPU scratch TwoTower, 21 steps, seed 101854, batch 2, one thread; capacity-aware control vs targeted exposure + slot-component owner; 1,608,962 vs 1,613,477 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1854/runs/ (local, explicit no-sync) | Fixture structure `.0575â†’.1353`, MPR `0â†’.333`, recall `0â†’.167`; p50 `917â†’1005` ms, tokens/forwards `21/4â†’36/7`, exact `0`, smoke `n=3`. **Fresh confirmation queued; never promote/sync/ship** ([results](design/autotrain-cycle-1854-slot-component-exposure-cap-positive.md)) |
-| Autotrain c1853 slot-component/inventory coupling | `c20260803-continuous-openui-202607-98199209-c1853-{control,slot-component-inventory-coupling}` | CPU scratch TwoTower, 21 steps, seed 101853, batch 2, one thread; capacity-aware control vs slot-component/inventory coupling; 1,608,962 vs 1,686,878 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1853/runs/ (local, explicit no-sync) | All guarded quality metrics are zero and structure ties at `.115`; candidate adds `77,916` params and p50 `856â†’902` ms. **Rejected capacity-negative null; never promote/sync/ship** ([results](design/autotrain-cycle-1853-slot-component-inventory-coupling-null.md)) |
-| Autotrain c1852 slot-component/fidelity coupling | `c20260803-continuous-openui-202607-98199209-c1852-{control,slot-component-fidelity-coupling}` | CPU scratch TwoTower, 21 steps, seed 101852, batch 2, one thread; capacity-aware control vs slot-component/fidelity coupling; 1,608,962 vs 1,613,477 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1852/runs/ (local, explicit no-sync) | Guarded quality is an exact tie; candidate loss `12.00â†’24.16`, p50 `910â†’966` ms, tokens `21â†’30`, forwards `4â†’5`, exact AST/canonical `0`, smoke `n=3`. **Rejected null; never promote/sync/ship** ([results](design/autotrain-cycle-1852-slot-component-fidelity-coupling-null.md)) |
-| Autotrain c1851 slot-component coverage | `c20260803-continuous-openui-202607-98199209-c1851-{control,slot-component-coverage}` | CPU scratch TwoTower, 21 steps, seed 101851, batch 2, one thread; capacity-aware control vs implemented slot-component coverage treatment; 1,608,962 vs 1,613,482 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1851/runs/ (local, explicit no-sync) | Candidate raises MPR `0â†’.667` and holds binder/fidelity at `1.0`, but structure only `.1425â†’.1767`, p50 `7400â†’8771` ms, exact AST/canonical `0`, and smoke `n=3`. **Rejected fixture tradeoff; never promote/sync/ship** ([results](design/autotrain-cycle-1851-slot-component-coverage-null.md)) |
-| Autotrain c1849 slot-owner runtime gap | `c20260803-continuous-openui-202607-98199209-c1849-{control,binder-slot-ownership}` | CPU scratch TwoTower, 21 steps, seed 101849, batch 2, one thread; capacity-aware control vs reserved binder-slot ownership treatment; 1,608,962 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1849/runs/ (local, explicit no-sync) | Control checkpoint `44db58f1...8f00`; candidate rejected at model construction because no runtime owner exists. **Incomplete; never promote/sync/ship** ([results](design/autotrain-cycle-1849-slot-owner-runtime-gap.md)) |
-| Autotrain c1848 binder-slot-ownership repair | `c20260803-continuous-openui-202607-98199209-c1848-{control,binder-slot-ownership}` | CPU scratch TwoTower, 20 steps, seed 101848, batch 2, one thread; capacity-aware control vs binder-slot-ownership treatment; 1,608,962 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1848/runs/ (local, explicit no-sync) | Control completed with checkpoint `a9a2f810...d269f`; candidate failed before training because tree compiler capability was omitted. **Incomplete; replay required; never promote/sync/ship** ([results](design/autotrain-cycle-1848-binder-slot-ownership-harness-repair.md)) |
-| Autotrain c1847 semantic-exhaustive successor | c20260803-continuous-openui-202607-98199209-c1847-{control,exposure-targeted-semantic-exhaustive-compiler-decision-margin} | CPU scratch TwoTower, 22 steps, seed 101847, batch 2, one thread; exposure-targeted control vs semantic-exhaustive treatment; both 1,608,962 params | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1847/runs/ (local, explicit no-sync) | Treatment improves structure/work but regresses binder/fidelity/reward; MPR and exact matches remain zero. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1847-semantic-exhaustive-null.md)) |
-| Autotrain c1846 exposure-targeted quality/cost | `c20260803-continuous-openui-202607-98199209-c1846-{control,exposure-targeted-compiler-decision-margin}` | CPU scratch TwoTower, 21 steps, seed 101846, batch 2, one thread; capacity-aware vs exposure-targeted sampling; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1846/runs/` (local, explicit no-sync) | Broad semantic gains, but structure -.052 and p50 +138%. **Rejected as configured; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1846-exposure-quality-cost.md)) |
-| Autotrain c1845 valid capacity-aware tail confirmation | `c20260803-continuous-openui-202607-98199209-c1845-{control,confirm}` | CPU scratch TwoTower, 20 steps, seed 101845, batch 2, one thread; capacity-aware tail weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1845/runs/` (local, explicit no-sync) | Quality and work exactly identical; candidate p50 +1.6%. **Confirmation rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1845-capacity-tail-valid-confirmation-null.md)) |
-| Autotrain c1844 promotion harness failure | `c20260803-continuous-openui-202607-98199209-c1844-{control,promote}` | CPU scratch TwoTower, 20 steps, seed 101844, batch 2, one thread; projected tail weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1844/runs/` (local, explicit no-sync) | Lean proved and trains completed, but all 8 eval documents timed out; audit found budget loss and dropped source sampling policy. **No model attribution; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1844-promotion-recipe-and-budget-failure.md)) |
-| Autotrain c1843 structure-token null | `c20260803-continuous-openui-202607-98199209-c1843-{control,capacity-aware-semantic-exhaustive-structure-token-margin}` | CPU scratch TwoTower, 21 steps, seed 101843, batch 2, one thread; structure-token weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1843/runs/` (local, explicit no-sync) | Quality and decode work are exactly identical; candidate p50 -2.2% is below the 5% floor. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1843-structure-token-null.md)) |
-| Autotrain c1842 semantic-exhaustive efficiency-only | `c20260803-continuous-openui-202607-98199209-c1842-{control,capacity-aware-semantic-exhaustive-compiler-decision-margin}` | CPU scratch TwoTower, 20 steps, seed 101842, batch 2, one thread; semantic-exhaustive off vs on; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1842/runs/` (local, explicit no-sync) | Candidate p50 -39%, but structure -.0033 and every semantic/exact metric is unchanged. **Rejected as quality; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1842-semantic-exhaustive-efficiency-only.md)) |
-| Autotrain c1840/c1841 tail promotion | `c20260803-continuous-openui-202607-98199209-c1840-{control,promote}` with c1841 frozen eval replay | CPU scratch TwoTower, 20 steps, seed 101840, batch 2, one thread; replacement-sampling tail weight 0 vs 1; both 1,608,962 params | c1840 trains + c1841 evals under `outputs/autoresearch/` (local, explicit no-sync) | Held-out null for executed recipe, but c1844 audit invalidated it as promotion of the c1830 capacity-aware source because the queue dropped sampling policy. **Never promote/sync/ship** ([results](design/autotrain-cycle-1841-promotion-held-out-null.md)) |
-| Autotrain c1839 capacity-aware tail third-seed null | `c20260803-continuous-openui-202607-98199209-c1839-{control,capacity-aware-tail-compiler-decision-margin}` | CPU scratch TwoTower, 20 steps, seed 101839, batch 2, one thread; tail weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1839/runs/` (local, explicit no-sync) | Candidate/control are quality- and decode-work-identical; candidate p50 is +3.8%. **Rejected as seed-sensitive; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1839-capacity-aware-tail-null.md)) |
-| Autotrain c1838 capacity-aware tail confirmation | `c20260803-continuous-openui-202607-98199209-c1838-{control,confirm}` | CPU scratch TwoTower, 20 steps, seed 101836, batch 2, one thread; same all-family margin recipe, tail weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1838/runs/` (local, explicit no-sync) | Fresh seed repeats the structure and binder gains, but fidelity/reward regress slightly and p50 is +5.1%. **Confirmed only for promotion-suite/formal preflight; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1838-capacity-aware-tail-confirmed.md)) |
-| Autotrain c1832 incomplete confirmation | `c20260802-continuous-openui-202607-98199209-c1832-{confirm,control}` | CPU scratch TwoTower, seed 101832, batch 2; candidate 20/20 steps and control 2/20; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1832/runs/` (local, explicit no-sync) | Candidate smoke 0/3 complete with 3 timeouts; control never checkpointed/evaluated. **No comparison; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1832-confirmation-endpoint-timeout.md)) |
-| Autotrain c1830 capacity-aware tail fixture positive | `c20260802-continuous-openui-202607-98199209-c1830-{control,capacity-aware-tail-compiler-decision-margin}` | CPU scratch TwoTower, 20 steps, seed 101830, batch 2; same capacity-aware all-family margin recipe, tail weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1830/runs/` (local, explicit no-sync) | Structure/binder/fidelity/reward improve and tokens/forwards fall; p50 +6.1% remains bounded. **Fresh-seed confirmation required; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1830-capacity-aware-tail-positive.md)) |
-| Autotrain c1829 capacity-aware quality/cost | `c20260802-continuous-openui-202607-98199209-c1829-{control,capacity-aware-compiler-decision-margin}` | CPU scratch TwoTower, 22 steps, seed 101829, batch 2; same all-family margin recipe, replacement vs capacity-aware sampling; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1829/runs/` (local, explicit no-sync) | Effective exposure and every guarded quality headline improve, but p50 regresses 65%. **Rejected over latency budget; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1829-capacity-aware-quality-cost.md)) |
-| Autotrain c1828 wide-draft null | `c20260802-continuous-openui-202607-98199209-c1828-{control,wide-draft-compiler-decision-margin}` | CPU scratch TwoTower, 21 steps, seed 101828, batch 2; same all-family margin recipe, draft 8 vs 16; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1828/runs/` (local, explicit no-sync) | Quality/work identical; 0.97% p50 delta is below floor and compiler time is worse. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1828-wide-draft-null.md)) |
-| Autotrain c1827 compiler-cache null | `c20260802-continuous-openui-202607-98199209-c1827-{control,cached-compiler-decision-margin}` | CPU scratch TwoTower, 20 steps, seed 101827, batch 2; same all-family margin recipe, equivalence cache off vs on; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1827/runs/` (local, explicit no-sync) | Quality/work identical; 0.67% speedup is below floor and cache has zero hits. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1827-compiler-cache-null.md)) |
-| Autotrain c1826 bounded-margin null | `c20260802-continuous-openui-202607-98199209-c1826-{control,bounded-compiler-decision-margin}` | CPU scratch TwoTower, 22 steps, seed 101826, batch 2; same all-family margin recipe, bounds off vs on; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1826/runs/` (local, explicit no-sync) | Quality and decode work are identical; bounded arm is 1.17% slower. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1826-bounded-margin-null.md)) |
-| Autotrain c1824 compiler-decision-margin quality/cost tradeoff | `c20260802-continuous-openui-202607-98199209-c1824-{control,compiler-decision-margin}` | CPU scratch TwoTower, 20 steps, seed 101824, batch 2; all-family legal margin 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1824/runs/` (local, explicit no-sync) | Large fixture quality gain, but tokens `21â†’61`, forwards `4â†’15`, and p50 `973â†’3902` ms. **Rejected over latency budget; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1824-compiler-decision-margin-quality-cost.md)) |
-| Autotrain c1823 compiler-decision-token fresh-seed null | `c20260802-continuous-openui-202607-98199209-c1823-{control,compiler-decision-token}` | CPU scratch TwoTower, 22 steps, seed 101823, batch 2; decision weights 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1823/runs/` (local, explicit no-sync) | All measured quality is identical and candidate is slower. **Rejected as non-reproducible; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1823-compiler-decision-token-fresh-seed-null.md)) |
-| Autotrain c1822 compiler-decision-token fixture positive | `c20260802-continuous-openui-202607-98199209-c1822-{control,compiler-decision-token}` | Eval-only frozen replay of c1821 CPU scratch checkpoints, seed 101821; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1822/runs/` (local, explicit no-sync) | Candidate improves fixture structure, MPR, recall, reward, and latency with protected metrics held. **Fresh-seed confirmation required; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1822-compiler-decision-token-positive.md)) |
-| Autotrain c1821 compiler-decision-token incomplete | `c20260802-continuous-openui-202607-98199209-c1821-{control,compiler-decision-token}` | CPU scratch TwoTower, 20 steps, seed 101821, batch 2; decision weights 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1821/runs/` (local, explicit no-sync) | Both smoke batches timed out 3/3, leaving quality unmeasured; candidate objective covered 34 decision rows. **Exact frozen replay required; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1821-compiler-decision-token-measurement-incomplete.md)) |
-| Autotrain c1819 component-edge-margin reject | `c20260802-continuous-openui-202607-98199209-c1819-{control,component-edge-margin}` | CPU scratch TwoTower, 20 steps, seed 101818, batch 2; both 1,608,962 params; control train reused from c1818 | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1819/runs/` (local, explicit no-sync) | Candidate is faster but sharply regresses MPR, structure, and binder F1; v117 invalidates the original ratio-positive disposition. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1819-component-edge-margin-rejected.md)) |
-| Autotrain c1818 component-edge-margin incomplete | `c20260802-continuous-openui-202607-98199209-c1818-{control,component-edge-margin}` | CPU scratch TwoTower, 20 steps, seed 101818, batch 2; control 1,608,962 params; candidate absent | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1818/runs/` (local, explicit no-sync) | Candidate failed at the omitted config allowlist owner before model construction; control-only metrics cannot measure the treatment. **Exact frozen replay required; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1818-component-edge-margin-harness-failure.md)) |
-| Autotrain c1817 component-edge-token null | `c20260802-continuous-openui-202607-98199209-c1817-{control,component-edge-token}` | CPU scratch TwoTower, 22 steps, seed 101817, batch 2; edge-token weights 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1817/runs/` (local, explicit no-sync) | Quality-identical fixture outputs; candidate objective is active but null. **Never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1817-component-edge-token-null.md)) |
-| Autotrain c1812 promotion measurement | `c20260802-continuous-openui-202607-98199209-c1812-{control,promote}` | CPU scratch TwoTower, 20 steps, seed 101812, batch 2; balance/close weights 0/0 vs .25/1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1812/runs/` (local, explicit no-sync) | Candidate completes both fixture suites; control has typed timeout on every document, so no matched effect exists. Lean preflight proved. **Exact frozen replay required; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1812-promotion-measurement-incomplete.md)) |
-| Autotrain c1810 balanced-close confirmation | `c20260802-continuous-openui-202607-98199209-c1810-{control,confirm}` | CPU scratch TwoTower, 20 steps, seed 101810, batch 2; balance/close weights 0/0 vs .25/1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1810/runs/` (local, explicit no-sync) | Fresh seed repeats every c1809 quality direction. **Confirmed only for promotion suite; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1810-balanced-container-close-confirmed.md)) |
-| Autotrain c1809 balanced-close screen | `c20260802-continuous-openui-202607-98199209-c1809-{control,balanced-container-close}` | CPU scratch TwoTower, 20 steps, seed 101809, batch 2; balance/close weights 0/0 vs .25/1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1809/runs/` (local, explicit no-sync) | Candidate improves all non-parse quality metrics with modest p50 cost. **Queued for fresh-seed confirmation; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1809-balanced-container-close-positive.md)) |
-| Autotrain c1808 container-close null | `c20260802-continuous-openui-202607-98199209-c1808-{control,container-close}` | CPU scratch TwoTower, 22 steps, seed 101808, batch 2; close-alignment weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1808/runs/` (local, explicit no-sync) | Exact quality/decode-work tie; candidate training is 3.04x slower. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1808-container-close-null.md)) |
-| Autotrain c1807 typed-family balance reject | `c20260802-continuous-openui-202607-98199209-c1807-{control,typed-family-balance}` | CPU scratch TwoTower, 21 steps, seed 101807, batch 2; balance weight 0 vs .25; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1807/runs/` (local, explicit no-sync) | Candidate improves local quality but MPR stays 0 and p50 rises `1084.71â†’5868.74` ms. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1807-typed-family-balance-rejected.md)) |
-| Autotrain c1806 STRUCT-token rejection | `c20260802-continuous-openui-202607-98199209-c1806-{control,structure-token}` | CPU scratch TwoTower, 20 steps, seed 101806, batch 2; STRUCT weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1806/runs/` (local, explicit no-sync) | Candidate regresses structure `.1725â†’.1375` and p50 `2425.58â†’7651.84` ms. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1806-structure-token-rejected.md)) |
-| Autotrain c1804/c1805 component-token reject | `c20260802-continuous-openui-202607-98199209-c1804-{control,component-token}` | CPU scratch TwoTower, 21 steps, seed 101804, batch 2; component weight 0 vs 1; both 1,608,962 params; c1805 exact frozen eval replay | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1804/runs/` (local, explicit no-sync) | Control timeout 3/3 reproduced; candidate completes but fails absolute structure and latency. **Rejected; never reuse/promote/sync/ship** ([replay](design/autotrain-cycle-1805-component-token-rejected.md)) |
-| Autotrain c1803 scaffold-prefix null | `c20260802-continuous-openui-202607-98199209-c1803-{control,scaffold-prefix}` | CPU scratch TwoTower, 20 steps, seed 101803, batch 2; prefix weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1803/runs/` (local, explicit no-sync) | Exact quality tie; candidate p50 `1827.59â†’2001.80` ms. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1803-scaffold-prefix-null.md)) |
-| Autotrain c1802 DESIGN dropout rejection | `c20260802-continuous-openui-202607-98199209-c1802-{control,design-dropout}` | CPU scratch TwoTower, 22 steps, seed 101802, batch 2; dropout 0 vs .25; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1802/runs/` (local, explicit no-sync) | Candidate regresses structure `.174167â†’.096400`, recall `.25â†’.0833`, and MPR `.3333â†’0`. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1802-design-dropout-rejected.md)) |
-| Autotrain c1801 symbol-boundary null | `c20260802-continuous-openui-202607-98199209-c1801-{control,symbol-boundary}` | CPU scratch TwoTower, 21 steps, seed 101801, batch 2; boundary weight 0 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1801/runs/` (local, explicit no-sync) | Exact quality tie; candidate worsens loss `12.48600â†’21.78877` and p50 `938.53â†’949.90` ms. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1801-symbol-boundary-null.md)) |
-| Autotrain c1800 mixed-mask null | `c20260802-continuous-openui-202607-98199209-c1800-{control,mixed-mask}` | CPU scratch TwoTower, 20 steps, seed 101800, batch 2; mask pattern random vs mixed; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1800/runs/` (local, explicit no-sync) | Exact tie on smoke structure `.135267`, binder F1 `.6333`, fidelity `.5278`, recall `.1667`, and reward `.76533`; candidate is slower and has worse loss. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1800-mixed-mask-null.md)) |
-| Autotrain c1799 slot-augmentation rejection | `c20260802-continuous-openui-202607-98199209-c1799-{control,slot-augmentation}` | CPU scratch TwoTower, 24 steps, seed 101799, batch 2; slot augmentation false vs true; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1799/runs/` (local, explicit no-sync) | Candidate regresses smoke structure `.13750â†’.05750`, binder F1 `.8222â†’.6333`, and fidelity `.7222â†’.5278`; p50 improves but quality controls. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1799-slot-augmentation-rejected.md)) |
-| Autotrain c1796 semantic-contrast incomplete | `c20260802-continuous-openui-202607-98199209-c1796-{control,semantic-contrast}` | CPU scratch TwoTower, 22 steps, seed 101796, batch 2; semantic-contrast loss 0 vs .25 with matched pair exposure; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1796/runs/` (local, explicit no-sync) | Control completes smoke/held-out 1/3 and 0/5; candidate 1/3 and 4/5. Typed timeouts make partial quality non-attributable. **Incomplete; exact frozen replay only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1796-semantic-contrast-incomplete.md)) |
-| Autotrain c1795 edge-alignment null | `c20260802-continuous-openui-202607-98199209-c1795-{control,edge-alignment}` | CPU scratch TwoTower, 21 steps, seed 101795, batch 2; edge-alignment loss 0 vs 1; both 1,766,987 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1795/runs/` (local, explicit no-sync) | Exact smoke quality tie; candidate p50 -3.71%, below the 5% screen, while loss and train wall worsen. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1795-edge-alignment-null.md)) |
-| Autotrain c1793 fidelity confirmation rejection | `c20260802-continuous-openui-202607-98199209-c1793-{control,confirm}` | CPU scratch TwoTower, 23 steps, seed 101793, batch 2; fidelity loss 0.5 vs 1.5; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1793/runs/` (local, explicit no-sync) | Candidate is faster but regresses structure, binder F1, fidelity, and reward. **Confirmation rejected; never reuse/promote/sync/ship**; false-positive queue gate repaired ([results](design/autotrain-cycle-1793-fidelity-confirmation-rejection.md)) |
-| Autotrain c1791 fidelity fixture candidate | `c20260802-continuous-openui-202607-98199209-c1791-{control,fidelity}` | CPU scratch TwoTower, 23 steps, seed 101791, batch 2; fidelity loss 0.5 vs 1.5; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1791/runs/` (local, explicit no-sync) | Candidate improves meaning, structure, binder F1, recall, fidelity, and p50. **Fixture candidate; exact fresh confirmation only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1791-fidelity-candidate.md)) |
-| Autotrain c1789 binder-component-plan incomplete screen | `c20260802-continuous-openui-202607-98199209-c1789-{control,binder-component-plan}` | CPU scratch TwoTower, 23 steps, seed 101789, batch 2; binder component-plan train/decode 0 vs 1; both 1,897,922 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1789/runs/` (local, explicit no-sync) | Control has one typed decode timeout; comparison is non-attributable. Candidate p50 +31.1% and binder F1 lower. **Incomplete; exact frozen replay only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1789-binder-component-plan-incomplete.md)) |
-| Autotrain c1788 binder-arity null | `c20260802-continuous-openui-202607-98199209-c1788-{control,binder-arity}` | CPU scratch TwoTower, 22 steps, seed 101787, batch 2; binder-arity train/decode 0 vs 1; both 2,145,602 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1788/runs/` (local, explicit no-sync) | Exact smoke quality tie; candidate p50 -3.72%, below the 5% screen, and loss +30.4%. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1788-binder-arity-null.md)) |
-| Autotrain c1786 steps latency rejection | `c20260802-continuous-openui-202607-98199209-c1786-{control,steps}` | CPU scratch TwoTower, 21 vs 42 steps, seed 101786, batch 2; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1786/runs/` (local, explicit no-sync) | Structure `.13527â†’.41973`, but meaning/binder F1 tie and candidate p50 +154.1%. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1786-steps-latency-rejection.md)) |
-| Autotrain c1785 recycled bounds null | `c20260802-continuous-openui-202607-98199209-c1785-{control,bounds}` | CPU scratch TwoTower, 20 steps, seed 101785, batch 2; bounds off vs on; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1785/runs/` (local, explicit no-sync) | Exact smoke quality tie; candidate p50 -1.03%, below the 5% screen, train wall +23.5%. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1785-bounds-recycle-null.md)) |
-| Autotrain c1784 component-plan confirmation rejection | `c20260802-continuous-openui-202607-98199209-c1784-{control,confirm}` | CPU scratch TwoTower, 21 steps, seed 101784, batch 2; component-plan train/decode 0 vs 1; both 1,755,764 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1784/runs/` (local, explicit no-sync) | Exact smoke/held-out quality ties; held-out p50 -2.92%, below the 5% screen, train wall 2.38x. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1784-component-plan-confirmation-rejection.md)) |
-| Autotrain c1783 component-plan efficiency candidate | `c20260802-continuous-openui-202607-98199209-c1783-{control,component-plan}` | CPU scratch TwoTower, 21 steps, seed 101783, batch 2; component-plan train/decode 0 vs 1; both 1,755,764 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1783/runs/` (local, explicit no-sync) | Exact smoke quality tie; candidate MPR/ms +6.39% from p50 1,059.20 vs 1,126.88 ms. **Fresh confirmation only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1783-component-plan-efficiency-candidate.md)) |
-| Autotrain c1782 runtime-flag harness failure | `c20260802-continuous-openui-202607-98199209-c1782-{control,component-plan}` | CPU scratch TwoTower, 20 steps, seed 101782, batch 2; both 1,755,764 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1782/runs/` (local, explicit no-sync) | Eval failed before scoreboard on an unregistered runtime flag. **Incomplete; exact frozen replay only; never promote/sync/ship**. Harness repaired in campaign v85 / flags v2 / eval v76 ([results](design/autotrain-cycle-1782-runtime-flag-harness-failure.md)) |
-| Autotrain c1781 canvas invalid comparison | `c20260802-continuous-openui-202607-98199209-c1781-{control,canvas}` | CPU scratch TwoTower, 22 steps, seed 101781, batch 2; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1781/runs/` (local, explicit no-sync) | Control trained canvas-off but evaluated canvas-on; comparison **non-scoreable; never reuse/promote/sync/ship**. Harness repaired in campaign v84 ([results](design/autotrain-cycle-1781-canvas-invalid.md)) |
-| Autotrain c1780 component-structure null | `c20260802-continuous-openui-202607-98199209-c1780-{control,component-structure}` | CPU scratch TwoTower, 21 steps, seed 101780, batch 2; component plan+edge train/decode 0 vs 1; both 1,913,789 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1780/runs/` (local, explicit no-sync) | Exact smoke/held-out quality ties; candidate smoke p50 -6.37%, held-out p50 +2.38%, train wall 2.38x. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1780-component-structure-null.md)) |
-| Autotrain c1779 binder-topology null | `c20260802-continuous-openui-202607-98199209-c1779-{control,binder-topology}` | CPU scratch TwoTower, 20 steps, seed 101779, batch 2; binder topology train/decode 0/0 vs .25/1; both 2,137,346 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1779/runs/` (local, explicit no-sync) | Exact smoke quality tie; candidate p50 +3.80% and train wall 2.37x. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1779-binder-topology-null.md)) |
-| Autotrain c1778 batch-size-one runtime null | `c20260802-continuous-openui-202607-98199209-c1778-{control,batch1}` | CPU scratch TwoTower, 22 steps, seed 101778; batch 2 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1778/runs/` (local, explicit no-sync) | Exact smoke quality tie; batch 1 p50 +7.82% and worse loss. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1778-batch1-runtime-null.md)) |
-| Autotrain c1777 component-inventory confirmation rejection | `c20260802-continuous-openui-202607-98199209-c1777-{control,confirm}` | CPU scratch TwoTower, 20 steps, seed 101777, batch 2; component-inventory train/decode weights 0 vs 1; both 1,682,363 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1777/runs/` (local, explicit no-sync) | Exact smoke quality tie at meaning/binder/fidelity/reward 0; candidate p50 +6.61%. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1777-component-inventory-confirmation-rejection.md)) |
-| Autotrain c1776 component-inventory candidate | `c20260802-continuous-openui-202607-98199209-c1776-{control,component-inventory}` | CPU scratch TwoTower, 20 steps, seed 101776, batch 2; component-inventory train/decode weights 0 vs 1; both 1,682,363 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1776/runs/` (local, explicit no-sync) | Held-out meaning `0â†’.2`, structure `.06024â†’.10690`, but binder F1 `.6648â†’.4371` and p50 +17.1%; smoke structure/meaning tie. **Fresh confirmation only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1776-component-inventory-candidate.md)) |
-| Autotrain c1775 component-edge null | `c20260802-continuous-openui-202607-98199209-c1775-{control,component-edge}` | CPU scratch TwoTower, 22 steps, seed 101775, batch 2; component-edge train/decode weights 0 vs 1; both 1,766,987 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1775/runs/` (local, explicit no-sync) | Exact smoke quality tie; candidate MPR/ms +3.88%, below the 5% minimum effect. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1775-component-edge-null.md)) |
-| Autotrain c1773 literal-close runtime unblock | `c20260802-continuous-openui-202607-98199209-c1773-{control,literal-close}` | CPU scratch TwoTower, 20 steps, seed 101773, batch 2; tail loss 0 vs 2; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1773/runs/` (local, explicit no-sync) | Candidate completes 3/3 but absolute quality is poor; control times out 3/3. **Exact frozen replay only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1773-literal-close-runtime-unblock.md)) |
-| Autotrain c1772 bounds confirmation rejection | `c20260802-continuous-openui-202607-98199209-c1772-{control,confirm}` | CPU scratch TwoTower, 21 steps, seed 101772, batch 2; completion bounds off vs on; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1772/runs/` (local, explicit no-sync) | Exact smoke/held-out quality ties; speed does not reproduce. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1772-bounds-confirmation-rejection.md)) |
-| Autotrain c1771 bounds efficiency candidate | `c20260802-continuous-openui-202607-98199209-c1771-{control,bounds}` | CPU scratch TwoTower, 21 steps, seed 101771, batch 2; completion bounds off vs on; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1771/runs/` (local, explicit no-sync) | Exact smoke quality tie; fixture MPR/ms +6.16%. **Fresh confirmation only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1771-bounds-efficiency-candidate.md)) |
-| Autotrain c1770 component-edge incomplete | `c20260802-continuous-openui-202607-98199209-c1770-{control,component-edge}` | CPU scratch TwoTower, 20 steps, seed 101770, batch 2; component-edge train/decode weights 0 vs 1; both 1,766,987 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1770/runs/` (local, explicit no-sync) | Both arms timed out 3/3 while extending numeric literals; quality unavailable. **Fresh literal-close experiment next; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1770-component-edge-incomplete.md)) |
-| Autotrain c1766 component-plan incomplete | `c20260802-continuous-openui-202607-98199209-c1766-{control,component-plan}` | CPU scratch TwoTower, 20 steps, seed 101766, batch 2; component-plan train/decode weights 0 vs 1; both 1,755,764 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1766/runs/` (local, explicit no-sync) | Candidate timed out 3/3 with quality unavailable; control completed 3/3. **Exact frozen replay only; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1766-component-plan-incomplete.md)) |
-| Autotrain c1765 numeric literal-margin regression | `c20260802-continuous-openui-202607-98199209-c1765-{control,literal-margin}` | CPU scratch TwoTower, 20 steps, seed 101765, batch 2; direct alignment off vs numeric-close weight/margin 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1765/runs/` (local, explicit no-sync) | Objective activates on 3 rows and clears the last observed violation, but smoke meaning `.3333->0`, structure falls 22.17%, binder F1 `.5->0`, and training takes 2.45x wall time. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1765-literal-margin-regression.md)) |
-| Autotrain c1764 literal-close null | `c20260802-continuous-openui-202607-98199209-c1764-{control,literal-close}` | CPU scratch TwoTower, 20 steps, seed 101764, batch 2; tail weight 0 vs 2; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1764/runs/` (local, explicit no-sync) | Prediction-identical smoke n=3 / held-out n=5 quality ties; all records complete, AgentV 0/2, gates fail. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1764-literal-close-null.md)) |
-| Autotrain c1760 batch-size-one incomplete measurement | `c20260802-continuous-openui-202607-98199209-c1760-{control,batch1}` | CPU scratch TwoTower, 22 steps, seed 101760, batch 2 vs 1; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1760/runs/` (local, explicit no-sync) | Candidate eval exceeded the stage wall and is explicitly non-scoreable; control AgentV completed smoke n=3 and held-out n=5 but gates fail. **Inconclusive; checkpoints restricted to exact frozen replay, never promote/sync/ship** ([results](design/autotrain-cycle-1760-batch1-incomplete.md)) |
-| Autotrain c1757 steps efficiency candidate | `c20260802-continuous-openui-202607-98199209-c1757-{control,steps}` | CPU scratch TwoTower, 22 vs 44 steps, seed 101757, batch 2; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1757/runs/` (local, explicit no-sync) | Candidate improves MPR/ms 13.66% and p50 12.02%, but structure drops 22.33% and recall `.25â†’.1667`; gates fail. **Queued for fresh confirmation only; not promoted/synced/ship** ([results](design/autotrain-cycle-1757-steps-efficiency-candidate.md)) |
-| Autotrain c1756 combined runtime diagnostic | `c20260802-continuous-openui-202607-98199209-c1756-{control,both}` | CPU scratch TwoTower, 21 steps, seed 101756, batch 2; smoke + held-out compiler-tree eval; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1756/runs/` (local, explicit no-sync) | Exact smoke/held-out quality and loss tie; candidate is 1.90% faster smoke but 7.79% slower held-out. AgentV complete; gates fail. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1756-combined-runtime-diagnostic.md)) |
-| Autotrain c1755 compact-canvas diagnostic | `c20260802-continuous-openui-202607-98199209-c1755-{control,canvas}` | CPU scratch TwoTower, 22 steps, seed 101755, batch 2; strict compiler-tree eval; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1755/runs/` (local, explicit no-sync) | Exact smoke quality/loss tie; canvas p50 is 6.08% slower despite 6.63% lower train wall. AgentV complete; gates fail. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1755-compact-canvas-diagnostic.md)) |
-| Autotrain c1754 completion-bounds diagnostic | `c20260802-continuous-openui-202607-98199209-c1754-{control,bounds}` | CPU scratch TwoTower, 24 steps, seed 101754; both 1,608,962 params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1754/runs/` | Exact smoke quality/loss tie; bounds 0.15% slower and 1.19x train wall. **Rejected; never reuse/promote/sync/ship** ([results](design/autotrain-cycle-1754-completion-bounds-diagnostic.md)) |
-| Autotrain c1753 coupled component-structure screen | `c20260802-continuous-openui-202607-98199209-c1753-{control,component-structure}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 23 steps, seed 101753, batch 2; compiler tree path; both arms 1,913,789 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1753/runs/` (local, explicit no-sync) | Joint coupling regresses smoke structure `.05750â†’.04333`, leaves meaning 0, raises p50 20.17%, takes 2.68x train wall, and worsens loss. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1753-coupled-component-structure-screen.md)) |
-| Autotrain c1752 coupled binder-topology promotion-cadence screen | `c20260802-continuous-openui-202607-98199209-c1752-{control,binder-topology}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 22 steps, seed 101752, batch 2; compiler tree path; both arms 2,137,346 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1752/runs/` (local, explicit no-sync) | Exact smoke n=3 / held-out n=5 ties: parse 1 / 1, meaning .3333 / 0, structure .51000 / .37006, binder F1 .82222 / .70762. Treatment p50 is 6.03% / .89% slower, training wall is 2.22x, and loss is worse. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1752-coupled-binder-topology-screen.md)) |
-| Autotrain c1751 coupled-topology incomplete screen | Control `c20260802-continuous-openui-202607-98199209-c1751-control`; failed candidate `â€¦-binder-topology` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 24 steps, seed 101751, batch 2; control 2,137,346 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1751/runs/` (local, explicit no-sync) | Control trained but its eval process exceeded the stage wall; candidate failed before training because `binder_topology_decode_weight=1` lacked required compiler mode. Partial control artifacts are non-scoreable; no comparison exists. **Harness failure; control checkpoint provenance-only, never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1751-coupled-topology-incomplete.md)) |
-| Autotrain c1750 component-inventory screen | `c20260802-continuous-openui-202607-98199209-c1750-{control,component-inventory}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 23 steps, seed 101750, batch 2; both arms 1,682,363 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1750/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, binder F1 .6333, recall .25, AST node/edge F1 .26190/0. Treatment p50 is 3.50% faster, below policy; loss is worse. Non-zero auxiliary targets with decode weight 0 trigger a coupled train/decode successor. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1750-component-inventory-screen.md)) |
-| Autotrain c1749 component-edge screen | `c20260802-continuous-openui-202607-98199209-c1749-{control,component-edge}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 22 steps, seed 101749, batch 2; both arms 1,766,987 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1749/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, binder F1 .6333, recall .25, AST node/edge F1 .26190/0. Treatment p50 is only 0.79% faster, loss is worse, and training wall is 1.16Ã—. AgentV complete; gates fail. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1749-component-edge-screen.md)) |
-| Autotrain c1748 component-plan promotion-cadence screen | `c20260802-continuous-openui-202607-98199209-c1748-{control,component-plan}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 24 steps, seed 101748, batch 2; smoke + held-out evaluation; both arms 1,755,764 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1748/runs/` (local, explicit no-sync) | Exact smoke n=3 / held-out n=5 quality ties: parse 1.0 / 1.0, meaning 0 / 0, structure .05750 / .04274, component recall and AST F1 0. Treatment p50 is 3.51% faster smoke but 1.60% slower held-out, training wall is 2.19Ã—, and loss is worse. AgentV complete; gates fail. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1748-component-plan-screen.md)) |
-| Autotrain c1737 compact-canvas incomplete screen | `c20260802-continuous-openui-202607-98199209-c1737-{control,canvas}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 22 steps, seed 101737, batch 2; both arms 1,608,962 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1737/runs/` (local, explicit no-sync) | Both trains completed with identical loss 9.5914, but both smoke evals stopped at 2/3 records on `smoke_callout_01`; progress is explicitly non-scoreable, with no AgentV bundle, gates, or comparison metrics. **Inconclusive; exact frozen replay only, never promote, sync, or ship** ([results](design/autotrain-cycle-1737-canvas-timeout.md)) |
-| Autotrain c1736 completion-bounds promotion-cadence screen | `c20260802-continuous-openui-202607-98199209-c1736-{control,bounds}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 24 steps, seed 101736, batch 2; smoke + held-out evaluation with `honest_slot_contract=True`; both arms 1,608,962 trainable params | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1736/runs/` (local, explicit no-sync) | Exact smoke n=3 / held-out n=5 quality ties: parse 1.0 / 1.0, meaning 0 / 0, structure .0575 / .0894, recall 0 / .10. Bounds p50 is 4.77% / 3.91% slower and training wall is 1.35Ã—. AgentV complete; gates fail. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1736-bounds-promotion-screen.md)) |
-| Autotrain c1735 component-structure screen | `c20260802-continuous-openui-202607-98199209-c1735-{control,component-structure}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 23 steps, seed 101735, batch 2; evaluation `honest_slot_contract=True`; both arms 1,913,789 trainable params with plan and edge heads prebuilt | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1735/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, binder F1 .6333, recall .25, AST node/edge F1 .26190/0. Treatment p50 is 5.30% slower, training wall is 3.04Ã—, and loss is worse. AgentV complete; gates fail. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1735-component-structure-screen.md)) |
-| Autotrain c1734 component-inventory screen | `c20260802-continuous-openui-202607-98199209-c1734-{control,component-inventory}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 22 steps, seed 101734, batch 2; evaluation `honest_slot_contract=True`; both arms 1,682,363 trainable params with the component-inventory head prebuilt | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1734/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, binder F1 .6333, recall .25, AST node/edge F1 .26190/0. Treatment p50 1,567.47 vs 1,574.83 ms is a 0.47% gain below the 5% floor. AgentV complete; gates fail. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1734-component-inventory-screen.md)) |
-| Autotrain c1733 component-edge screen | `c20260802-continuous-openui-202607-98199209-c1733-{control,component-edge}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 24 steps, seed 101733, batch 2; evaluation `honest_slot_contract=True`; both arms 1,766,987 trainable params with the component-edge head prebuilt | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1733/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse/binder F1 1.0, meaning 0, structure .20693, recall .08333, AST node/edge F1 .05128/0. Treatment p50 6,005.56 vs 6,136.43 ms is a 2.13% gain below the 5% floor. AgentV complete, `--ship-gates` fail under `openui_ship_gates_v6`; clean code `a88ea74133115d0ed8850bc0bf49ab5456d7828d`, harness `v73`, meaning eval `2.13.0`, scoring `v22`. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1733-component-edge-screen.md)) |
-| Autotrain c1732 component-plan promotion-cadence screen | Control `c20260801-continuous-openui-202607-98199209-c1732-control`; treatment `c20260801-continuous-openui-202607-98199209-c1732-component-plan` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 23 steps, seed 101732, batch 2, `honest_slot_contract=True`; both arms 1,755,764 trainable params with the component-plan head prebuilt | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1732/runs/` (local, explicit no-sync) | Control and treatment are exact quality ties on smoke n=3 (parse 1.0, meaningful .3333, structure .2153, binder F1 .8222) and held-out n=5 (parse 1.0, meaningful 0, structure .06024, binder F1 .7076). Treatment p50 is 2,066.56 vs 2,057.09 ms smoke and 1,665.84 vs 1,734.45 ms held-out, with 2.89Ã— training wall. `--ship-gates` **fail** under `openui_ship_gates_v6`; run stamp `version_stamp/v1`, code `fbfc16ae6372cbccd9c8e1d30f755678ad6ffd19` clean, harness `v73`, meaning eval `2.13.0`, scoring `v22`, eval recipe `e938_role_safe_all_targets_v2`. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1732-component-plan-promotion-screen.md)) |
-| Autotrain c1731 component-plan replication | `c20260801-continuous-openui-202607-98199209-c1731-{control,component-plan}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 22 steps, seed 101731, batch 2; both arms 1,755,764 trainable params with the component-plan head prebuilt | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1731/runs/` (local, explicit no-sync) | Both AgentV smoke n=3 arms have identical parse 1.0, meaningful .3333, structure .4197, binder F1 .6333, recall .1667, and AST node/edge F1 .4833/0. Treatment p50 3,430.55 vs 3,453.06 ms is only a 0.65% delta, below policy v4's 5% efficiency floor. **Quality-null; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1731-component-plan-replication.md)) |
-| Autotrain c1730 component-plan screen | `c20260801-continuous-openui-202607-98199209-c1730-{control,component-plan}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 24 steps, seed 101730, batch 2; both arms 1,755,764 trainable params with the component-plan head prebuilt | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1730/runs/` (local, explicit no-sync) | Both AgentV smoke n=3 arms completed with identical parse 1.0, meaningful .3333, structure .1742, binder F1 .6333, recall .25, and AST node/edge F1 .2619/0. Treatment p50 1,560.93 vs 1,798.92 ms is an efficiency-only fixture signal requiring confirmation. **Quality-null; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1730-component-plan-screen.md)) |
-| Autotrain c1729 binder-topology screen | `c20260801-continuous-openui-202607-98199209-c1729-{control,binder-topology}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 23 steps, seed 101729, batch 2; control 1,608,962 vs treatment 2,137,346 trainable params | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1729/runs/` (local, explicit no-sync) | Both AgentV smoke n=3 arms completed: parse 1.0, structure .0575, binder F1 / meaningful / AST node and edge F1 0.0; honest gates failed. The treatment is a complete null and +528,384 params, so the advertised size-match was invalid. **Rejected; never reuse, promote, sync, or ship** ([results](design/autotrain-cycle-1729-binder-topology-capacity-audit.md)) |
-| Autotrain c1717 frozen replay | `c20260801-continuous-openui-202607-98199209-c1717-control` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 80 steps, seed 101710, batch 2, 1,608,962 trainable params | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/runs/` (local, explicit no-sync) | Control AgentV smoke n=3: parse 1.0, binder F1 1.0, meaningful .3333, structure .3656, p50 3,954.45 ms; honest gates failed. Batch1 redundantly retrained until its stage interrupt and wrote no checkpoint or metrics. **Incomplete; never reuse, promote, sync, or ship; stage-level frozen reuse required** ([results](design/autotrain-cycle-1717-redundant-retrain-timeout.md)) |
-| Autotrain c1716 frozen replay | `c20260801-continuous-openui-202607-98199209-c1716-{control,batch1}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 80 steps, seed 101710, batch 2 vs 1, 1,608,962 trainable params | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1716/runs/` (local, explicit no-sync) | Both trains deterministically reproduced the c1715 checkpoint hashes. Control AgentV smoke n=3: parse 1.0, binder F1 1.0, meaningful .3333, structure .3656, p50 3,705.20 ms; honest gates failed. Batch1 evaluation timed out in official AST parsing reached by terminal-witness completion and has no metrics. **Incomplete; never reuse, promote, sync, or ship; frozen replay required** ([results](design/autotrain-cycle-1716-terminal-parse-timeout.md)) |
-| Autotrain c1715 frozen replay | `c20260801-continuous-openui-202607-98199209-c1715-{control,batch1}` | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 80 steps, seed 101710, batch 2 vs 1, 1,608,962 trainable params | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1715/runs/` (local, explicit no-sync) | Both trains completed. Control AgentV smoke n=3: parse 1.0, binder F1 1.0, meaningful .3333, structure .3656, p50 3,884.32 ms; honest gates failed. Batch1 evaluation timed out inside terminal-witness completion and has no metrics. **Incomplete; never reuse, promote, sync, or ship; frozen replay required** ([results](design/autotrain-cycle-1715-terminal-witness-timeout.md)) |
-| Autotrain c1708â€“c1710 infrastructure diagnostics | six `c20260801-continuous-openui-202607-98199209-c170{8,9,10}-*` runs | CPU scratch TwoTower, `wf_smoke_v2`, lexer output, 80â€“164 steps, batch 1â€“2, 1,608,962 trainable params | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c170{8,9,10}/runs/` (local, explicit no-sync) | All six trains reached declared steps and wrote checkpoints; an 8 KiB stdout-tail parsing defect falsely stopped each outcome before evaluation. No suite metrics, AgentV bundle, or gate result existsâ€”**infrastructure evidence only; never reuse, promote, or ship; frozen c1710 replay required** ([results](design/autotrain-cycles-1708-1710-runtime-artifact-recovery.md)) |
-| SLM-313 AbstractPlan local checkpoint | `slm313_local_plan_1k_v2` | CPU scratch Choice TwoTower with predicted-plan head and learned connector conditioning; 8 canonical direct-natural rows | `outputs/runs/slm313_local_plan_1k_v2/checkpoints/last.pt` (local, explicit no-sync) | 9 steps / 1,006 target tokens / 24.70s, SHA `66bd535fâ€¦b3868ce4`; full locked 226-record Ã— 9-arm Ã— 3-path matrix (6,102 rows) has meaning-v2/binder-F1 CI `[0,0]` versus every destructive controlâ€”**ignored_or_collapsed, not promotable, reusable, or ship** ([SLM-313 evidence](design/abstract-plan-functional-evidence.md)) |
-| SLM-322 AP-027 Pareto screening checkpoint | `slm322_ap027_scratch_v1` | CPU scratch TwoTower, connector-free (no AbstractPlanConnector attached); trained only so `run_discrete_plan_pareto.py` could load a symbol_only/v2-compatible checkpoint (the committed `playground_demo` checkpoint predates the current output contract and no longer loads) | `outputs/runs/slm322_ap027_scratch_v1/checkpoints/last.pt` (local, explicit no-sync) | 8 steps, SHA `62ddcc77â€¦92f39167`; 1-seed screening decode at refinement rounds 1-2 only (rounds 4/8 and every arm needing a trained connector/binder-precision channel/retrieval index are pending)â€”**claim_class: wiring, ship_eligible: false, not promotable or reusable** ([SLM-322 evidence](design/discrete-plan-pareto.md)) |
-| E1211 seed-7 topology-dose control | `e1211_v273_e937_batch4_seed7_lr1e4_binder_topology_quarter` | CPU scratch role-safe lexer topology-loss dose control | `outputs/runs/e1211_v273_e937_batch4_seed7_lr1e4_binder_topology_quarter/checkpoints/last.pt` (local) | 395 Ã— 4 draws, SHA `8c969406...4ebf11`; E1212 strict held `n=5` exactly matches E1182/E1200 (parse/meaning .4, strict-v2 .2, fidelity .28, structure .2852, recall .3333, reward .3388, 3 timeouts, zero fallback) â€” **neutral/rejected; never sync/promote/serve/use as parent** ([results](design/iter-e1211-e1214-seed7-topology-slot-component-20260725.md)) |
-| SLM-298 local factorial diagnostics | `d32/d64-scratch-{trainable,frozen}-{flat,complexity_ordered}-s*` | CPU scratch symbol-only lexer, 520 strict rows, 5,000-token matched budget | `outputs/runs/slm298_local_factorial*/cells/` (local, explicit no-sync) | 20/24 bounded locked `n=1` cells completed with AgentV; constrained syntax 1.0, strict meaningful/binder F1 0.0 in every completed cell. Four d32 seed-2 cells repeatedly exceeded the immutable cap and are non-evidence. **Rejected, not promotable or ship** ([results](design/iter-slm298-capacity-context-curriculum-20260725.md)) |
-| SLM-287 five-seed locked baseline | `slm287-trained-local-v13-20260725` | Ten CPU float32 scratch Choice TwoTower cells (five seeds Ã— design off/on); 97-record strict `slm230_symbol_only_v1`, 5,000-token budget | `outputs/runs/slm287-trained-local-v13-20260725/trained_cells/` (local, explicit no-sync) | Full locked local 226-record sweep with AgentV per shard: meaning-v2/binder F1 0 in all raw/constrained/repaired variants; absolute-probability MDE 0.0200. **Diagnostic, rejected for promotion and not ship** ([results](design/iter-slm287-locked-power-protocol-20260724.md)) |
-| SLM-294 tiny ceiling baseline | `slm294_tiny_baseline` | CPU scratch output-contract-v2 lexer baseline (600 steps via capped chunked resume, final loss 1.5187) | `outputs/runs/slm294_tiny_baseline/checkpoints/last.pt` (local) | Trained within the run cap for the SLM-294 external-ceiling campaign, but constrained decode is infeasible on rico-scale layouts under the cap (>280s/16 tokens); campaign disposition `inconclusive` â€” **diagnostic, not promotable or ship** ([results](design/iter-slm294-external-ceiling-20260724.md)) |
-| SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2` | CPU scratch symbol-only shared-recursive R=4 diagnostic | `outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt` (local) | 4 steps / 1.70s, SHA `1604b2cbâ€¦8b28a`; held-out depth 1â†’4 CE improves, but accuracy/parse/structure/reward stay 0.0 (`stagnant`). SLM-231 finds exact product top `4.7243` / FTLE `0.3882` (`expansive_unstable`); SLM-232 finds z0 rank `2.1054` but rank `0.0` after context/position removal and vacuous bounded ablations (`unstable`). The RSC4 disposition remains blockedâ€”no latent checkpoint is promoted or synced ([RSC4](design/recurrent-semantic-computation-looped-latent-disposition.md)) â€” **explicit no-sync, rejected, not ship** ([observability](design/iter-slm230-recurrence-observability-20260724.md), [dynamics](design/iter-slm231-recurrence-dynamics-20260724.md), [latent state](design/iter-slm232-latent-state-use-20260724.md)) |
-| E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1` | CPU scratch output-contract-v2 corrected root-arity objective | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/checkpoints/last.pt` (local) | 140 steps / 82.07s, SHA `710e2dbeâ€¦68b970`; impossible smoke argmax class 41 becomes class 1, but weight 0/1 quality is identical and strict-v2 remains 0.0 â€” **objective fix retained, checkpoint rejected** ([results](design/iter-e735-root-arity-full-head-20260722.md)) |
-| E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1` | CPU scratch output-contract-v2 invalid capability declaration | `outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt` (local) | 140 steps / 78.98s, SHA `cddb5f28â€¦5167fc`; matched weight 0/1 eval has zero identity applications â€” **invalidated; never sync, promote, serve, resume, or use as parent** ([results](design/iter-e733-lexer-root-identity-reachability-20260722.md)) |
-| E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1` | CPU scratch output-contract-v2 root-arity objective | `outputs/runs/e731-symbol-only-root-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 82.20s, SHA `bff1e0e6â€¦2fbb88`; weights 0/1/2 are prediction-identical and strict-v2 remains 0.0 â€” **capability retained, checkpoint rejected** ([results](design/iter-e731-lexer-root-arity-symbol-only-20260722.md)) |
-| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1` | CPU scratch output-contract-v2 baseline | `outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 48.72s, SHA `71ef1d25â€¦2b49e`; all predictions satisfy symbol-only v2, but five-suite strict meaning is 0.0 and AgentV 0/5 â€” **compatible diagnostic, not promotable or ship** ([results](design/iter-e714-symbol-only-baseline-20260721.md)) |
-| E720 component-inventory diagnostic | `e720-symbol-only-component-inventory600-r1` | CPU scratch output-contract-v2 inventory objective | `outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt` (local) | 600 steps / 72.38s, SHA `842a1a21â€¦f91a11`; inventory top-k recall 0.6875, but smoke parse/strict meaning 0.0 and weight-4 decode timed out 3/3 â€” **rejected, not promotable or ship** ([results](design/iter-e720-component-inventory-symbol-only-20260721.md)) |
-| E721 role/count plan diagnostic | `e721-symbol-only-component-plan190-r4` | CPU scratch output-contract-v2 component plan | `outputs/runs/e721-symbol-only-component-plan190-r4/checkpoints/last.pt` (local) | 190 steps / 90.39s, SHA `c30fd565â€¦20f530`; smoke parse 1.0, but strict meaning 0.0 and plan on/off outputs are identical â€” **rejected, not promotable or ship** ([results](design/iter-e721-component-plan-symbol-only-20260721.md)) |
-| E722 component-edge diagnostic | `e722-symbol-only-component-edge150-r1` | CPU scratch output-contract-v2 plan + edge objective | `outputs/runs/e722-symbol-only-component-edge150-r1/checkpoints/last.pt` (local) | 150 steps / 77.52s, SHA `08873bf0â€¦a25597d`; parse 1.0 / structure 0.2861 / recall 0.5, but strict meaning 0.0 and edge on/off identical â€” **rejected, not promotable or ship** ([results](design/iter-e722-component-edge-symbol-only-20260721.md)) |
-| E723 slot-owner diagnostic | `e723-symbol-only-slot-owner140-r1` | CPU scratch output-contract-v2 slot-owner objective | `outputs/runs/e723-symbol-only-slot-owner140-r1/checkpoints/last.pt` (local) | 140 steps / 77.16s, SHA `787d2d21â€¦bd62795`; causal smoke + held-out gains, but strict-v2 0.0 â€” **lever retained, checkpoint not promotable or ship** ([results](design/iter-e723-slot-owner-symbol-only-20260721.md)) |
-| E725 cumulative inventory diagnostic | `e725-symbol-only-component-inventory130-r1` | CPU scratch output-contract-v2 plan + edge + slot-owner + inventory objectives | `outputs/runs/e725-symbol-only-component-inventory130-r1/checkpoints/last.pt` (local) | 130 steps / 73.22s, SHA `897208bfâ€¦8ba1e`; inventory weight 1/0 outputs identical and smoke meaning-v1/strict-v2 0.0 â€” **rejected, not promotable or ship** ([results](design/iter-e725-component-inventory-symbol-only-20260722.md)) |
-| E726 invalid root-arity attempt | `e726-symbol-only-root-arity140-r1` | CPU scratch output-contract-v2 invalid configuration | `outputs/runs/e726-symbol-only-root-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 81.20s, SHA `d84148feâ€¦1b91b`; choice-only lever was absent on lexer and all tensors match E723 â€” **invalidated; never evaluate, sync, promote, or serve** ([results](design/iter-e726-root-arity-compatibility-symbol-only-20260722.md)) |
-| E727 binder-arity diagnostic | `e727-symbol-only-binder-arity140-r1` | CPU scratch output-contract-v2 slot-owner + binder-arity objectives | `outputs/runs/e727-symbol-only-binder-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 77.46s, SHA `c211d2eaâ€¦36a857`; arity weights 1/2 change no smoke or held-out choices and strict-v2 remains 0.0 â€” **rejected, not promotable or ship** ([results](design/iter-e727-binder-arity-symbol-only-20260722.md)) |
-| E729 binder-topology diagnostic | `e729-symbol-only-binder-topology140-r1` | CPU scratch output-contract-v2 slot-owner + binder-topology objectives | `outputs/runs/e729-symbol-only-binder-topology140-r1/checkpoints/last.pt` (local) | 140 steps / 77.50s, SHA `c5bafb8dâ€¦18c43d`; topology weights 0.25/1 causally regress smoke quality and strict-v2 remains 0.0 â€” **rejected, not promotable or ship** ([results](design/iter-e729-binder-topology-symbol-only-20260722.md)) |
-| Playground demo | `playground_demo` | Fixture wiring | `src/slm_training/resources/checkpoints/playground_demo/last.pt` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5, one timeout. Demo only â€” **not** a quality or ship claim |
-| Restructure CPU verify | `restructure_cpu_scratch_v0` | Fixture scratch train | `outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local) | Train OK; smoke parse **0.0** @ 80 steps â€” **not** a ship claim ([results](design/restructure-cpu-train-results.json)) |
-| Local DirectML verify | `local_directml_adreno_20260714` | Local GPU scratch train | `outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt` (local) | Adreno DirectML train/checkpoint OK @ 5 steps; not evaluated â€” **not** a ship claim ([results](design/local-directml-train-results.json)) |
-| Overnight retrain | `overnight_retrain_200` | CPU scratch train | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/checkpoints/last.pt` (local) | 200 steps; all honest suites parse 0.0 â€” **not promotable or ship** |
-| Overnight retrain extended | `overnight_retrain_1000` | CPU scratch train | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/checkpoints/last.pt` (local) | 1,000 steps; smoke parse 0.0 at steps 200/400/600/800/1000 â€” **not promotable or ship** |
-| E120 singleton diagnostic | `e120_unsandboxed` | CPU scratch decoder diagnostic | `outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed/checkpoints/last.pt` (local) | 8 steps; guarded singleton/root/arity path verified; `rico_held n=1` parse 0.0 â€” **not promotable or ship** |
-| E121 judged-corpus E53 iteration | `qx_e53_honest_v5_champion` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt` (local) | 405 judge-approved records; 8 train + 30 trust-gate steps; bounded smoke parse 0.0 with decode timeout â€” **not promotable or ship** |
-| E123 judged-corpus 32-step iteration | `e123_judged_32step_b` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt` (local) | 405 judge-approved records; loss 10.97; smoke parse 0.0 with unconstrained fallback and canvas cap â€” **not promotable or ship** ([results](design/iter-e123-judged-corpus-32step-20260715.md)) |
-| E127 schema/slot-contract iteration | `e127_judged_schema_slots` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e127-schema-slots-20260715/e127_judged_schema_slots/checkpoints/last.pt` (local) | 405 judged records; loss 10.71; placeholder validity 0.55 / normalized fidelity 0.25, parse 0.0 â€” **not promotable or ship** ([results](design/iter-e127-schema-slots-20260715.md)) |
-| E128 schema/slot 64-step iteration | `e128_judged_schema_slots_64` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64/checkpoints/last.pt` (local) | 405 judged records; loss 15.03; higher LTR/fidelity weights regressed placeholder signals; parse 0.0 â€” **not promotable or ship** ([results](design/iter-e128-schema-slots-64step-20260715.md)) |
-| E129 schema/slot 64-step low-weight control | `e129_judged_schema_slots_64_lowweights` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights/checkpoints/last.pt` (local) | 405 judged records; loss 9.89; placeholder/parse 0.0; longer training did not reproduce E127 â€” **not promotable or ship** ([results](design/iter-e129-schema-slots-64low-20260715.md)) |
-| E130 schema/slot seed-1 control | `e130_judged_schema_slots_seed1` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1/checkpoints/last.pt` (local) | 405 judged records; seed 1 loss 15.28; parse and placeholder signals 0.0 â€” **not promotable or ship** ([results](design/iter-e130-schema-slots-seed1-20260715.md)) |
-| E132 generation-focused mixture | `e132_generation_focus` | CPU scratch judged-corpus mixture iteration | `outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus/checkpoints/last.pt` (local) | 405 judged records; three-prompt smoke parse/placeholder 0.0; task reweighting rejected â€” **not promotable or ship** ([results](design/iter-e132-generation-focus-20260715.md)) |
-| E133 no-fused-LTR path | `e133_no_fuse_ltr` | CPU scratch judged-corpus training-path iteration | `outputs/runs/iter-e133-no-fuse-ltr-20260715/e133_no_fuse_ltr/checkpoints/last.pt` (local) | 405 judged records; three-prompt parse/structure 0.0 with one timeout; fused LTR retained â€” **not promotable or ship** ([results](design/iter-e133-no-fuse-ltr-20260715.md)) |
-| E135 HF context control | `e135_hf_context_control` | CPU HF-context control | `outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt` (local) | Frozen SmolLM2-135M, 8 steps; 3-prompt parse 0.0 but structural similarity 0.2422 / placeholder validity 0.3167; **not promotable or ship** ([results](design/iter-e135-hf-context-control-20260715.md)) |
-| E136 HF context 32-step control | `e136_hf_context_32` | CPU HF-context control | `outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/checkpoints/last.pt` (local) | Frozen SmolLM2-135M, 32 steps; parse/placeholder 0.0 and structural similarity 0.0825; **not promotable or ship** ([results](design/iter-e136-hf-context-32step-20260715.md)) |
-| E137 HF context 16-step midpoint | `e137_hf_context_16` | CPU HF-context control | `outputs/runs/iter-e137-hf-context-20260715/e137_hf_context_16/checkpoints/last.pt` (local) | Frozen SmolLM2-135M, 16 steps; placeholder validity 0.40 / structural similarity 0.2142, parse 0.0; **not promotable or ship** ([results](design/iter-e137-hf-context-16step-20260715.md)) |
-| E138 HF context seed-1 8-step control | `e138_hf_context_seed1_8` | CPU HF-context seed variance control | `outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt` (local) | Frozen SmolLM2-135M, seed 1, 8 steps; placeholder validity 0.0 / structural similarity 0.1683, parse 0.0; **not promotable or ship** ([results](design/iter-e138-hf-seed1-8step-20260715.md)) |
-| E139 HF context seed-2 8-step control | `e139_hf_context_seed2_8` | CPU HF-context seed variance control | `outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt` (local) | Frozen SmolLM2-135M, seed 2, 8 steps; placeholder validity/structure/parse 0.0 with two timeouts; **not promotable or ship** ([results](design/iter-e139-hf-seed2-8step-20260715.md)) |
-| E173 schema-context 32-step control | `e173-schema-context-32step` | CPU HF-context semantic control | `outputs/runs/e173-schema-context-32step/checkpoints/last.pt` (local) | Schema/slot context enabled, loss 11.0876; bounded probe syntax 1.0 but meaningful parse 0.0; **not promotable or ship** ([results](design/iter-e173-schema-context-20260716.md)) |
-| E174 unfrozen-context 8-step control | `e174-unfrozen-context-8step` | CPU HF-context semantic control | `outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local) | Unfrozen context, loss 39.4253; bounded probe syntax 0.0 and parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e174-unfrozen-context-20260716.md)) |
-| E175 retrieval 8-step control | `e175-retrieval-8step` | CPU HF-context retrieval control | `outputs/runs/e175-retrieval-8step/checkpoints/last.pt` (local) | Retrieval k=4, loss 27.9708; bounded syntax/parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e175-retrieval-20260716.md)) |
-| E176 broad-corpus 8-step control | `e176-broad-corpus-8step` | CPU HF-context corpus control | `outputs/runs/e176-broad-corpus-8step/checkpoints/last.pt` (local) | 1,417-record corpus, loss 34.0464; bounded syntax/parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e176-broad-corpus-20260716.md)) |
-| E177 semantic-judge 32-step control | `e177-semantic-judge-32step` | CPU HF-context data-quality control | `outputs/runs/e177-semantic-judge-32step/checkpoints/last.pt` (local) | 496-record published judge-gated corpus, loss 12.2220; E180 bounded decode reaches syntax 1.0 but meaningful parse 0.0 / component recall 0.25; **not promotable or ship** ([results](design/iter-e177-e180-semantic-compiler-20260716.md)) |
-| E181 balanced-mixture control | `e181-semantic-balanced-32step` | CPU HF-context mixture control | `outputs/runs/e181-semantic-balanced-32step/checkpoints/last.pt` (local) | Loss 5.5118; bounded syntax 1.0 but meaningful parse 0.0 / component recall 0.25; **not promotable or ship** ([results](design/iter-e181-e194-compiler-alignment-20260716.md)) |
-| E184 component-aligned diagnostic | `e184-compiler-aligned-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e184-compiler-aligned-32step/checkpoints/last.pt` (local) | Component-state alignment recovers `Stack` root, but E194 meaningful parse 0.0 / structure 0.3600; **not promotable or ship** ([results](design/iter-e181-e194-compiler-alignment-20260716.md)) |
-| E191 all-branch aligned diagnostic | `e191-full-compiler-aligned-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e191-full-compiler-aligned-32step/checkpoints/last.pt` (local) | Random all-branch alignment regresses root selection; E192 meaningful parse 0.0; rejected, **not promotable or ship** ([results](design/iter-e181-e194-compiler-alignment-20260716.md)) |
-| E195 stratified-alignment invalid control | `e195-stratified-compiler-aligned-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e195-stratified-compiler-aligned-32step/checkpoints/last.pt` (local) | Mixture was silently unset, so recipe is not comparable; retained as invalid evidence, **not promotable or ship** ([results](design/iter-e195-e199-stratified-alignment-20260716.md)) |
-| E196 matched stratified alignment | `e196-stratified-compiler-aligned-matched-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e196-stratified-compiler-aligned-matched-32step/checkpoints/last.pt` (local) | E199 syntax 1.0 with zero compiler fallbacks, but meaningful parse/component recall 0.0; **not promotable or ship** ([results](design/iter-e195-e199-stratified-alignment-20260716.md)) |
-| E201 generated-role alignment | `e201-role-stratified-compiler-aligned-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e201-role-stratified-compiler-aligned-32step/checkpoints/last.pt` (local) | E204 component recall 0.25 / placeholder validity 0.70, but recursive children hit the token cap and meaningful parse remains 0.0; **not promotable or ship** ([results](design/iter-e200-e204-layout-role-compiler-20260716.md)) |
-| E205 Lark-terminal alignment | `e205-lark-terminal-stratified-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e205-lark-terminal-stratified-32step/checkpoints/last.pt` (local) | E207 syntax 1.0 with zero fallback and structure 0.3125, but empty bound stacks leave meaningful parse/component recall 0.0; **not promotable or ship** ([results](design/iter-e205-e207-lark-terminal-alignment-20260716.md)) |
-| E208 occupancy alignment | `e208-list-occupancy-stratified-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e208-list-occupancy-stratified-32step/checkpoints/last.pt` (local) | E209 syntax 1.0 but empty root and meaningful parse 0.0; rejected, **not promotable or ship** ([results](design/iter-e208-e213-contextual-decisions-20260716.md)) |
-| E210 scoped occupancy alignment | `e210-list-scope-occupancy-stratified-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e210-list-scope-occupancy-stratified-32step/checkpoints/last.pt` (local) | E211 syntax 1.0 but empty root and meaningful parse 0.0; rejected, **not promotable or ship** ([results](design/iter-e208-e213-contextual-decisions-20260716.md)) |
-| E212 contextual decision alignment | `e212-contextual-decision-stratified-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e212-contextual-decision-stratified-32step/checkpoints/last.pt` (local) | E213 recovers populated root and normalized fidelity 0.50, but required schema semantics fail and meaningful parse remains 0.0; **not promotable or ship** ([results](design/iter-e208-e213-contextual-decisions-20260716.md)) |
-| E215 overfiltered schema-role control | `e215-schema-role-judged-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e215-schema-role-judged-32step/checkpoints/last.pt` (local) | E214 falsely rejected 27 legal optional-null records; E216 metrics remain diagnostic but the data conclusion is superseded; **not promotable or ship** ([results](design/iter-e214-e216-schema-role-judge-20260716.md)) |
-| E219 corrected schema-admission control | `e219-schema-normalized-32step` | CPU HF-context compiler-alignment diagnostic | `outputs/runs/e219-schema-normalized-32step/checkpoints/last.pt` (local) | E220 syntax 1.0 with zero fallback/dead ends, but component recall 0.25 and meaningful parse 0.0; **not promotable or ship** ([results](design/iter-e218-e220-schema-normalization-20260716.md)) |
-| E221 task-balanced exposure diagnostic | `e221-canonical-task-balanced` | CPU HF-context compiler-alignment diagnostic | `outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/checkpoints/last.pt` (local) | Effective exposure 29.68/128 falsifies task balancing; strict five-suite eval failed 9 gates and AgentV passed 1/5; **not promotable or ship** ([results](design/iter-e221-task-balanced-exposure-20260716.md)) |
-| E222 capacity-aware exposure diagnostic | `e222-capacity-aware-matched` | CPU HF-context sampler diagnostic | `outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/checkpoints/last.pt` (local) | Effective exposure rose to 83.59/128, but strict smoke parse regressed to 0.0 and 10 gates failed; **not promotable or ship** ([results](design/iter-e222-capacity-aware-exposure-20260716.md)) |
-| E223 quota-capacity exposure diagnostic | `e223-quota-capacity-matched` | CPU HF-context sampler diagnostic | `outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/checkpoints/last.pt` (local) | Task quotas and syntax are deterministic, but every suite has meaningful parse/recall/fidelity 0.0 and 12 gates fail; **not promotable or ship** ([results](design/iter-e223-quota-capacity-exposure-20260716.md)) |
-| E224 semantic-exhaustive alignment diagnostic | `e224-semantic-exhaustive-matched` | CPU HF-context AST-role alignment diagnostic | `outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/checkpoints/last.pt` (local) | E226 honest tree eval reaches syntax 1.0 on all suites and exact contract precision 1.0, but meaningful-program quality fails 5 gates; **not promotable or ship** ([results](design/iter-e226-honest-compiler-policy-20260716.md)) |
-| E227 legal-candidate alignment diagnostic | `e227-candidate-set-matched` | CPU HF-context compiler candidate-ranking diagnostic | `outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/checkpoints/last.pt` (local) | Syntax 1.0 but empty-layout collapse fails 12 gates and AgentV 0/5; rejected, **not promotable or ship** ([results](design/iter-e227-candidate-set-alignment-20260716.md)) |
-| E228 legal-candidate margin diagnostic | `e228-candidate-margin-matched` | CPU HF-context compiler margin diagnostic | `outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt` (local) | Syntax/contract precision 1.0 and only 4 failed gates, but AgentV 1/5; best diagnostic, **not promotable or ship** ([results](design/iter-e228-candidate-margin-alignment-20260716.md)) |
-| E229 64-step margin continuation | `e229-margin-64step` | CPU HF-context duration diagnostic | `outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/checkpoints/last.pt` (local) | Corrected syntax 1.0, but same 4 gates fail and several quality metrics regress vs E228; rejected, **not promotable or ship** ([results](design/iter-e229-margin-continuation-20260716.md)) |
-| E230 diverse judged roots | `e230-diverse-roots-32step` | CPU HF-context data-coverage diagnostic | `outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/checkpoints/last.pt` (local) | 126 published judge-passed roots; four gates still fail and adversarial regresses; data repair retained, checkpoint **not promotable or ship** ([results](design/iter-e230-diverse-judged-roots-20260716.md)) |
-| E231 component inventory | `e231-component-inventory-32step` | CPU HF-context semantic-inventory diagnostic | `outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/checkpoints/last.pt` (local) | Inventory recall reaches 0.9167, but bias-off aggregate metrics/component choices are identical; six thresholds fail, checkpoint **not promotable or ship** ([results](design/iter-e231-component-inventory-20260716.md)) |
-| E232 role component plan | `e232-role-component-plan-32step` | CPU HF-context grammar-role planning diagnostic | `outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/checkpoints/last.pt` (local) | Root/count targets learn and causally improve adversarial quality, but four frontier thresholds fail and stronger calibration is flat; **not promotable or ship** ([results](design/iter-e232-role-component-plan-20260716.md)) |
-| E233 resolved-AST component edges | `e233-component-edges-32step` | CPU HF-context AST-edge planning diagnostic | `outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/checkpoints/last.pt` (local) | Edge target learns, but edge on/off suite aggregates are identical and four thresholds fail; **not promotable or ship** ([results](design/iter-e233-component-edges-20260716.md)) |
-| E234 edge decision alignment | `e234-edge-decision-alignment-32step` | CPU HF-context legal-decision alignment diagnostic | `outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/checkpoints/last.pt` (local) | Decision accuracy learns and changes five choices, but edge on/off suite aggregates are identical and four thresholds fail; **not promotable or ship** ([results](design/iter-e234-edge-decision-alignment-20260716.md)) |
-| E235 binder-instance plan | `e235-binder-instance-plan-32step` | CPU HF-context grammar-binder planning diagnostic | `outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/checkpoints/last.pt` (local) | Binder accuracy learns with full bound-row coverage and changes four choices, but on/off suite aggregates are identical and nine thresholds fail; **not promotable or ship** ([results](design/iter-e235-binder-instance-plan-20260716.md)) |
-| E236 binder topology | `e236-binder-topology-32step` | CPU HF-context binder-reference diagnostic | `outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/checkpoints/last.pt` (local) | Topology objective fails to learn, changes zero of 38 applied choices, and semantic metrics collapse; twelve thresholds fail; **not promotable or ship** ([results](design/iter-e236-binder-topology-20260716.md)) |
-| E237 detached topology | `e237-detached-topology-32step` | CPU HF-context gradient-routing diagnostic | `outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/checkpoints/last.pt` (local) | Detaching already-frozen context is a no-op and exactly reproduces E236; twelve thresholds fail; **not promotable or ship** ([results](design/iter-e237-detached-topology-20260716.md)) |
-| E238 binder arity (invalidated) | `e238-binder-arity-32step` | CPU HF-context arity diagnostic | `outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/checkpoints/last.pt` (local) | Optional-head RNG shifted matched stochastic draws; ten thresholds fail and causal training comparison is invalid; **not promotable or ship** ([results](design/iter-e238-binder-arity-confounded-20260716.md)) |
-| E239 isolated binder arity | `e239d-binder-arity-fully-isolated-32step` | CPU HF-context isolated arity diagnostic | `outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/checkpoints/last.pt` (local) | 104/104 shared tensors are bit-exact against control; 29 changed choices improve smoke syntax only, meaningful rate stays 0 and eleven thresholds fail; **not promotable or ship** ([results](design/iter-e239-binder-arity-isolated-20260716.md)) |
-| E249 exact-event CE plus margin | `qx_e249_local_ce_margin` | CPU HF-context exact-state preference diagnostic | `outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/checkpoints/last.pt` (local) | Held-out lexical chosen win rises 0â†’0.7649, but structure/reward regress on every suite and AgentV is 0/5; rejected, **not promotable or ship** ([results](design/iter-e249-local-ce-margin-20260716.md)) |
-| E252 verifier-backed set FTPO | `qx_e252_local_ftpo_set` | CPU HF-context judged counterfactual preference diagnostic | `outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/checkpoints/last.pt` (local) | Syntax stays 1.0, but fidelity collapses to 0, structure/reward regress on every suite, 13 thresholds fail, and AgentV is 0/5; rejected, **not promotable or ship** ([results](design/iter-e252-ftpo-set-20260716.md)) |
-| E277 broad gold-AST set FTPO | `qx_e262_broad_gold_ast_ftpo_set` | CPU HF-context judged exact-state preference diagnostic | `outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/checkpoints/last.pt` (local) | Executed as E262 before concurrent ID reconciliation; syntax/fidelity match E248, but held-out FTPO loss worsens, structure regresses on every suite, 10 thresholds fail, and AgentV is 0/5; rejected, **not promotable or ship** ([results](design/iter-e277-broad-gold-ast-ftpo-20260716.md)) |
-| E278 guarded gold-AST set FTPO | `qx_e278_guarded_gold_ast_ftpo_set` | CPU HF-context guarded exact-state preference diagnostic | `outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/checkpoints/last.pt` (local) | No trained step passed the four-metric held-out Pareto guard; step 0 was restored and all 374 tensors are bit-identical to E228. Current-code parent control exactly reproduces the five failing gates; no model gain, **not promotable or ship** ([results](design/iter-e278-guarded-gold-ast-ftpo-20260716.md)) |
-| E265 safe gold-AST set FTPO | `qx_e265_safe_gold_ast_ftpo_set` | CPU HF-context backtracked exact-state preference diagnostic | `outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | 3/30 proposals improve the aggregate held-out Pareto guard, but decision-kind regressions are masked, fidelity/reward fall on most suites, five gates fail, and AgentV is 2/5; rejected, **not promotable or ship** ([results](design/iter-e265-safe-gold-ast-ftpo-20260717.md)) |
-| E266 stratified safe set FTPO | `qx_e266_stratified_safe_gold_ast_ftpo_set` | CPU HF-context decision-kind-stratified preference diagnostic | `outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | All 30 proposals fail at least one grammar/AST decision-kind guard; parent is restored bit-identically, current control reproduces all metrics, five gates fail, and AgentV is 2/5; **not promotable or ship** ([results](design/iter-e266-stratified-safe-ftpo-20260717.md)) |
-| E267 block-coordinate safe set FTPO | `qx_e267_block_stratified_safe_gold_ast_ftpo_set` | CPU HF-context decision-kind block preference diagnostic | `outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | All 30 category-block proposals fail the stratified guard; parent is restored bit-identically, full evaluation matches E266/current control, five gates fail, and AgentV is 2/5; **not promotable or ship** ([results](design/iter-e267-block-stratified-ftpo-20260717.md)) |
-| E268 projected safe set FTPO | `qx_e268_projected_stratified_safe_gold_ast_ftpo_set` | CPU HF-context conflict-projected preference diagnostic | `outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | PCGrad projects 2,220 conflicting ordered task pairs, but all 30 proposals fail the stratified guard; parent is restored bit-identically, five gates fail, and AgentV is 2/5; **not promotable or ship** ([results](design/iter-e268-projected-stratified-ftpo-20260717.md)) |
-| E269 MGDA safe set FTPO | `qx_e269_mgda_stratified_safe_gold_ast_ftpo_set` | CPU HF-context minimum-norm preference preflight | `outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | MGDA certifies common train-objective descent, but every scale regresses held-out decision kinds; parent is restored, five gates fail, and AgentV is 2/5; **not promotable or ship** ([results](design/iter-e269-mgda-stratified-ftpo-20260717.md)) |
-| E272 MGDA plus SGD preflight | `qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set` | CPU HF-context metric-completeness preflight | `outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | Collinear SGD improves aggregate held-out FTPO loss, but every scale regresses per-kind probability/margin metrics; parent restored, five gates fail, AgentV 2/5; **not promotable or ship** ([results](design/iter-e272-mgda-sgd-preflight-20260717.md)) |
-| E174 unfrozen-context 8-step control | `e174-unfrozen-context-8step` | CPU HF-context semantic control | `outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local) | Unfrozen context, loss 39.4253; bounded probe syntax 0.0 and parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e174-unfrozen-context-20260716.md)) |
-| Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
-| P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
-| P13 integrated E50 candidate | `qx_e50_core_remask` | CPU scratch, integrated corpus | `/tmp/slm17-e50-new-honest/` (local) | Strict fidelity gain on both smoke suites; parse 0.0, not promotable or ship |
-| Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | Retired fixed-canvas grammar diffusion | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local) | 80 steps; all suites parse/fidelity/structure/reward 0.0; comparison only, not ship |
-| Topology implementation smoke | `grammar_diffusion_overfit` | CPU scratch fixture topology v2 | pytest temporary checkpoint (local) | 200 steps; smoke n=2 parse/fidelity 0.5, topology composite 0.482; not reusable or ship |
-| Topology X9/X14 confirmation | `gx_x9_topology_base`, `gx_x14_buffer` seeds 0/1/2 | CPU scratch topology v2 matrix | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | 200 steps; all 6 fail multi-suite gates; not promoted or synced |
-| ScopeDiff X18 confirmation | `gx_x18_scope_noise_confirm_200` seeds 0/1/2 | CPU scratch topology v2 matrix | `outputs/runs/gx_x18_scope_noise_confirm_200/` (local) | 200 steps; all-suite median parse/fidelity 0.0; not promoted or synced |
-| ScopeDiff X21 confirmation | `gx_x21_scoped_topology_confirm_200` seeds 0/1/2 | CPU scratch topology v2 matrix | `outputs/runs/gx_x21_scoped_topology_confirm_200/` (local) | 200 steps; weak structure, parse/fidelity 0.0; not promoted or synced |
-| EFS0-04 X22 reproduction | `gx_x22_kapur_tree_edit_s0` | CPU scratch tree-edit diffusion | `outputs/runs/gx_x22_kapur_tree_edit_s0/checkpoints/last.pt` (local) | 80-step seed-0 audit-material replay; SHA `a9cfb450â€¦02ff6`; syntax 1.0 but meaningful parse 0.333/0.2/0/0/0.667; ship gates fail, no sync or promotion ([results](design/iter-efs0-04-x22-reproduction-20260717.md)) |
-| B3 five-minute lexer control | `capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity control | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | 53 steps / 5,004 target tokens; all-suite parse/meaningful/fidelity 0.0; AgentV 0/5 â€” **not promotable or ship** ([results](design/iter-b3-capacity-ladder-20260717.md)) |
-| B3 five-minute choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | E288 frozen eval restores deterministic parse 1.0 on all suites, but meaningful/fidelity remain 0.0 and AgentV 0/5 â€” **not promotable or ship** ([results](design/iter-e288-choice-native-gate-20260717.md)) |
-| E289 cached choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/e289-choice-state-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | Same SHA as E288; exact symbolic-state cache preserves all-suite parse 1.0 and improves p50 2.65Ã—â€“5.86Ã—, but meaningful/fidelity and AgentV remain zero â€” **not promotable or ship** ([results](design/iter-e289-choice-state-cache-20260717.md)) |
-| E290 direct-candidate choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/e290-choice-direct-candidates/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | Same SHA as E288/E289; exact grammar-derived candidates preserve parse 1.0 and improve p95 1.14Ã—â€“1.19Ã— but regress p50; semantic metrics and AgentV remain zero â€” **not promotable or ship** ([results](design/iter-e290-choice-direct-candidates-20260717.md)) |
-| E291 completion-cached choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/e291-choice-completion-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | Same SHA as E288â€“E290; exact completion caching improves p50 1.29Ã—â€“1.99Ã— and p95 1.51Ã—â€“1.93Ã— vs E290, but semantic metrics and AgentV remain zero â€” **not model-promotable or ship** ([results](design/iter-e291-choice-completion-cache-20260717.md)) |
-| E292 complete-loss choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/e292-choice-loss-suite-complete-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | Same SHA as E288â€“E291; fixed metric classification makes all five loss categories complete (weighted NLL 7.2265, binding NLL 8.0201); honest ship board has parse 1.0 but meaningful 0.0 and AgentV 0/5 â€” **not promotable or ship** ([results](design/iter-e292-choice-loss-suite-completeness-20260717.md)) |
-| E293 choice-native component plan | `e293-choice-component-plan-r3` | CPU scratch matched-capacity semantic diagnostic | `outputs/runs/e293-choice-component-plan-r3/checkpoints/last.pt` (local) | Plan loss improves root accuracy/bound recall to 0.5 and legal decode bias reduces gate failures 17â†’13, but matched no-DESIGN meaningful rate stays 0.0 and AgentV 0/5 â€” **not promotable or ship** ([results](design/iter-e293-choice-component-plan-20260717.md)) |
-| E294 no-DESIGN choice control | `e294-choice-no-design-control-r1` | CPU scratch matched-capacity no-plan control | `outputs/runs/e294-choice-no-design-control-r1/checkpoints/last.pt` (local) | Complete weighted NLL 7.4977; honest board exactly matches E293 decode-off (meaningful 0.0, AgentV 0/5, 17 failures), isolating E293's gain to its decode head â€” **not promotable or ship** ([results](design/iter-e294-no-design-plan-control-20260717.md)) |
-| E295 DESIGN-dropout choice arm | `e295-choice-design-dropout-r1` | CPU scratch matched-capacity 50% DESIGN dropout | `outputs/runs/e295-choice-design-dropout-r1/checkpoints/last.pt` (local) | Complete weighted NLL 7.3785; prompt-only adversarial meaningful 0.25, AgentV 1/5, but four suites remain at 0.0 and 14 gates fail â€” **not promotable or ship** ([results](design/iter-e295-design-context-dropout-20260717.md)) |
-| E396 durable diagnostic checkpoint | `e396-balanced-type-head-continuation-r1` | CPU frozen SmolLM2 full-state continuation | `hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/` | Exact SHA `feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0`; bucket artifacts verified. E498 restores current-main loading and records 20 learned head applications, improving smoke structure 0.17197â†’0.27057, but meaningful/recall/reward remain zero and AgentV fails. **Durable and load-compatible diagnostic; not champion, promotable, or ship** ([train](design/iter-e396-e399-balanced-type-supervision-20260718.md), [branch-only gates](design/iter-e490-e396-json-number-typed-any-full-ship-gates-20260718.md), [current-main diagnostic](design/iter-e498-current-main-slot-component-restore-20260718.md)) |
-| E499 diverse-root control | `e499-remediated-roots-hf-choice-control-r4` | CPU frozen SmolLM2 bounded corpus control | `outputs/runs/e499-remediated-roots-hf-choice-control-r4/checkpoints/last.pt` (local) | 10 steps / 1,023 target tokens; smoke n=1 syntax 1.0, structure 0.1542, component recall 0.25, meaningful/fidelity/reward 0.0, AgentV 0/1. SHA `bb4bec5fâ€¦f359fb6`; **diagnostic, not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
-| E499 strict-r4 candidate | `e499-strict-r4-hf-choice-candidate-r4` | CPU frozen SmolLM2 bounded strict-corpus candidate | `outputs/runs/e499-strict-r4-hf-choice-candidate-r4/checkpoints/last.pt` (local) | Matched 9 steps / 1,034 target tokens; smoke structure regresses to 0.0375 and recall to 0.0, AgentV 0/1. SHA `81b2cb66â€¦bcfbaf1`; rejected, **not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
-| E499 choice-compatible strict candidate | `e499-choice-compatible-strict-hf-choice-candidate-r6` | CPU frozen SmolLM2 bounded document-only strict candidate | `outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/checkpoints/last.pt` (local) | 9 steps / 1,091 target tokens; 67/67 codec-compatible rows and 5.88s smoke p50, but structure 0.0375, recall/meaningful/fidelity/reward 0.0, AgentV 0/1. SHA `7230ace9â€¦2e2fab`; rejected, **not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
-| E500 1k document control | `e500-document-control-hf-choice-r1` | CPU frozen SmolLM2 bounded document control | `outputs/runs/e500-document-control-hf-choice-r1/checkpoints/last.pt` (local) | 9 steps / 1,028 target tokens; loss 30.3844, smoke syntax 1.0 and structure 0.0375 with semantic metrics zero, AgentV 0/1. SHA `a40f39a5â€¦772d6834`; **diagnostic, not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
-| E500 1k projected candidate | `e500-documentized-expression-hf-choice-r2` | CPU frozen SmolLM2 bounded projected corpus | `outputs/runs/e500-documentized-expression-hf-choice-r2/checkpoints/last.pt` (local) | 11 steps / 1,039 target tokens; loss 27.6250 but smoke exactly matches the control's red semantic metrics, AgentV 0/1. SHA `f54cea08â€¦773d3f0`; rejected, **not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
-| E500 5k document control | `e500-document-control-hf-choice-r3-5k` | CPU frozen SmolLM2 bounded document control | `outputs/runs/e500-document-control-hf-choice-r3-5k/checkpoints/last.pt` (local) | 43 steps / 5,040 target tokens; loss 10.5529, smoke syntax 1.0 and structure 0.0375 with semantic metrics zero, AgentV 0/1. SHA `9f752ae0â€¦0b2b53`; **diagnostic, not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
-| E500 5k projected candidate | `e500-documentized-expression-hf-choice-r4-5k` | CPU frozen SmolLM2 bounded projected corpus | `outputs/runs/e500-documentized-expression-hf-choice-r4-5k/checkpoints/last.pt` (local) | 50 steps / 5,062 target tokens; loss regresses to 12.6778 and smoke matches the control's red semantic metrics, AgentV 0/1. SHA `a0ed6a58â€¦dda5623`; rejected, **not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
-| E501 task-balanced 5k warm-start | `e501-e396-e500-init-r1` | CPU frozen SmolLM2 E396â†’E500 diagnostic | `outputs/runs/e501-e396-e500-init-r1/checkpoints/last.pt` (local) | 96 steps / 5,060 target tokens; structure regresses 0.2117â†’0.1458 and semantic metrics remain zero, AgentV 0/1. SHA `f86b83d3â€¦cc9cf15`; rejected, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
-| E501 uniform 5k warm-start | `e501-e396-e500-uniform-init-r2` | CPU frozen SmolLM2 generation-heavy E396â†’E500 diagnostic | `outputs/runs/e501-e396-e500-uniform-init-r2/checkpoints/last.pt` (local) | 99 steps / 5,019 target tokens; recall reaches 0.1667 but structure collapses to 0.0889 and meaningful/fidelity/reward remain zero, AgentV 0/1. SHA `14605459â€¦736e4e7`; rejected, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
-| E501 uniform 1k warm-start | `e501-e396-e500-uniform-init-r3-1k` | CPU frozen SmolLM2 short E396â†’E500 diagnostic | `outputs/runs/e501-e396-e500-uniform-init-r3-1k/checkpoints/last.pt` (local) | 22 steps / 1,039 target tokens; structure improves slightly 0.2117â†’0.2317 but all semantic metrics remain zero, AgentV 0/1. SHA `d84d34c0â€¦b5be2ffd`; diagnostic only, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
-| E502 1e-4 warm-start | `e502-e396-e500-uniform-lr1e4-r1` | CPU frozen SmolLM2 lower-LR diagnostic | `outputs/runs/e502-e396-e500-uniform-lr1e4-r1/checkpoints/last.pt` (local) | 22 steps / 1,039 tokens; structure 0.1133, recall 0.1667, semantic metrics zero, AgentV 0/1. SHA `fcd51266â€¦f047255e`; rejected, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
-| E502 3e-5 warm-start | `e502-e396-e500-uniform-lr3e5-r2` | CPU frozen SmolLM2 lower-LR diagnostic | `outputs/runs/e502-e396-e500-uniform-lr3e5-r2/checkpoints/last.pt` (local) | 22 steps / 1,039 tokens; structure 0.1167, recall 0.0833, semantic metrics zero, AgentV 0/1. SHA `528c86a6â€¦a62677c`; rejected, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
-| E502 retained-prior 1k | `e502-e396-e500-prior-retained-lr3e4-r3` | CPU frozen SmolLM2 prior-retention diagnostic | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r3/checkpoints/last.pt` (local) | 22 steps / 1,039 tokens; structure 0.3169 and recall 0.0833, but semantic metrics zero and AgentV 0/1. SHA `e1e833cbâ€¦0746cb6a`; diagnostic only, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
-| E502 retained-prior 5k | `e502-e396-e500-prior-retained-lr3e4-r4-5k` | CPU frozen SmolLM2 prior-retention stress diagnostic | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r4-5k/checkpoints/last.pt` (local) | 99 steps / 5,019 tokens; structure collapses to 0.0927 with recall 0.1667 and semantic metrics zero, AgentV 0/1. SHA `6f937374â€¦4a46a726`; rejected, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
-| E503 0% retention control | `e503-e396-e500-retention0-r1-5k` | CPU frozen SmolLM2 initialized-weight control | `outputs/runs/e503-e396-e500-retention0-r1-5k/checkpoints/last.pt` (local) | 99 steps / 5,019 tokens; RMS drift 0.003123, structure 0.0927, recall 0.1667, semantic metrics zero, AgentV 0/1. SHA `af6e9b1câ€¦8a0af431`; rejected, **not promotable or ship** ([results](design/iter-e503-initialized-weight-retention-20260719.md)) |
-| E503 1% retention | `e503-e396-e500-retention001-r2-5k` | CPU frozen SmolLM2 initialized-weight diagnostic | `outputs/runs/e503-e396-e500-retention001-r2-5k/checkpoints/last.pt` (local) | RMS drift 0.002071, structure 0.0900, recall 0.1667, semantic metrics zero, AgentV 0/1. SHA `7c5f016fâ€¦1be75711`; rejected, **not promotable or ship** ([results](design/iter-e503-initialized-weight-retention-20260719.md)) |
-| E503 5% retention | `e503-e396-e500-retention005-r3-5k` | CPU frozen SmolLM2 initialized-weight diagnostic | `outputs/runs/e503-e396-e500-retention005-r3-5k/checkpoints/last.pt` (local) | RMS drift 0.000811 and structure 0.2029, but recall and semantic metrics are zero, AgentV 0/1. SHA `4093f1aaâ€¦af8d2031`; rejected, **not promotable or ship** ([results](design/iter-e503-initialized-weight-retention-20260719.md)) |
-| E503 3% retention | `e503-e396-e500-retention003-r4-5k` | CPU frozen SmolLM2 initialized-weight midpoint | `outputs/runs/e503-e396-e500-retention003-r4-5k/checkpoints/last.pt` (local) | RMS drift 0.001163, structure 0.1667, recall 0.0833, semantic metrics zero, AgentV 0/1. SHA `2dbb52dbâ€¦5751455b`; rejected, **not promotable or ship** ([results](design/iter-e503-initialized-weight-retention-20260719.md)) |
-| E504 0% replay control | `e504-e396-e500-replay000-r1-5k` | CPU frozen SmolLM2 replay control | `outputs/runs/e504-e396-e500-replay000-r1-5k/checkpoints/last.pt` (local) | RMS drift 0.003123, structure 0.0927, recall 0.1667, semantic metrics zero, AgentV 0/1. SHA `35cd38e0â€¦56334c87`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
-| E504 12.5% parent replay | `e504-e396-e500-replay0125-r2-5k` | CPU frozen SmolLM2 E357 replay diagnostic | `outputs/runs/e504-e396-e500-replay0125-r2-5k/checkpoints/last.pt` (local) | Structure 0.1558, recall zero, semantic metrics zero, AgentV 0/1. SHA `da63b403â€¦1b725d3`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
-| E504 25% parent replay | `e504-e396-e500-replay025-r3-5k` | CPU frozen SmolLM2 E357 replay diagnostic | `outputs/runs/e504-e396-e500-replay025-r3-5k/checkpoints/last.pt` (local) | Structure 0.0964, recall 0.0833, semantic metrics zero, AgentV 0/1. SHA `91ab3f73â€¦c3d85b4`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
-| E504 50% parent replay | `e504-e396-e500-replay050-r4-5k` | CPU frozen SmolLM2 E357 replay diagnostic | `outputs/runs/e504-e396-e500-replay050-r4-5k/checkpoints/last.pt` (local) | RMS drift 0.002796 and structure 0.2469, but recall 0.0833 and semantic metrics zero, AgentV 0/1. SHA `7d7e056eâ€¦c90294f9`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
-| E504 50% replay + 1% retention | `e504-e396-e500-replay050-retention001-r5-5k` | CPU frozen SmolLM2 interaction diagnostic | `outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/checkpoints/last.pt` (local) | RMS drift 0.001775, but structure collapses to 0.0634 and semantic metrics remain zero, AgentV 0/1. SHA `1fc2fc23â€¦a36036c`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
-| E505 50% replay loss attribution | `e505-e396-e500-replay050-loss-attribution-r1-5k` | CPU frozen SmolLM2 source-loss diagnostic | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/checkpoints/last.pt` (local) | Primary/replay loss proxies both decline; matched structure 0.2469 and recall 0.0833, but meaningful/fidelity/reward zero, AgentV 0/1. SHA `8fd11acdâ€¦525967e8`; rejected, **not promotable or ship** ([results](design/iter-e505-replay-loss-attribution-20260719.md)) |
-| E513 durable slot-role continuation | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | CPU frozen SmolLM2 slot-role diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 steps / 5,000 target tokens in 79.6s under the three-minute cap; bucket verified, SHA `59253c67â€¦a88a9548`. E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e513-slot-role-supervision-20260719.md)) |
-| E515 focal-zero slot-role control | `e515-e396-e500-replay050-slotrole4-focal0-r1-5k` | CPU frozen SmolLM2 focal-loss diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/` | 101 steps / 5,000 target tokens in 105.8s under the three-minute cap; bucket verified, SHA `97f2e426â€¦24721c1b`. E516 OOD meaningful 0.25, fidelity 0.6583, structure 0.3213, AgentV 0/1; focal 2 rejected and this control **not promotable or ship** ([results](design/iter-e515-focal-loss-decomposition-20260719.md)) |
-| E517 slot-loss-1 context control | `e517-e396-e500-replay050-slotrole1-context-r1-5k` | CPU frozen SmolLM2 context interaction diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/` | 101 steps / 5,000 target tokens in 130.7s under the three-minute cap; bucket verified, SHA `2b572a04â€¦e24b60e3`. E518 OOD meaningful 0.0, fidelity 0.4083, structure 0.2250, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e517-slot-loss-context-control-20260719.md)) |
-| E519 honest slot-context control | `e519-e396-e500-replay050-slotrole1-honest-context-r1-5k` | CPU frozen SmolLM2 authority diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k/` | 101 steps / 5,000 target tokens in 103.2s from clean harness v7; bucket verified, SHA `d82155b0â€¦6c91805f`. E520 exactly matches E518 quality (meaningful 0.0, fidelity 0.4083, structure 0.2250, AgentV 0/1); honest path retained, checkpoint **not promotable or ship** ([results](design/iter-e519-honest-slot-context-20260719.md)) |
-| E522 visible-inventory continuation | `e522-e396-e521-replay050-slotrole1-honest-context-r2-5k` | CPU frozen SmolLM2 data-authority diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e522-e396-e521-replay050-slotrole1-honest-context-r2-5k/` | 99 steps / 5,059 target tokens in 120.7s; bucket verified, SHA `97cb10f4â€¦bf420ce`. E523 fidelity rises to 0.8667 and recall to 0.2708, but meaningful remains 0.0, structure falls to 0.1955, and AgentV is 0/1; **not promotable or ship** ([results](design/iter-e522-visible-slot-continuation-20260719.md)) |
-| E525 visible-component continuation | `e525-e396-e524-replay050-slotrole1-honest-context-r2-5k` | CPU frozen SmolLM2 conditional-contract diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k/` | 99 steps / 5,059 target tokens in 76.7s; bucket verified, SHA `dbd11811â€¦e55e4b9`. E526 recall rises to 0.4167, but fidelity falls to 0.4667, structure to 0.1452, meaningful remains 0.0, and AgentV is 0/1; **not promotable or ship** ([results](design/iter-e525-visible-component-continuation-20260719.md)) |
-| E528 visible-component-types continuation | `e528-e396-e527-replay050-slotrole1-honest-context-r1-5k` | CPU frozen SmolLM2 type-contract diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k/` | 99 steps / 5,059 target tokens in 146.8s; bucket verified, SHA `6a2180d7â€¦306976d5`. E529 meaningful reaches 0.25 and reward 0.5778, but structure falls to 0.1136, strict meaning is 0.0, and AgentV is 0/1; **not promotable or ship** ([results](design/iter-e528-visible-component-types-continuation-20260719.md)) |
-| E616 object-frame slot-bias replay (80-step) | `e616-object-property-slot-bias-scratch80-20260720` | CPU scratch TwoTower train check | `outputs/runs/e616-object-property-slot-bias-scratch80-20260720/checkpoints/last.pt` (local) | Fresh 80-step run on E530 (244 records, 10x E615's steps), 1,643,522 trainable params, loss 26.5243, SHA `119dd41aâ€¦eef0c508`. Same matched OOD `n=4` control-vs-treatment pair now produces 4/4 syntactically valid, non-empty predictions (vs E615's 0/4) but remains byte-identical: the Gallery record decodes to `ImageGallery([])` in both arms, so the E615 lever's precondition (an opened typed-object item) is never reached â€” reproduces E612's already-rejected empty-array-close finding one step upstream; **not promotable or ship** ([results](design/iter-e616-object-frame-slot-bias-scratch80-replay-20260720.json)) |
-| E620 required-slot coverage replay (800-step) | `e620-required-slot-coverage-scratch800-20260720` | CPU scratch TwoTower duration diagnostic | `outputs/runs/e620-required-slot-coverage-scratch800-20260720/checkpoints/last.pt` (local) | 800 steps on E530 in 80.96s, 1,643,522 trainable params, loss 4.0680, SHA `3ce5c9efâ€¦363ecc5f`. Matched OOD `n=4` treatment reaches fidelity 0.5500 / structure 0.4886 / reward 0.8140 but strict-v2 remains 0.0 and AgentV 0/1; lower train loss regresses E619 fidelity/structure, so **rejected, not promotable or ship** ([results](design/iter-e620-required-slot-coverage-scratch800-20260720.md)) |
-| E548 fresh TwoTower training-loop iteration | `e548_training_loop_twotower_scratch_20260720` | CPU scratch TwoTower train check | `outputs/runs/e548_training_loop_twotower_scratch_20260720/checkpoints/last.pt` (local) | Fresh 8-step run on E530 (244 records), 68,514 trainable params, 2,038 prompt / 561 target tokens seen, loss 39.4267, SHA `6581e32fâ€¦81386936`; no eval or sync, **not promotable or ship** ([results](design/e548-training-loop-twotower-scratch-20260720.json)) |
-| E547 fresh TwoTower training-loop iteration | `e547_training_loop_twotower_scratch_20260720` | CPU scratch TwoTower train check | `outputs/runs/e547_training_loop_twotower_scratch_20260720/checkpoints/last.pt` (local) | Fresh 7-step run on E530 (244 records), 68,514 trainable params, 1,782 prompt / 467 target tokens seen, loss 35.7431, SHA `c67db09fâ€¦6d17627f`; no eval or sync, **not promotable or ship** ([results](design/e547-training-loop-twotower-scratch-20260720.json)) |
-| E546 fresh TwoTower training-loop iteration | `e546_training_loop_twotower_scratch_20260720` | CPU scratch TwoTower train check | `outputs/runs/e546_training_loop_twotower_scratch_20260720/checkpoints/last.pt` (local) | Fresh 6-step run on E530 (244 records), 68,514 trainable params, 1,536 prompt / 398 target tokens seen, loss 40.3390, SHA `dfc0272câ€¦351cf9c5`; no eval or sync, **not promotable or ship** ([results](design/e546-training-loop-twotower-scratch-20260720.json)) |
-| E545 fresh TwoTower training-loop iteration | `e545_training_loop_twotower_scratch_20260719` | CPU scratch TwoTower train check | `outputs/runs/e545_training_loop_twotower_scratch_20260719/checkpoints/last.pt` (local) | Fresh 5-step run on E530 (244 records), 68,514 trainable params, 1,280 prompt / 346 target tokens seen, loss 42.1226, SHA `3d08f592â€¦1823e1fe`; no eval or sync, **not promotable or ship** ([results](design/e545-training-loop-twotower-scratch-20260719.json)) |
-| E544 fresh TwoTower training-loop iteration | `e544_training_loop_twotower_scratch_20260719` | CPU scratch TwoTower train check | `outputs/runs/e544_training_loop_twotower_scratch_20260719/checkpoints/last.pt` (local) | Fresh 4-step run on E530 after prior gitignored E543 checkpoint was absent, 68,514 trainable params, 1,024 prompt / 296 target tokens seen, loss 42.3848, SHA `8531f7d7â€¦c2eb8036`; no eval or sync, **not promotable or ship** ([results](design/e544-training-loop-twotower-scratch-20260719.json)) |
-| E543 resumed TwoTower training-loop iteration | `e543_training_loop_twotower_resume_scratch_20260719` | CPU scratch TwoTower resume/train check | `outputs/runs/e543_training_loop_twotower_resume_scratch_20260719/checkpoints/last.pt` (local) | Resumed from E542 full-state to step 3 on E530 (244 records), 68,514 trainable params, 768 prompt / 199 target tokens seen, loss 39.7476, SHA `6219feedâ€¦130fd1da`; no eval or sync, **not promotable or ship** ([results](design/e543-training-loop-twotower-resume-scratch-20260719.json)) |
-| E542 resumed TwoTower training-loop iteration | `e542_training_loop_twotower_resume_scratch_20260719` | CPU scratch TwoTower resume/train check | `outputs/runs/e542_training_loop_twotower_resume_scratch_20260719/checkpoints/last.pt` (local) | Resumed from E541 full-state to step 2 on E530 (244 records), 68,514 trainable params, 512 prompt / 120 target tokens seen, loss 43.6742, SHA `682ab617â€¦77347c42`; no eval or sync, **not promotable or ship** ([results](design/e542-training-loop-twotower-resume-scratch-20260719.json)) |
-| E541 TwoTower training-loop iteration | `e541_training_loop_twotower_scratch_20260719` | CPU scratch TwoTower wiring/train check | `outputs/runs/e541_training_loop_twotower_scratch_20260719/checkpoints/last.pt` (local) | 1 step on E530 (244 records), 68,514 trainable params, 256 prompt / 63 target tokens seen, loss 36.9158, SHA `ffc8f2e3â€¦db3ffbaa`; no eval or sync, **not promotable or ship** ([results](design/e541-training-loop-twotower-scratch-20260719.json)) |
-| E540 training-loop sentinel | `e540_training_loop_scratch_20260719` | CPU scratch stub wiring check | `outputs/runs/e540_training_loop_scratch_20260719/checkpoints/last.pt` (local) | 1 step / 0 target-token-accounted examples on E530 (244 records), loss 0.5, SHA `46c1d82dâ€¦589e6014`; no eval or sync, **not promotable or ship** ([results](design/e540-training-loop-scratch-20260719.json)) |
-| E531 visible-semantic-role continuation | `e531-e396-e530-replay050-slotrole1-honest-context-r1-5k` | CPU frozen SmolLM2 semantic-role diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k/` | 99 steps / 5,059 target tokens in 99.72s; bucket verified, SHA `6b8c1abcâ€¦74a6154`. E532 structure reaches 0.1431, but meaningful is 0.0, fidelity 0.4667, reward 0.3685, strict meaning 0.0, and AgentV 0/1; **not promotable or ship** ([results](design/iter-e531-visible-semantic-roles-continuation-20260719.md)) |
-| E542 learned root-arity continuation | `e542-e531-root-reference-arity1-r1-24s` | CPU frozen SmolLM2 learned-topology scratch diagnostic | `outputs/runs/e542-e531-root-reference-arity1-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,270 target tokens in 52.93s; SHA `2d5cd4b3â€¦6854c5d8`. OOD `n=4` control reaches meaningful 0.50, fidelity 0.5917, structure 0.3019, reward 0.7950, but learned weight 1 is quality-neutral, strict meaning 0.0, and AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e542-learned-root-reference-arity-20260719.md)) |
-| E543 bounded root-arity continuation | `e543-e531-root-reference-bounded-r1-24s` | CPU frozen SmolLM2 bounded-topology scratch diagnostic | `outputs/runs/e543-e531-root-reference-bounded-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,270 target tokens in 37.17s; SHA `c6be3791â€¦51d7f90`. Bounded loss sharply improves head calibration, but OOD `n=4` decisions and quality exactly match E542, strict meaning is 0.0, and AgentV is 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e543-bounded-root-reference-arity-20260719.md)) |
-| E544 root-reference identity continuation | `e544-e543-root-identity1-r2-24s` | CPU frozen SmolLM2 bounded-identity scratch diagnostic | `outputs/runs/e544-e543-root-identity1-r2-24s/checkpoints/last.pt` (local) | 24 steps / 1,270 target tokens in 40.96s; SHA `3b6e3c00â€¦474f20c`. Same-checkpoint rank-only identity decoding improves OOD `n=4` meaningful 0.00â†’0.25, structure 0.1250â†’0.1688, recall 0.1458â†’0.2708, and AST node F1 0.1833â†’0.2833, but strict meaning is 0.0 and AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e544-root-reference-identity-20260719.md)) |
-| E545 identity negative-weight-1 control | `e545-e544-root-identity-neg1-control-r1-24s` | CPU frozen SmolLM2 matched class-weight scratch diagnostic | `outputs/runs/e545-e544-root-identity-neg1-control-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,270 target tokens in 30.64s; SHA `9e54d470â€¦76fa1`. OOD `n=4` meaningful 0.0, structure 0.1494, recall 0.2083, strict meaning 0.0, AgentV 0/1; regresses from E544, explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e545-root-reference-negative-weight-20260719.md)) |
-| E545 identity negative-weight-4 treatment | `e545-e544-root-identity-neg4-r2-24s` | CPU frozen SmolLM2 matched class-weight scratch diagnostic | `outputs/runs/e545-e544-root-identity-neg4-r2-24s/checkpoints/last.pt` (local) | 24 steps / 1,270 target tokens in 28.64s; SHA `14dd4404â€¦61ae`. Sparse late negative accuracy improves 0.3333â†’0.3958, but predictions and every OOD metric exactly match the control; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e545-root-reference-negative-weight-20260719.md)) |
-| E546 strict-subset multiplier-1 control | `e546-e544-strict-subset1-control-r1-24s` | CPU frozen SmolLM2 matched sampling scratch diagnostic | `outputs/runs/e546-e544-strict-subset1-control-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,270 target tokens in 29.10s; SHA `46aba904â€¦0fc55`. OOD `n=4` meaningful 0.0, fidelity 0.4250, structure 0.1494, recall 0.2083, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e546-root-reference-coverage-sampling-20260719.md)) |
-| E546 strict-subset multiplier-5 treatment | `e546-e544-strict-subset5-r2-24s` | CPU frozen SmolLM2 matched sampling scratch diagnostic | `outputs/runs/e546-e544-strict-subset5-r2-24s/checkpoints/last.pt` (local) | 24 steps / 1,318 target tokens in 30.50s; SHA `a1a6bfc9â€¦b4efe2`. OOD fidelity, structure, reward, and AST F1 improve but recall falls to 0.0625; meaning 0.0 and AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e546-root-reference-coverage-sampling-20260719.md)) |
-| E547 strict-subset multiplier-2 treatment | `e547-e544-strict-subset2-r1-24s` | CPU frozen SmolLM2 moderate sampling scratch diagnostic | `outputs/runs/e547-e544-strict-subset2-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 36.48s; SHA `37002bfdâ€¦0fc57`. OOD structure 0.2248 and AST node F1 0.3270 lead the multiplier ladder while recall stays 0.2083, but fidelity falls to 0.2583, meaning 0.0, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e547-root-reference-coverage2-20260719.md)) |
-| E551 no-lexeme-prior treatment | `e551-e544-strict-subset2-no-lexeme-r1-24s` | CPU frozen SmolLM2 prior-calibration scratch diagnostic | `outputs/runs/e551-e544-strict-subset2-no-lexeme-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 41.85s; SHA `e7921e66â€¦dac32fc6`. Fidelity improves to 0.3000, but structure falls to 0.1594 and recall to 0.1250; meaning 0.0, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e551-slot-lexeme-prior0-20260719.md)) |
-| E552 half-strength lexeme-prior treatment | `e552-e544-strict-subset2-lexeme05-r1-24s` | CPU frozen SmolLM2 prior-calibration scratch diagnostic | `outputs/runs/e552-e544-strict-subset2-lexeme05-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 34.75s; SHA `49a9c111â€¦a151fc04`. OOD fidelity 0.1333, structure 0.2181, recall 0.1250, reward 0.3435; meaning 0.0, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e552-slot-lexeme-prior05-20260719.md)) |
-| E553 corpus-local proportional-prior treatment | `e553-e544-prior-proportional-r3-24s` | CPU frozen SmolLM2 prior-correctness scratch diagnostic | `outputs/runs/e553-e544-prior-proportional-r3-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 34.48s; SHA `510e55cfâ€¦e75399d`. OOD fidelity 0.3000, structure 0.1244, recall 0.0625, reward 0.5453; meaning 0.0, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e553-slot-prior-proportional-smoothing-20260720.md)) |
-| E554 next-slot-context treatment | `e554-e544-slot-next-context-r2-24s` | CPU frozen SmolLM2 slot-context scratch diagnostic | `outputs/runs/e554-e544-slot-next-context-r2-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 39.91s; SHA `af3cbce7â€¦c67b579`. OOD fidelity 0.2583, structure 0.1594, recall 0.1250, reward 0.5328; meaning 0.0, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e554-slot-next-context-20260720.md)) |
-| E555 slot-pair-interaction treatment | `e555-e544-slot-pair-interaction-r2-24s` | CPU frozen SmolLM2 slot-context scratch diagnostic | `outputs/runs/e555-e544-slot-pair-interaction-r2-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 50.29s; SHA `af53e161â€¦addf19e`. OOD fidelity 0.3000, structure 0.1594, recall 0.1250, reward 0.5453; Pareto lever retained, meaning 0.0, AgentV 0/1; explicit no-sync scratch, **not promotable or ship** ([results](design/iter-e555-slot-pair-interaction-20260720.md)) |
-| E556 combined-slot-context treatment | `e556-e544-slot-context-combined-r1-24s` | CPU frozen SmolLM2 slot-context scratch diagnostic | `outputs/runs/e556-e544-slot-context-combined-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 68.42s; SHA `139c670câ€¦5831f0a`. OOD fidelity 0.2167, structure 0.1594, recall 0.1250, reward 0.5203; combination rejected, meaning 0.0, AgentV 0/1; **not ship** ([results](design/iter-e556-slot-context-combined-20260720.md)) |
-| E557 full-balance treatment | `e557-e544-slot-pair-balance1-r1-24s` | CPU frozen SmolLM2 class-balance scratch diagnostic | `outputs/runs/e557-e544-slot-pair-balance1-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,304 target tokens in 70.09s; SHA `438d9871â€¦b97db05`. Metrics exactly match E555; meaning 0.0, AgentV 0/1; **not ship** ([results](design/iter-e557-slot-balance1-20260720.md)) |
-| E558 owner-coverage engineering trial | `e558-e544-owner-coverage-r1-24s` | CPU frozen SmolLM2 rare-owner sampling scratch diagnostic | `outputs/runs/e558-e544-owner-coverage-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,222 target tokens in 43.31s; SHA `8a572738â€¦de85382`. Dirty-tree engineering trial, excluded from decisions; **not ship** ([results](design/iter-e558-owner-coverage-20260720.md)) |
-| E558 owner-coverage treatment | `e558-e544-owner-coverage-r2-24s` | CPU frozen SmolLM2 rare-owner sampling scratch diagnostic | `outputs/runs/e558-e544-owner-coverage-r2-24s/checkpoints/last.pt` (local) | 24 steps / 1,222 target tokens in 43.74s; SHA `a45909dfâ€¦381ede`. OOD fidelity 0.4250, structure 0.0921, recall 0.1250, reward 0.4075; meaning-v2 0.0, AgentV 0/1; **not ship** ([results](design/iter-e558-owner-coverage-20260720.md)) |
-| E559 twofold owner-coverage treatment | `e559-e544-owner-coverage2-r1-24s` | CPU frozen SmolLM2 rare-owner sampling scratch diagnostic | `outputs/runs/e559-e544-owner-coverage2-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,296 target tokens in 31.14s; SHA `1d11926dâ€¦9aac861`. OOD fidelity 0.4417, structure 0.1085, recall 0.2708, reward 0.1643; meaning-v2 0.0, AgentV 0/1; **not ship** ([results](design/iter-e559-owner-coverage2-20260720.md)) |
-| E560 narrow owner-coverage treatment | `e560-e544-owner-threshold4-r1-24s` | CPU frozen SmolLM2 rare-owner sampling scratch diagnostic | `outputs/runs/e560-e544-owner-threshold4-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,312 target tokens in 42.26s; SHA `dae11ceeâ€¦d7686a3`. OOD fidelity 0.2583, structure 0.2181, recall 0.2083, reward 0.5403; meaning-v2 0.0, AgentV 0/1; **not ship** ([results](design/iter-e560-owner-threshold4-20260720.md)) |
-| E561 midpoint owner-coverage treatment | `e561-e544-owner-threshold7-r1-24s` | CPU frozen SmolLM2 rare-owner sampling scratch diagnostic | `outputs/runs/e561-e544-owner-threshold7-r1-24s/checkpoints/last.pt` (local) | 24 steps / 1,284 target tokens in 41.47s; SHA `35a4fe6dâ€¦3a127f9`. OOD fidelity 0.5750, structure 0.2419, recall 0.1458, reward 0.5753; meaning-v2 0.0, AgentV 0/1; **not ship** ([results](design/iter-e561-owner-threshold7-20260720.md)) |
-| E568 design-context continuation | `e568-e561-cont48-r1-48s` | CPU frozen SmolLM2 context-plus-duration scratch diagnostic | `outputs/runs/e568-e561-cont48-r1-48s/checkpoints/last.pt` (local) | 48 steps / 2,561 target tokens in 116.24s; SHA `8dcc0804â€¦0283a12b`. Reward improves to 0.6920, but fidelity/structure regress to 0.2583/0.1375, meaning-v2 0.0, AgentV 0/1; **not ship** ([results](design/iter-e568-design-context-continuation-20260720.md)) |
-| E569 matched continuation | `e569-e561-matched-cont48-r1-48s` | CPU frozen SmolLM2 duration scratch diagnostic | `outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt` (local) | 48 steps / 2,561 target tokens in 75.20s; SHA `8254fcf7â€¦c6535f73`. Meaning-v1 0.25, recall 0.3333, reward 0.6920, but meaning-v2 0.0 and AgentV 0/1; **not ship** ([results](design/iter-e569-matched-continuation-20260720.md)) |
-| E572 fidelity-loss treatment | `e572-e569-fidelity2-r1-48s` | CPU frozen SmolLM2 fidelity-weight scratch diagnostic | `outputs/runs/e572-e569-fidelity2-r1-48s/checkpoints/last.pt` (local) | 48 steps / 2,561 target tokens in 84.26s; SHA `bb6a58ffâ€¦cc29efa2`. Fidelity 0.6500 and reward 0.8170, but meaning-v1/v2 0, recall 0.1458, AgentV 0/1; **not ship** ([results](design/iter-e572-e569-fidelity2-20260720.md)) |
-| E573 midpoint fidelity treatment | `e573-e569-fidelity1-r1-48s` | CPU frozen SmolLM2 fidelity-weight scratch diagnostic | `outputs/runs/e573-e569-fidelity1-r1-48s/checkpoints/last.pt` (local) | 48 steps / 2,561 target tokens in 109.72s; SHA `ff21fc0câ€¦cf59070d`. Meaning-v1 0.25, fidelity 0.4750, reward 0.7570, but meaning-v2 0 and AgentV 0/1; **not ship** ([results](design/iter-e573-e569-fidelity1-20260720.md)) |
-| E574 slot-loss treatment | `e574-e569-slotloss2-r1-48s` | CPU frozen SmolLM2 slot-owner scratch diagnostic | `outputs/runs/e574-e569-slotloss2-r1-48s/checkpoints/last.pt` (local) | 48 steps / 2,561 target tokens in 76.23s; SHA `649cf512â€¦3810b7c2`. All aggregates match E573; meaning-v2 0 and AgentV 0/1; **not ship** ([results](design/iter-e574-e569-slotloss2-20260720.md)) |
-| CAP5 evidence package | `cap5-03-evidence` | CAP0â€“CAP4 reproducible evidence package | `docs/design/calculated-arity-adaptive-precision-results.md` | Reproducible exact-calculation fixtures, claim ledger, artifact index, and negative-result registry; **not a checkpoint or ship claim** ([results](design/calculated-arity-adaptive-precision-results.md)) |
-| Production HF ship | â€” | â€” | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** â€” fill this row after the first full HF sync |
-
-### CAP2 capability certificate
-
-`CERT_CAP2` is **not issued**. The terminal SLM-385 ledger classifies symbolic
-transform and bounded merge as compiler-contract-only, rejects learned
-discrete-token action benefit from E803, and records the remaining capabilities
-as unavailable or unrun conditionals. DSH4 action distillation is closed.
-No checkpoint roster, promotion, or ship claim changed. Full evidence:
-[`dsh3-17-cap2-disposition-20260723/summary.md`](design/dsh3-17-cap2-disposition-20260723/summary.md).
-
-### DSH5 advanced-operator disposition
-
-DSH5 ("Bulk Operators, Transactions & Control Plane") is closed by SLM-420
-(DSH5-12). Selector correctness, bulk atomicity, transaction contracts/
-execution, sequence merge, and control-plane execution are **supported** as
-compiler-owned runtime utilities only â€” none is a learned capability and none
-changes the CAP2 certificate posture above (`CERT_CAP2` remains not-issued,
-retained unchanged). Crossover work, adaptive routing, parameterized
-templates, and systems efficiency are **unavailable** (each ran a real
-preflight or repository-wide audit that confirmed its own measurement
-prerequisite does not exist). Set-valued selection and replay-grounded event
-memory are **unrun_conditional** wiring preconditions with no corpus or
-baseline to answer their held-out-benefit question. The disposition inherits
-DSH3-33's (SLM-408) empty allowed learned-policy inventory (`may_start=false`,
-zero heads/objectives/actions) unchanged. Recommendation:
-`retain_as_compiler_utility`. No checkpoint roster, promotion, ship claim, or
-advanced-operator default-on change follows. Full evidence:
-[`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](design/dsh5-12-advanced-operator-disposition-20260727-local/summary.md).
-
-### RSP-009 EXP-SR cross-experiment disposition (SLM-490)
-
-RSP-009 closes the EXP-SR-1..12 catalogue initiative with a machine-auditable
-SGS-009 disposition over committed sibling evidence. Canonical pointer:
-[`exp-sr-disposition-20260810.md`](design/exp-sr-disposition-20260810.md)
-(full structured report:
-[`iter-slm490-rsp-009-disposition-20260810.md`](design/iter-slm490-rsp-009-disposition-20260810.md);
-reproduce with `python -m scripts.run_rsp009_disposition --mode fixture`).
-
-- 13 disposition rows across 12 catalogue families (EXP-SR-12 split by pack):
-  7 `retain_diagnostic`, 3 `reject`, 2 `revise_and_retest`, 1 `blocked`
-  (`exp-sr-11` PySR/SRBench external-blocked â€” not reject).
-- **Zero** `adopt_primary` / `adopt_optional`; champion pointers stay empty.
-  Fixture/scratch/blocked evidence cannot adopt under SGS-009 fail-closed rules.
-- **No checkpoint roster, default, promotion, or ship claim changed.**
-- Open follow-ups: **SLM-491** (real EXP-SR-3 external-judge/human calibration)
-  and **SLM-492** (real EXP-SR-11 PySR/SRBench run).
-
-Update the table in place when a checkpoint is written or superseded. Keep
-invalidated / superseded rows in **Checkpoint history** below.
-
----
-
-## Intended use
-
-- Generate **placeholder OpenUI** layout programs (`openuiLibrary` syntax) from
-  natural-language prompts, optionally conditioned on DESIGN.md.
-- Train / eval harness research for TwoTower masked diffusion and
-  grammar-diffusion codecs with honest multi-suite ship gates.
-
-**Not intended:** production UI without human review; treating fixture-demo or
-scratch-matrix clears as production readiness; silent gold-placeholder channels.
-
----
-
-## Architecture (serving defaults)
-
-| Piece | Default / notes |
-| --- | --- |
-| Model | TwoTower (context tower + MaskGIT-style denoiser); optional `grammar_diffusion` |
-| Context | HF frozen backbone (`HuggingFaceTB/SmolLM2-135M`) for full ship track; scratch for matrix/CI demos |
-| Output tokenizer | Compositional `OpenUITokenizer` (default) or V5 lexer (`DSLNativeTokenizer`) |
-| Decode | Grammar-constrained LTR / MaskGIT + repair levers (see design docs) |
-| Topology experiment | `grammar_diffusion` v2: typed production-tree expansion/contraction with bounded active nodes; no fixed canvas |
-| Verified-solver decode | `verified_solver_decode` (VSS1-03) **off by default**: opt-in certificate-checked exact-closure pruning of the compiler-tree forest before soft ranking, on the DSL-native path only. **Experimental and unmeasured â€” no checkpoint uses it and it carries no ship/quality claim** ([config glossary](design/quality-experiment-matrix.md#configuration-glossary--verified-solver-decode-vss1-03)). |
-| Eval gates | Multi-suite `--ship-gates` (parse, structural, `placeholder_fidelity`, reward) |
-
----
-
-## How to load
-
-```bash
-# Fixture demo (annotate playground)
-python -m scripts.serve_playground
-# â†’ src/slm_training/resources/checkpoints/playground_demo/last.pt
-
-# Full-run checkpoint from the OpenUI bucket (after sync)
-hf buckets sync \
-  hf://buckets/TKendrick/OpenUI/checkpoints/<run_id> \
-  ./outputs/runs/<run_id>/checkpoints
-
-python -m scripts.evaluate_model \
-  --test-dir outputs/data/eval/v1 \
-  --run-id <run_id> \
-  --ship-gates
-```
-
-Sidecars required next to `*.pt`: `.tokenizer.json`, `.meta.json`
-(optional `.context.tokenizer.json`).
-
----
-
-## Training data
-
-| Split | Source | Notes |
-| --- | --- | --- |
-| Train | `outputs/data/train/v1` (all sources + quality synth) for ship | Fixture upsample = demo only |
-| Eval | `outputs/data/eval/v1` suites: smoke, held_out, adversarial, ood, `rico_held` | Ship claims need full `rico_held` (1500) when asserted |
-
-Leakage: structural fingerprints + train/test isolation
-([adversarial-review.md](design/adversarial-review.md)).
-
----
-
-## Evaluation (fill per checkpoint)
-
-| Suite | n | parse | fidelity | struct | reward | Pass? |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| smoke (c1848-binder-slot-ownership, control / candidate) | 3 / â€” | 1.0 / â€” | 0 / â€” | .05750 / â€” | 0 / â€” | No â€” candidate failed before training at capability validation; replay required; fixture n=3 |
-| smoke (c1847-semantic-exhaustive, candidate / control) | 3 | 1.0 / 1.0 | .7222 / .9167 | .32250 / .23833 | .8657 / .9360 | No â€” MPR 0/0, binder .8222/.9524, AST/canonical 0/0; treatment cuts tokens 60/130, forwards 11/28, and p50 2811/6886 ms but regresses semantic quality; fixture n=3 |
-| smoke (`c1846-exposure`, candidate / control) | 3 | 1.0 / 1.0 | 1.0 / .5278 | .41240 / .46417 | .9610 / .8073 | No â€” MPR `.6667/.3333`, recall `.4167/.25`, binder `1.0/.6333`, but candidate tokens `117/54`, forwards `25/10`, p50 `6358/2669` ms, AST/canonical `0` |
-| smoke (`c1845-capacity-tail`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .5278 | .46417 / .46417 | .8073 / .8073 | No â€” exact null on MPR `.3333`, recall `.25`, binder `.6333`, tokens `54`, forwards `10`, AST/canonical `0`; candidate p50 `2680/2638` ms |
-| smoke + held-out (`c1844-promote`, candidate / control) | 3 + 5 | â€” | â€” | â€” | â€” | No â€” Lean proved and trains completed, but candidate/control timed out on all 3 smoke and all 5 held-out documents; source sampling policy was also dropped, so model attribution is unavailable |
-| smoke (`c1843-structure-token`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .5278 | .46417 / .46417 | .8073 / .8073 | No â€” MPR `.3333/.3333`, recall `.25/.25`, binder `.6333/.6333`, tokens `48/48`, forwards `8/8`, AST/canonical `0`; candidate p50 `2551/2607` ms is below effect floor |
-| smoke (`c1842-semantic-exhaustive`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .5278 | .46417 / .46750 | .8073 / .8193 | No â€” MPR `.3333/.3333`, recall `.25/.25`, binder `.6333/.6333`, AST/canonical `0`; candidate tokens `48/75`, forwards `8/12`, p50 `2604/4296` ms |
-| smoke + held-out (`c1841-promote`, candidate / control) | 3 + 5 | 1.0 / 1.0 | smoke `.5278/.5278`; held `.2900/.2900` | smoke `.46417/.46417`; held `.30788/.30788` | smoke `.8073/.8073`; held `.7360/.7360` | No â€” Lean proved, but all quality/work metrics are null; held MPR `0`, recall `.1619`, binder `.4371`, AST/canonical `0`; candidate p50 `3160/3087` ms |
-| smoke (`c1839-capacity-tail`, candidate / control) | 3 | 1.0 / 1.0 | .7222 / .7222 | .4600 / .4600 | .8777 / .8777 | No â€” exact null on MPR `.3333`, recall `.25`, binder F1 `.8222`, tokens `75`, forwards `13`, AST/canonical 0; candidate p50 `4699/4527` ms |
-| smoke (`c1838-confirm`, candidate / control) | 3 | 1.0 / 1.0 | .7222 / .7500 | .43723 / .40193 | .8657 / .8740 | No â€” fixture confirmation only; MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.8222/.8000`, tokens `78/74`, forwards `15/16`, AST/canonical 0; promotion suites and formal preflight pending |
-| smoke (`c1832-confirm`, candidate / control) | 0 / not run | â€” | â€” | â€” | â€” | No â€” candidate timed out 3/3 documents and control stopped at train step 2; no scoreboard or comparison |
-| smoke (`c1830-capacity-tail`, candidate / control) | 3 | 1.0 / 1.0 | .7222 / .6111 | .40333 / .35057 | .8777 / .8443 | No â€” fixture positive only; MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.8222/.7222`, tokens `99/104`, forwards `22/23`, AST/canonical 0; fresh confirmation pending |
-| smoke (`c1829-capacity-aware`, candidate / control) | 3 | 1.0 / 1.0 | .7222 / .5278 | .5300 / .41973 | .8777 / .8073 | No â€” MPR `.6667/.3333`, recall `.4167/.1667`, binder F1 `.8222/.6333`; quality gain rejected because p50 is `4680.28/2838.60` ms and AST/canonical remain 0 |
-| smoke (`c1828-wide-draft`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .5278 | .46417 / .46417 | .8073 / .8073 | No â€” exact quality/work null; MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.6333/.6333`, draft `16/8`, AST/canonical 0 |
-| smoke (`c1827-compiler-cache`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .5278 | .46417 / .46417 | .8073 / .8073 | No â€” exact quality/work null; MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.6333/.6333`, cache hits `0/0`, AST/canonical 0 |
-| smoke (`c1826-bounded-margin`, candidate / control) | 3 | 1.0 / 1.0 | 1.0 / 1.0 | .3439 / .3439 | .973 / .973 | No â€” exact quality/work null; MPR `.6667/.6667`, recall `.3333/.3333`, binder F1 `1/1`, tokens `201/201`, forwards `51/51`, AST/canonical 0 |
-| smoke (`c1824-compiler-decision-margin`, candidate / control) | 3 | 1.0 / 1.0 | .72222 / .52778 | .4811 / .13527 | .85967 / .76533 | No â€” MPR `.6667/.3333`, recall `.4167/.1667`, binder F1 `.8222/.6333`; quality gain rejected because p50 is `3901.53/973.41` ms and AST/canonical remain 0 |
-| smoke (`c1823-compiler-decision-token`, candidate / control) | 3 | 1.0 / 1.0 | .38889 / .38889 | .0575 / .0575 | 0 / 0 | No â€” fresh-seed null; MPR `0/0`, recall `0/0`, binder F1 `.48889/.48889`, AST/canonical 0, candidate p50 `1781.41` vs `1765.12` ms |
-| smoke (`c1822-compiler-decision-token`, candidate / control) | 3 | 1.0 / 1.0 | 1.0 / 1.0 | .146233 / .052367 | .945 / .941 | No â€” fixture positive only; MPR `.6667/0`, recall `.3333/.0833`, AST/canonical 0, absolute gates fail, fresh confirmation required |
-| smoke (`c1821-compiler-decision-token`, candidate / control) | 0 / 0 complete of 3 | â€” | â€” | â€” | â€” | Incomplete â€” both production batches timed out 3/3; no model effect is measurable and exact frozen replay is required |
-| smoke (`c1819-component-edge-margin`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .9167 | .174167 / .404433 | .76533 / .92 | No â€” MPR `.3333/.6667`, binder F1 `.63333/.95238`, AST/canonical 0; v117 rejects the regressed quality despite faster p50 |
-| smoke (`c1818-component-edge-margin`, candidate / control) | 0 / 3 complete | â€” / 1.0 | â€” / .9167 | â€” / .404433 | â€” / .92 | Incomplete â€” candidate failed before model construction; exact frozen replay required and control gates fail |
-| held_out (`c1812-promote`, candidate / timed-out control) | 5 / 0 complete | 1.0 / â€” | .58 / â€” | .20316 / â€” | 0 / â€” | Incomplete â€” control timed out 5/5; Lean preflight proved, but exact frozen replay is required and absolute gates fail |
-| smoke (`c1817-component-edge-token`, candidate / control) | 3 | 1.0 / 1.0 | .5278 / .5278 | .174167 / .174167 | .76533 / .76533 | No â€” size-matched null; MPR `.3333`, binder F1 `.6333`, AST/canonical 0, and gates fail |
-| smoke (`c1812-promote`, candidate / timed-out control) | 3 / 0 complete | 1.0 / â€” | .7222 / â€” | .264167 / â€” | 0 / â€” | Incomplete â€” control timed out 3/3; no matched promotion claim is available |
-| smoke (`c1810-confirm`, candidate / control) | 3 | 1.0 | .5278 / 0 | .174167 / .0964 | .76533 / 0 | No â€” fresh-seed confirmation only; MPR .3333, recall .25, and absolute gates still fail |
-| smoke (`c1809-balanced-container-close`, candidate / control) | 3 | 1.0 | .5278 / 0 | .174167 / .0575 | .76533 / 0 | No â€” screening win only; MPR .3333, recall .25, and absolute gates fail; fresh confirmation required |
-| smoke (`c1808-container-close`, weight 1 / 0) | 3 | 1.0 | 0 | .3225 | 0 | No â€” exact quality/decode-work tie; training wall rises 3.07â†’9.35 s and p50 rises 1900.30â†’1931.99 ms |
-| smoke (`c1807-typed-family-balance`, .25 / 0) | 3 | 1.0 | 1.0 / .5278 | .104467 / .0575 | .9370 / .76533 | No â€” MPR remains 0, absolute structure fails, and p50 rises 1084.71â†’5868.74 ms |
-| smoke (`c1806-structure-token`, weight 1 / 0) | 3 | 1.0 | .7222 / .5278 | .1375 / .1725 | .88267 / .80733 | No â€” primary structure regresses and p50 rises 2425.58â†’7651.84 ms |
-| smoke (`c1805-component-token`, frozen candidate / control replay) | 3 / 0 complete | 1.0 / â€” | 1.0 / â€” | .081733 / â€” | .927 / â€” | No â€” control timeout 3/3 reproduced; candidate is only a runtime-specific unblock and fails absolute structure |
-| smoke (`c1804-component-token`, candidate / timed-out control) | 3 / 0 complete | 1.0 / â€” | 1.0 / â€” | .081733 / â€” | .927 / â€” | Incomplete â€” control has 3 typed decode timeouts; exact frozen replay required |
-| smoke (`c1803-scaffold-prefix`, weight 1 / 0) | 3 | 1.0 | .7222 | .419733 | .85367 | No â€” exact tie including MPR .3333, binder F1 .8222, and recall .1667; treatment worsens p50 1827.59â†’2001.80 ms |
-| smoke (`c1802-design-dropout`, .25 / 0) | 3 | 1.0 | .5278 | .096400 / .174167 | .76533 | No â€” candidate MPR `.3333â†’0` and recall `.25â†’.0833`; 2.71 ms faster p50 cannot override quality regression |
-| smoke (`c1801-symbol-boundary`, weight 1 / 0) | 3 | 1.0 | .5278 | .135267 | .76533 | No â€” exact quality tie including binder F1 .6333 and recall .1667; treatment worsens loss and p50 |
-| smoke (`c1800-mixed-mask`, mixed / random) | 3 | 1.0 | .5278 | .135267 | .76533 | No â€” exact quality tie including binder F1 .6333 and recall .1667; candidate p50 regresses 982.53â†’1112.15 ms and loss 16.90084â†’22.29659 |
-| smoke (`c1799-slot-augmentation`, true / control false) | 3 | 1.0 | .5278 / .7222 | .05750 / .13750 | 0 | No â€” meaningful-program and recall are 0; binder F1 regresses .8222â†’.6333 despite p50 improving 5,086.88â†’1,004.31 ms |
-| smoke / held_out (`c1796-semantic-contrast`, weight .25 / control 0) | 1/3 + 4/5 / 1/3 + 0/5 complete | partial 1.0 | partial 0/.4167 / 1.0/NA | partial .06000/.16535 / .18000/NA | partial 0/.45550 / .94900/NA | Incomplete â€” both arms have typed decode timeouts; metrics cover different subsets and are not scoreable |
-| smoke (`c1795-edge-alignment`, weight 1 / control 0) | 3 | 1.0 | .5278 | .05750 | .76533 | No â€” exact quality tie with meaning 0, binder F1 .6333, and recall 0; candidate p50 1,302.79 vs control 1,352.96 ms (-3.71%), below the 5% floor |
-| smoke (`c1793-confirm`, fidelity 1.5 / control .5) | 3 | 1.0 | .5278 / .9167 | .44583 / .45750 | .80333 / .92000 | No â€” meaning .3333 and recall .25 tie, but binder F1 .6333 vs .9524 and primary structure regresses; p50 2,344.24 vs 5,018.29 ms cannot confirm quality |
-| smoke (`c1791-fidelity`, weight 1.5 / control .5) | 3 | 1.0 | .5278 / .4444 | .17417 / .14593 | .76533 / .53800 | No â€” candidate meaning .3333 vs 0, binder F1 .6333 vs .5, recall .25 vs 0, and p50 1,088.81 vs 1,154.30 ms; fixture candidate pending fresh confirmation |
-| smoke (`c1789-binder-component-plan`, candidate / incomplete control) | 3 / 2 complete | 1.0 | .7222 / 1.0 | .29667 / .12000 | .87767 / .97300 | Incomplete â€” control has one decode timeout; candidate p50 4,155.15 vs control 3,169.52 ms and binder F1 .8222 vs 1.0 |
-| smoke (`c1788-binder-arity`, weight 1 / control 0) | 3 | 1.0 | 0 | .20583 | 0 | No â€” exact quality tie with meaning/binder F1 0; candidate p50 2,652.77 vs control 2,755.21 ms (-3.72%) |
-| smoke (`c1786-steps`, 42 / 21 steps) | 3 | 1.0 | .5278 | .41973 / .13527 | .80733 / .76533 | No â€” meaning .3333 and binder F1 .6333 tie; candidate p50 2,810.05 vs control 1,105.90 ms (+154.1%) |
-| smoke (`c1785-bounds`, bounds / control) | 3 | 1.0 | 0 | .05750 | 0 | No â€” exact quality tie with meaning/binder F1 0; candidate p50 1,135.36 vs control 1,147.14 ms |
-| smoke (`c1784-confirm`, component-plan / control) | 3 | 1.0 | .7222 | .05750 | 0 | No â€” exact quality tie; candidate p50 1,246.97 vs control 1,373.19 ms, but meaning is 0 |
-| held_out (`c1784-confirm`, component-plan / control) | 5 | 1.0 | .5800 | .08940 | 0 | No â€” exact quality tie with meaning .2 and binder F1 .7076; candidate p50 1,249.79 vs control 1,287.42 ms; c1783 rejected |
-| smoke (`c1783-component-plan`, weight 1 / control 0) | 3 | 1.0 | .5278 | .17417 | .76533 | No â€” exact quality tie; candidate p50 1,059.20 vs control 1,126.88 ms gives MPR/ms +6.39%; fresh confirmation required |
-| smoke (`c1782-component-plan`, weight 1 / control 0) | unavailable | unavailable | unavailable | unavailable | unavailable | Incomplete â€” both evaluations failed before scoreboard on an unregistered runtime flag; exact frozen replay required |
-| smoke (`c1781-canvas`, reported candidate / invalid control) | 3 | 1.0 | .5278 | .17417 | .76533 | Invalid â€” control trained canvas-off but evaluated canvas-on; reported p50 1,086.17 / 1,046.84 ms is non-attributable |
-| smoke (`c1780-component-structure`, plan+edge 1 / control 0) | 3 | 1.0 | .5278 | .17417 | .76533 | No â€” exact quality tie; candidate p50 1,013.25 vs control 1,082.16 ms |
-| held_out (`c1780-component-structure`, plan+edge 1 / control 0) | 5 | 1.0 | .2900 | .09758 | .69400 | No â€” exact quality tie with meaning 0 and binder F1 .4371; candidate p50 1,091.01 vs control 1,065.64 ms |
-| smoke (`c1779-binder-topology`, .25/1 / control 0/0) | 3 | 1.0 | .7222 | .11750 | .31233 | No â€” exact quality tie with meaning 0 and binder F1 .8222; candidate p50 1,480.73 vs control 1,426.49 ms |
-| smoke (`c1778-batch1`, batch 1 / control batch 2) | 3 | 1.0 | .5278 | .17417 | .76533 | No â€” exact quality tie; candidate p50 1,169.59 vs control 1,084.79 ms and worse loss |
-| smoke (`c1777-confirm`, component-inventory / control) | 3 | 1.0 | 0 | .05750 | 0 | No â€” exact quality tie with meaning/binder F1 0; candidate p50 1,217.79 vs control 1,142.29 ms; c1776 rejected |
-| smoke (`c1776-component-inventory`, weights 1 / control 0) | 3 | 1.0 | .5278 / .6389 | .13527 / .13527 | .76533 / .52967 | No â€” meaning ties at .3333; binder F1 .6333 / .7333 and p50 1,381.80 / 1,207.83 ms; fresh confirmation required |
-| held_out (`c1776-component-inventory`, weights 1 / control 0) | 5 | 1.0 | .2900 / .5467 | .10690 / .06024 | .69400 / .13140 | No â€” meaning .2 / 0, but binder F1 .4371 / .6648 and p50 1,494.22 / 1,276.43 ms; fixture candidate only |
-| smoke (`c1775-component-edge`, train/decode 1 / control 0) | 3 | 1.0 | .5278 | .17417 | .76533 | No â€” exact quality tie; candidate p50 1,052.15 vs control 1,093.01 ms gives only +3.88% MPR/ms, below the 5% minimum effect |
-| smoke (`c1773-literal-close`, tail 2 / control 0) | 3 | 1.0 / unavailable | 0 / unavailable | .09640 / unavailable | 0 / unavailable | No â€” candidate completed 3/3 while control timed out 3/3; quality delta unavailable; exact frozen replay required |
-| smoke (`c1772-confirm`, bounds / control) | 3 | 1.0 | .5278 | .46417 | .80733 | No â€” exact quality tie; p50 2,815.53 / 2,893.13 ms; speed below confirmation threshold |
-| held_out (`c1772-confirm`, bounds / control) | 5 | 1.0 | .2900 | .30788 | .73600 | No â€” exact quality tie; candidate p50 2,931.34 vs control 2,877.23 ms; gates fail |
-| smoke (`c1771-bounds`, on / control off) | 3 | 1.0 | .7222 | .11527 | .82367 | No â€” exact quality/prediction tie; candidate p50 1,433.96 vs control 1,522.25 ms; fixture screening only; fresh confirmation required |
-| smoke (`c1770-component-edge`, train/decode 1 / control 0) | 3 | unavailable | unavailable | unavailable | unavailable | No â€” both arms timed out 3/3; strict completeness forbids model-quality attribution; fresh size-matched literal-close experiment next |
-| smoke (`c1766-component-plan`, weight 1 / control 0) | 3 | unavailable / 1.0 | unavailable / .5278 | unavailable / .13527 | unavailable / .76533 | No â€” candidate timed out 3/3; strict completeness forbids model attribution; exact frozen replay required |
-| smoke (`c1765-literal-margin`, direct margin 1 / control 0) | 3 | 1.0 / 1.0 | 0 / .4444 | .11500 / .14777 | 0 / .5380 | No â€” candidate regresses meaning `.3333->0`, binder F1 `.5->0`, and recall `.1667->0`; complete AgentV bundles; gates fail |
-| smoke (`c1764-literal-close`, tail 2 / control 0) | 3 | 1.0 | .5278 | .17417 | .76533 | No â€” prediction-identical; meaning .3333; AgentV 0/2 bundle; gates fail |
-| held_out (`c1764-literal-close`, tail 2 / control 0) | 5 | 1.0 | .2900 | .09758 | .69400 | No â€” prediction-identical; meaning 0; AgentV 0/2 bundle; gates fail |
-| locked local holdout (`slm287-trained-local-v13-20260725`, 5 seeds Ã— 2 configs) | 226 | â€” | â€” | â€” | â€” | No â€” this protocol records raw/constrained/repaired meaning-v2 and binder/reference F1, all 0; AgentV 160/160 shard bundles; absolute-probability MDE 0.0200, diagnostic only |
-| smoke calibration (`slm230_bounded_recursive_r4_r2`, depths 1â€“4) | 2 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” policy calibration only; no meaningful output, no ship claim |
-| held_out (`slm230_bounded_recursive_r4_r2`, fixed R=4) | 2 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” CE improves with depth but token accuracy remains 0.0; AgentV contract audit 4/4, verdict `stagnant` |
-| smoke (`e714-symbol-only-scratch600-r1`) | 3 | 0.3333 | 1.0 | 0.0880 | 0.0 | No â€” strict-v2 0.0, AgentV 0/1; compatible diagnostic subset |
-| smoke (`e720-component-inventory-tree-smoke-r1`, bias 4) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” 3/3 timeouts, strict-v2 0.0, AgentV 0/1 |
-| smoke (`e720-component-inventory-tree-bias0-smoke-r2`, bias 0) | 3 | 0.0 | 0.8056 | 0.2903 | 0.0 | No â€” non-empty diagnostic overlap recovered, but strict-v2 0.0 and AgentV 0/1 |
-| smoke (`e721-component-plan-tree-smoke-r1`, plan 1) | 3 | 1.0 | 0.5278 | 0.1513 | 0.0 | No â€” strict-v2 0.0, plan on/off identical, AgentV 0/1 |
-| smoke (`e721-component-plan-tree-bias0-smoke-r2`, plan 0) | 3 | 1.0 | 0.5278 | 0.1513 | 0.0 | No â€” matched control confirms no plan-decode effect, AgentV 0/1 |
-| smoke (`e722-component-edge-tree-smoke-r1`, edge 1) | 3 | 1.0 | 0.5278 | 0.2861 | 0.8313 | No â€” strict-v2 0.0, edge on/off identical, AgentV 0/1 |
-| smoke (`e722-component-edge-tree-bias0-smoke-r2`, edge 0) | 3 | 1.0 | 0.5278 | 0.2861 | 0.8313 | No â€” matched control confirms no edge-decode effect, AgentV 0/1 |
-| smoke (`e723-slot-owner-tree-smoke-r1`, slot 1) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | No â€” meaningful-v1 0.6667 but strict-v2 0.0, AgentV 0/1 |
-| held_out (`e723-slot-owner-tree-heldout-r3`, slot 1) | 4 | 1.0 | 0.2667 | 0.3940 | 0.7290 | No â€” causal gain over slot-off, but strict-v2 0.0, AgentV 0/1 |
-| smoke (`e725-component-inventory1-smoke-r3`, inventory 1) | 3 | 1.0 | 0.0 | 0.3094 | 0.0 | No â€” meaning-v1/strict-v2 0.0, inventory on/off identical, AgentV 0/1 |
-| not run (`e726-symbol-only-root-arity140-r1`) | 0 | â€” | â€” | â€” | â€” | Invalid â€” configured choice-only treatment was not instantiated on lexer; checkpoint excluded |
-| smoke (`e727-binder-arity1-tree-smoke-r2`, arity 1) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | No â€” identical to arity 0/2, strict-v2 0.0, AgentV 0/1 |
-| held_out (`e727-binder-arity1-tree-heldout-r4`, arity 1) | 4 | 1.0 | 0.2667 | 0.3940 | 0.7290 | No â€” identical to arity 0, strict-v2 0.0, AgentV 0/1 |
-| smoke (`e729-binder-topology1-tree-smoke-r3`, topology 1) | 3 | 1.0 | 0.5278 | 0.4642 | 0.7953 | No â€” meaning-v1 0.3333 vs control 0.6667; strict-v2 0.0, AgentV 0/1 |
-| smoke (`e731-root-arity2-tree-smoke-r3`, root arity 2) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | No â€” identical to weights 0/1 after six applications and zero changes; strict-v2 0.0, AgentV 0/1 |
-| invalid (`e733-root-identity1-tree-smoke-r1`, root identity 1) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | Invalid â€” treatment recorded zero applications; checkpoint and lexer capability declaration invalidated, AgentV 0/1 |
-| smoke (`e735-root-arity-fullhead1-smoke-r1`, root arity 1) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | No â€” full-head training removes impossible tail classes, but weight 0/1 is prediction-identical, strict-v2 0.0, AgentV 0/1 |
-| held_out (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 0.5 | 0.1638 | 0.0 | No â€” strict-v2 0.0, two timeouts, AgentV 0/1 |
-| adversarial (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 1.0 | 0.1221 | 0.0 | No â€” strict-v2 0.0, AgentV 0/1 |
-| ood (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 0.5 | 0.0483 | 0.0 | No â€” strict-v2 0.0, two timeouts, AgentV 0/1 |
-| rico_held (`e714-symbol-only-scratch600-r1`) | 3 | 0.0 | 0.5 | 0.2248 | 0.0 | No â€” strict-v2 0.0, one timeout, AgentV 0/1 |
-| smoke (`restructure_cpu_scratch_v0`) | 3 | 0.0 | 0.0 | 0.31 | 0.0 | No â€” fixture scratch wiring |
-| not run (`local_directml_adreno_20260714`) | 0 | â€” | â€” | â€” | â€” | No â€” hardware/checkpoint validation only |
-| held_out | | | | | | |
-| adversarial | | | | | | |
-| ood | | | | | | |
-| rico_held | | | | | | |
-| `rico_held` (`e120_unsandboxed`, diagnostic subset) | 1 | 0.0 | 0.375 | 0.0375 | 0.0 | No â€” 8-step scratch; 64-token incomplete program |
-| `ood` (`e542-e531-root-reference-arity1-r1-24s`, diagnostic subset) | 4 | 1.0 | 0.5917 | 0.3019 | 0.7950 | No â€” meaningful-v1 0.50, strict-v2 0.0, AgentV 0/1; learned weight 1 exactly matches control |
-| `ood` (`e543-e531-root-reference-bounded-r1-24s`, diagnostic subset) | 4 | 1.0 | 0.5917 | 0.3019 | 0.7950 | No â€” bounded training improves head calibration but decisions and quality exactly match E542; meaningful-v1 0.50, strict-v2 0.0, AgentV 0/1 |
-| `ood` (`e544-e543-root-identity1-r2-24s`, diagnostic subset) | 4 | 1.0 | 0.4333 | 0.1688 | 0.7370 | No â€” rank-only identity weight 1 raises meaningful-v1 0.00â†’0.25 and recall 0.1458â†’0.2708 versus same-checkpoint control, but strict-v2 0.0, AST edge F1 0.0, AgentV 0/1 |
-| `ood` (`e545-e544-root-identity-neg1-control-r1-24s`, diagnostic subset) | 4 | 1.0 | 0.4250 | 0.1494 | 0.5078 | No â€” meaningful-v1 0.0, strict-v2 0.0, AST edge F1 0.0, AgentV 0/1; regresses from E544 |
-| `ood` (`e545-e544-root-identity-neg4-r2-24s`, diagnostic subset) | 4 | 1.0 | 0.4250 | 0.1494 | 0.5078 | No â€” byte-identical to weight-1 control; increased negative weight is quality-neutral, AgentV 0/1 |
-| `ood` (`e546-e544-strict-subset1-control-r1-24s`, diagnostic subset) | 4 | 1.0 | 0.4250 | 0.1494 | 0.5078 | No â€” meaningful-v1/strict-v2 0.0, recall 0.2083, AgentV 0/1 |
-| `ood` (`e546-e544-strict-subset5-r2-24s`, diagnostic subset) | 4 | 1.0 | 0.6083 | 0.2038 | 0.8120 | No â€” AST edge F1 0.0417, but recall regresses to 0.0625, meaningful-v1/strict-v2 0.0, AgentV 0/1 |
-| `ood` (`e547-e544-strict-subset2-r1-24s`, diagnostic subset) | 4 | 1.0 | 0.2583 | 0.2248 | 0.5403 | No â€” recall 0.2083 and AST node F1 0.3270, but meaningful-v1/strict-v2 and AST edge F1 0.0, AgentV 0/1 |
-| `ood` (`e620-slotcoverage-treatment-r1`, diagnostic subset) | 4 | 1.0 | 0.5500 | 0.4886 | 0.8140 | No â€” meaningful-v1 0.50, strict-v2 0.0, required placeholders missing on 3/4 records, AgentV 0/1; duration scaling rejected |
-| `smoke` (`qx_e53_honest_v5_champion`, E121 diagnostic subset) | 1 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” one 5-second constrained-decode timeout; not a ship evaluation |
-| `smoke` (`e123_judged_32step_b`, E123 diagnostic subset) | 1 | 0.0 | 0.1917 | 0.0 | 0.0 | No â€” unconstrained retry/canvas cap; not a ship evaluation |
-| `smoke` (`e127_judged_schema_slots`, E127 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1917 | 0.0 | No â€” placeholder signals improved but output did not parse; not a ship evaluation |
-| `smoke` (`e128_judged_schema_slots_64`, E128 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.0 | No â€” higher loss weights regressed placeholder signal; not a ship evaluation |
-| `smoke` (`e129_judged_schema_slots_64_lowweights`, E129 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.0 | No â€” lower-weight control did not reproduce E127; not a ship evaluation |
-| `smoke` (`e130_judged_schema_slots_seed1`, E130 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.0 | No â€” seed-1 control did not reproduce E127; not a ship evaluation |
-| `smoke` (`e132_generation_focus`, E132 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.1742 | 0.0 | No â€” task reweighting did not improve quality; not a ship evaluation |
-| `smoke` (`e133_no_fuse_ltr`, E133 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” no-fused-LTR path worsened feedback; not a ship evaluation |
-| `smoke` (`e135_hf_context_control`, E135 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.2422 | 0.0 | No â€” HF representation improved signals but did not parse; not a ship evaluation |
-| `smoke` (`e136_hf_context_32`, E136 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.0825 | 0.0 | No â€” longer HF run regressed E135; not a ship evaluation |
-| `smoke` (`e137_hf_context_16`, E137 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.2142 | 0.0 | No â€” midpoint improved placeholder signal but did not parse; not a ship evaluation |
-| `smoke` (`e138_hf_context_seed1_8`, E138 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.1683 | 0.0 | No â€” seed-1 control regressed diagnostic signals; not a ship evaluation |
-| `smoke` (`e139_hf_context_seed2_8`, E139 three-prompt diagnostic) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” seed-2 control had no quality signal and two timeouts; not a ship evaluation |
-| `smoke` (B3 lexer control) | 3 | 0.0 | 0.0 | 0.0125 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `held_out` (B3 lexer control) | 5 | 0.0 | 0.0 | 0.1166 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `adversarial` (B3 lexer control) | 4 | 0.0 | 0.0 | 0.0346 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `ood` (B3 lexer control) | 4 | 0.0 | 0.0 | 0.0833 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `rico_held` (B3 lexer control) | 3 | 0.0 | 0.0 | 0.2528 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `smoke` (B3 choice arm) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” empty predictions; AgentV row failed |
-| `held_out` (B3 choice arm) | 5 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” empty predictions; AgentV row failed |
-| `adversarial` (B3 choice arm) | 4 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” empty predictions; AgentV row failed |
-| `ood` (B3 choice arm) | 4 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” empty predictions; AgentV row failed |
-| `rico_held` (B3 choice arm) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No â€” empty predictions; AgentV row failed |
-| `smoke` (E288 choice-native gate) | 3 | 1.0 | 0.0 | 0.3094 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `held_out` (E288 choice-native gate) | 5 | 1.0 | 0.0 | 0.2514 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `adversarial` (E288 choice-native gate) | 4 | 1.0 | 0.0 | 0.2905 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `ood` (E288 choice-native gate) | 4 | 1.0 | 0.0 | 0.2369 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `rico_held` (E288 choice-native gate) | 3 | 1.0 | 0.0 | 0.0901 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `smoke` (E289 cached choice) | 3 | 1.0 | 0.0 | 0.3094 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `held_out` (E289 cached choice) | 5 | 1.0 | 0.0 | 0.2514 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `adversarial` (E289 cached choice) | 4 | 1.0 | 0.0 | 0.2905 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `ood` (E289 cached choice) | 4 | 1.0 | 0.0 | 0.2369 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `rico_held` (E289 cached choice) | 3 | 1.0 | 0.0 | 0.0901 | 0.0 | No â€” meaningful 0.0; AgentV row failed |
-| `smoke` (E290 direct candidates) | 3 | 1.0 | 0.0 | 0.3094 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `held_out` (E290 direct candidates) | 5 | 1.0 | 0.0 | 0.2514 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `adversarial` (E290 direct candidates) | 4 | 1.0 | 0.0 | 0.2905 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `ood` (E290 direct candidates) | 4 | 1.0 | 0.0 | 0.2369 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `rico_held` (E290 direct candidates) | 3 | 1.0 | 0.0 | 0.0901 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `smoke` (E291 completion cache) | 3 | 1.0 | 0.0 | 0.3094 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `held_out` (E291 completion cache) | 5 | 1.0 | 0.0 | 0.2514 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `adversarial` (E291 completion cache) | 4 | 1.0 | 0.0 | 0.2905 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `ood` (E291 completion cache) | 4 | 1.0 | 0.0 | 0.2369 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `rico_held` (E291 completion cache) | 3 | 1.0 | 0.0 | 0.0901 | 0.0 | No â€” meaningful 0.0; AgentV rows failed |
-| `smoke` (E292 complete-loss honest eval) | 3 | 1.0 | 0.7222 | 0.2958 | 0.0 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `held_out` (E292 complete-loss honest eval) | 5 | 1.0 | 0.4800 | 0.2784 | 0.1414 | No â€” meaningful 0.0, component recall 0.04; AgentV row failed |
-| `adversarial` (E292 complete-loss honest eval) | 4 | 1.0 | 0.4167 | 0.2330 | 0.0 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `ood` (E292 complete-loss honest eval) | 4 | 1.0 | 0.1667 | 0.2731 | 0.0 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `rico_held` (E292 complete-loss honest eval) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `smoke` (E293 matched plan) | 3 | 1.0 | 0.7222 | 0.2681 | 0.0000 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `held_out` (E293 matched plan) | 5 | 1.0 | 0.5600 | 0.3328 | 0.1474 | No â€” meaningful 0.0, component recall 0.04; AgentV row failed |
-| `adversarial` (E293 matched plan) | 4 | 1.0 | 0.8333 | 0.2843 | 0.0000 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `ood` (E293 matched plan) | 4 | 1.0 | 0.5167 | 0.3617 | 0.1893 | No â€” meaningful 0.0, component recall 0.0625; AgentV row failed |
-| `rico_held` (E293 matched plan) | 3 | 1.0 | 0.2500 | 0.1381 | 0.0000 | No â€” meaningful/component recall 0.0; limited n=3 diagnostic |
-| `smoke` (E294 no-DESIGN control) | 3 | 1.0 | 0.3333 | 0.3500 | 0.0000 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `held_out` (E294 no-DESIGN control) | 5 | 1.0 | 0.0000 | 0.2514 | 0.0000 | No â€” meaningful/component recall/fidelity 0.0; AgentV row failed |
-| `adversarial` (E294 no-DESIGN control) | 4 | 1.0 | 0.2500 | 0.2363 | 0.0000 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `ood` (E294 no-DESIGN control) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No â€” meaningful/component recall/fidelity 0.0; AgentV row failed |
-| `rico_held` (E294 no-DESIGN control) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No â€” meaningful/component recall 0.0; limited n=3 diagnostic |
-| `smoke` (E295 DESIGN dropout) | 3 | 1.0 | 0.3333 | 0.3500 | 0.0000 | No â€” meaningful/component recall 0.0; AgentV row failed |
-| `held_out` (E295 DESIGN dropout) | 5 | 1.0 | 0.0000 | 0.2514 | 0.0000 | No â€” meaningful/component recall/fidelity 0.0; AgentV row failed |
-| `adversarial` (E295 DESIGN dropout) | 4 | 1.0 | 0.2500 | 0.2697 | 0.2343 | No â€” meaningful/component recall only 0.25; checkpoint fails overall |
-| `ood` (E295 DESIGN dropout) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No â€” meaningful/component recall/fidelity 0.0; AgentV row failed |
-| `rico_held` (E295 DESIGN dropout) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No â€” meaningful/component recall 0.0; limited n=3 diagnostic |
-| `smoke` (E497 current-main playground audit) | 3 | 0.0 | 0.0 | 0.2203 | 0.0 | No â€” type recall 0.1667, AgentV 0/5, one timeout; fixture wiring only |
-| `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No â€” syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
-| `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No â€” mixture-only control did not improve quality; not a ship evaluation |
-| `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No â€” root/schema constraints improved, but output remained incomplete; not a ship evaluation |
-| `smoke` (`e191-full-compiler-aligned-32step`, E192 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No â€” all-branch alignment regressed semantic root selection; not a ship evaluation |
-| `smoke` (`e196-stratified-compiler-aligned-matched-32step`, E199 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1917 | 0.0 | No â€” syntax 1.0, but primitive binder declaration makes the layout trivial; not a ship evaluation |
-| `smoke` (`e201-role-stratified-compiler-aligned-32step`, E204 diagnostic subset) | 1 | 0.0 | 0.0 | 0.0955 | 0.70 | No â€” component recall 0.25, but recursive children hit the token cap; not a ship evaluation |
-| `smoke` (`e205-lark-terminal-stratified-32step`, E207 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3125 | 0.0 | No â€” syntax 1.0 without fallback, but bound stacks are empty; not a ship evaluation |
-| `smoke` (`e208-list-occupancy-stratified-32step`, E209 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1917 | 0.0 | No â€” syntax 1.0 but root is empty; not a ship evaluation |
-| `smoke` (`e210-list-scope-occupancy-stratified-32step`, E211 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1917 | 0.0 | No â€” typed scope does not recover root occupancy; not a ship evaluation |
-| `smoke` (`e212-contextual-decision-stratified-32step`, E213 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1333 | 0.50 | No â€” populated root/fidelity recover, but required schema semantics fail; not a ship evaluation |
-| `smoke` (`e215-schema-role-judged-32step`, E216 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3458 | 0.25 | No â€” syntax 1.0, but component recall 0.25 keeps meaningful parse at 0.0; not a ship evaluation |
-| `smoke` (`e219-schema-normalized-32step`, E220 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3458 | 0.25 | No â€” corrected admission preserves syntax, but component recall 0.25 keeps meaningful parse at 0.0; not a ship evaluation |
-| `smoke` (`e221-canonical-task-balanced`, strict) | 3 | 0.3333 | 0.0 | 0.2097 | 0.4327 | No â€” syntax 1.0, but meaningful structure and fidelity fail gates |
-| `held_out` (`e221-canonical-task-balanced`, strict) | 5 | 0.0 | 0.0 | 0.1667 | 0.3822 | No â€” strict gate failure |
-| `adversarial` (`e221-canonical-task-balanced`, strict) | 4 | 0.25 | 0.0 | 0.3492 | 0.1593 | No â€” diagnostic only; checkpoint fails the full gate set |
-| `ood` (`e221-canonical-task-balanced`, strict) | 4 | 0.0 | 0.0 | 0.2527 | 0.1593 | No â€” strict gate failure |
-| `rico_held` (`e221-canonical-task-balanced`, strict) | 3 | 0.0 | 0.0 | 0.0901 | 0.0 | No â€” strict gate failure |
-| `smoke` (`e222-capacity-aware-matched`, strict) | 3 | 0.0 | 0.0 | 0.2661 | 0.2123 | No â€” exposure improved but syntax and semantic quality regressed |
-| `held_out` (`e222-capacity-aware-matched`, strict) | 5 | 0.0 | 0.0 | 0.2796 | 0.2548 | No â€” strict gate failure |
-| `adversarial` (`e222-capacity-aware-matched`, strict) | 4 | 0.5 | 0.0 | 0.3845 | 0.4778 | No â€” suite signal only; full gate set failed |
-| `ood` (`e222-capacity-aware-matched`, strict) | 4 | 0.0 | 0.0 | 0.3719 | 0.1593 | No â€” strict gate failure |
-| `rico_held` (`e222-capacity-aware-matched`, strict) | 3 | 0.0 | 0.0 | 0.1501 | 0.0 | No â€” strict gate failure |
-| `smoke` (`e223-quota-capacity-matched`, strict) | 3 | 0.0 | 0.0 | 0.3094 | 0.0 | No â€” syntax 1.0 but output is semantically trivial |
-| `held_out` (`e223-quota-capacity-matched`, strict) | 5 | 0.0 | 0.0 | 0.2514 | 0.0 | No â€” strict gate failure |
-| `adversarial` (`e223-quota-capacity-matched`, strict) | 4 | 0.0 | 0.0 | 0.2905 | 0.0 | No â€” strict gate failure |
-| `ood` (`e223-quota-capacity-matched`, strict) | 4 | 0.0 | 0.0 | 0.2369 | 0.0 | No â€” strict gate failure |
-| `rico_held` (`e223-quota-capacity-matched`, strict) | 3 | 0.0 | 0.0 | 0.0901 | 0.0 | No â€” strict gate failure |
-| `smoke` (`e224-semantic-exhaustive-matched`, E226 honest tree) | 3 | 1.0 | 0.7222 | 0.3628 | 0.3163 | No â€” meaningful program 0.0; trivial/low-recall layouts |
-| `held_out` (`e224-semantic-exhaustive-matched`, E226 honest tree) | 5 | 1.0 | 0.4533 | 0.2309 | 0.2916 | No â€” meaningful program 0.0 and structure below gate |
-| `adversarial` (`e224-semantic-exhaustive-matched`, E226 honest tree) | 4 | 1.0 | 0.7500 | 0.2982 | 0.1873 | No â€” meaningful program 0.0 |
-| `ood` (`e224-semantic-exhaustive-matched`, E226 honest tree) | 4 | 1.0 | 0.4250 | 0.2762 | 0.3520 | No â€” meaningful program 0.0 |
-| `rico_held` (`e224-semantic-exhaustive-matched`, E226 honest tree) | 3 | 1.0 | 0.1667 | 0.2380 | 0.4577 | No â€” diagnostic n=3; full gate set failed |
-| `smoke` (`e227-candidate-set-matched`) | 3 | 1.0 | 0.0000 | 0.3094 | 0.0000 | No â€” trivial empty layouts |
-| `held_out` (`e227-candidate-set-matched`) | 5 | 1.0 | 0.0333 | 0.2739 | 0.1398 | No â€” meaningful program 0.0; full gate set failed |
-| `adversarial` (`e227-candidate-set-matched`) | 4 | 1.0 | 0.0000 | 0.2905 | 0.0000 | No â€” trivial empty layouts |
-| `ood` (`e227-candidate-set-matched`) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No â€” trivial empty layouts |
-| `rico_held` (`e227-candidate-set-matched`) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No â€” diagnostic n=3; full gate set failed |
-| `smoke` (`e228-candidate-margin-matched`) | 3 | 1.0 | 0.5278 | 0.4642 | 0.8073 | No â€” meaningful program 0.3333 below gate |
-| `held_out` (`e228-candidate-margin-matched`) | 5 | 1.0 | 0.2800 | 0.3369 | 0.7330 | No â€” meaningful program 0.0 |
-| `adversarial` (`e228-candidate-margin-matched`) | 4 | 1.0 | 0.5417 | 0.4744 | 0.8115 | Suite passes; checkpoint still fails full gate set |
-| `ood` (`e228-candidate-margin-matched`) | 4 | 1.0 | 0.2583 | 0.3750 | 0.7265 | No â€” meaningful program 0.0 |
-| `rico_held` (`e228-candidate-margin-matched`) | 3 | 1.0 | 0.1250 | 0.1628 | 0.6865 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e229-margin-64step`) | 3 | 1.0 | 0.5556 | 0.4475 | 0.6073 | No â€” meaningful program 0.3333 below gate |
-| `held_out` (`e229-margin-64step`) | 5 | 1.0 | 0.5600 | 0.3564 | 0.8290 | No â€” meaningful program 0.0 |
-| `adversarial` (`e229-margin-64step`) | 4 | 1.0 | 0.8333 | 0.4387 | 0.9110 | Suite passes; checkpoint still fails full gate set |
-| `ood` (`e229-margin-64step`) | 4 | 1.0 | 0.5583 | 0.3481 | 0.8285 | No â€” meaningful program 0.0 |
-| `rico_held` (`e229-margin-64step`) | 3 | 1.0 | 0.2500 | 0.1720 | 0.7360 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e230-diverse-roots-32step`) | 3 | 1.0 | 0.5278 | 0.4642 | 0.8073 | No â€” meaningful program 0.3333 below gate |
-| `held_out` (`e230-diverse-roots-32step`) | 5 | 1.0 | 0.2800 | 0.3369 | 0.7330 | No â€” meaningful program 0.0 |
-| `adversarial` (`e230-diverse-roots-32step`) | 4 | 1.0 | 0.2083 | 0.3477 | 0.3870 | No â€” semantic quality regressed |
-| `ood` (`e230-diverse-roots-32step`) | 4 | 1.0 | 0.2583 | 0.3750 | 0.7265 | No â€” meaningful program 0.0 |
-| `rico_held` (`e230-diverse-roots-32step`) | 3 | 1.0 | 0.1250 | 0.1628 | 0.6865 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e231-component-inventory-32step`) | 3 | 1.0 | 0.1944 | 0.4636 | 0.4910 | No â€” meaningful program 0.3333 and fidelity below gates |
-| `held_out` (`e231-component-inventory-32step`) | 5 | 1.0 | 0.1133 | 0.3302 | 0.4234 | No â€” meaningful program 0.0 and fidelity below gates |
-| `adversarial` (`e231-component-inventory-32step`) | 4 | 1.0 | 0.4583 | 0.4681 | 0.6242 | Suite passes; checkpoint still fails full gate set |
-| `ood` (`e231-component-inventory-32step`) | 4 | 1.0 | 0.2083 | 0.3469 | 0.5493 | No â€” meaningful program 0.0 |
-| `rico_held` (`e231-component-inventory-32step`) | 3 | 1.0 | 0.1250 | 0.1628 | 0.6865 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e232-role-component-plan-32step`) | 3 | 1.0 | 0.5278 | 0.4642 | 0.8073 | No â€” meaningful program 0.3333 |
-| `held_out` (`e232-role-component-plan-32step`) | 5 | 1.0 | 0.1800 | 0.3335 | 0.5732 | No â€” meaningful program 0.0 |
-| `adversarial` (`e232-role-component-plan-32step`) | 4 | 1.0 | 0.5417 | 0.4744 | 0.8115 | Suite passes; checkpoint still fails full gate set |
-| `ood` (`e232-role-component-plan-32step`) | 4 | 1.0 | 0.2083 | 0.3469 | 0.5493 | No â€” meaningful program 0.0 |
-| `rico_held` (`e232-role-component-plan-32step`) | 3 | 1.0 | 0.1250 | 0.1628 | 0.6865 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e233-component-edges-32step`) | 3 | 1.0 | 0.5278 | 0.4642 | 0.8073 | No â€” meaningful program 0.3333 |
-| `held_out` (`e233-component-edges-32step`) | 5 | 1.0 | 0.2800 | 0.3369 | 0.7330 | No â€” meaningful program 0.0 |
-| `adversarial` (`e233-component-edges-32step`) | 4 | 1.0 | 0.4167 | 0.3895 | 0.6148 | No â€” meaningful program 0.25 |
-| `ood` (`e233-component-edges-32step`) | 4 | 1.0 | 0.2583 | 0.3750 | 0.7265 | No â€” meaningful program 0.0 |
-| `rico_held` (`e233-component-edges-32step`) | 3 | 1.0 | 0.1250 | 0.1628 | 0.6865 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e234-edge-decision-alignment-32step`) | 3 | 1.0 | 0.5278 | 0.4642 | 0.8073 | No â€” meaningful program 0.3333 |
-| `held_out` (`e234-edge-decision-alignment-32step`) | 5 | 1.0 | 0.2800 | 0.3369 | 0.7330 | No â€” meaningful program 0.0 |
-| `adversarial` (`e234-edge-decision-alignment-32step`) | 4 | 1.0 | 0.2917 | 0.3619 | 0.5743 | No â€” meaningful program 0.25 |
-| `ood` (`e234-edge-decision-alignment-32step`) | 4 | 1.0 | 0.2583 | 0.3750 | 0.7265 | No â€” meaningful program 0.0 |
-| `rico_held` (`e234-edge-decision-alignment-32step`) | 3 | 1.0 | 0.1250 | 0.1628 | 0.6865 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e235-binder-instance-plan-32step`) | 3 | 1.0 | 0.1111 | 0.4122 | 0.2497 | No â€” meaningful program, fidelity, and reward below gates |
-| `held_out` (`e235-binder-instance-plan-32step`) | 5 | 1.0 | 0.0333 | 0.2739 | 0.1398 | No â€” meaningful program, structure, and fidelity below gates |
-| `adversarial` (`e235-binder-instance-plan-32step`) | 4 | 1.0 | 0.2083 | 0.3556 | 0.3870 | Suite passes; checkpoint still fails full gate set |
-| `ood` (`e235-binder-instance-plan-32step`) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No â€” meaningful program and structure below gates |
-| `rico_held` (`e235-binder-instance-plan-32step`) | 3 | 1.0 | 0.0833 | 0.1371 | 0.4577 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`e236-binder-topology-32step`) | 3 | 1.0 | 0.0000 | 0.3094 | 0.0000 | No â€” semantic metrics collapse |
-| `held_out` (`e236-binder-topology-32step`) | 5 | 1.0 | 0.0000 | 0.2514 | 0.0000 | No â€” semantic metrics collapse |
-| `adversarial` (`e236-binder-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2905 | 0.0000 | No â€” meaningful program below gate |
-| `ood` (`e236-binder-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No â€” semantic metrics collapse |
-| `rico_held` (`e236-binder-topology-32step`) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No â€” semantic metrics collapse; diagnostic n=3 |
-| `smoke` (`e237-detached-topology-32step`) | 3 | 1.0 | 0.0000 | 0.3094 | 0.0000 | No â€” exact E236 reproduction |
-| `held_out` (`e237-detached-topology-32step`) | 5 | 1.0 | 0.0000 | 0.2514 | 0.0000 | No â€” exact E236 reproduction |
-| `adversarial` (`e237-detached-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2905 | 0.0000 | No â€” exact E236 reproduction |
-| `ood` (`e237-detached-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No â€” exact E236 reproduction |
-| `rico_held` (`e237-detached-topology-32step`) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No â€” exact E236 reproduction; diagnostic n=3 |
-| `smoke` (`e238-binder-arity-32step`) | 3 | 0.6667 | 0.5278 | 0.2042 | 0.4770 | Invalidated â€” optional-head RNG confound |
-| `held_out` (`e238-binder-arity-32step`) | 5 | 0.6000 | 0.3933 | 0.1326 | 0.4406 | Invalidated â€” optional-head RNG confound |
-| `adversarial` (`e238-binder-arity-32step`) | 4 | 0.7500 | 0.8333 | 0.2174 | 0.6658 | Invalidated â€” optional-head RNG confound |
-| `ood` (`e238-binder-arity-32step`) | 4 | 0.5000 | 0.3500 | 0.0888 | 0.3585 | Invalidated â€” optional-head RNG confound |
-| `rico_held` (`e238-binder-arity-32step`) | 3 | 0.6667 | 0.1250 | 0.0291 | 0.4297 | Invalidated â€” optional-head RNG confound; diagnostic n=3 |
-| `smoke` (`e239d-binder-arity-fully-isolated-32step`) | 3 | 0.3333 | 0.5833 | 0.2591 | 0.0000 | No â€” meaningful rate 0; 11 total failures |
-| `held_out` (`e239d-binder-arity-fully-isolated-32step`) | 5 | 0.2000 | 0.5667 | 0.1338 | 0.0000 | No â€” meaningful rate 0 |
-| `adversarial` (`e239d-binder-arity-fully-isolated-32step`) | 4 | 0.0000 | 0.8333 | 0.1912 | 0.0000 | No â€” syntax and meaningful rate 0 |
-| `ood` (`e239d-binder-arity-fully-isolated-32step`) | 4 | 0.0000 | 0.5250 | 0.1775 | 0.0000 | No â€” syntax and meaningful rate 0 |
-| `rico_held` (`e239d-binder-arity-fully-isolated-32step`) | 3 | 0.0000 | 0.3750 | 0.0971 | 0.0000 | No â€” syntax and meaningful rate 0; diagnostic n=3 |
-| `smoke` (`qx_e249_local_ce_margin`) | 3 | 1.0000 | 0.5278 | 0.1742 | 0.7653 | No â€” meaningful rate below gate; structure regressed vs E248 |
-| `held_out` (`qx_e249_local_ce_margin`) | 5 | 1.0000 | 0.2800 | 0.1088 | 0.6910 | No â€” meaningful rate 0; structure regressed vs E248 |
-| `adversarial` (`qx_e249_local_ce_margin`) | 4 | 1.0000 | 0.5417 | 0.1927 | 0.7695 | No â€” structure below gate and regressed vs E248 |
-| `ood` (`qx_e249_local_ce_margin`) | 4 | 1.0000 | 0.2167 | 0.1469 | 0.6720 | No â€” meaningful rate 0; structure regressed vs E248 |
-| `rico_held` (`qx_e249_local_ce_margin`) | 3 | 1.0000 | 0.1250 | 0.0727 | 0.6445 | No â€” structure below gate; diagnostic n=3 |
-| `smoke` (`qx_e252_local_ftpo_set`) | 3 | 1.0000 | 0 | 0.1353 | 0.6070 | No â€” fidelity collapsed; 13 total failures |
-| `held_out` (`qx_e252_local_ftpo_set`) | 5 | 1.0000 | 0 | 0.1239 | 0.6070 | No â€” fidelity collapsed; structure regressed vs E248 |
-| `adversarial` (`qx_e252_local_ftpo_set`) | 4 | 1.0000 | 0 | 0.0978 | 0.6070 | No â€” fidelity collapsed; structure regressed vs E248 |
-| `ood` (`qx_e252_local_ftpo_set`) | 4 | 1.0000 | 0 | 0.1906 | 0.6070 | No â€” fidelity collapsed; structure regressed vs E248 |
-| `rico_held` (`qx_e252_local_ftpo_set`) | 3 | 1.0000 | 0 | 0.0368 | 0.6070 | No â€” meaningful rate 0; diagnostic n=3 |
-| `smoke` (`qx_e262_broad_gold_ast_ftpo_set`) | 3 | 1.0000 | 0.5278 | 0.1742 | 0.7653 | No â€” meaningful rate and structure below gate; 10 total failures |
-| `held_out` (`qx_e262_broad_gold_ast_ftpo_set`) | 5 | 1.0000 | 0.2800 | 0.1088 | 0.6910 | No â€” meaningful rate 0; structure regressed vs E248 |
-| `adversarial` (`qx_e262_broad_gold_ast_ftpo_set`) | 4 | 1.0000 | 0.5417 | 0.1927 | 0.7695 | No â€” structure below gate and regressed vs E248 |
-| `ood` (`qx_e262_broad_gold_ast_ftpo_set`) | 4 | 1.0000 | 0.2583 | 0.1469 | 0.6845 | No â€” meaningful rate 0; structure regressed vs E248 |
-| `rico_held` (`qx_e262_broad_gold_ast_ftpo_set`) | 3 | 1.0000 | 0.1250 | 0.0727 | 0.6445 | No â€” structure below gate; diagnostic n=3 |
-
-Recipe for `restructure_cpu_scratch_v0`: device=cpu, steps=80, context=scratch,
-fixture train/test `v0`, `--no-sync-checkpoints`, LTR primary, no DESIGN.md in
-context. Host: 4c / 15GB RAM, no CUDA, no `HF_TOKEN` (Jobs/bucket skipped).
-Evidence: [restructure-cpu-train-results.json](design/restructure-cpu-train-results.json).
-
-Recipe for `local_directml_adreno_20260714`: Qualcomm Adreno X1-85 via
-Torch-DirectML (`privateuseone:0`), 5 steps, batch 4, 585-record remediated
-corpus, scratch context, 924,386 trainable parameters, no AMP/compile, and
-`--no-sync-checkpoints`. Last loss was 61.2962; no eval suite or ship gates ran.
-AdamW `aten::lerp.Scalar_out` fell back to CPU. The checkpoint loaded in the CPU
-playground, but a real generation did not return within 120 seconds, so it is not
-a viable playground candidate. Evidence:
-[local-directml-train-results.json](design/local-directml-train-results.json).
-
-Record device, steps, context backend, honesty mode (`honest_slot_contract`),
-and whether gates used `--ship-gates`. Link
-`docs/design/*-results.json` / run `gates.json` when available.
-
-**Known honest fixture clears (not production):** V6 E50/E53/E55 on CPU scratch
-with limited `rico_held` n â€” see
-[quality-experiment-matrix.md](design/quality-experiment-matrix.md).
-
-### P13 matched smoke (SLM-17)
-
-| Checkpoint | Suite | n | Parse | Fidelity | Struct | Reward | Pass? |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| fixture E50 | `held_out` | 5 | 0.0 | 0.08 | 0.0 | 0.0 | No |
-| integrated E50 | `held_out` | 5 | 0.0 | 0.12 | 0.0 | 0.0 | Signal only; +0.04 |
-| fixture E50 | `rico_held` | 5 | 0.0 | 0.0667 | 0.0 | 0.0 | No |
-| integrated E50 | `rico_held` | 5 | 0.0 | 0.10 | 0.0 | 0.0 | Signal only; +0.0333 |
-
-Recipe: E50 on CPU scratch, 80 train steps, batch 4, lr `3e-4`, seed 0,
-honest slot contract, four-step best-of-1 decode, no template fill or
-DESIGN.md context, and unchanged gates. Checkpoints are local scratch
-artifacts with explicit no-sync rationale; this is a bounded matched data
-signal, not a full HF-context train or reusable promotion.
-Evidence: [data-synthesis.md](design/data-synthesis.md) and
-[data-synthesis-results.json](design/data-synthesis-results.json).
-
-### Grammar topology implementation smoke
-
-| Checkpoint | Suite | n | Parse | Fidelity | Struct | Topology composite | Pass? |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| retired X2, seeds 0/1/2 | all five | 19 per seed | 0.0 | 0.0 | 0.0 | unavailable | No |
-| topology v2 fixture overfit | smoke | 2 | 0.5 | 0.5 | 0.225 | 0.4820 | Wiring only; no ship |
-| X9 confirmation median | smoke | 3 | 0.0 | 0.333 | 0.098 | 0.414 | No |
-| X9 confirmation median | held_out | 5 | 0.0 | 0.0 | 0.0 | 0.372 | No |
-| X9 confirmation median | adversarial | 4 | 0.0 | 0.0 | 0.0 | 0.472 | No |
-| X9 confirmation median | ood | 4 | 0.0 | 0.083 | 0.108 | 0.330 | No |
-| X9 confirmation median | rico_held | 3 | 0.667 | 0.125 | 0.317 | 0.464 | No â€” limited slice; other suites fail |
-| X14 confirmation median | smoke | 3 | 0.0 | 0.0 | 0.309 | 0.298 | No |
-| X14 confirmation median | held_out | 5 | 0.0 | 0.0 | 0.251 | 0.277 | No |
-| X14 confirmation median | adversarial | 4 | 0.0 | 0.0 | 0.291 | 0.285 | No |
-| X14 confirmation median | ood | 4 | 0.0 | 0.0 | 0.237 | 0.278 | No |
-| X14 confirmation median | rico_held | 3 | 0.0 | 0.042 | 0.078 | 0.233 | No |
-| X18 confirmation median | smoke | 3 | 0.0 | 0.0 | 0.0 | unavailable | No |
-| X18 confirmation median | held_out | 5 | 0.0 | 0.0 | 0.0 | unavailable | No |
-| X18 confirmation median | adversarial | 4 | 0.0 | 0.0 | 0.0 | unavailable | No |
-| X18 confirmation median | ood | 4 | 0.0 | 0.0 | 0.0 | unavailable | No |
-| X18 confirmation median | rico_held | 32 | 0.0 | 0.0 | 0.0 | unavailable | No |
-| X21 confirmation median | smoke | 3 | 0.0 | 0.0 | 0.115 | 0.238 | No |
-| X21 confirmation median | held_out | 5 | 0.0 | 0.0 | 0.109 | 0.231 | No |
-| X21 confirmation median | adversarial | 4 | 0.0 | 0.0 | 0.109 | 0.231 | No |
-| X21 confirmation median | ood | 4 | 0.0 | 0.0 | 0.085 | 0.228 | No |
-| X21 confirmation median | rico_held | 32 | 0.0 | 0.0 | 0.046 | 0.208 | No |
-
-X2 used CPU scratch, 80 steps, batch 4, seeds 0/1/2, the 1,165-record
-curriculum corpus, limited remediated suites, and no checkpoint sync. All three
-AgentV bundles ran without execution errors and all ship gates failed. Topology v2
-used CPU scratch, 200 steps, batch 2, learning rate `3e-3`, two fixture records,
-and honest request slot contracts; AgentV ran 5 checks with zero passes. Neither
-checkpoint family was promoted or uploaded. Evidence:
-[grammar-fixed-canvas-baseline-results.json](design/grammar-fixed-canvas-baseline-results.json)
-and [grammar-topology-smoke-results.json](design/grammar-topology-smoke-results.json).
-The X9/X14 confirmation used the same 1,165-record curriculum corpus, CPU scratch
-context, 200 steps, batch 4, learning rate `3e-4`, 16 generation phases, and seeds
-0/1/2. Six AgentV bundles completed. All checkpoints are local short-budget matrix
-artifacts with an explicit no-sync rationale; no reusable champion was designated.
-Evidence: [grammar-matrix-results.json](design/grammar-matrix-results.json).
-The X16-X21 campaign used 694 immutable ProgramSpec-derived records, including
-189 scope-contract rows, and limited RICO n=32. X18 and X21 were confirmed at 200
-CPU scratch steps for seeds 0/1/2. Six AgentV bundles completed with 0/5 domain
-passes each. The scope-specific heads cannot be scored on these generalization
-suites because they contain no scope metadata. Evidence:
-[grammar-scope-matrix-results.json](design/grammar-scope-matrix-results.json).
-
-### E499 bounded strict-corpus diagnostic
-
-All rows use frozen local SmolLM2 context, the choice codec, no DESIGN context,
-the same 1,000-target-token budget, and honest constrained smoke `n=1`.
-
-| Checkpoint | n | Syntax | Meaningful | Fidelity | Structure | Component recall | Reward | AgentV | Pass |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `e499-remediated-roots-hf-choice-control-r4` | 1 | 1.0 | 0.0 | 0.0 | 0.1542 | 0.25 | 0.0 | 0/1 | No |
-| `e499-strict-r4-hf-choice-candidate-r4` | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
-| `e499-choice-compatible-strict-hf-choice-candidate-r6` | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
-
-This is a one-record scratch diagnostic, not a ship evaluation. All checkpoints
-were explicitly kept local with `--no-sync-checkpoints`.
-
-### E500 documentized-expression diagnostic
-
-All rows use CPU, frozen local SmolLM2 context, the choice codec, seed 0,
-batch 4, learning rate `3e-4`, no DESIGN context, an honest prompt-derived slot
-contract, and a three-minute wall limit. The only matched variable is the
-96-row document control versus the 260-row documentized-expression corpus.
-
-| Checkpoint | Tokens | n | Syntax | Meaningful | Fidelity | Structure | Component recall | Reward | AgentV | Pass |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `e500-document-control-hf-choice-r1` | 1,028 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
-| `e500-documentized-expression-hf-choice-r2` | 1,039 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
-| `e500-document-control-hf-choice-r3-5k` | 5,040 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
-| `e500-documentized-expression-hf-choice-r4-5k` | 5,062 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
-
-All four runs emitted AgentEvals JSONL and pinned AgentV result bundles without
-execution errors. They are bounded diagnostics, not ship evaluations, and were
-explicitly kept local with `--no-sync-checkpoints`.
-
-### E501 E396-to-E500 warm-start diagnostic
-
-All rows use the same frozen E396 parent, CPU/frozen local SmolLM2 context,
-choice output, and honest constrained smoke `n=3`. Every process is capped at
-170 seconds and every train summary records `max_wall_minutes=3.0`.
-
-| Checkpoint | Sampling | Tokens | Syntax | Meaningful | Fidelity | Structure | Component recall | Reward | AgentV | Pass |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Frozen E396 parent | â€” | 0 | 1.0 | 0.0 | 0.0 | 0.2117 | 0.0 | 0.0 | 0/1 | No |
-| `e501-e396-e500-init-r1` | equal task groups | 5,060 | 1.0 | 0.0 | 0.0 | 0.1458 | 0.0 | 0.0 | 0/1 | No |
-| `e501-e396-e500-uniform-init-r2` | uniform records | 5,019 | 1.0 | 0.0 | 0.0 | 0.0889 | 0.1667 | 0.0 | 0/1 | No |
-| `e501-e396-e500-uniform-init-r3-1k` | uniform records | 1,039 | 1.0 | 0.0 | 0.0 | 0.2317 | 0.0 | 0.0 | 0/1 | No |
-
-### E502 checkpoint-prior retention diagnostic
-
-All rows use CPU, frozen local SmolLM2-135M, the committed E500 corpus,
-honest prompt-derived slots, constrained decode without fallback, smoke `n=3`,
-and `max_wall_minutes=3.0`. Version stamp: code `3e4f906`, train v2 for the
-lower-LR controls and v3 for retained-prior arms; eval v1, meaningful v2,
-scoring v1, ship gates v1.
-
-| Run | LR | Tokens | Priors restored | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AgentV | Promote |
-| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `e502-e396-e500-uniform-lr1e4-r1` | 1e-4 | 1,039 | No | 1.0 | 0.0 | 0.0 | 0.1133 | 0.1667 | 0.0 | 0/1 | No |
-| `e502-e396-e500-uniform-lr3e5-r2` | 3e-5 | 1,039 | No | 1.0 | 0.0 | 0.0 | 0.1167 | 0.0833 | 0.0 | 0/1 | No |
-| `e502-e396-e500-prior-retained-lr3e4-r3` | 3e-4 | 1,039 | Lexeme + span | 1.0 | 0.0 | 0.0 | 0.3169 | 0.0833 | 0.0 | 0/1 | No |
-| `e502-e396-e500-prior-retained-lr3e4-r4-5k` | 3e-4 | 5,019 | Lexeme + span | 1.0 | 0.0 | 0.0 | 0.0927 | 0.1667 | 0.0 | 0/1 | No |
-
-All four E502 checkpoints are rejected local diagnostics with explicit
-`--no-sync-checkpoints`; the frozen parent remains the only bucket artifact.
-
-### E503 initialized-weight retention diagnostic
-
-All rows use the same E396 parent, E500 corpus, 5,019 target tokens, CPU/frozen
-local SmolLM2 context, honest constrained smoke `n=3`, and external 170-second
-process cap. Train v4 records the anchored parameter count and final RMS drift;
-eval v1, meaningful v2, scoring v1, ship gates v1.
-
-| Run | Retention | RMS drift | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AgentV | Promote |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `e503-e396-e500-retention0-r1-5k` | 0.00 | 0.003123 | 1.0 | 0.0 | 0.0 | 0.0927 | 0.1667 | 0.0 | 0/1 | No |
-| `e503-e396-e500-retention001-r2-5k` | 0.01 | 0.002071 | 1.0 | 0.0 | 0.0 | 0.0900 | 0.1667 | 0.0 | 0/1 | No |
-| `e503-e396-e500-retention003-r4-5k` | 0.03 | 0.001163 | 1.0 | 0.0 | 0.0 | 0.1667 | 0.0833 | 0.0 | 0/1 | No |
-| `e503-e396-e500-retention005-r3-5k` | 0.05 | 0.000811 | 1.0 | 0.0 | 0.0 | 0.2029 | 0.0 | 0.0 | 0/1 | No |
-
-All four checkpoints are rejected local diagnostics with explicit
-`--no-sync-checkpoints`; no promotion or production claim is made.
-
-### E504 parent-corpus replay diagnostic
-
-All rows use the same E396 parent, E500 primary corpus, approximately 5,000
-target tokens, CPU/frozen local SmolLM2 context, honest constrained smoke
-`n=3`, and external 170-second process cap. Train v5 records immutable replay
-fingerprints and effective exposure; eval v1, meaningful v2, scoring v1, ship
-gates v1.
-
-| Run | Replay | Retention | RMS drift | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AgentV | Promote |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `e504-e396-e500-replay000-r1-5k` | 0% | 0% | 0.003123 | 1.0 | 0.0 | 0.0 | 0.0927 | 0.1667 | 0.0 | 0/1 | No |
-| `e504-e396-e500-replay0125-r2-5k` | 12.5% | 0% | 0.003219 | 1.0 | 0.0 | 0.0 | 0.1558 | 0.0 | 0.0 | 0/1 | No |
-| `e504-e396-e500-replay025-r3-5k` | 25% | 0% | 0.003098 | 1.0 | 0.0 | 0.0 | 0.0964 | 0.0833 | 0.0 | 0/1 | No |
-| `e504-e396-e500-replay050-r4-5k` | 50% | 0% | 0.002796 | 1.0 | 0.0 | 0.0 | 0.2469 | 0.0833 | 0.0 | 0/1 | No |
-| `e504-e396-e500-replay050-retention001-r5-5k` | 50% | 1% | 0.001775 | 1.0 | 0.0 | 0.0 | 0.0634 | 0.0 | 0.0 | 0/1 | No |
-
-All five checkpoints are rejected local diagnostics with explicit
-`--no-sync-checkpoints`; the exact E357 data snapshot, not these checkpoints,
-was persisted to the HF bucket.
-
-### E505 replay-loss attribution diagnostic
-
-The single train repeats E504's 50% replay recipe for 5,000 target tokens under
-the external 170-second cap. Train v6 adds source-stratified masked-token loss
-proxies without changing the objective.
-
-| Run | Decode policy | Primary proxy firstâ†’last | Replay proxy firstâ†’last | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AgentV | Promote |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `e505-e396-e500-replay050-loss-attribution-r1-5k` | Honest, slot-contract bias off | 3.8422â†’3.3724 | 3.4087â†’2.9217 | 1.0 | 0.0 | 0.0 | 0.2469 | 0.0833 | 0.0 | 0/1 | No |
-| same checkpoint | Constrained slot contract | â€” | â€” | 1.0 | 0.0 | 0.1667 | 0.2039 | 0.0833 | 0.2623 | 0/1 | No |
-
-Both source losses improve, while constrained slot-contract decode changes the
-fidelity/structure tradeoff without clearing meaningful or AgentV gates. The
-checkpoint is a rejected local diagnostic with explicit
-`--no-sync-checkpoints`.
-
-### E506 constrained slot-contract multi-suite diagnostic
-
-Both rows evaluate the same rejected E505 checkpoint on all 13 held-out, OOD,
-and adversarial records. CPU/frozen local SmolLM2 context, honest contracts,
-grammar-constrained LTR decode, four generation steps, one attempt, no fallback,
-and a 96-token canvas are matched. No new checkpoint was written.
-
-| Decode | n | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AST node F1 | AST edge F1 | AgentV | Promote |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Contract off | 13 | 1.0 | 0.0 | 0.0 | 0.1271 | 0.1410 | 0.0 | 0.1524 | 0.0192 | 0/3 | No |
-| Contract on | 13 | 1.0 | 0.1538 | 0.2538 | 0.1669 | 0.2654 | 0.5454 | 0.2385 | 0.0 | 0/3 | No |
-
-The constraint improves six semantic/structural metrics, but AgentV remains
-red and the 96-token canvas is below every suite's gold p95. This updates the
-leading diagnostic inference policy only; it is not checkpoint promotion or a
-ship claim.
-
-### E507 length-safe OOD contract-decode diagnostic
-
-Both rows evaluate the same E505 checkpoint on all four OOD records with a
-160-token canvas, above gold p95 143. All other settings are matched.
-
-| Decode | n | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AST node F1 | p50 latency | AgentV | Promote |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Contract off | 4 | 1.0 | 0.0 | 0.0 | 0.0729 | 0.0 | 0.0 | 0.0313 | 4,571 ms | 0/1 | No |
-| Contract on | 4 | 1.0 | 0.25 | 0.2583 | 0.2281 | 0.3333 | 0.692 | 0.3389 | 6,966 ms | 0/1 | No |
-
-Quality metrics exactly match E506's 96-token OOD rows, ruling out canvas
-truncation as the source of the gain. AgentV remains red; no checkpoint was
-created or promoted.
-
-### E508 default-generation OOD contract-decode diagnostic
-
-The same E505 checkpoint and length-safe constrained OOD policy use eight
-generation steps and four attempts. All four records exactly reproduce E507
-quality: syntax 1.0, meaningful 0.25, fidelity 0.2583, structure 0.2281, recall
-0.3333, reward 0.692, AST node F1 0.3389, and AgentV 0/1. No checkpoint was
-created or promoted.
-
-### E509 honest slot-contract-context diagnostic
-
-The same E505 checkpoint and E508 policy additionally expose the honest request
-slot contract in model context. Structure improves 0.2281â†’0.2406 and
-binding-aware coverage 0.75â†’1.0, but meaningfulness, fidelity, recall, reward,
-AST F1, and AgentV 0/1 are unchanged. Inventory visibility does not resolve the
-component/placeholder semantic-role failures. No checkpoint was created or
-promoted.
-
-### E510 component-plan-decode diagnostic
-
-The same E505 checkpoint activates its trained component-plan head at decode
-weight 4. Against E509 on the same four OOD records, meaningful improves
-0.25â†’0.50, fidelity 0.2583â†’0.6583, structure 0.2406â†’0.3446, reward
-0.6920â†’0.8405, AST node F1 0.3389â†’0.4679, and AST edge F1 0â†’0.1625. Strict
-binding-aware meaning and AgentV 0/1 remain red. This is the leading diagnostic
-policy, not a checkpoint promotion.
-
-### E511 length-safe three-suite component-plan diagnostic
-
-The E510 policy expands to all 13 held-out/OOD/adversarial records with a
-192-token length-safe canvas. Aggregate meaningful is 0.3846, fidelity 0.6718,
-structure 0.3440, recall 0.4615, reward 0.6272, AST node F1 0.4654, and AST edge
-F1 0.1748. Strict binding-aware meaning remains zero and AgentV remains 0/3.
-The policy generalizes diagnostically; the checkpoint is still rejected.
-
-### E512 slot-to-component decode-weight diagnostic
-
-Doubling the E505 checkpoint's slot-to-component decode weight from 4 to 8
-reduces OOD placeholder-spam prevalence 3â†’1 but leaves semantic-role mismatch at
-4/4. Meaningful regresses 0.50â†’0.25, fidelity 0.6583â†’0.3417, structure
-0.3446â†’0.2869, reward 0.8405â†’0.7245, and AgentV stays 0/1. Weight 8 is rejected;
-the checkpoint and weight 4 policy remain non-promotable.
-
-### E513 durable slot-role supervision continuation
-
-E513 warm-starts E396 on E500 with 50% exact E357 replay, raises
-slot-component loss from 1 to 4, adds focal gamma 2, and supplies the honest
-slot contract in context. The HF-context CPU run completes 101 steps / 5,000
-target tokens in 79.6 seconds under `max_wall_minutes=3`. Its checkpoint SHA
-`59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548`
-and full state are uploaded and verified in the OpenUI bucket.
-
-Matched E514 OOD evaluation under E510's component-plan weight-4 policy
-regresses meaningful 0.50â†’0.00, fidelity 0.6583â†’0.4917, structure
-0.3446â†’0.2750, recall 0.3958â†’0.2083, AST node F1 0.4679â†’0.3500, and AST edge
-F1 0.1625â†’0.0625. Strict binding-aware meaning stays zero and AgentV stays
-0/1. The checkpoint is retained as durable diagnostic evidence but rejected
-for promotion.
-
-### E515 focal-loss decomposition
-
-E515 is matched to E513 except focal gamma returns from 2 to 0. The CPU
-HF-context run completes 101 steps / 5,000 target tokens in 105.8 seconds under
-`max_wall_minutes=3`; serving SHA
-`97f2e426604e3956f2791398a608b967937ebf548fa7cae0ef59dde324721c1b`
-and full state are uploaded and verified in the OpenUI bucket.
-
-Matched E516 OOD evaluation recovers meaningful 0.00â†’0.25, fidelity
-0.4917â†’0.6583, structure 0.2750â†’0.3213, recall 0.2083â†’0.2708, reward
-0.7695â†’0.8270, and AST node F1 0.3500â†’0.4292 versus E513. It remains below
-E510 on meaningfulness and component structure, while strict binding-aware
-meaning and AgentV stay zero. Focal gamma 2 is rejected; the focal-zero
-checkpoint remains diagnostic and is not promoted.
-
-### E517 slot-loss context control
-
-E517 is matched to E515 except slot-component loss returns from 4 to 1 while
-focal gamma stays zero and honest contract context remains enabled during
-training. The CPU HF-context run completes 101 steps / 5,000 target tokens in
-130.7 seconds under `max_wall_minutes=3`; serving SHA
-`2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3`
-and full state are uploaded and verified in the OpenUI bucket.
-
-Matched E518 OOD evaluation regresses meaningful 0.25â†’0.00, fidelity
-0.6583â†’0.4083, structure 0.3213â†’0.2250, recall 0.2708â†’0.2083, reward
-0.8270â†’0.7445, and AST node F1 0.4292â†’0.2833 versus E515. Strict
-binding-aware meaning and AgentV stay zero. The loss and context interact, but
-neither context-conditioned checkpoint is promotable.
-
-### E519 honest slot-contract context
-
-E519 adds `train_model --honest-slot-contract`, preventing training-time
-context from using gold record placeholders and recording the authority flags
-under train harness v7. The clean-source CPU HF-context run completes 101 steps
-/ 5,000 target tokens in 103.2 seconds; serving SHA
-`d82155b03531c2d852ec8d497d3fdb0878ac1f678c0c5d247e272bc36c91805f`
-and full state are uploaded and verified.
-
-E520 exactly matches E518 quality and decoder counts: meaningful 0.0, fidelity
-0.4083, structure 0.2250, recall 0.2083, reward 0.7445, AST node F1 0.2833,
-AST edge F1 0.0625, and AgentV 0/1. The checkpoint tensors do change, so the
-authority path is operational, but it yields no observable quality gain. The
-honest harness fix is retained; the checkpoint is rejected.
-
-### E522 visible-inventory continuation
-
-E522 replaces E500 with the 244-row E521 corpus, whose prompts expose every
-declared placeholder. Every other E519 train/eval lever is held fixed. The
-clean-source CPU HF-context run completes 99 steps / 5,059 target tokens in
-120.7 seconds; serving SHA
-`97cb10f43d229b1a15403295f71fa425e844ee4865c31761f3e529b24bf420ce`
-and full state are uploaded and verified.
-
-Matched E523 OOD fidelity rises 0.4083â†’0.8667, component recall
-0.2083â†’0.2708, AST node F1 0.2833â†’0.3437, and AST edge F1
-0.0625â†’0.1007. Structure regresses 0.2250â†’0.1955, reward
-0.7445â†’0.2093, meaningful and strict meaning remain zero, and AgentV remains
-0/1. Visible inventory is retained as a positive slot-grounding lever, but the
-checkpoint is rejected.
-
-### E525 visible-component continuation
-
-E525 replaces E521 with membership-identical E524, which appends exact
-component type/count inventories to every prompt. All other E522 train/eval
-levers remain fixed. The CPU HF-context run completes 99 steps / 5,059 target
-tokens in 76.7 seconds; serving SHA
-`dbd11811d826fdf7efd8b22557fb3bd48f879e84ec7484bc0a2680198e55e4b9`
-and full state are uploaded, independently listed, and verified.
-
-Matched E526 OOD component recall rises 0.2708â†’0.4167, but fidelity falls
-0.8667â†’0.4667, structure 0.1955â†’0.1452, AST node F1 0.3437â†’0.3041, and AST
-edge F1 0.1007â†’0.0774. Meaningful and strict meaning remain zero and AgentV
-remains 0/1. The count signal is learned but does not restore hierarchy, so the
-checkpoint is rejected.
-
-### E528 visible-component-types continuation
-
-E528 replaces exact type/count inventories with membership-identical E527
-type-only contracts. All other E525 train/eval levers remain fixed. The CPU
-HF-context run completes 99 steps / 5,059 target tokens in 146.8 seconds;
-serving SHA
-`6a2180d76c366a282a74d1d27ae2b2fcf4c1b5f2b4d298cf4cef35bc306976d5`
-and full state are automatically uploaded, independently listed, and verified.
-
-Matched E529 OOD meaningful rate rises 0.0â†’0.25, fidelity 0.4667â†’0.55, and
-reward 0.1668â†’0.5778 versus E525. Component recall falls 0.4167â†’0.3542,
-structure 0.1452â†’0.1136, and AST node F1 0.3041â†’0.2270. Strict meaning remains
-zero and AgentV remains 0/1. The weaker inventory signal is retained as
-diagnostic evidence, but the checkpoint is rejected.
-
-### E531 visible-semantic-role continuation
-
-E531 replaces E527 type-only prompts with membership-identical E530 semantic
-role contracts derived exclusively from already-visible slots, already-visible
-types, and schema compatibility. All other E528 train/eval levers remain
-fixed. The CPU HF-context run completes 99 steps / 5,059 target tokens in
-99.72 seconds; serving SHA
-`6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154`
-and full state are uploaded, independently listed, and verified.
-
-Matched E532 OOD structure rises 0.1136â†’0.1431 and AST node F1
-0.2270â†’0.2543, but meaningful falls 0.25â†’0.0, fidelity 0.55â†’0.4667,
-component recall 0.3542â†’0.2917, reward 0.5778â†’0.3685, and AST edge F1
-0.0801â†’0.0455. Strict meaning remains zero and AgentV remains 0/1. The
-semantic-role signal is retained as negative diagnostic evidence, and the
-checkpoint is rejected.
-
----
-
-## Limitations & honesty
-
-- Smoke parse alone is a canary, not generalization.
-- Soft `placeholder_validity` is diagnostic; ship on `placeholder_fidelity`.
-- Inventory must come from the user-visible prompt / DESIGN.md under
-  `honest_slot_contract=True` (no silent `gold.placeholders`).
-- Scratch + short steps â‰  HF + full `rico_held` production claim.
-
----
-
-## Checkpoint history
-
-| Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
-| --- | --- | --- | --- | --- |
-| 2026-08-04 | c20260804-continuous-openui-schedu-3d42338c-c2-{control,canvas} | outputs/autoresearch/continuous-loop-20260804-continuous-openui-schedu-3d42338c-c2/runs/ (local, explicit no-sync) | Both 22 CPU steps, size-matched params `1,608,962` each; `--ship-gates` eval crashed with `AgentV SDK is unavailable` (missing `npm ci`) before any scoreboard, so no quality metrics were produced | Control SHA `0ccf6221...71f4e2`; canvas SHA `44bf9cdf...681f2e`. Repaired via `2aedf3b` (self-heal AgentV bootstrap); frozen-arm replay in c3 completed the harness but hit decode timeouts (n=3, all incomplete) â€” no model attribution, harness-repair-only ([results](design/continuous-openui-scheduled-fe71636-c2-results.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1855-{control,confirm} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1855/runs/ (local, explicit no-sync) | Fresh seed 101855; params `1,608,962/1,613,477`, structure `.230/.354`, MPR `0/.333`, recall `0/.333`, binder/fidelity `0/.633/.528`, reward `0/.807`, p50 `2433/2574` ms, tokens `60/72`, forwards `7/12` | Control SHA `b67c8792...e558`; candidate SHA `49c3b3e3...d864`. Primary improves but confirmation contract fails on MPR/recall/exact metrics and latency; loss diverges. Reject, no champion ([results](design/autotrain-cycle-1855-exposure-confirmation-null.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1854-{control,slot-component-exposure-cap} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1854/runs/ (local, explicit no-sync) | Both 21 CPU steps, seed 101854; params `1,608,962/1,613,477`, structure `.0575/.1353`, MPR `0/.333`, recall `0/.167`, binder/fidelity `0/.633/.528`, reward `0/.765`, p50 `917/1005` ms, tokens `21/36`, forwards `4/7` | Control SHA `5d79b7a6...effd`; candidate SHA `7cf9dd15...e123`. Fixture positive but latency/decode work regress, exact metrics are 0, smoke n=3. Fresh-seed confirmation queued; no promotion/sync/ship ([results](design/autotrain-cycle-1854-slot-component-exposure-cap-positive.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1853-{control,slot-component-inventory-coupling} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1853/runs/ (local, explicit no-sync) | Both 21 CPU steps, seed 101853; params `1,608,962/1,686,878`, structure `.115/.115`, MPR/recall/binder/fidelity/reward `0/0`, p50 `856/902` ms, tokens `27/27`, forwards `2/2` | Control SHA `96842fde...efca8`; candidate SHA `848eeadb...d697`. Auxiliary inventory coupling buys `+77,916` params and +5.39% p50 with no quality signal; smoke n=3. Reject ([results](design/autotrain-cycle-1853-slot-component-inventory-coupling-null.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1852-{control,slot-component-fidelity-coupling} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1852/runs/ (local, explicit no-sync) | Both 21 CPU steps, seed 101852; params `1,608,962/1,613,477`, structure `.1742/.1742`, MPR `.333/.333`, recall `.25/.25`, binder/fidelity `.633/.633` and `.528/.528`, p50 `910/966` ms, tokens `21/30`, forwards `4/5` | Control SHA `07637aa1...93766`; candidate SHA `075585c2...1728c2`. Exact quality tie with higher candidate loss, decode work, latency, and capacity; smoke n=3. Reject; require a distinct size-matched objective ([results](design/autotrain-cycle-1852-slot-component-fidelity-coupling-null.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1851-{control,slot-component-coverage} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1851/runs/ (local, explicit no-sync) | Both 21 CPU steps, seed 101851; params `1,608,962/1,613,482`, structure `.1425/.1767`, MPR `0/.667`, component recall `0/.3333`, binder/fidelity `1/1`, reward `.981/.989`, p50 `7400/8771` ms, tokens `184/214`, forwards `39/44` | Control SHA `f0613e16...9ffaf`; candidate SHA `cfa1fffd...c124e`. Candidate is a real fixture signal but raises loss, compiler/decode work, latency, and capacity; exact metrics are 0 and smoke n=3. Reject; require a distinct size-matched objective ([results](design/autotrain-cycle-1851-slot-component-coverage-null.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1848-{control,binder-slot-ownership} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1848/runs/ (local, explicit no-sync) | Control 20 CPU steps, seed 101848, matched 1,608,962 params; smoke struct .0575, MPR/binder/fidelity/reward 0, p50 911.1 ms | Candidate failed before training because `binder_slot_ownership_decode_weight` lacked tree compiler capability. Repair `d876037b5`; frozen replay required. No reuse/promote/sync/ship ([results](design/autotrain-cycle-1848-binder-slot-ownership-harness-repair.md)) |
-| 2026-08-03 | c20260803-continuous-openui-202607-98199209-c1847-{control,exposure-targeted-semantic-exhaustive-compiler-decision-margin} | outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1847/runs/ (local, explicit no-sync) | Both 22 CPU steps, seed 101847, matched 1,608,962 params; structure .3225/.2383, MPR 0/0, binder .8222/.9524, fidelity .7222/.9167, reward .8657/.9360, tokens 60/130, forwards 11/28 | Treatment SHA 25f7080d...ec1e3f, control SHA be127fdb...075e9d; p50 2811/6886 ms and compiler 7455/18539 ms, but semantic quality regresses and exact metrics remain zero. Reject; no reuse/promote/sync/ship ([results](design/autotrain-cycle-1847-semantic-exhaustive-null.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1846-{control,exposure-targeted-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1846/runs/` (local, explicit no-sync) | Both 21 CPU steps, seed 101846, matched 1,608,962 params; MPR `.6667/.3333`, recall `.4167/.25`, binder `1.0/.6333`, fidelity `1.0/.5278`, structure `.4124/.46417`, tokens `117/54`, forwards `25/10` | Candidate SHA `a8770114...e8ecb`, control SHA `f6961900...2bdca`; p50 +138%, exact metrics 0. Reject configuration, retain exposure quality signal ([results](design/autotrain-cycle-1846-exposure-quality-cost.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1845-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1845/runs/` (local, explicit no-sync) | Both 20 CPU steps, seed 101845, matched 1,608,962 params; structure `.46417/.46417`, MPR `.3333/.3333`, binder `.6333/.6333`, fidelity `.5278/.5278`, reward `.8073/.8073`, tokens `54/54`, forwards `10/10` | Candidate SHA `2d9c0294...4baa`, control SHA `360ba581...cbac`. Candidate p50 +1.6%; valid capacity-aware confirmation rejects c1830 as seed-sensitive ([results](design/autotrain-cycle-1845-capacity-tail-valid-confirmation-null.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1844-{control,promote}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1844/runs/` (local, explicit no-sync) | Both 20 CPU steps, seed 101844, matched 1,608,962 params; every smoke and held-out document timed out, so no quality metric is defined | Candidate SHA `874e3cd2...0b45`, control SHA `eab02650...260d`; Lean proved `f9ca0239...1abb`. Inner budget and recipe projection defects found; no model attribution ([results](design/autotrain-cycle-1844-promotion-recipe-and-budget-failure.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1843-{control,capacity-aware-semantic-exhaustive-structure-token-margin}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1843/runs/` (local, explicit no-sync) | Both 21 CPU steps, seed 101843, matched 1,608,962 params; structure `.46417/.46417`, MPR `.3333/.3333`, binder `.6333/.6333`, fidelity `.5278/.5278`, reward `.8073/.8073`, tokens `48/48`, forwards `8/8` | Candidate SHA `aa032e93...00c8`, control SHA `4558d721...d3d1`. Candidate p50 -2.2% is below effect floor; Lean `not_applicable:screening`; never reuse/promote/sync/ship ([results](design/autotrain-cycle-1843-structure-token-null.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1842-{control,capacity-aware-semantic-exhaustive-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1842/runs/` (local, explicit no-sync) | Both 20 CPU steps, seed 101842, matched 1,608,962 params; structure `.46417/.46750`, MPR `.3333/.3333`, binder `.6333/.6333`, fidelity `.5278/.5278`, reward `.8073/.8193`, tokens `48/75`, forwards `8/12` | Candidate SHA `8eb323b9...3f8f`, control SHA `90fa1660...3317`. Candidate p50 -39% but quality does not improve; Lean `not_applicable:screening`; never reuse/promote/sync/ship ([results](design/autotrain-cycle-1842-semantic-exhaustive-efficiency-only.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1840-{control,promote}` + c1841 frozen eval replay | c1840 trains + c1841 evals under `outputs/autoresearch/` (local, explicit no-sync) | Both 20 CPU steps, seed 101840, matched 1,608,962 params; repaired replay held-out structure `.30788/.30788`, MPR `0/0`, binder `.4371/.4371`, fidelity `.29/.29`, reward `.736/.736`, tokens `130/130`, forwards `17/17` | Candidate SHA `6834a759...4cfa`, control SHA `1d0aa0ec...75f5`. Fresh Lean replay proved (`e3741613...71e8`); candidate p50 +2.4%; rejected as held-out null. Never promote/sync/ship ([results](design/autotrain-cycle-1841-promotion-held-out-null.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1839-{control,capacity-aware-tail-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1839/runs/` (local, explicit no-sync) | Both 20 CPU steps, seed 101839, batch 2, one thread, matched 1,608,962 params; structure `.46/.46`, binder `.8222/.8222`, fidelity `.7222/.7222`, reward `.8777/.8777`, tokens `75/75`, forwards `13/13` | Candidate SHA `117312ac...81b3b`, control SHA `32f10d70...11ea7`. Candidate p50 +3.8%; rejected as third-seed null. Lean `not_applicable:screening`; never reuse/promote/sync/ship ([results](design/autotrain-cycle-1839-capacity-aware-tail-null.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-local-8c0b60dd-c2-{control,component-plan}` (session `j48f8u`) | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2/runs/` (local, explicit no-sync) | `component-plan` beats control on `structural_similarity` by `+.05613` (`.32667â†’.38280`), seed 100002 â€” byte-identical delta to two prior independent sessions' measurements of the same hypothesis (PR #1369; `autotrain-cycle-c4-component-plan-efficiency-win.md`) | CPU `wf_smoke_v2`, 22 steps, seed 100002. Control checkpoint SHA `6abf57d4...db3512b`; component-plan checkpoint SHA `20e573b1...f0f8a8e741`. Third independent reproduction of the same screening win; the c4 champion candidate's fresh-seed confirmation remains blocked by two documented harness bugs (`autotrain-cycle-c5-c6-replay-blocked-follow-up.md`) â€” this cycle does not attempt to fix them. Lean `not_applicable:screening`; never reusable/promoted/synced/ship ([results](design/continuous-openui-local-j48f8u-c2-results.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-local-8c0b60dd-c1-{control,bounds}` (session `j48f8u`) | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-local-8c0b60dd-c1/runs/` (local, explicit no-sync) | Bounds vs control byte-identical on training (loss `22.6219` both, 1,681,794 params) and exact tie on every smoke quality metric (structure `.0575`, binder F1 `.6333`, fidelity `.5278`, MPR/recall/AST/canonical/reward all 0 both arms); bounds p50 `1790.84` vs control `1922.47` ms | CPU `wf_smoke_v2`, 21 steps, seed 100001, matched 1,681,794 params. Control checkpoint SHA `d2f2dc4b...c557e44b`; bounds checkpoint SHA `eb81529a...b224a2f`. Latency-only delta with no quality/held signal is not a metric win per the SDLC tradeoff rule. Lean `not_applicable:screening`; rejected, never reusable/promoted/synced/ship ([results](design/continuous-openui-local-j48f8u-c1-results.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-202607-98199209-c1838-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-202607-98199209-c1838/runs/` (local, explicit no-sync) | Both 20 CPU steps, seed 101836, batch 2, one thread, matched 1,608,962 params; candidate/control losses `41.2863/37.0940`; structure `.43723/.40193`, binder F1 `.8222/.8000`, reward `.8657/.8740`, p50 `3733/3552` ms | Candidate SHA `c445ce87...12d5`, control SHA `472b1d20...5a9b`. Fresh-seed fixture signal confirmed; smoke and all missing production suites still fail. Lean `not_applicable:screening`; never reuse/promote/sync/ship ([results](design/autotrain-cycle-1838-capacity-aware-tail-confirmed.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1832-confirm` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1832/runs/c20260802-continuous-openui-202607-98199209-c1832-confirm/` (local, explicit no-sync) | Train 20/20, loss `17.6023`, effective records `25.81`, unique `30/40`, repeat `3`; smoke 0/3 complete with 3 decode timeouts; no defined eval metrics | CPU `wf_smoke_v2`, seed 101832, batch 2, 1,608,962 params. SHA `a3905259...5cd54`. Endpoint-boundary harness failure; control only 2/20. Lean `not_applicable:confirmation_incomplete`; never reuse/promote/sync/ship ([results](design/autotrain-cycle-1832-confirmation-endpoint-timeout.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1830-{control,capacity-aware-tail-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1830/runs/` (local, explicit no-sync) | Candidate/control effective records `27.59/27.59`, structure `.40333/.35057`, MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.8222/.7222`, fidelity `.7222/.6111`, reward `.8777/.8443`; tokens `99/104`, forwards `22/23`, p50 `6417.56/6047.96` ms | CPU `wf_smoke_v2`, 20 steps, seed 101830, matched 1,608,962 params. Candidate SHA `a4e8d972...cafcd1`, control SHA `420d3e8a...58b0b`. Lean `not_applicable:screening`; fresh-seed confirmation queued ([results](design/autotrain-cycle-1830-capacity-aware-tail-positive.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1829-{control,capacity-aware-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1829/runs/` (local, explicit no-sync) | Candidate/control effective records `32.27/24.82`, structure `.5300/.41973`, MPR `.6667/.3333`, recall `.4167/.1667`, binder F1 `.8222/.6333`, fidelity `.7222/.5278`, reward `.8777/.8073`; tokens `75/54`, forwards `13/9`, p50 `4680.28/2838.60` ms | CPU `wf_smoke_v2`, 22 steps, seed 101829, matched 1,608,962 params. Candidate SHA `da2863d6...429a9c`, control SHA `e284b175...9185333`. Lean `not_applicable:screening`; quality gain rejected over latency budget ([results](design/autotrain-cycle-1829-capacity-aware-quality-cost.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1828-{control,wide-draft-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1828/runs/` (local, explicit no-sync) | Candidate/control structure `.46417/.46417`, MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.6333/.6333`, fidelity `.5278/.5278`, reward `.8073/.8073`; tokens `60/60`, forwards `12/12`, p50 `2930.73/2959.37` ms | CPU `wf_smoke_v2`, 21 steps, seed 101828, matched 1,608,962 params; byte-identical SHA `e66960b1...30bb6c`. Lean `not_applicable:screening`; reject below-floor draft effect ([results](design/autotrain-cycle-1828-wide-draft-null.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1827-{control,cached-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1827/runs/` (local, explicit no-sync) | Candidate/control structure `.46417/.46417`, MPR `.3333/.3333`, recall `.25/.25`, binder F1 `.6333/.6333`, fidelity `.5278/.5278`, reward `.8073/.8073`; tokens `60/60`, forwards `11/11`, p50 `2850.97/2870.15` ms | CPU `wf_smoke_v2`, 20 steps, seed 101827, matched 1,608,962 params. Candidate SHA `45d1ee73...c739292`, control SHA `9eec7fe6...cdbb0d4`. Lean `not_applicable:screening`; reject below-floor cache effect ([results](design/autotrain-cycle-1827-compiler-cache-null.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1826-{control,bounded-compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1826/runs/` (local, explicit no-sync) | Candidate/control structure `.3439/.3439`, MPR `.6667/.6667`, recall `.3333/.3333`, binder F1 `1/1`, fidelity `1/1`, reward `.973/.973`; tokens `201/201`, forwards `51/51`, p50 `11719.02/11583.87` ms | CPU `wf_smoke_v2`, 22 steps, seed 101826, matched 1,608,962 params. Candidate SHA `49aa39ee...394bea`, control SHA `1e26bec3...2d89f3`. Lean `not_applicable:screening`; reject bounds on compiler-tree path ([results](design/autotrain-cycle-1826-bounded-margin-null.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1824-{control,compiler-decision-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1824/runs/` (local, explicit no-sync) | Candidate/control structure `.4811/.13527`, MPR `.6667/.3333`, recall `.4167/.1667`, binder F1 `.8222/.6333`, fidelity `.7222/.5278`, reward `.8597/.7653`; tokens `61/21`, forwards `15/4`, p50 `3901.53/973.41` ms | CPU `wf_smoke_v2`, 20 steps, seed 101824, matched 1,608,962 params. Candidate SHA `524a7938...be6605`, control SHA `01f3d6ab...1158a5`. Lean `not_applicable:screening`; quality gain rejected over latency budget ([results](design/autotrain-cycle-1824-compiler-decision-margin-quality-cost.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1823-{control,compiler-decision-token}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1823/runs/` (local, explicit no-sync) | Candidate/control structure `.0575/.0575`, MPR `0/0`, recall `0/0`, binder F1 `.48889/.48889`, fidelity `.38889/.38889`, reward `0/0`, AST/canonical 0; candidate p50 `1781.41` vs `1765.12` ms | CPU `wf_smoke_v2`, 22 steps, seed 101823, matched 1,608,962 params. Candidate SHA `de76bb72...2c2e2c`, control SHA `56af2560...1d37aef`. Lean `not_applicable:screening`; reject the non-reproducing arm ([results](design/autotrain-cycle-1823-compiler-decision-token-fresh-seed-null.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1822-{control,compiler-decision-token}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1822/runs/` (local, explicit no-sync; reuses c1821 checkpoints) | Candidate/control structure `.146233/.052367`, MPR `.6667/0`, recall `.3333/.0833`, binder F1 `1/1`, fidelity `1/1`, reward `.945/.941`, p50 `12386.03/14011.85` ms, AST/canonical 0 | Eval v78 completes the exact frozen pair after c1821. Matched 1,608,962 params; candidate SHA `95c5846a...815b1`, control SHA `e02e53d3...9d029`. Lean `not_applicable:retry_measurement`; queue fresh-seed confirmation ([results](design/autotrain-cycle-1822-compiler-decision-token-positive.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1821-{control,compiler-decision-token}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1821/runs/` (local, explicit no-sync) | Both smoke batches timed out 3/3, so parse, MPR, structure, fidelity, reward, and equality are unmeasured; candidate step 20 covered 34 compiler-decision rows at mean CE `9.37192` | CPU `wf_smoke_v2`, 20 steps, seed 101821, matched 1,608,962 params. Control SHA `e02e53d3...9d029`; candidate SHA `95c5846a...815b1`. Lean `not_applicable:screening`; exact frozen replay under eval v78/campaign v119 required ([results](design/autotrain-cycle-1821-compiler-decision-token-measurement-incomplete.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1819-{control,component-edge-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1819/runs/` (local, explicit no-sync) | Candidate p50 `1074.57` vs control `3772.85` ms, but structure `.174167/.404433`, MPR `.3333/.6667`, binder F1 `.63333/.95238`, and both AST/canonical 0 | CPU `wf_smoke_v2`, 20 steps, seed 101818, matched 1,608,962 params. Reused control SHA `b97e7424...b502215`; candidate SHA `68c7d02b...cc02f0d`. Lean `not_applicable:retry_measurement`; v117 rejects ([results](design/autotrain-cycle-1819-component-edge-margin-rejected.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1818-{control,component-edge-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1818/runs/` (local, explicit no-sync) | Candidate absent after pre-model config rejection; control smoke structure `.404433`, MPR `.6667`, binder F1 `.95238`, recall `.3333`, fidelity `.9167`, AST/canonical 0; no causal comparison | CPU `wf_smoke_v2`, 20 steps, seed 101818. Control SHA `b97e7424...b502215`; candidate has no checkpoint. Lean `not_applicable:screening`; exact frozen replay required ([results](design/autotrain-cycle-1818-component-edge-margin-harness-failure.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1817-{control,component-edge-token}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1817/runs/` (local, explicit no-sync) | Both arms produce identical smoke quality: structure `.174167`, MPR `.3333`, binder F1 `.6333`, recall `.25`, fidelity `.5278`, AST/canonical 0; candidate p50 `960.07` vs control `962.44` ms is below the efficiency floor | CPU `wf_smoke_v2`, 22 steps, seed 101817, matched 1,608,962 params. Control SHA `5a349a4b...d0c1`; candidate SHA `d68ff571...27fe`. Lean `not_applicable:screening`; reject null ([results](design/autotrain-cycle-1817-component-edge-token-null.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1812-{control,promote}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1812/runs/` (local, explicit no-sync) | Candidate completes smoke 3/3 at structure `.264167`, MPR `.3333`, fidelity `.7222` and held-out 5/5 at structure `.20316`, MPR `.20`, fidelity `.58`; control times out 3/3 and 5/5, so matched effect is unavailable | CPU `wf_smoke_v2`, 20 steps, seed 101812, matched 1,608,962 params. Control SHA `c91414a1...4aae`; candidate SHA `7b1d0a90...cb4d`. Lean preflight `proved` (`404caa09...ce2b`); exact frozen replay required ([results](design/autotrain-cycle-1812-promotion-measurement-incomplete.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-local-8c0b60dd-c3-{control,bounds}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-local-8c0b60dd-c3/runs/` (local, explicit no-sync; reuses c2 checkpoints) | Bounds vs control tie on smoke structure `.0575` both, binder F1 `.6333` both; bounds `42.91` ms slower p50 (`3107.70` vs `3064.79`); AgentV complete; gates fail | CPU `wf_smoke_v2`, frozen replay eval only (no retrain), matched 1,608,962 params. Control SHA `f2fe8f5a...b81b2`; bounds SHA `2c1749c6...41742f64`. First cycle in this loop to complete train+eval end to end after the c1/c2 infra repairs. Lean `not_applicable:screening`; rejected, quality-neutral, never reusable/promoted/synced/ship ([results](design/autotrain-cycle-c3-bounds-quality-neutral.md)) |
-| 2026-08-03 | `c20260803-continuous-openui-local-8c0b60dd-c2-{control,bounds}` | `outputs/autoresearch/continuous-loop-20260803-continuous-openui-local-8c0b60dd-c2/runs/` (local, explicit no-sync) | Training completed both arms (loss `22.6219` each); `evaluate_model.py --ship-gates` crashed on a missing AgentV SDK before any scoreboard existed â€” no smoke metrics, not scoreable | CPU `wf_smoke_v2`, 21 steps, matched 1,608,962 params. Control SHA `f2fe8f5a...b81b2`; bounds SHA `2c1749c6...41742f64`. Infrastructure failure (sandbox never ran `npm ci`; also exposed a NODE_OPTIONS bridge-subprocess bug fixed in the same cycle), not a model result. Lean `not_applicable:screening`; never reusable, promoted, synced, or ship ([results](design/autotrain-cycle-c2-agentv-missing-infra-failure.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1810-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1810/runs/` (local, explicit no-sync) | Candidate structure `.174167` vs `.0964`, MPR `.3333` vs 0, binder F1 `.6333` vs 0, recall `.25` vs `.0833`, p50 `983.80` vs `906.83` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101810, matched 1,608,962 params. Control SHA `274e7d34...a1d`; candidate SHA `f5d05181...cb00`. Lean `not_applicable:confirmation`; confirmed only for promotion suite ([results](design/autotrain-cycle-1810-balanced-container-close-confirmed.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1809-{control,balanced-container-close}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1809/runs/` (local, explicit no-sync) | Candidate structure `.174167` vs `.0575`, MPR `.3333` vs 0, recall `.25` vs 0, fidelity `.5278` vs 0, p50 `973.43` vs `944.03` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101809, matched 1,608,962 params. Control SHA `ba99d6c2...e1bf`; candidate SHA `6a73da29...e81f`. Lean `not_applicable:screening`; queued for fresh confirmation ([results](design/autotrain-cycle-1809-balanced-container-close-positive.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1808-{control,container-close}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1808/runs/` (local, explicit no-sync) | Exact tie: structure `.3225`, MPR/binder/recall/fidelity/reward 0, tokens 36, forwards 7; p50 `1931.99` vs `1900.30` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101808, matched 1,608,962 params. Control SHA `d2e8deb7...ccb9`; candidate SHA `d2fbce14...9d4f`. Lean `not_applicable:screening`; rejected ([results](design/autotrain-cycle-1808-container-close-null.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1807-{control,typed-family-balance}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1807/runs/` (local, explicit no-sync) | Candidate structure `.104467` vs `.0575`, binder F1 `1.0` vs `.6333`, recall `.0833` vs 0, MPR both 0, p50 `5868.74` vs `1084.71` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101807, matched 1,608,962 params. Control SHA `3886a403...e0c79`; candidate SHA `1850d25f...ff06e`. Lean `not_applicable:screening`; rejected ([results](design/autotrain-cycle-1807-typed-family-balance-rejected.md)) |
-| 2026-08-03 | `c20260802-continuous-openui-202607-98199209-c1806-{control,structure-token}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1806/runs/` (local, explicit no-sync) | Candidate structure `.1375` vs `.1725`, binder F1 `.8222` vs `.6333`, MPR/recall both 0, p50 `7651.84` vs `2425.58` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101806, matched 1,608,962 params. Control SHA `d0b5c4cf...f22ae`; candidate SHA `689ce69c...14c80`. Lean `not_applicable:screening`; rejected ([results](design/autotrain-cycle-1806-structure-token-rejected.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1805-{control,component-token}` | Reuses c1804 local explicit-no-sync checkpoints | Control timeout 3/3 reproduced; candidate completes 3/3 at structure `.081733`, recall `.3333`, MPR `.6667`, p50 `7186.02` ms; AgentV complete; gates fail | Exact frozen evaluation replay, seed 101804, matched 1,608,962 params. No new checkpoint. Lean `not_applicable:retry_measurement`; runtime-specific unblock and absolute quality reject ([results](design/autotrain-cycle-1805-component-token-rejected.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1804-{control,component-token}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1804/runs/` (local, explicit no-sync) | Control completes 0/3 with 3 typed timeouts; candidate completes 3/3 at MPR `.6667`, recall `.3333`, fidelity `1.0`, structure `.081733`, p50 `7462.88` ms; non-attributable | CPU `wf_smoke_v2`, 21 steps, seed 101804, matched 1,608,962 params. Control SHA `f31ac8fc...2d99`; candidate SHA `4edbbb7f...678c`. Lean `not_applicable:screening`; exact frozen replay only ([results](design/autotrain-cycle-1804-component-token-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1803-{control,scaffold-prefix}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1803/runs/` (local, explicit no-sync) | Exact quality tie; candidate p50 `2001.80` vs `1827.59` ms and loss `13.47166` vs `13.55472`; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101803, matched 1,608,962 params. Control SHA `74f1e6e1...e97ba`; candidate SHA `8dfb8866...fee0`. Lean `not_applicable:screening`; rejected ([results](design/autotrain-cycle-1803-scaffold-prefix-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1802-{control,design-dropout}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1802/runs/` (local, explicit no-sync) | Candidate regresses structure `.174167â†’.096400`, recall `.25â†’.0833`, and MPR `.3333â†’0`; p50 `944.05` vs `946.76` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101802, matched 1,608,962 params. Control SHA `dd9d11e8...7154`; candidate SHA `212ba7ce...573b`. Lean `not_applicable:screening`; rejected ([results](design/autotrain-cycle-1802-design-dropout-rejected.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1801-{control,symbol-boundary}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1801/runs/` (local, explicit no-sync) | Exact quality tie; candidate loss `21.78877` vs `12.48600`, p50 `949.90` vs `938.53` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101801, matched 1,608,962 params. Control SHA `d8b45266...df831`; candidate SHA `34783017...fd21a`. Lean `not_applicable:screening`; rejected ([results](design/autotrain-cycle-1801-symbol-boundary-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1800-{control,mixed-mask}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1800/runs/` (local, explicit no-sync) | Exact tie on smoke structure `.135267`, binder F1 `.6333`, fidelity `.5278`, recall `.1667`, and reward `.76533`; candidate p50 `1112.15` vs `982.53` ms and loss `22.29659` vs `16.90084`; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101800, matched 1,608,962 params. Control SHA `434e50e8...42727`; candidate SHA `6b80bd63...832f9`. Lean `not_applicable:screening`; rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1800-mixed-mask-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1799-{control,slot-augmentation}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1799/runs/` (local, explicit no-sync) | Candidate regresses smoke structure `.13750â†’.05750`, binder F1 `.8222â†’.6333`, fidelity `.7222â†’.5278`, and loss `16.15545â†’18.68529`; p50 improves `5,086.88â†’1,004.31` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 24 steps, seed 101799, matched 1,608,962 params. Control SHA `51f71d3d...730f2`; candidate SHA `108bfc6b...73a3a`. Lean `not_applicable:screening`; rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1799-slot-augmentation-rejected.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1796-{control,semantic-contrast}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1796/runs/` (local, explicit no-sync) | Control completes smoke/held-out 1/3 and 0/5; candidate 1/3 and 4/5. Partial aggregates are non-attributable; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101796, matched 1,608,962 params and 835-pair exposure. Control SHA `8ad84a58...84be0`; candidate SHA `feb745fc...efb4`. Lean `not_applicable:no_champion`; exact frozen replay only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1796-semantic-contrast-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1795-{control,edge-alignment}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1795/runs/` (local, explicit no-sync) | Exact smoke quality tie at meaning/structure/binder F1/recall/fidelity/reward `0/.05750/.6333/0/.5278/.76533`; candidate p50 1,302.79 vs control 1,352.96 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101795, matched 1,766,987 params. Control SHA `824e1eac...801f6`; candidate SHA `968cdc90...cb6a`. Lean `not_applicable:screening`; rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1795-edge-alignment-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1793-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1793/runs/` (local, explicit no-sync) | Candidate regresses smoke structure `.45750â†’.44583`, binder F1 `.9524â†’.6333`, fidelity `.9167â†’.5278`, and reward `.92000â†’.80333`; p50 improves `5,018.29â†’2,344.24` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 23 steps, seed 101793, matched 1,608,962 params. Control SHA `54348049...4c84`; candidate SHA `590fa756...a1af`. Lean `not_applicable:confirmation_rejected`; false-positive queue gate repaired, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1793-fidelity-confirmation-rejection.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1791-{control,fidelity}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1791/runs/` (local, explicit no-sync) | Candidate improves smoke meaning `0â†’.3333`, structure `.14593â†’.17417`, binder F1 `.5â†’.6333`, recall `0â†’.25`, fidelity `.4444â†’.5278`, and p50 `1,154.30â†’1,088.81` ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 23 steps, seed 101791, matched 1,608,962 params. Control SHA `299d0aac...a5f0`; candidate SHA `d8470198...abbf`. Lean `not_applicable:screening`; exact fresh confirmation only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1791-fidelity-candidate.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1789-{control,binder-component-plan}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1789/runs/` (local, explicit no-sync) | Control completed 2/3 documents with one typed timeout; candidate completed 3/3. Candidate reported MPR .3333, structure .29667, binder F1 .8222, and p50 4,155.15 ms versus incomplete control 0/.12000/1.0/3,169.52 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 23 steps, seed 101789, matched 1,897,922 params. Control SHA `36ef2b04...ac45`; candidate SHA `d60d6493...893f`. Lean `not_applicable:incomplete_measurement`; exact frozen replay only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1789-binder-component-plan-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1788-{control,binder-arity}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1788/runs/` (local, explicit no-sync) | Exact smoke parse/meaning/structure/binder/recall/fidelity/reward tie at `1/0/.20583/0/.0833/0/0`; candidate p50 2,652.77 vs control 2,755.21 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101787, matched 2,145,602 params. Control SHA `7c207137...ae15`; candidate SHA `e2ef318e...968f`. Lean `not_applicable:screening`; rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1788-binder-arity-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1786-{control,steps}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1786/runs/` (local, explicit no-sync) | Structure `.13527â†’.41973`, but parse/meaning/binder F1 tie; candidate p50 2,810.05 vs control 1,105.90 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 vs 42 steps, seed 101786, matched 1,608,962 params. Control SHA `f1882fcd...306e`; candidate SHA `c2217b79...9e40`. Lean `not_applicable:screening`; rejected, selector and latency-budget harness repaired, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1786-steps-latency-rejection.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1785-{control,bounds}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1785/runs/` (local, explicit no-sync) | Exact smoke parse/meaning/structure/binder/fidelity/reward tie at `1/0/.05750/0/0/0`; candidate p50 1,135.36 vs control 1,147.14 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101785, matched 1,608,962 params. Control SHA `fd12e40f...2b81`; candidate SHA `731517da...7afc`. Lean `not_applicable:screening`; rejected, lineage-exhaustion harness repaired, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1785-bounds-recycle-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1784-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1784/runs/` (local, explicit no-sync) | Exact smoke and held-out quality ties; candidate p50 1,246.97 / 1,249.79 vs control 1,373.19 / 1,287.42 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101784, matched 1,755,764 params. Control SHA `19abd599...9f00`; candidate SHA `9f6aa2f6...9c2b`. Lean `not_applicable:confirmation`; c1783 rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1784-component-plan-confirmation-rejection.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1783-{control,component-plan}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1783/runs/` (local, explicit no-sync) | Exact smoke parse/meaning/structure/binder/fidelity/reward tie at `1/.3333/.17417/.6333/.5278/.76533`; candidate p50 1,059.20 vs control 1,126.88 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101783, matched 1,755,764 params. Control SHA `02f360d0...550d`; candidate SHA `4539698a...a98d`. Lean `not_applicable:screening`; fresh confirmation only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1783-component-plan-efficiency-candidate.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1782-{control,component-plan}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1782/runs/` (local, explicit no-sync) | Both arms trained; evaluation failed before scoreboard with typed unknown-runtime-flag error; no quality/latency/AgentV/gate evidence | CPU `wf_smoke_v2`, 20 steps, seed 101782, matched 1,755,764 params. Control SHA `9fea4a15...6564`; candidate SHA `87377fff...8428`. Lean `not_applicable:screening`; exact frozen replay only after harness repair; neither checkpoint promotable/ship ([results](design/autotrain-cycle-1782-runtime-flag-harness-failure.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1781-{control,canvas}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1781/runs/` (local, explicit no-sync) | Reported exact quality tie and canvas p50 1,086.17 vs control 1,046.84 ms are non-attributable because eval enabled canvas for both; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101781, matched 1,608,962 params. Control SHA `5e08fdcf...7834`; candidate SHA `bd272e76...97aa`. Lean `not_applicable:invalid_measurement`; harness repaired in campaign v84; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1781-canvas-invalid.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1780-{control,component-structure}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1780/runs/` (local, explicit no-sync) | Exact smoke/held-out quality ties; candidate p50 1,013.25 / 1,091.01 vs control 1,082.16 / 1,065.64 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101780, matched 1,913,789 params. Control SHA `417a155e...d3fc`; candidate SHA `97439513...3bb`. Lean `not_applicable:no_champion`; promotion-cadence candidate rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1780-component-structure-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1779-{control,binder-topology}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1779/runs/` (local, explicit no-sync) | Exact smoke parse/meaning/structure/binder/fidelity/reward tie at `1/0/.11750/.8222/.7222/.31233`; candidate p50 1,480.73 vs control 1,426.49 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101779, matched 2,137,346 params. Control SHA `bfe5726e...40cb7`; candidate SHA `4a90f117...7459`. Lean `not_applicable:screening`; rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1779-binder-topology-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1778-{control,batch1}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1778/runs/` (local, explicit no-sync) | Exact smoke quality tie; batch-1 p50 1,169.59 vs control 1,084.79 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101778, matched 1,608,962 params. Control SHA `37cccdcc...f1911`; candidate SHA `a5743bb1...98c0d`. Lean `not_applicable:screening`; rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1778-batch1-runtime-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1777-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1777/runs/` (local, explicit no-sync) | Exact smoke parse/meaning/structure/binder/fidelity/reward tie at `1/0/.05750/0/0/0`; candidate p50 1,217.79 vs control 1,142.29 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101777, matched 1,682,363 params. Control SHA `6c2530e7...04841`; candidate SHA `5cd1912a...d62bb`. Lean `not_applicable:confirmation`; c1776 champion rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1777-component-inventory-confirmation-rejection.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1776-{control,component-inventory}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1776/runs/` (local, explicit no-sync) | Held-out meaning/structure/reward `0/.06024/.13140â†’.2/.10690/.69400`; binder F1 `.6648â†’.4371`, p50 +17.1%; smoke meaning/structure tie | CPU `wf_smoke_v2`, 20 steps, seed 101776, matched 1,682,363 params. Control SHA `3bef9ed9...7c47b`; candidate SHA `51f05c0a...4fadf`. Lean `not_applicable:no_champion`; fresh confirmation only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1776-component-inventory-candidate.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1775-{control,component-edge}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1775/runs/` (local, explicit no-sync) | Exact smoke parse/meaning/structure/binder/fidelity/reward tie; p50 1,093.01â†’1,052.15 ms, MPR/ms +3.88%; AgentV complete; gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101775, matched 1,766,987 params. Control SHA `79191075...c35ee`; candidate SHA `7fb1c6ce...d3f40`. Lean `not_applicable:screening`; candidate rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1775-component-edge-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1773-{control,literal-close}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1773/runs/` (local, explicit no-sync) | Candidate smoke 3/3 complete with meaning/structure/binder F1 `0/.09640/0`, p50 1,097.20 ms; control 0/3 with typed timeouts and unavailable quality | CPU `wf_smoke_v2`, 20 steps, seed 101773, matched 1,608,962 params. Control SHA `1e3f4a64...979f6f`; candidate SHA `7e585012...2c04d6`. Lean `not_applicable:screening`; exact frozen replay only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1773-literal-close-runtime-unblock.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1772-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1772/runs/` (local, explicit no-sync) | Exact smoke/held-out quality ties; bounds p50 2,815.53 / 2,931.34 vs control 2,893.13 / 2,877.23 ms; AgentV complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101772, matched 1,608,962 params. Control SHA `01cf7ce8...0d631`; candidate SHA `c8dd5ab0...23995`. Lean `not_applicable:confirmation`; candidate rejected, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1772-bounds-confirmation-rejection.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1771-{control,bounds}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1771/runs/` (local, explicit no-sync) | Exact smoke quality tie; p50 1,522.25â†’1,433.96 ms, MPR/ms +6.16%; AgentV bundles complete; gates fail | CPU `wf_smoke_v2`, 21 steps, seed 101771, matched 1,608,962 params. Control SHA `12b0a74a...feee0`; candidate SHA `28bb5236...d101f`. Lean `not_applicable:screening`; fresh confirmation only, neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1771-bounds-efficiency-candidate.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1770-{control,component-edge}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1770/runs/` (local, explicit no-sync) | Both arms smoke 0/3 complete with three typed timeouts and unavailable quality; p50 including incomplete 8,815.11 / 8,858.58 ms; AgentV bundles complete | CPU `wf_smoke_v2`, 20 steps, seed 101770, matched 1,766,987 params. Control SHA `5d1a9dd8...b0559`; candidate SHA `eb3cccf7...723ed`. Numeric literal-close starvation observed; Lean `not_applicable:no_champion`; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1770-component-edge-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1766-{control,component-plan}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1766/runs/` (local, explicit no-sync) | Candidate smoke 0/3 complete with three timeouts and unavailable quality; control 3/3 complete with meaning/structure/binder F1 `.3333/.13527/.6333`; AgentV bundles complete | CPU `wf_smoke_v2`, 20 steps, seed 101766, matched 1,755,764 params. Control SHA `35869ea8...edd8`; candidate SHA `8af2c84d...c2e3`. Candidate is restricted to exact frozen replay; Lean `not_applicable:no_champion`; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1766-component-plan-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1765-{control,literal-margin}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1765/runs/` (local, explicit no-sync) | Candidate meaning/structure/binder F1 `0/.11500/0` vs control `.3333/.14777/.5`; p50 1,022.87 vs 1,134.45 ms; complete smoke n=3 AgentV bundles; gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101765, matched 1,608,962 params. Control SHA `178ea75c...effbd`; treatment SHA `3aa09545...5b13`. Three eligible rows prove activation, but training takes 2.45x wall and quality regresses. Lean `not_applicable:no_champion`; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1765-literal-margin-regression.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1764-{control,literal-close}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1764/runs/` (local, explicit no-sync) | Exact smoke and held-out prediction/quality ties; tail arm p50 1,167.26 / 1,150.26 ms vs control 1,189.39 / 1,153.93 ms; AgentV 0/2, gates fail | CPU `wf_smoke_v2`, 20 steps, seed 101764, matched 1,608,962 params. Control SHA `56cd5baeâ€¦db152`; tail SHA `5a11701câ€¦54f5b`. Tail weight is active but quality-null; Lean `not_applicable:no_champion`. Neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1764-literal-close-null.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1760-{control,batch1}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1760/runs/` (local, explicit no-sync) | Candidate trained but eval interrupted with `measurement_complete=false`; control smoke meaning/structure/recall `.3333/.13527/.1667` and held-out `0/.06024/.02857`; AgentV 0/2, gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101760, matched 1,608,962 params, batch 2 vs 1. Control SHA `bd95d451â€¦b549dc`; candidate SHA `da3c0462â€¦bcdcc9`. Candidate partial telemetry is diagnostic only; Lean `not_applicable:no_champion`. Exact frozen replay only; neither checkpoint promotable/ship ([results](design/autotrain-cycle-1760-batch1-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1759-{control,confirm}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1759/runs/` (local, explicit no-sync) | Fresh-seed confirmation: control meaning/structure/recall `.3333/.17417/.25`; 44-step candidate `0/.05750/0`; p50 1,362.47â†’3,195.06 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, seed 101759, batch 2; matched 1,608,962-param compiler-tree arms. Control SHA `66af1bbdâ€¦fb9e011`; candidate SHA `a1fcbc81â€¦dfa50e`. Candidate loss falls 77.00% while quality and latency regress, so c1757 is rejected; Lean `not_applicable:confirmation`. Neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1759-steps-confirmation.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1757-{control,steps}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1757/runs/` (local, explicit no-sync) | Screening candidate: 44 steps improves p50 1,346.77â†’1,184.95 ms and MPR/ms 13.66%, but structure `.17417â†’.13527` and recall `.25â†’.1667`; AgentV complete, gates fail | CPU `wf_smoke_v2`, seed 101757, batch 2; matched 1,608,962-param arms. Control SHA `dad20b46â€¦501c9`; candidate SHA `5f3f64efâ€¦f2b087`. Queued only for c1759 confirmation, which rejected it; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1757-steps-efficiency-candidate.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1754-{control,bounds}` | local no-sync c1754 runs | Exact quality/loss tie; p50 14,453.65 vs 14,431.80 ms | 24 steps, seed 101754, matched 1,608,962 params; SHAs `0716d0d2â€¦c18ba` / `98b03a38â€¦413c7`; clean `0ebf14cdâ€¦cc0f4`. Rejected, never reusable/promotable/ship ([results](design/autotrain-cycle-1754-completion-bounds-diagnostic.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1753-{control,component-structure}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1753/runs/` (local, explicit no-sync) | Treatment structure `.04333` vs control `.05750`; p50 1,712.01 vs 1,424.68 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 23 steps, seed 101753, batch 2; matched 1,913,789-param compiler-tree arms. Control SHA `e6936a8câ€¦25611`; treatment SHA `da567ef7â€¦b78f9`. Clean code `fbfb3757dcd30fd9018aa2f0d7d7609fb3edffd9`, eval harness `v74`. Quality regression; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1753-coupled-component-structure-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1752-{control,binder-topology}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1752/runs/` (local, explicit no-sync) | Exact smoke n=3 / held-out n=5 quality ties; treatment p50 4,663.12 / 4,614.14 vs control 4,398.12 / 4,573.57 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101752, batch 2; exactly matched 2,137,346-param compiler-tree arms. Control SHA `eddaf8ddâ€¦135d7`; treatment SHA `a38b7623â€¦43e04`. Clean code `b3920eaf109d0e2e686e7664bfa8c31c54682c01`, harness campaign `v61`, model build eval `v74`, meaning `2.13.0`, scoring `v22`. No champion; Lean promotion proof not applicable. Neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1752-coupled-binder-topology-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1751-control` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1751/runs/` (local, explicit no-sync) | 24-step control train completed; eval process exceeded stage wall; candidate rejected before training; no scoreable comparison | CPU `wf_smoke_v2`, seed 101751, batch 2, 2,137,346 params. Control SHA `c181b5c9â€¦72007e`; candidate has no checkpoint. Clean code `1b1cfe0222a33b23629e25230137828ae9a3fde9`, harness `v60`. Compiler-path companion and failed-outcome routing require repair. Provenance-only, never reusable/promotable/ship ([results](design/autotrain-cycle-1751-coupled-topology-incomplete.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1750-{control,component-inventory}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1750/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, recall .25, AST node/edge F1 .26190/0; treatment p50 1,123.96 vs control 1,164.70 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 23 steps, seed 101750, batch 2; exactly matched 1,682,363-param arms. Control SHA `4731e2c0â€¦0d01a1`; inventory SHA `b58d5de7â€¦2ad0e7`. Clean code `73ed42c96a461fbdb61ae70b73a8124e7bc5bb57`, harness `v74`, meaning eval `2.13.0`, scoring `v22`, completion kernel `v16`, gates `openui_ship_gates_v6`. Quality null; non-zero auxiliary targets with decode weight 0 motivate a coupled successor; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1750-component-inventory-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1749-{control,component-edge}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1749/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, recall .25, AST node/edge F1 .26190/0; treatment p50 1,121.26 vs control 1,130.21 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101749, batch 2; exactly matched 1,766,987-param arms. Control SHA `a40040ceâ€¦ce42a70`; component-edge SHA `f4bbee59â€¦45aa556`. Clean code `2db8db323ab856e2736f61232ec3c329a81c87ff`, harness `v74`, meaning eval `2.13.0`, scoring `v22`, completion kernel `v16`, gates `openui_ship_gates_v6`. Quality null and 0.79% efficiency gain below policy floor; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1749-component-edge-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1748-{control,component-plan}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1748/runs/` (local, explicit no-sync) | Exact smoke n=3 / held-out n=5 quality ties: parse 1.0, meaning/component recall/AST F1 0, structure .05750 / .04274; treatment p50 1,357.57 / 1,336.36 vs control 1,406.90 / 1,315.32 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 24 steps, seed 101748, batch 2; exactly matched 1,755,764-param arms. Control SHA `f66fe0edâ€¦b71dec`; component-plan SHA `d0507f83â€¦313a28`. Clean code `c0a1ad28ea47be328a6d95c2c1c443781c91acb7`, harness `v74`, meaning eval `2.13.0`, scoring `v22`, completion kernel `v16`, gates `openui_ship_gates_v6`. Quality null, worse candidate loss and 2.19Ã— training wall; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1748-component-plan-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1737-{control,canvas}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1737/runs/` (local, explicit no-sync) | Both trains completed; both smoke evals interrupted at 2/3 records with `measurement_complete=false` and `scoreable=false`; no AgentV, gates, quality, or latency result | CPU `wf_smoke_v2`, 22 steps, seed 101737, batch 2; exactly matched 1,608,962-param arms. Control SHA `85531461â€¦12cb46`; canvas SHA `4669b0b6â€¦725f8d`. Clean code `e43d05633dca9919762392f8f9485924f20902d3`. Inconclusive; checkpoints restricted to exact frozen replay and never reusable/promotable/ship ([results](design/autotrain-cycle-1737-canvas-timeout.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1736-{control,bounds}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1736/runs/` (local, explicit no-sync) | Exact smoke n=3 / held-out n=5 quality ties: parse 1.0 / 1.0, meaning 0 / 0, structure .0575 / .0894; bounds p50 3,072.99 / 3,177.65 vs control 2,933.21 / 3,058.12 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 24 steps, seed 101736, batch 2, `honest_slot_contract=True`; exactly matched 1,608,962-param arms. Control SHA `1383c5a9â€¦fd2c4f`; bounds SHA `a6113951â€¦da0f3b`. Clean code `f22d2e89df5f0949a502c7227ea1dbf174cfefdd`, harness `v73`, meaning eval `2.13.0`, scoring `v22`, gates `openui_ship_gates_v6`. Quality null, slower on both suites, no champion/Lean campaign certificate; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1736-bounds-promotion-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1735-{control,component-structure}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1735/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, binder F1 .6333, recall .25; treatment p50 1,589.07 vs 1,509.10 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 23 steps, seed 101735, batch 2, evaluation `honest_slot_contract=True`; exactly matched 1,913,789-param arms. Control SHA `927220daâ€¦e7b5e9`; treatment SHA `f5b3f51câ€¦ad6a52`. Clean code `3cb2dc107960119e9e75c50f322c21c0eb8039c3`, harness `v73`, meaning eval `2.13.0`, scoring `v22`, gates `openui_ship_gates_v6`. Quality null, 5.30% slower, and 3.04Ã— training wall; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1735-component-structure-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1734-{control,component-inventory}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1734/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse 1.0, meaning .3333, structure .17417, binder F1 .6333, recall .25; treatment p50 1,567.47 vs 1,574.83 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 22 steps, seed 101734, batch 2, evaluation `honest_slot_contract=True`; exactly matched 1,682,363-param arms. Control SHA `0e2cac42â€¦0afe28`; treatment SHA `4b61fecfâ€¦549229`. Clean code `2b2c33166d8ee207cdf2bdf1f5825bc70959420b`, harness `v73`, meaning eval `2.13.0`, scoring `v22`, gates `openui_ship_gates_v6`. Quality null and 0.47% efficiency gain below policy floor; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1734-component-inventory-screen.md)) |
-| 2026-08-02 | `c20260802-continuous-openui-202607-98199209-c1733-{control,component-edge}` | `outputs/autoresearch/continuous-loop-20260802-continuous-openui-202607-98199209-c1733/runs/` (local, explicit no-sync) | Exact smoke n=3 quality ties: parse/binder F1 1.0, meaning 0, structure .20693, recall .08333; treatment p50 6,005.56 vs 6,136.43 ms; AgentV complete, gates fail | CPU `wf_smoke_v2`, 24 steps, seed 101733, batch 2, evaluation `honest_slot_contract=True`; exactly matched 1,766,987-param arms. Control SHA `19033055â€¦eafd52b`; treatment SHA `f6f4d361â€¦306cfe6`. Clean code `a88ea74133115d0ed8850bc0bf49ab5456d7828d`, harness `v73`, meaning eval `2.13.0`, scoring `v22`, gates `openui_ship_gates_v6`. Quality null and 2.13% efficiency gain below policy floor; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1733-component-edge-screen.md)) |
-| 2026-08-02 | Control `c20260801-continuous-openui-202607-98199209-c1732-control`; treatment `c20260801-continuous-openui-202607-98199209-c1732-component-plan` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1732/runs/` (local, explicit no-sync) | Exact quality ties on smoke n=3 (parse 1.0, meaningful .3333, structure .2153, binder F1 .8222) and held-out n=5 (parse 1.0, meaningful 0, structure .06024, binder F1 .7076); treatment p50 2,066.56 vs 2,057.09 ms smoke and 1,665.84 vs 1,734.45 ms held-out; AgentV complete, `--ship-gates` fail | CPU `wf_smoke_v2`, 23 steps, seed 101732, batch 2, `honest_slot_contract=True`; exactly matched 1,755,764-param arms. Control SHA `ea4f5f32â€¦0046c27`; treatment SHA `bee24d60â€¦7c2cc2e`. Stamp `version_stamp/v1`, clean code `fbfc16ae6372cbccd9c8e1d30f755678ad6ffd19`, harness `v73`, meaning eval `2.13.0`, scoring `v22`, gates `openui_ship_gates_v6`, eval recipe `e938_role_safe_all_targets_v2`. Third component-plan quality null; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1732-component-plan-promotion-screen.md)) |
-| 2026-08-02 | `c20260801-continuous-openui-202607-98199209-c1731-{control,component-plan}` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1731/runs/` (local, explicit no-sync) | Both smoke n=3: parse 1.0, meaningful .3333, structure .4197, binder F1 .6333, recall .1667; control p50 3,453.06 ms, treatment 3,430.55 ms; AgentV complete, gates fail | Exactly matched 1,755,764-param arms. Control SHA `126e390eâ€¦81a3d`; treatment SHA `ed9e630eâ€¦b5c2b`. Quality-null and 0.65% latency delta is below policy v4's 5% efficiency floor; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1731-component-plan-replication.md)) |
-| 2026-08-02 | `c20260801-continuous-openui-202607-98199209-c1730-{control,component-plan}` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1730/runs/` (local, explicit no-sync) | Both smoke n=3: parse 1.0, meaningful .3333, structure .1742, binder F1 .6333, recall .25; control p50 1,798.92 ms, treatment 1,560.93 ms; AgentV complete, gates fail | Exactly matched 1,755,764-param arms. Control SHA `d1acb3c0â€¦aae35`; treatment SHA `4e70baaaâ€¦aff30`. Quality-null with a 13.23% fixture p50 signal queued for new-seed confirmation; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1730-component-plan-screen.md)) |
-| 2026-08-02 | `c20260801-continuous-openui-202607-98199209-c1729-{control,binder-topology}` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1729/runs/` (local, explicit no-sync) | Both smoke n=3: parse 1.0, structure .0575, meaningful/binder F1 0.0; control p50 1,520.36 ms, treatment 1,532.49 ms; AgentV complete, gates fail | Control SHA `e16840b5â€¦e5b35` at 1,608,962 params; treatment SHA `655e7e30â€¦8396d` at 2,137,346 params. Null, +32.84% capacity-confounded, rejected; neither checkpoint reusable/promotable/ship ([results](design/autotrain-cycle-1729-binder-topology-capacity-audit.md)) |
-| 2026-08-01 | `c20260801-continuous-openui-202607-98199209-c1717-control` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1717/runs/` (local, explicit no-sync) | Control smoke n=3: parse/binder F1 1.0, meaningful .3333, structure .3656, p50 3,954.45 ms, AgentV complete, gates fail; batch1 train timed out and produced no checkpoint/eval | Control SHA `e38a18adâ€¦7c54ee` again matches c1715/c1716. Redundant frozen retraining consumed the candidate stage; measurement incomplete and no checkpoint is reusable/promotable/ship ([results](design/autotrain-cycle-1717-redundant-retrain-timeout.md)) |
-| 2026-08-01 | `c20260801-continuous-openui-202607-98199209-c1716-{control,batch1}` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1716/runs/` (local, explicit no-sync) | Control smoke n=3: parse/binder F1 1.0, meaningful .3333, structure .3656, p50 3,705.20 ms, AgentV complete, gates fail; batch1 has no eval metrics after terminal-witness official-parser timeout | Current-main exact replay of c1715, with identical checkpoint hashes and 1,608,962 params. Measurement remains incomplete; neither checkpoint reusable/promotable/ship; exact replay remains required ([results](design/autotrain-cycle-1716-terminal-parse-timeout.md)) |
-| 2026-08-01 | `c20260801-continuous-openui-202607-98199209-c1715-{control,batch1}` | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c1715/runs/` (local, explicit no-sync) | Control smoke n=3: parse/binder F1 1.0, meaningful .3333, structure .3656, p50 3,884.32 ms, AgentV complete, gates fail; batch1 has no eval metrics after terminal-witness timeout | Matched 80-step / seed-101710 / 1,608,962-param CPU scratch replay. Control SHA `e38a18adâ€¦7c54ee`; batch1 SHA `3ef5056aâ€¦14dc64`. Measurement incomplete; neither checkpoint reusable/promotable/ship; exact replay required ([results](design/autotrain-cycle-1715-terminal-witness-timeout.md)) |
-| 2026-08-01 | c1708â€“c1710 six-arm scratch set | `outputs/autoresearch/continuous-loop-20260801-continuous-openui-202607-98199209-c170{8,9,10}/runs/` (local, explicit no-sync) | Training only: 80â€“164 steps, loss 3.2810â€“12.3192, 6.74â€“17.43s, 1,608,962 params/arm; eval and AgentV unavailable | Canonical train summaries and checkpoints prove train completion, while bounded stdout-tail parsing falsely classified all outcomes incomplete. Infrastructure-only provenance; frozen c1710 replay required; never reuse/promote/ship ([results](design/autotrain-cycles-1708-1710-runtime-artifact-recovery.md)) |
-| 2026-07-25 | `slm287-trained-local-v13-20260725` | `outputs/runs/slm287-trained-local-v13-20260725/trained_cells/` (local, explicit no-sync) | Five seeds Ã— two configs over locked n=226: all raw/constrained/repaired meaning-v2 and binder/reference F1 0.0; absolute-probability MDE 0.0200; AgentV 160/160 | CPU float32 Choice TwoTower, strict 97-record `slm230_symbol_only_v1`, 5,000-token budget; full local diagnostic negative result, not promoted or ship ([results](design/iter-slm287-locked-power-protocol-20260724.md)) |
-| 2026-07-24 | `slm230_bounded_recursive_r4_r2` | `outputs/runs/slm230_bounded_recursive_r4_r2/` (local) | Held-out n=2: CE 24.2536â†’20.0761 and 25.1835â†’20.5992 from R=1â†’4, but accuracy/parse/structure/reward 0.0; AgentV 4/4 | Four CPU scratch steps on 97 strict symbol-only records, 1.70s, explicit `--no-sync-checkpoints`; observability verdict `stagnant`, no early exit, no promotion |
-| 2026-07-22 | `e735-symbol-only-root-arity-fullhead140-r1` | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/` (local) | E731 smoke head argmax 41 becomes 1; weight 0/1 smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0, AgentV 0/1 | 140-step / 82.07s explicit no-sync CPU scratch diagnostic; objective correction retained, checkpoint rejected |
-| 2026-07-22 | `e733-symbol-only-root-identity140-r1` | `outputs/runs/e733-symbol-only-root-identity140-r1/` (local) | Weight 0/1 smoke outputs and metrics identical; treatment has zero identity applications, strict-v2 0.0, AgentV 0/1 | 140-step / 78.98s explicit no-sync CPU run under an invalid transient capability declaration; checkpoint invalidated and final config rejects lexer identity before artifacts |
-| 2026-07-22 | `e731-symbol-only-root-arity140-r1` | `outputs/runs/e731-symbol-only-root-arity140-r1/` (local) | Smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0; weights 0/1/2 identical, AgentV 0/1 | 140-step / 82.20s explicit no-sync CPU scratch diagnostic; capability retained, checkpoint rejected |
-| 2026-07-22 | `e727-symbol-only-binder-arity140-r1` | `outputs/runs/e727-symbol-only-binder-arity140-r1/` (local) | Smoke meaning-v1 0.6667 / structure 0.5614; held-out meaning-v1 0.25 / structure 0.3940; strict-v2 0.0, AgentV 0/1 | 140-step / 77.46s no-sync CPU scratch diagnostic; arity weights 1/2 cause no choice changes, checkpoint rejected |
-| 2026-07-22 | `e729-symbol-only-binder-topology140-r1` | `outputs/runs/e729-symbol-only-binder-topology140-r1/` (local) | Smoke meaning-v1 0.3333 / structure 0.4642 at topology 0.25/1 vs control 0.6667 / 0.5614; strict-v2 0.0, AgentV 0/1 | 140-step / 77.50s no-sync CPU scratch diagnostic; topology changes 3/3 choices harmfully, checkpoint rejected |
-| 2026-07-22 | `e726-symbol-only-root-arity140-r1` | `outputs/runs/e726-symbol-only-root-arity140-r1/` (local) | No evaluation; all 137 tensors and training metrics exactly match E723 | 140-step / 81.20s no-sync CPU run with silently unavailable choice-only lever; checkpoint invalidated and harness now fails closed |
-| 2026-07-22 | `e725-symbol-only-component-inventory130-r1` | `outputs/runs/e725-symbol-only-component-inventory130-r1/` (local) | Smoke parse 1.0 / structure 0.3094, but meaning-v1/strict-v2 0.0 and AgentV 0/1; inventory on/off identical | 130-step / 73.22s no-sync CPU scratch diagnostic; checkpoint and lever rejected |
-| 2026-07-21 | `e714-symbol-only-scratch600-r1` | `outputs/runs/e714-symbol-only-scratch600-r1/` (local) | Five-suite strict-v2 0.0, AgentV 0/5; all outputs symbol-only | First compatible v2 checkpoint; 600-step / 48.72s no-sync CPU scratch baseline, rejected for promotion |
-| 2026-07-21 | `e720-symbol-only-component-inventory600-r1` | `outputs/runs/e720-symbol-only-component-inventory600-r1/` (local) | Smoke strict-v2 0.0 and AgentV 0/1 in both decode arms; bias 4 timed out 3/3 | 600-step / 72.38s no-sync CPU scratch diagnostic; learned inventory head did not yield valid programs, rejected for promotion |
-| 2026-07-21 | `e721-symbol-only-component-plan190-r4` | `outputs/runs/e721-symbol-only-component-plan190-r4/` (local) | Smoke parse 1.0 but strict-v2 0.0 and AgentV 0/1; plan on/off identical | 190-step / 90.39s no-sync CPU scratch syntax diagnostic; three larger budgets timed out and are invalid; rejected for promotion |
-| 2026-07-21 | `e722-symbol-only-component-edge150-r1` | `outputs/runs/e722-symbol-only-component-edge150-r1/` (local) | Smoke parse 1.0, structure 0.2861, recall 0.5, reward 0.8313, strict-v2 0.0, AgentV 0/1 | 150-step / 77.52s no-sync CPU scratch diagnostic; edge on/off identical, rejected for promotion |
-| 2026-07-21 | `e723-symbol-only-slot-owner140-r1` | `outputs/runs/e723-symbol-only-slot-owner140-r1/` (local) | Causal smoke + held-out improvements; smoke meaning-v1 0.6667 / structure 0.5614, strict-v2 0.0, AgentV 0/1 | 140-step / 77.16s no-sync CPU scratch diagnostic; lever retained, checkpoint rejected for promotion |
-| 2026-07-20 | `e620-required-slot-coverage-scratch800-20260720` | `outputs/runs/e620-required-slot-coverage-scratch800-20260720/` (local) | OOD treatment fidelity 0.5500, structure 0.4886, reward 0.8140, strict-v2 0.0, AgentV 0/1 | 800-step no-sync scratch; lower loss regresses E619 generalization; rejected |
-| 2026-07-20 | `e574-e569-slotloss2-r1-48s` | `outputs/runs/e574-e569-slotloss2-r1-48s/` (local) | OOD aggregates equal E573; meaning-v2 0, AgentV 0/1 | No-sync scratch; no-effect negative evidence |
-| 2026-07-20 | `e573-e569-fidelity1-r1-48s` | `outputs/runs/e573-e569-fidelity1-r1-48s/` (local) | OOD meaning-v1 0.25, fidelity 0.4750, reward 0.7570, AgentV 0/1 | No-sync scratch; fidelity/coverage Pareto, not ship |
-| 2026-07-20 | `e572-e569-fidelity2-r1-48s` | `outputs/runs/e572-e569-fidelity2-r1-48s/` (local) | OOD fidelity 0.6500, reward 0.8170, meaning-v1/v2 0, AgentV 0/1 | No-sync scratch; non-semantic fidelity/reward Pareto, rejected |
-| 2026-07-20 | `e569-e561-matched-cont48-r1-48s` | `outputs/runs/e569-e561-matched-cont48-r1-48s/` (local) | OOD meaningful-v1 0.25, recall 0.3333, reward 0.6920, AgentV 0/1 | No-sync scratch; semantic-coverage Pareto, not ship |
-| 2026-07-20 | `e568-e561-cont48-r1-48s` | `outputs/runs/e568-e561-cont48-r1-48s/` (local) | OOD reward 0.6920, fidelity 0.2583, structure 0.1375, AgentV 0/1 | No-sync scratch; design-context recipe drift, rejected |
-| 2026-07-20 | `e561-e544-owner-threshold7-r1-24s` | `outputs/runs/e561-e544-owner-threshold7-r1-24s/` (local) | OOD fidelity 0.5750, structure 0.2419, reward 0.5753, AgentV 0/1 | No-sync scratch; sampling ladder winner, semantic research only |
-| 2026-07-20 | `e560-e544-owner-threshold4-r1-24s` | `outputs/runs/e560-e544-owner-threshold4-r1-24s/` (local) | OOD structure 0.2181, recall 0.2083, AST-node F1 0.3389, AgentV 0/1 | No-sync scratch; topology Pareto lever only |
-| 2026-07-20 | `e559-e544-owner-coverage2-r1-24s` | `outputs/runs/e559-e544-owner-coverage2-r1-24s/` (local) | OOD fidelity 0.4417, recall 0.2708, reward 0.1643, AgentV 0/1 | No-sync scratch; narrow eligibility next |
-| 2026-07-20 | `e558-e544-owner-coverage-r2-24s` | `outputs/runs/e558-e544-owner-coverage-r2-24s/` (local) | OOD fidelity 0.4250, structure 0.0921, reward 0.4075, AgentV 0/1 | No-sync scratch; 4Ã— coverage overcorrects, test 2Ã— |
-| 2026-07-20 | `e558-e544-owner-coverage-r1-24s` | `outputs/runs/e558-e544-owner-coverage-r1-24s/` (local) | No decision eval | Dirty-tree engineering trial persisted, excluded from decisions |
-| 2026-07-20 | `e557-e544-slot-pair-balance1-r1-24s` | `outputs/runs/e557-e544-slot-pair-balance1-r1-24s/` (local) | Metrics exactly match E555; AgentV 0/1 | No-sync scratch; scalar balance tuning closed |
-| 2026-07-20 | `e556-e544-slot-context-combined-r1-24s` | `outputs/runs/e556-e544-slot-context-combined-r1-24s/` (local) | OOD fidelity 0.2167, structure 0.1594, recall 0.1250, AgentV 0/1 | No-sync scratch; combined treatment rejected |
-| 2026-07-20 | `e555-e544-slot-pair-interaction-r2-24s` | `outputs/runs/e555-e544-slot-pair-interaction-r2-24s/` (local) | OOD fidelity 0.3000, structure 0.1594, recall 0.1250, AgentV 0/1 | Explicit no-sync scratch; Pareto lever retained, checkpoint not promoted |
-| 2026-07-20 | `e554-e544-slot-next-context-r2-24s` | `outputs/runs/e554-e544-slot-next-context-r2-24s/` (local) | OOD fidelity 0.2583, structure 0.1594, recall 0.1250, AgentV 0/1 | Explicit no-sync scratch; mixed architecture result rejected; not promoted |
-| 2026-07-20 | `e553-e544-prior-proportional-r3-24s` | `outputs/runs/e553-e544-prior-proportional-r3-24s/` (local) | OOD fidelity 0.3000, structure 0.1244, recall 0.0625, AgentV 0/1 | Explicit no-sync scratch; correctness fix retained, checkpoint rejected; not promoted |
-| 2026-07-19 | `e552-e544-strict-subset2-lexeme05-r1-24s` | `outputs/runs/e552-e544-strict-subset2-lexeme05-r1-24s/` (local) | OOD fidelity 0.1333, structure 0.2181, recall 0.1250, AgentV 0/1 | Explicit no-sync scratch; midpoint rejected; not promoted |
-| 2026-07-19 | `e551-e544-strict-subset2-no-lexeme-r1-24s` | `outputs/runs/e551-e544-strict-subset2-no-lexeme-r1-24s/` (local) | OOD fidelity 0.3000, structure 0.1594, recall 0.1250, AgentV 0/1 | Explicit no-sync scratch; prior removal rejected; not promoted |
-| (seed) | `playground_demo` | `src/slm_training/resources/checkpoints/playground_demo/` | wiring demo | Committed fixture; regenerate via `bootstrap_playground` |
-| 2026-07-14 | `restructure_cpu_scratch_v0` | `outputs/runs/restructure_cpu_scratch_v0/` (local) | smoke parse 0.0 @ 80 steps; last_lossâ‰ˆ6.97 | Post-restructure CPU budget verify; not ship |
-| 2026-07-14 | `restructure_cpu_scratch_v0_cont` | `outputs/runs/restructure_cpu_scratch_v0_cont/` (local) | resume +200 scratch steps; smoke parse still 0.0 | Continues v0; HF Jobs still blocked on missing HF_TOKEN |
-| 2026-07-14 | `qx_e0_baseline` (P13 superseded) | `outputs/slm17/matrix-smoke-baseline/` (local) | `rico_held n=3` parse/fidelity 0.0 | Fixture probe; not comparable to E50; scratch/no-sync |
-| 2026-07-14 | `qx_e50_core_remask` (P13 superseded) | `outputs/slm17/matrix-smoke-champion/` (local) | `rico_held n=3` parse/fidelity 1.0 | System-recipe probe, not a matched data signal; scratch/no-sync |
-| 2026-07-14 | fixture `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-fixture-honest/` (local) | held 0.08 / RICO 0.0667 fidelity; parse 0.0 | Equal-recipe fixture control; scratch/no-sync; not ship |
-| 2026-07-14 | integrated `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-new-honest/` (local) | held 0.12 / RICO 0.10 fidelity; parse 0.0 | Strict two-suite data signal; scratch/no-sync; not promotable or ship |
-| 2026-07-14 | `local_directml_adreno_20260714` | `outputs/runs/local_directml_adreno_20260714/` (local) | DirectML train completed @ 5 steps; last_lossâ‰ˆ61.30 | Adreno GPU/checkpoint wiring; one AdamW op used CPU fallback; CPU generation timed out at 120s; no eval/ship claim |
-| 2026-07-15 | `overnight_retrain_200` | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/` (local) | 200 CPU scratch steps; last_lossâ‰ˆ6.64; all suites parse 0.0 | Full honest eval with AgentV bundle; no promotion; decode-path investigation continues |
-| 2026-07-15 | `overnight_retrain_1000` | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/` (local) | 1,000 CPU scratch steps; last_lossâ‰ˆ1.12; smoke parse 0.0 at every checkpoint | Extended training did not improve generation quality; no promotion |
-| 2026-07-15 | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local) | all five suites parse/fidelity/structure/reward 0.0 | Frozen format-v1 comparison; AgentV complete; not promoted or synced |
-| 2026-07-15 | topology `grammar_diffusion_overfit` | pytest temporary local checkpoint | smoke n=2 parse/fidelity 0.5; topology composite 0.4820 | Implementation smoke only; temporary checkpoint, not promoted or synced |
-| 2026-07-15 | `gx_x9_topology_base` seeds 0/1/2 | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | RICO n=3 median parse 0.667, but held/adversarial/OOD parse 0.0 | 200-step CPU scratch confirmation; all seeds fail multi-suite gates; not promoted or synced |
-| 2026-07-15 | `gx_x14_buffer` seeds 0/1/2 | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | all-suite median parse 0.0 | 200-step CPU scratch confirmation; all seeds fail; not promoted or synced |
-| 2026-07-16 | `gx_x18_scope_noise_confirm_200` seeds 0/1/2 | `outputs/runs/gx_x18_scope_noise_confirm_200/` (local) | all-suite median parse/fidelity/structure 0.0 | 200-step CPU scratch confirmation; all seeds fail; no promotion or sync |
-| 2026-07-16 | `gx_x21_scoped_topology_confirm_200` seeds 0/1/2 | `outputs/runs/gx_x21_scoped_topology_confirm_200/` (local) | all-suite median parse/fidelity 0.0; weak structure | 200-step CPU scratch confirmation; all seeds fail; no promotion or sync |
-| 2026-07-16 | `qx_e53_honest_v5_champion` (E121) | `outputs/runs/iter-e121d-e53-judged-20260715/` (local) | judged corpus 405; smoke n=1 parse/fidelity/structure/reward 0.0; decode timeout | Explicit corpus precedence and evaluator tuple bugs fixed; scratch-only; no promotion |
-| 2026-07-16 | `e123_judged_32step_b` (E123) | `outputs/runs/iter-e123b-judged-20260715/` (local) | 32 CPU scratch steps; loss 10.97; smoke parse 0.0, structural similarity 0.1917, 26.75s p50; fallback/canvas cap | Longer training did not improve generation; generation-recipe investigation next; no promotion |
-| 2026-07-16 | `e127_judged_schema_slots` (E127) | `outputs/runs/iter-e127-schema-slots-20260715/` (local) | 32 CPU scratch steps; loss 10.71; placeholder validity 0.55 / normalized fidelity 0.25; parse 0.0 | Schema/slot conditioning improves placeholder signal but not syntax; no promotion |
-| 2026-07-16 | `e128_judged_schema_slots_64` (E128) | `outputs/runs/iter-e128-schema-slots-20260715/` (local) | 64 CPU scratch steps; loss 15.03; placeholder validity/fidelity 0.0; parse 0.0 | Higher LTR/fidelity weights regressed E127; no promotion |
-| 2026-07-16 | `e129_judged_schema_slots_64_lowweights` (E129) | `outputs/runs/iter-e129-schema-slots-20260715/` (local) | 64 CPU scratch steps; loss 9.89; placeholder validity/fidelity 0.0; parse 0.0 | Lower-weight control failed to reproduce E127; data/variance investigation next; no promotion |
-| 2026-07-16 | `e130_judged_schema_slots_seed1` (E130) | `outputs/runs/iter-e130-schema-slots-20260715/` (local) | 32 CPU scratch steps, seed 1; loss 15.28; placeholder validity/fidelity 0.0; parse 0.0 | E127 not reproducible; multi-example/task-composition feedback next; no promotion |
-| 2026-07-16 | `e132_generation_focus` (E132) | `outputs/runs/iter-e132-generation-focus-20260715/` (local) | 32 CPU scratch steps; three-prompt parse/placeholder 0.0; structural similarity 0.1742 | Task reweighting rejected; architecture/representation or synthesis contract next; no promotion |
-| 2026-07-16 | `e133_no_fuse_ltr` (E133) | `outputs/runs/iter-e133-no-fuse-ltr-20260715/` (local) | 32 CPU scratch steps; three-prompt parse/structure 0.0; one 15s timeout | No-fused-LTR path rejected; fused LTR retained; no promotion |
-| 2026-07-16 | `e135_hf_context_control` (E135) | `outputs/runs/iter-e135-hf-context-20260715/` (local) | 8 CPU steps with frozen SmolLM2-135M; three-prompt parse 0.0, structural 0.2422, placeholder validity 0.3167; one timeout | HF context is leading representation hypothesis; longer cached control next; no promotion |
-| 2026-07-16 | `e136_hf_context_32` (E136) | `outputs/runs/iter-e136-hf-context-20260715/` (local) | 32 CPU steps with frozen SmolLM2-135M; parse/placeholder 0.0, structural 0.0825 | Longer HF training regressed; checkpoint selection/supervision alignment next; no promotion |
-| 2026-07-16 | `e137_hf_context_16` (E137) | `outputs/runs/iter-e137-hf-context-20260715/` (local) | 16 CPU steps with frozen SmolLM2-135M; parse 0.0, placeholder validity 0.40, structural 0.2142 | Non-monotonic HF trajectory; explicit early checkpoint selection next; no promotion |
-| 2026-07-16 | `e138_hf_context_seed1_8` (E138) | `outputs/runs/iter-e138-hf-seed1-20260715/` (local) | 8 CPU steps with frozen SmolLM2-135M, seed 1; parse 0.0, placeholder validity 0.0, structural 0.1683 | Seed variance is material; multi-seed selection before corpus/loss changes; no promotion |
-| 2026-07-16 | `e139_hf_context_seed2_8` (E139) | `outputs/runs/iter-e139-hf-seed2-20260715/` (local) | 8 CPU steps with frozen SmolLM2-135M, seed 2; parse/placeholder/structure 0.0, two timeouts | Seed-0 signal remains unexplained; decoder/checkpoint diagnosis next; no promotion |
-| 2026-07-16 | `e173-schema-context-32step` (E173) | `outputs/runs/e173-schema-context-32step/` (local) | 32 CPU steps with frozen HF context plus schema/slot context; loss 11.0876; bounded syntax 1.0, parse 0.0 | Context-only control did not recover semantic hierarchy; no promotion |
-| 2026-07-16 | `e174-unfrozen-context-8step` (E174) | `outputs/runs/e174-unfrozen-context-8step/` (local) | 8 CPU steps with unfrozen HF context; loss 39.4253; bounded syntax 0.0, parse 0.0 | Rejected control; retain frozen context; no promotion |
-| 2026-07-16 | `e175-retrieval-8step` (E175) | `outputs/runs/e175-retrieval-8step/` (local) | 8 CPU steps with frozen HF context, schema context, retrieval k=4; loss 27.9708; bounded syntax/parse 0.0 | Retrieval rejected; improve semantic coverage; no promotion |
-| 2026-07-16 | `e176-broad-corpus-8step` (E176) | `outputs/runs/e176-broad-corpus-8step/` (local) | 8 CPU steps on 1,417-record prompt-contract corpus; loss 34.0464; bounded syntax/parse 0.0 | Broad corpus rejected; targeted judge-gated augmentation next; no promotion |
-| 2026-07-16 | `e177-semantic-judge-32step` (E177â€“E180) | `outputs/runs/e177-semantic-judge-32step/` (local) | 32 CPU steps on 496 published judge-gated records; loss 12.2220; bounded syntax 1.0, meaningful parse 0.0, structure 0.1542 | Deterministic compiler structure fixed; semantic role supervision next; no promotion |
-| 2026-07-16 | `e181-semantic-balanced-32step` (E181â€“E183) | `outputs/runs/e181-semantic-balanced-32step/` (local) | 32 CPU steps; loss 5.5118; bounded syntax 1.0, meaningful parse 0.0, structure 0.1542 | Mixture-only change rejected; root telemetry isolates learned semantic preference; no promotion |
-| 2026-07-16 | `e184-compiler-aligned-32step` (E184â€“E190, E193â€“E194) | `outputs/runs/e184-compiler-aligned-32step/` (local) | 32 CPU steps; loss 10.0153; E194 meaningful parse 0.0, structure 0.3600 | Component alignment recovered root; generalized grammar/schema fixes retained; no promotion |
-| 2026-07-16 | `e191-full-compiler-aligned-32step` (E191â€“E192) | `outputs/runs/e191-full-compiler-aligned-32step/` (local) | 32 CPU steps; loss 14.8498; E192 syntax 1.0, meaningful parse 0.0, structure 0.1542 | Random all-branch alignment regressed root selection; rejected; no promotion |
-| 2026-07-16 | `e195-stratified-compiler-aligned-32step` (E195) | `outputs/runs/e195-stratified-compiler-aligned-32step/` (local) | 32 CPU steps; loss 17.0750; 597 aligned states | Invalid comparison: persisted mixture was not loaded; resolver fixed; no promotion |
-| 2026-07-16 | `e196-stratified-compiler-aligned-matched-32step` (E196â€“E199) | `outputs/runs/e196-stratified-compiler-aligned-matched-32step/` (local) | 32 CPU steps; loss 7.8562; E199 syntax 1.0, meaningful parse 0.0, structure 0.1917 | Stratification fixes root/binder choice and enum completion, but declaration role remains wrong; no promotion |
-| 2026-07-16 | `e201-role-stratified-compiler-aligned-32step` (E200â€“E204) | `outputs/runs/e201-role-stratified-compiler-aligned-32step/` (local) | 32 CPU steps; loss 9.1521; E204 meaningful parse 0.0, structure 0.0955, placeholder validity 0.70 | Generated role constraints work locally, but recursive children remain incomplete; no promotion |
-| 2026-07-16 | `e205-lark-terminal-stratified-32step` (E205â€“E207) | `outputs/runs/e205-lark-terminal-stratified-32step/` (local) | 32 CPU steps; loss 8.1997; E207 syntax 1.0, meaningful parse 0.0, structure 0.3125 | Terminal alignment and enum paths fix syntax/fallback, but empty child collections remain trivial; no promotion |
-| 2026-07-16 | `e208-list-occupancy-stratified-32step` (E208â€“E209) | `outputs/runs/e208-list-occupancy-stratified-32step/` (local) | 32 CPU steps; loss 7.4938; E209 syntax 1.0, meaningful parse 0.0 | Occupancy-only alignment produces an empty root; rejected, no promotion |
-| 2026-07-16 | `e210-list-scope-occupancy-stratified-32step` (E210â€“E211) | `outputs/runs/e210-list-scope-occupancy-stratified-32step/` (local) | 32 CPU steps; loss 7.5847; E211 syntax 1.0, meaningful parse 0.0 | Root/bound occupancy scope remains insufficient; rejected, no promotion |
-| 2026-07-16 | `e212-contextual-decision-stratified-32step` (E212â€“E213) | `outputs/runs/e212-contextual-decision-stratified-32step/` (local) | 32 CPU steps; loss 7.5117; E213 normalized fidelity 0.50, meaningful parse 0.0 | Contextual binder role recovers root occupancy; required schema semantics next; no promotion |
-| 2026-07-16 | `e215-schema-role-judged-32step` (E214â€“E216) | `outputs/runs/e215-schema-role-judged-32step/` (local) | 32 CPU steps on 447 overfiltered records; loss 12.4024; E216 syntax 1.0, meaningful parse 0.0 | Superseded after 27 false-positive optional-null rejects were found; no promotion |
-| 2026-07-16 | `e219-schema-normalized-32step` (E218â€“E220) | `outputs/runs/e219-schema-normalized-32step/` (local) | 32 CPU steps on 480 corrected records; loss 13.2406; E220 syntax 1.0, meaningful parse 0.0 | Restores legal optional omissions and schema-normalizes producers; semantic coverage unchanged; no promotion |
-| 2026-07-16 | `e221-canonical-task-balanced` (E221) | `outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/` (local) | 32 CPU steps on canonical E218; loss 14.1748; strict eval syntax 1.0 on all suites but meaningful parse 0.3333/0/0.25/0/0 and 9 failed gates | Task balancing did not improve effective exposure; AgentV 1/5; checkpoint SHA `85f0fb0câ€¦bd7cd`; no sync or promotion |
-| 2026-07-16 | `e222-capacity-aware-matched` (E222) | `outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/` (local) | 32 CPU steps on canonical E218; loss 11.7409; exposure 83.59/128; strict meaningful parse 0/0/0.5/0/0 and 10 failed gates | Sampler mechanism confirmed but semantic non-regression falsified; AgentV 1/5; checkpoint SHA `960e13f1â€¦3f348c5`; no sync or promotion |
-| 2026-07-16 | `e223-quota-capacity-matched` (E223) | `outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/` (local) | 32 CPU steps on canonical E218; loss 11.9060; exposure 81.11/128; syntax 1.0 but meaningful parse/recall/fidelity 0.0 on all suites | Allocation mechanism confirmed but quality recovery falsified; AgentV 0/5; checkpoint SHA `2db1e797â€¦28a5ab87`; no sync or promotion |
-| 2026-07-16 | `e224-semantic-exhaustive-matched` (E224â€“E226) | `outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/` (local) | 32 CPU steps; loss 15.9786; E226 honest tree eval syntax 1.0 on all suites, fidelity 0.1667â€“0.75, meaningful program 0/0/0/0/0.3333 | E225 superseded after request telemetry dropped schema/contract; AgentV 1/5; checkpoint SHA `c9f38df1â€¦22bb8ef`; no sync or promotion |
-| 2026-07-16 | `e227-candidate-set-matched` (E227) | `outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/` (local) | 32 CPU steps; loss 12.3030; syntax 1.0 on all suites, meaningful program 0.0 throughout | Legal-candidate loss fell to 2.4120 but empty-layout collapse failed 12 gates; AgentV 0/5; checkpoint SHA `b99bdf78â€¦269577`; no sync or promotion |
-| 2026-07-16 | `e228-candidate-margin-matched` (E228) | `outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/` (local) | 32 CPU steps; loss 14.6153; syntax/contract 1.0, meaningful program 0.3333/0/0.5/0/0.6667 | Margin restores populated topology and reduces failures to 4; AgentV 1/5; checkpoint SHA `7a9be4a6â€¦f5b093a`; no sync or promotion |
-| 2026-07-16 | `e229-margin-64step` (E229) | `outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/` (local) | Resumed to 64 CPU steps; loss 9.4505; corrected syntax 1.0, meaningful program 0.3333/0/0.5/0/0.6667 | Same 4 gates fail and quality regresses vs E228; AgentV 1/5; checkpoint SHA `23f31fa9â€¦97cf0f4`; no sync or promotion |
-| 2026-07-16 | `e230-diverse-roots-32step` (E230) | `outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/` (local) | 32 CPU steps on 126 published judged roots; loss 19.1868; syntax 1.0 and meaningful program 0.3333/0/0.25/0/0.6667 | Same 4 gates fail; adversarial regresses; AgentV 1/5; checkpoint SHA `009b1ab3â€¦03198`; no sync or promotion |
-| 2026-07-16 | `e231-component-inventory-32step` (E231) | `outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/` (local) | 32 CPU steps; loss 19.9879; inventory recall 0.9167; syntax 1.0 and meaningful program 0.3333/0/0.5/0/0.6667 | Bias-off aggregate/component choices identical; 6 thresholds fail; AgentV 1/5; checkpoint SHA `136aa004â€¦d475de`; no sync or promotion |
-| 2026-07-16 | `e232-role-component-plan-32step` (E232) | `outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/` (local) | 32 CPU steps; root accuracy 1.0, bound recall 0.7083; syntax 1.0 and meaningful program 0.3333/0/0.5/0/0.6667 | Plan improves adversarial quality, but same 4 frontier thresholds fail; AgentV 1/5; checkpoint SHA `da42b9eaâ€¦be208e`; no sync or promotion |
-| 2026-07-16 | `e233-component-edges-32step` (E233) | `outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/` (local) | 32 CPU steps; edge recall 0â†’0.50; syntax 1.0 and meaningful program 0.3333/0/0.25/0/0.6667 | Edge on/off aggregates identical; 4 thresholds fail; AgentV 1/5; checkpoint SHA `46141ac1â€¦f2575`; no sync or promotion |
-| 2026-07-16 | `e234-edge-decision-alignment-32step` (E234) | `outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/` (local) | 32 CPU steps; decision accuracy 0â†’0.5714; syntax 1.0 and meaningful program 0.3333/0/0.25/0/0.6667 | Edge on/off aggregates identical despite 5 changes; 4 thresholds fail; AgentV 1/5; checkpoint SHA `350b7c5câ€¦0fc68`; no sync or promotion |
-| 2026-07-16 | `e235-binder-instance-plan-32step` (E235) | `outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/` (local) | 32 CPU steps; binder accuracy 0â†’0.40 with all 30 bound rows supervised; syntax 1.0 and meaningful program 0.3333/0/0.25/0/0.6667 | Binder on/off aggregates identical despite 4 changes; 9 thresholds fail; AgentV 1/5; checkpoint SHA `83adbccdâ€¦73ca8`; no sync or promotion |
-| 2026-07-16 | `e236-binder-topology-32step` (E236) | `outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/` (local) | 32 CPU steps; topology accuracy 0.5455â†’0.5238; syntax 1.0 but semantic metrics 0 throughout | Decode on/off identical with 0/38 choice changes; 12 thresholds fail; AgentV 0/5; checkpoint SHA `94e1d042â€¦f8c43`; no sync or promotion |
-| 2026-07-16 | `e237-detached-topology-32step` (E237) | `outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/` (local) | 32 CPU steps; detached frozen context reproduces E236 train/eval diagnostics | No-op hypothesis rejected; 12 thresholds fail; AgentV 0/5; checkpoint SHA `edcbad06â€¦4b59d`; no sync or promotion |
-| 2026-07-16 | `e238-binder-arity-32step` (E238) | `outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/` (local) | 32 CPU steps; arity loss 4.4211â†’2.9895; syntax 0.5â€“0.75 and meaningful program 0 | Invalidated by optional-head RNG confound; 10 thresholds fail; AgentV 0/5; checkpoint SHA `2f9accccâ€¦3ff7a4`; no sync or promotion |
-| 2026-07-16 | `e239d-binder-arity-fully-isolated-32step` (E239) | `outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/` (local) | 32 CPU steps; arity loss 4.0988â†’2.4903, accuracy 0â†’0.4706; 104/104 shared tensors bit-exact | 29 decode changes but meaningful rate 0 on every suite; 11 thresholds fail; AgentV 0/5; checkpoint SHA `677e80efâ€¦674d`; no sync or promotion |
-| 2026-07-16 | `qx_e249_local_ce_margin` (E249) | `outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/` (local) | 30 CPU exact-event steps; held-out chosen win 0â†’0.7649 and margin win 0â†’0.6489; syntax 1.0 on all suites | Structure/reward regress everywhere; 8 thresholds fail; AgentV 0/5; checkpoint SHA `24285bd4â€¦264f32c`; scratch/no sync/no promotion |
-| 2026-07-16 | `qx_e252_local_ftpo_set` (E252) | `outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/` (local) | 30 CPU set-FTPO steps on 14 judged train events; held-out margin win 0â†’0.3333 while syntax stays 1.0 | Fidelity 0 and structure/reward regress on every suite; 13 thresholds fail; AgentV 0/5; checkpoint SHA `c01aebc2â€¦088946`; scratch/no sync/no promotion |
-| 2026-07-16 | `qx_e262_broad_gold_ast_ftpo_set` (E277; emitted E262 before ID reconciliation) | `outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/` (local) | 30 CPU set-FTPO steps on 200 committed gold-AST train events; syntax/fidelity match E248 and AgentV publication resumed without retraining | Held-out loss worsens, structure regresses on every suite, 10 thresholds fail, AgentV 0/5; checkpoint SHA `3f6a2eb2â€¦f760831b`; scratch/no sync/no promotion |
-| 2026-07-16 | `qx_e278_guarded_gold_ast_ftpo_set` (E278) | `outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/` (local) | 30 CPU set-FTPO steps with validation every 5 steps; no trained step passed the held-out loss/bad-mass/good-mass/mean-margin guard, so step 0 was restored | 374/374 tensors bit-identical to E228; current parent control reproduces all suite metrics and 5 failures; AgentV 2/5; serialized SHA `518d4736â€¦91935ba`; no sync/no promotion |
-| 2026-07-17 | `qx_e265_safe_gold_ast_ftpo_set` (E265) | `outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/` (local) | 3/30 proposals accepted through optimizer-consistent Pareto backtracking; aggregate held-out loss `-0.0471`, bad mass `-0.000420`, good mass `+0.002570`, mean margin `+0.1452` | Per-kind regressions hide behind aggregate gains; fidelity/reward regress on most suites, 5 gates fail, AgentV 2/5; 50m09s stage; checkpoint SHA `44079a8câ€¦a846ab`; no sync/no promotion |
-| 2026-07-17 | `qx_e266_stratified_safe_gold_ast_ftpo_set` (E266) | `outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/` (local) | 30 CPU proposals, 150 scales, and per-decision-kind Pareto guards; batched validation cuts the local stage to 79.77s from E265's 3,009.05s | 0/30 accepted; 374/374 tensors match E228; matched current control reproduces all metrics, 5 gates fail, AgentV 2/5; serialized SHA `518d4736â€¦91935ba`; no sync/no promotion |
-| 2026-07-17 | `qx_e267_block_stratified_safe_gold_ast_ftpo_set` (E267) | `outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/` (local) | 30 CPU category-block proposals across 14 decision kinds and 150 scales; batched stage 90.27s | 0/30 accepted; 374/374 tensors match E228 and full evaluation matches current control; 5 gates fail, AgentV 2/5; serialized SHA `518d4736â€¦91935ba`; no sync/no promotion |
-| 2026-07-17 | `qx_e268_projected_stratified_safe_gold_ast_ftpo_set` (E268) | `outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/` (local) | 30 CPU steps, 420 task gradients, 2,220/5,460 conflicting ordered pairs projected, and 150 scales; stage 2,338.56s | 0/30 accepted; model tensors match E228 and full evaluation matches current control; 5 gates fail, AgentV 2/5; serialized SHA `518d4736â€¦91935ba`; no sync/no promotion |
-| 2026-07-17 | `qx_e269_mgda_stratified_safe_gold_ast_ftpo_set` (E269) | `outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/` (local) | One CPU preflight step; 13 active decision-kind gradients; minimum-norm common-descent certificate; stage 219.11s | 0/1 accepted and all five scales regress held-out kinds; 30-step run canceled, parent restored; 5 gates fail, AgentV 2/5; SHA `518d4736â€¦91935ba`; no sync/no promotion |
-| 2026-07-17 | `qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set` (E272) | `outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/` (local) | One CPU MGDA plus SGD preflight; 13 active loss objectives; stage 214.96s | 0/1 accepted; aggregate loss improves but all scales regress nine per-kind probability/margin guards; parent restored, 5 gates fail, AgentV 2/5; SHA `518d4736â€¦91935ba`; no sync/no promotion |
-| 2026-07-16 | A1 emptiness probe (E248, diagnostic â€” no new checkpoint) | `playground_demo` fixture via `scripts/probe_emptiness.py`; evidence `docs/design/iter-e248-emptiness-probe-20260716.{md,json}` | On the wiring fixture, empty program preferred on total AND per-token NLL (verdict `content_modeling_failure`); probe validated end-to-end | Diagnostic tool for the E224+ wall; real verdict needs the local E224+ checkpoints (gitignored). Fixture result is wiring-only, not a frontier finding |
-| 2026-07-16 | `qx_e255_b4_scratch_control` / `qx_e256_b4_ar_adapt` (V11 B4 pair) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-e255-e256-b4-ar-adaptation-20260716.md` + v10 campaign JSONs | 200 CPU steps, fixture v1 corpus, matched pair differing only in `denoiser_backend`; adaptation (SmolLM2-135M, bidirectional 4D-mask) trails the 1.1M scratch control on every signal (loss 8.51 vs 3.75; lr=3e-5 probe worse at 9.72); syntax/meaningful parse 0.0 on both | B4 verdict OPEN â€” fixture budget can neither confirm nor kill the from-scratch assumption; decisive run needs GPU-scale matched-compute arms with per-arm LR. Wiring-only; no promotion |
-| 2026-07-16 | `qx_e257_c1_relative_bind` (V11 C1) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-e257-c1-relative-bind-20260716.md` + `quality-matrix-results-iter-v10-c1-20260716.json` | Matched vs E255 (only `bind_encoding=relative` differs): syntax parse 0.667/0.6/0.25/0.5 vs 0.0, loss 3.27 vs 3.75, decode p50 1â€“8s vs ~15s; meaningful parse 0.0 on both (failures shift to `empty_root_stack`) | Nameless `<BINDDEF>` + signed `<BINDREL_Â±k>` refs, scope legality verifier-enforced; fixture wiring evidence only, frontier E-row + C1Ã—A interaction open; no promotion |
-| 2026-07-17 | `qx_e280_c3_macro_tokens` (V16 C3) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-e280-c3-macro-tokens-20260717.md` + `quality-matrix-results-iter-v16-c3-20260717.json` | 80 CPU steps, fixture v1 corpus; 16 mined `<MACRO_i>` macros (tokenizer v3), corpus âˆ’34.3% tokens incl. table, `seen_target_tokens` âˆ’34.4% at the matched recipe; table round-trips through the checkpoint sidecar; syntax/meaningful parse 0.0, loss 5.61 | Deterministic lossless expansion, fixed-vocabulary spans only (alpha-independent); wiring evidence only, no matched no-macro control row in-run; frontier matched pair open; no promotion |
-| 2026-07-17 | `qx_e281_c4_anon_control` / `qx_e282_c4_surface_ids` (V17 C4 pair) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-e281-e282-c4-names-disappear-20260717.md` + `quality-matrix-results-iter-v17-c4-20260717.json` | 80 CPU steps, fixture v1 corpus, matched pair differing only in `symbol_anonymization`; both arms unconstrained decode; syntax/meaningful parse 0.0 on both; structural similarity favors the surface arm on 5/5 suites (0.23â€“0.11 vs 0.12â€“0.03) at 1.72Ã— target length | C4 verdict OPEN â€” primary metric never leaves zero at fixture budget; secondary signal is a small adverse data point for the C1â€“C3 anonymization defense; decisive test needs a frontier-scale replicated pair. Wiring-only; no promotion |
-| 2026-07-17 | `gx_x22_kapur_tree_edit` (D3 Kapur baseline, vs matched X9) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-x22-d3-kapur-tree-edit-20260717.md` + `grammar-matrix-results-iter-x22-kapur-20260717.json` | 80 CPU steps, seed 0, fixture v1; all-valid tree-edit forward + inverse-edit policy + value-guided search; syntax parse 1.0 by construction; meaningful parse 0.2/0.25/0.25 (held_out/adversarial/ood â€” first nonzero at this budget; both those gate rows passed) vs 0.0 everywhere for matched X9 | Kapur arXiv:2405.20519 now Faithful (mechanism); observation channel prompt-conditioned (no target render exists); full gate battery still fails (smoke + rico rows); single seed, wiring-only, no promotion |
-| 2026-07-17 | `gx_x22_kapur_tree_edit_s0` (EFS0-04 audit-material reproduction) | `outputs/runs/gx_x22_kapur_tree_edit_s0/checkpoints/last.pt` (local, no sync); evidence `docs/design/iter-efs0-04-x22-reproduction-20260717.md` + `grammar-matrix-results-iter-efs0-04-x22-replay-20260717.json` | 80 CPU scratch steps, seed 0; checkpoint SHA `a9cfb450e8146089cb26b6df84e90a5073627c4e59a2933d16f69034ec802ff6`; syntax 1.0; meaningful parse 0.333/0.2/0/0/0.667 across smoke/held/adversarial/OOD/RICO (`n=3/5/4/4/3`) | Reproduces raw X22 material for a blinded study; unchanged gates fail; fixture-grade, single-seed, local-only; no external/human judgment, sync, or promotion |
-| 2026-07-17 | G2 recipe-evolution fixture campaign (`g2_fixture_20260717`, no checkpoint kept) | `outputs/experiments/g2_fixture_20260717/` (local); evidence `docs/design/iter-g2-recipe-evolution-20260717.md` + `recipe-evolution-results-iter-g2-20260717.json` | 4 unique recipes, 2 generations, 20 CPU steps each; evolveâ†’trainâ†’evalâ†’gate-checked-select loop ran end-to-end; `promotable: false` (no candidate passed the frozen gates) | Gate-locked selection proved load-bearing immediately: NLL fitness monotonically rewards driving `fidelity_loss_weight`â†’0, exactly the failure the frozen gates block; decode-only genes are NLL-fitness-neutral. Wiring-only; no gate weakened; nothing promoted |
-| 2026-07-17 | G4 reasoning bench fixture (`g4_fixture_20260717`, no checkpoint kept) | `outputs/experiments/reasoning_bench/` (local); evidence `docs/design/iter-g4-reasoning-bench-20260717.md` + `reasoning-bench-results-iter-g4-20260717.json` | 96-record arith-sketch corpus, 24 held-out problems, 120 CPU steps per arm; sketch (executed program trace) and direct (bare answer) arms both 0.0 accuracy; loop + single deterministic oracle proven end-to-end | First checkable-answer evaluator in the repo; sketch failures are forward refs + missing `root` (exactly what constrained decode fixes); direct arm collapses to a constant; PAL/PoT-analog comparison unanswered at this budget. Wiring-only; nothing promoted |
-| 2026-07-16 | `qx_e240_compiler_tree_control` (V9 campaign E240â€“E247) | `outputs/runs/qx_e240_compiler_tree_control/` (local scratch control); evidence `docs/design/iter-e240-e247-lattice-campaign-20260716.md` + `quality-matrix-results-iter-v9-lattice-20260716.json` | 800 CPU steps on the 108-record fixture v1 corpus; all 8 V9 rows ran (E241â€“E247 eval-only from this frozen checkpoint via new `--eval-checkpoint`); syntax/meaningful parse 0.0 everywhere (placeholder-policy rejections); always-on PTRM (E244) = ~3Ã— latency and lower structural similarity; triggered rows byte-identical to greedy | Fixture-grade wiring campaign only â€” all honest gates fail as expected; no sync or promotion; ship-grade V9 run needs local E224+ checkpoints on a GPU host with full suites (`rico_held` 1500) |
-| 2026-07-17 | `qx_e277_a2_asap_decode` (V14 A2, eval-only â€” no new checkpoint) | eval overlay on frozen `qx_e255_b4_scratch_control` weights; evidence `docs/design/iter-e277-a2-asap-decode-20260717.md` + `quality-matrix-results-iter-v14-a2-20260717.json` | ASAp-style constraint-mass removal (`asap_decode`, GAD/ASAp adapted trieâ†’canvas-position) live during decode: 204â€“334 penalties across 32â€“53 positions per suite, deterministic across two runs; structural similarity mixed vs E255 (adversarial +9pts, others âˆ’3â€“9pts at nâ‰¤5); syntax/meaningful parse 0.0 on both | Decode-only lever, matched pair vs E255; fixture wiring evidence only â€” the A1-diagnosed constraint distortion binds at frontier scale, so the A2 verdict needs the local E224+ checkpoints on a GPU host; no promotion |
-| 2026-07-17 | `qx_e278_c2_pseudo_embeddings` (V15 C2) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-e278-c2-pseudo-embeddings-20260717.md` + v13 JSON + binding probe JSON | 200 CPU steps, fixture v1, matched vs E255 (only `runtime_symbol_features="replace"` differs): structural similarity 0.19â€“0.29 vs 0.28â€“0.37 (honest fixture negative); binding probe on the trained checkpoint: same-surface hidden cosine 0.9998 vs cross 0.9679 (margin +0.032); run flushed + fixed a latent stale-feature leak (training_loss now clears request-local features) | DyVo-style deterministic byte-compositional symbol embeddings via the V8 delta path; fixture wiring + probe evidence only, frontier C2Ã—C1 interaction open; no promotion |
-| 2026-07-17 | `capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0` (B3 matched control) | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 53 CPU scratch steps / 5,004 target tokens; weighted NLL 13.1800; parse/meaningful/fidelity 0.0 on all five suites | AgentV 0/5; invalid integrity-only promotion removed and gate fixed; scratch/no sync/no promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (B3 matched choice; E288 reevaluation) | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; E287 emitted 19 empty predictions; E288 same SHA restores parse 1.0 on every suite via production-codec/schema state | Meaningful/fidelity/reward remain 0.0, AgentV 0/5; decoder fix confirmed without retraining; scratch/no sync/no promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (E289 exact choice-state cache) | `outputs/ladders/e289-choice-state-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; byte-identical to E288; exact state cache preserves parse 1.0 and zero dead ends while reducing p50 2.65Ã—â€“5.86Ã— | Cold p95 remains 5.9â€“8.7s; meaningful/fidelity/reward 0.0 and AgentV 0/5; scratch/no sync/no promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (E290 direct candidates) | `outputs/ladders/e290-choice-direct-candidates/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; byte-identical to E288/E289; grammar-derived candidates avoid 34.8% of cold probes and preserve parse 1.0 / zero dead ends | p95 improves 1.14Ã—â€“1.19Ã— but p50 regresses; semantic metrics 0.0 and AgentV 0/5 in both repeats; scratch/no sync/no promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (E291 completion cache) | `outputs/ladders/e291-choice-completion-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; byte-identical to E288â€“E290; 90.7â€“91.9% exact completion-cache hit rate, p50 1.29Ã—â€“1.99Ã— and p95 1.51Ã—â€“1.93Ã— faster than E290 | Parse 1.0 / zero dead ends preserved; semantic metrics 0.0 and AgentV 0/5 in both repeats; scratch/no sync/no model promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t1250_x1__s0` (E292 budget calibration) | `outputs/ladders/e292-choice-loss-suite-complete/runs/capacity_choice_v1__d64_h2_c1_dn2_t1250_x1__s0/` (local) | 26 CPU scratch steps / 1,263 target tokens; complete weighted NLL 18.5150; SHA `78334790da71535f1b65edd7073b8c66a21bda35d3da87cfd6d33ab1ece11211` | Base budget was divided across ladder cells; retained as calibration evidence only, scratch/no sync/no promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (E292 complete loss suite) | `outputs/ladders/e292-choice-loss-suite-complete-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; complete weighted NLL 7.2265, binding NLL 8.0201; byte-identical to E288â€“E291 | Honest constrained eval: parse 1.0, meaningful 0.0, AgentV 0/5 and 15 gate failures; scratch/no sync/no promotion |
-| 2026-07-17 | `e293-choice-component-plan-r2` (E293 E292-matched DESIGN-context arm) | `outputs/runs/e293-choice-component-plan-r2/` (local) | 107 CPU scratch steps / 5,022 target tokens with DESIGN context; plan loss 5.6250â†’3.4399; SHA `8c6b7595373d623cc821ddfb7a362faaedd4f3aa87bf360133fb167889a9157d` | Bias-off adversarial meaningful 0.5 / AgentV 1/5 versus E292 0.0 / 0/5, but bias 1 erases the gain and no-DESIGN transfer fails; scratch/no sync/no promotion |
-| 2026-07-17 | `e293-choice-component-plan-r3` (E293 matched choice-native plan) | `outputs/runs/e293-choice-component-plan-r3/` (local) | 107 CPU scratch steps / 5,022 target tokens, no DESIGN context; plan loss 5.6761â†’3.2616, root accuracy and bound recall 0â†’0.5; complete NLL 7.5550; SHA `78b70c81bd16395e22718baa91b50427c205f38136269c6248b85562cdec5308` | Bias reduces failures 17â†’13 but meaningful remains 0.0 and AgentV 0/5; scratch/no sync/no promotion |
-| 2026-07-17 | `e294-choice-no-design-control-r1` (E294 no-plan control) | `outputs/runs/e294-choice-no-design-control-r1/` (local) | 107 CPU scratch steps / 5,022 target tokens, no DESIGN context; complete NLL 7.4977; SHA `df30ca03f8f2bc3313b1b8afff9c40b7ab18c4fd2b0e8ae1b3888ba780d9add0` | Honest metrics exactly match E293 bias-off; meaningful 0.0, AgentV 0/5, 17 failures; scratch/no sync/no promotion |
-| 2026-07-17 | `e295-choice-design-dropout-r1` (E295 context interpolation) | `outputs/runs/e295-choice-design-dropout-r1/` (local) | 107 CPU scratch steps / 5,022 target tokens; 240/480 DESIGN contexts omitted; complete NLL 7.3785; SHA `5b4c50467454f7a9dddbc28da2e115c31a8eba8071587e95eda096729a16fb50` | Prompt-only adversarial meaningful 0.25 and AgentV 1/5, but four suites remain 0.0 and 14 failures remain; scratch/no sync/no promotion |
-| 2026-07-18 | `e396-balanced-type-head-continuation-r1` (E396 durable diagnostic) | `hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/` | 427 cumulative CPU steps / 22,044 target tokens in 104.6s; SHA `feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0`; E498 current-main smoke structure 0.27057 | Remote artifacts and SHA verified; current `main` now loads and applies the learned head, but smoke semantic gates and AgentV remain red; no promotion or production ship |
-| 2026-07-18 | `e499-remediated-control-r1` (invalid lexer control) | `outputs/runs/e499-remediated-control-r1/` (local) | 5 CPU steps / 1,084 target tokens; SHA `0ba703523ed35e262383f745b3f4784c6fb9c739ac210539b70ea61c52a9a040` | Invalid comparison: data-derived lexer vocabulary changed trainable parameter count; no eval, sync, or promotion |
-| 2026-07-18 | `e499-strict-r4-candidate-r1` (invalid lexer candidate) | `outputs/runs/e499-strict-r4-candidate-r1/` (local) | 5 CPU steps / 1,082 target tokens; SHA `c089e5e8b3a93b484827b3af32dc186fdc43bac1390a20233caeee421d15d86e` | Invalid comparison: data-derived lexer vocabulary changed trainable parameter count; no eval, sync, or promotion |
-| 2026-07-18 | `e499-strict-r4-choice-candidate-r2` (unmatched choice candidate) | `outputs/runs/e499-strict-r4-choice-candidate-r2/` (local) | 9 CPU steps / 1,034 target tokens; SHA `4ae78b53a0b0d548e530a924e4eedd8dfa98a6eb9375fe5fb53a9eaef0fc7569` | Intended control failed before checkpoint on 61 fragment targets; unmatched evidence only, no eval, sync, or promotion |
-| 2026-07-18 | `e499-remediated-roots-choice-control-r3` (invalid scratch choice control) | `outputs/runs/e499-remediated-roots-choice-control-r3/` (local) | 10 CPU steps / 1,023 target tokens; SHA `400251045164c9f677fac00c9f14ab526f848fecb9339584da80f4367d1e408c` | Invalid comparison: scratch context vocabulary still changed trainable parameter count; no eval, sync, or promotion |
-| 2026-07-18 | `e499-remediated-roots-hf-choice-control-r4` (matched control) | `outputs/runs/e499-remediated-roots-hf-choice-control-r4/` (local) | 10 CPU steps / 1,023 target tokens in 7.35s; SHA `bb4bec5f7565f733cc9b1417916cc13f10d831bdabac025ad45fa9477f359fb6`; smoke structure 0.1542 | Meaningful/fidelity/reward 0.0 and AgentV 0/1; scratch diagnostic, no sync or promotion |
-| 2026-07-18 | `e499-strict-r4-hf-choice-candidate-r4` (matched strict-r4 candidate) | `outputs/runs/e499-strict-r4-hf-choice-candidate-r4/` (local) | 9 CPU steps / 1,034 target tokens in 5.76s; SHA `81b2cb669bbd6b5faa3e6fe60caa0fd3a5d9d310463dc11198dfee227bcfbaf1`; smoke structure 0.0375 | Regresses matched control and AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-18 | `e499-choice-compatible-strict-hf-choice-candidate-r6` (document-only strict candidate) | `outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/` (local) | 9 CPU steps / 1,091 target tokens in 6.56s; SHA `7230ace958aa61dcc2c11997f12b8cb6ece590205f69676e4123ac8a4b2e2fab`; smoke p50 5.88s | Structure remains 0.0375 with semantic metrics zero and AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-18 | `e500-document-control-hf-choice-r1` (1k control) | `outputs/runs/e500-document-control-hf-choice-r1/` (local) | 9 CPU steps / 1,028 target tokens in 7.00s; loss 30.3844; SHA `a40f39a53fe92b298a69fc0727fa55c4ccf32f26b3c48a034378eefb772d6834` | Smoke structure 0.0375 with semantic metrics zero and AgentV 0/1; scratch/no sync/no promotion |
-| 2026-07-18 | `e500-documentized-expression-hf-choice-r2` (1k candidate) | `outputs/runs/e500-documentized-expression-hf-choice-r2/` (local) | 11 CPU steps / 1,039 target tokens in 8.95s; loss 27.6250; SHA `f54cea082c57686b7736a5de4058d762de51f97a611d670115f246bd1773d3f0` | Matches control's red smoke metrics and AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-18 | `e500-document-control-hf-choice-r3-5k` (5k control) | `outputs/runs/e500-document-control-hf-choice-r3-5k/` (local) | 43 CPU steps / 5,040 target tokens in 10.14s; loss 10.5529; SHA `9f752ae05d0e1bf50fe77cc3133794cf215e518946c04505f9ce25df6e0b2b53` | Smoke structure 0.0375 with semantic metrics zero and AgentV 0/1; scratch/no sync/no promotion |
-| 2026-07-18 | `e500-documentized-expression-hf-choice-r4-5k` (5k candidate) | `outputs/runs/e500-documentized-expression-hf-choice-r4-5k/` (local) | 50 CPU steps / 5,062 target tokens in 13.95s; loss 12.6778; SHA `a0ed6a5840304e5b00d815bb895cafdeb10004e08649e09e4a3611553dda5623` | Loss reverses against control; smoke remains red and AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-19 | `e501-e396-e500-init-r1` (task-balanced 5k warm-start) | `outputs/runs/e501-e396-e500-init-r1/` (local) | 96 CPU steps / 5,060 target tokens in 44.99s; loss 10.3340; SHA `f86b83d3c2629d311b6c56f618b1f30ab237624fbc9c47c41929882fdcc9cf15` | Structure regresses to 0.1458 with semantic metrics zero and AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-19 | `e501-e396-e500-uniform-init-r2` (uniform 5k warm-start) | `outputs/runs/e501-e396-e500-uniform-init-r2/` (local) | 99 CPU steps / 5,019 target tokens in 79.65s; loss 12.8653; SHA `14605459038c8e56d4f797cc359a2ff9e89d261a375b799476855f262736e4e7` | Recall 0.1667 but structure 0.0889 and meaningful/fidelity/reward zero, AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-19 | `e501-e396-e500-uniform-init-r3-1k` (uniform 1k warm-start) | `outputs/runs/e501-e396-e500-uniform-init-r3-1k/` (local) | 22 CPU steps / 1,039 target tokens in 21.39s; loss 26.0208; SHA `d84d34c031c6f2a9e017d2566c04e4abb66314ea3814ba3868a8cc7cb5be2ffd` | Structure 0.2317 is +0.0200 vs parent but semantic metrics remain zero, AgentV 0/1; diagnostic only, no sync or promotion |
-| 2026-07-19 | `e502-e396-e500-uniform-lr1e4-r1` | `outputs/runs/e502-e396-e500-uniform-lr1e4-r1/` (local) | 22 CPU steps / 1,039 tokens in 22.79s; loss 28.8950; SHA `fcd5126637cb1d0aa206f5b66f37c198d124813038dba2c76eed7101f047255e` | Structure 0.1133 and recall 0.1667; semantic gates zero, AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-19 | `e502-e396-e500-uniform-lr3e5-r2` | `outputs/runs/e502-e396-e500-uniform-lr3e5-r2/` (local) | 22 CPU steps / 1,039 tokens in 21.32s; loss 29.5542; SHA `528c86a6677b711ee5a5484fd513faaa3baca11ad3525c007ef6fd383a62677c` | Structure 0.1167 and recall 0.0833; semantic gates zero, AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-19 | `e502-e396-e500-prior-retained-lr3e4-r3` | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r3/` (local) | 22 CPU steps / 1,039 tokens in 21.17s; loss 25.6905; SHA `e1e833cb35f7de656ead215a0d2924f646008e82d3f7b78b94e4569f0746cb6a` | Structure 0.3169 and recall 0.0833, but semantic gates zero and AgentV 0/1; diagnostic only, no sync or promotion |
-| 2026-07-19 | `e502-e396-e500-prior-retained-lr3e4-r4-5k` | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r4-5k/` (local) | 99 CPU steps / 5,019 tokens in 79.48s; loss 12.8937; SHA `6f937374222b7fd0e82f02e603d4315422bd86d8c2728ac65401f3c24a46a726` | Structure collapses to 0.0927; semantic gates zero, AgentV 0/1; rejected, no sync or promotion |
-| 2026-07-19 | `e503-e396-e500-retention0-r1-5k` | `outputs/runs/e503-e396-e500-retention0-r1-5k/` (local) | 99 CPU steps / 5,019 tokens in 75.65s; loss 12.8937; SHA `af6e9b1c207f0a6c2b2bfa264e3e0fcaf9f2afceb850cd74314cad278a0af431` | RMS drift 0.003123; structure 0.0927 and recall 0.1667; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e503-e396-e500-retention001-r2-5k` | `outputs/runs/e503-e396-e500-retention001-r2-5k/` (local) | 99 CPU steps / 5,019 tokens in 74.41s; loss 13.4907; SHA `7c5f016f1baf0dd9eb56df51aae46d3ed2da10d2d956bbd4cc093d021be75711` | RMS drift 0.002071; structure 0.0900 and recall 0.1667; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e503-e396-e500-retention005-r3-5k` | `outputs/runs/e503-e396-e500-retention005-r3-5k/` (local) | 99 CPU steps / 5,019 tokens in 73.96s; loss 14.7205; SHA `4093f1aa5a1924f729ddb3c1596333215d744a849b44045b6e302bddaf8d2031` | RMS drift 0.000811; structure 0.2029 but recall zero; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e503-e396-e500-retention003-r4-5k` | `outputs/runs/e503-e396-e500-retention003-r4-5k/` (local) | 99 CPU steps / 5,019 tokens in 74.04s; loss 14.4501; SHA `2dbb52db813530e0ed06af2e7ba144d5988565570bec1f3fed91ae785751455b` | RMS drift 0.001163; structure 0.1667 and recall 0.0833; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e504-e396-e500-replay000-r1-5k` | `outputs/runs/e504-e396-e500-replay000-r1-5k/` (local) | 99 CPU steps / 5,019 tokens in 88.54s; loss 12.8937; SHA `35cd38e024c4f458eb67c64c1e0877195a5b40122b8cfb3e95697d0b56334c87` | RMS drift 0.003123; structure 0.0927 and recall 0.1667; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e504-e396-e500-replay0125-r2-5k` | `outputs/runs/e504-e396-e500-replay0125-r2-5k/` (local) | 100 CPU steps / 5,064 tokens in 70.85s; loss 23.7526; SHA `da63b403aae72267751eaf53d83fdf45e8f4596446fd47c657ba9a7581b725d3` | 12.5% replay; structure 0.1558, recall zero, semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e504-e396-e500-replay025-r3-5k` | `outputs/runs/e504-e396-e500-replay025-r3-5k/` (local) | 100 CPU steps / 5,039 tokens in 73.12s; loss 8.8749; SHA `91ab3f73b6a3f74d7b8a19679d5827068be0806cd327a1c3aeaef76c8c3d85b4` | 25% replay; structure 0.0964 and recall 0.0833; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e504-e396-e500-replay050-r4-5k` | `outputs/runs/e504-e396-e500-replay050-r4-5k/` (local) | 101 CPU steps / 5,000 tokens in 74.70s; loss 9.8487; SHA `7d7e056e9c61ed4ffba53cf2c20e4d6d624d242488ac7f999e1baa05c90294f9` | 50% replay; RMS drift 0.002796, structure 0.2469, recall 0.0833; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e504-e396-e500-replay050-retention001-r5-5k` | `outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/` (local) | 101 CPU steps / 5,000 tokens in 74.50s; loss 9.5478; SHA `1fc2fc23b7598bffaab0e0beb07c79593ebc9d25221d6441bc924a38ea36036c` | 50% replay + 1% retention; drift 0.001775 but structure 0.0634 and recall zero; semantic gates zero, AgentV 0/1; rejected |
-| 2026-07-19 | `e505-e396-e500-replay050-loss-attribution-r1-5k` | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/` (local) | 101 CPU steps / 5,000 tokens in 93.82s; loss 9.8487; SHA `8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8` | Primary/replay proxies both decline; matched structure 0.2469 and recall 0.0833, semantic gates zero, AgentV 0/1; constrained slot-contract ablation still rejected |
-| 2026-07-19 | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 79.6s; loss 11.1562; SHA `59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548` | Bucket upload and resync verification pass; matched E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; durable diagnostic, rejected for promotion |
-| 2026-07-19 | `e515-e396-e500-replay050-slotrole4-focal0-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 105.8s; loss 11.3045; SHA `97f2e426604e3956f2791398a608b967937ebf548fa7cae0ef59dde324721c1b` | Bucket upload and resync verification pass; removing focal gamma 2 recovers OOD meaningful to 0.25 and fidelity to 0.6583, but strict meaning and AgentV remain zero; rejected for promotion |
-| 2026-07-19 | `e517-e396-e500-replay050-slotrole1-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 130.7s; loss 9.9594; SHA `2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3` | Bucket upload and resync verification pass; slot loss 1 with contract context regresses every headline metric versus E515 and AgentV remains 0/1; rejected for promotion |
-| 2026-07-19 | `e519-e396-e500-replay050-slotrole1-honest-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 103.2s from clean commit `950007f`; loss 9.9594; SHA `d82155b03531c2d852ec8d497d3fdb0878ac1f678c0c5d247e272bc36c91805f` | Bucket upload and resync verification pass; honest authority changes tensors but exactly matches E517 quality and AgentV 0/1; harness fix retained, checkpoint rejected |
-| 2026-07-19 | `e522-e396-e521-replay050-slotrole1-honest-context-r2-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e522-e396-e521-replay050-slotrole1-honest-context-r2-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 120.7s from clean commit `ba86b71`; loss 17.5728; SHA `97cb10f43d229b1a15403295f71fa425e844ee4865c31761f3e529b24bf420ce` | Bucket upload and resync verification pass; visible inventory improves fidelity and recall but regresses structure/reward, with meaningful 0.0 and AgentV 0/1; checkpoint rejected |
-| 2026-07-19 | `e525-e396-e524-replay050-slotrole1-honest-context-r2-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 76.7s from clean commit `f6d7695`; loss 17.4623; SHA `dbd11811d826fdf7efd8b22557fb3bd48f879e84ec7484bc0a2680198e55e4b9` | Rescue upload, report persistence, resync verification, and independent bucket listing pass; recall improves but fidelity/hierarchy regress, meaningful 0.0 and AgentV 0/1; checkpoint rejected |
-| 2026-07-19 | `e528-e396-e527-replay050-slotrole1-honest-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 146.8s from clean commit `5cbbb5e`; loss 17.6792; SHA `6a2180d76c366a282a74d1d27ae2b2fcf4c1b5f2b4d298cf4cef35bc306976d5` | Automatic upload, resync verification, and independent nine-file listing pass; meaningful/reward recover but hierarchy regresses, strict meaning 0.0 and AgentV 0/1; checkpoint rejected |
-| 2026-07-19 | `e531-e396-e530-replay050-slotrole1-honest-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 99.72s from clean commit `e74e27c`; loss 17.0918; SHA `6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154` | Canonical direct rescue sync, report reconciliation, resync verification, and independent nine-file listing pass; slight structure gain does not offset semantic/fidelity/reward regressions, strict meaning 0.0 and AgentV 0/1; checkpoint rejected |
-| 2026-07-19 | `e542-e531-root-reference-arity1-r1-24s` | `outputs/runs/e542-e531-root-reference-arity1-r1-24s/` (local) | 24 CPU HF-context steps / 1,270 target tokens in 52.93s from clean commit `5cb1d9c`; loss 17.2169; SHA `2d5cd4b3c8c721e8193e06b5aa231bd9ec5009b4bec9cacfeebe842f6854c5d8` | Explicit `--no-sync-checkpoints` scratch diagnostic. OOD `n=4` control improves over E531-era diagnostics, but learned arity weight 1 is exactly quality-neutral, strict meaning 0.0, AgentV 0/1; checkpoint not promoted |
-| 2026-07-19 | `e543-e531-root-reference-bounded-r1-24s` | `outputs/runs/e543-e531-root-reference-bounded-r1-24s/` (local) | 24 CPU HF-context steps / 1,270 target tokens in 37.17s from clean commit `0592d81`; loss 15.4532; SHA `c6be3791544def59ad26b8d2b3b605a7efefd93ec83c996371e593a3251d7f90` | Explicit `--no-sync-checkpoints` scratch diagnostic. Bounded loss sharply improves auxiliary calibration, but the matched OOD replay is decision- and quality-identical to E542, strict meaning 0.0, AgentV 0/1; checkpoint not promoted |
-| 2026-07-19 | `e544-e543-root-identity1-r2-24s` | `outputs/runs/e544-e543-root-identity1-r2-24s/` (local) | 24 CPU HF-context steps / 1,270 target tokens in 40.96s from clean commit `81c97b3`; loss 15.6135; SHA `3b6e3c00666b8832187a489d6684ce909fff5b3ccaef57965f9cc1975474f20c` | Explicit `--no-sync-checkpoints` scratch diagnostic. Rank-only identity decoding improves meaningful-v1, structure, recall, and AST node F1 on matched OOD `n=4`, but strict meaning and AST edge F1 remain 0.0 and AgentV 0/1; checkpoint not promoted |
-| 2026-07-19 | `e545-e544-root-identity-neg1-control-r1-24s` | `outputs/runs/e545-e544-root-identity-neg1-control-r1-24s/` (local) | 24 CPU HF-context steps / 1,270 target tokens in 30.64s from clean commit `7f59a77`; loss 15.9699; SHA `9e54d4700938c2e1feececfa3b952d4188c76873281e54d38f19bcea4cc76fa1` | Explicit `--no-sync-checkpoints` matched scratch control. OOD meaningful 0.0 and AgentV 0/1; extra continuation regresses from E544; checkpoint not promoted |
-| 2026-07-19 | `e545-e544-root-identity-neg4-r2-24s` | `outputs/runs/e545-e544-root-identity-neg4-r2-24s/` (local) | 24 CPU HF-context steps / 1,270 target tokens in 28.64s from clean commit `7f59a77`; loss 15.9901; SHA `14dd44043887cfb6b5a14b1a99fee3750dc8f72c2d27f205fe3bdc0506de61ae` | Explicit `--no-sync-checkpoints` matched scratch treatment. Slight sparse negative calibration gain is decode- and quality-neutral; AgentV 0/1; checkpoint not promoted |
-| 2026-07-19 | `e546-e544-strict-subset1-control-r1-24s` | `outputs/runs/e546-e544-strict-subset1-control-r1-24s/` (local) | 24 CPU HF-context steps / 1,270 target tokens in 29.10s from clean commit `4e66e46`; loss 15.9699; SHA `46aba9048624f766e6052d202a94b689440baca9f1ab94d8d6c8d48adc40fc55` | Explicit no-sync matched scratch control; meaningful 0.0 and AgentV 0/1; checkpoint not promoted |
-| 2026-07-19 | `e546-e544-strict-subset5-r2-24s` | `outputs/runs/e546-e544-strict-subset5-r2-24s/` (local) | 24 CPU HF-context steps / 1,318 target tokens in 30.50s from clean commit `4e66e46`; loss 26.4735; SHA `a1a6bfc94108a8bba9aac18e5570d70e317cdec5bb706f126bf47e67e2b4efe2` | Explicit no-sync matched scratch treatment; mixed fidelity/topology gain with severe recall regression, meaning 0.0 and AgentV 0/1; checkpoint not promoted |
-| 2026-07-19 | `e547-e544-strict-subset2-r1-24s` | `outputs/runs/e547-e544-strict-subset2-r1-24s/` (local) | 24 CPU HF-context steps / 1,304 target tokens in 36.48s from clean commit `bad2f230`; loss 12.4980; SHA `37002bfd3c63d1ac58f5fc505bf034805b57eee2415d9e15ec1acbb81620fc57` | Explicit no-sync scratch diagnostic; preferred exposure setting for topology, but fidelity and semantic gates fail; checkpoint not promoted |
-
-Add a row for every new or replaced checkpoint **at the top of the table**
-(newest first â€” the dashboard and readers select the newest row by the
-Date (UTC) column). Do not delete history.
-
----
-
-## Agent checklist (after each checkpoint)
-
-1. Sync durable weights (HF bucket for full runs) â€”
-   [checkpoint-bucket.md](design/checkpoint-bucket.md).
-2. Update **Current checkpoint roster** + **Evaluation** + **Checkpoint history**
-   in this file.
-3. Refresh the **Model card (summary)** section in [`README.md`](../README.md)
-   (keep it short; link here for detail).
-4. Point measured-results / matrix docs at the new run id when relevant.
-5. Record the run's version stamp with the eval table: `code_commit` plus the
-   `harness.model_build.eval` / `evals.meaningful_program` / `gates.ship`
-   versions from `scoreboard.json`
-   ([version-stamp-contract.md](design/version-stamp-contract.md)).
-6. Commit docs with the checkpoint-producing change.
-
-## Continuous autotrain note (2026-08-08, c1)
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c1`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c2)
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c2`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c4`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c5)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c5`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c6)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c6`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c6-canvas/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c7)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c7`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c7-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c7-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c1`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c2`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c3`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c4`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c5)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c5`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c6)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c7`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c7-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c8`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c8-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c8-control/checkpoints/last.pt`
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c6`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c6-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-202608-1211eecb-c7)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c7`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c7-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c7-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-5c9d176f-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-5c9d176f-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-5c9d176f-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-5c9d176f-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-5c9d176f-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-5c9d176f-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-5c9d176f-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-5c9d176f-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-5c9d176f-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-5c9d176f-c5`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-5c9d176f-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-5c9d176f-c5-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-13c4d22a-c1`
-- checkpoints: `runs/c20260808-continuous-openui-202608-13c4d22a-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-13c4d22a-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-13c4d22a-c2`
-- checkpoints: `runs/c20260808-continuous-openui-202608-13c4d22a-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-13c4d22a-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-13c4d22a-c3`
-- checkpoints: `runs/c20260808-continuous-openui-202608-13c4d22a-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-13c4d22a-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-13c4d22a-c4`
-- checkpoints: `runs/c20260808-continuous-openui-202608-13c4d22a-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-13c4d22a-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-13c4d22a-c5`
-- checkpoints: `runs/c20260808-continuous-openui-202608-13c4d22a-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-13c4d22a-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-13c4d22a-c6`
-- checkpoints: `runs/c20260808-continuous-openui-202608-13c4d22a-c6-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-13c4d22a-c6-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-0808a-861d16c8-c1`
-- checkpoints: `runs/c20260808-openui-scheduled-0808a-861d16c8-c1-bounds/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-0808a-861d16c8-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-0808a-861d16c8-c2`
-- checkpoints: `runs/c20260808-openui-scheduled-0808a-861d16c8-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-0808a-861d16c8-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-0808a-861d16c8-c3`
-- checkpoints: `runs/c20260808-openui-scheduled-0808a-861d16c8-c3-bounds/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-0808a-861d16c8-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-0808a-861d16c8-c4`
-- checkpoints: `runs/c20260808-openui-scheduled-0808a-861d16c8-c4-component-plan/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-0808a-861d16c8-c4-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-bcz5ho-5720c848-c1`
-- checkpoints: `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c1-bounds/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-bcz5ho-5720c848-c2`
-- checkpoints: `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-bcz5ho-5720c848-c4`
-- checkpoints: `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c4-bounds/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-bcz5ho-5720c848-c5`
-- checkpoints: `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-bcz5ho-5720c848-c7`
-- checkpoints: `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c7-canvas/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-openui-scheduled-bcz5ho-5720c848-c8`
-- checkpoints: `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c8-component-plan/checkpoints/last.pt`, `runs/c20260808-openui-scheduled-bcz5ho-5720c848-c8-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c5`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c7`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c7-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c8`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c8-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c8-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c9`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c9-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c9-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c10`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c10-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c10-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c11`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c11-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c11-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c12`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c12-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c12-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c13`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c13-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c13-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c14`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c14-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c14-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c15`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c15-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c15-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-6e2cdb52-c16`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-6e2cdb52-c16-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-6e2cdb52-c16-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c3`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c4`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c5`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c6`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c6-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c7`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c7-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c1`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c2`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c4`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c6`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c6-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c7`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c7-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c8`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c8-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c8-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c9`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c9-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c9-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c10`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c10-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c10-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c11`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c11-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c11-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c12`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c12-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c12-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c13`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c13-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c13-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c14`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c14-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c14-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c15`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c15-binder-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c15-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c16`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c16-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c16-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c17`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c17-binder-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c17-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c18`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c18-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c18-slot-component-fidelity-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c19`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c19-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c19-slot-component-inventory-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c20`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c20-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c20-slot-component-fidelity-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c21`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c21-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c21-slot-component-inventory-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c22`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c22-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c22-slot-contract-context/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c23`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c23-constraint-graph/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c23-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c24`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c24-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c24-slot-contract-context/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c25`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c25-constraint-graph/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c25-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c26`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c26-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c26-fidelity/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c27`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c27-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c27-edge-alignment/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c28`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c28-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c28-fidelity/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c29`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c29-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c29-edge-alignment/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c30`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c30-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c30-semantic-contrast/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-202608-1211eecb-c31`
-- checkpoints: `runs/c20260808-continuous-openui-202608-1211eecb-c31-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-202608-1211eecb-c31-semantic-contrast-compiler-margin/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-33d4c6ef-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-33d4c6ef-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-33d4c6ef-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-33d4c6ef-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-33d4c6ef-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-33d4c6ef-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-33d4c6ef-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-33d4c6ef-c3-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-33d4c6ef-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-33d4c6ef-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-33d4c6ef-c4-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-33d4c6ef-c4-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-c1d66fca-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-c1d66fca-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-c1d66fca-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-c1d66fca-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-c1d66fca-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-c1d66fca-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-c1d66fca-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-c1d66fca-c3-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-c1d66fca-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-c1d66fca-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-c1d66fca-c4-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-c1d66fca-c4-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c3-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c4-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-32a7e28a-c5`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-32a7e28a-c5-canvas/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-32a7e28a-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c8)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c8`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c8-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c8-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, c10)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c10`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c10-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c10-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-b09a9491-c5)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-b09a9491-c5`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-b09a9491-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-b09a9491-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-ba275d00-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-ba275d00-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-ba275d00-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-ba275d00-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-ba275d00-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-ba275d00-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-ba275d00-c2-component-plan/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-ba275d00-c3)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-ba275d00-c3`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-ba275d00-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-ba275d00-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-ba275d00-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-ba275d00-c4-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-ba275d00-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-ba275d00-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-ba275d00-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-ba275d00-c5-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-ba275d00-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-ba275d00-c6)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-ba275d00-c6`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-ba275d00-c6-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-ba275d00-c6-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c4-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c5-component-edge/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c6)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c6`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c6-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c7)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c7`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c7-component-edge/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c8)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c8`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c8-component-inventory/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c8-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c9)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c9`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c9-binder-topology/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c9-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c10)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c10`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c10-component-inventory/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c10-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c11)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c11`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c11-binder-topology/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c11-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c12)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c12`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c12-binder-arity/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c12-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c13)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c13`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c13-binder-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c13-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c14)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c14`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c14-binder-arity/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c14-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c15)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c15`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c15-binder-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c15-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c16)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c16`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c16-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c16-slot-component-fidelity-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c17)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c17`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c17-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c17-slot-component-inventory-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c18)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c18`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c18-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c18-slot-component-fidelity-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c19)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c19`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c19-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c19-slot-component-inventory-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c20)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c20`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c20-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c20-slot-contract-context/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c21)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c21`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c21-constraint-graph/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c21-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c22)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c22`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c22-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c22-slot-contract-context/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c23)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c23`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c23-constraint-graph/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c23-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c24)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c24`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c24-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c24-fidelity/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c25)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c25`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c25-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c25-edge-alignment/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c26)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c26`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c26-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c26-fidelity/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c27)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c27`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c27-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c27-edge-alignment/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c28)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c28`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c28-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c28-semantic-contrast/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c29)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c29`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c29-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c29-semantic-contrast-compiler-margin/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c31)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c31`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c31-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c31-semantic-contrast/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c32)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c32`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c32-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c32-semantic-contrast-compiler-margin/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c34)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c34`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c34-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c34-slot-augmentation/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c35)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c35`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c35-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c35-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c36)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c36`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c36-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c36-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c37)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c37`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c37-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c37-slot-augmentation/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c38)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-e9c397aa-c38`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-e9c397aa-c38-control/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-e9c397aa-c38-mixed-mask/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0d84a63e-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0d84a63e-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0d84a63e-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0d84a63e-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0d84a63e-c4-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0d84a63e-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0d84a63e-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0d84a63e-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0d84a63e-c5-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c3)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c3`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c3-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c4-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c6)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c6`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c6-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c7)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c7`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c7-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c8)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-39aa1a2b-c8`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-39aa1a2b-c8-component-edge/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-39aa1a2b-c8-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-588c01bf-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-588c01bf-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-588c01bf-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-588c01bf-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-588c01bf-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-588c01bf-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-588c01bf-c2-component-plan/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260808-continuous-openui-schedu-588c01bf-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-588c01bf-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-588c01bf-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-588c01bf-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-588c01bf-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-588c01bf-c4-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-588c01bf-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-588c01bf-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-588c01bf-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-588c01bf-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-588c01bf-c5-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-09f30a35-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-09f30a35-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-09f30a35-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-09f30a35-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-09f30a35-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-09f30a35-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-09f30a35-c3-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-09f30a35-c3-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c6)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c6`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c6-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c6-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c5)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c5`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c7)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c7`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c7-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c8)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c8`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c8-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c8-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c9)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c9`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c9-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c9-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c10)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c10`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c10-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c10-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c11)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c11`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c11-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c11-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c12)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c12`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c12-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c12-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c13)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c13`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c13-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c13-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-8d54410a-c14)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-8d54410a-c14`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-8d54410a-c14-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-8d54410a-c14-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-121086e4-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-121086e4-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-121086e4-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-121086e4-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-121086e4-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-121086e4-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-121086e4-c2-component-plan/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-121086e4-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-121086e4-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-121086e4-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-121086e4-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-121086e4-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-121086e4-c4-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-121086e4-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-121086e4-c5)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-121086e4-c5`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-121086e4-c5-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-121086e4-c5-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c3-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-eaa78363-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-eaa78363-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-eaa78363-c4-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-eaa78363-c4-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-97a2c1e2-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-97a2c1e2-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-97a2c1e2-c3-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-97a2c1e2-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c4)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-97a2c1e2-c4`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-97a2c1e2-c4-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-97a2c1e2-c4-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-02340fde-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-02340fde-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-02340fde-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-02340fde-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-02340fde-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-02340fde-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-02340fde-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-02340fde-c2-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-a8e59439-c1)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-a8e59439-c1`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-a8e59439-c1-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-a8e59439-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-a8e59439-c2)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-a8e59439-c2`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-a8e59439-c2-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-a8e59439-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-schedu-a8e59439-c3)
-
-- campaign: `continuous-loop-20260808-continuous-openui-schedu-a8e59439-c3`
-- checkpoints: `runs/c20260808-continuous-openui-schedu-a8e59439-c3-bounds/checkpoints/last.pt`, `runs/c20260808-continuous-openui-schedu-a8e59439-c3-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-08, c11)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c11`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c11-component-edge/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c11-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c12)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c12`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c12-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c12-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c14)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c14`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c14-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c14-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c15)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c15`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c15-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c15-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c16)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c16`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c16-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c16-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c17)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c17`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c17-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c17-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c18)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c18`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c18-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c18-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c19)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c19`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c19-canvas/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c19-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c20)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c20`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c20-component-inventory/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c20-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c21)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c21`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c21-binder-topology/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c21-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c22)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c22`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c22-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c22-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c23)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c23`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c23-binder-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c23-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c24)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c24`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c24-binder-arity/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c24-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c25)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c25`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c25-binder-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c25-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion. Reconstructed post-hoc; the driver never wrote this cycle's `cycle_handoff.json` (see the matching `docs/design/*-c25-results.md` note).
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c26)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c26`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c26-binder-component-plan/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c26-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c27)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c27`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c27-control/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c27-slot-component-fidelity-coupling/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c28)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c28`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c28-confirm/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c28-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-08, continuous-loop-20260808-continuous-openui-local-8c0b60dd-c29)
-
-- campaign: `continuous-loop-20260808-continuous-openui-local-8c0b60dd-c29`
-- checkpoints: `runs/c20260808-continuous-openui-local-8c0b60dd-c29-batch1/checkpoints/last.pt`, `runs/c20260808-continuous-openui-local-8c0b60dd-c29-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0f17ac27-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0f17ac27-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0f17ac27-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0f17ac27-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0f17ac27-c4-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0f17ac27-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0f17ac27-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0f17ac27-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c7)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c7`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0f17ac27-c7-canvas/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0f17ac27-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c8)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-0f17ac27-c8`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-0f17ac27-c8-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-0f17ac27-c8-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4f947861-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4f947861-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4f947861-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4f947861-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4f947861-c3)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4f947861-c3`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4f947861-c3-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4f947861-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4f947861-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4f947861-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4f947861-c4-component-edge/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4f947861-c4-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-1b7ec4eb-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-1b7ec4eb-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-1b7ec4eb-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-1b7ec4eb-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c3)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-1b7ec4eb-c3`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-1b7ec4eb-c3-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-1b7ec4eb-c3-control/checkpoints/last.pt`
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c3)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c3`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c3-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c4-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c6)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c6`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c6-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c6-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c7)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c7`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c7-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c7-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c8)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c8`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c8-component-edge/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c8-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c9)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c9`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c9-component-inventory/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c9-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c10)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c10`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c10-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c10-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c11)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c11`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c11-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c11-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c12)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c12`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c12-component-edge/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c12-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c13)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c13`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c13-component-inventory/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c13-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c14)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c14`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c14-binder-topology/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c14-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-b47915d7-c15)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-b47915d7-c15`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-b47915d7-c15-binder-arity/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-b47915d7-c15-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4b132389-c1)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4b132389-c1`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4b132389-c1-bounds/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4b132389-c1-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4b132389-c2)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4b132389-c2`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4b132389-c2-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4b132389-c2-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4b132389-c3)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4b132389-c3`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4b132389-c3-confirm/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4b132389-c3-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4b132389-c4)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4b132389-c4`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4b132389-c4-batch1/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4b132389-c4-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-09, continuous-loop-20260809-continuous-openui-schedu-4b132389-c5)
-
-- campaign: `continuous-loop-20260809-continuous-openui-schedu-4b132389-c5`
-- checkpoints: `runs/c20260809-continuous-openui-schedu-4b132389-c5-component-plan/checkpoints/last.pt`, `runs/c20260809-continuous-openui-schedu-4b132389-c5-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c421)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c421`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c421-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c421-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c422)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c422`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c422-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c422-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c423)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c423`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c423-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c423-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c424)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c424`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c424-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c424-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c425)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c425`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c425-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c425-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c426)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c426`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c426-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c426-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c427)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c427`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c427-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c427-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c428)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c428`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c428-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c428-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c429)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c429`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c429-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c429-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c430)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c430`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c430-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c430-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c431)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c431`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c431-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c431-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c432)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c432`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c432-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c432-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c433)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c433`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c433-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c433-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c434)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c434`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c434-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c434-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c435)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c435`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c435-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c435-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c436)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c436`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c436-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c436-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c437)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c437`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c437-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c437-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c438)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c438`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c438-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c438-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c439)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c439`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c439-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c439-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c440)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c440`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c440-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c440-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c441)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c441`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c441-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c441-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c442)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c442`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c442-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c442-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c443)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c443`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c443-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c443-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c444)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c444`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c444-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c444-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c445)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c445`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c445-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c445-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c446)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c446`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c446-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c446-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c447)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c447`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c447-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c447-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c448)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c448`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c448-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c448-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c449)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c449`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c449-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c449-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c450)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c450`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c450-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c450-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c451)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c451`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c451-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c451-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c452)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c452`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c452-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c452-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c453)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c453`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c453-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c453-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c454)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c454`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c454-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c454-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c455)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c455`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c455-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c455-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c456)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c456`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c456-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c456-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c457)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c457`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c457-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c457-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c458)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c458`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c458-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c458-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c460)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c460`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c460-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c460-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c461)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c461`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c461-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c461-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c462)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c462`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c462-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c462-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c463)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c463`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c463-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c463-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c464)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c464`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c464-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c464-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c465)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c465`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c465-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c465-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c466)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c466`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c466-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c466-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c467)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c467`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c467-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c467-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c468)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c468`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c468-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c468-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c469)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c469`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c469-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c469-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c470)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c470`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c470-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c470-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c471)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c471`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c471-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c471-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c472)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c472`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c472-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c472-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c473)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c473`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c473-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c473-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c474)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c474`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c474-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c474-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c475)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c475`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c475-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c475-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c476)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c476`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c476-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c476-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c477)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c477`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c477-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c477-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c482)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c482`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c482-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c482-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c483)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c483`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c483-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c483-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c484)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c484`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c484-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c484-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c485)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c485`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c485-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c485-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c486)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c486`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c486-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c486-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c487)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c487`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c487-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c487-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c488)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c488`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c488-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c488-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c489)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c489`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c489-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c489-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c491)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c491`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c491-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c491-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c492)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c492`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c492-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c493)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c493`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c493-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c494)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c494`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c494-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c494-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c495)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c495`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c495-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c495-slot-augmentation/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c496)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c496`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c496-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c496-literal-margin/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c497)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c497`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c497-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c497-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c498)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c498`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c498-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c498-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c499-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c499-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c500)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c500`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c500-confirm/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c500-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c502)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c502`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c502-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c502-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c503)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c503`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c503-control/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c504)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c504`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c504-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c505)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c505`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c505-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c505-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c506)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c506`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c506-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c506-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c507)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c507`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c507-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c507-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c508)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c508`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c508-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c508-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c509)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c509`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c509-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c509-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c510)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c510`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c510-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c510-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c512)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c512`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c512-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c512-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c514)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c514`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c514-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c514-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-20, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c515)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c515`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c515-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c515-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c517)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c517`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c517-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c517-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c518)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c518`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c518-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c518-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c519)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c519`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c519-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c519-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c520)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c520`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c520-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c520-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c521)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c521`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c521-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c521-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c522)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c522`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c522-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c522-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c523)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c523`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c523-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c523-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c524)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c524`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c524-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c524-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c525)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c525`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c525-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c525-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c526)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c526`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c526-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c526-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c527)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c527`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c527-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c527-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c528)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c528`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c528-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c528-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c529)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c529`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c529-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c529-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c530)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c530`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c530-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c530-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c531)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c531`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c531-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c531-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c532)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c532`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c532-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c532-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c533)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c533`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c533-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c533-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c534)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c534`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c534-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c534-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-21, continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535)
-
-- campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535`
-- checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c535-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c535-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c546)
-
-- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c546`
-- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c546-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c548)
-
-- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c548`
-- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c548-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c554)
-
-- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c554`
-- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c554-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-22, continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556)
-
-- campaign: `continuous-loop-20260821-continuous-openui-local-8c0b60dd-c556`
-- checkpoints: `runs/c20260821-continuous-openui-local-8c0b60dd-c556-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c565)
-
-| Arm | Params | Suite n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Gate |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `c565-control` | 1,601,794 | â€” | â€” | â€” | â€” | â€” | â€” | incomplete: evaluation timed out |
-| `c565-current-rung-data-heal` | 1,601,794 | smoke 24 | 1.000 | 0.375 | 0.299 | 0.531 | 7.450 | fail |
-
-- recipe: local CPU, scratch context, 401 requested steps, batch size 2, grammar-constrained, `design-md-context` honesty.
-- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c565/runs/c20260826-continuous-openui-local-8c0b60dd-c565-{control,current-rung-data-heal}/checkpoints/last.pt`.
-- candidate failures include meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control has no scoreboard, so no matched comparison exists.
-- history: both checkpoints were created on 2026-08-26. They are fixture/scratch artifacts, intentionally local with no bucket sync, and are not promoted.
-
-## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c570)
-
-| Arm | Params | Suite n | Complete n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Gate |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `c570-control` | 1,661,698 | smoke 24 | 0 | â€” | â€” | â€” | â€” | 4.418 | incomplete: 24 decode timeouts |
-| `c570-current-rung-data-heal` | 1,601,794 | smoke 24 | 24 | 1.000 | 0.208 | 0.136 | 0.531 | 8.454 | fail |
-
-- recipe: local CPU, scratch context, 173 steps, batch size 2, grammar-constrained, 70-second arm walls; control train `hillclimb_strict_v2_role_safe`, candidate train `continuous_i10_continuous_openui_local_c556_harness`.
-- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c570/runs/c20260826-continuous-openui-local-8c0b60dd-c570-{control,current-rung-data-heal}/checkpoints/last.pt`.
-- candidate failures include meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control completed no documents, so the matched comparison is incomplete and non-promotable.
-- history: both checkpoints were created on 2026-08-26. They are fixture/scratch artifacts, intentionally local with `sync_checkpoints=false`, no bucket sync, and no promotion.
-
-## Continuous fixture checkpoints â€” c573 (2026-08-26)
-
-Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573` ran a size-matched local screening pair. Both artifacts are scratch checkpoints, not ship candidates.
-
-| Checkpoint | Params | Suite n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Result |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `c573-control` | 1,661,698 | 0 | â€” | â€” | â€” | â€” | â€” | evaluation timed out; incomplete |
-| `c573-current-rung-data-heal` | 1,601,794 | 24 | 1.000 | 0.208 | 0.136 | 0.531 | 9.289 | smoke and ship gates failed |
-
-- recipe: CPU, 164 steps, scratch context/denoiser, lexer output tokenizer, seed 100573, strict grammar-constrained tree decode, `sync_checkpoints=false`.
-- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c573/runs/c20260826-continuous-openui-local-8c0b60dd-c573-{control,current-rung-data-heal}/checkpoints/last.pt`.
-- candidate failures: certified fallback, meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control produced no scoreboard, so the comparison is incomplete and non-promotable.
-- history: both checkpoints were created on 2026-08-26. They remain local fixture artifacts with no bucket sync and no promotion.
-
-## Continuous fixture checkpoints â€” c575 (2026-08-26)
-
-Campaign `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575` ran a size-matched local screening pair. Both artifacts are scratch checkpoints, not ship candidates.
-
-| Checkpoint | Params | Suite n | Parse | Meaningful | Structural | Binder F1 | Eval NLL | Result |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `c575-control` | 1,661,698 | 0 | â€” | â€” | â€” | â€” | â€” | evaluation timed out; incomplete |
-| `c575-current-rung-data-heal` | 1,601,794 | 24 | 1.000 | 0.208 | 0.136 | 0.531 | 9.259 | smoke and ship gates failed |
-
-- recipe: CPU, 374 steps, scratch context/denoiser, lexer output tokenizer, seed 100575, strict grammar-constrained tree decode, `sync_checkpoints=false`.
-- checkpoints: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c575/runs/c20260826-continuous-openui-local-8c0b60dd-c575-{control,current-rung-data-heal}/checkpoints/last.pt`.
-- candidate failures: meaningful-program rate, structural similarity, component recall, AST/canonical BEQ, and missing held-out suites. The control produced no scoreboard, so the comparison is incomplete and non-promotable.
-- history: both checkpoints were created on 2026-08-26. They remain local fixture artifacts with no bucket sync and no promotion.
-
-## Continuous autotrain note (2026-08-26, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578)
-
-- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c578`
-- checkpoints: `runs/c20260826-continuous-openui-local-8c0b60dd-c578-current-rung-data-heal/checkpoints/last.pt`
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579)
-
-- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c579`
-- checkpoint: `runs/c20260826-continuous-openui-local-8c0b60dd-c579-current-rung-data-heal/checkpoints/last.pt` (local scratch only; 6,453,212 bytes)
-- recipe: TwoTower, 1,601,794 trainable parameters, CPU/scratch context, 328 steps, seed 100579, 90 records, 14.88 s train time.
-- smoke eval (`n=24`, AgentV): parse `1.0`, meaningful-program `0.208333`, structural `0.117875`, binder-reference F1 `0.531349`, eval NLL `8.687258`, latency p50 `6532.47 ms`; gates failed and the control timed out.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581)
-
-- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581`
-- control checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 parameters, CPU, 398 steps, seed 100581, 629 records, 41.29 s train, final loss 5.94836.
-- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c581/runs/c20260826-continuous-openui-local-8c0b60dd-c581-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 parameters, CPU, 398 steps, seed 100581, 90 records, 16.06 s train, final loss 0.000115376.
-- evaluation: both arms hit the 70 s cap before producing scoreboards; every metric is unavailable and neither checkpoint is promotion evidence.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583)
-
-- campaign: `continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583`
-- control checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583/runs/c20260826-continuous-openui-local-8c0b60dd-c583-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 401 steps, seed 100583, 629 records, 40.68 s train, final loss 6.92503.
-- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260826-continuous-openui-local-8c0b60dd-c583/runs/c20260826-continuous-openui-local-8c0b60dd-c583-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 401 steps, seed 100583, 90 records, 16.48 s train, final loss 0.00275301.
-- evaluation: candidate smoke `n=24`, parse 1.0, meaningful-program rate 0.2083, structural similarity 0.1364, binder-reference F1 0.5313, eval NLL 8.3543, latency p50 6.686 s; AgentV 4/9 assertions passed and ship gates failed. Control timed out before a scoreboard, so the comparison is incomplete.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585)
-
-- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585`
-- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585/runs/c20260827-continuous-openui-local-8c0b60dd-c585-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 400 steps, seed 100585, 629 records, 42.28 s train, final loss 6.81211.
-- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c585/runs/c20260827-continuous-openui-local-8c0b60dd-c585-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 400 steps, seed 100585, 90 records, 16.52 s train, final loss 0.000869098.
-- evaluation: both arms hit the 70 s cap. Candidate eval NLL was 9.0546, but smoke `n=24` had `incomplete_document_n=24` and `decode_timeout_count=24`; parse, meaningful, structural, binder, and latency metrics are unavailable, and this is not promotion evidence.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c586)
-
-- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c586`
-- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c586/runs/c20260827-continuous-openui-local-8c0b60dd-c586-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 401 steps, seed 100586, 629 records, 42.03 s train, final loss 7.23869.
-- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c586/runs/c20260827-continuous-openui-local-8c0b60dd-c586-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 401 steps, seed 100586, 90 records, 17.15 s train, final loss 0.00772793.
-- evaluation: both arms hit the 70 s cap. Candidate eval NLL was 7.2987, but smoke `n=24` had `incomplete_document_n=24` and `decode_timeout_count=24`; parse, meaningful, structural, binder, and latency metrics are unavailable, and this is not promotion evidence.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587)
-
-- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587`
-- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 173 steps, seed 100587, 629 records, 19.95 s train, final loss 8.51234.
-- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c587/runs/c20260827-continuous-openui-local-8c0b60dd-c587-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 173 steps, seed 100587, 90 records, 8.23 s train, final loss 2.29963.
-- evaluation: both arms hit the 70 s cap before producing scoreboards or eval NLL; parse, meaningful, structural, binder, and latency metrics are unavailable, and neither checkpoint is promotion evidence.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590)
-
-- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590`
-- candidate checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590/runs/c20260827-continuous-openui-local-8c0b60dd-c590-current-rung-data-heal/checkpoints/last.pt` (local scratch, 6,453,212 bytes); TwoTower, 1,601,794 trainable parameters, CPU, 380 steps, seed 100590, 90 records, 44.32 s train, final loss 0.595024.
-- control checkpoint: none; the control arm timed out before writing one.
-- evaluation: both arms hit the 70 s cap before producing scoreboards or eval NLL; parse, meaningful, structural, binder, and latency metrics are unavailable, and the candidate checkpoint is not promotion evidence.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-27, continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591)
-
-- campaign: `continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591`
-- control checkpoint: `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c591/runs/c20260827-continuous-openui-local-8c0b60dd-c591-control/checkpoints/last.pt` (local scratch, 6,692,828 bytes); TwoTower, 1,661,698 trainable parameters, CPU, 380 steps, seed 100590, 629 records, 40.11 s train, final loss 5.41978.
-- candidate checkpoint: reused `outputs/autoresearch/continuous-loop-20260827-continuous-openui-local-8c0b60dd-c590/runs/c20260827-continuous-openui-local-8c0b60dd-c590-current-rung-data-heal/checkpoints/last.pt`; no new candidate checkpoint was written.
-- evaluation: candidate smoke `n=24`, parse 1.0, meaningful-program rate 0.208333, structural similarity 0.136387, binder-reference F1 0.531349, p50 latency 7297.04 ms; honest smoke gates failed. The control timed out before evaluation, so comparison and eval NLL remain unavailable.
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
-
-## Continuous autotrain note (2026-08-28, continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594)
-
-- campaign: `continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594`
-- checkpoints: `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594/runs/c20260828-continuous-openui-local-8c0b60dd-c594-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 110 steps, 629 records); `outputs/autoresearch/continuous-loop-20260828-continuous-openui-local-8c0b60dd-c594/runs/c20260828-continuous-openui-local-8c0b60dd-c594-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 110 steps, 90 records)
-- honesty: fixture/scratch continuous cycle â€” **not** a ship promotion.
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×¾ºç¤èµ©hºÚn¶X§zÍHÈ[Ù[Ø\™8 %Ü[•RHÛÕÝÙ\ˆÈÜ˜[[X\‹YY™\Ú[Û‚‚Ø[›ÛšXØ[Ø\™›ÜˆÚXÚÜÚ[È›ÙXÙYžH\È™\ËˆYÙ[È
+Š›]\Ý\]B\Èš[HÚ[™]™\ˆH™]ÈÚXÚÜÚ[\ÈÜ™X]YÜˆ›Û[ÝY
+Šˆ
+[˜Z[‹œ™[[ÝH˜Z[‹›ÛÝÝ˜\[[ËÜˆX]š^Ú[\[Ûˆ[[™Y›Üˆ™]\ÙJK[‚›Z\œ›ÜˆHÚÜÝ[[X\žH[ÈØ‘PQQK›YJ‹‹Ô‘PQQK›Y
+H8¡¤ˆ8 '[Ù[Ø\™
+Ý[[X\žJx 'K‚‚”ÝÜ˜YÙNˆ\˜X›H[\[ˆÙZYÚÈ]™H[‚–ØŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RXJÎ‹ËÚYÙÚ[™Ù˜XÙK˜ÛËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RJBŠÚXÚÜÚ[ËÏ[—ÚY‹Ø
+KˆØØ[ÙÚ]š^\™H[[Î‚˜Ü˜ËÜÛWÝ˜Z[š[™ËÜ™\ÛÝ\˜Ù\ËØÚXÚÜÚ[ËÜ^YÜ›Ý[™Ù[[ËØ‚‚”›Ý™[˜[˜ÙH\È
+Š™˜Z[XÛÜÙY
+ŠŽˆH›ÝÈÚ][™ÈHœ›ÛY\˜ÈÚ\ØØ[™Y]X˜ÚXÚÜÚ[]\ÝØ\œžHH™\šYšYYÚXÚÜÚ[™Y™\™[˜ÙUŒX]™\ÛÛ™\Èœ›ÛHB™œ™\ÚÛÛ™H
+]Ûˆ[HØÜš\Ë™\šYžWØÚXÚÜÚ[Ü™Y™\™[˜Ù\ÈKXÚXÚØ
+K‚‘Ú]YÛ›Ü™YÝ]]ËØ›ÝÜÈ™[ÝÈ\™HÛ™\Ý
+Š›ØØ[ÈXYÛ›ÜÝXÊŠˆ]šY[˜ÙK›Ý™œ›ÛY\ˆÛZ[\ÎÈÙYHHZYÜ˜][Ûˆ™XÛÜ™–ØÚXÚÜÚ[\™Y™\™[˜ÙKX˜XÚÙš[LŒŒÌMË›YJ\ÚYÛ‹ØÚXÚÜÚ[\™Y™\™[˜ÙKX˜XÚÙš[LŒŒÌMË›Y
+K‚‚”›Û[Ý[Ûˆ›Ý™[˜[˜ÙH\È[ÛÈ™\™YÚ\Ý\™Yˆ™]È›Û[Ý[ÛˆØ[™Y]\È]\Ýš[™Z\ˆÛÛ\]H\›KÜÙYY[™Ú[][\XÚ]KYÙ[]˜[ËÐYÙ[‹›Û˜XÚË˜[™Ú\YØ]H]šY[˜ÙHÈH™K\Ý\^\š[Y[Ø[\ZYÛ•ŒXYÙ\ÝˆH[Ù[™š[HÜˆ\ÜÚ[™È\X[›Ø\™Ø[››Ýž\\ÜÈ\È™\]Z\™[Y[ˆÙYB–Ù^\š[Y[XØ[\ZYÛ‹YÛÝ™\›˜[˜ÙK›YJ\ÚYÛ‹Ù^\š[Y[XØ[\ZYÛ‹YÛÝ™\›˜[˜ÙK›Y
+K‚‚”Ù[X[XÈ™YXÝ[Û‹ØÛÛ›ÛÛZ[\È]™H[ˆY][Û˜[˜Z[XÛÜÙY™\™\]Z\Ú]N‚–ØÙ[X[XÑ›ÛÜ‘Ø]UŒXJ\ÚYÛ‹ÜÙ[X[XËY›ÛÜ‹YØ]K]ŒKšœÛÛŠKÝ\œ™[B˜[˜ÛÛ˜Û\Ú]™X]Ø]H\Ú˜ÎÎYY˜™LÍÍÌLÍÍMÙNLMÌMÙØÍ˜NYL˜ØLY˜ŒÌM™Œ˜LŒØMÙ‚•HÑMH[™HÛÛZ[œÈš^\™KÜ›ÞH]šY[˜ÙH]›È\˜X›HÚXÚÜÚ[œ™\™YÚ\Ý\™YÝšXÝYX[š[™Ë]Œˆ]˜[X][Û‹^XÝ]Y[KYØ[Z[™È™\Ý[Z\™YœÙ[X[XÈÝ]\ÝXÜËÜˆYÙ[ˆ[™KˆÜXÝ˜[[™™XÝ\œ™[Û][ÛÜšÈX^B˜ÛÛ[YH\È^XÚ]HØÛÜYXYÛ›ÜÝXÜÎÈÙ[X[X×Ü™YXÝ[Û˜˜Ù[X[X×ØØ]\Ø[[™X\›™YÛ][ÛZ[\È™[XZ[ˆ›ØÚÙYˆÙYHB–ÙÙ[™\˜]YÛÜÙ[Ý]J\ÚYÛ‹ÜÙ[X[XËY›ÛÜ‹YØ]K]ŒK›Y
+K‚‚•HÓKLŒMˆš^Y]ÚÙ[ˆÜXÝ˜[\™YÚ[YHX]š^\È[ÛÈXYÛ›ÜÝXË[Û›H[™˜[˜ÛÛ˜Û\Ú]™Xˆ]˜Z[™YH›Ý[™YÔHØÜ˜]Ú[Ù[Ü›ÝH›È™]\ØX›B˜ÚXÚÜÚ[[™Y›Ý[ˆHØ[›ÛšXØ[[Ù[ÐYÙ[ˆ]˜[X][Û‹ˆ]\™Y›Ü™B™Ù\È›ÝÚ[™ÙH\È›ÜÝ\ˆÜˆ]]Üš^™HÜXÝ˜[Ü[Z^™\‹›Û[Ý[Û‹ÜˆÚ\˜ÛZ[\ËˆÙYHHÛYX\Ý\™Y™\Ý[J\ÚYÛ‹Ú]\‹\ÛLŒM‹\ÜXÝ˜[\™YÚ[YKLŒŒÌŒË›Y
+K‚•Hš[˜[ÓKLŒŽ–ÔÜXÝ˜[\ÜÜÚ][Û•ŒWJ\ÚYÛ‹Û[XØ[Xœ˜]Y\ÜXÝ˜[[X\›š[™ËY\ÜÜÚ][Û‹›Y
+B˜YÜÈÛ›H˜Z[XÛÜÙYXYÛ›ÜÝXÜÈ[™YÈ›Û[Ý[ÛˆÝX\™Îˆ˜]ËX[HÛZ[\ËœÜXÝ˜[˜Z[š[™ÈÛÛ›ÛËØ]\Ø[ÜXÝ˜[™][[Û‹][Ûˆ›Û[Ý[Û‹[™•ÕËTÑÝ˜XÙK[ÙÈÛÜœ™XÝ[Ûˆ™[XZ[ˆ™Z™XÝYÜˆ›ØÚÙYˆH\ÜÜÚ][Ûˆ\È[‚™]šY[˜ÙHÞ[\Ú\ËÜ™X]Y›ÈÚXÚÜÚ[[™XZÙ\È›È›ÜÝ\ˆÜˆ‘PQQH[Ù[X›HÚ[™ÙK‚‚”™[]YˆØÚXÚÜÚ[XXÚÙ]›YJ\ÚYÛ‹ØÚXÚÜÚ[XXÚÙ]›Y
+K–ØÚXÚÜÚ[\›Ý™[˜[˜ÙK›YJ\ÚYÛ‹ØÚXÚÜÚ[\›Ý™[˜[˜ÙK›Y
+K–ØY™\œØ\šX[\™]šY]Ë›YJ\ÚYÛ‹ØY™\œØ\šX[\™]šY]Ë›Y
+K–Ü]X[]KY^\š[Y[[X]š^›YJ\ÚYÛ‹Ü]X[]KY^\š[Y[[X]š^›Y
+K‚‚ˆÈÈØ\Xš[]HY\ˆÜÚ][Ûˆ
+XÛÙH[˜\šX[LL
+B‚‘]™\žHÚXÚÜÚ[[ˆ\ÈØ\™\ÈÛZ[YY
+Š˜]H[™ÊŠ‹[™H[™È\È™]™\‚˜Ü™Y]YžHHÝÙ\ˆ[™ÉÜÈ]šY[˜ÙKˆÛØ[]Î‚–ÙXÛÙKZ[˜\šX[Ë›YJ\ÚYÛ‹ÙXÛÙKZ[˜\šX[Ë›Y
+K‚‚Ÿ[™ÈÝ]\È›ÝHŸKKHKKHKKHŸKˆTÕ8¡¤ˆTÕZ[™YKYY]Y™\Ú[Ûˆ
+ÈY]ÛÜœÜ˜HŸ‹ˆÜ˜[[X\ˆ8¡¤ˆTÕZ[›Û\8¡¤TÕÛÜœ\ÈŸËˆÜ˜[[X\ŠÛÜÈ8¡¤ˆTÕZ[\›™\ÜÙ\ËÝ˜Z[—Ù]KÛÜ\˜]Ü—ØÛÜœ\ËœXŸˆÚ[\YšYYS“8¡¤ˆTÕ[ˆœ›Þ™[ˆœ›ÛY\ˆ˜[Z[Y\Èø $ÓK[žH[™[ÜžH8 %HœšYÙHÈ[™ÈHŸKˆÛÛ\^“8¡¤ˆTÕ
+Š[˜Z[
+Šˆ˜Z[XÛÜÙY›Ø]˜Z[X›OQ˜[ÙXÈÑT•ÐÐTWÝ[˜]˜Z[X›X‚‘]™\žHÚXÚÜÚ[™[ÝÈ\ÈH[™ËLx $ÌÈ\Y˜XÝˆ›È›ÝÈ[ˆ\ÈØ\™ÛZ[\È[™È›ÜˆKˆ[™ÈH\È
+[˜Z[
+‹›ÝX˜[™Û™Yˆ]ÈÝXØÙ\ÜÛÜˆ\›ØXÚ\ÈZ[[™ÈÝ]HÚ[\YšYYS“[™[ÜžH\ÈHœšYÙK˜XÚÙY[‚–ÙXÛÙKZ[˜\šX[Ë›Y0©ÈLLJ\ÚYÛ‹ÙXÛÙKZ[˜\šX[Ë›Y
+K‚‚”Ù\š[™Ë\ÚYHXÛÙHÛÛ˜XÝ›Üˆ]™\žH›Û[ÝYÚXÚÜÚ[ˆÜ˜[[X\‹XÛÛœÝ˜Z[™Y™[™È[™[Ý×Ý[˜ÛÛœÝ˜Z[™YÙ˜[˜XÚÏQ˜[ÙX]\›Z[š\ÝXÈÚ[™Û]Ûˆž\\ÜÂ›Û‹[™˜Z[XÛÜÙYÙ\YšXØ][Ûˆ[ˆ]™\žH˜XÚÙ[™
+Ü˜Ú[™Ó“–
+KˆB˜ÚXÚÜÚ[]˜[X]Y[™\ˆHÙXZÙ[œ×ØÛÛœÝ˜Z[]™\ˆ\ÈXYÛ›ÜÝXÈ]šY[˜ÙK›™]™\ˆHÚ\ÛZ[K‚‚‹KKB‚ˆÈÈXÝ]™H™]\ØX›HÚXÚÜÚ[Ý]\Â‚“›ÈÚXÚÜÚ[[ˆ\ÈØ\™\ÈÝ\œ™[HHÚ\\]X[YšYYÚ[\[ÛŽÈØ[›ÛšXØ[˜Ú[\[ÛˆÚ[\œÈ\™H[\KˆHÛÕÝÙ\ˆ˜XÚÈ\È[\[Y[YÚ[HB˜Ø]\Ø[SH˜XÚÈ™[XZ[œÈ[š[š]X[^™Y[[]È[›™Y˜\ÙH˜ZÙ[Ù™ˆ\È[ˆ[™›ØÚÙYˆHX›H™[ÝÈ\È\[™[Û›HÚXÚÜÚ[]šY[˜ÙH[™›Ý™[˜[˜ÙK›Ý˜[ˆXÝ]™H\Þ[Y[\Ý‚‚ˆÈÈÝ\œ™[ÚXÚÜÚ[›ÜÝ\‚‚•\ÈÛÛ\]Xš[]K\ÝX›HXY[™È\È™]Z[™Y›ÜˆÛÛ[™Ëˆ›ÝÜÈX^H™HØØ[œ™Z™XÝY[˜ÛÛ\]KÜˆÝ\\œÙYYÈ\ÙHHXÝ]™HÝ]\ÈX›Ý™H[™Ø[›ÛšXØ[›[™XYÙHÚ[\œÈ›ÜˆÝ\œ™[\Þ[Y[]‚‚ŠŠÛÛ\]Xš[]H›ÝXÙH
+Œ‹LËLŒJNŠŠˆÝ]]ÛÛ˜XÝŒˆ\›Z]ÈÛ›B™Ü˜[[X\‹ÐTÕÞ[X›ÛÈ[™[\]HXÙZÛ\œËˆ[™KQMÌMÚXÚÜÚ[È™[ÝÂÙ\™HÜ™X]Y[™\ˆ[ˆX\›Y\ˆœ™YKY›Ü›KXØ\X›HÝ]]ÛÛ˜XÝ[™\™Bš[[[Û˜[H[˜ÛÛ\]X›HÚ]Ý\œ™[ØY[™ËÙ\š[™Ë™\Ý[YK›Û[Ý[Û‹˜[™]˜[X][Ûˆ]Ëˆ^H™[XZ[ˆ›Ý™[˜[˜ÙHÛ›NÈMÌM\ÈHš\œÝÛÛ\]X›BœØÜ˜]Ú˜\Ù[[™K‚‚Ÿ›ÛH[ˆYÚ[™ØØ][ÛˆÝ]\ÈŸKKHKKHKKHKKHKKHŸÓKLÌÈ[žHŒˆœ™\Ú˜\Ù[[™HÛLÌ×Ý[žWÝŒ—Ùœ™\ÚÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ^\ˆ˜\Ù[[™HÛˆ™XZ[ÝšXÝš^\™HÛÜœ\ÈÛLŒÌÜÞ[X›ÛÛÛ›WÝŒ˜
+LH™XÛÜ™ÊNÈÝ\ÈšXHØ\YÚ[šÙY™\Ý[Y\Ëš[˜[ÜÜÈŒMKŒMŒˆ\˜[\ÈÝ]]ËÜ[œËÜÛLÌ×Ý[žWÝŒ—Ùœ™\ÚØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[^XÚ]›Ë\Þ[˜ÊH˜Z[™YÛX[ˆÈÝÜYÛÛŽˆÝ\Ø[™\ˆH[ˆØ\ÈÛ[ÚÙHÝZ]H[\HžHÛÛœÝXÝ[Ûˆ
+LØ[YH\ÈÓKLŽM˜\Ù[[™JH8 %
+Š™š^\™WÙ[[ÈÚ\š[™ÈÛ›K›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹\ÛLÌË][žK]Œ‹LŒŒÌŽ›Y
+JHŸ]]Ý˜Z[ˆÌˆÛÛ\Û™[\[ˆØÜ™Y[ˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌ‹^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÚ^™K[X]ÚYKÍMKÍ\˜[\ËÝšXÝÛÛ\[\‹]™YHÛ[ÚÙHÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHš^\™HÝXÝ\˜[Ú[ˆŒÌø¡¤‹ŒÎŽYX[š[™Ù[ÛÛ\Û™[™XØ[ŒMØ\œÙHKŒÈØ[™Y]HLNÌ‹ŒLXœÈŒËLŽM˜\ËˆÛ[ÚÙHLØ[ÝZ]\ÈZ\ÜÚ[™Ëˆ
+Š‘œ™\Ú\ÙYYÛÛ™š\›X][Ûˆ]Y]YYÈ›Ý›Û[ÝX›KÜÞ[˜ÙYÜÚ\Y[YÚX›JŠˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLŒŒËXÌ‹XÛÛ\Û™[\[‹\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌH›Ý[™ÈØÜ™Y[ˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌK^ØÛÛ›Û›Ý[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÚ^™K[X]ÚYKŒMŒˆ\˜[\ËÝšXÝÛÛ\[\‹]™YHÛ[ÚÙHÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]H[ˆÝXÝ\™HŒMÍXYX[š[™Ù[š[™\ˆŒHŒÌÌØ\œÙHKŒÈØ[™Y]HLNKÌ˜œÈMÌKM˜\ËˆÛ[ÚÙHLØ[ÝZ]\ÈZ\ÜÚ[™Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLŒŒËXÌKX›Ý[™Ë\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌNŒÈÙ[X[XËXÛÛ˜\ÝØÛÛ\[\‹[X\™Ú[ˆÛÛ™š\›X][Ûˆ™Z™XÝYÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒË^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNŒË˜]Ú‹Û™H™XYÈœ™\Ú\ÙYYX]ÚY™\^NÈKŒMŒˆ\˜[\ÈXXÚÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒËÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÝXÝ\™HŒMÍ¸¡¤‹ŒŽNXTˆŒÌÌØYK™XØ[ŒXYK^XÝÈLLx¡¤ÍX\È[™ÚÙ[œÈÌ8¡¤ŒLÍØˆ
+Š”™Z™XÝY›ÜˆÛÜÝÈ›È›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒË\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹XÛÛ™š\›X][Û‹\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌNŒˆÙ[X[XËXÛÛ˜\ÝØÛÛ\[\‹[X\™Ú[ˆÛÛ™š\›X][Ûˆ[˜ÛÛ\]HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒ‹XÛÛ™š\›XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNŒ‹˜]Ú‹Û™H™XYÈœ™\Ú\ÙYYØ[™Y]HÛÛ™š\›X][ÛŽÈKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒ‹Ü[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]HÛ[ÚÙHÝXÝNMØTˆŒÌÌØ™XØ[ŒMØ^XÝLNŒX\ÎÈX]ÚYÛÛ›ÛY›ÈØÛÜ™X›Ø\™ˆ
+Š’[˜ÛÛ˜Û\Ú]™NÈ›È›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒ‹\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹XÛÛ™š\›X][Û‹Z[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌNŒHÙ[X[XËXÛÛ˜\ÝØÛÛ\[\‹[X\™Ú[ˆœ›Þ™[ˆ™\^HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒK^ØÛÛ›ÛÙ[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\ˆ™\^KŒÝ\ËÙYYLNŒ˜]Ú‹Û™H™XYÈ™]\ÙYÚ^™K[X]ÚYÌNŒÚXÚÜÚ[ÎÈKŒMŒˆ\˜[\ÈXXÚÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒKÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHX]ÚYš^\™HÚYÛ˜[ˆÝXÝ\™HŒMÍx¡¤‹ŒÍ˜Tˆ8¡¤‹ŒÌÌØ™XØ[8¡¤‹ŒÌÌØLMÍNx¡¤ŒÍŒ˜\ÎÈ^XÝTÕØØ[›ÛšXØ[Û[ÚÙHLØˆ
+Š“›Ý›Û[ÝX›NÈ[\ÝZ]H]šY[˜ÙHZ\ÜÚ[™ÊŠˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒK\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹\™\^K›Y
+JHŸ]]Ý˜Z[ˆÌNŒÙ[X[XËXÛÛ˜\ÝØÛÛ\[\‹[X\™Ú[ˆ[˜ÛÛ\]HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒ^ØÛÛ›ÛÙ[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNŒ˜]Ú‹Û™H™XYÈÚ^™K[X]ÚYÙ[X[XËXÛÛ˜\Ý
+ÈÛÛ\[\‹X[YÛ›Y[ØÜ™Y[š[™ÎÈKŒMŒˆ\˜[\ÈXXÚÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]HÛ[ÚÙHÝXÝŒÍ˜TˆŒÌÌØ™XØ[ŒÌÌØš[™\ˆŒÌØ^XÝLÍŒ˜\ÎÈÛÛ›Û]˜[X][Ûˆ[\œ\Y™Y›Ü™HØÛÜ™X›Ø\™ˆ
+Š’[˜ÛÛ\]NÈ›È]šX][Û‹Ü›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒ\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹Z[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌNNHÛÛœÝ˜Z[YÜ˜\[ÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNNK^ØÛÛ›ÛÛÛœÝ˜Z[YÜ˜\XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLNNK˜]Ú‹Û™H™XYÈÚ^™K[X]ÚYÜ˜[[X\ˆÛÛœÝ˜Z[YÜ˜\ÛÛ\\š\ÛÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNNKÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]KÝÛÜšÈYKØ[™Y]HLLÍ¸¡¤ŒŒŒØ\Ë^XÝÛ[ÚÙHLØˆ
+Š”™Z™XÝYš^\™H[È™^\Ý[˜ÝØš™XÝ]™H™\]Z\™YÈ›È›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNNKXÛÛœÝ˜Z[YÜ˜\[[›Y
+JHŸ]]Ý˜Z[ˆÌNNÛÝXÛÛ˜XÝÛÛ^™\^HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNN^ØÛÛ›ÛÛÝXÛÛ˜XÝXÛÛ^XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNMË˜]Ú‹Û™H™XYÈ^XÝÝ\œ™[[XZ[ˆ™\^HY\ˆÌNMÈ\›™\ÜÈ™\Z\ŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNNÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]H\ÈY[XØ[
+ÝXÝ\™HŒMÍ˜TˆŒÌÌØ™XØ[ŒXš[™\ˆŒÌØšY[]HLŽ^XÝ
+NÈØ[™Y]HLM¸¡¤ŽÌX\È\ÈY™šXÚY[˜ÞK[Û›HÛˆÛ[ÚÙHLØˆ
+Š”™\^H[È›ÈÚ[\[Û‹Ü›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNN\ÛÝXÛÛ˜XÝXÛÛ^\™\^K[[›Y
+JHŸ]]Ý˜Z[ˆÌNMÈÛÝXÛÛ˜XÝÛÛ^\›™\ÜÈ˜Z[\™HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMË^ØÛÛ›ÛÛÝXÛÛ˜XÝXÛÛ^XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNMË˜]Ú‹Û™H™XYÈÛÛ›ÛÛÛ\]Y[™Ø[™Y]H[˜X›YÛÝØÛÛ˜XÝÚ[—ØÛÛ^Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMËÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›ÛÚXÚÜÚ[Û›H
+ÍLÌ™‹‹™™LØ
+NÈØ[™Y]H˜Z[Y™Y›Ü™HØÛÜ™X›Ø\™™XØ]\ÙH[˜ÚY[[TÒQÓ‹›YœÛÝÍ^š[Û]Y[™[ÜžH˜[Y][Û‹ˆ
+Š’[˜ÛÛ\]NÈ^XÝ™\^H™\]Z\™YÈ›È[Ù[]šX][Û‹Ü›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNMË\ÛÝXÛÛ˜XÝXÛÛ^Z\›™\ÜËY˜Z[\™K›Y
+JHŸ]]Ý˜Z[ˆÌNMH^ÜÝ\™KXØ\œ™\ÚÛÛ™š\›X][ÛˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMK^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNMK˜]Ú‹Û™H™XYÈœ™\ÚÛÛ›ÛœÈ^XÝ^ÜÝ\™KXØ\ÛÛ™š\›X][ÛŽÈKŒMŒˆœÈKŒLËÍÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMKÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÝXÝ\™HŒŒÌ8¡¤‹ŒÍMTˆ8¡¤‹ŒÌÌØ™XØ[ŒÌÌØ]^XÝTÕØØ[›ÛšXØ[LÌø¡¤ŒMÍ\ËÜÜÈLŒŒ8¡¤ŒN˜È
+Š˜ÛÛ™š\›X][Ûˆ™Z™XÝYÈ›ÈÚ[\[Û‹Ü›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNMKY^ÜÝ\™KXÛÛ™š\›X][Û‹[[›Y
+JHŸ]]Ý˜Z[ˆÌNMÛÝXÛÛ\Û™[^ÜÝ\™HØ\ÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNM^ØÛÛ›ÛÛÝXÛÛ\Û™[Y^ÜÝ\™KXØ\XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNM˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HÛÛ›ÛœÈ\™Ù]Y^ÜÝ\™H
+ÈÛÝXÛÛ\Û™[ÝÛ™\ŽÈKŒMŒˆœÈKŒLËÍÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHš^\™HÝXÝ\™HŒMÍx¡¤‹ŒLÍLØTˆ8¡¤‹ŒÌÌØ™XØ[8¡¤‹ŒMØÈLLMø¡¤ŒLX\ËÚÙ[œËÙ›ÜØ\™ÈŒKÍ8¡¤ŒÍ‹ÍØ^XÝÛ[ÚÙHLØˆ
+Š‘œ™\ÚÛÛ™š\›X][Ûˆ]Y]YYÈ™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNM\ÛÝXÛÛ\Û™[Y^ÜÝ\™KXØ\\ÜÚ]]™K›Y
+JHŸ]]Ý˜Z[ˆÌNLÈÛÝXÛÛ\Û™[Ú[™[ÜžHÛÝ\[™ÈÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNLË^ØÛÛ›ÛÛÝXÛÛ\Û™[Z[™[ÜžKXÛÝ\[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNLË˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HÛÛ›ÛœÈÛÝXÛÛ\Û™[Ú[™[ÜžHÛÝ\[™ÎÈKŒMŒˆœÈKŽ‹Î\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNLËÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊH[ÝX\™Y]X[]HY]šXÜÈ\™H™\›È[™ÝXÝ\™HY\È]ŒLMXÈØ[™Y]HYÈÍËLM˜\˜[\È[™LM¸¡¤ŽL˜\Ëˆ
+Š”™Z™XÝYØ\XÚ]K[™YØ]]™H[È™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNLË\ÛÝXÛÛ\Û™[Z[™[ÜžKXÛÝ\[™Ë[[›Y
+JHŸ]]Ý˜Z[ˆÌNLˆÛÝXÛÛ\Û™[ÙšY[]HÛÝ\[™ÈÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNL‹^ØÛÛ›ÛÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNL‹˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HÛÛ›ÛœÈÛÝXÛÛ\Û™[ÙšY[]HÛÝ\[™ÎÈKŒMŒˆœÈKŒLËÍÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNL‹Ü[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÝX\™Y]X[]H\È[ˆ^XÝYNÈØ[™Y]HÜÜÈL‹Œ8¡¤ŒŒM˜LLL8¡¤ŽM˜\ËÚÙ[œÈŒx¡¤ŒÌ›ÜØ\™È8¡¤X^XÝTÕØØ[›ÛšXØ[Û[ÚÙHLØˆ
+Š”™Z™XÝY[È™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNL‹\ÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™Ë[[›Y
+JHŸ]]Ý˜Z[ˆÌNLHÛÝXÛÛ\Û™[ÛÝ™\˜YÙHÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNLK^ØÛÛ›ÛÛÝXÛÛ\Û™[XÛÝ™\˜YÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNLK˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HÛÛ›ÛœÈ[\[Y[YÛÝXÛÛ\Û™[ÛÝ™\˜YÙH™X]Y[ÈKŒMŒˆœÈKŒLËˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNLKÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H˜Z\Ù\ÈTˆ8¡¤‹Ø[™ÛÈš[™\‹ÙšY[]H]KŒ]ÝXÝ\™HÛ›HŒMx¡¤‹ŒMÍØLÍ8¡¤ŽÍÌX\Ë^XÝTÕØØ[›ÛšXØ[[™Û[ÚÙHLØˆ
+Š”™Z™XÝYš^\™H˜Y[Ù™ŽÈ™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNLK\ÛÝXÛÛ\Û™[XÛÝ™\˜YÙK[[›Y
+JHŸ]]Ý˜Z[ˆÌNHÛÝ[ÝÛ™\ˆ[[YHØ\ÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNK^ØÛÛ›Ûš[™\‹\ÛÝ[ÝÛ™\œÚ\XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNK˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HÛÛ›ÛœÈ™\Ù\™Yš[™\‹\ÛÝÝÛ™\œÚ\™X]Y[ÈKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNKÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›ÛÚXÚÜÚ[NŒK‹‹ŽŒÈØ[™Y]H™Z™XÝY][Ù[ÛÛœÝXÝ[Ûˆ™XØ]\ÙH›È[[YHÝÛ™\ˆ^\ÝËˆ
+Š’[˜ÛÛ\]NÈ™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNK\ÛÝ[ÝÛ™\‹\[[YKYØ\›Y
+JHŸ]]Ý˜Z[ˆÌNš[™\‹\ÛÝ[ÝÛ™\œÚ\™\Z\ˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›Ûš[™\‹\ÛÝ[ÝÛ™\œÚ\XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HÛÛ›ÛœÈš[™\‹\ÛÝ[ÝÛ™\œÚ\™X]Y[ÈKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›ÛÛÛ\]YÚ]ÚXÚÜÚ[NXL™ŽL‹‹™ŽY˜ÈØ[™Y]H˜Z[Y™Y›Ü™H˜Z[š[™È™XØ]\ÙH™YHÛÛ\[\ˆØ\Xš[]HØ\ÈÛZ]Yˆ
+Š’[˜ÛÛ\]NÈ™\^H™\]Z\™YÈ™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNXš[™\‹\ÛÝ[ÝÛ™\œÚ\Z\›™\ÜË\™\Z\‹›Y
+JHŸ]]Ý˜Z[ˆÌNÈÙ[X[XËY^]\Ý]™HÝXØÙ\ÜÛÜˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNË^ØÛÛ›Û^ÜÝ\™K]\™Ù]Y\Ù[X[XËY^]\Ý]™KXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸHÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLNË˜]Ú‹Û™H™XYÈ^ÜÝ\™K]\™Ù]YÛÛ›ÛœÈÙ[X[XËY^]\Ý]™H™X]Y[È›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNËÜ[œËÈ
+ØØ[^XÚ]›Ë\Þ[˜ÊH™X]Y[[\›Ý™\ÈÝXÝ\™KÝÛÜšÈ]™YÜ™\ÜÙ\Èš[™\‹ÙšY[]KÜ™]Ø\™ÈTˆ[™^XÝX]Ú\È™[XZ[ˆ™\›Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNË\Ù[X[XËY^]\Ý]™K[[›Y
+JHŸ]]Ý˜Z[ˆÌNˆ^ÜÝ\™K]\™Ù]Y]X[]KØÛÜÝÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹^ØÛÛ›Û^ÜÝ\™K]\™Ù]YXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLN‹˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HœÈ^ÜÝ\™K]\™Ù]YØ[\[™ÎÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHœ›ØYÙ[X[XÈØZ[œË]ÝXÝ\™HKŒLˆ[™L
+ÌLÎ	Kˆ
+Š”™Z™XÝY\ÈÛÛ™šYÝ\™YÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN‹Y^ÜÝ\™K\]X[]KXÛÜÝ›Y
+JHŸ]]Ý˜Z[ˆÌNH˜[YØ\XÚ]KX]Ø\™HZ[ÛÛ™š\›X][ÛˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNK^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNK˜]Ú‹Û™H™XYÈØ\XÚ]KX]Ø\™HZ[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]H[™ÛÜšÈ^XÝHY[XØ[ÈØ[™Y]HL
+ÌK‰Kˆ
+ŠÛÛ™š\›X][Ûˆ™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNKXØ\XÚ]K]Z[]˜[YXÛÛ™š\›X][Û‹[[›Y
+JHŸ]]Ý˜Z[ˆÌN›Û[Ý[Ûˆ\›™\ÜÈ˜Z[\™HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›Û›Û[Ý_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN˜]Ú‹Û™H™XYÈ›Ú™XÝYZ[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHX[ˆ›Ý™Y[™˜Z[œÈÛÛ\]Y][]˜[ØÝ[Y[È[YYÝ]È]Y]›Ý[™YÙ]ÜÜÈ[™›ÜYÛÝ\˜ÙHØ[\[™ÈÛXÞKˆ
+Š“›È[Ù[]šX][ÛŽÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN\›Û[Ý[Û‹\™XÚ\KX[™XYÙ]Y˜Z[\™K›Y
+JHŸ]]Ý˜Z[ˆÌNÈÝXÝ\™K]ÚÙ[ˆ[ÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNË^ØÛÛ›ÛØ\XÚ]KX]Ø\™K\Ù[X[XËY^]\Ý]™K\ÝXÝ\™K]ÚÙ[‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNË˜]Ú‹Û™H™XYÈÝXÝ\™K]ÚÙ[ˆÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]H[™XÛÙHÛÜšÈ\™H^XÝHY[XØ[ÈØ[™Y]HLL‹Œ‰H\È™[ÝÈHIH›ÛÜ‹ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNË\ÝXÝ\™K]ÚÙ[‹[[›Y
+JHŸ]]Ý˜Z[ˆÌNˆÙ[X[XËY^]\Ý]™HY™šXÚY[˜ÞK[Û›HÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹^ØÛÛ›ÛØ\XÚ]KX]Ø\™K\Ù[X[XËY^]\Ý]™KXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN‹˜]Ú‹Û™H™XYÈÙ[X[XËY^]\Ý]™HÙ™ˆœÈÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]HLLÎIK]ÝXÝ\™HKŒÌÈ[™]™\žHÙ[X[XËÙ^XÝY]šXÈ\È[˜Ú[™ÙYˆ
+Š”™Z™XÝY\È]X[]NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN‹\Ù[X[XËY^]\Ý]™KYY™šXÚY[˜ÞK[Û›K›Y
+JHŸ]]Ý˜Z[ˆÌNØÌNHZ[›Û[Ý[ÛˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›Û›Û[Ý_XÚ]ÌNHœ›Þ™[ˆ]˜[™\^HÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN˜]Ú‹Û™H™XYÈ™\XÙ[Y[\Ø[\[™ÈZ[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÌN˜Z[œÈ
+ÈÌNH]˜[È[™\ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH[[Ý][›Üˆ^XÝ]Y™XÚ\K]ÌN]Y][˜[Y]Y]\È›Û[Ý[ÛˆÙˆHÌNÌØ\XÚ]KX]Ø\™HÛÝ\˜ÙH™XØ]\ÙHH]Y]YH›ÜYØ[\[™ÈÛXÞKˆ
+Š“™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNK\›Û[Ý[Û‹Z[[Ý][[›Y
+JHŸ]]Ý˜Z[ˆÌNÎHØ\XÚ]KX]Ø\™HZ[\™\ÙYY[ÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÎK^ØÛÛ›ÛØ\XÚ]KX]Ø\™K]Z[XÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNÎK˜]Ú‹Û™H™XYÈZ[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÎKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]KØÛÛ›Û\™H]X[]KH[™XÛÙK]ÛÜšËZY[XØ[ÈØ[™Y]HL\È
+ÌËŽ	Kˆ
+Š”™Z™XÝY\ÈÙYY\Ù[œÚ]]™NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNÎKXØ\XÚ]KX]Ø\™K]Z[[[›Y
+JHŸ]]Ý˜Z[ˆÌNÎØ\XÚ]KX]Ø\™HZ[ÛÛ™š\›X][ÛˆÌŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÎ^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNÍ‹˜]Ú‹Û™H™XYÈØ[YH[Y˜[Z[HX\™Ú[ˆ™XÚ\KZ[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÎÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHœ™\ÚÙYY™\X]ÈHÝXÝ\™H[™š[™\ˆØZ[œË]šY[]KÜ™]Ø\™™YÜ™\ÜÈÛYÚH[™L\È
+ÍKŒIKˆ
+ŠÛÛ™š\›YYÛ›H›Üˆ›Û[Ý[Û‹\ÝZ]KÙ›Ü›X[™Y›YÚÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNÎXØ\XÚ]KX]Ø\™K]Z[XÛÛ™š\›YY›Y
+JHŸ]]Ý˜Z[ˆÌNÌˆ[˜ÛÛ\]HÛÛ™š\›X][ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÌ‹^ØÛÛ™š\›KÛÛ›ÛXÔHØÜ˜]ÚÛÕÝÙ\‹ÙYYLNÌ‹˜]ÚŽÈØ[™Y]HŒÌŒÝ\È[™ÛÛ›Û‹ÌŒÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÌ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]HÛ[ÚÙHÌÈÛÛ\]HÚ]È[Y[Ý]ÎÈÛÛ›Û™]™\ˆÚXÚÜÚ[YÙ]˜[X]Yˆ
+Š“›ÈÛÛ\\š\ÛÛŽÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNÌ‹XÛÛ™š\›X][Û‹Y[™Ú[][Y[Ý]›Y
+JHŸ]]Ý˜Z[ˆÌNÌØ\XÚ]KX]Ø\™HZ[š^\™HÜÚ]]™HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÌ^ØÛÛ›ÛØ\XÚ]KX]Ø\™K]Z[XÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNÌ˜]ÚŽÈØ[YHØ\XÚ]KX]Ø\™H[Y˜[Z[HX\™Ú[ˆ™XÚ\KZ[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÌÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÝXÝ\™KØš[™\‹ÙšY[]KÜ™]Ø\™[\›Ý™H[™ÚÙ[œËÙ›ÜØ\™È˜[ÈL
+Í‹ŒIH™[XZ[œÈ›Ý[™Yˆ
+Š‘œ™\Ú\ÙYYÛÛ™š\›X][Ûˆ™\]Z\™YÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNÌXØ\XÚ]KX]Ø\™K]Z[\ÜÚ]]™K›Y
+JHŸ]]Ý˜Z[ˆÌNŽHØ\XÚ]KX]Ø\™H]X[]KØÛÜÝÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŽK^ØÛÛ›ÛØ\XÚ]KX]Ø\™KXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLNŽK˜]ÚŽÈØ[YH[Y˜[Z[HX\™Ú[ˆ™XÚ\K™\XÙ[Y[œÈØ\XÚ]KX]Ø\™HØ[\[™ÎÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŽKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHY™™XÝ]™H^ÜÝ\™H[™]™\žHÝX\™Y]X[]HXY[™H[\›Ý™K]L™YÜ™\ÜÙ\ÈIKˆ
+Š”™Z™XÝYÝ™\ˆ][˜ÞHYÙ]È™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŽKXØ\XÚ]KX]Ø\™K\]X[]KXÛÜÝ›Y
+JHŸ]]Ý˜Z[ˆÌNŽÚYKY˜Y[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŽ^ØÛÛ›ÛÚYKY˜YXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNŽ˜]ÚŽÈØ[YH[Y˜[Z[HX\™Ú[ˆ™XÚ\K˜YœÈMŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŽÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]KÝÛÜšÈY[XØ[ÈŽMÉHL[H\È™[ÝÈ›ÛÜˆ[™ÛÛ\[\ˆ[YH\ÈÛÜœÙKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŽ]ÚYKY˜Y[[›Y
+JHŸ]]Ý˜Z[ˆÌNÈÛÛ\[\‹XØXÚH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNË^ØÛÛ›ÛØXÚYXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNË˜]ÚŽÈØ[YH[Y˜[Z[HX\™Ú[ˆ™XÚ\K\]Z]˜[[˜ÙHØXÚHÙ™ˆœÈÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]KÝÛÜšÈY[XØ[ÈÉHÜYY\\È™[ÝÈ›ÛÜˆ[™ØXÚH\È™\›È]Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNËXÛÛ\[\‹XØXÚK[[›Y
+JHŸ]]Ý˜Z[ˆÌNˆ›Ý[™Y[X\™Ú[ˆ[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹^ØÛÛ›Û›Ý[™YXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLN‹˜]ÚŽÈØ[YH[Y˜[Z[HX\™Ú[ˆ™XÚ\K›Ý[™ÈÙ™ˆœÈÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]H[™XÛÙHÛÜšÈ\™HY[XØ[È›Ý[™Y\›H\ÈKŒMÉHÛÝÙ\‹ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN‹X›Ý[™Y[X\™Ú[‹[[›Y
+JHŸ]]Ý˜Z[ˆÌNÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ˆ]X[]KØÛÜÝ˜Y[Ù™ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›ÛÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN˜]ÚŽÈ[Y˜[Z[HYØ[X\™Ú[ˆœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH\™ÙHš^\™H]X[]HØZ[‹]ÚÙ[œÈŒx¡¤ŒX›ÜØ\™È8¡¤ŒMX[™LMÌø¡¤ŒÎL˜\Ëˆ
+Š”™Z™XÝYÝ™\ˆ][˜ÞHYÙ]È™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[‹\]X[]KXÛÜÝ›Y
+JHŸ]]Ý˜Z[ˆÌNŒÈÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[ˆœ™\Ú\ÙYY[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒË^ØÛÛ›ÛÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLNŒË˜]ÚŽÈXÚ\Ú[ÛˆÙZYÚÈœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH[YX\Ý\™Y]X[]H\ÈY[XØ[[™Ø[™Y]H\ÈÛÝÙ\‹ˆ
+Š”™Z™XÝY\È›Û‹\™\›ÙXÚX›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒËXÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[‹Yœ™\Ú\ÙYY[[›Y
+JHŸ]]Ý˜Z[ˆÌNŒˆÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[ˆš^\™HÜÚ]]™HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒ‹^ØÛÛ›ÛÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[ŸX]˜[[Û›Hœ›Þ™[ˆ™\^HÙˆÌNŒHÔHØÜ˜]ÚÚXÚÜÚ[ËÙYYLNŒNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H[\›Ý™\Èš^\™HÝXÝ\™KT‹™XØ[™]Ø\™[™][˜ÞHÚ]›ÝXÝYY]šXÜÈ[ˆ
+Š‘œ™\Ú\ÙYYÛÛ™š\›X][Ûˆ™\]Z\™YÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒ‹XÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[‹\ÜÚ]]™K›Y
+JHŸ]]Ý˜Z[ˆÌNŒHÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[ˆ[˜ÛÛ\]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒK^ØÛÛ›ÛÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNŒK˜]ÚŽÈXÚ\Ú[ÛˆÙZYÚÈœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNŒKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›ÝÛ[ÚÙH˜]Ú\È[YYÝ]ËÌËX]š[™È]X[]H[›YX\Ý\™YÈØ[™Y]HØš™XÝ]™HÛÝ™\™YÍXÚ\Ú[Ûˆ›ÝÜËˆ
+Š‘^XÝœ›Þ™[ˆ™\^H™\]Z\™YÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNŒKXÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[‹[YX\Ý\™[Y[Z[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌNNHÛÛ\Û™[YYÙK[X\™Ú[ˆ™Z™XÝÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNNK^ØÛÛ›ÛÛÛ\Û™[YYÙK[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNN˜]ÚŽÈ›ÝKŒMŒˆ\˜[\ÎÈÛÛ›Û˜Z[ˆ™]\ÙYœ›ÛHÌNNÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNNKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H\È˜\Ý\ˆ]Ú\œH™YÜ™\ÜÙ\ÈT‹ÝXÝ\™K[™š[™\ˆŒNÈŒLMÈ[˜[Y]\ÈHÜšYÚ[˜[˜][Ë\ÜÚ]]™H\ÜÜÚ][Û‹ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNNKXÛÛ\Û™[YYÙK[X\™Ú[‹\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌNNÛÛ\Û™[YYÙK[X\™Ú[ˆ[˜ÛÛ\]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNN^ØÛÛ›ÛÛÛ\Û™[YYÙK[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNN˜]ÚŽÈÛÛ›ÛKŒMŒˆ\˜[\ÎÈØ[™Y]HXœÙ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNNÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H˜Z[Y]HÛZ]YÛÛ™šYÈ[ÝÛ\ÝÝÛ™\ˆ™Y›Ü™H[Ù[ÛÛœÝXÝ[ÛŽÈÛÛ›Û[Û›HY]šXÜÈØ[››ÝYX\Ý\™HH™X]Y[ˆ
+Š‘^XÝœ›Þ™[ˆ™\^H™\]Z\™YÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNNXÛÛ\Û™[YYÙK[X\™Ú[‹Z\›™\ÜËY˜Z[\™K›Y
+JHŸ]]Ý˜Z[ˆÌNMÈÛÛ\Û™[YYÙK]ÚÙ[ˆ[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMË^ØÛÛ›ÛÛÛ\Û™[YYÙK]ÚÙ[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLNMË˜]ÚŽÈYÙK]ÚÙ[ˆÙZYÚÈœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNMËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]X[]KZY[XØ[š^\™HÝ]]ÎÈØ[™Y]HØš™XÝ]™H\ÈXÝ]™H][ˆ
+Š“™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNMËXÛÛ\Û™[YYÙK]ÚÙ[‹[[›Y
+JHŸ]]Ý˜Z[ˆÌNLˆ›Û[Ý[ÛˆYX\Ý\™[Y[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNL‹^ØÛÛ›Û›Û[Ý_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNL‹˜]ÚŽÈ˜[[˜ÙKØÛÜÙHÙZYÚÈÌœÈŒKÌNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNL‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]HÛÛ\]\È›Ýš^\™HÝZ]\ÎÈÛÛ›Û\È\Y[Y[Ý]Ûˆ]™\žHØÝ[Y[ÛÈ›ÈX]ÚYY™™XÝ^\ÝËˆX[ˆ™Y›YÚ›Ý™Yˆ
+Š‘^XÝœ›Þ™[ˆ™\^H™\]Z\™YÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNL‹\›Û[Ý[Û‹[YX\Ý\™[Y[Z[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌNL˜[[˜ÙYXÛÜÙHÛÛ™š\›X][ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNL^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNL˜]ÚŽÈ˜[[˜ÙKØÛÜÙHÙZYÚÈÌœÈŒKÌNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNLÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHœ™\ÚÙYY™\X]È]™\žHÌNH]X[]H\™XÝ[Û‹ˆ
+ŠÛÛ™š\›YYÛ›H›Üˆ›Û[Ý[ÛˆÝZ]NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNLX˜[[˜ÙYXÛÛZ[™\‹XÛÜÙKXÛÛ™š\›YY›Y
+JHŸ]]Ý˜Z[ˆÌNH˜[[˜ÙYXÛÜÙHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNK^ØÛÛ›Û˜[[˜ÙYXÛÛZ[™\‹XÛÜÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNK˜]ÚŽÈ˜[[˜ÙKØÛÜÙHÙZYÚÈÌœÈŒKÌNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H[\›Ý™\È[›Û‹\\œÙH]X[]HY]šXÜÈÚ][Ù\ÝLÛÜÝˆ
+Š”]Y]YY›Üˆœ™\Ú\ÙYYÛÛ™š\›X][ÛŽÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNKX˜[[˜ÙYXÛÛZ[™\‹XÛÜÙK\ÜÚ]]™K›Y
+JHŸ]]Ý˜Z[ˆÌNÛÛZ[™\‹XÛÜÙH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›ÛÛÛZ[™\‹XÛÜÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLN˜]ÚŽÈÛÜÙKX[YÛ›Y[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝ]X[]KÙXÛÙK]ÛÜšÈYNÈØ[™Y]H˜Z[š[™È\ÈËŒÛÝÙ\‹ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNXÛÛZ[™\‹XÛÜÙK[[›Y
+JHŸ]]Ý˜Z[ˆÌNÈ\YY˜[Z[H˜[[˜ÙH™Z™XÝÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNË^ØÛÛ›Û\YY˜[Z[KX˜[[˜Ù_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNË˜]ÚŽÈ˜[[˜ÙHÙZYÚœÈŒNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H[\›Ý™\ÈØØ[]X[]H]TˆÝ^\È[™Lš\Ù\ÈLÌx¡¤NŽÍ\Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNË]\YY˜[Z[KX˜[[˜ÙK\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌNˆÕ•PÕ]ÚÙ[ˆ™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹^ØÛÛ›ÛÝXÝ\™K]ÚÙ[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN‹˜]ÚŽÈÕ•PÕÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H™YÜ™\ÜÙ\ÈÝXÝ\™HŒMÌx¡¤‹ŒLÍÍX[™LKN8¡¤ÍLKŽ\Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN‹\ÝXÝ\™K]ÚÙ[‹\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌNØÌNHÛÛ\Û™[]ÚÙ[ˆ™Z™XÝÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›ÛÛÛ\Û™[]ÚÙ[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLN˜]ÚŽÈÛÛ\Û™[ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÎÈÌNH^XÝœ›Þ™[ˆ]˜[™\^HÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›Û[Y[Ý]ËÌÈ™\›ÙXÙYÈØ[™Y]HÛÛ\]\È]˜Z[ÈXœÛÛ]HÝXÝ\™H[™][˜ÞKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\^WJ\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNKXÛÛ\Û™[]ÚÙ[‹\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌNÈØØY™›Û\™Yš^[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNË^ØÛÛ›ÛØØY™›Û\™Yš^XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLNË˜]ÚŽÈ™Yš^ÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝ]X[]HYNÈØ[™Y]HLNËNx¡¤ŒŒKŽ\Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNË\ØØY™›Û\™Yš^[[›Y
+JHŸ]]Ý˜Z[ˆÌNˆTÒQÓˆ›ÜÝ]™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹^ØÛÛ›Û\ÚYÛ‹Y›ÜÝ]XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLN‹˜]ÚŽÈ›ÜÝ]œÈŒNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H™YÜ™\ÜÙ\ÈÝXÝ\™HŒMÍMø¡¤‹ŒM™XØ[Œx¡¤‹ŒÌØ[™TˆŒÌÌÌø¡¤Œˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN‹Y\ÚYÛ‹Y›ÜÝ]\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌNHÞ[X›ÛX›Ý[™\žH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNK^ØÛÛ›ÛÞ[X›ÛX›Ý[™\ž_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLNK˜]ÚŽÈ›Ý[™\žHÙZYÚœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝ]X[]HYNÈØ[™Y]HÛÜœÙ[œÈÜÜÈL‹Œ8¡¤ŒŒKÎÍØ[™LLÎLø¡¤ŽMKŽL\Ëˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLNK\Þ[X›ÛX›Ý[™\žK[[›Y
+JHŸ]]Ý˜Z[ˆÌNZ^Y[X\ÚÈ[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌN^ØÛÛ›ÛZ^Y[X\ÚßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLN˜]ÚŽÈX\ÚÈ]\›ˆ˜[™ÛHœÈZ^YÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌNÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝYHÛˆÛ[ÚÙHÝXÝ\™HŒLÍLØš[™\ˆŒHŒÌÌØšY[]HLÎ™XØ[ŒMØ[™™]Ø\™ÍLÌØÈØ[™Y]H\ÈÛÝÙ\ˆ[™\ÈÛÜœÙHÜÜËˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLN[Z^Y[X\ÚË[[›Y
+JHŸ]]Ý˜Z[ˆÌMÎNHÛÝX]YÛY[][Ûˆ™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎNK^ØÛÛ›ÛÛÝX]YÛY[][ÛŸXÔHØÜ˜]ÚÛÕÝÙ\‹Ý\ËÙYYLMÎNK˜]ÚŽÈÛÝ]YÛY[][Ûˆ˜[ÙHœÈYNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎNKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H™YÜ™\ÜÙ\ÈÛ[ÚÙHÝXÝ\™HŒLÍÍL8¡¤‹ŒMÍLš[™\ˆŒHŽŒŒ¸¡¤‹ŒÌÌØ[™šY[]HÌŒŒ¸¡¤‹LÎÈL[\›Ý™\È]]X[]HÛÛ›ÛËˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎNK\ÛÝX]YÛY[][Û‹\™Z™XÝY›Y
+JHŸ]]Ý˜Z[ˆÌMÎMˆÙ[X[XËXÛÛ˜\Ý[˜ÛÛ\]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎM‹^ØÛÛ›ÛÙ[X[XËXÛÛ˜\ÝXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÎM‹˜]ÚŽÈÙ[X[XËXÛÛ˜\ÝÜÜÈœÈŒHÚ]X]ÚYZ\ˆ^ÜÝ\™NÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎM‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›ÛÛÛ\]\ÈÛ[ÚÙKÚ[[Ý]KÌÈ[™ÍNÈØ[™Y]HKÌÈ[™ÍKˆ\Y[Y[Ý]ÈXZÙH\X[]X[]H›Û‹X]šX]X›Kˆ
+Š’[˜ÛÛ\]NÈ^XÝœ›Þ™[ˆ™\^HÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎM‹\Ù[X[XËXÛÛ˜\ÝZ[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌMÎMHYÙKX[YÛ›Y[[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎMK^ØÛÛ›ÛYÙKX[YÛ›Y[XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÎMK˜]ÚŽÈYÙKX[YÛ›Y[ÜÜÈœÈNÈ›ÝKÍ‹NÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎMKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈØ[™Y]HLLËÌIK™[ÝÈHIHØÜ™Y[‹Ú[HÜÜÈ[™˜Z[ˆØ[ÛÜœÙ[‹ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎMKYYÙKX[YÛ›Y[[[›Y
+JHŸ]]Ý˜Z[ˆÌMÎLÈšY[]HÛÛ™š\›X][Ûˆ™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎLË^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÈÝ\ËÙYYLMÎLË˜]ÚŽÈšY[]HÜÜÈHœÈKNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎLËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H\È˜\Ý\ˆ]™YÜ™\ÜÙ\ÈÝXÝ\™Kš[™\ˆŒKšY[]K[™™]Ø\™ˆ
+ŠÛÛ™š\›X][Ûˆ™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+ŠŽÈ˜[ÙK\ÜÚ]]™H]Y]YHØ]H™\Z\™Y
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎLËYšY[]KXÛÛ™š\›X][Û‹\™Z™XÝ[Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÎLHšY[]Hš^\™HØ[™Y]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎLK^ØÛÛ›ÛšY[]_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÈÝ\ËÙYYLMÎLK˜]ÚŽÈšY[]HÜÜÈHœÈKNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎLKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H[\›Ý™\ÈYX[š[™ËÝXÝ\™Kš[™\ˆŒK™XØ[šY[]K[™Lˆ
+Š‘š^\™HØ[™Y]NÈ^XÝœ™\ÚÛÛ™š\›X][ÛˆÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎLKYšY[]KXØ[™Y]K›Y
+JHŸ]]Ý˜Z[ˆÌMÎHš[™\‹XÛÛ\Û™[\[ˆ[˜ÛÛ\]HØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎK^ØÛÛ›Ûš[™\‹XÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÈÝ\ËÙYYLMÎK˜]ÚŽÈš[™\ˆÛÛ\Û™[\[ˆ˜Z[‹ÙXÛÙHœÈNÈ›ÝKMËLŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›Û\ÈÛ™H\YXÛÙH[Y[Ý]ÈÛÛ\\š\ÛÛˆ\È›Û‹X]šX]X›KˆØ[™Y]HL
+ÌÌKŒIH[™š[™\ˆŒHÝÙ\‹ˆ
+Š’[˜ÛÛ\]NÈ^XÝœ›Þ™[ˆ™\^HÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎKXš[™\‹XÛÛ\Û™[\[‹Z[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌMÎš[™\‹X\š]H[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ^ØÛÛ›Ûš[™\‹X\š]_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÎË˜]ÚŽÈš[™\‹X\š]H˜Z[‹ÙXÛÙHœÈNÈ›Ý‹MKŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈØ[™Y]HLLËÌ‰K™[ÝÈHIHØÜ™Y[‹[™ÜÜÈ
+ÌÌ	Kˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎXš[™\‹X\š]K[[›Y
+JHŸ]]Ý˜Z[ˆÌMÎˆÝ\È][˜ÞH™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ‹^ØÛÛ›ÛÝ\ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHœÈˆÝ\ËÙYYLMÎ‹˜]ÚŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÝXÝ\™HŒLÍLø¡¤‹NMÌØ]YX[š[™ËØš[™\ˆŒHYH[™Ø[™Y]HL
+ÌMMŒIKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎ‹\Ý\Ë[][˜ÞK\™Z™XÝ[Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÎH™XÞXÛY›Ý[™È[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎK^ØÛÛ›Û›Ý[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÎK˜]ÚŽÈ›Ý[™ÈÙ™ˆœÈÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈØ[™Y]HLLKŒÉK™[ÝÈHIHØÜ™Y[‹˜Z[ˆØ[
+ÌŒËIKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎKX›Ý[™Ë\™XÞXÛK[[›Y
+JHŸ]]Ý˜Z[ˆÌMÎÛÛ\Û™[\[ˆÛÛ™š\›X][Ûˆ™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÎ˜]ÚŽÈÛÛ\Û™[\[ˆ˜Z[‹ÙXÛÙHœÈNÈ›ÝKÍMKÍ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙKÚ[[Ý]]X[]HY\ÎÈ[[Ý]LL‹ŽL‰K™[ÝÈHIHØÜ™Y[‹˜Z[ˆØ[‹ŒÎˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎXÛÛ\Û™[\[‹XÛÛ™š\›X][Û‹\™Z™XÝ[Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÎÈÛÛ\Û™[\[ˆY™šXÚY[˜ÞHØ[™Y]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎË^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÎË˜]ÚŽÈÛÛ\Û™[\[ˆ˜Z[‹ÙXÛÙHœÈNÈ›ÝKÍMKÍ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈØ[™Y]HT‹Û\È
+Í‹ŒÎIHœ›ÛHLKNKŒŒœÈKL‹Ž\Ëˆ
+Š‘œ™\ÚÛÛ™š\›X][ÛˆÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎËXÛÛ\Û™[\[‹YY™šXÚY[˜ÞKXØ[™Y]K›Y
+JHŸ]]Ý˜Z[ˆÌMÎˆ[[YKY›YÈ\›™\ÜÈ˜Z[\™HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ‹^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÎ‹˜]ÚŽÈ›ÝKÍMKÍ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH]˜[˜Z[Y™Y›Ü™HØÛÜ™X›Ø\™Ûˆ[ˆ[œ™YÚ\Ý\™Y[[YH›YËˆ
+Š’[˜ÛÛ\]NÈ^XÝœ›Þ™[ˆ™\^HÛ›NÈ™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Š‹ˆ\›™\ÜÈ™\Z\™Y[ˆØ[\ZYÛˆŽHÈ›YÜÈŒˆÈ]˜[Íˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎ‹\[[YKY›YËZ\›™\ÜËY˜Z[\™K›Y
+JHŸ]]Ý˜Z[ˆÌMÎHØ[˜\È[˜[YÛÛ\\š\ÛÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎK^ØÛÛ›ÛØ[˜\ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÎK˜]ÚŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›Û˜Z[™YØ[˜\Ë[Ù™ˆ]]˜[X]YØ[˜\Ë[ÛŽÈÛÛ\\š\ÛÛˆ
+Š››Û‹\ØÛÜ™XX›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Š‹ˆ\›™\ÜÈ™\Z\™Y[ˆØ[\ZYÛˆŽ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎKXØ[˜\ËZ[˜[Y›Y
+JHŸ]]Ý˜Z[ˆÌMÎÛÛ\Û™[\ÝXÝ\™H[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎ^ØÛÛ›ÛÛÛ\Û™[\ÝXÝ\™_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÎ˜]ÚŽÈÛÛ\Û™[[ŠÙYÙH˜Z[‹ÙXÛÙHœÈNÈ›ÝKLLËÎH\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÎÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙKÚ[[Ý]]X[]HY\ÎÈØ[™Y]HÛ[ÚÙHLM‹ŒÍÉK[[Ý]L
+Ì‹ŒÎ	K˜Z[ˆØ[‹ŒÎˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÎXÛÛ\Û™[\ÝXÝ\™K[[›Y
+JHŸ]]Ý˜Z[ˆÌMÍÎHš[™\‹]ÜÛÙÞH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÎK^ØÛÛ›Ûš[™\‹]ÜÛÙÞ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍÎK˜]ÚŽÈš[™\ˆÜÛÙÞH˜Z[‹ÙXÛÙHÌœÈŒKÌNÈ›Ý‹LÍËÍˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÎKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈØ[™Y]HL
+ÌËŽ	H[™˜Z[ˆØ[‹ŒÍÞˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÎKXš[™\‹]ÜÛÙÞK[[›Y
+JHŸ]]Ý˜Z[ˆÌMÍÎ˜]Ú\Ú^™K[Û™H[[YH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÎ^ØÛÛ›Û˜]Ú_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÍÎÈ˜]ÚˆœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÎÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈ˜]ÚHL
+ÍËŽ‰H[™ÛÜœÙHÜÜËˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÎX˜]ÚK\[[YK[[›Y
+JHŸ]]Ý˜Z[ˆÌMÍÍÈÛÛ\Û™[Z[™[ÜžHÛÛ™š\›X][Ûˆ™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÍË^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍÍË˜]ÚŽÈÛÛ\Û™[Z[™[ÜžH˜Z[‹ÙXÛÙHÙZYÚÈœÈNÈ›ÝKŽ‹ÍŒÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÍËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYH]YX[š[™ËØš[™\‹ÙšY[]KÜ™]Ø\™ÈØ[™Y]HL
+Í‹ŒIKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÍËXÛÛ\Û™[Z[™[ÜžKXÛÛ™š\›X][Û‹\™Z™XÝ[Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍÍˆÛÛ\Û™[Z[™[ÜžHØ[™Y]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÍ‹^ØÛÛ›ÛÛÛ\Û™[Z[™[Üž_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍÍ‹˜]ÚŽÈÛÛ\Û™[Z[™[ÜžH˜Z[‹ÙXÛÙHÙZYÚÈœÈNÈ›ÝKŽ‹ÍŒÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÍ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH[[Ý]YX[š[™È8¡¤‹Œ˜ÝXÝ\™HŒŒ8¡¤‹ŒLŽL]š[™\ˆŒH8¡¤‹ÍÌX[™L
+ÌMËŒINÈÛ[ÚÙHÝXÝ\™KÛYX[š[™ÈYKˆ
+Š‘œ™\ÚÛÛ™š\›X][ÛˆÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÍ‹XÛÛ\Û™[Z[™[ÜžKXØ[™Y]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍÍHÛÛ\Û™[YYÙH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÍK^ØÛÛ›ÛÛÛ\Û™[YYÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÍÍK˜]ÚŽÈÛÛ\Û™[YYÙH˜Z[‹ÙXÛÙHÙZYÚÈœÈNÈ›ÝKÍ‹NÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÍKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈØ[™Y]HT‹Û\È
+ÌËŽ	K™[ÝÈHIHZ[š[][HY™™XÝˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÍKXÛÛ\Û™[YYÙK[[›Y
+JHŸ]]Ý˜Z[ˆÌMÍÌÈ]\˜[XÛÜÙH[[YH[˜›ØÚÈÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌË^ØÛÛ›Û]\˜[XÛÜÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍÌË˜]ÚŽÈZ[ÜÜÈœÈŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]HÛÛ\]\ÈËÌÈ]XœÛÛ]H]X[]H\ÈÛÜŽÈÛÛ›Û[Y\ÈÝ]ËÌËˆ
+Š‘^XÝœ›Þ™[ˆ™\^HÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÌË[]\˜[XÛÜÙK\[[YK][˜›ØÚË›Y
+JHŸ]]Ý˜Z[ˆÌMÍÌˆ›Ý[™ÈÛÛ™š\›X][Ûˆ™Z™XÝ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌ‹^ØÛÛ›ÛÛÛ™š\›_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÍÌ‹˜]ÚŽÈÛÛ\][Ûˆ›Ý[™ÈÙ™ˆœÈÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙKÚ[[Ý]]X[]HY\ÎÈÜYYÙ\È›Ý™\›ÙXÙKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÌ‹X›Ý[™ËXÛÛ™š\›X][Û‹\™Z™XÝ[Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍÌH›Ý[™ÈY™šXÚY[˜ÞHØ[™Y]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌK^ØÛÛ›Û›Ý[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÍÌK˜]ÚŽÈÛÛ\][Ûˆ›Ý[™ÈÙ™ˆœÈÛŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]HYNÈš^\™HT‹Û\È
+Í‹ŒM‰Kˆ
+Š‘œ™\ÚÛÛ™š\›X][ÛˆÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÌKX›Ý[™ËYY™šXÚY[˜ÞKXØ[™Y]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍÌÛÛ\Û™[YYÙH[˜ÛÛ\]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌ^ØÛÛ›ÛÛÛ\Û™[YYÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍÌ˜]ÚŽÈÛÛ\Û™[YYÙH˜Z[‹ÙXÛÙHÙZYÚÈœÈNÈ›ÝKÍ‹NÈ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÌÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›Ý\›\È[YYÝ]ËÌÈÚ[H^[™[™È[Y\šXÈ]\˜[ÎÈ]X[]H[˜]˜Z[X›Kˆ
+Š‘œ™\Ú]\˜[XÛÜÙH^\š[Y[™^È™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍÌXÛÛ\Û™[YYÙKZ[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍˆÛÛ\Û™[\[ˆ[˜ÛÛ\]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍ‹^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍ‹˜]ÚŽÈÛÛ\Û™[\[ˆ˜Z[‹ÙXÛÙHÙZYÚÈœÈNÈ›ÝKÍMKÍ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H[YYÝ]ËÌÈÚ]]X[]H[˜]˜Z[X›NÈÛÛ›ÛÛÛ\]YËÌËˆ
+Š‘^XÝœ›Þ™[ˆ™\^HÛ›NÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍ‹XÛÛ\Û™[\[‹Z[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍH[Y\šXÈ]\˜[[X\™Ú[ˆ™YÜ™\ÜÚ[ÛˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍK^ØÛÛ›Û]\˜[[X\™Ú[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍK˜]ÚŽÈ\™XÝ[YÛ›Y[Ù™ˆœÈ[Y\šXËXÛÜÙHÙZYÚÛX\™Ú[ˆNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØš™XÝ]™HXÝ]˜]\ÈÛˆÈ›ÝÜÈ[™ÛX\œÈH\ÝØœÙ\™Yš[Û][Û‹]Û[ÚÙHYX[š[™ÈŒÌÌÌËOŒÝXÝ\™H˜[ÈŒ‹ŒMÉKš[™\ˆŒHKOŒ[™˜Z[š[™ÈZÙ\È‹^Ø[[YKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍK[]\˜[[X\™Ú[‹\™YÜ™\ÜÚ[Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍ]\˜[XÛÜÙH[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍ^ØÛÛ›Û]\˜[XÛÜÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒÝ\ËÙYYLMÍ˜]ÚŽÈZ[ÙZYÚœÈŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH™YXÝ[Û‹ZY[XØ[Û[ÚÙHLÈÈ[[Ý]MH]X[]HY\ÎÈ[™XÛÜ™ÈÛÛ\]KYÙ[ˆÌ‹Ø]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍ[]\˜[XÛÜÙK[[›Y
+JHŸ]]Ý˜Z[ˆÌMÍŒ˜]Ú\Ú^™K[Û™H[˜ÛÛ\]HYX\Ý\™[Y[ÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍŒ^ØÛÛ›Û˜]Ú_XÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÍŒ˜]ÚˆœÈNÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍŒÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H]˜[^ÙYYYHÝYÙHØ[[™\È^XÚ]H›Û‹\ØÛÜ™XX›NÈÛÛ›ÛYÙ[ˆÛÛ\]YÛ[ÚÙHLÈ[™[[Ý]MH]Ø]\È˜Z[ˆ
+Š’[˜ÛÛ˜Û\Ú]™NÈÚXÚÜÚ[È™\ÝšXÝYÈ^XÝœ›Þ™[ˆ™\^K™]™\ˆ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍŒX˜]ÚKZ[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍMÈÝ\ÈY™šXÚY[˜ÞHØ[™Y]HÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍMË^ØÛÛ›ÛÝ\ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆœÈÝ\ËÙYYLMÍMË˜]ÚŽÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍMËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHØ[™Y]H[\›Ý™\ÈT‹Û\ÈLË‰H[™LL‹Œ‰K]ÝXÝ\™H›ÜÈŒ‹ŒÌÉH[™™XØ[Œx¡¤‹ŒMØÈØ]\È˜Z[ˆ
+Š”]Y]YY›Üˆœ™\ÚÛÛ™š\›X][ÛˆÛ›NÈ›Ý›Û[ÝYÜÞ[˜ÙYÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍMË\Ý\ËYY™šXÚY[˜ÞKXØ[™Y]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍMˆÛÛXš[™Y[[YHXYÛ›ÜÝXÈÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍM‹^ØÛÛ›Û›ÝXÔHØÜ˜]ÚÛÕÝÙ\‹ŒHÝ\ËÙYYLMÍM‹˜]ÚŽÈÛ[ÚÙH
+È[[Ý]ÛÛ\[\‹]™YH]˜[È›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍM‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙKÚ[[Ý]]X[]H[™ÜÜÈYNÈØ[™Y]H\ÈKŽL	H˜\Ý\ˆÛ[ÚÙH]ËÎIHÛÝÙ\ˆ[[Ý]ˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍM‹XÛÛXš[™Y\[[YKYXYÛ›ÜÝXË›Y
+JHŸ]]Ý˜Z[ˆÌMÍMHÛÛ\XÝXØ[˜\ÈXYÛ›ÜÝXÈÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍMK^ØÛÛ›ÛØ[˜\ßXÔHØÜ˜]ÚÛÕÝÙ\‹ŒˆÝ\ËÙYYLMÍMK˜]ÚŽÈÝšXÝÛÛ\[\‹]™YH]˜[È›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍMKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙH]X[]KÛÜÜÈYNÈØ[˜\ÈL\È‹Œ	HÛÝÙ\ˆ\Ü]H‹ŒÉHÝÙ\ˆ˜Z[ˆØ[ˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍMKXÛÛ\XÝXØ[˜\ËYXYÛ›ÜÝXË›Y
+JHŸ]]Ý˜Z[ˆÌMÍMÛÛ\][Û‹X›Ý[™ÈXYÛ›ÜÝXÈÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍM^ØÛÛ›Û›Ý[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹Ý\ËÙYYLMÍMÈ›ÝKŒMŒˆ\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍMÜ[œËØ^XÝÛ[ÚÙH]X[]KÛÜÜÈYNÈ›Ý[™ÈŒMIHÛÝÙ\ˆ[™KŒN^˜Z[ˆØ[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙKÜ›Û[ÝKÜÞ[˜ËÜÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍMXÛÛ\][Û‹X›Ý[™ËYXYÛ›ÜÝXË›Y
+JHŸ]]Ý˜Z[ˆÌMÍLÈÛÝ\YÛÛ\Û™[\ÝXÝ\™HØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍLË^ØÛÛ›ÛÛÛ\Û™[\ÝXÝ\™_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒÈÝ\ËÙYYLMÍLË˜]ÚŽÈÛÛ\[\ˆ™YH]È›Ý\›\ÈKLLËÎH˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍLËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›Ú[ÛÝ\[™È™YÜ™\ÜÙ\ÈÛ[ÚÙHÝXÝ\™HŒMÍL8¡¤‹ŒÌÌØX]™\ÈYX[š[™È˜Z\Ù\ÈLŒŒMÉKZÙ\È‹Ž˜Z[ˆØ[[™ÛÜœÙ[œÈÜÜËˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍLËXÛÝ\YXÛÛ\Û™[\ÝXÝ\™K\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍLˆÛÝ\Yš[™\‹]ÜÛÙÞH›Û[Ý[Û‹XØY[˜ÙHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍL‹^ØÛÛ›Ûš[™\‹]ÜÛÙÞ_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒˆÝ\ËÙYYLMÍL‹˜]ÚŽÈÛÛ\[\ˆ™YH]È›Ý\›\È‹LÍËÍˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍL‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈÈ[[Ý]MHY\Îˆ\œÙHHÈKYX[š[™ÈŒÌÌÌÈÈÝXÝ\™HLLÈŒÍÌ‹š[™\ˆŒHŽŒŒŒˆÈÌÍŒ‹ˆ™X]Y[L\È‹ŒÉHÈŽIHÛÝÙ\‹˜Z[š[™ÈØ[\È‹ŒŒž[™ÜÜÈ\ÈÛÜœÙKˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍL‹XÛÝ\YXš[™\‹]ÜÛÙÞK\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍLHÛÝ\Y]ÜÛÙÞH[˜ÛÛ\]HØÜ™Y[ˆÛÛ›ÛÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍLKXÛÛ›ÛÈ˜Z[YØ[™Y]H8 )‹Xš[™\‹]ÜÛÙÞXÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÍLK˜]ÚŽÈÛÛ›Û‹LÍËÍˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍLKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›Û˜Z[™Y]]È]˜[›ØÙ\ÜÈ^ÙYYYHÝYÙHØ[ÈØ[™Y]H˜Z[Y™Y›Ü™H˜Z[š[™È™XØ]\ÙHš[™\—ÝÜÛÙÞWÙXÛÙWÝÙZYÚLXXÚÙY™\]Z\™YÛÛ\[\ˆ[ÙKˆ\X[ÛÛ›Û\Y˜XÝÈ\™H›Û‹\ØÛÜ™XX›NÈ›ÈÛÛ\\š\ÛÛˆ^\ÝËˆ
+Š’\›™\ÜÈ˜Z[\™NÈÛÛ›ÛÚXÚÜÚ[›Ý™[˜[˜ÙK[Û›K™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍLKXÛÝ\Y]ÜÛÙÞKZ[˜ÛÛ\]K›Y
+JHŸ]]Ý˜Z[ˆÌMÍLÛÛ\Û™[Z[™[ÜžHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍL^ØÛÛ›ÛÛÛ\Û™[Z[™[Üž_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒÈÝ\ËÙYYLMÍL˜]ÚŽÈ›Ý\›\ÈKŽ‹ÍŒÈ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍLÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈ]X[]HY\Îˆ\œÙHKŒYX[š[™ÈŒÌÌÌËÝXÝ\™HŒMÍMËš[™\ˆŒHŒÌÌË™XØ[ŒKTÕ›ÙKÙYÙHŒHŒŒNLÌˆ™X]Y[L\ÈËL	H˜\Ý\‹™[ÝÈÛXÞNÈÜÜÈ\ÈÛÜœÙKˆ›Û‹^™\›È]^[X\žH\™Ù]ÈÚ]XÛÙHÙZYÚšYÙÙ\ˆHÛÝ\Y˜Z[‹ÙXÛÙHÝXØÙ\ÜÛÜ‹ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍLXÛÛ\Û™[Z[™[ÜžK\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍHÛÛ\Û™[YYÙHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍK^ØÛÛ›ÛÛÛ\Û™[YYÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒˆÝ\ËÙYYLMÍK˜]ÚŽÈ›Ý\›\ÈKÍ‹NÈ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈ]X[]HY\Îˆ\œÙHKŒYX[š[™ÈŒÌÌÌËÝXÝ\™HŒMÍMËš[™\ˆŒHŒÌÌË™XØ[ŒKTÕ›ÙKÙYÙHŒHŒŒNLÌˆ™X]Y[L\ÈÛ›HÎIH˜\Ý\‹ÜÜÈ\ÈÛÜœÙK[™˜Z[š[™ÈØ[\ÈKŒM°åËˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍKXÛÛ\Û™[YYÙK\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÍÛÛ\Û™[\[ˆ›Û[Ý[Û‹XØY[˜ÙHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍ^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÍ˜]ÚŽÈÛ[ÚÙH
+È[[Ý]]˜[X][ÛŽÈ›Ý\›\ÈKÍMKÍ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÍÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈÈ[[Ý]MH]X[]HY\Îˆ\œÙHKŒÈKŒYX[š[™ÈÈÝXÝ\™HŒMÍLÈŒÍÛÛ\Û™[™XØ[[™TÕŒHˆ™X]Y[L\ÈËLIH˜\Ý\ˆÛ[ÚÙH]KŒ	HÛÝÙ\ˆ[[Ý]˜Z[š[™ÈØ[\È‹ŒNpåË[™ÜÜÈ\ÈÛÜœÙKˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÍXÛÛ\Û™[\[‹\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÍÈÛÛ\XÝXØ[˜\È[˜ÛÛ\]HØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍË^ØÛÛ›ÛØ[˜\ßXÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒˆÝ\ËÙYYLMÌÍË˜]ÚŽÈ›Ý\›\ÈKŒMŒˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›Ý˜Z[œÈÛÛ\]YÚ]Y[XØ[ÜÜÈKNLM]›ÝÛ[ÚÙH]˜[ÈÝÜY]‹ÌÈ™XÛÜ™ÈÛˆÛ[ÚÙWØØ[Ý]ÌXÈ›ÙÜ™\ÜÈ\È^XÚ]H›Û‹\ØÛÜ™XX›KÚ]›ÈYÙ[ˆ[™KØ]\ËÜˆÛÛ\\š\ÛÛˆY]šXÜËˆ
+Š’[˜ÛÛ˜Û\Ú]™NÈ^XÝœ›Þ™[ˆ™\^HÛ›K™]™\ˆ›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÍËXØ[˜\Ë][Y[Ý]›Y
+JHŸ]]Ý˜Z[ˆÌMÌÍˆÛÛ\][Û‹X›Ý[™È›Û[Ý[Û‹XØY[˜ÙHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍ‹^ØÛÛ›Û›Ý[™ßXÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÌÍ‹˜]ÚŽÈÛ[ÚÙH
+È[[Ý]]˜[X][ÛˆÚ]Û™\ÝÜÛÝØÛÛ˜XÝUYXÈ›Ý\›\ÈKŒMŒˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈÈ[[Ý]MH]X[]HY\Îˆ\œÙHKŒÈKŒYX[š[™ÈÈÝXÝ\™HŒMÍHÈŒM™XØ[ÈŒLˆ›Ý[™ÈL\ÈÍÉHÈËŽLIHÛÝÙ\ˆ[™˜Z[š[™ÈØ[\ÈKŒÍpåËˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÍ‹X›Ý[™Ë\›Û[Ý[Û‹\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÍHÛÛ\Û™[\ÝXÝ\™HØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍK^ØÛÛ›ÛÛÛ\Û™[\ÝXÝ\™_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒÈÝ\ËÙYYLMÌÍK˜]ÚŽÈ]˜[X][ÛˆÛ™\ÝÜÛÝØÛÛ˜XÝUYXÈ›Ý\›\ÈKLLËÎH˜Z[˜X›H\˜[\ÈÚ][ˆ[™YÙHXYÈ™XZ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈ]X[]HY\Îˆ\œÙHKŒYX[š[™ÈŒÌÌÌËÝXÝ\™HŒMÍMËš[™\ˆŒHŒÌÌË™XØ[ŒKTÕ›ÙKÙYÙHŒHŒŒNLÌˆ™X]Y[L\ÈKŒÌ	HÛÝÙ\‹˜Z[š[™ÈØ[\ÈËŒ0åË[™ÜÜÈ\ÈÛÜœÙKˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÍKXÛÛ\Û™[\ÝXÝ\™K\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÍÛÛ\Û™[Z[™[ÜžHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍ^ØÛÛ›ÛÛÛ\Û™[Z[™[Üž_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒˆÝ\ËÙYYLMÌÍ˜]ÚŽÈ]˜[X][ÛˆÛ™\ÝÜÛÝØÛÛ˜XÝUYXÈ›Ý\›\ÈKŽ‹ÍŒÈ˜Z[˜X›H\˜[\ÈÚ]HÛÛ\Û™[Z[™[ÜžHXY™XZ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÍÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈ]X[]HY\Îˆ\œÙHKŒYX[š[™ÈŒÌÌÌËÝXÝ\™HŒMÍMËš[™\ˆŒHŒÌÌË™XØ[ŒKTÕ›ÙKÙYÙHŒHŒŒNLÌˆ™X]Y[LKMËÈœÈKMÍŽÈ\È\ÈHÉHØZ[ˆ™[ÝÈHIH›ÛÜ‹ˆYÙ[ˆÛÛ\]NÈØ]\È˜Z[ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÍXÛÛ\Û™[Z[™[ÜžK\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÌÈÛÛ\Û™[YYÙHØÜ™Y[ˆÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌË^ØÛÛ›ÛÛÛ\Û™[YYÙ_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÌÌË˜]ÚŽÈ]˜[X][ÛˆÛ™\ÝÜÛÝØÛÛ˜XÝUYXÈ›Ý\›\ÈKÍ‹NÈ˜Z[˜X›H\˜[\ÈÚ]HÛÛ\Û™[YYÙHXY™XZ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH^XÝÛ[ÚÙHLÈ]X[]HY\Îˆ\œÙKØš[™\ˆŒHKŒYX[š[™ÈÝXÝ\™HŒŒŽLË™XØ[ŒÌÌËTÕ›ÙKÙYÙHŒHŒLLŽÌˆ™X]Y[L‹KMˆœÈ‹LÍ‹È\È\ÈH‹ŒLÉHØZ[ˆ™[ÝÈHIH›ÛÜ‹ˆYÙ[ˆÛÛ\]KK\Ú\YØ]\Ø˜Z[[™\ˆÜ[ZWÜÚ\ÙØ]\×Ý˜ÈÛX[ˆÛÙHNXMÍLÌÌLMYYL˜Ì™XXMM™ÎŽ\›™\ÜÈÌØYX[š[™È]˜[‹ŒLËŒØÛÜš[™ÈŒŒ˜ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÌËXÛÛ\Û™[YYÙK\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÌˆÛÛ\Û™[\[ˆ›Û[Ý[Û‹XØY[˜ÙHØÜ™Y[ˆÛÛ›ÛÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌ‹XÛÛ›ÛÈ™X]Y[ÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌ‹XÛÛ\Û™[\[˜ÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒÈÝ\ËÙYYLMÌÌ‹˜]Ú‹Û™\ÝÜÛÝØÛÛ˜XÝUYXÈ›Ý\›\ÈKÍMKÍ˜Z[˜X›H\˜[\ÈÚ]HÛÛ\Û™[\[ˆXY™XZ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌ‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›Û[™™X]Y[\™H^XÝ]X[]HY\ÈÛˆÛ[ÚÙHLÈ
+\œÙHKŒYX[š[™Ù[ŒÌÌÌËÝXÝ\™HŒŒMLËš[™\ˆŒHŽŒŒŠH[™[[Ý]MH
+\œÙHKŒYX[š[™Ù[ÝXÝ\™HŒŒš[™\ˆŒHÌÍŠKˆ™X]Y[L\È‹‹MˆœÈ‹MËŒH\ÈÛ[ÚÙH[™KKŽœÈKÌÍH\È[[Ý]Ú]‹ŽpåÈ˜Z[š[™ÈØ[ˆK\Ú\YØ]\Ø
+Š™˜Z[
+Šˆ[™\ˆÜ[ZWÜÚ\ÙØ]\×Ý˜È[ˆÝ[\™\œÚ[Û—ÜÝ[\ÝŒXÛÙH˜™˜ÌM˜YMŒÍÌ˜Ø˜ØÙXÎLYÌÍMMÎY™™™NXÛX[‹\›™\ÜÈÌØYX[š[™È]˜[‹ŒLËŒØÛÜš[™ÈŒŒ˜]˜[™XÚ\HNLÎÜ›ÛWÜØY™WØ[Ý\™Ù]×ÝŒ˜ˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÌ‹XÛÛ\Û™[\[‹\›Û[Ý[Û‹\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÌHÛÛ\Û™[\[ˆ™\XØ][ÛˆÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌK^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒˆÝ\ËÙYYLMÌÌK˜]ÚŽÈ›Ý\›\ÈKÍMKÍ˜Z[˜X›H\˜[\ÈÚ]HÛÛ\Û™[\[ˆXY™XZ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›ÝYÙ[ˆÛ[ÚÙHLÈ\›\È]™HY[XØ[\œÙHKŒYX[š[™Ù[ŒÌÌÌËÝXÝ\™HNMËš[™\ˆŒHŒÌÌË™XØ[ŒMË[™TÕ›ÙKÙYÙHŒHÌËÌˆ™X]Y[LËÌMHœÈËLËŒˆ\È\ÈÛ›HHIH[K™[ÝÈÛXÞH	ÜÈIHY™šXÚY[˜ÞH›ÛÜ‹ˆ
+Š”]X[]K[[È™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÌKXÛÛ\Û™[\[‹\™\XØ][Û‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌÌÛÛ\Û™[\[ˆØÜ™Y[ˆÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌ^ØÛÛ›ÛÛÛ\Û™[\[ŸXÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÌÌ˜]ÚŽÈ›Ý\›\ÈKÍMKÍ˜Z[˜X›H\˜[\ÈÚ]HÛÛ\Û™[\[ˆXY™XZ[Ý]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÌÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›ÝYÙ[ˆÛ[ÚÙHLÈ\›\ÈÛÛ\]YÚ]Y[XØ[\œÙHKŒYX[š[™Ù[ŒÌÌÌËÝXÝ\™HŒMÍ‹š[™\ˆŒHŒÌÌË™XØ[ŒK[™TÕ›ÙKÙYÙHŒHŒŒNKÌˆ™X]Y[LKMŒŽLÈœÈKÎNŽLˆ\È\È[ˆY™šXÚY[˜ÞK[Û›Hš^\™HÚYÛ˜[™\]Z\š[™ÈÛÛ™š\›X][Û‹ˆ
+Š”]X[]K[[È™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌÌXÛÛ\Û™[\[‹\ØÜ™Y[‹›Y
+JHŸ]]Ý˜Z[ˆÌMÌŽHš[™\‹]ÜÛÙÞHØÜ™Y[ˆÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌŽK^ØÛÛ›Ûš[™\‹]ÜÛÙÞ_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]ŒÈÝ\ËÙYYLMÌŽK˜]ÚŽÈÛÛ›ÛKŒMŒˆœÈ™X]Y[‹LÍËÍˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌŽKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›ÝYÙ[ˆÛ[ÚÙHLÈ\›\ÈÛÛ\]Yˆ\œÙHKŒÝXÝ\™HŒMÍKš[™\ˆŒHÈYX[š[™Ù[ÈTÕ›ÙH[™YÙHŒHŒÈÛ™\ÝØ]\È˜Z[YˆH™X]Y[\ÈHÛÛ\]H[[™
+ÍLŽÎ\˜[\ËÛÈHY™\\ÙYÚ^™K[X]ÚØ\È[˜[Yˆ
+Š”™Z™XÝYÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌŽKXš[™\‹]ÜÛÙÞKXØ\XÚ]KX]Y]›Y
+JHŸ]]Ý˜Z[ˆÌMÌMÈœ›Þ™[ˆ™\^HÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌMËXÛÛ›ÛÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÌL˜]Ú‹KŒMŒˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌMËÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÛÛ›ÛYÙ[ˆÛ[ÚÙHLÎˆ\œÙHKŒš[™\ˆŒHKŒYX[š[™Ù[ŒÌÌÌËÝXÝ\™HŒÍM‹LËMMH\ÎÈÛ™\ÝØ]\È˜Z[Yˆ˜]ÚH™Y[™[H™]˜Z[™Y[[]ÈÝYÙH[\œ\[™Ü›ÝH›ÈÚXÚÜÚ[ÜˆY]šXÜËˆ
+Š’[˜ÛÛ\]NÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\ÈÝYÙK[]™[œ›Þ™[ˆ™]\ÙH™\]Z\™Y
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌMË\™Y[™[\™]˜Z[‹][Y[Ý]›Y
+JHŸ]]Ý˜Z[ˆÌMÌMˆœ›Þ™[ˆ™\^HÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌM‹^ØÛÛ›Û˜]Ú_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÌL˜]ÚˆœÈKKŒMŒˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌM‹Ü[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›Ý˜Z[œÈ]\›Z[š\ÝXØ[H™\›ÙXÙYHÌMÌMHÚXÚÜÚ[\Ú\ËˆÛÛ›ÛYÙ[ˆÛ[ÚÙHLÎˆ\œÙHKŒš[™\ˆŒHKŒYX[š[™Ù[ŒÌÌÌËÝXÝ\™HŒÍM‹LËÌKŒŒ\ÎÈÛ™\ÝØ]\È˜Z[Yˆ˜]ÚH]˜[X][Ûˆ[YYÝ][ˆÙ™šXÚX[TÕ\œÚ[™È™XXÚYžH\›Z[˜[]Ú]™\ÜÈÛÛ\][Ûˆ[™\È›ÈY]šXÜËˆ
+Š’[˜ÛÛ\]NÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\Èœ›Þ™[ˆ™\^H™\]Z\™Y
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌM‹]\›Z[˜[\\œÙK][Y[Ý]›Y
+JHŸ]]Ý˜Z[ˆÌMÌMHœ›Þ™[ˆ™\^HÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌMK^ØÛÛ›Û˜]Ú_XÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]Ý\ËÙYYLMÌL˜]ÚˆœÈKKŒMŒˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌMKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH›Ý˜Z[œÈÛÛ\]YˆÛÛ›ÛYÙ[ˆÛ[ÚÙHLÎˆ\œÙHKŒš[™\ˆŒHKŒYX[š[™Ù[ŒÌÌÌËÝXÝ\™HŒÍM‹LËŒÌˆ\ÎÈÛ™\ÝØ]\È˜Z[Yˆ˜]ÚH]˜[X][Ûˆ[YYÝ][œÚYH\›Z[˜[]Ú]™\ÜÈÛÛ\][Ûˆ[™\È›ÈY]šXÜËˆ
+Š’[˜ÛÛ\]NÈ™]™\ˆ™]\ÙK›Û[ÝKÞ[˜ËÜˆÚ\Èœ›Þ™[ˆ™\^H™\]Z\™Y
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛKLMÌMK]\›Z[˜[]Ú]™\ÜË][Y[Ý]›Y
+JHŸ]]Ý˜Z[ˆÌMÌ8 $ØÌMÌL[™œ˜\ÝXÝ\™HXYÛ›ÜÝXÜÈÚ^ÌŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÎKLKJ˜[œÈÔHØÜ˜]ÚÛÕÝÙ\‹Ù—ÜÛ[ÚÙWÝŒ˜^\ˆÝ]]8 $ÌMÝ\Ë˜]Úx $Ì‹KŒMŒˆ˜Z[˜X›H\˜[\ÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZKLŒŒËNNNNLŒKXÌMÌÎKLKÜ[œËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH[Ú^˜Z[œÈ™XXÚYXÛ\™YÝ\È[™Ü›ÝHÚXÚÜÚ[ÎÈ[ˆÚPˆÝÝ]]Z[\œÚ[™ÈY™XÝ˜[Ù[HÝÜYXXÚÝ]ÛÛYH™Y›Ü™H]˜[X][Û‹ˆ›ÈÝZ]HY]šXÜËYÙ[ˆ[™KÜˆØ]H™\Ý[^\Ýø %
+Šš[™œ˜\ÝXÝ\™H]šY[˜ÙHÛ›NÈ™]™\ˆ™]\ÙK›Û[ÝKÜˆÚ\Èœ›Þ™[ˆÌMÌL™\^H™\]Z\™Y
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ø]]Ý˜Z[‹XÞXÛ\ËLMÌLMÌL\[[YKX\Y˜XÝ\™XÛÝ™\žK›Y
+JHŸÓKLÌLÈXœÝ˜XÝ[ˆØØ[ÚXÚÜÚ[ÛLÌL×ÛØØ[Ü[—ÌZ×ÝŒ˜ÔHØÜ˜]ÚÚÚXÙHÛÕÝÙ\ˆÚ]™YXÝY\[ˆXY[™X\›™YÛÛ›™XÝÜˆÛÛ™][Ûš[™ÎÈØ[›ÛšXØ[\™XÝ[˜]\˜[›ÝÜÈÝ]]ËÜ[œËÜÛLÌL×ÛØØ[Ü[—ÌZ×ÝŒ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[^XÚ]›Ë\Þ[˜ÊHHÝ\ÈÈKˆ\™Ù]ÚÙ[œÈÈÌËÒH˜™LÍY¸ )˜ŒÎŽÙMÈ[ØÚÙYŒ‹\™XÛÜ™0åÈKX\›H0åÈË\]X]š^
+‹Lˆ›ÝÜÊH\ÈYX[š[™Ë]Œ‹Øš[™\‹QŒHÒHÌX™\œÝ\È]™\žH\ÝXÝ]™HÛÛ›Û8 %
+ŠšYÛ›Ü™YÛÜ—ØÛÛ\ÙY›Ý›Û[ÝX›K™]\ØX›KÜˆÚ\
+Šˆ
+ÔÓKLÌLÈ]šY[˜ÙWJ\ÚYÛ‹ØXœÝ˜XÝ\[‹Y[˜Ý[Û˜[Y]šY[˜ÙK›Y
+JHŸÓKLÌŒˆTLÈ\™]ÈØÜ™Y[š[™ÈÚXÚÜÚ[ÛLÌŒ—Ø\×ÜØÜ˜]ÚÝŒXÔHØÜ˜]ÚÛÕÝÙ\‹ÛÛ›™XÝÜ‹Yœ™YH
+›ÈXœÝ˜XÝ[ÛÛ›™XÝÜˆ]XÚY
+NÈ˜Z[™YÛ›HÛÈ[—Ù\ØÜ™]WÜ[—Ü\™]ËœXÛÝ[ØYHÞ[X›ÛÛÛ›KÝŒ‹XÛÛ\]X›HÚXÚÜÚ[
+HÛÛ[Z]Y^YÜ›Ý[™Ù[[ØÚXÚÜÚ[™Y]\ÈHÝ\œ™[Ý]]ÛÛ˜XÝ[™›ÈÛ™Ù\ˆØYÊHÝ]]ËÜ[œËÜÛLÌŒ—Ø\×ÜØÜ˜]ÚÝŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[^XÚ]›Ë\Þ[˜ÊHÝ\ËÒHŒ™ØÍÍø )ŽL™ŒÎLMØÈK\ÙYYØÜ™Y[š[™ÈXÛÙH]™Yš[™[Y[›Ý[™ÈKLˆÛ›H
+›Ý[™ÈÎ[™]™\žH\›H™YY[™ÈH˜Z[™YÛÛ›™XÝÜ‹Øš[™\‹\™XÚ\Ú[ÛˆÚ[›™[Ü™]šY]˜[[™^\™H[™[™Êx %
+Š˜ÛZ[WØÛ\ÜÎˆÚ\š[™ËÚ\Ù[YÚX›Nˆ˜[ÙK›Ý›Û[ÝX›HÜˆ™]\ØX›JŠˆ
+ÔÓKLÌŒˆ]šY[˜ÙWJ\ÚYÛ‹Ù\ØÜ™]K\[‹\\™]Ë›Y
+JHŸLLŒLHÙYYMÈÜÛÙÞKYÜÙHÛÛ›ÛLLŒLWÝŒÌ×ÙNLÍ×Ø˜]ÚÜÙYY×ÛŒYMØš[™\—ÝÜÛÙÞWÜ]X\\˜ÔHØÜ˜]Ú›ÛK\ØY™H^\ˆÜÛÙÞK[ÜÜÈÜÙHÛÛ›ÛÝ]]ËÜ[œËÙLLŒLWÝŒÌ×ÙNLÍ×Ø˜]ÚÜÙYY×ÛŒYMØš[™\—ÝÜÛÙÞWÜ]X\\‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÎMH0åÈ˜]ÜËÒHÎMŽM‹‹‹X™ŒLXÈLLŒLˆÝšXÝ[MX^XÝHX]Ú\ÈLLN‹ÑLLŒ
+\œÙKÛYX[š[™ÈÝšXÝ]ŒˆŒ‹šY[]HŒŽÝXÝ\™HŒŽL‹™XØ[ŒÌÌÌË™]Ø\™ŒÌÎÈ[Y[Ý]Ë™\›È˜[˜XÚÊH8 %
+Š›™]]˜[Ü™Z™XÝYÈ™]™\ˆÞ[˜ËÜ›Û[ÝKÜÙ\™KÝ\ÙH\È\™[
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLŒLKYLLŒM\ÙYYË]ÜÛÙÞK\ÛÝXÛÛ\Û™[LŒŒÌK›Y
+JHŸÓKLŽNØØ[˜XÝÜšX[XYÛ›ÜÝXÜÈÌ‹Ù\ØÜ˜]Ú^Ý˜Z[˜X›Kœ›Þ™[ŸK^Ù›]ÛÛ\^]WÛÜ™\™YK\Ê˜ÔHØÜ˜]ÚÞ[X›Û[Û›H^\‹LŒÝšXÝ›ÝÜËK]ÚÙ[ˆX]ÚYYÙ]Ý]]ËÜ[œËÜÛLŽNÛØØ[Ù˜XÝÜšX[
+‹ØÙ[ËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊHŒÌ›Ý[™YØÚÙYLXÙ[ÈÛÛ\]YÚ]YÙ[ŽÈÛÛœÝ˜Z[™YÞ[^KŒÝšXÝYX[š[™Ù[Øš[™\ˆŒHŒ[ˆ]™\žHÛÛ\]YÙ[ˆ›Ý\ˆÌˆÙYYLˆÙ[È™\X]YH^ÙYYYH[[]]X›HØ\[™\™H›Û‹Y]šY[˜ÙKˆ
+Š”™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹\ÛLŽNXØ\XÚ]KXÛÛ^XÝ\œšXÝ[[KLŒŒÌK›Y
+JHŸÓKLŽÈš]™K\ÙYYØÚÙY˜\Ù[[™HÛLŽË]˜Z[™Y[ØØ[]ŒLËLŒŒÌX[ˆÔH›Ø]ÌˆØÜ˜]ÚÚÚXÙHÛÕÝÙ\ˆÙ[È
+š]™HÙYYÈ0åÈ\ÚYÛˆÙ™‹ÛÛŠNÈMË\™XÛÜ™ÝšXÝÛLŒÌÜÞ[X›ÛÛÛ›WÝŒXK]ÚÙ[ˆYÙ]Ý]]ËÜ[œËÜÛLŽË]˜Z[™Y[ØØ[]ŒLËLŒŒÌKÝ˜Z[™YØÙ[ËØ
+ØØ[^XÚ]›Ë\Þ[˜ÊH[ØÚÙYØØ[Œ‹\™XÛÜ™ÝÙY\Ú]YÙ[ˆ\ˆÚ\™ˆYX[š[™Ë]Œ‹Øš[™\ˆŒH[ˆ[˜]ËØÛÛœÝ˜Z[™YÜ™\Z\™Y˜\šX[ÎÈXœÛÛ]K\›Ø˜Xš[]HQHŒŒˆ
+Š‘XYÛ›ÜÝXË™Z™XÝY›Üˆ›Û[Ý[Ûˆ[™›ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹\ÛLŽË[ØÚÙY\ÝÙ\‹\›ÝØÛÛLŒŒÌ›Y
+JHŸÓKLŽM[žHÙZ[[™È˜\Ù[[™HÛLŽMÝ[žWØ˜\Ù[[™XÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ^\ˆ˜\Ù[[™H
+ŒÝ\ÈšXHØ\YÚ[šÙY™\Ý[YKš[˜[ÜÜÈKLNÊHÝ]]ËÜ[œËÜÛLŽMÝ[žWØ˜\Ù[[™KØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H˜Z[™YÚ][ˆH[ˆØ\›ÜˆHÓKLŽM^\›˜[XÙZ[[™ÈØ[\ZYÛ‹]ÛÛœÝ˜Z[™YXÛÙH\È[™™X\ÚX›HÛˆšXÛË\ØØ[H^[Ý]È[™\ˆHØ\
+ŒŽËÌMˆÚÙ[œÊNÈØ[\ZYÛˆ\ÜÜÚ][Ûˆ[˜ÛÛ˜Û\Ú]™X8 %
+Š™XYÛ›ÜÝXË›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹\ÛLŽMY^\›˜[XÙZ[[™ËLŒŒÌ›Y
+JHŸÓKLŒÌ›Ý[™Y™XÝ\œ™[˜ÙHXYÛ›ÜÝXÈÛLŒÌØ›Ý[™YÜ™XÝ\œÚ]™WÜÜŒ˜ÔHØÜ˜]ÚÞ[X›Û[Û›HÚ\™Y\™XÝ\œÚ]™HMXYÛ›ÜÝXÈÝ]]ËÜ[œËÜÛLŒÌØ›Ý[™YÜ™XÝ\œÚ]™WÜÜŒ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌËÒHMŒŒ˜Ø¸ )ŽŒŽXÈ[[Ý]\x¡¤ÑH[\›Ý™\Ë]XØÝ\˜XÞKÜ\œÙKÜÝXÝ\™KÜ™]Ø\™Ý^HŒ
+ÝYÛ˜[
+KˆÓKLŒÌHš[™È^XÝ›ÙXÝÜÌØÈ•HŒÎ˜
+^[œÚ]™WÝ[œÝX›X
+NÈÓKLŒÌˆš[™ÈŒ˜[šÈ‹ŒLM]˜[šÈŒY\ˆÛÛ^ÜÜÚ][Ûˆ™[[Ý˜[[™˜XÝ[Ý\È›Ý[™YX›][ÛœÈ
+[œÝX›X
+KˆH”ÐÍ\ÜÜÚ][Ûˆ™[XZ[œÈ›ØÚÙY8 %›È][ÚXÚÜÚ[\È›Û[ÝYÜˆÞ[˜ÙY
+Ô”ÐÍJ\ÚYÛ‹Ü™XÝ\œ™[\Ù[X[XËXÛÛ\]][Û‹[ÛÜY[][Y\ÜÜÚ][Û‹›Y
+JH8 %
+Š™^XÚ]›Ë\Þ[˜Ë™Z™XÝY›ÝÚ\
+Šˆ
+ÛØœÙ\˜Xš[]WJ\ÚYÛ‹Ú]\‹\ÛLŒÌ\™XÝ\œ™[˜ÙK[ØœÙ\˜Xš[]KLŒŒÌ›Y
+KÙ[˜[ZXÜ×J\ÚYÛ‹Ú]\‹\ÛLŒÌK\™XÝ\œ™[˜ÙKY[˜[ZXÜËLŒŒÌ›Y
+KÛ][Ý]WJ\ÚYÛ‹Ú]\‹\ÛLŒÌ‹[][\Ý]K]\ÙKLŒŒÌ›Y
+JHŸMÌÍH[ZXY›ÛÝX\š]HXYÛ›ÜÝXÈMÌÍK\Þ[X›Û[Û›K\›ÛÝX\š]KY[XYM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]ŒˆÛÜœ™XÝY›ÛÝX\š]HØš™XÝ]™HÝ]]ËÜ[œËÙMÌÍK\Þ[X›Û[Û›K\›ÛÝX\š]KY[XYM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈ‹ŒÜËÒHÌLL™™x )ŽŽMÌÈ[\ÜÜÚX›HÛ[ÚÙH\™ÛX^Û\ÜÈH™XÛÛY\ÈÛ\ÜÈK]ÙZYÚÌH]X[]H\ÈY[XØ[[™ÝšXÝ]Œˆ™[XZ[œÈŒ8 %
+Š›Øš™XÝ]™Hš^™]Z[™YÚXÚÜÚ[™Z™XÝY
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌÍK\›ÛÝX\š]KY[ZXYLŒŒÌŒ‹›Y
+JHŸMÌÌÈ[˜[Y^\ˆ›ÛÝZY[]H][\MÌÌË\Þ[X›Û[Û›K\›ÛÝZY[]LM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ[˜[YØ\Xš[]HXÛ\˜][ÛˆÝ]]ËÜ[œËÙMÌÌË\Þ[X›Û[Û›K\›ÛÝZY[]LM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈÎŽNËÒHÙYŒŽ8 )LMÙ˜ØÈX]ÚYÙZYÚÌH]˜[\È™\›ÈY[]H\XØ][ÛœÈ8 %
+Šš[˜[Y]YÈ™]™\ˆÞ[˜Ë›Û[ÝKÙ\™K™\Ý[YKÜˆ\ÙH\È\™[
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌÌË[^\‹\›ÛÝZY[]K\™XXÚXš[]KLŒŒÌŒ‹›Y
+JHŸMÌÌH^\ˆ›ÛÝX\š]HXYÛ›ÜÝXÈMÌÌK\Þ[X›Û[Û›K\›ÛÝX\š]LM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ›ÛÝX\š]HØš™XÝ]™HÝ]]ËÜ[œËÙMÌÌK\Þ[X›Û[Û›K\›ÛÝX\š]LM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈ‹ŒŒËÒH™™ŒYLM¸ )Œ™˜˜ŽÈÙZYÚÈÌKÌˆ\™H™YXÝ[Û‹ZY[XØ[[™ÝšXÝ]Œˆ™[XZ[œÈŒ8 %
+Š˜Ø\Xš[]H™]Z[™YÚXÚÜÚ[™Z™XÝY
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌÌK[^\‹\›ÛÝX\š]K\Þ[X›Û[Û›KLŒŒÌŒ‹›Y
+JHŸMÌMÞ[X›Û[Û›H˜\Ù[[™HMÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ˜\Ù[[™HÝ]]ËÜ[œËÙMÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒÝ\ÈÈÌœËÒHÌYYŒYx )Œ˜YXÈ[™YXÝ[ÛœÈØ]\ÙžHÞ[X›Û[Û›HŒ‹]š]™K\ÝZ]HÝšXÝYX[š[™È\ÈŒ[™YÙ[ˆÍH8 %
+Š˜ÛÛ\]X›HXYÛ›ÜÝXË›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌM\Þ[X›Û[Û›KX˜\Ù[[™KLŒŒÌŒK›Y
+JHŸMÌŒÛÛ\Û™[Z[™[ÜžHXYÛ›ÜÝXÈMÌŒ\Þ[X›Û[Û›KXÛÛ\Û™[Z[™[ÜžMŒ\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ[™[ÜžHØš™XÝ]™HÝ]]ËÜ[œËÙMÌŒ\Þ[X›Û[Û›KXÛÛ\Û™[Z[™[ÜžMŒ\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒÝ\ÈÈÌ‹ŒÎËÒH˜LXLŒx )™ŽLXLLXÈ[™[ÜžHÜZÈ™XØ[ŽÍK]Û[ÚÙH\œÙKÜÝšXÝYX[š[™ÈŒ[™ÙZYÚMXÛÙH[YYÝ]ËÌÈ8 %
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌŒXÛÛ\Û™[Z[™[ÜžK\Þ[X›Û[Û›KLŒŒÌŒK›Y
+JHŸMÌŒH›ÛKØÛÝ[[ˆXYÛ›ÜÝXÈMÌŒK\Þ[X›Û[Û›KXÛÛ\Û™[\[ŒNL\ÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]ŒˆÛÛ\Û™[[ˆÝ]]ËÜ[œËÙMÌŒK\Þ[X›Û[Û›KXÛÛ\Û™[\[ŒNL\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HNLÝ\ÈÈLŒÎ\ËÒHÌÌ™Mx )ŒŒLÌÈÛ[ÚÙH\œÙHKŒ]ÝšXÝYX[š[™ÈŒ[™[ˆÛ‹ÛÙ™ˆÝ]]È\™HY[XØ[8 %
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌŒKXÛÛ\Û™[\[‹\Þ[X›Û[Û›KLŒŒÌŒK›Y
+JHŸMÌŒˆÛÛ\Û™[YYÙHXYÛ›ÜÝXÈMÌŒ‹\Þ[X›Û[Û›KXÛÛ\Û™[YYÙLML\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ[ˆ
+ÈYÙHØš™XÝ]™HÝ]]ËÜ[œËÙMÌŒ‹\Þ[X›Û[Û›KXÛÛ\Û™[YYÙLML\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMLÝ\ÈÈÍËLœËÒHÌØ™Œ8 )˜LMNMÙÈ\œÙHKŒÈÝXÝ\™HŒŽŒHÈ™XØ[K]ÝšXÝYX[š[™ÈŒ[™YÙHÛ‹ÛÙ™ˆY[XØ[8 %
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌŒ‹XÛÛ\Û™[YYÙK\Þ[X›Û[Û›KLŒŒÌŒK›Y
+JHŸMÌŒÈÛÝ[ÝÛ™\ˆXYÛ›ÜÝXÈMÌŒË\Þ[X›Û[Û›K\ÛÝ[ÝÛ™\ŒM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]ŒˆÛÝ[ÝÛ™\ˆØš™XÝ]™HÝ]]ËÜ[œËÙMÌŒË\Þ[X›Û[Û›K\ÛÝ[ÝÛ™\ŒM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈÍËŒMœËÒHÎÙ™Œx )˜™ŒÎMXÈØ]\Ø[Û[ÚÙH
+È[[Ý]ØZ[œË]ÝšXÝ]ŒˆŒ8 %
+Š›]™\ˆ™]Z[™YÚXÚÜÚ[›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌŒË\ÛÝ[ÝÛ™\‹\Þ[X›Û[Û›KLŒŒÌŒK›Y
+JHŸMÌHÝ[][]]™H[™[ÜžHXYÛ›ÜÝXÈMÌK\Þ[X›Û[Û›KXÛÛ\Û™[Z[™[ÜžLLÌ\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ[ˆ
+ÈYÙH
+ÈÛÝ[ÝÛ™\ˆ
+È[™[ÜžHØš™XÝ]™\ÈÝ]]ËÜ[œËÙMÌK\Þ[X›Û[Û›KXÛÛ\Û™[Z[™[ÜžLLÌ\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLÌÝ\ÈÈÌËŒŒœËÒHMÌŒ™¸ )Ž˜LYXÈ[™[ÜžHÙZYÚKÌÝ]]ÈY[XØ[[™Û[ÚÙHYX[š[™Ë]ŒKÜÝšXÝ]ŒˆŒ8 %
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌKXÛÛ\Û™[Z[™[ÜžK\Þ[X›Û[Û›KLŒŒÌŒ‹›Y
+JHŸMÌˆ[˜[Y›ÛÝX\š]H][\MÌ‹\Þ[X›Û[Û›K\›ÛÝX\š]LM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]Œˆ[˜[YÛÛ™šYÝ\˜][ÛˆÝ]]ËÜ[œËÙMÌ‹\Þ[X›Û[Û›K\›ÛÝX\š]LM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈKŒŒËÒHM™x )ŒXŽLX˜ÈÚÚXÙK[Û›H]™\ˆØ\ÈXœÙ[Ûˆ^\ˆ[™[[œÛÜœÈX]ÚMÌŒÈ8 %
+Šš[˜[Y]YÈ™]™\ˆ]˜[X]KÞ[˜Ë›Û[ÝKÜˆÙ\™JŠˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌ‹\›ÛÝX\š]KXÛÛ\]Xš[]K\Þ[X›Û[Û›KLŒŒÌŒ‹›Y
+JHŸMÌÈš[™\‹X\š]HXYÛ›ÜÝXÈMÌË\Þ[X›Û[Û›KXš[™\‹X\š]LM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]ŒˆÛÝ[ÝÛ™\ˆ
+Èš[™\‹X\š]HØš™XÝ]™\ÈÝ]]ËÜ[œËÙMÌË\Þ[X›Û[Û›KXš[™\‹X\š]LM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈÍËœËÒHÌŒLY™Xx )ŒÍ˜NMØÈ\š]HÙZYÚÈKÌˆÚ[™ÙH›ÈÛ[ÚÙHÜˆ[[Ý]ÚÚXÙ\È[™ÝšXÝ]Œˆ™[XZ[œÈŒ8 %
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌËXš[™\‹X\š]K\Þ[X›Û[Û›KLŒŒÌŒ‹›Y
+JHŸMÌŽHš[™\‹]ÜÛÙÞHXYÛ›ÜÝXÈMÌŽK\Þ[X›Û[Û›KXš[™\‹]ÜÛÙÞLM\ŒXÔHØÜ˜]ÚÝ]]XÛÛ˜XÝ]ŒˆÛÝ[ÝÛ™\ˆ
+Èš[™\‹]ÜÛÙÞHØš™XÝ]™\ÈÝ]]ËÜ[œËÙMÌŽK\Þ[X›Û[Û›KXš[™\‹]ÜÛÙÞLM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMÝ\ÈÈÍËLËÒHÍX˜Y˜Ž8 )ŒNÍÙÈÜÛÙÞHÙZYÚÈŒKÌHØ]\Ø[H™YÜ™\ÜÈÛ[ÚÙH]X[]H[™ÝšXÝ]Œˆ™[XZ[œÈŒ8 %
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMÌŽKXš[™\‹]ÜÛÙÞK\Þ[X›Û[Û›KLŒŒÌŒ‹›Y
+JHŸ^YÜ›Ý[™[[È^YÜ›Ý[™Ù[[Øš^\™HÚ\š[™ÈÜ˜ËÜÛWÝ˜Z[š[™ËÜ™\ÛÝ\˜Ù\ËØÚXÚÜÚ[ËÜ^YÜ›Ý[™Ù[[ËÛ\Ýœ
+Ú]
+HMMÈÛX[‹\™]š\Ú[ÛˆÛ™\ÝÛ[ÚÙNˆ\œÙKÛYX[š[™Ù[ÙšY[]HŒÝXÝ\™HŒŒŒËYÙ[ˆÍKÛ™H[Y[Ý]ˆ[[ÈÛ›H8 %
+Š››Ý
+ŠˆH]X[]HÜˆÚ\ÛZ[HŸ™\ÝXÝ\™HÔH™\šYžH™\ÝXÝ\™WØÜWÜØÜ˜]ÚÝŒš^\™HØÜ˜]Ú˜Z[ˆÝ]]ËÜ[œËÜ™\ÝXÝ\™WØÜWÜØÜ˜]ÚÝŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H˜Z[ˆÒÎÈÛ[ÚÙH\œÙH
+ŠŒŒ
+ŠˆÝ\È8 %
+Š››Ý
+ŠˆHÚ\ÛZ[H
+Ü™\Ý[×J\ÚYÛ‹Ü™\ÝXÝ\™KXÜK]˜Z[‹\™\Ý[ËšœÛÛŠJHŸØØ[\™XÝS™\šYžHØØ[Ù\™XÝ[ØY™[›×ÌŒŒÌMØØ[ÔHØÜ˜]Ú˜Z[ˆÝ]]ËÜ[œËÛØØ[Ù\™XÝ[ØY™[›×ÌŒŒÌMØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HY™[›È\™XÝS˜Z[‹ØÚXÚÜÚ[ÒÈHÝ\ÎÈ›Ý]˜[X]Y8 %
+Š››Ý
+ŠˆHÚ\ÛZ[H
+Ü™\Ý[×J\ÚYÛ‹ÛØØ[Y\™XÝ[]˜Z[‹\™\Ý[ËšœÛÛŠJHŸÝ™\›šYÚ™]˜Z[ˆÝ™\›šYÚÜ™]˜Z[—ÌŒÔHØÜ˜]Ú˜Z[ˆÝ\ÜÛK]˜Z[š[™Ë[Ý™\›šYÚÛÝ]]ËÜ[œËÛÝ™\›šYÚÜ™]˜Z[—ÌŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒÝ\ÎÈ[Û™\ÝÝZ]\È\œÙHŒ8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+ŠˆŸÝ™\›šYÚ™]˜Z[ˆ^[™YÝ™\›šYÚÜ™]˜Z[—ÌLÔHØÜ˜]Ú˜Z[ˆÝ\ÜÛK]˜Z[š[™Ë[Ý™\›šYÚÛÝ]]ËÜ[œËÛÝ™\›šYÚÜ™]˜Z[—ÌLØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HKÝ\ÎÈÛ[ÚÙH\œÙHŒ]Ý\ÈŒÍÍŒÎÌL8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+ŠˆŸLLŒÚ[™Û]ÛˆXYÛ›ÜÝXÈLLŒÝ[œØ[™›ÞYÔHØÜ˜]ÚXÛÙ\ˆXYÛ›ÜÝXÈÝ]]ËÜ[œËÚ]\‹YLLŒ][œØ[™›ÞYLŒŒÌMKÙLLŒÝ[œØ[™›ÞYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÎÈÝX\™YÚ[™Û]Û‹Ü›ÛÝØ\š]H]™\šYšYYÈšXÛ×Ú[LX\œÙHŒ8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+ŠˆŸLLŒHYÙYXÛÜœ\ÈMLÈ]\˜][Ûˆ^ÙML×ÚÛ™\ÝÝWØÚ[\[Û˜ÔHØÜ˜]ÚYÙYXÛÜœ\È]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLŒYYMLËZYÙYLŒŒÌMKÜ^ÙML×ÚÛ™\ÝÝWØÚ[\[Û‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙKX\›Ý™Y™XÛÜ™ÎÈ˜Z[ˆ
+ÈÌ\ÝYØ]HÝ\ÎÈ›Ý[™YÛ[ÚÙH\œÙHŒÚ]XÛÙH[Y[Ý]8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+ŠˆŸLLŒÈYÙYXÛÜœ\ÈÌ‹\Ý\]\˜][ÛˆLLŒ×ÚYÙYÌÌœÝ\Ø˜ÔHØÜ˜]ÚYÙYXÛÜœ\È]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLŒØ‹ZYÙYLŒŒÌMKÙLLŒ×ÚYÙYÌÌœÝ\Ø‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙKX\›Ý™Y™XÛÜ™ÎÈÜÜÈLŽMÎÈÛ[ÚÙH\œÙHŒÚ][˜ÛÛœÝ˜Z[™Y˜[˜XÚÈ[™Ø[˜\ÈØ\8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLŒËZYÙYXÛÜœ\ËLÌœÝ\LŒŒÌMK›Y
+JHŸLLÈØÚ[XKÜÛÝXÛÛ˜XÝ]\˜][ÛˆLL×ÚYÙYÜØÚ[XWÜÛÝØÔHØÜ˜]ÚYÙYXÛÜœ\È]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLË\ØÚ[XK\ÛÝËLŒŒÌMKÙLL×ÚYÙYÜØÚ[XWÜÛÝËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙY™XÛÜ™ÎÈÜÜÈLÌNÈXÙZÛ\ˆ˜[Y]HMHÈ›Ü›X[^™YšY[]HŒK\œÙHŒ8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLË\ØÚ[XK\ÛÝËLŒŒÌMK›Y
+JHŸLLŽØÚ[XKÜÛÝ\Ý\]\˜][ÛˆLLŽÚYÙYÜØÚ[XWÜÛÝ×ÍÔHØÜ˜]ÚYÙYXÛÜœ\È]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLŽ\ØÚ[XK\ÛÝËLŒŒÌMKÙLLŽÚYÙYÜØÚ[XWÜÛÝ×ÍØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙY™XÛÜ™ÎÈÜÜÈMKŒÎÈYÚ\ˆ‹ÙšY[]HÙZYÚÈ™YÜ™\ÜÙYXÙZÛ\ˆÚYÛ˜[ÎÈ\œÙHŒ8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLŽ\ØÚ[XK\ÛÝËMÝ\LŒŒÌMK›Y
+JHŸLLŽHØÚ[XKÜÛÝ\Ý\ÝË]ÙZYÚÛÛ›ÛLLŽWÚYÙYÜØÚ[XWÜÛÝ×ÍÛÝÝÙZYÚØÔHØÜ˜]ÚYÙYXÛÜœ\È]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLŽK\ØÚ[XK\ÛÝËLŒŒÌMKÙLLŽWÚYÙYÜØÚ[XWÜÛÝ×ÍÛÝÝÙZYÚËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙY™XÛÜ™ÎÈÜÜÈKŽNÈXÙZÛ\‹Ü\œÙHŒÈÛ™Ù\ˆ˜Z[š[™ÈY›Ý™\›ÙXÙHLLÈ8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLŽK\ØÚ[XK\ÛÝËMÝËLŒŒÌMK›Y
+JHŸLLÌØÚ[XKÜÛÝÙYYLHÛÛ›ÛLLÌÚYÙYÜØÚ[XWÜÛÝ×ÜÙYYXÔHØÜ˜]ÚYÙYXÛÜœ\È]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLÌ\ØÚ[XK\ÛÝËLŒŒÌMKÙLLÌÚYÙYÜØÚ[XWÜÛÝ×ÜÙYYKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙY™XÛÜ™ÎÈÙYYHÜÜÈMKŒŽÈ\œÙH[™XÙZÛ\ˆÚYÛ˜[ÈŒ8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÌ\ØÚ[XK\ÛÝË\ÙYYKLŒŒÌMK›Y
+JHŸLLÌˆÙ[™\˜][Û‹Y›ØÝ\ÙYZ^\™HLLÌ—ÙÙ[™\˜][Û—Ù›ØÝ\ØÔHØÜ˜]ÚYÙYXÛÜœ\ÈZ^\™H]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLÌ‹YÙ[™\˜][Û‹Y›ØÝ\ËLŒŒÌMKÙLLÌ—ÙÙ[™\˜][Û—Ù›ØÝ\ËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙY™XÛÜ™ÎÈ™YK\›Û\Û[ÚÙH\œÙKÜXÙZÛ\ˆŒÈ\ÚÈ™]ÙZYÚ[™È™Z™XÝY8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÌ‹YÙ[™\˜][Û‹Y›ØÝ\ËLŒŒÌMK›Y
+JHŸLLÌÈ›ËY\ÙYSˆ]LLÌ×Û›×Ù\ÙWÛ˜ÔHØÜ˜]ÚYÙYXÛÜœ\È˜Z[š[™Ë\]]\˜][ÛˆÝ]]ËÜ[œËÚ]\‹YLLÌË[›ËY\ÙK[‹LŒŒÌMKÙLLÌ×Û›×Ù\ÙWÛ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHYÙY™XÛÜ™ÎÈ™YK\›Û\\œÙKÜÝXÝ\™HŒÚ]Û™H[Y[Ý]È\ÙYˆ™]Z[™Y8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÌË[›ËY\ÙK[‹LŒŒÌMK›Y
+JHŸLLÍHˆÛÛ^ÛÛ›ÛLLÍWÚ—ØÛÛ^ØÛÛ›ÛÔH‹XÛÛ^ÛÛ›ÛÝ]]ËÜ[œËÚ]\‹YLLÍKZ‹XÛÛ^LŒŒÌMKÙLLÍWÚ—ØÛÛ^ØÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ›Þ™[ˆÛ[ÛL‹LLÍSKÝ\ÎÈË\›Û\\œÙHŒ]ÝXÝ\˜[Ú[Z[\š]HŒŒˆÈXÙZÛ\ˆ˜[Y]HŒÌMÎÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÍKZ‹XÛÛ^XÛÛ›ÛLŒŒÌMK›Y
+JHŸLLÍˆˆÛÛ^Ì‹\Ý\ÛÛ›ÛLLÍ—Ú—ØÛÛ^ÌÌ˜ÔH‹XÛÛ^ÛÛ›ÛÝ]]ËÜ[œËÚ]\‹YLLÍ‹Z‹XÛÛ^LŒŒÌMKÙLLÍ—Ú—ØÛÛ^ÌÌ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ›Þ™[ˆÛ[ÛL‹LLÍSKÌˆÝ\ÎÈ\œÙKÜXÙZÛ\ˆŒ[™ÝXÝ\˜[Ú[Z[\š]HŒNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÍ‹Z‹XÛÛ^LÌœÝ\LŒŒÌMK›Y
+JHŸLLÍÈˆÛÛ^M‹\Ý\ZYÚ[LLÍ×Ú—ØÛÛ^ÌM˜ÔH‹XÛÛ^ÛÛ›ÛÝ]]ËÜ[œËÚ]\‹YLLÍËZ‹XÛÛ^LŒŒÌMKÙLLÍ×Ú—ØÛÛ^ÌM‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ›Þ™[ˆÛ[ÛL‹LLÍSKMˆÝ\ÎÈXÙZÛ\ˆ˜[Y]HÈÝXÝ\˜[Ú[Z[\š]HŒŒM‹\œÙHŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÍËZ‹XÛÛ^LMœÝ\LŒŒÌMK›Y
+JHŸLLÎˆÛÛ^ÙYYLH\Ý\ÛÛ›ÛLLÎÚ—ØÛÛ^ÜÙYYWÎÔH‹XÛÛ^ÙYY˜\šX[˜ÙHÛÛ›ÛÝ]]ËÜ[œËÚ]\‹YLLÎZ‹\ÙYYKLŒŒÌMKÙLLÎÚ—ØÛÛ^ÜÙYYWÎØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ›Þ™[ˆÛ[ÛL‹LLÍSKÙYYKÝ\ÎÈXÙZÛ\ˆ˜[Y]HŒÈÝXÝ\˜[Ú[Z[\š]HŒMŽË\œÙHŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÎZ‹\ÙYYKNÝ\LŒŒÌMK›Y
+JHŸLLÎHˆÛÛ^ÙYYLˆ\Ý\ÛÛ›ÛLLÎWÚ—ØÛÛ^ÜÙYY—ÎÔH‹XÛÛ^ÙYY˜\šX[˜ÙHÛÛ›ÛÝ]]ËÜ[œËÚ]\‹YLLÎKZ‹\ÙYY‹LŒŒÌMKÙLLÎWÚ—ØÛÛ^ÜÙYY—ÎØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ›Þ™[ˆÛ[ÛL‹LLÍSKÙYY‹Ý\ÎÈXÙZÛ\ˆ˜[Y]KÜÝXÝ\™KÜ\œÙHŒÚ]ÛÈ[Y[Ý]ÎÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLLÎKZ‹\ÙYY‹NÝ\LŒŒÌMK›Y
+JHŸLMÌÈØÚ[XKXÛÛ^Ì‹\Ý\ÛÛ›ÛLMÌË\ØÚ[XKXÛÛ^LÌœÝ\ÔH‹XÛÛ^Ù[X[XÈÛÛ›ÛÝ]]ËÜ[œËÙLMÌË\ØÚ[XKXÛÛ^LÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HØÚ[XKÜÛÝÛÛ^[˜X›YÜÜÈLKŒÍŽÈ›Ý[™Y›Ø™HÞ[^KŒ]YX[š[™Ù[\œÙHŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLMÌË\ØÚ[XKXÛÛ^LŒŒÌM‹›Y
+JHŸLMÍ[™œ›Þ™[‹XÛÛ^\Ý\ÛÛ›ÛLMÍ][™œ›Þ™[‹XÛÛ^NÝ\ÔH‹XÛÛ^Ù[X[XÈÛÛ›ÛÝ]]ËÜ[œËÙLMÍ][™œ›Þ™[‹XÛÛ^NÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[™œ›Þ™[ˆÛÛ^ÜÜÈÎKLÎÈ›Ý[™Y›Ø™HÞ[^Œ[™\œÙHŒÈ™Z™XÝYÛÛ›Û
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLMÍ][™œ›Þ™[‹XÛÛ^LŒŒÌM‹›Y
+JHŸLMÍH™]šY]˜[\Ý\ÛÛ›ÛLMÍK\™]šY]˜[NÝ\ÔH‹XÛÛ^™]šY]˜[ÛÛ›ÛÝ]]ËÜ[œËÙLMÍK\™]šY]˜[NÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H™]šY]˜[ÏMÜÜÈËŽMÌÈ›Ý[™YÞ[^Ü\œÙHŒÈ™Z™XÝYÛÛ›Û
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLMÍK\™]šY]˜[LŒŒÌM‹›Y
+JHŸLMÍˆœ›ØYXÛÜœ\È\Ý\ÛÛ›ÛLMÍ‹Xœ›ØYXÛÜœ\ËNÝ\ÔH‹XÛÛ^ÛÜœ\ÈÛÛ›ÛÝ]]ËÜ[œËÙLMÍ‹Xœ›ØYXÛÜœ\ËNÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HKMË\™XÛÜ™ÛÜœ\ËÜÜÈÍŒÈ›Ý[™YÞ[^Ü\œÙHŒÈ™Z™XÝYÛÛ›Û
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLMÍ‹Xœ›ØYXÛÜœ\ËLŒŒÌM‹›Y
+JHŸLMÍÈÙ[X[XËZYÙHÌ‹\Ý\ÛÛ›ÛLMÍË\Ù[X[XËZYÙKLÌœÝ\ÔH‹XÛÛ^]K\]X[]HÛÛ›ÛÝ]]ËÜ[œËÙLMÍË\Ù[X[XËZYÙKLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HM‹\™XÛÜ™X›\ÚYYÙKYØ]YÛÜœ\ËÜÜÈL‹ŒŒŒŒÈLN›Ý[™YXÛÙH™XXÚ\ÈÞ[^KŒ]YX[š[™Ù[\œÙHŒÈÛÛ\Û™[™XØ[ŒNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLMÍËYLN\Ù[X[XËXÛÛ\[\‹LŒŒÌM‹›Y
+JHŸLNH˜[[˜ÙY[Z^\™HÛÛ›ÛLNK\Ù[X[XËX˜[[˜ÙYLÌœÝ\ÔH‹XÛÛ^Z^\™HÛÛ›ÛÝ]]ËÜ[œËÙLNK\Ù[X[XËX˜[[˜ÙYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÜÜÈKLLNÈ›Ý[™YÞ[^KŒ]YX[š[™Ù[\œÙHŒÈÛÛ\Û™[™XØ[ŒNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLNKYLNMXÛÛ\[\‹X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLNÛÛ\Û™[X[YÛ™YXYÛ›ÜÝXÈLNXÛÛ\[\‹X[YÛ™YLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLNXÛÛ\[\‹X[YÛ™YLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÛÛ\Û™[\Ý]H[YÛ›Y[™XÛÝ™\œÈÝXÚØ›ÛÝ]LNMYX[š[™Ù[\œÙHŒÈÝXÝ\™HŒÍŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLNKYLNMXÛÛ\[\‹X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLNLH[Xœ˜[˜Ú[YÛ™YXYÛ›ÜÝXÈLNLKY[XÛÛ\[\‹X[YÛ™YLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLNLKY[XÛÛ\[\‹X[YÛ™YLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H˜[™ÛH[Xœ˜[˜Ú[YÛ›Y[™YÜ™\ÜÙ\È›ÛÝÙ[XÝ[ÛŽÈLNLˆYX[š[™Ù[\œÙHŒÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLNKYLNMXÛÛ\[\‹X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLNMHÝ˜]YšYYX[YÛ›Y[[˜[YÛÛ›ÛLNMK\Ý˜]YšYYXÛÛ\[\‹X[YÛ™YLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLNMK\Ý˜]YšYYXÛÛ\[\‹X[YÛ™YLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HZ^\™HØ\ÈÚ[[H[œÙ]ÛÈ™XÚ\H\È›ÝÛÛ\\˜X›NÈ™]Z[™Y\È[˜[Y]šY[˜ÙK
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLNMKYLNNK\Ý˜]YšYYX[YÛ›Y[LŒŒÌM‹›Y
+JHŸLNMˆX]ÚYÝ˜]YšYY[YÛ›Y[LNM‹\Ý˜]YšYYXÛÛ\[\‹X[YÛ™Y[X]ÚYLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLNM‹\Ý˜]YšYYXÛÛ\[\‹X[YÛ™Y[X]ÚYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLNNHÞ[^KŒÚ]™\›ÈÛÛ\[\ˆ˜[˜XÚÜË]YX[š[™Ù[\œÙKØÛÛ\Û™[™XØ[ŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLNMKYLNNK\Ý˜]YšYYX[YÛ›Y[LŒŒÌM‹›Y
+JHŸLŒHÙ[™\˜]Y\›ÛH[YÛ›Y[LŒK\›ÛK\Ý˜]YšYYXÛÛ\[\‹X[YÛ™YLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒK\›ÛK\Ý˜]YšYYXÛÛ\[\‹X[YÛ™YLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒÛÛ\Û™[™XØ[ŒHÈXÙZÛ\ˆ˜[Y]HÌ]™XÝ\œÚ]™HÚ[™[ˆ]HÚÙ[ˆØ\[™YX[š[™Ù[\œÙH™[XZ[œÈŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒYLŒ[^[Ý]\›ÛKXÛÛ\[\‹LŒŒÌM‹›Y
+JHŸLŒH\šË]\›Z[˜[[YÛ›Y[LŒK[\šË]\›Z[˜[\Ý˜]YšYYLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒK[\šË]\›Z[˜[\Ý˜]YšYYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒÈÞ[^KŒÚ]™\›È˜[˜XÚÈ[™ÝXÝ\™HŒÌLK][\H›Ý[™ÝXÚÜÈX]™HYX[š[™Ù[\œÙKØÛÛ\Û™[™XØ[ŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒKYLŒË[\šË]\›Z[˜[X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLŒØØÝ\[˜ÞH[YÛ›Y[LŒ[\Ý[ØØÝ\[˜ÞK\Ý˜]YšYYLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒ[\Ý[ØØÝ\[˜ÞK\Ý˜]YšYYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒHÞ[^KŒ][\H›ÛÝ[™YX[š[™Ù[\œÙHŒÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒYLŒLËXÛÛ^X[YXÚ\Ú[ÛœËLŒŒÌM‹›Y
+JHŸLŒLØÛÜYØØÝ\[˜ÞH[YÛ›Y[LŒL[\Ý\ØÛÜK[ØØÝ\[˜ÞK\Ý˜]YšYYLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒL[\Ý\ØÛÜK[ØØÝ\[˜ÞK\Ý˜]YšYYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒLHÞ[^KŒ][\H›ÛÝ[™YX[š[™Ù[\œÙHŒÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒYLŒLËXÛÛ^X[YXÚ\Ú[ÛœËLŒŒÌM‹›Y
+JHŸLŒLˆÛÛ^X[XÚ\Ú[Ûˆ[YÛ›Y[LŒL‹XÛÛ^X[YXÚ\Ú[Û‹\Ý˜]YšYYLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒL‹XÛÛ^X[YXÚ\Ú[Û‹\Ý˜]YšYYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒLÈ™XÛÝ™\œÈÜ[]Y›ÛÝ[™›Ü›X[^™YšY[]HL]™\]Z\™YØÚ[XHÙ[X[XÜÈ˜Z[[™YX[š[™Ù[\œÙH™[XZ[œÈŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒYLŒLËXÛÛ^X[YXÚ\Ú[ÛœËLŒŒÌM‹›Y
+JHŸLŒMHÝ™\™š[\™YØÚ[XK\›ÛHÛÛ›ÛLŒMK\ØÚ[XK\›ÛKZYÙYLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒMK\ØÚ[XK\›ÛKZYÙYLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒM˜[Ù[H™Z™XÝYÈYØ[Ü[Û˜[[[™XÛÜ™ÎÈLŒMˆY]šXÜÈ™[XZ[ˆXYÛ›ÜÝXÈ]H]HÛÛ˜Û\Ú[Ûˆ\ÈÝ\\œÙYYÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒMYLŒM‹\ØÚ[XK\›ÛKZYÙKLŒŒÌM‹›Y
+JHŸLŒNHÛÜœ™XÝYØÚ[XKXYZ\ÜÚ[ÛˆÛÛ›ÛLŒNK\ØÚ[XK[›Ü›X[^™YLÌœÝ\ÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŒNK\ØÚ[XK[›Ü›X[^™YLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒŒÞ[^KŒÚ]™\›È˜[˜XÚËÙXY[™Ë]ÛÛ\Û™[™XØ[ŒH[™YX[š[™Ù[\œÙHŒÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒNYLŒŒ\ØÚ[XK[›Ü›X[^˜][Û‹LŒŒÌM‹›Y
+JHŸLŒŒH\ÚËX˜[[˜ÙY^ÜÝ\™HXYÛ›ÜÝXÈLŒŒKXØ[›ÛšXØ[]\ÚËX˜[[˜ÙYÔH‹XÛÛ^ÛÛ\[\‹X[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒŒK]\ÚËX˜[[˜ÙYY^ÜÝ\™K]Ü[œËÙLŒŒKXØ[›ÛšXØ[]\ÚËX˜[[˜ÙYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HY™™XÝ]™H^ÜÝ\™HŽKŽÌLŽ˜[ÚYšY\È\ÚÈ˜[[˜Ú[™ÎÈÝšXÝš]™K\ÝZ]H]˜[˜Z[YHØ]\È[™YÙ[ˆ\ÜÙYKÍNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒŒK]\ÚËX˜[[˜ÙYY^ÜÝ\™KLŒŒÌM‹›Y
+JHŸLŒŒˆØ\XÚ]KX]Ø\™H^ÜÝ\™HXYÛ›ÜÝXÈLŒŒ‹XØ\XÚ]KX]Ø\™K[X]ÚYÔH‹XÛÛ^Ø[\\ˆXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒŒ‹XØ\XÚ]KX]Ø\™KY^ÜÝ\™KÜ[œËÙLŒŒ‹XØ\XÚ]KX]Ø\™K[X]ÚYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HY™™XÝ]™H^ÜÝ\™H›ÜÙHÈËNKÌLŽ]ÝšXÝÛ[ÚÙH\œÙH™YÜ™\ÜÙYÈŒ[™LØ]\È˜Z[YÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒŒ‹XØ\XÚ]KX]Ø\™KY^ÜÝ\™KLŒŒÌM‹›Y
+JHŸLŒŒÈ][ÝKXØ\XÚ]H^ÜÝ\™HXYÛ›ÜÝXÈLŒŒË\][ÝKXØ\XÚ]K[X]ÚYÔH‹XÛÛ^Ø[\\ˆXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒŒË\][ÝKXØ\XÚ]KY^ÜÝ\™KÜ[œËÙLŒŒË\][ÝKXØ\XÚ]K[X]ÚYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H\ÚÈ][Ý\È[™Þ[^\™H]\›Z[š\ÝXË]]™\žHÝZ]H\ÈYX[š[™Ù[\œÙKÜ™XØ[ÙšY[]HŒ[™LˆØ]\È˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒŒË\][ÝKXØ\XÚ]KY^ÜÝ\™KLŒŒÌM‹›Y
+JHŸLŒÙ[X[XËY^]\Ý]™H[YÛ›Y[XYÛ›ÜÝXÈLŒ\Ù[X[XËY^]\Ý]™K[X]ÚYÔH‹XÛÛ^TÕ\›ÛH[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒ\Ù[X[XËY^]\Ý]™KX[YÛ›Y[Ü[œËÙLŒ\Ù[X[XËY^]\Ý]™K[X]ÚYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŒˆÛ™\Ý™YH]˜[™XXÚ\ÈÞ[^KŒÛˆ[ÝZ]\È[™^XÝÛÛ˜XÝ™XÚ\Ú[ÛˆKŒ]YX[š[™Ù[\›ÙÜ˜[H]X[]H˜Z[ÈHØ]\ÎÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒ‹ZÛ™\ÝXÛÛ\[\‹\ÛXÞKLŒŒÌM‹›Y
+JHŸLŒÈYØ[XØ[™Y]H[YÛ›Y[XYÛ›ÜÝXÈLŒËXØ[™Y]K\Ù][X]ÚYÔH‹XÛÛ^ÛÛ\[\ˆØ[™Y]K\˜[šÚ[™ÈXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒËXØ[™Y]K\Ù]X[YÛ›Y[Ü[œËÙLŒËXØ[™Y]K\Ù][X]ÚYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÞ[^KŒ][\K[^[Ý]ÛÛ\ÙH˜Z[ÈLˆØ]\È[™YÙ[ˆÍNÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒËXØ[™Y]K\Ù]X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLŒŽYØ[XØ[™Y]HX\™Ú[ˆXYÛ›ÜÝXÈLŒŽXØ[™Y]K[X\™Ú[‹[X]ÚYÔH‹XÛÛ^ÛÛ\[\ˆX\™Ú[ˆXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒŽXØ[™Y]K[X\™Ú[‹X[YÛ›Y[Ü[œËÙLŒŽXØ[™Y]K[X\™Ú[‹[X]ÚYØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÞ[^ØÛÛ˜XÝ™XÚ\Ú[ÛˆKŒ[™Û›H˜Z[YØ]\Ë]YÙ[ˆKÍNÈ™\ÝXYÛ›ÜÝXË
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒŽXØ[™Y]K[X\™Ú[‹X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLŒŽH\Ý\X\™Ú[ˆÛÛ[X][ÛˆLŒŽK[X\™Ú[‹MÝ\ÔH‹XÛÛ^\˜][ÛˆXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒŽK[X\™Ú[‹XÛÛ[X][Û‹Ü[œËÙLŒŽK[X\™Ú[‹MÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÛÜœ™XÝYÞ[^KŒ]Ø[YHØ]\È˜Z[[™Ù]™\˜[]X[]HY]šXÜÈ™YÜ™\ÜÈœÈLŒŽÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒŽK[X\™Ú[‹XÛÛ[X][Û‹LŒŒÌM‹›Y
+JHŸLŒÌ]™\œÙHYÙY›ÛÝÈLŒÌY]™\œÙK\›ÛÝËLÌœÝ\ÔH‹XÛÛ^]KXÛÝ™\˜YÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÌY]™\œÙKZYÙY\›ÛÝËÜ[œËÙLŒÌY]™\œÙK\›ÛÝËLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLˆX›\ÚYYÙK\\ÜÙY›ÛÝÎÈ›Ý\ˆØ]\ÈÝ[˜Z[[™Y™\œØ\šX[™YÜ™\ÜÙ\ÎÈ]H™\Z\ˆ™]Z[™YÚXÚÜÚ[
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÌY]™\œÙKZYÙY\›ÛÝËLŒŒÌM‹›Y
+JHŸLŒÌHÛÛ\Û™[[™[ÜžHLŒÌKXÛÛ\Û™[Z[™[ÜžKLÌœÝ\ÔH‹XÛÛ^Ù[X[XËZ[™[ÜžHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÌKXÛÛ\Û™[Z[™[ÜžKÜ[œËÙLŒÌKXÛÛ\Û™[Z[™[ÜžKLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[™[ÜžH™XØ[™XXÚ\ÈŽLMË]šX\Ë[Ù™ˆYÙÜ™YØ]HY]šXÜËØÛÛ\Û™[ÚÚXÙ\È\™HY[XØ[ÈÚ^™\ÚÛÈ˜Z[ÚXÚÜÚ[
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÌKXÛÛ\Û™[Z[™[ÜžKLŒŒÌM‹›Y
+JHŸLŒÌˆ›ÛHÛÛ\Û™[[ˆLŒÌ‹\›ÛKXÛÛ\Û™[\[‹LÌœÝ\ÔH‹XÛÛ^Ü˜[[X\‹\›ÛH[›š[™ÈXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÌ‹\›ÛKXÛÛ\Û™[\[‹Ü[œËÙLŒÌ‹\›ÛKXÛÛ\Û™[\[‹LÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H›ÛÝØÛÝ[\™Ù]ÈX\›ˆ[™Ø]\Ø[H[\›Ý™HY™\œØ\šX[]X[]K]›Ý\ˆœ›ÛY\ˆ™\ÚÛÈ˜Z[[™Ý›Û™Ù\ˆØ[Xœ˜][Ûˆ\È›]È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÌ‹\›ÛKXÛÛ\Û™[\[‹LŒŒÌM‹›Y
+JHŸLŒÌÈ™\ÛÛ™YPTÕÛÛ\Û™[YÙ\ÈLŒÌËXÛÛ\Û™[YYÙ\ËLÌœÝ\ÔH‹XÛÛ^TÕYYÙH[›š[™ÈXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÌËXÛÛ\Û™[YYÙ\ËÜ[œËÙLŒÌËXÛÛ\Û™[YYÙ\ËLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HYÙH\™Ù]X\›œË]YÙHÛ‹ÛÙ™ˆÝZ]HYÙÜ™YØ]\È\™HY[XØ[[™›Ý\ˆ™\ÚÛÈ˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÌËXÛÛ\Û™[YYÙ\ËLŒŒÌM‹›Y
+JHŸLŒÍYÙHXÚ\Ú[Ûˆ[YÛ›Y[LŒÍYYÙKYXÚ\Ú[Û‹X[YÛ›Y[LÌœÝ\ÔH‹XÛÛ^YØ[YXÚ\Ú[Ûˆ[YÛ›Y[XYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÍYYÙKYXÚ\Ú[Û‹X[YÛ›Y[Ü[œËÙLŒÍYYÙKYXÚ\Ú[Û‹X[YÛ›Y[LÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HXÚ\Ú[ÛˆXØÝ\˜XÞHX\›œÈ[™Ú[™Ù\Èš]™HÚÚXÙ\Ë]YÙHÛ‹ÛÙ™ˆÝZ]HYÙÜ™YØ]\È\™HY[XØ[[™›Ý\ˆ™\ÚÛÈ˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÍYYÙKYXÚ\Ú[Û‹X[YÛ›Y[LŒŒÌM‹›Y
+JHŸLŒÍHš[™\‹Z[œÝ[˜ÙH[ˆLŒÍKXš[™\‹Z[œÝ[˜ÙK\[‹LÌœÝ\ÔH‹XÛÛ^Ü˜[[X\‹Xš[™\ˆ[›š[™ÈXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÍKXš[™\‹Z[œÝ[˜ÙK\[‹Ü[œËÙLŒÍKXš[™\‹Z[œÝ[˜ÙK\[‹LÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hš[™\ˆXØÝ\˜XÞHX\›œÈÚ][›Ý[™\›ÝÈÛÝ™\˜YÙH[™Ú[™Ù\È›Ý\ˆÚÚXÙ\Ë]Û‹ÛÙ™ˆÝZ]HYÙÜ™YØ]\È\™HY[XØ[[™š[™H™\ÚÛÈ˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÍKXš[™\‹Z[œÝ[˜ÙK\[‹LŒŒÌM‹›Y
+JHŸLŒÍˆš[™\ˆÜÛÙÞHLŒÍ‹Xš[™\‹]ÜÛÙÞKLÌœÝ\ÔH‹XÛÛ^š[™\‹\™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÍ‹Xš[™\‹]ÜÛÙÞKÜ[œËÙLŒÍ‹Xš[™\‹]ÜÛÙÞKLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÜÛÙÞHØš™XÝ]™H˜Z[ÈÈX\›‹Ú[™Ù\È™\›ÈÙˆÎ\YYÚÚXÙ\Ë[™Ù[X[XÈY]šXÜÈÛÛ\ÙNÈÙ[™H™\ÚÛÈ˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÍ‹Xš[™\‹]ÜÛÙÞKLŒŒÌM‹›Y
+JHŸLŒÍÈ]XÚYÜÛÙÞHLŒÍËY]XÚY]ÜÛÙÞKLÌœÝ\ÔH‹XÛÛ^Ü˜YY[\›Ý][™ÈXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÍËY]XÚY]ÜÛÙÞKÜ[œËÙLŒÍËY]XÚY]ÜÛÙÞKLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H]XÚ[™È[™XYKYœ›Þ™[ˆÛÛ^\ÈH›Ë[Ü[™^XÝH™\›ÙXÙ\ÈLŒÍŽÈÙ[™H™\ÚÛÈ˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÍËY]XÚY]ÜÛÙÞKLŒŒÌM‹›Y
+JHŸLŒÎš[™\ˆ\š]H
+[˜[Y]Y
+HLŒÎXš[™\‹X\š]KLÌœÝ\ÔH‹XÛÛ^\š]HXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÎXš[™\‹X\š]KÜ[œËÙLŒÎXš[™\‹X\š]KLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÜ[Û˜[ZXY“‘ÈÚYYX]ÚYÝØÚ\ÝXÈ˜]ÜÎÈ[ˆ™\ÚÛÈ˜Z[[™Ø]\Ø[˜Z[š[™ÈÛÛ\\š\ÛÛˆ\È[˜[YÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÎXš[™\‹X\š]KXÛÛ™›Ý[™YLŒŒÌM‹›Y
+JHŸLŒÎH\ÛÛ]Yš[™\ˆ\š]HLŒÎYXš[™\‹X\š]KY[KZ\ÛÛ]YLÌœÝ\ÔH‹XÛÛ^\ÛÛ]Y\š]HXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒÎKXš[™\‹X\š]KXÛÜœ™XÝYÜ[œËÙLŒÎYXš[™\‹X\š]KY[KZ\ÛÛ]YLÌœÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLÌLÚ\™Y[œÛÜœÈ\™Hš]Y^XÝYØZ[œÝÛÛ›ÛÈŽHÚ[™ÙYÚÚXÙ\È[\›Ý™HÛ[ÚÙHÞ[^Û›KYX[š[™Ù[˜]HÝ^\È[™[]™[ˆ™\ÚÛÈ˜Z[È
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŒÎKXš[™\‹X\š]KZ\ÛÛ]YLŒŒÌM‹›Y
+JHŸLH^XÝY]™[ÑH\ÈX\™Ú[ˆ^ÙLWÛØØ[ØÙWÛX\™Ú[˜ÔH‹XÛÛ^^XÝ\Ý]H™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLK[ØØ[XÙK[X\™Ú[‹Ü[œËÜ^ÙLWÛØØ[ØÙWÛX\™Ú[‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[[Ý]^XØ[ÚÜÙ[ˆÚ[ˆš\Ù\È8¡¤ŒÍK]ÝXÝ\™KÜ™]Ø\™™YÜ™\ÜÈÛˆ]™\žHÝZ]H[™YÙ[ˆ\ÈÍNÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLK[ØØ[XÙK[X\™Ú[‹LŒŒÌM‹›Y
+JHŸLLˆ™\šYšY\‹X˜XÚÙYÙ]•È^ÙLL—ÛØØ[Ù×ÜÙ]ÔH‹XÛÛ^YÙYÛÝ[\™˜XÝX[™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLL‹YË\Ù]Ü[œËÜ^ÙLL—ÛØØ[Ù×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÞ[^Ý^\ÈKŒ]šY[]HÛÛ\Ù\ÈÈÝXÝ\™KÜ™]Ø\™™YÜ™\ÜÈÛˆ]™\žHÝZ]KLÈ™\ÚÛÈ˜Z[[™YÙ[ˆ\ÈÍNÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLL‹YË\Ù]LŒŒÌM‹›Y
+JHŸLÍÈœ›ØYÛÛPTÕÙ]•È^ÙLŒ—Øœ›ØYÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^YÙY^XÝ\Ý]H™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŒ‹Xœ›ØYYÛÛX\ÝYËÜ[œËÜ^ÙLŒ—Øœ›ØYÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H^XÝ]Y\ÈLŒˆ™Y›Ü™HÛÛ˜Ý\œ™[Q™XÛÛ˜Ú[X][ÛŽÈÞ[^ÙšY[]HX]ÚL][[Ý]•ÈÜÜÈÛÜœÙ[œËÝXÝ\™H™YÜ™\ÜÙ\ÈÛˆ]™\žHÝZ]KL™\ÚÛÈ˜Z[[™YÙ[ˆ\ÈÍNÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLÍËXœ›ØYYÛÛX\ÝYËLŒŒÌM‹›Y
+JHŸLÎÝX\™YÛÛPTÕÙ]•È^ÙLÎÙÝX\™YÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^ÝX\™Y^XÝ\Ý]H™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLÎYÝX\™YYÛÛX\ÝYËÜ[œËÜ^ÙLÎÙÝX\™YÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H›È˜Z[™YÝ\\ÜÙYH›Ý\‹[Y]šXÈ[[Ý]\™]ÈÝX\™ÈÝ\Ø\È™\ÝÜ™Y[™[ÍÍ[œÛÜœÈ\™Hš]ZY[XØ[ÈLŒŽˆÝ\œ™[XÛÙH\™[ÛÛ›Û^XÝH™\›ÙXÙ\ÈHš]™H˜Z[[™ÈØ]\ÎÈ›È[Ù[ØZ[‹
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLÎYÝX\™YYÛÛX\ÝYËLŒŒÌM‹›Y
+JHŸLHØY™HÛÛPTÕÙ]•È^ÙLWÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^˜XÚÝ˜XÚÙY^XÝ\Ý]H™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLK\ØY™KYÛÛX\ÝYËÜ[œËÜ^ÙLWÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HËÌÌ›ÜÜØ[È[\›Ý™HHYÙÜ™YØ]H[[Ý]\™]ÈÝX\™]XÚ\Ú[Û‹ZÚ[™™YÜ™\ÜÚ[ÛœÈ\™HX\ÚÙYšY[]KÜ™]Ø\™˜[Ûˆ[ÜÝÝZ]\Ëš]™HØ]\È˜Z[[™YÙ[ˆ\È‹ÍNÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLK\ØY™KYÛÛX\ÝYËLŒŒÌMË›Y
+JHŸLˆÝ˜]YšYYØY™HÙ]•È^ÙL—ÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^XÚ\Ú[Û‹ZÚ[™\Ý˜]YšYY™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙL‹\Ý˜]YšYY\ØY™KYÛÛX\ÝYËÜ[œËÜ^ÙL—ÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[Ì›ÜÜØ[È˜Z[]X\ÝÛ™HÜ˜[[X\‹ÐTÕXÚ\Ú[Û‹ZÚ[™ÝX\™È\™[\È™\ÝÜ™Yš]ZY[XØ[KÝ\œ™[ÛÛ›Û™\›ÙXÙ\È[Y]šXÜËš]™HØ]\È˜Z[[™YÙ[ˆ\È‹ÍNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YL‹\Ý˜]YšYY\ØY™KYËLŒŒÌMË›Y
+JHŸLÈ›ØÚËXÛÛÜ™[˜]HØY™HÙ]•È^ÙL×Ø›ØÚ×ÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^XÚ\Ú[Û‹ZÚ[™›ØÚÈ™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLËX›ØÚË\Ý˜]YšYY\ØY™KYËÜ[œËÜ^ÙL×Ø›ØÚ×ÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[ÌØ]YÛÜžKX›ØÚÈ›ÜÜØ[È˜Z[HÝ˜]YšYYÝX\™È\™[\È™\ÝÜ™Yš]ZY[XØ[K[]˜[X][ÛˆX]Ú\ÈL‹ØÝ\œ™[ÛÛ›Ûš]™HØ]\È˜Z[[™YÙ[ˆ\È‹ÍNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLËX›ØÚË\Ý˜]YšYYYËLŒŒÌMË›Y
+JHŸLŽ›Ú™XÝYØY™HÙ]•È^ÙLŽÜ›Ú™XÝYÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^ÛÛ™›XÝ\›Ú™XÝY™Y™\™[˜ÙHXYÛ›ÜÝXÈÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŽ\›Ú™XÝY\Ý˜]YšYY\ØY™KYËÜ[œËÜ^ÙLŽÜ›Ú™XÝYÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÑÜ˜Y›Ú™XÝÈ‹ŒŒÛÛ™›XÝ[™ÈÜ™\™Y\ÚÈZ\œË][Ì›ÜÜØ[È˜Z[HÝ˜]YšYYÝX\™È\™[\È™\ÝÜ™Yš]ZY[XØ[Kš]™HØ]\È˜Z[[™YÙ[ˆ\È‹ÍNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽ\›Ú™XÝY\Ý˜]YšYYYËLŒŒÌMË›Y
+JHŸLŽHQÑHØY™HÙ]•È^ÙLŽWÛYÙWÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^Z[š[][K[›Ü›H™Y™\™[˜ÙH™Y›YÚÝ]]ËØ]]Ü™\ÙX\˜ÚÙLŽK[YÙK[Û™K\Ý\Yš[˜[Ü[œËÜ^ÙLŽWÛYÙWÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HQÑHÙ\YšY\ÈÛÛ[[Ûˆ˜Z[‹[Øš™XÝ]™H\ØÙ[]]™\žHØØ[H™YÜ™\ÜÙ\È[[Ý]XÚ\Ú[ÛˆÚ[™ÎÈ\™[\È™\ÝÜ™Yš]™HØ]\È˜Z[[™YÙ[ˆ\È‹ÍNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽK[YÙK\Ý˜]YšYYYËLŒŒÌMË›Y
+JHŸLÌˆQÑH\ÈÑÑ™Y›YÚ^ÙLÌ—ÛYÙWÜÙÙÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ÔH‹XÛÛ^Y]šXËXÛÛ\][™\ÜÈ™Y›YÚÝ]]ËØ]]Ü™\ÙX\˜ÚÙLÌ‹[YÙK\ÙÙ[Û™K\Ý\Ü[œËÜ^ÙLÌ—ÛYÙWÜÙÙÜÝ˜]YšYYÜØY™WÙÛÛØ\ÝÙ×ÜÙ]ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÛÛ[™X\ˆÑÑ[\›Ý™\ÈYÙÜ™YØ]H[[Ý]•ÈÜÜË]]™\žHØØ[H™YÜ™\ÜÙ\È\‹ZÚ[™›Ø˜Xš[]KÛX\™Ú[ˆY]šXÜÎÈ\™[™\ÝÜ™Yš]™HØ]\È˜Z[YÙ[ˆ‹ÍNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLÌ‹[YÙK\ÙÙ\™Y›YÚLŒŒÌMË›Y
+JHŸLMÍ[™œ›Þ™[‹XÛÛ^\Ý\ÛÛ›ÛLMÍ][™œ›Þ™[‹XÛÛ^NÝ\ÔH‹XÛÛ^Ù[X[XÈÛÛ›ÛÝ]]ËÜ[œËÙLMÍ][™œ›Þ™[‹XÛÛ^NÝ\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[™œ›Þ™[ˆÛÛ^ÜÜÈÎKLÎÈ›Ý[™Y›Ø™HÞ[^Œ[™\œÙHŒÈ™Z™XÝYÛÛ›Û
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLMÍ][™œ›Þ™[‹XÛÛ^LŒŒÌM‹›Y
+JHŸX]š^Û™\ÝÚ[\[Ûˆ
+ØÜ˜]Ú
+H^ÙML×Ê˜
+ˆMLÈ˜[Z[JHÔHØÜ˜]ÚX]š^ÛX\ˆš[X\š[HÝ]]ËÜ[œËØ
+
+ÈØÜÈX]š^”ÓÓŠHÛ™\ÝK\Ú\YØ]\ØÛˆ[Z]YšXÛ×Ú[ŽÈ
+Š››Ý
+Šˆ›ÙXÝ[ÛˆˆÚ\ŸLÈš^\™HMLÛÛ›Û^ÙMLØÛÜ™WÜ™[X\ÚØÔHØÜ˜]Úš^\™HÛÜœ\ÈÝ\ÜÛLMËYMLYš^\™KZÛ™\ÝØ
+ØØ[
+HX]ÚYÛÛ›ÛÈ[ŒÈ’PÓÈŒÈšY[]NÈ\œÙHŒ›ÝÚ\ŸLÈ[YÜ˜]YMLØ[™Y]H^ÙMLØÛÜ™WÜ™[X\ÚØÔHØÜ˜]Ú[YÜ˜]YÛÜœ\ÈÝ\ÜÛLMËYML[™]ËZÛ™\ÝØ
+ØØ[
+HÝšXÝšY[]HØZ[ˆÛˆ›ÝÛ[ÚÙHÝZ]\ÎÈ\œÙHŒ›Ý›Û[ÝX›HÜˆÚ\Ÿœ›Þ™[ˆˆ˜\Ù[[™HÞÞ—ØÛÙXØÙYYÈÌKÌˆ™]\™Yš^YXØ[˜\ÈÜ˜[[X\ˆY™\Ú[ÛˆÝ\ÜÛK]˜Z[š[™ËYš^YX˜\Ù[[™KÛÝ]]ËÝÜÛÙÞWØ˜\Ù[[™KØ
+ØØ[
+HÝ\ÎÈ[ÝZ]\È\œÙKÙšY[]KÜÝXÝ\™KÜ™]Ø\™ŒÈÛÛ\\š\ÛÛˆÛ›K›ÝÚ\ŸÜÛÙÞH[\[Y[][ÛˆÛ[ÚÙHÜ˜[[X\—ÙY™\Ú[Û—ÛÝ™\™š]ÔHØÜ˜]Úš^\™HÜÛÙÞHŒˆ]\Ý[\Ü˜\žHÚXÚÜÚ[
+ØØ[
+HŒÝ\ÎÈÛ[ÚÙHLˆ\œÙKÙšY[]HKÜÛÙÞHÛÛ\ÜÚ]HŽÈ›Ý™]\ØX›HÜˆÚ\ŸÜÛÙÞHKÖMÛÛ™š\›X][ÛˆÞÞWÝÜÛÙÞWØ˜\ÙXÞÞMØY™™\˜ÙYYÈÌKÌˆÔHØÜ˜]ÚÜÛÙÞHŒˆX]š^Ý\ÜÛK]˜Z[š[™ËYÜ˜[[X\‹]ÜÛÙÞKÛÝ]]ËÝÜÛÙÞWØÛÛ™š\›WÍ™ŽMØ
+ØØ[
+HŒÝ\ÎÈ[ˆ˜Z[][K\ÝZ]HØ]\ÎÈ›Ý›Û[ÝYÜˆÞ[˜ÙYŸØÛÜQY™ˆNÛÛ™š\›X][ÛˆÞÞNÜØÛÜWÛ›Ú\ÙWØÛÛ™š\›WÌŒÙYYÈÌKÌˆÔHØÜ˜]ÚÜÛÙÞHŒˆX]š^Ý]]ËÜ[œËÙÞÞNÜØÛÜWÛ›Ú\ÙWØÛÛ™š\›WÌŒØ
+ØØ[
+HŒÝ\ÎÈ[\ÝZ]HYYX[ˆ\œÙKÙšY[]HŒÈ›Ý›Û[ÝYÜˆÞ[˜ÙYŸØÛÜQY™ˆŒHÛÛ™š\›X][ÛˆÞÞŒWÜØÛÜYÝÜÛÙÞWØÛÛ™š\›WÌŒÙYYÈÌKÌˆÔHØÜ˜]ÚÜÛÙÞHŒˆX]š^Ý]]ËÜ[œËÙÞÞŒWÜØÛÜYÝÜÛÙÞWØÛÛ™š\›WÌŒØ
+ØØ[
+HŒÝ\ÎÈÙXZÈÝXÝ\™K\œÙKÙšY[]HŒÈ›Ý›Û[ÝYÜˆÞ[˜ÙYŸQ”ÌLŒˆ™\›ÙXÝ[ÛˆÞÞŒ—ÚØ\\—Ý™YWÙY]ÜÌÔHØÜ˜]Ú™YKYY]Y™\Ú[ÛˆÝ]]ËÜ[œËÙÞÞŒ—ÚØ\\—Ý™YWÙY]ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H\Ý\ÙYYL]Y][X]\šX[™\^NÈÒHNXÙ˜L8 )Œ™™˜ÈÞ[^KŒ]YX[š[™Ù[\œÙHŒÌÌËÌŒ‹ÌÌÌÎÈÚ\Ø]\È˜Z[›ÈÞ[˜ÈÜˆ›Û[Ý[Ûˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YYœÌL^Œ‹\™\›ÙXÝ[Û‹LŒŒÌMË›Y
+JHŸŒÈš]™K[Z[]H^\ˆÛÛ›ÛØ\XÚ]WÛ^\—ÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÛÛ›ÛÝ]]ËÛY\œËØŒË[X]ÚYM[KYLŽË\Œ‹Ü[œËØØ\XÚ]WÛ^\—ÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLÈÝ\ÈÈK\™Ù]ÚÙ[œÎÈ[\ÝZ]H\œÙKÛYX[š[™Ù[ÙšY[]HŒÈYÙ[ˆÍH8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹XŒËXØ\XÚ]K[Y\‹LŒŒÌMË›Y
+JHŸŒÈš]™K[Z[]HÚÚXÙH\›HØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÚÚXÙHÛÙXÈÝ]]ËÛY\œËØŒË[X]ÚYM[KYLŽË\Œ‹Ü[œËØØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLŽœ›Þ™[ˆ]˜[™\ÝÜ™\È]\›Z[š\ÝXÈ\œÙHKŒÛˆ[ÝZ]\Ë]YX[š[™Ù[ÙšY[]H™[XZ[ˆŒ[™YÙ[ˆÍH8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽXÚÚXÙK[˜]]™KYØ]KLŒŒÌMË›Y
+JHŸLŽHØXÚYÚÚXÙH\›HØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÚÚXÙHÛÙXÈÝ]]ËÛY\œËÙLŽKXÚÚXÙK\Ý]KXØXÚKÜ[œËØØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HØ[YHÒH\ÈLŽÈ^XÝÞ[X›ÛXË\Ý]HØXÚH™\Ù\™\È[\ÝZ]H\œÙHKŒ[™[\›Ý™\ÈL‹påø $ÍKŽ°åË]YX[š[™Ù[ÙšY[]H[™YÙ[ˆ™[XZ[ˆ™\›È8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽKXÚÚXÙK\Ý]KXØXÚKLŒŒÌMË›Y
+JHŸLŽL\™XÝXØ[™Y]HÚÚXÙH\›HØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÚÚXÙHÛÙXÈÝ]]ËÛY\œËÙLŽLXÚÚXÙKY\™XÝXØ[™Y]\ËÜ[œËØØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HØ[YHÒH\ÈLŽÑLŽNÈ^XÝÜ˜[[X\‹Y\š]™YØ[™Y]\È™\Ù\™H\œÙHKŒ[™[\›Ý™HMHKŒM0åø $ÌKŒNpåÈ]™YÜ™\ÜÈLÈÙ[X[XÈY]šXÜÈ[™YÙ[ˆ™[XZ[ˆ™\›È8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽLXÚÚXÙKY\™XÝXØ[™Y]\ËLŒŒÌMË›Y
+JHŸLŽLHÛÛ\][Û‹XØXÚYÚÚXÙH\›HØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÚÚXÙHÛÙXÈÝ]]ËÛY\œËÙLŽLKXÚÚXÙKXÛÛ\][Û‹XØXÚKÜ[œËØØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HØ[YHÒH\ÈLŽ8 $ÑLŽLÈ^XÝÛÛ\][ÛˆØXÚ[™È[\›Ý™\ÈLKŒŽpåø $ÌKŽNpåÈ[™MHKLpåø $ÌKŽLðåÈœÈLŽL]Ù[X[XÈY]šXÜÈ[™YÙ[ˆ™[XZ[ˆ™\›È8 %
+Š››Ý[Ù[\›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽLKXÚÚXÙKXÛÛ\][Û‹XØXÚKLŒŒÌMË›Y
+JHŸLŽLˆÛÛ\]K[ÜÜÈÚÚXÙH\›HØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÚÚXÙHÛÙXÈÝ]]ËÛY\œËÙLŽL‹XÚÚXÙK[ÜÜË\ÝZ]KXÛÛ\]K\Œ‹Ü[œËØØ\XÚ]WØÚÚXÙWÝŒW×ÙÚ—ØÌWÙŒ—ÝLÞW×ÜÌØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HØ[YHÒH\ÈLŽ8 $ÑLŽLNÈš^YY]šXÈÛ\ÜÚYšXØ][ÛˆXZÙ\È[š]™HÜÜÈØ]YÛÜšY\ÈÛÛ\]H
+ÙZYÚY“ËŒŒKš[™[™È“ŒŒJNÈÛ™\ÝÚ\›Ø\™\È\œÙHKŒ]YX[š[™Ù[Œ[™YÙ[ˆÍH8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽL‹XÚÚXÙK[ÜÜË\ÝZ]KXÛÛ\][™\ÜËLŒŒÌMË›Y
+JHŸLŽLÈÚÚXÙK[˜]]™HÛÛ\Û™[[ˆLŽLËXÚÚXÙKXÛÛ\Û™[\[‹\ŒØÔHØÜ˜]ÚX]ÚYXØ\XÚ]HÙ[X[XÈXYÛ›ÜÝXÈÝ]]ËÜ[œËÙLŽLËXÚÚXÙKXÛÛ\Û™[\[‹\ŒËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H[ˆÜÜÈ[\›Ý™\È›ÛÝXØÝ\˜XÞKØ›Ý[™™XØ[ÈH[™YØ[XÛÙHšX\È™YXÙ\ÈØ]H˜Z[\™\ÈMø¡¤ŒLË]X]ÚY›ËQTÒQÓˆYX[š[™Ù[˜]HÝ^\ÈŒ[™YÙ[ˆÍH8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽLËXÚÚXÙKXÛÛ\Û™[\[‹LŒŒÌMË›Y
+JHŸLŽM›ËQTÒQÓˆÚÚXÙHÛÛ›ÛLŽMXÚÚXÙK[›ËY\ÚYÛ‹XÛÛ›Û\ŒXÔHØÜ˜]ÚX]ÚYXØ\XÚ]H›Ë\[ˆÛÛ›ÛÝ]]ËÜ[œËÙLŽMXÚÚXÙK[›ËY\ÚYÛ‹XÛÛ›Û\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÛÛ\]HÙZYÚY“ËMÍÎÈÛ™\Ý›Ø\™^XÝHX]Ú\ÈLŽLÈXÛÙK[Ù™ˆ
+YX[š[™Ù[ŒYÙ[ˆÍKMÈ˜Z[\™\ÊK\ÛÛ][™ÈLŽLÉÜÈØZ[ˆÈ]ÈXÛÙHXY8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽM[›ËY\ÚYÛ‹\[‹XÛÛ›ÛLŒŒÌMË›Y
+JHŸLŽMHTÒQÓ‹Y›ÜÝ]ÚÚXÙH\›HLŽMKXÚÚXÙKY\ÚYÛ‹Y›ÜÝ]\ŒXÔHØÜ˜]ÚX]ÚYXØ\XÚ]HL	HTÒQÓˆ›ÜÝ]Ý]]ËÜ[œËÙLŽMKXÚÚXÙKY\ÚYÛ‹Y›ÜÝ]\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÛÛ\]HÙZYÚY“ËŒÍÎNÈ›Û\[Û›HY™\œØ\šX[YX[š[™Ù[ŒKYÙ[ˆKÍK]›Ý\ˆÝZ]\È™[XZ[ˆ]Œ[™MØ]\È˜Z[8 %
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YLŽMKY\ÚYÛ‹XÛÛ^Y›ÜÝ]LŒŒÌMË›Y
+JHŸLÎMˆ\˜X›HXYÛ›ÜÝXÈÚXÚÜÚ[LÎM‹X˜[[˜ÙY]\KZXYXÛÛ[X][Û‹\ŒXÔHœ›Þ™[ˆÛ[ÛLˆ[\Ý]HÛÛ[X][ÛˆŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙLÎM‹X˜[[˜ÙY]\KZXYXÛÛ[X][Û‹\ŒKØ^XÝÒH™YY˜LML™Y™ÎY™ÌLMØYYØXŽYMLÌŒÍLÌŽÌ™Œ™YYLÈXÚÙ]\Y˜XÝÈ™\šYšYYˆMN™\ÝÜ™\ÈÝ\œ™[[XZ[ˆØY[™È[™™XÛÜ™ÈŒX\›™YXY\XØ][ÛœË[\›Ýš[™ÈÛ[ÚÙHÝXÝ\™HŒMÌNMø¡¤ŒŒÌMË]YX[š[™Ù[Ü™XØ[Ü™]Ø\™™[XZ[ˆ™\›È[™YÙ[ˆ˜Z[Ëˆ
+Š‘\˜X›H[™ØYXÛÛ\]X›HXYÛ›ÜÝXÎÈ›ÝÚ[\[Û‹›Û[ÝX›KÜˆÚ\
+Šˆ
+Ý˜Z[—J\ÚYÛ‹Ú]\‹YLÎM‹YLÎNKX˜[[˜ÙY]\K\Ý\\š\Ú[Û‹LŒŒÌN›Y
+KØœ˜[˜Ú[Û›HØ]\×J\ÚYÛ‹Ú]\‹YMLYLÎM‹ZœÛÛ‹[[X™\‹]\YX[žKY[\Ú\YØ]\ËLŒŒÌN›Y
+KØÝ\œ™[[XZ[ˆXYÛ›ÜÝX×J\ÚYÛ‹Ú]\‹YMNXÝ\œ™[[XZ[‹\ÛÝXÛÛ\Û™[\™\ÝÜ™KLŒŒÌN›Y
+JHŸMNH]™\œÙK\›ÛÝÛÛ›ÛMNK\™[YYX]Y\›ÛÝËZ‹XÚÚXÙKXÛÛ›Û\ÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™YÛÜœ\ÈÛÛ›ÛÝ]]ËÜ[œËÙMNK\™[YYX]Y\›ÛÝËZ‹XÚÚXÙKXÛÛ›Û\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLÝ\ÈÈKŒÈ\™Ù]ÚÙ[œÎÈÛ[ÚÙHLHÞ[^KŒÝXÝ\™HŒMM‹ÛÛ\Û™[™XØ[ŒKYX[š[™Ù[ÙšY[]KÜ™]Ø\™ŒYÙ[ˆÌKˆÒH˜™XÍY¸ )™ŒÍNY˜˜È
+Š™XYÛ›ÜÝXË›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMNK\ÝšXÝXÛÜœ\ËX›Ý[™Y\ÙLŒŒÌN›Y
+JHŸMNHÝšXÝ\Ø[™Y]HMNK\ÝšXÝ\Z‹XÚÚXÙKXØ[™Y]K\ÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™YÝšXÝXÛÜœ\ÈØ[™Y]HÝ]]ËÜ[œËÙMNK\ÝšXÝ\Z‹XÚÚXÙKXØ[™Y]K\ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HX]ÚYHÝ\ÈÈKÍ\™Ù]ÚÙ[œÎÈÛ[ÚÙHÝXÝ\™H™YÜ™\ÜÙ\ÈÈŒÍÍH[™™XØ[ÈŒYÙ[ˆÌKˆÒHXŒ˜Ø¸ )˜˜Ù˜˜YŒXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMNK\ÝšXÝXÛÜœ\ËX›Ý[™Y\ÙLŒŒÌN›Y
+JHŸMNHÚÚXÙKXÛÛ\]X›HÝšXÝØ[™Y]HMNKXÚÚXÙKXÛÛ\]X›K\ÝšXÝZ‹XÚÚXÙKXØ[™Y]K\˜ÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™YØÝ[Y[[Û›HÝšXÝØ[™Y]HÝ]]ËÜ[œËÙMNKXÚÚXÙKXÛÛ\]X›K\ÝšXÝZ‹XÚÚXÙKXØ[™Y]K\‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHÝ\ÈÈKLH\™Ù]ÚÙ[œÎÈËÍÈÛÙXËXÛÛ\]X›H›ÝÜÈ[™KŽÈÛ[ÚÙHL]ÝXÝ\™HŒÍÍK™XØ[ÛYX[š[™Ù[ÙšY[]KÜ™]Ø\™ŒYÙ[ˆÌKˆÒHÌŒÌXÙNx )Œ™L™˜X˜È™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMNK\ÝšXÝXÛÜœ\ËX›Ý[™Y\ÙLŒŒÌN›Y
+JHŸMLZÈØÝ[Y[ÛÛ›ÛMLYØÝ[Y[XÛÛ›ÛZ‹XÚÚXÙK\ŒXÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™YØÝ[Y[ÛÛ›ÛÝ]]ËÜ[œËÙMLYØÝ[Y[XÛÛ›ÛZ‹XÚÚXÙK\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHÝ\ÈÈKŽ\™Ù]ÚÙ[œÎÈÜÜÈÌŒÎÛ[ÚÙHÞ[^KŒ[™ÝXÝ\™HŒÍÍHÚ]Ù[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHMŒÎXMx )ÍÌ™ŽÍÈ
+Š™XYÛ›ÜÝXË›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLYØÝ[Y[^™YY^™\ÜÚ[Û‹XÛÜœ\ËLŒŒÌN›Y
+JHŸMLZÈ›Ú™XÝYØ[™Y]HMLYØÝ[Y[^™YY^™\ÜÚ[Û‹Z‹XÚÚXÙK\Œ˜ÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™Y›Ú™XÝYÛÜœ\ÈÝ]]ËÜ[œËÙMLYØÝ[Y[^™YY^™\ÜÚ[Û‹Z‹XÚÚXÙK\Œ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLHÝ\ÈÈKÎH\™Ù]ÚÙ[œÎÈÜÜÈËŒL]Û[ÚÙH^XÝHX]Ú\ÈHÛÛ›Û	ÜÈ™YÙ[X[XÈY]šXÜËYÙ[ˆÌKˆÒHMÙXL8 )ÍÌÙÙŒÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLYØÝ[Y[^™YY^™\ÜÚ[Û‹XÛÜœ\ËLŒŒÌN›Y
+JHŸMLZÈØÝ[Y[ÛÛ›ÛMLYØÝ[Y[XÛÛ›ÛZ‹XÚÚXÙK\ŒËMZØÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™YØÝ[Y[ÛÛ›ÛÝ]]ËÜ[œËÙMLYØÝ[Y[XÛÛ›ÛZ‹XÚÚXÙK\ŒËMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÈÝ\ÈÈK\™Ù]ÚÙ[œÎÈÜÜÈLMLŽKÛ[ÚÙHÞ[^KŒ[™ÝXÝ\™HŒÍÍHÚ]Ù[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHYÍL˜YL8 )ŒŒ˜LØÈ
+Š™XYÛ›ÜÝXË›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLYØÝ[Y[^™YY^™\ÜÚ[Û‹XÛÜœ\ËLŒŒÌN›Y
+JHŸMLZÈ›Ú™XÝYØ[™Y]HMLYØÝ[Y[^™YY^™\ÜÚ[Û‹Z‹XÚÚXÙK\MZØÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™Y›Ú™XÝYÛÜœ\ÈÝ]]ËÜ[œËÙMLYØÝ[Y[^™YY^™\ÜÚ[Û‹Z‹XÚÚXÙK\MZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HLÝ\ÈÈKŒˆ\™Ù]ÚÙ[œÎÈÜÜÈ™YÜ™\ÜÙ\ÈÈL‹ÍÎ[™Û[ÚÙHX]Ú\ÈHÛÛ›Û	ÜÈ™YÙ[X[XÈY]šXÜËYÙ[ˆÌKˆÒHLY˜MN8 )™MMŒŒØÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLYØÝ[Y[^™YY^™\ÜÚ[Û‹XÛÜœ\ËLŒŒÌN›Y
+JHŸMLH\ÚËX˜[[˜ÙYZÈØ\›K\Ý\MLKYLÎM‹YMLZ[š]\ŒXÔHœ›Þ™[ˆÛ[ÛLˆLÎM¸¡¤‘MLXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLKYLÎM‹YMLZ[š]\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HMˆÝ\ÈÈKŒ\™Ù]ÚÙ[œÎÈÝXÝ\™H™YÜ™\ÜÙ\ÈŒŒLMø¡¤ŒŒMN[™Ù[X[XÈY]šXÜÈ™[XZ[ˆ™\›ËYÙ[ˆÌKˆÒHŽ˜ŽÙø )˜ØÎXÙŒMXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLKYLÎM‹YML]Ø\›K\Ý\LŒŒÌNK›Y
+JHŸMLH[šY›Ü›HZÈØ\›K\Ý\MLKYLÎM‹YML][šY›Ü›KZ[š]\Œ˜ÔHœ›Þ™[ˆÛ[ÛLˆÙ[™\˜][Û‹ZX]žHLÎM¸¡¤‘MLXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLKYLÎM‹YML][šY›Ü›KZ[š]\Œ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HNHÝ\ÈÈKNH\™Ù]ÚÙ[œÎÈ™XØ[™XXÚ\ÈŒMÈ]ÝXÝ\™HÛÛ\Ù\ÈÈŒH[™YX[š[™Ù[ÙšY[]KÜ™]Ø\™™[XZ[ˆ™\›ËYÙ[ˆÌKˆÒHMŒMNx )ÌÍ™MMØÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLKYLÎM‹YML]Ø\›K\Ý\LŒŒÌNK›Y
+JHŸMLH[šY›Ü›HZÈØ\›K\Ý\MLKYLÎM‹YML][šY›Ü›KZ[š]\ŒËLZØÔHœ›Þ™[ˆÛ[ÛLˆÚÜLÎM¸¡¤‘MLXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLKYLÎM‹YML][šY›Ü›KZ[š]\ŒËLZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒˆÝ\ÈÈKÎH\™Ù]ÚÙ[œÎÈÝXÝ\™H[\›Ý™\ÈÛYÚHŒŒLMø¡¤ŒŒŒÌMÈ][Ù[X[XÈY]šXÜÈ™[XZ[ˆ™\›ËYÙ[ˆÌKˆÒHÍÌ8 )˜X™L™™™ÈXYÛ›ÜÝXÈÛ›K
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLKYLÎM‹YML]Ø\›K\Ý\LŒŒÌNK›Y
+JHŸMLˆYKMØ\›K\Ý\ML‹YLÎM‹YML][šY›Ü›K[ŒYM\ŒXÔHœ›Þ™[ˆÛ[ÛLˆÝÙ\‹SˆXYÛ›ÜÝXÈÝ]]ËÜ[œËÙML‹YLÎM‹YML][šY›Ü›K[ŒYM\ŒKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒˆÝ\ÈÈKÎHÚÙ[œÎÈÝXÝ\™HŒLLÌË™XØ[ŒMËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒH˜ÙLL¸ )™ŒÌMYXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML‹Z[š]X[^˜][Û‹\š[Ü‹\™][[Û‹LŒŒÌNK›Y
+JHŸMLˆÙKMHØ\›K\Ý\ML‹YLÎM‹YML][šY›Ü›K[ŒÙMK\Œ˜ÔHœ›Þ™[ˆÛ[ÛLˆÝÙ\‹SˆXYÛ›ÜÝXÈÝ]]ËÜ[œËÙML‹YLÎM‹YML][šY›Ü›K[ŒÙMK\Œ‹ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒˆÝ\ÈÈKÎHÚÙ[œÎÈÝXÝ\™HŒLMË™XØ[ŒÌËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHLŽÎ˜M¸ )˜MŒÍØØÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML‹Z[š]X[^˜][Û‹\š[Ü‹\™][[Û‹LŒŒÌNK›Y
+JHŸMLˆ™]Z[™Y\š[ÜˆZÈML‹YLÎM‹YML\š[Ü‹\™]Z[™Y[ŒÙM\ŒØÔHœ›Þ™[ˆÛ[ÛLˆš[Ü‹\™][[ÛˆXYÛ›ÜÝXÈÝ]]ËÜ[œËÙML‹YLÎM‹YML\š[Ü‹\™]Z[™Y[ŒÙM\ŒËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HŒˆÝ\ÈÈKÎHÚÙ[œÎÈÝXÝ\™HŒÌMŽH[™™XØ[ŒÌË]Ù[X[XÈY]šXÜÈ™\›È[™YÙ[ˆÌKˆÒHLYNÌØØ¸ )ŒÍ˜Ø˜XÈXYÛ›ÜÝXÈÛ›K
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML‹Z[š]X[^˜][Û‹\š[Ü‹\™][[Û‹LŒŒÌNK›Y
+JHŸMLˆ™]Z[™Y\š[ÜˆZÈML‹YLÎM‹YML\š[Ü‹\™]Z[™Y[ŒÙM\MZØÔHœ›Þ™[ˆÛ[ÛLˆš[Ü‹\™][[ÛˆÝ™\ÜÈXYÛ›ÜÝXÈÝ]]ËÜ[œËÙML‹YLÎM‹YML\š[Ü‹\™]Z[™Y[ŒÙM\MZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HNHÝ\ÈÈKNHÚÙ[œÎÈÝXÝ\™HÛÛ\Ù\ÈÈŒLÈÚ]™XØ[ŒMÈ[™Ù[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒH™ŽLÍÌÍÍ8 )M˜MÌ˜È™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML‹Z[š]X[^˜][Û‹\š[Ü‹\™][[Û‹LŒŒÌNK›Y
+JHŸMLÈ	H™][[ÛˆÛÛ›ÛMLËYLÎM‹YML\™][[ÛŒ\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆ[š]X[^™Y]ÙZYÚÛÛ›ÛÝ]]ËÜ[œËÙMLËYLÎM‹YML\™][[ÛŒ\ŒKMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HNHÝ\ÈÈKNHÚÙ[œÎÈ“TÈšYŒÌLŒËÝXÝ\™HŒLË™XØ[ŒMËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHY™NXŒXø )ŽLYÌXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLËZ[š]X[^™Y]ÙZYÚ\™][[Û‹LŒŒÌNK›Y
+JHŸMLÈIH™][[ÛˆMLËYLÎM‹YML\™][[ÛŒK\Œ‹MZØÔHœ›Þ™[ˆÛ[ÛLˆ[š]X[^™Y]ÙZYÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLËYLÎM‹YML\™][[ÛŒK\Œ‹MZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H“TÈšYŒŒÌKÝXÝ\™HŒL™XØ[ŒMËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHØÍYŒM™¸ )ŒX™MÍMÌLXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLËZ[š]X[^™Y]ÙZYÚ\™][[Û‹LŒŒÌNK›Y
+JHŸMLÈIH™][[ÛˆMLËYLÎM‹YML\™][[ÛŒK\ŒËMZØÔHœ›Þ™[ˆÛ[ÛLˆ[š]X[^™Y]ÙZYÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLËYLÎM‹YML\™][[ÛŒK\ŒËMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H“TÈšYŒLH[™ÝXÝ\™HŒŒŽK]™XØ[[™Ù[X[XÈY]šXÜÈ\™H™\›ËYÙ[ˆÌKˆÒHLÙŒXXx )˜YŽŒÌXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLËZ[š]X[^™Y]ÙZYÚ\™][[Û‹LŒŒÌNK›Y
+JHŸMLÈÉH™][[ÛˆMLËYLÎM‹YML\™][[ÛŒË\MZØÔHœ›Þ™[ˆÛ[ÛLˆ[š]X[^™Y]ÙZYÚZYÚ[Ý]]ËÜ[œËÙMLËYLÎM‹YML\™][[ÛŒË\MZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H“TÈšYŒLMŒËÝXÝ\™HŒMË™XØ[ŒÌËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒH™˜L™¸ )MÍLMMX˜È™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLËZ[š]X[^™Y]ÙZYÚ\™][[Û‹LŒŒÌNK›Y
+JHŸML	H™\^HÛÛ›ÛMLYLÎM‹YML\™\^L\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆ™\^HÛÛ›ÛÝ]]ËÜ[œËÙMLYLÎM‹YML\™\^L\ŒKMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H“TÈšYŒÌLŒËÝXÝ\™HŒLË™XØ[ŒMËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHÍXÙÎL8 )MŒÌÍÎØÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML\\™[XÛÜœ\Ë\™\^KLŒŒÌNK›Y
+JHŸMLL‹IH\™[™\^HMLYLÎM‹YML\™\^LLK\Œ‹MZØÔHœ›Þ™[ˆÛ[ÛLˆLÍMÈ™\^HXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLYLÎM‹YML\™\^LLK\Œ‹MZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝXÝ\™HŒMMN™XØ[™\›ËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHMŒØø )ŒXÌYØÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML\\™[XÛÜœ\Ë\™\^KLŒŒÌNK›Y
+JHŸMLIH\™[™\^HMLYLÎM‹YML\™\^LK\ŒËMZØÔHœ›Þ™[ˆÛ[ÛLˆLÍMÈ™\^HXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLYLÎM‹YML\™\^LK\ŒËMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝXÝ\™HŒM™XØ[ŒÌËÙ[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHLXXŒÙÌø )˜ÌÙXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML\\™[XÛÜœ\Ë\™\^KLŒŒÌNK›Y
+JHŸMLL	H\™[™\^HMLYLÎM‹YML\™\^LL\MZØÔHœ›Þ™[ˆÛ[ÛLˆLÍMÈ™\^HXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLYLÎM‹YML\™\^LL\MZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H“TÈšYŒÎMˆ[™ÝXÝ\™HŒŽK]™XØ[ŒÌÈ[™Ù[X[XÈY]šXÜÈ™\›ËYÙ[ˆÌKˆÒHÙÙLM™x )˜ÎLŽMŽXÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML\\™[XÛÜœ\Ë\™\^KLŒŒÌNK›Y
+JHŸMLL	H™\^H
+ÈIH™][[ÛˆMLYLÎM‹YML\™\^LL\™][[ÛŒK\KMZØÔHœ›Þ™[ˆÛ[ÛLˆ[\˜XÝ[ÛˆXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLYLÎM‹YML\™\^LL\™][[ÛŒK\KMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H“TÈšYŒMÍÍK]ÝXÝ\™HÛÛ\Ù\ÈÈŒŒÍ[™Ù[X[XÈY]šXÜÈ™[XZ[ˆ™\›ËYÙ[ˆÌKˆÒHY˜Ì™˜ÌŒø )˜LÍŒÍ˜ØÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YML\\™[XÛÜœ\Ë\™\^KLŒŒÌNK›Y
+JHŸMLHL	H™\^HÜÜÈ]šX][ÛˆMLKYLÎM‹YML\™\^LL[ÜÜËX]šX][Û‹\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆÛÝ\˜ÙK[ÜÜÈXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMLKYLÎM‹YML\™\^LL[ÜÜËX]šX][Û‹\ŒKMZËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hš[X\žKÜ™\^HÜÜÈ›ÞY\È›ÝXÛ[™NÈX]ÚYÝXÝ\™HŒŽH[™™XØ[ŒÌË]YX[š[™Ù[ÙšY[]KÜ™]Ø\™™\›ËYÙ[ˆÌKˆÒH™LXXÙ8 )LNMÙNÈ™Z™XÝY
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLK\™\^K[ÜÜËX]šX][Û‹LŒŒÌNK›Y
+JHŸMLLÈ\˜X›HÛÝ\›ÛHÛÛ[X][ÛˆMLLËYLÎM‹YML\™\^LL\ÛÝ›ÛMY›ØØ[‹\ŒËMZØÔHœ›Þ™[ˆÛ[ÛLˆÛÝ\›ÛHXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLLËYLÎM‹YML\™\^LL\ÛÝ›ÛMY›ØØ[‹\ŒËMZËØLHÝ\ÈÈK\™Ù]ÚÙ[œÈ[ˆÎKœÈ[™\ˆH™YK[Z[]HØ\ÈXÚÙ]™\šYšYYÒHNLLØÍø )˜NNMMˆMLMÓÑYX[š[™Ù[ŒšY[]HLMËÝXÝ\™HŒÍLYÙ[ˆÌNÈ™Z™XÝY
+Š™\˜X›HXYÛ›ÜÝXÈÛ›K›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLLË\ÛÝ\›ÛK\Ý\\š\Ú[Û‹LŒŒÌNK›Y
+JHŸMLMH›ØØ[^™\›ÈÛÝ\›ÛHÛÛ›ÛMLMKYLÎM‹YML\™\^LL\ÛÝ›ÛMY›ØØ[\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆ›ØØ[[ÜÜÈXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLMKYLÎM‹YML\™\^LL\ÛÝ›ÛMY›ØØ[\ŒKMZËØLHÝ\ÈÈK\™Ù]ÚÙ[œÈ[ˆLKŽÈ[™\ˆH™YK[Z[]HØ\ÈXÚÙ]™\šYšYYÒHMÙŒ™M¸ )ŒÌŒXÌX˜ˆMLMˆÓÑYX[š[™Ù[ŒKšY[]HNËÝXÝ\™HŒÌŒLËYÙ[ˆÌNÈ›ØØ[ˆ™Z™XÝY[™\ÈÛÛ›Û
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLMKY›ØØ[[ÜÜËYXÛÛ\ÜÚ][Û‹LŒŒÌNK›Y
+JHŸMLMÈÛÝ[ÜÜËLHÛÛ^ÛÛ›ÛMLMËYLÎM‹YML\™\^LL\ÛÝ›ÛLKXÛÛ^\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆÛÛ^[\˜XÝ[ÛˆXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLMËYLÎM‹YML\™\^LL\ÛÝ›ÛLKXÛÛ^\ŒKMZËØLHÝ\ÈÈK\™Ù]ÚÙ[œÈ[ˆLÌÜÈ[™\ˆH™YK[Z[]HØ\ÈXÚÙ]™\šYšYYÒH˜MÌ˜L8 )™LŒLØˆMLNÓÑYX[š[™Ù[ŒšY[]HËÝXÝ\™HŒŒLYÙ[ˆÌNÈ™Z™XÝY
+Š™\˜X›HXYÛ›ÜÝXÈÛ›K›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLMË\ÛÝ[ÜÜËXÛÛ^XÛÛ›ÛLŒŒÌNK›Y
+JHŸMLNHÛ™\ÝÛÝXÛÛ^ÛÛ›ÛMLNKYLÎM‹YML\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆ]]Üš]HXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLNKYLÎM‹YML\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZËØLHÝ\ÈÈK\™Ù]ÚÙ[œÈ[ˆLËŒœÈœ›ÛHÛX[ˆ\›™\ÜÈÎÈXÚÙ]™\šYšYYÒHŒMMXŒ8 )˜ÎLNY˜ˆMLŒ^XÝHX]Ú\ÈMLN]X[]H
+YX[š[™Ù[ŒšY[]HËÝXÝ\™HŒŒLYÙ[ˆÌJNÈÛ™\Ý]™]Z[™YÚXÚÜÚ[
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLNKZÛ™\Ý\ÛÝXÛÛ^LŒŒÌNK›Y
+JHŸMLŒˆš\ÚX›KZ[™[ÜžHÛÛ[X][ÛˆMLŒ‹YLÎM‹YMLŒK\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\Œ‹MZØÔHœ›Þ™[ˆÛ[ÛLˆ]KX]]Üš]HXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLŒ‹YLÎM‹YMLŒK\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\Œ‹MZËØNHÝ\ÈÈKNH\™Ù]ÚÙ[œÈ[ˆLŒÜÎÈXÚÙ]™\šYšYYÒHMØØŒL8 )˜™ŒÙXˆMLŒÈšY[]Hš\Ù\ÈÈŽÈ[™™XØ[ÈŒÌ]YX[š[™Ù[™[XZ[œÈŒÝXÝ\™H˜[ÈÈŒNMMK[™YÙ[ˆ\ÈÌNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLŒ‹]š\ÚX›K\ÛÝXÛÛ[X][Û‹LŒŒÌNK›Y
+JHŸMLHš\ÚX›KXÛÛ\Û™[ÛÛ[X][ÛˆMLKYLÎM‹YML\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\Œ‹MZØÔHœ›Þ™[ˆÛ[ÛLˆÛÛ™][Û˜[XÛÛ˜XÝXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLKYLÎM‹YML\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\Œ‹MZËØNHÝ\ÈÈKNH\™Ù]ÚÙ[œÈ[ˆÍ‹ÜÎÈXÚÙ]™\šYšYYÒH™LNLx )™MMYMŽXˆMLˆ™XØ[š\Ù\ÈÈMË]šY[]H˜[ÈÈËÝXÝ\™HÈŒML‹YX[š[™Ù[™[XZ[œÈŒ[™YÙ[ˆ\ÈÌNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLK]š\ÚX›KXÛÛ\Û™[XÛÛ[X][Û‹LŒŒÌNK›Y
+JHŸMLŽš\ÚX›KXÛÛ\Û™[]\\ÈÛÛ[X][ÛˆMLŽYLÎM‹YMLË\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆ\KXÛÛ˜XÝXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLŽYLÎM‹YMLË\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZËØNHÝ\ÈÈKNH\™Ù]ÚÙ[œÈ[ˆM‹ŽÎÈXÚÙ]™\šYšYYÒH˜LŒNø )ŒÌŽMÍ™XˆMLŽHYX[š[™Ù[™XXÚ\ÈŒH[™™]Ø\™MÍÎ]ÝXÝ\™H˜[ÈÈŒLLÍ‹ÝšXÝYX[š[™È\ÈŒ[™YÙ[ˆ\ÈÌNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLŽ]š\ÚX›KXÛÛ\Û™[]\\ËXÛÛ[X][Û‹LŒŒÌNK›Y
+JHŸMŒMˆØš™XÝYœ˜[YHÛÝXšX\È™\^H
+\Ý\
+HMŒM‹[Øš™XÝ\›Ü\K\ÛÝXšX\Ë\ØÜ˜]ÚLŒŒÌŒÔHØÜ˜]ÚÛÕÝÙ\ˆ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMŒM‹[Øš™XÝ\›Ü\K\ÛÝXšX\Ë\ØÜ˜]ÚLŒŒÌŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ™\Ú\Ý\[ˆÛˆMLÌ
+™XÛÜ™ËLMŒMIÜÈÝ\ÊKKËLŒˆ˜Z[˜X›H\˜[\ËÜÜÈ‹LËÒHLNYXx )™YYŒÍLˆØ[YHX]ÚYÓÑMÛÛ›Û]œË]™X]Y[Z\ˆ›ÝÈ›ÙXÙ\ÈÍÞ[XÝXØ[H˜[Y›Û‹Y[\H™YXÝ[ÛœÈ
+œÈMŒMIÜÈÍ
+H]™[XZ[œÈž]KZY[XØ[ˆHØ[\žH™XÛÜ™XÛÙ\ÈÈ[XYÙQØ[\žJ×JX[ˆ›Ý\›\ËÛÈHMŒMH]™\‰ÜÈ™XÛÛ™][Ûˆ
+[ˆÜ[™Y\Y[Øš™XÝ][JH\È™]™\ˆ™XXÚY8 %™\›ÙXÙ\ÈMŒL‰ÜÈ[™XYK\™Z™XÝY[\KX\œ˜^KXÛÜÙHš[™[™ÈÛ™HÝ\\Ý™X[NÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMŒM‹[Øš™XÝYœ˜[YK\ÛÝXšX\Ë\ØÜ˜]Ú\™\^KLŒŒÌŒšœÛÛŠJHŸMŒŒ™\]Z\™Y\ÛÝÛÝ™\˜YÙH™\^H
+\Ý\
+HMŒŒ\™\]Z\™Y\ÛÝXÛÝ™\˜YÙK\ØÜ˜]ÚLŒŒÌŒÔHØÜ˜]ÚÛÕÝÙ\ˆ\˜][ÛˆXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMŒŒ\™\]Z\™Y\ÛÝXÛÝ™\˜YÙK\ØÜ˜]ÚLŒŒÌŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÛˆMLÌ[ˆŽMœËKËLŒˆ˜Z[˜X›H\˜[\ËÜÜÈŒŽÒHØÙMXÎYY¸ )ŒÍŒÙXØÍY˜ˆX]ÚYÓÑM™X]Y[™XXÚ\ÈšY[]HMLÈÝXÝ\™HˆÈ™]Ø\™ŽM]ÝšXÝ]Œˆ™[XZ[œÈŒ[™YÙ[ˆÌNÈÝÙ\ˆ˜Z[ˆÜÜÈ™YÜ™\ÜÙ\ÈMŒNHšY[]KÜÝXÝ\™KÛÈ
+Šœ™Z™XÝY›Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMŒŒ\™\]Z\™Y\ÛÝXÛÝ™\˜YÙK\ØÜ˜]ÚLŒŒÌŒ›Y
+JHŸMMœ™\ÚÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMMÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌŒÔHØÜ˜]ÚÛÕÝÙ\ˆ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMMÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ™\Ú\Ý\[ˆÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\Ë‹Î›Û\ÈMŒH\™Ù]ÚÙ[œÈÙY[‹ÜÜÈÎKËÒHNYLÌ™¸ )ŽLÎŽLÍ˜È›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMM]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\ØÜ˜]ÚLŒŒÌŒšœÛÛŠJHŸMMÈœ™\ÚÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMM×Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌŒÔHØÜ˜]ÚÛÕÝÙ\ˆ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMM×Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ™\ÚË\Ý\[ˆÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\ËKÎˆ›Û\ÈÈ\™Ù]ÚÙ[œÈÙY[‹ÜÜÈÍKÍÌKÒHÍÙŒY¸ )™MÍŒÙ˜È›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMMË]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\ØÜ˜]ÚLŒŒÌŒšœÛÛŠJHŸMMˆœ™\ÚÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMM—Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌŒÔHØÜ˜]ÚÛÕÝÙ\ˆ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMM—Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌŒØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ™\Ú‹\Ý\[ˆÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\ËKLÍˆ›Û\ÈÎN\™Ù]ÚÙ[œÈÙY[‹ÜÜÈŒÌÎLÒH˜ÌÌ˜ø )ŒÍLXÙŽXÍXÈ›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMM‹]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\ØÜ˜]ÚLŒŒÌŒšœÛÛŠJHŸMMHœ™\ÚÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMMWÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌNXÔHØÜ˜]ÚÛÕÝÙ\ˆ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMMWÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌNKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ™\ÚK\Ý\[ˆÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\ËKŽ›Û\ÈÍˆ\™Ù]ÚÙ[œÈÙY[‹ÜÜÈ‹ŒLŒ‹ÒHÙNL¸ )ŒNŒÙLY™XÈ›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMMK]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\ØÜ˜]ÚLŒŒÌNKšœÛÛŠJHŸMMœ™\ÚÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMMÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌNXÔHØÜ˜]ÚÛÕÝÙ\ˆ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMMÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌNKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+Hœ™\Ú\Ý\[ˆÛˆMLÌY\ˆš[ÜˆÚ]YÛ›Ü™YMMÈÚXÚÜÚ[Ø\ÈXœÙ[ŽLM˜Z[˜X›H\˜[\ËK›Û\ÈŽMˆ\™Ù]ÚÙ[œÈÙY[‹ÜÜÈ‹ŒÎÒHLÌYÙø )˜Ì™XŽÍ˜È›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMM]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\ØÜ˜]ÚLŒŒÌNKšœÛÛŠJHŸMMÈ™\Ý[YYÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMM×Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—Ü™\Ý[YWÜØÜ˜]ÚÌŒŒÌNXÔHØÜ˜]ÚÛÕÝÙ\ˆ™\Ý[YKÝ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMM×Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—Ü™\Ý[YWÜØÜ˜]ÚÌŒŒÌNKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H™\Ý[YYœ›ÛHMMˆ[\Ý]HÈÝ\ÈÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\ËÍŽ›Û\ÈNNH\™Ù]ÚÙ[œÈÙY[‹ÜÜÈÎKÍÍ‹ÒHŒŒNY™YY8 )ŒLÌ™YXÈ›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMMË]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\™\Ý[YK\ØÜ˜]ÚLŒŒÌNKšœÛÛŠJHŸMMˆ™\Ý[YYÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMM—Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—Ü™\Ý[YWÜØÜ˜]ÚÌŒŒÌNXÔHØÜ˜]ÚÛÕÝÙ\ˆ™\Ý[YKÝ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMM—Ý˜Z[š[™×ÛÛÜÝÛÝÝÙ\—Ü™\Ý[YWÜØÜ˜]ÚÌŒŒÌNKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+H™\Ý[YYœ›ÛHMMH[\Ý]HÈÝ\ˆÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\ËLLˆ›Û\ÈLŒ\™Ù]ÚÙ[œÈÙY[‹ÜÜÈËÍ‹ÒHŽ˜XŒMø )ÍÌÍØÍ˜È›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMM‹]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\™\Ý[YK\ØÜ˜]ÚLŒŒÌNKšœÛÛŠJHŸMMHÛÕÝÙ\ˆ˜Z[š[™Ë[ÛÜ]\˜][ÛˆMMWÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌNXÔHØÜ˜]ÚÛÕÝÙ\ˆÚ\š[™ËÝ˜Z[ˆÚXÚÈÝ]]ËÜ[œËÙMMWÝ˜Z[š[™×ÛÛÜÝÛÝÝÙ\—ÜØÜ˜]ÚÌŒŒÌNKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHÝ\ÛˆMLÌ
+™XÛÜ™ÊKŽLM˜Z[˜X›H\˜[\ËMˆ›Û\ÈŒÈ\™Ù]ÚÙ[œÈÙY[‹ÜÜÈÍ‹ŽLMNÒH™˜ÎŒ™Lø )™ŒÙ™˜˜XXÈ›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMMK]˜Z[š[™Ë[ÛÜ]ÛÝÝÙ\‹\ØÜ˜]ÚLŒŒÌNKšœÛÛŠJHŸMM˜Z[š[™Ë[ÛÜÙ[[™[MMÝ˜Z[š[™×ÛÛÜÜØÜ˜]ÚÌŒŒÌNXÔHØÜ˜]ÚÝXˆÚ\š[™ÈÚXÚÈÝ]]ËÜ[œËÙMMÝ˜Z[š[™×ÛÛÜÜØÜ˜]ÚÌŒŒÌNKØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HHÝ\È\™Ù]]ÚÙ[‹XXØÛÝ[Y^[\\ÈÛˆMLÌ
+™XÛÜ™ÊKÜÜÈKÒH˜ÌY™8 )NYMŒMÈ›È]˜[ÜˆÞ[˜Ë
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹ÙMM]˜Z[š[™Ë[ÛÜ\ØÜ˜]ÚLŒŒÌNKšœÛÛŠJHŸMLÌHš\ÚX›K\Ù[X[XË\›ÛHÛÛ[X][ÛˆMLÌKYLÎM‹YMLÌ\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZØÔHœ›Þ™[ˆÛ[ÛLˆÙ[X[XË\›ÛHXYÛ›ÜÝXÈŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLÌKYLÎM‹YMLÌ\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZËØNHÝ\ÈÈKNH\™Ù]ÚÙ[œÈ[ˆNKÌœÎÈXÚÙ]™\šYšYYÒH˜ŽÌXX˜ø )ÍMŒMMˆMLÌˆÝXÝ\™H™XXÚ\ÈŒMÌK]YX[š[™Ù[\ÈŒšY[]HË™]Ø\™ŒÍŽKÝšXÝYX[š[™ÈŒ[™YÙ[ˆÌNÈ
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMLÌK]š\ÚX›K\Ù[X[XË\›Û\ËXÛÛ[X][Û‹LŒŒÌNK›Y
+JHŸMMˆX\›™Y›ÛÝX\š]HÛÛ[X][ÛˆMM‹YMLÌK\›ÛÝ\™Y™\™[˜ÙKX\š]LK\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆX\›™Y]ÜÛÙÞHØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMM‹YMLÌK\›ÛÝ\™Y™\™[˜ÙKX\š]LK\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆL‹ŽLÜÎÈÒH™XÙŒø )ŽMÍYˆÓÑMÛÛ›Û™XXÚ\ÈYX[š[™Ù[LšY[]HNLMËÝXÝ\™HŒÌNK™]Ø\™ÎML]X\›™YÙZYÚH\È]X[]K[™]]˜[ÝšXÝYX[š[™ÈŒ[™YÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMM‹[X\›™Y\›ÛÝ\™Y™\™[˜ÙKX\š]KLŒŒÌNK›Y
+JHŸMMÈ›Ý[™Y›ÛÝX\š]HÛÛ[X][ÛˆMMËYMLÌK\›ÛÝ\™Y™\™[˜ÙKX›Ý[™Y\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™Y]ÜÛÙÞHØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMËYMLÌK\›ÛÝ\™Y™\™[˜ÙKX›Ý[™Y\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÍËŒMÜÎÈÒHÍ˜™LÍÎLx )LYÙŽLˆ›Ý[™YÜÜÈÚ\œH[\›Ý™\ÈXYØ[Xœ˜][Û‹]ÓÑMXÚ\Ú[ÛœÈ[™]X[]H^XÝHX]ÚMM‹ÝšXÝYX[š[™È\ÈŒ[™YÙ[ˆ\ÈÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMËX›Ý[™Y\›ÛÝ\™Y™\™[˜ÙKX\š]KLŒŒÌNK›Y
+JHŸMM›ÛÝ\™Y™\™[˜ÙHY[]HÛÛ[X][ÛˆMMYMMË\›ÛÝZY[]LK\Œ‹LØÔHœ›Þ™[ˆÛ[ÛLˆ›Ý[™YZY[]HØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMYMMË\›ÛÝZY[]LK\Œ‹LËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽMœÎÈÒHØ™LØÌ8 )ÍŒŒØˆØ[YKXÚXÚÜÚ[˜[šË[Û›HY[]HXÛÙ[™È[\›Ý™\ÈÓÑMYX[š[™Ù[Œ8¡¤ŒŒKÝXÝ\™HŒLL8¡¤ŒŒMŽ™XØ[ŒMN8¡¤ŒŒÌ[™TÕ›ÙHŒHŒNÌø¡¤ŒŒŽÌË]ÝšXÝYX[š[™È\ÈŒ[™YÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMM\›ÛÝ\™Y™\™[˜ÙKZY[]KLŒŒÌNK›Y
+JHŸMMHY[]H™YØ]]™K]ÙZYÚLHÛÛ›ÛMMKYMM\›ÛÝZY[]K[™YÌKXÛÛ›Û\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆX]ÚYÛ\ÜË]ÙZYÚØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMKYMM\›ÛÝZY[]K[™YÌKXÛÛ›Û\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÌÎÈÒHYMMÌ8 )Í™˜LXˆÓÑMYX[š[™Ù[ŒÝXÝ\™HŒMM™XØ[ŒŒËÝšXÝYX[š[™ÈŒYÙ[ˆÌNÈ™YÜ™\ÜÙ\Èœ›ÛHMM^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMK\›ÛÝ\™Y™\™[˜ÙK[™YØ]]™K]ÙZYÚLŒŒÌNK›Y
+JHŸMMHY[]H™YØ]]™K]ÙZYÚM™X]Y[MMKYMM\›ÛÝZY[]K[™YÍ\Œ‹LØÔHœ›Þ™[ˆÛ[ÛLˆX]ÚYÛ\ÜË]ÙZYÚØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMKYMM\›ÛÝZY[]K[™YÍ\Œ‹LËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽÎÈÒHM8 )ŒXYXˆÜ\œÙH]H™YØ]]™HXØÝ\˜XÞH[\›Ý™\ÈŒÌÌÌø¡¤ŒŒÎMN]™YXÝ[ÛœÈ[™]™\žHÓÑY]šXÈ^XÝHX]ÚHÛÛ›ÛÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMK\›ÛÝ\™Y™\™[˜ÙK[™YØ]]™K]ÙZYÚLŒŒÌNK›Y
+JHŸMMˆÝšXÝ\ÝXœÙ]][\Y\‹LHÛÛ›ÛMM‹YMM\ÝšXÝ\ÝXœÙ]KXÛÛ›Û\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆX]ÚYØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMM‹YMM\ÝšXÝ\ÝXœÙ]KXÛÛ›Û\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽKŒLÎÈÒH˜X˜NL8 )Œ˜ÍMXˆÓÑMYX[š[™Ù[ŒšY[]HLÝXÝ\™HŒMM™XØ[ŒŒËYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMM‹\›ÛÝ\™Y™\™[˜ÙKXÛÝ™\˜YÙK\Ø[\[™ËLŒŒÌNK›Y
+JHŸMMˆÝšXÝ\ÝXœÙ]][\Y\‹MH™X]Y[MM‹YMM\ÝšXÝ\ÝXœÙ]K\Œ‹LØÔHœ›Þ™[ˆÛ[ÛLˆX]ÚYØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMM‹YMM\ÝšXÝ\ÝXœÙ]K\Œ‹LËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌN\™Ù]ÚÙ[œÈ[ˆÌLÎÈÒHLXM˜™˜Îx )˜Y™L˜ˆÓÑšY[]KÝXÝ\™K™]Ø\™[™TÕŒH[\›Ý™H]™XØ[˜[ÈÈŒŒNÈYX[š[™ÈŒ[™YÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMM‹\›ÛÝ\™Y™\™[˜ÙKXÛÝ™\˜YÙK\Ø[\[™ËLŒŒÌNK›Y
+JHŸMMÈÝšXÝ\ÝXœÙ]][\Y\‹Lˆ™X]Y[MMËYMM\ÝšXÝ\ÝXœÙ]‹\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆ[Ù\˜]HØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMËYMM\ÝšXÝ\ÝXœÙ]‹\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÍ‹ÎÈÒHÍÌ˜™™8 )Œ˜ÍMØˆÓÑÝXÝ\™HŒŒ[™TÕ›ÙHŒHŒÌÌXYH][\Y\ˆY\ˆÚ[H™XØ[Ý^\ÈŒŒË]šY[]H˜[ÈÈŒNËYX[š[™ÈŒYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMË\›ÛÝ\™Y™\™[˜ÙKXÛÝ™\˜YÙL‹LŒŒÌNK›Y
+JHŸMMLH›Ë[^[YK\š[Üˆ™X]Y[MMLKYMM\ÝšXÝ\ÝXœÙ]‹[›Ë[^[YK\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆš[Ü‹XØ[Xœ˜][ÛˆØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMLKYMM\ÝšXÝ\ÝXœÙ]‹[›Ë[^[YK\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆKŽ\ÎÈÒHMÎLŒYM¸ )™XÌÌ™˜Í˜ˆšY[]H[\›Ý™\ÈÈŒÌ]ÝXÝ\™H˜[ÈÈŒMNM[™™XØ[ÈŒLLÈYX[š[™ÈŒYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMLK\ÛÝ[^[YK\š[ÜŒLŒŒÌNK›Y
+JHŸMMLˆ[‹\Ý™[™Ý^[YK\š[Üˆ™X]Y[MML‹YMM\ÝšXÝ\ÝXœÙ]‹[^[YLK\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆš[Ü‹XØ[Xœ˜][ÛˆØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMML‹YMM\ÝšXÝ\ÝXœÙ]‹[^[YLK\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÍÍ\ÎÈÒHXNXÌLLx )˜LMLY˜ÌˆÓÑšY[]HŒLÌÌËÝXÝ\™HŒŒNK™XØ[ŒLL™]Ø\™ŒÍÍNÈYX[š[™ÈŒYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMML‹\ÛÝ[^[YK\š[ÜŒKLŒŒÌNK›Y
+JHŸMMLÈÛÜœ\Ë[ØØ[›ÜÜ[Û˜[\š[Üˆ™X]Y[MMLËYMM\š[Ü‹\›ÜÜ[Û˜[\ŒËLØÔHœ›Þ™[ˆÛ[ÛLˆš[Ü‹XÛÜœ™XÝ™\ÜÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMLËYMM\š[Ü‹\›ÜÜ[Û˜[\ŒËLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÍÎÈÒHLLMMXÙ¸ )™MÍLÎNYˆÓÑšY[]HŒÌÝXÝ\™HŒL™XØ[ŒŒK™]Ø\™MLÎÈYX[š[™ÈŒYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMLË\ÛÝ\š[Ü‹\›ÜÜ[Û˜[\Û[ÛÝ[™ËLŒŒÌŒ›Y
+JHŸMMM™^\ÛÝXÛÛ^™X]Y[MMMYMM\ÛÝ[™^XÛÛ^\Œ‹LØÔHœ›Þ™[ˆÛ[ÛLˆÛÝXÛÛ^ØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMMYMM\ÛÝ[™^XÛÛ^\Œ‹LËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÎKŽL\ÎÈÒHYŒØØ˜ÙMø )˜ÍØMÎXˆÓÑšY[]HŒNËÝXÝ\™HŒMNM™XØ[ŒLL™]Ø\™LÌŽÈYX[š[™ÈŒYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMM\ÛÝ[™^XÛÛ^LŒŒÌŒ›Y
+JHŸMMMHÛÝ\Z\‹Z[\˜XÝ[Ûˆ™X]Y[MMMKYMM\ÛÝ\Z\‹Z[\˜XÝ[Û‹\Œ‹LØÔHœ›Þ™[ˆÛ[ÛLˆÛÝXÛÛ^ØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMMKYMM\ÛÝ\Z\‹Z[\˜XÝ[Û‹\Œ‹LËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆLŒŽ\ÎÈÒHYLÙLMŒx )˜YŒNYXˆÓÑšY[]HŒÌÝXÝ\™HŒMNM™XØ[ŒLL™]Ø\™MLÎÈ\™]È]™\ˆ™]Z[™YYX[š[™ÈŒYÙ[ˆÌNÈ^XÚ]›Ë\Þ[˜ÈØÜ˜]Ú
+Š››Ý›Û[ÝX›HÜˆÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMMK\ÛÝ\Z\‹Z[\˜XÝ[Û‹LŒŒÌŒ›Y
+JHŸMMMˆÛÛXš[™Y\ÛÝXÛÛ^™X]Y[MMM‹YMM\ÛÝXÛÛ^XÛÛXš[™Y\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆÛÝXÛÛ^ØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMM‹YMM\ÛÝXÛÛ^XÛÛXš[™Y\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽœÎÈÒHLÎXÍÌø )NÌYŒXˆÓÑšY[]HŒŒMËÝXÝ\™HŒMNM™XØ[ŒLL™]Ø\™LŒÎÈÛÛXš[˜][Ûˆ™Z™XÝYYX[š[™ÈŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMM‹\ÛÝXÛÛ^XÛÛXš[™YLŒŒÌŒ›Y
+JHŸMMMÈ[X˜[[˜ÙH™X]Y[MMMËYMM\ÛÝ\Z\‹X˜[[˜ÙLK\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆÛ\ÜËX˜[[˜ÙHØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMMËYMM\ÛÝ\Z\‹X˜[[˜ÙLK\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÌŒ\ÎÈÒHÎNÌx )˜ŽMÙŒXˆY]šXÜÈ^XÝHX]ÚMMMNÈYX[š[™ÈŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMMË\ÛÝX˜[[˜ÙLKLŒŒÌŒ›Y
+JHŸMMNÝÛ™\‹XÛÝ™\˜YÙH[™Ú[™Y\š[™ÈšX[MMNYMM[ÝÛ™\‹XÛÝ™\˜YÙK\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆ˜\™K[ÝÛ™\ˆØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMNYMM[ÝÛ™\‹XÛÝ™\˜YÙK\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKŒŒˆ\™Ù]ÚÙ[œÈ[ˆËŒÌ\ÎÈÒHMMÌÌÎ8 )™NLÎ˜ˆ\K]™YH[™Ú[™Y\š[™ÈšX[^ÛYYœ›ÛHXÚ\Ú[ÛœÎÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMN[ÝÛ™\‹XÛÝ™\˜YÙKLŒŒÌŒ›Y
+JHŸMMNÝÛ™\‹XÛÝ™\˜YÙH™X]Y[MMNYMM[ÝÛ™\‹XÛÝ™\˜YÙK\Œ‹LØÔHœ›Þ™[ˆÛ[ÛLˆ˜\™K[ÝÛ™\ˆØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMNYMM[ÝÛ™\‹XÛÝ™\˜YÙK\Œ‹LËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKŒŒˆ\™Ù]ÚÙ[œÈ[ˆËÍÎÈÒHMNLY¸ )ŒÎYYXˆÓÑšY[]HLÝXÝ\™HŒLŒK™XØ[ŒLL™]Ø\™ÍNÈYX[š[™Ë]ŒˆŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMN[ÝÛ™\‹XÛÝ™\˜YÙKLŒŒÌŒ›Y
+JHŸMMNHÛÙ›ÛÝÛ™\‹XÛÝ™\˜YÙH™X]Y[MMNKYMM[ÝÛ™\‹XÛÝ™\˜YÙL‹\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆ˜\™K[ÝÛ™\ˆØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMNKYMM[ÝÛ™\‹XÛÝ™\˜YÙL‹\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKŽMˆ\™Ù]ÚÙ[œÈ[ˆÌKŒMÎÈÒHYLNL™8 )ŽXXXÎŒXˆÓÑšY[]HMËÝXÝ\™HŒLK™XØ[ŒÌ™]Ø\™ŒMÎÈYX[š[™Ë]ŒˆŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMNK[ÝÛ™\‹XÛÝ™\˜YÙL‹LŒŒÌŒ›Y
+JHŸMMŒ˜\œ›ÝÈÝÛ™\‹XÛÝ™\˜YÙH™X]Y[MMŒYMM[ÝÛ™\‹]™\ÚÛ\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆ˜\™K[ÝÛ™\ˆØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMŒYMM[ÝÛ™\‹]™\ÚÛ\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKÌLˆ\™Ù]ÚÙ[œÈ[ˆ‹ŒœÎÈÒHYLLXÙYx )™ÍŽ˜LØˆÓÑšY[]HŒNËÝXÝ\™HŒŒNK™XØ[ŒŒË™]Ø\™MÎÈYX[š[™Ë]ŒˆŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMŒ[ÝÛ™\‹]™\ÚÛLŒŒÌŒ›Y
+JHŸMMŒHZYÚ[ÝÛ™\‹XÛÝ™\˜YÙH™X]Y[MMŒKYMM[ÝÛ™\‹]™\ÚÛË\ŒKLØÔHœ›Þ™[ˆÛ[ÛLˆ˜\™K[ÝÛ™\ˆØ[\[™ÈØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMŒKYMM[ÝÛ™\‹]™\ÚÛË\ŒKLËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈKŽ\™Ù]ÚÙ[œÈ[ˆKÜÎÈÒHÍXM™M™8 )ŒØLLÙŽXˆÓÑšY[]HMÍLÝXÝ\™HŒNK™XØ[ŒMN™]Ø\™MÍLÎÈYX[š[™Ë]ŒˆŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMŒK[ÝÛ™\‹]™\ÚÛËLŒŒÌŒ›Y
+JHŸMMŽ\ÚYÛ‹XÛÛ^ÛÛ[X][ÛˆMMŽYMMŒKXÛÛ\ŒKMØÔHœ›Þ™[ˆÛ[ÛLˆÛÛ^\\ËY\˜][ÛˆØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMŽYMMŒKXÛÛ\ŒKMËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈ‹MŒH\™Ù]ÚÙ[œÈ[ˆLM‹ŒÎÈÒHØÌ8 )ŒŽØLL˜˜ˆ™]Ø\™[\›Ý™\ÈÈŽLŒ]šY[]KÜÝXÝ\™H™YÜ™\ÜÈÈŒNËÌŒLÍÍKYX[š[™Ë]ŒˆŒYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMŽY\ÚYÛ‹XÛÛ^XÛÛ[X][Û‹LŒŒÌŒ›Y
+JHŸMMŽHX]ÚYÛÛ[X][ÛˆMMŽKYMMŒK[X]ÚYXÛÛ\ŒKMØÔHœ›Þ™[ˆÛ[ÛLˆ\˜][ÛˆØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMŽKYMMŒK[X]ÚYXÛÛ\ŒKMËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈ‹MŒH\™Ù]ÚÙ[œÈ[ˆÍKŒŒÎÈÒHM˜Ùø )˜ÍLÍYÌØˆYX[š[™Ë]ŒHŒK™XØ[ŒÌÌÌË™]Ø\™ŽLŒ]YX[š[™Ë]ŒˆŒ[™YÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMŽK[X]ÚYXÛÛ[X][Û‹LŒŒÌŒ›Y
+JHŸMMÌˆšY[]K[ÜÜÈ™X]Y[MMÌ‹YMMŽKYšY[]L‹\ŒKMØÔHœ›Þ™[ˆÛ[ÛLˆšY[]K]ÙZYÚØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMÌ‹YMMŽKYšY[]L‹\ŒKMËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈ‹MŒH\™Ù]ÚÙ[œÈ[ˆŒœÎÈÒH˜˜MN™¸ )˜ØÌŽYY˜L˜ˆšY[]HL[™™]Ø\™ŽMÌ]YX[š[™Ë]ŒKÝŒˆ™XØ[ŒMNYÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMÌ‹YMMŽKYšY[]L‹LŒŒÌŒ›Y
+JHŸMMÌÈZYÚ[šY[]H™X]Y[MMÌËYMMŽKYšY[]LK\ŒKMØÔHœ›Þ™[ˆÛ[ÛLˆšY[]K]ÙZYÚØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMÌËYMMŽKYšY[]LK\ŒKMËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈ‹MŒH\™Ù]ÚÙ[œÈ[ˆLKÌœÎÈÒH™ŒŒY˜Ìø )˜ÙNLÌˆYX[š[™Ë]ŒHŒKšY[]HÍL™]Ø\™ÍMÌ]YX[š[™Ë]Œˆ[™YÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMÌËYMMŽKYšY[]LKLŒŒÌŒ›Y
+JHŸMMÍÛÝ[ÜÜÈ™X]Y[MMÍYMMŽK\ÛÝÜÜÌ‹\ŒKMØÔHœ›Þ™[ˆÛ[ÛLˆÛÝ[ÝÛ™\ˆØÜ˜]ÚXYÛ›ÜÝXÈÝ]]ËÜ[œËÙMMÍYMMŽK\ÛÝÜÜÌ‹\ŒKMËØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[
+HÝ\ÈÈ‹MŒH\™Ù]ÚÙ[œÈ[ˆÍ‹ŒŒÜÎÈÒHXÙLL¸ )ŒÎLØÌ˜ˆ[YÙÜ™YØ]\ÈX]ÚMMÌÎÈYX[š[™Ë]Œˆ[™YÙ[ˆÌNÈ
+Š››ÝÚ\
+Šˆ
+Ü™\Ý[×J\ÚYÛ‹Ú]\‹YMMÍYMMŽK\ÛÝÜÜÌ‹LŒŒÌŒ›Y
+JHŸÐTH]šY[˜ÙHXÚØYÙHØ\KLËY]šY[˜ÙXÐT8 $ÐÐT™\›ÙXÚX›H]šY[˜ÙHXÚØYÙHØÜËÙ\ÚYÛ‹ØØ[Ý[]YX\š]KXY\]™K\™XÚ\Ú[Û‹\™\Ý[Ë›Y™\›ÙXÚX›H^XÝXØ[Ý[][Ûˆš^\™\ËÛZ[HYÙ\‹\Y˜XÝ[™^[™™YØ]]™K\™\Ý[™YÚ\ÝžNÈ
+Š››ÝHÚXÚÜÚ[ÜˆÚ\ÛZ[JŠˆ
+Ü™\Ý[×J\ÚYÛ‹ØØ[Ý[]YX\š]KXY\]™K\™XÚ\Ú[Û‹\™\Ý[Ë›Y
+JHŸ›ÙXÝ[ÛˆˆÚ\8 %8 %Ž‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÏ[—ÚY‹Ø
+Š“›Û™H™YÚ\Ý\™YY]
+Šˆ8 %š[\È›ÝÈY\ˆHš\œÝ[ˆÞ[˜È‚ˆÈÈÈÐTˆØ\Xš[]HÙ\YšXØ]B‚˜ÑT•ÐÐT˜\È
+Š››Ý\ÜÝYY
+Š‹ˆH\›Z[˜[ÓKLÎHYÙ\ˆÛ\ÜÚYšY\ÈÞ[X›ÛXÂ˜[œÙ›Ü›H[™›Ý[™YY\™ÙH\ÈÛÛ\[\‹XÛÛ˜XÝ[Û›K™Z™XÝÈX\›™Y™\ØÜ™]K]ÚÙ[ˆXÝ[Ûˆ™[™Yš]œ›ÛHNË[™™XÛÜ™ÈH™[XZ[š[™ÈØ\Xš[]Y\Â˜\È[˜]˜Z[X›HÜˆ[œ[ˆÛÛ™][Û˜[ËˆÒXÝ[Ûˆ\Ý[][Ûˆ\ÈÛÜÙY‚“›ÈÚXÚÜÚ[›ÜÝ\‹›Û[Ý[Û‹ÜˆÚ\ÛZ[HÚ[™ÙYˆ[]šY[˜ÙN‚–ØÚËLMËXØ\‹Y\ÜÜÚ][Û‹LŒŒÌŒËÜÝ[[X\žK›YJ\ÚYÛ‹ÙÚËLMËXØ\‹Y\ÜÜÚ][Û‹LŒŒÌŒËÜÝ[[X\žK›Y
+K‚‚ˆÈÈÈÒHY˜[˜ÙY[Ü\˜]Üˆ\ÜÜÚ][Û‚‚‘ÒH
+[ÈÜ\˜]ÜœË˜[œØXÝ[ÛœÈ	ˆÛÛ›Û[™HŠH\ÈÛÜÙYžHÓKMŒŠÒKLLŠKˆÙ[XÝÜˆÛÜœ™XÝ™\ÜË[È]ÛZXÚ]K˜[œØXÝ[ÛˆÛÛ˜XÝËÂ™^XÝ][Û‹Ù\]Y[˜ÙHY\™ÙK[™ÛÛ›Û\[™H^XÝ][Ûˆ\™H
+ŠœÝ\ÜY
+Šˆ\Â˜ÛÛ\[\‹[ÝÛ™Y[[YH][]Y\ÈÛ›H8 %›Û™H\ÈHX\›™YØ\Xš[]H[™›Û™B˜Ú[™Ù\ÈHÐTˆÙ\YšXØ]HÜÝ\™HX›Ý™H
+ÑT•ÐÐT˜™[XZ[œÈ›ÝZ\ÜÝYYœ™]Z[™Y[˜Ú[™ÙY
+KˆÜ›ÜÜÛÝ™\ˆÛÜšËY\]™H›Ý][™Ë\˜[Y]\š^™Y[\]\Ë[™Þ\Ý[\ÈY™šXÚY[˜ÞH\™H
+Š[˜]˜Z[X›JŠˆ
+XXÚ˜[ˆH™X[œ™Y›YÚÜˆ™\ÜÚ]ÜžK]ÚYH]Y]]ÛÛ™š\›YY]ÈÝÛˆYX\Ý\™[Y[œ™\™\]Z\Ú]HÙ\È›Ý^\Ý
+KˆÙ]]˜[YYÙ[XÝ[Ûˆ[™™\^KYÜ›Ý[™Y]™[›Y[[ÜžH\™H
+Š[œ[—ØÛÛ™][Û˜[
+ŠˆÚ\š[™È™XÛÛ™][ÛœÈÚ]›ÈÛÜœ\ÈÜ‚˜˜\Ù[[™HÈ[œÝÙ\ˆZ\ˆ[[Ý]X™[™Yš]]Y\Ý[Û‹ˆH\ÜÜÚ][Ûˆ[š\š]Â‘ÒËLÌÉÜÈ
+ÓKM
+H[\H[ÝÙYX\›™Y\ÛXÞH[™[ÜžH
+X^WÜÝ\Y˜[ÙXž™\›ÈXYËÛØš™XÝ]™\ËØXÝ[ÛœÊH[˜Ú[™ÙYˆ™XÛÛ[Y[™][ÛŽ‚˜™]Z[—Ø\×ØÛÛ\[\—Ý][]Xˆ›ÈÚXÚÜÚ[›ÜÝ\‹›Û[Ý[Û‹Ú\ÛZ[KÜ‚˜Y˜[˜ÙY[Ü\˜]ÜˆY˜][[ÛˆÚ[™ÙH›ÛÝÜËˆ[]šY[˜ÙN‚–ØÚKLL‹XY˜[˜ÙY[Ü\˜]Ü‹Y\ÜÜÚ][Û‹LŒŒÌË[ØØ[ÜÝ[[X\žK›YJ\ÚYÛ‹ÙÚKLL‹XY˜[˜ÙY[Ü\˜]Ü‹Y\ÜÜÚ][Û‹LŒŒÌË[ØØ[ÜÝ[[X\žK›Y
+K‚‚ˆÈÈÈ”ÔLHVTÔˆÜ›ÜÜËY^\š[Y[\ÜÜÚ][Ûˆ
+ÓKML
+B‚””ÔLHÛÜÙ\ÈHVTÔ‹LK‹ŒLˆØ][ÙÝYH[š]X]]™HÚ]HXXÚ[™KX]Y]X›B”ÑÔËLH\ÜÜÚ][ÛˆÝ™\ˆÛÛ[Z]YÚX›[™È]šY[˜ÙKˆØ[›ÛšXØ[Ú[\Ž‚–Ø^\Ü‹Y\ÜÜÚ][Û‹LŒŒL›YJ\ÚYÛ‹Ù^\Ü‹Y\ÜÜÚ][Û‹LŒŒL›Y
+BŠ[ÝXÝ\™Y™\Ü‚–Ø]\‹\ÛML\œÜLKY\ÜÜÚ][Û‹LŒŒL›YJ\ÚYÛ‹Ú]\‹\ÛML\œÜLKY\ÜÜÚ][Û‹LŒŒL›Y
+NÂœ™\›ÙXÙHÚ]]Ûˆ[HØÜš\Ëœ[—ÜœÜWÙ\ÜÜÚ][ÛˆK[[ÙHš^\™X
+K‚‚‹HLÈ\ÜÜÚ][Ûˆ›ÝÜÈXÜ›ÜÜÈLˆØ][ÙÝYH˜[Z[Y\È
+VTÔ‹LLˆÜ]žHXÚÊN‚ˆÈ™]Z[—ÙXYÛ›ÜÝXØÈ™Z™XÝˆ™]š\ÙWØ[™Ü™]\ÝH›ØÚÙYˆ
+^\Ü‹LLXTÔ‹ÔÔ™[˜Ú^\›˜[X›ØÚÙY8 %›Ý™Z™XÝ
+K‚‹H
+Š–™\›ÊŠˆYÜÜš[X\žXÈYÜÛÜ[Û˜[ÈÚ[\[ÛˆÚ[\œÈÝ^H[\K‚ˆš^\™KÜØÜ˜]ÚØ›ØÚÙY]šY[˜ÙHØ[››ÝYÜ[™\ˆÑÔËLH˜Z[XÛÜÙY[\Ë‚‹H
+Š“›ÈÚXÚÜÚ[›ÜÝ\‹Y˜][›Û[Ý[Û‹ÜˆÚ\ÛZ[HÚ[™ÙYŠŠ‚‹HÜ[ˆ›ÛÝË]\Îˆ
+Š”ÓKMLJŠˆ
+™X[VTÔ‹LÈ^\›˜[ZYÙKÚ[X[ˆØ[Xœ˜][ÛŠBˆ[™
+Š”ÓKMLŠŠˆ
+™X[VTÔ‹LLHTÔ‹ÔÔ™[˜Ú[ŠK‚‚•\]HHX›H[ˆXÙHÚ[ˆHÚXÚÜÚ[\ÈÜš][ˆÜˆÝ\\œÙYYˆÙY\š[˜[Y]YÈÝ\\œÙYY›ÝÜÈ[ˆ
+ŠÚXÚÜÚ[\ÝÜžJŠˆ™[ÝË‚‚‹KKB‚ˆÈÈ[[™Y\ÙB‚‹HÙ[™\˜]H
+ŠœXÙZÛ\ˆÜ[•RJŠˆ^[Ý]›ÙÜ˜[\È
+Ü[ZSXœ˜\žXÞ[^
+Hœ›ÛBˆ˜]\˜[[[™ÝXYÙH›Û\ËÜ[Û˜[HÛÛ™][Û™YÛˆTÒQÓ‹›Y‚‹H˜Z[ˆÈ]˜[\›™\ÜÈ™\ÙX\˜Ú›ÜˆÛÕÝÙ\ˆX\ÚÙYY™\Ú[Ûˆ[™ˆÜ˜[[X\‹YY™\Ú[ÛˆÛÙXÜÈÚ]Û™\Ý][K\ÝZ]HÚ\Ø]\Ë‚‚ŠŠ“›Ý[[™YŠŠˆ›ÙXÝ[ÛˆRHÚ]Ý][X[ˆ™]šY]ÎÈ™X][™Èš^\™KY[[ÈÜ‚œØÜ˜]Ú[X]š^ÛX\œÈ\È›ÙXÝ[Ûˆ™XY[™\ÜÎÈÚ[[ÛÛ\XÙZÛ\ˆÚ[›™[Ë‚‚‹KKB‚ˆÈÈ\˜Ú]XÝ\™H
+Ù\š[™ÈY˜][ÊB‚ŸYXÙHY˜][È›Ý\ÈŸKKHKKHŸ[Ù[ÛÕÝÙ\ˆ
+ÛÛ^ÝÙ\ˆ
+ÈX\ÚÑÒU\Ý[H[›Ú\Ù\ŠNÈÜ[Û˜[Ü˜[[X\—ÙY™\Ú[Û˜ŸÛÛ^ˆœ›Þ™[ˆ˜XÚØ›Û™H
+YÙÚ[™Ñ˜XÙU‹ÔÛ[ÛL‹LLÍSX
+H›Üˆ[Ú\˜XÚÎÈØÜ˜]Ú›ÜˆX]š^ÐÒH[[ÜÈŸÝ]]ÚÙ[š^™\ˆÛÛ\ÜÚ][Û˜[Ü[•RUÚÙ[š^™\˜
+Y˜][
+HÜˆH^\ˆ
+Ó˜]]™UÚÙ[š^™\˜
+HŸXÛÙHÜ˜[[X\‹XÛÛœÝ˜Z[™YˆÈX\ÚÑÒU
+È™\Z\ˆ]™\œÈ
+ÙYH\ÚYÛˆØÜÊHŸÜÛÙÞH^\š[Y[Ü˜[[X\—ÙY™\Ú[Û˜ŒŽˆ\Y›ÙXÝ[Û‹]™YH^[œÚ[Û‹ØÛÛ˜XÝ[ÛˆÚ]›Ý[™YXÝ]™H›Ù\ÎÈ›Èš^YØ[˜\ÈŸ™\šYšYY\ÛÛ™\ˆXÛÙH™\šYšYYÜÛÛ™\—ÙXÛÙX
+”ÔÌKLÊH
+Š›Ù™ˆžHY˜][
+ŠŽˆÜZ[ˆÙ\YšXØ]KXÚXÚÙY^XÝXÛÜÝ\™H[š[™ÈÙˆHÛÛ\[\‹]™YH›Ü™\Ý™Y›Ü™HÛÙ˜[šÚ[™ËÛˆHÓ[˜]]™H]Û›Kˆ
+Š‘^\š[Y[[[™[›YX\Ý\™Y8 %›ÈÚXÚÜÚ[\Ù\È][™]Ø\œšY\È›ÈÚ\Ü]X[]HÛZ[JŠˆ
+ØÛÛ™šYÈÛÜÜØ\žWJ\ÚYÛ‹Ü]X[]KY^\š[Y[[X]š^›YØÛÛ™šYÝ\˜][Û‹YÛÜÜØ\žKK]™\šYšYY\ÛÛ™\‹YXÛÙK]œÜÌKLÊJKˆŸ]˜[Ø]\È][K\ÝZ]HK\Ú\YØ]\Ø
+\œÙKÝXÝ\˜[XÙZÛ\—ÙšY[]X™]Ø\™
+H‚‹KKB‚ˆÈÈÝÈÈØY‚˜˜\ÚˆÈš^\™H[[È
+[››Ý]H^YÜ›Ý[™
+Bœ]Ûˆ[HØÜš\ËœÙ\™WÜ^YÜ›Ý[™ˆÈ8¡¤ˆÜ˜ËÜÛWÝ˜Z[š[™ËÜ™\ÛÝ\˜Ù\ËØÚXÚÜÚ[ËÜ^YÜ›Ý[™Ù[[ËÛ\Ýœ‚ˆÈ[\[ˆÚXÚÜÚ[œ›ÛHHÜ[•RHXÚÙ]
+Y\ˆÞ[˜ÊBšˆXÚÙ]ÈÞ[˜ÈˆŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÏ[—ÚYˆˆ‹ÛÝ]]ËÜ[œËÏ[—ÚY‹ØÚXÚÜÚ[Â‚œ]Ûˆ[HØÜš\Ë™]˜[X]WÛ[Ù[ˆK]\ÝY\ˆÝ]]ËÙ]KÙ]˜[ÝŒHˆK\[‹ZY[—ÚYˆˆK\Ú\YØ]\Â˜‚”ÚYXØ\œÈ™\]Z\™Y™^È
+‹œˆÚÙ[š^™\‹šœÛÛ˜›Y]KšœÛÛ˜ŠÜ[Û˜[˜ÛÛ^ÚÙ[š^™\‹šœÛÛ˜
+K‚‚‹KKB‚ˆÈÈ˜Z[š[™È]B‚ŸÜ]ÛÝ\˜ÙH›Ý\ÈŸKKHKKHKKHŸ˜Z[ˆÝ]]ËÙ]KÝ˜Z[‹ÝŒX
+[ÛÝ\˜Ù\È
+È]X[]HÞ[
+H›ÜˆÚ\š^\™H\Ø[\HH[[ÈÛ›HŸ]˜[Ý]]ËÙ]KÙ]˜[ÝŒXÝZ]\ÎˆÛ[ÚÙK[ÛÝ]Y™\œØ\šX[ÛÙšXÛ×Ú[Ú\ÛZ[\È™YY[šXÛ×Ú[
+ML
+HÚ[ˆ\ÜÙ\Y‚“XZØYÙNˆÝXÝ\˜[š[™Ù\œš[È
+È˜Z[‹Ý\Ý\ÛÛ][Û‚ŠØY™\œØ\šX[\™]šY]Ë›YJ\ÚYÛ‹ØY™\œØ\šX[\™]šY]Ë›Y
+JK‚‚‹KKB‚ˆÈÈ]˜[X][Ûˆ
+š[\ˆÚXÚÜÚ[
+B‚ŸÝZ]Hˆ\œÙHšY[]HÝXÝ™]Ø\™\ÜÏÈŸKKHKKNˆKKNˆKKNˆKKNˆKKNˆKKHŸÛ[ÚÙH
+ÌNXš[™\‹\ÛÝ[ÝÛ™\œÚ\ÛÛ›ÛÈØ[™Y]JHÈÈ8 %KŒÈ8 %È8 %ŒMÍLÈ8 %È8 %›È8 %Ø[™Y]H˜Z[Y™Y›Ü™H˜Z[š[™È]Ø\Xš[]H˜[Y][ÛŽÈ™\^H™\]Z\™YÈš^\™HLÈŸÛ[ÚÙH
+ÌNË\Ù[X[XËY^]\Ý]™KØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒÌŒŒˆÈŽLMÈŒÌŒLÈŒŒÎÌÈŽMÈÈŽLÍŒ›È8 %TˆÌš[™\ˆŽŒŒ‹ËŽMLTÕØØ[›ÛšXØ[ÌÈ™X]Y[Ý]ÈÚÙ[œÈŒÌLÌ›ÜØ\™ÈLKÌŽ[™LŽLKÍŽˆ\È]™YÜ™\ÜÙ\ÈÙ[X[XÈ]X[]NÈš^\™HLÈŸÛ[ÚÙH
+ÌN‹Y^ÜÝ\™XØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒKŒÈLÎLÈMÈŽMŒLÈŽÌÈ›È8 %TˆËËŒÌÌÌØ™XØ[MËËŒXš[™\ˆKŒËŒÌÌØ]Ø[™Y]HÚÙ[œÈLMËÍM›ÜØ\™ÈKÌLLŒÍNÌŽX\ËTÕØØ[›ÛšXØ[ŸÛ[ÚÙH
+ÌNKXØ\XÚ]K]Z[Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈLÎMÈÈMÈŽÌÈÈŽÌÈ›È8 %^XÝ[ÛˆTˆŒÌÌÌØ™XØ[ŒXš[™\ˆŒÌÌØÚÙ[œÈM›ÜØ\™ÈLTÕØØ[›ÛšXØ[ÈØ[™Y]HLŽÌŒÎ\ÈŸÛ[ÚÙH
+È[[Ý]
+ÌN\›Û[ÝXØ[™Y]HÈÛÛ›Û
+HÈ
+ÈH8 %8 %8 %8 %›È8 %X[ˆ›Ý™Y[™˜Z[œÈÛÛ\]Y]Ø[™Y]KØÛÛ›Û[YYÝ]Ûˆ[ÈÛ[ÚÙH[™[H[[Ý]ØÝ[Y[ÎÈÛÝ\˜ÙHØ[\[™ÈÛXÞHØ\È[ÛÈ›ÜYÛÈ[Ù[]šX][Ûˆ\È[˜]˜Z[X›HŸÛ[ÚÙH
+ÌNË\ÝXÝ\™K]ÚÙ[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈLÎMÈÈMÈŽÌÈÈŽÌÈ›È8 %TˆŒÌÌÌËËŒÌÌÌØ™XØ[ŒKËŒXš[™\ˆŒÌÌËËŒÌÌØÚÙ[œÈÍ›ÜØ\™ÈÎTÕØØ[›ÛšXØ[ÈØ[™Y]HLMLKÌŒØ\È\È™[ÝÈY™™XÝ›ÛÜˆŸÛ[ÚÙH
+ÌN‹\Ù[X[XËY^]\Ý]™XØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈLÎMÈÈÍLŽÌÈÈŽNLÈ›È8 %TˆŒÌÌÌËËŒÌÌÌØ™XØ[ŒKËŒXš[™\ˆŒÌÌËËŒÌÌØTÕØØ[›ÛšXØ[ÈØ[™Y]HÚÙ[œÈÍÍX›ÜØ\™ÈÌL˜LŒÍŽM˜\ÈŸÛ[ÚÙH
+È[[Ý]
+ÌNK\›Û[ÝXØ[™Y]HÈÛÛ›Û
+HÈ
+ÈHKŒÈKŒÛ[ÚÙHLÎËLÎÈ[ŒŽLËŒŽLÛ[ÚÙHMËËMØÈ[ŒÌÎËŒÌÎÛ[ÚÙHŽÌËËŽÌØÈ[ÌÍŒËÌÍŒ›È8 %X[ˆ›Ý™Y][]X[]KÝÛÜšÈY]šXÜÈ\™H[È[Tˆ™XØ[ŒMŒNXš[™\ˆÍÌXTÕØØ[›ÛšXØ[ÈØ[™Y]HLÌMŒÌÌØ\ÈŸÛ[ÚÙH
+ÌNÎKXØ\XÚ]K]Z[Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒÌŒŒˆÈÌŒŒˆŒÈŒŽÍÍÈÈŽÍÍÈ›È8 %^XÝ[ÛˆTˆŒÌÌÌØ™XØ[ŒXš[™\ˆŒHŽŒŒ˜ÚÙ[œÈÍX›ÜØ\™ÈLØTÕØØ[›ÛšXØ[ÈØ[™Y]HLŽNKÍLØ\ÈŸÛ[ÚÙH
+ÌNÎXÛÛ™š\›XØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒÌŒŒˆÈÍLÍÌŒÈÈNLÈŽMÈÈŽÍ›È8 %š^\™HÛÛ™š\›X][ÛˆÛ›NÈTˆŒÌÌÌËËŒÌÌÌØ™XØ[ŒKËŒXš[™\ˆŒHŽŒŒ‹ËŽÚÙ[œÈÎÍÍ›ÜØ\™ÈMKÌM˜TÕØØ[›ÛšXØ[È›Û[Ý[ÛˆÝZ]\È[™›Ü›X[™Y›YÚ[™[™ÈŸÛ[ÚÙH
+ÌNÌ‹XÛÛ™š\›XØ[™Y]HÈÛÛ›Û
+HÈ›Ý[ˆ8 %8 %8 %8 %›È8 %Ø[™Y]H[YYÝ]ËÌÈØÝ[Y[È[™ÛÛ›ÛÝÜY]˜Z[ˆÝ\ŽÈ›ÈØÛÜ™X›Ø\™ÜˆÛÛ\\š\ÛÛˆŸÛ[ÚÙH
+ÌNÌXØ\XÚ]K]Z[Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒÌŒŒˆÈŒLLHÌÌÈÈŒÍLMÈŽÍÍÈÈŽÈ›È8 %š^\™HÜÚ]]™HÛ›NÈTˆŒÌÌÌËËŒÌÌÌØ™XØ[ŒKËŒXš[™\ˆŒHŽŒŒ‹ËÌŒŒ˜ÚÙ[œÈNKÌL›ÜØ\™ÈŒ‹ÌŒØTÕØØ[›ÛšXØ[Èœ™\ÚÛÛ™š\›X][Ûˆ[™[™ÈŸÛ[ÚÙH
+ÌNŽKXØ\XÚ]KX]Ø\™XØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒÌŒŒˆÈLÎLÌÈNMÌÈŽÍÍÈÈŽÌÈ›È8 %TˆËËŒÌÌÌØ™XØ[MËËŒMØš[™\ˆŒHŽŒŒ‹ËŒÌÌØÈ]X[]HØZ[ˆ™Z™XÝY™XØ]\ÙHL\ÈŽŒŽÌŽÎŒ\È[™TÕØØ[›ÛšXØ[™[XZ[ˆŸÛ[ÚÙH
+ÌNŽ]ÚYKY˜YØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈLÎMÈÈMÈŽÌÈÈŽÌÈ›È8 %^XÝ]X[]KÝÛÜšÈ[ÈTˆŒÌÌÌËËŒÌÌÌØ™XØ[ŒKËŒXš[™\ˆŒHŒÌÌËËŒÌÌØ˜YM‹ÎTÕØØ[›ÛšXØ[ŸÛ[ÚÙH
+ÌNËXÛÛ\[\‹XØXÚXØ[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈLÎMÈÈMÈŽÌÈÈŽÌÈ›È8 %^XÝ]X[]KÝÛÜšÈ[ÈTˆŒÌÌÌËËŒÌÌÌØ™XØ[ŒKËŒXš[™\ˆŒHŒÌÌËËŒÌÌØØXÚH]ÈÌTÕØØ[›ÛšXØ[ŸÛ[ÚÙH
+ÌN‹X›Ý[™Y[X\™Ú[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒKŒÈKŒŒÍÎHÈŒÍÎHŽMÌÈÈŽMÌÈ›È8 %^XÝ]X[]KÝÛÜšÈ[ÈTˆËËØ™XØ[ŒÌÌÌËËŒÌÌÌØš[™\ˆŒHKÌXÚÙ[œÈŒKÌŒX›ÜØ\™ÈLKÍLXTÕØØ[›ÛšXØ[ŸÛ[ÚÙH
+ÌNXÛÛ\[\‹YXÚ\Ú[Û‹[X\™Ú[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒÌŒŒŒˆÈLÍÎLHÈŒLÍLÈŽNMÈÈÍLÌÈ›È8 %TˆËËŒÌÌÌØ™XØ[MËËŒMØš[™\ˆŒHŽŒŒ‹ËŒÌÌØÈ]X[]HØZ[ˆ™Z™XÝY™XØ]\ÙHL\ÈÎLKLËÎMÌËX\È[™TÕØØ[›ÛšXØ[™[XZ[ˆŸÛ[ÚÙH
+ÌNŒËXÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒŒÎHÈŒÎHŒMÍHÈŒMÍHÈ›È8 %œ™\Ú\ÙYY[ÈTˆÌ™XØ[Ìš[™\ˆŒHKËXTÕØØ[›ÛšXØ[Ø[™Y]HLMÎKXœÈMÍKŒL˜\ÈŸÛ[ÚÙH
+ÌNŒ‹XÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒKŒÈKŒŒMŒŒÌÈÈŒLŒÍÈŽMHÈŽMH›È8 %š^\™HÜÚ]]™HÛ›NÈTˆËÌ™XØ[ŒÌÌÌËËŒÌØTÕØØ[›ÛšXØ[XœÛÛ]HØ]\È˜Z[œ™\ÚÛÛ™š\›X][Ûˆ™\]Z\™YŸÛ[ÚÙH
+ÌNŒKXÛÛ\[\‹YXÚ\Ú[Û‹]ÚÙ[˜Ø[™Y]HÈÛÛ›Û
+HÈÛÛ\]HÙˆÈ8 %8 %8 %8 %[˜ÛÛ\]H8 %›Ý›ÙXÝ[Ûˆ˜]Ú\È[YYÝ]ËÌÎÈ›È[Ù[Y™™XÝ\ÈYX\Ý\˜X›H[™^XÝœ›Þ™[ˆ™\^H\È™\]Z\™YŸÛ[ÚÙH
+ÌNNKXÛÛ\Û™[YYÙK[X\™Ú[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈŽLMÈŒMÍMÈÈÌÈÍLÌÈÈŽLˆ›È8 %TˆŒÌÌÌËËØš[™\ˆŒHŒÌÌÌËËŽMLŒÎTÕØØ[›ÛšXØ[ÈŒLMÈ™Z™XÝÈH™YÜ™\ÜÙY]X[]H\Ü]H˜\Ý\ˆLŸÛ[ÚÙH
+ÌNNXÛÛ\Û™[YYÙK[X\™Ú[˜Ø[™Y]HÈÛÛ›Û
+HÈÈÛÛ\]H8 %ÈKŒ8 %ÈŽLMÈ8 %ÈÌÈ8 %ÈŽLˆ[˜ÛÛ\]H8 %Ø[™Y]H˜Z[Y™Y›Ü™H[Ù[ÛÛœÝXÝ[ÛŽÈ^XÝœ›Þ™[ˆ™\^H™\]Z\™Y[™ÛÛ›ÛØ]\È˜Z[Ÿ[ÛÝ]
+ÌNL‹\›Û[ÝXØ[™Y]HÈ[YY[Ý]ÛÛ›Û
+HHÈÛÛ\]HKŒÈ8 %NÈ8 %ŒŒÌMˆÈ8 %È8 %[˜ÛÛ\]H8 %ÛÛ›Û[YYÝ]KÍNÈX[ˆ™Y›YÚ›Ý™Y]^XÝœ›Þ™[ˆ™\^H\È™\]Z\™Y[™XœÛÛ]HØ]\È˜Z[ŸÛ[ÚÙH
+ÌNMËXÛÛ\Û™[YYÙK]ÚÙ[˜Ø[™Y]HÈÛÛ›Û
+HÈKŒÈKŒLÎÈLÎŒMÍMÈÈŒMÍMÈÍLÌÈÈÍLÌÈ›È8 %Ú^™K[X]ÚY[ÈTˆŒÌÌÌØš[™\ˆŒHŒÌÌØTÕØØ[›ÛšXØ[[™Ø]\È˜Z[ŸÛ[ÚÙH
+ÌNL‹\›Û[ÝXØ[™Y]HÈ[YY[Ý]ÛÛ›Û
+HÈÈÛÛ\]HKŒÈ8 %ÌŒŒˆÈ8 %ŒMÈÈ8 %È8 %[˜ÛÛ\]H8 %ÛÛ›Û[YYÝ]ËÌÎÈ›ÈX]ÚY›Û[Ý[ÛˆÛZ[H\È]˜Z[X›HŸÛ[ÚÙH
+ÌNLXÛÛ™š\›XØ[™Y]HÈÛÛ›Û
+HÈKŒLÎÈŒMÍMÈÈŒMÍLÌÈÈ›È8 %œ™\Ú\ÙYYÛÛ™š\›X][ÛˆÛ›NÈTˆŒÌÌÌË™XØ[ŒK[™XœÛÛ]HØ]\ÈÝ[˜Z[ŸÛ[ÚÙH
+ÌNKX˜[[˜ÙYXÛÛZ[™\‹XÛÜÙXØ[™Y]HÈÛÛ›Û
+HÈKŒLÎÈŒMÍMÈÈŒMÍHÍLÌÈÈ›È8 %ØÜ™Y[š[™ÈÚ[ˆÛ›NÈTˆŒÌÌÌË™XØ[ŒK[™XœÛÛ]HØ]\È˜Z[Èœ™\ÚÛÛ™š\›X][Ûˆ™\]Z\™YŸÛ[ÚÙH
+ÌNXÛÛZ[™\‹XÛÜÙXÙZYÚHÈ
+HÈKŒŒÌŒH›È8 %^XÝ]X[]KÙXÛÙK]ÛÜšÈYNÈ˜Z[š[™ÈØ[š\Ù\ÈËŒø¡¤ŽKŒÍHÈ[™Lš\Ù\ÈNLŒÌ8¡¤ŒNLÌKŽNH\ÈŸÛ[ÚÙH
+ÌNË]\YY˜[Z[KX˜[[˜ÙXŒHÈ
+HÈKŒKŒÈLÎŒLÈÈŒMÍHŽLÍÌÈÍLÌÈ›È8 %Tˆ™[XZ[œÈXœÛÛ]HÝXÝ\™H˜Z[Ë[™Lš\Ù\ÈLÌx¡¤NŽÍ\ÈŸÛ[ÚÙH
+ÌN‹\ÝXÝ\™K]ÚÙ[˜ÙZYÚHÈ
+HÈKŒÌŒŒˆÈLÎŒLÍÍHÈŒMÌHŽÈÈŽÌÌÈ›È8 %š[X\žHÝXÝ\™H™YÜ™\ÜÙ\È[™Lš\Ù\ÈKN8¡¤ÍLKŽ\ÈŸÛ[ÚÙH
+ÌNKXÛÛ\Û™[]ÚÙ[˜œ›Þ™[ˆØ[™Y]HÈÛÛ›Û™\^JHÈÈÛÛ\]HKŒÈ8 %KŒÈ8 %ŒMÌÌÈÈ8 %ŽLÈÈ8 %›È8 %ÛÛ›Û[Y[Ý]ËÌÈ™\›ÙXÙYÈØ[™Y]H\ÈÛ›HH[[YK\ÜXÚYšXÈ[˜›ØÚÈ[™˜Z[ÈXœÛÛ]HÝXÝ\™HŸÛ[ÚÙH
+ÌNXÛÛ\Û™[]ÚÙ[˜Ø[™Y]HÈ[YY[Ý]ÛÛ›Û
+HÈÈÛÛ\]HKŒÈ8 %KŒÈ8 %ŒMÌÌÈÈ8 %ŽLÈÈ8 %[˜ÛÛ\]H8 %ÛÛ›Û\ÈÈ\YXÛÙH[Y[Ý]ÎÈ^XÝœ›Þ™[ˆ™\^H™\]Z\™YŸÛ[ÚÙH
+ÌNË\ØØY™›Û\™Yš^ÙZYÚHÈ
+HÈKŒÌŒŒˆNMÌÌÈŽLÍÈ›È8 %^XÝYH[˜ÛY[™ÈTˆŒÌÌÌËš[™\ˆŒHŽŒŒ‹[™™XØ[ŒMÎÈ™X]Y[ÛÜœÙ[œÈLNËNx¡¤ŒŒKŽ\ÈŸÛ[ÚÙH
+ÌN‹Y\ÚYÛ‹Y›ÜÝ]ŒHÈ
+HÈKŒLÎŒMÈŒMÍMÈÍLÌÈ›È8 %Ø[™Y]HTˆŒÌÌÌø¡¤Œ[™™XØ[Œx¡¤‹ŒÌØÈ‹ÌH\È˜\Ý\ˆLØ[››ÝÝ™\œšYH]X[]H™YÜ™\ÜÚ[ÛˆŸÛ[ÚÙH
+ÌNK\Þ[X›ÛX›Ý[™\žXÙZYÚHÈ
+HÈKŒLÎŒLÍLÈÍLÌÈ›È8 %^XÝ]X[]HYH[˜ÛY[™Èš[™\ˆŒHŒÌÌÈ[™™XØ[ŒMÎÈ™X]Y[ÛÜœÙ[œÈÜÜÈ[™LŸÛ[ÚÙH
+ÌN[Z^Y[X\ÚØZ^YÈ˜[™ÛJHÈKŒLÎŒLÍLÈÍLÌÈ›È8 %^XÝ]X[]HYH[˜ÛY[™Èš[™\ˆŒHŒÌÌÈ[™™XØ[ŒMÎÈØ[™Y]HL™YÜ™\ÜÙ\ÈN‹Lø¡¤ŒLLL‹ŒMH\È[™ÜÜÈM‹ŽL8¡¤ŒŒ‹ŒŽMNHŸÛ[ÚÙH
+ÌMÎNK\ÛÝX]YÛY[][Û˜YHÈÛÛ›Û˜[ÙJHÈKŒLÎÈÌŒŒˆŒMÍLÈŒLÍÍL›È8 %YX[š[™Ù[\›ÙÜ˜[H[™™XØ[\™HÈš[™\ˆŒH™YÜ™\ÜÙ\ÈŽŒŒ¸¡¤‹ŒÌÌÈ\Ü]HL[\›Ýš[™ÈK‹Ž8¡¤ŒKŒÌH\ÈŸÛ[ÚÙHÈ[ÛÝ]
+ÌMÎM‹\Ù[X[XËXÛÛ˜\ÝÙZYÚŒHÈÛÛ›Û
+HKÌÈ
+ÈÍHÈKÌÈ
+ÈÍHÛÛ\]H\X[KŒ\X[ËMÈÈKŒÓH\X[ŒŒËŒMLÍHÈŒNÓH\X[ËMMLÈŽMLÓH[˜ÛÛ\]H8 %›Ý\›\È]™H\YXÛÙH[Y[Ý]ÎÈY]šXÜÈÛÝ™\ˆY™™\™[ÝXœÙ]È[™\™H›ÝØÛÜ™XX›HŸÛ[ÚÙH
+ÌMÎMKYYÙKX[YÛ›Y[ÙZYÚHÈÛÛ›Û
+HÈKŒLÎŒMÍLÍLÌÈ›È8 %^XÝ]X[]HYHÚ]YX[š[™Èš[™\ˆŒHŒÌÌË[™™XØ[ÈØ[™Y]HLKÌ‹ÎHœÈÛÛ›ÛKÍL‹ŽMˆ\È
+LËÌIJK™[ÝÈHIH›ÛÜˆŸÛ[ÚÙH
+ÌMÎLËXÛÛ™š\›XšY[]HKHÈÛÛ›ÛJHÈKŒLÎÈŽLMÈNÈÈMÍLŽÌÌÈÈŽLŒ›È8 %YX[š[™ÈŒÌÌÌÈ[™™XØ[ŒHYK]š[™\ˆŒHŒÌÌÈœÈŽML[™š[X\žHÝXÝ\™H™YÜ™\ÜÙ\ÎÈL‹ÍŒœÈKNŒŽH\ÈØ[››ÝÛÛ™š\›H]X[]HŸÛ[ÚÙH
+ÌMÎLKYšY[]XÙZYÚKHÈÛÛ›ÛJHÈKŒLÎÈŒMÍMÈÈŒMNLÈÍLÌÈÈLÎ›È8 %Ø[™Y]HYX[š[™ÈŒÌÌÌÈœÈš[™\ˆŒHŒÌÌÈœÈK™XØ[ŒHœÈ[™LKŽHœÈKMMŒÌ\ÎÈš^\™HØ[™Y]H[™[™Èœ™\ÚÛÛ™š\›X][ÛˆŸÛ[ÚÙH
+ÌMÎKXš[™\‹XÛÛ\Û™[\[˜Ø[™Y]HÈ[˜ÛÛ\]HÛÛ›Û
+HÈÈˆÛÛ\]HKŒÌŒŒˆÈKŒŒŽMÈÈŒLŒŽÍÍÈÈŽMÌÌ[˜ÛÛ\]H8 %ÛÛ›Û\ÈÛ™HXÛÙH[Y[Ý]ÈØ[™Y]HLMMKŒMHœÈÛÛ›ÛËMŽKLˆ\È[™š[™\ˆŒHŽŒŒˆœÈKŒŸÛ[ÚÙH
+ÌMÎXš[™\‹X\š]XÙZYÚHÈÛÛ›Û
+HÈKŒŒŒNÈ›È8 %^XÝ]X[]HYHÚ]YX[š[™ËØš[™\ˆŒHÈØ[™Y]HL‹L‹ÍÈœÈÛÛ›Û‹ÍMKŒŒH\È
+LËÌ‰JHŸÛ[ÚÙH
+ÌMÎ‹\Ý\ØˆÈŒHÝ\ÊHÈKŒLÎNMÌÈÈŒLÍLÈŽÌÌÈÈÍLÌÈ›È8 %YX[š[™ÈŒÌÌÌÈ[™š[™\ˆŒHŒÌÌÈYNÈØ[™Y]HL‹LŒHœÈÛÛ›ÛKLKŽL\È
+
+ÌMMŒIJHŸÛ[ÚÙH
+ÌMÎKX›Ý[™Ø›Ý[™ÈÈÛÛ›Û
+HÈKŒŒMÍL›È8 %^XÝ]X[]HYHÚ]YX[š[™ËØš[™\ˆŒHÈØ[™Y]HLKLÍKŒÍˆœÈÛÛ›ÛKMËŒM\ÈŸÛ[ÚÙH
+ÌMÎXÛÛ™š\›XÛÛ\Û™[\[ˆÈÛÛ›Û
+HÈKŒÌŒŒˆŒMÍL›È8 %^XÝ]X[]HYNÈØ[™Y]HLK‹ŽMÈœÈÛÛ›ÛKÍÌËŒNH\Ë]YX[š[™È\ÈŸ[ÛÝ]
+ÌMÎXÛÛ™š\›XÛÛ\Û™[\[ˆÈÛÛ›Û
+HHKŒNŒM›È8 %^XÝ]X[]HYHÚ]YX[š[™ÈŒˆ[™š[™\ˆŒHÌÍŽÈØ[™Y]HLKKÎHœÈÛÛ›ÛKŽËˆ\ÎÈÌMÎÈ™Z™XÝYŸÛ[ÚÙH
+ÌMÎËXÛÛ\Û™[\[˜ÙZYÚHÈÛÛ›Û
+HÈKŒLÎŒMÍMÈÍLÌÈ›È8 %^XÝ]X[]HYNÈØ[™Y]HLKNKŒŒœÈÛÛ›ÛKL‹Ž\ÈÚ]™\ÈT‹Û\È
+Í‹ŒÎINÈœ™\ÚÛÛ™š\›X][Ûˆ™\]Z\™YŸÛ[ÚÙH
+ÌMÎ‹XÛÛ\Û™[\[˜ÙZYÚHÈÛÛ›Û
+H[˜]˜Z[X›H[˜]˜Z[X›H[˜]˜Z[X›H[˜]˜Z[X›H[˜]˜Z[X›H[˜ÛÛ\]H8 %›Ý]˜[X][ÛœÈ˜Z[Y™Y›Ü™HØÛÜ™X›Ø\™Ûˆ[ˆ[œ™YÚ\Ý\™Y[[YH›YÎÈ^XÝœ›Þ™[ˆ™\^H™\]Z\™YŸÛ[ÚÙH
+ÌMÎKXØ[˜\Ø™\ÜYØ[™Y]HÈ[˜[YÛÛ›Û
+HÈKŒLÎŒMÍMÈÍLÌÈ[˜[Y8 %ÛÛ›Û˜Z[™YØ[˜\Ë[Ù™ˆ]]˜[X]YØ[˜\Ë[ÛŽÈ™\ÜYLK‹ŒMÈÈK‹Ž\È\È›Û‹X]šX]X›HŸÛ[ÚÙH
+ÌMÎXÛÛ\Û™[\ÝXÝ\™X[ŠÙYÙHHÈÛÛ›Û
+HÈKŒLÎŒMÍMÈÍLÌÈ›È8 %^XÝ]X[]HYNÈØ[™Y]HLKLËŒHœÈÛÛ›ÛK‹ŒMˆ\ÈŸ[ÛÝ]
+ÌMÎXÛÛ\Û™[\ÝXÝ\™X[ŠÙYÙHHÈÛÛ›Û
+HHKŒŒŽLŒMÍNŽM›È8 %^XÝ]X[]HYHÚ]YX[š[™È[™š[™\ˆŒHÍÌNÈØ[™Y]HLKLKŒHœÈÛÛ›ÛKK\ÈŸÛ[ÚÙH
+ÌMÍÎKXš[™\‹]ÜÛÙÞXŒKÌHÈÛÛ›ÛÌ
+HÈKŒÌŒŒˆŒLMÍLŒÌLŒÌÈ›È8 %^XÝ]X[]HYHÚ]YX[š[™È[™š[™\ˆŒHŽŒŒŽÈØ[™Y]HLKÌÈœÈÛÛ›ÛK‹H\ÈŸÛ[ÚÙH
+ÌMÍÎX˜]ÚX˜]ÚHÈÛÛ›Û˜]ÚŠHÈKŒLÎŒMÍMÈÍLÌÈ›È8 %^XÝ]X[]HYNÈØ[™Y]HLKMŽKNHœÈÛÛ›ÛKÎH\È[™ÛÜœÙHÜÜÈŸÛ[ÚÙH
+ÌMÍÍËXÛÛ™š\›XÛÛ\Û™[Z[™[ÜžHÈÛÛ›Û
+HÈKŒŒMÍL›È8 %^XÝ]X[]HYHÚ]YX[š[™ËØš[™\ˆŒHÈØ[™Y]HLKŒMËÎHœÈÛÛ›ÛKM‹ŒŽH\ÎÈÌMÍÍˆ™Z™XÝYŸÛ[ÚÙH
+ÌMÍÍ‹XÛÛ\Û™[Z[™[ÜžXÙZYÚÈHÈÛÛ›Û
+HÈKŒLÎÈŒÎHŒLÍLÈÈŒLÍLÈÍLÌÈÈLŽMÈ›È8 %YX[š[™ÈY\È]ŒÌÌÌÎÈš[™\ˆŒHŒÌÌÈÈÌÌÌÈ[™LKÎKŽÈKŒËŽÈ\ÎÈœ™\ÚÛÛ™š\›X][Ûˆ™\]Z\™YŸ[ÛÝ]
+ÌMÍÍ‹XÛÛ\Û™[Z[™[ÜžXÙZYÚÈHÈÛÛ›Û
+HHKŒŒŽLÈMÈŒLŽLÈŒŒŽMÈŒLÌM›È8 %YX[š[™ÈŒˆÈ]š[™\ˆŒHÍÌHÈ[™LKMŒŒˆÈKÍ‹È\ÎÈš^\™HØ[™Y]HÛ›HŸÛ[ÚÙH
+ÌMÍÍKXÛÛ\Û™[YYÙX˜Z[‹ÙXÛÙHHÈÛÛ›Û
+HÈKŒLÎŒMÍMÈÍLÌÈ›È8 %^XÝ]X[]HYNÈØ[™Y]HLKL‹ŒMHœÈÛÛ›ÛKLËŒH\ÈÚ]™\ÈÛ›H
+ÌËŽ	HT‹Û\Ë™[ÝÈHIHZ[š[][HY™™XÝŸÛ[ÚÙH
+ÌMÍÌË[]\˜[XÛÜÙXZ[ˆÈÛÛ›Û
+HÈKŒÈ[˜]˜Z[X›HÈ[˜]˜Z[X›HŒMÈ[˜]˜Z[X›HÈ[˜]˜Z[X›H›È8 %Ø[™Y]HÛÛ\]YËÌÈÚ[HÛÛ›Û[YYÝ]ËÌÎÈ]X[]H[H[˜]˜Z[X›NÈ^XÝœ›Þ™[ˆ™\^H™\]Z\™YŸÛ[ÚÙH
+ÌMÍÌ‹XÛÛ™š\›X›Ý[™ÈÈÛÛ›Û
+HÈKŒLÎMÈŽÌÌÈ›È8 %^XÝ]X[]HYNÈL‹MKLÈÈ‹LËŒLÈ\ÎÈÜYY™[ÝÈÛÛ™š\›X][Ûˆ™\ÚÛŸ[ÛÝ]
+ÌMÍÌ‹XÛÛ™š\›X›Ý[™ÈÈÛÛ›Û
+HHKŒŒŽLŒÌÎÌÍŒ›È8 %^XÝ]X[]HYNÈØ[™Y]HL‹LÌKŒÍœÈÛÛ›Û‹ÍËŒŒÈ\ÎÈØ]\È˜Z[ŸÛ[ÚÙH
+ÌMÍÌKX›Ý[™ØÛˆÈÛÛ›ÛÙ™ŠHÈKŒÌŒŒˆŒLMLÈŽŒÍÈ›È8 %^XÝ]X[]KÜ™YXÝ[ÛˆYNÈØ[™Y]HLKÌËŽMˆœÈÛÛ›ÛKLŒ‹ŒH\ÎÈš^\™HØÜ™Y[š[™ÈÛ›NÈœ™\ÚÛÛ™š\›X][Ûˆ™\]Z\™YŸÛ[ÚÙH
+ÌMÍÌXÛÛ\Û™[YYÙX˜Z[‹ÙXÛÙHHÈÛÛ›Û
+HÈ[˜]˜Z[X›H[˜]˜Z[X›H[˜]˜Z[X›H[˜]˜Z[X›H›È8 %›Ý\›\È[YYÝ]ËÌÎÈÝšXÝÛÛ\][™\ÜÈ›Ü˜šYÈ[Ù[\]X[]H]šX][ÛŽÈœ™\ÚÚ^™K[X]ÚY]\˜[XÛÜÙH^\š[Y[™^ŸÛ[ÚÙH
+ÌMÍ‹XÛÛ\Û™[\[˜ÙZYÚHÈÛÛ›Û
+HÈ[˜]˜Z[X›HÈKŒ[˜]˜Z[X›HÈLÎ[˜]˜Z[X›HÈŒLÍLÈ[˜]˜Z[X›HÈÍLÌÈ›È8 %Ø[™Y]H[YYÝ]ËÌÎÈÝšXÝÛÛ\][™\ÜÈ›Ü˜šYÈ[Ù[]šX][ÛŽÈ^XÝœ›Þ™[ˆ™\^H™\]Z\™YŸÛ[ÚÙH
+ÌMÍK[]\˜[[X\™Ú[˜\™XÝX\™Ú[ˆHÈÛÛ›Û
+HÈKŒÈKŒÈŒLMLÈŒMÍÍÈÈLÎ›È8 %Ø[™Y]H™YÜ™\ÜÙ\ÈYX[š[™ÈŒÌÌÌËOŒš[™\ˆŒHKOŒ[™™XØ[ŒMËOŒÈÛÛ\]HYÙ[ˆ[™\ÎÈØ]\È˜Z[ŸÛ[ÚÙH
+ÌMÍ[]\˜[XÛÜÙXZ[ˆÈÛÛ›Û
+HÈKŒLÎŒMÍMÈÍLÌÈ›È8 %™YXÝ[Û‹ZY[XØ[ÈYX[š[™ÈŒÌÌÌÎÈYÙ[ˆÌˆ[™NÈØ]\È˜Z[Ÿ[ÛÝ]
+ÌMÍ[]\˜[XÛÜÙXZ[ˆÈÛÛ›Û
+HHKŒŒŽLŒMÍNŽM›È8 %™YXÝ[Û‹ZY[XØ[ÈYX[š[™ÈÈYÙ[ˆÌˆ[™NÈØ]\È˜Z[ŸØÚÙYØØ[ÛÝ]
+ÛLŽË]˜Z[™Y[ØØ[]ŒLËLŒŒÌXHÙYYÈ0åÈˆÛÛ™šYÜÊHŒˆ8 %8 %8 %8 %›È8 %\È›ÝØÛÛ™XÛÜ™È˜]ËØÛÛœÝ˜Z[™YÜ™\Z\™YYX[š[™Ë]Œˆ[™š[™\‹Ü™Y™\™[˜ÙHŒK[ÈYÙ[ˆMŒÌMŒÚ\™[™\ÎÈXœÛÛ]K\›Ø˜Xš[]HQHŒŒXYÛ›ÜÝXÈÛ›HŸÛ[ÚÙHØ[Xœ˜][Ûˆ
+ÛLŒÌØ›Ý[™YÜ™XÝ\œÚ]™WÜÜŒ˜\Èx $Í
+HˆŒŒŒŒ›È8 %ÛXÞHØ[Xœ˜][ÛˆÛ›NÈ›ÈYX[š[™Ù[Ý]]›ÈÚ\ÛZ[HŸ[ÛÝ]
+ÛLŒÌØ›Ý[™YÜ™XÝ\œÚ]™WÜÜŒ˜š^YM
+HˆŒŒŒŒ›È8 %ÑH[\›Ý™\ÈÚ]\]ÚÙ[ˆXØÝ\˜XÞH™[XZ[œÈŒÈYÙ[ˆÛÛ˜XÝ]Y]Í™\™XÝÝYÛ˜[ŸÛ[ÚÙH
+MÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒX
+HÈŒÌÌÌÈKŒŒŒ›È8 %ÝšXÝ]ŒˆŒYÙ[ˆÌNÈÛÛ\]X›HXYÛ›ÜÝXÈÝXœÙ]ŸÛ[ÚÙH
+MÌŒXÛÛ\Û™[Z[™[ÜžK]™YK\Û[ÚÙK\ŒXšX\È
+HÈŒŒŒŒ›È8 %ËÌÈ[Y[Ý]ËÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛ[ÚÙH
+MÌŒXÛÛ\Û™[Z[™[ÜžK]™YKXšX\Ì\Û[ÚÙK\Œ˜šX\È
+HÈŒŽMˆŒŽLÈŒ›È8 %›Û‹Y[\HXYÛ›ÜÝXÈÝ™\›\™XÛÝ™\™Y]ÝšXÝ]ŒˆŒ[™YÙ[ˆÌHŸÛ[ÚÙH
+MÌŒKXÛÛ\Û™[\[‹]™YK\Û[ÚÙK\ŒX[ˆJHÈKŒLÎŒMLLÈŒ›È8 %ÝšXÝ]ŒˆŒ[ˆÛ‹ÛÙ™ˆY[XØ[YÙ[ˆÌHŸÛ[ÚÙH
+MÌŒKXÛÛ\Û™[\[‹]™YKXšX\Ì\Û[ÚÙK\Œ˜[ˆ
+HÈKŒLÎŒMLLÈŒ›È8 %X]ÚYÛÛ›ÛÛÛ™š\›\È›È[‹YXÛÙHY™™XÝYÙ[ˆÌHŸÛ[ÚÙH
+MÌŒ‹XÛÛ\Û™[YYÙK]™YK\Û[ÚÙK\ŒXYÙHJHÈKŒLÎŒŽŒHŽÌLÈ›È8 %ÝšXÝ]ŒˆŒYÙHÛ‹ÛÙ™ˆY[XØ[YÙ[ˆÌHŸÛ[ÚÙH
+MÌŒ‹XÛÛ\Û™[YYÙK]™YKXšX\Ì\Û[ÚÙK\Œ˜YÙH
+HÈKŒLÎŒŽŒHŽÌLÈ›È8 %X]ÚYÛÛ›ÛÛÛ™š\›\È›ÈYÙKYXÛÙHY™™XÝYÙ[ˆÌHŸÛ[ÚÙH
+MÌŒË\ÛÝ[ÝÛ™\‹]™YK\Û[ÚÙK\ŒXÛÝJHÈKŒLÎMŒMŽÌÈ›È8 %YX[š[™Ù[]ŒHÈ]ÝšXÝ]ŒˆŒYÙ[ˆÌHŸ[ÛÝ]
+MÌŒË\ÛÝ[ÝÛ™\‹]™YKZ[Ý]\ŒØÛÝJHKŒŒÈŒÎMÌŽL›È8 %Ø]\Ø[ØZ[ˆÝ™\ˆÛÝ[Ù™‹]ÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛ[ÚÙH
+MÌKXÛÛ\Û™[Z[™[ÜžLK\Û[ÚÙK\ŒØ[™[ÜžHJHÈKŒŒŒÌMŒ›È8 %YX[š[™Ë]ŒKÜÝšXÝ]ŒˆŒ[™[ÜžHÛ‹ÛÙ™ˆY[XØ[YÙ[ˆÌHŸ›Ý[ˆ
+MÌ‹\Þ[X›Û[Û›K\›ÛÝX\š]LM\ŒX
+H8 %8 %8 %8 %[˜[Y8 %ÛÛ™šYÝ\™YÚÚXÙK[Û›H™X]Y[Ø\È›Ý[œÝ[X]YÛˆ^\ŽÈÚXÚÜÚ[^ÛYYŸÛ[ÚÙH
+MÌËXš[™\‹X\š]LK]™YK\Û[ÚÙK\Œ˜\š]HJHÈKŒLÎMŒMŽÌÈ›È8 %Y[XØ[È\š]HÌ‹ÝšXÝ]ŒˆŒYÙ[ˆÌHŸ[ÛÝ]
+MÌËXš[™\‹X\š]LK]™YKZ[Ý]\\š]HJHKŒŒÈŒÎMÌŽL›È8 %Y[XØ[È\š]HÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛ[ÚÙH
+MÌŽKXš[™\‹]ÜÛÙÞLK]™YK\Û[ÚÙK\ŒØÜÛÙÞHJHÈKŒLÎˆÎMLÈ›È8 %YX[š[™Ë]ŒHŒÌÌÌÈœÈÛÛ›ÛÎÈÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛ[ÚÙH
+MÌÌK\›ÛÝX\š]L‹]™YK\Û[ÚÙK\ŒØ›ÛÝ\š]HŠHÈKŒLÎMŒMŽÌÈ›È8 %Y[XØ[ÈÙZYÚÈÌHY\ˆÚ^\XØ][ÛœÈ[™™\›ÈÚ[™Ù\ÎÈÝšXÝ]ŒˆŒYÙ[ˆÌHŸ[˜[Y
+MÌÌË\›ÛÝZY[]LK]™YK\Û[ÚÙK\ŒX›ÛÝY[]HJHÈKŒLÎMŒMŽÌÈ[˜[Y8 %™X]Y[™XÛÜ™Y™\›È\XØ][ÛœÎÈÚXÚÜÚ[[™^\ˆØ\Xš[]HXÛ\˜][Ûˆ[˜[Y]YYÙ[ˆÌHŸÛ[ÚÙH
+MÌÍK\›ÛÝX\š]KY[XYK\Û[ÚÙK\ŒX›ÛÝ\š]HJHÈKŒLÎMŒMŽÌÈ›È8 %[ZXY˜Z[š[™È™[[Ý™\È[\ÜÜÚX›HZ[Û\ÜÙ\Ë]ÙZYÚÌH\È™YXÝ[Û‹ZY[XØ[ÝšXÝ]ŒˆŒYÙ[ˆÌHŸ[ÛÝ]
+MÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒX
+HHHŒMŒÎŒ›È8 %ÝšXÝ]ŒˆŒÛÈ[Y[Ý]ËYÙ[ˆÌHŸY™\œØ\šX[
+MÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒX
+HHKŒŒLŒŒHŒ›È8 %ÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛÙ
+MÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒX
+HHHŒÈŒ›È8 %ÝšXÝ]ŒˆŒÛÈ[Y[Ý]ËYÙ[ˆÌHŸšXÛ×Ú[
+MÌM\Þ[X›Û[Û›K\ØÜ˜]ÚŒ\ŒX
+HÈŒHŒŒŒ›È8 %ÝšXÝ]ŒˆŒÛ™H[Y[Ý]YÙ[ˆÌHŸÛ[ÚÙH
+™\ÝXÝ\™WØÜWÜØÜ˜]ÚÝŒ
+HÈŒŒŒÌHŒ›È8 %š^\™HØÜ˜]ÚÚ\š[™ÈŸ›Ý[ˆ
+ØØ[Ù\™XÝ[ØY™[›×ÌŒŒÌM
+H8 %8 %8 %8 %›È8 %\™Ø\™KØÚXÚÜÚ[˜[Y][ÛˆÛ›HŸ[ÛÝ]ŸY™\œØ\šX[ŸÛÙŸšXÛ×Ú[ŸšXÛ×Ú[
+LLŒÝ[œØ[™›ÞYXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒÍÍHŒÍÍHŒ›È8 %\Ý\ØÜ˜]ÚÈ]ÚÙ[ˆ[˜ÛÛ\]H›ÙÜ˜[HŸÛÙ
+MM‹YMLÌK\›ÛÝ\™Y™\™[˜ÙKX\š]LK\ŒKLØXYÛ›ÜÝXÈÝXœÙ]
+HKŒNLMÈŒÌNHÎML›È8 %YX[š[™Ù[]ŒHLÝšXÝ]ŒˆŒYÙ[ˆÌNÈX\›™YÙZYÚH^XÝHX]Ú\ÈÛÛ›ÛŸÛÙ
+MMËYMLÌK\›ÛÝ\™Y™\™[˜ÙKX›Ý[™Y\ŒKLØXYÛ›ÜÝXÈÝXœÙ]
+HKŒNLMÈŒÌNHÎML›È8 %›Ý[™Y˜Z[š[™È[\›Ý™\ÈXYØ[Xœ˜][Ûˆ]XÚ\Ú[ÛœÈ[™]X[]H^XÝHX]ÚMMŽÈYX[š[™Ù[]ŒHLÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛÙ
+MMYMMË\›ÛÝZY[]LK\Œ‹LØXYÛ›ÜÝXÈÝXœÙ]
+HKŒÌÌÈŒMŽÌÍÌ›È8 %˜[šË[Û›HY[]HÙZYÚH˜Z\Ù\ÈYX[š[™Ù[]ŒHŒ8¡¤ŒŒH[™™XØ[ŒMN8¡¤ŒŒÌ™\œÝ\ÈØ[YKXÚXÚÜÚ[ÛÛ›Û]ÝšXÝ]ŒˆŒTÕYÙHŒHŒYÙ[ˆÌHŸÛÙ
+MMKYMM\›ÛÝZY[]K[™YÌKXÛÛ›Û\ŒKLØXYÛ›ÜÝXÈÝXœÙ]
+HKŒLŒMMLÎ›È8 %YX[š[™Ù[]ŒHŒÝšXÝ]ŒˆŒTÕYÙHŒHŒYÙ[ˆÌNÈ™YÜ™\ÜÙ\Èœ›ÛHMMŸÛÙ
+MMKYMM\›ÛÝZY[]K[™YÍ\Œ‹LØXYÛ›ÜÝXÈÝXœÙ]
+HKŒLŒMMLÎ›È8 %ž]KZY[XØ[ÈÙZYÚLHÛÛ›ÛÈ[˜Ü™X\ÙY™YØ]]™HÙZYÚ\È]X[]K[™]]˜[YÙ[ˆÌHŸÛÙ
+MM‹YMM\ÝšXÝ\ÝXœÙ]KXÛÛ›Û\ŒKLØXYÛ›ÜÝXÈÝXœÙ]
+HKŒLŒMMLÎ›È8 %YX[š[™Ù[]ŒKÜÝšXÝ]ŒˆŒ™XØ[ŒŒËYÙ[ˆÌHŸÛÙ
+MM‹YMM\ÝšXÝ\ÝXœÙ]K\Œ‹LØXYÛ›ÜÝXÈÝXœÙ]
+HKŒŒÈŒŒÎŽLŒ›È8 %TÕYÙHŒHŒMË]™XØ[™YÜ™\ÜÙ\ÈÈŒŒKYX[š[™Ù[]ŒKÜÝšXÝ]ŒˆŒYÙ[ˆÌHŸÛÙ
+MMËYMM\ÝšXÝ\ÝXœÙ]‹\ŒKLØXYÛ›ÜÝXÈÝXœÙ]
+HKŒŒNÈŒŒMÈ›È8 %™XØ[ŒŒÈ[™TÕ›ÙHŒHŒÌÌ]YX[š[™Ù[]ŒKÜÝšXÝ]Œˆ[™TÕYÙHŒHŒYÙ[ˆÌHŸÛÙ
+MŒŒ\ÛÝÛÝ™\˜YÙK]™X]Y[\ŒXXYÛ›ÜÝXÈÝXœÙ]
+HKŒMLˆŽM›È8 %YX[š[™Ù[]ŒHLÝšXÝ]ŒˆŒ™\]Z\™YXÙZÛ\œÈZ\ÜÚ[™ÈÛˆËÍ™XÛÜ™ËYÙ[ˆÌNÈ\˜][ÛˆØØ[[™È™Z™XÝYŸÛ[ÚÙX
+^ÙML×ÚÛ™\ÝÝWØÚ[\[Û˜LLŒHXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒŒŒ›È8 %Û™HK\ÙXÛÛ™ÛÛœÝ˜Z[™YYXÛÙH[Y[Ý]È›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLŒ×ÚYÙYÌÌœÝ\Ø˜LLŒÈXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒNLMÈŒŒ›È8 %[˜ÛÛœÝ˜Z[™Y™]žKØØ[˜\ÈØ\È›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LL×ÚYÙYÜØÚ[XWÜÛÝØLLÈXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒŒNLMÈŒ›È8 %XÙZÛ\ˆÚYÛ˜[È[\›Ý™Y]Ý]]Y›Ý\œÙNÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLŽÚYÙYÜØÚ[XWÜÛÝ×ÍLLŽXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒŒMMˆŒ›È8 %YÚ\ˆÜÜÈÙZYÚÈ™YÜ™\ÜÙYXÙZÛ\ˆÚYÛ˜[È›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLŽWÚYÙYÜØÚ[XWÜÛÝ×ÍÛÝÝÙZYÚØLLŽHXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒŒMMˆŒ›È8 %ÝÙ\‹]ÙZYÚÛÛ›ÛY›Ý™\›ÙXÙHLLÎÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÌÚYÙYÜØÚ[XWÜÛÝ×ÜÙYYXLLÌXYÛ›ÜÝXÈÝXœÙ]
+HHŒŒŒMMˆŒ›È8 %ÙYYLHÛÛ›ÛY›Ý™\›ÙXÙHLLÎÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÌ—ÙÙ[™\˜][Û—Ù›ØÝ\ØLLÌˆ™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒMÍˆŒ›È8 %\ÚÈ™]ÙZYÚ[™ÈY›Ý[\›Ý™H]X[]NÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÌ×Û›×Ù\ÙWÛ˜LLÌÈ™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒŒ›È8 %›ËY\ÙYSˆ]ÛÜœÙ[™Y™YY˜XÚÎÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÍWÚ—ØÛÛ^ØÛÛ›ÛLLÍH™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒŒˆŒ›È8 %ˆ™\™\Ù[][Ûˆ[\›Ý™YÚYÛ˜[È]Y›Ý\œÙNÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÍ—Ú—ØÛÛ^ÌÌ˜LLÍˆ™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒHŒ›È8 %Û™Ù\ˆˆ[ˆ™YÜ™\ÜÙYLLÍNÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÍ×Ú—ØÛÛ^ÌM˜LLÍÈ™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒŒMˆŒ›È8 %ZYÚ[[\›Ý™YXÙZÛ\ˆÚYÛ˜[]Y›Ý\œÙNÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÎÚ—ØÛÛ^ÜÙYYWÎLLÎ™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒMŽÈŒ›È8 %ÙYYLHÛÛ›Û™YÜ™\ÜÙYXYÛ›ÜÝXÈÚYÛ˜[ÎÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+LLÎWÚ—ØÛÛ^ÜÙYY—ÎLLÎH™YK\›Û\XYÛ›ÜÝXÊHÈŒŒŒŒ›È8 %ÙYYLˆÛÛ›ÛY›È]X[]HÚYÛ˜[[™ÛÈ[Y[Ý]ÎÈ›ÝHÚ\]˜[X][ÛˆŸÛ[ÚÙX
+ŒÈ^\ˆÛÛ›Û
+HÈŒŒŒLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸ[ÛÝ]
+ŒÈ^\ˆÛÛ›Û
+HHŒŒŒLMˆŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸY™\œØ\šX[
+ŒÈ^\ˆÛÛ›Û
+HŒŒŒÍˆŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸÛÙ
+ŒÈ^\ˆÛÛ›Û
+HŒŒŒÌÈŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸšXÛ×Ú[
+ŒÈ^\ˆÛÛ›Û
+HÈŒŒŒLŽŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸÛ[ÚÙX
+ŒÈÚÚXÙH\›JHÈŒŒŒŒ›È8 %[\H™YXÝ[ÛœÎÈYÙ[ˆ›ÝÈ˜Z[YŸ[ÛÝ]
+ŒÈÚÚXÙH\›JHHŒŒŒŒ›È8 %[\H™YXÝ[ÛœÎÈYÙ[ˆ›ÝÈ˜Z[YŸY™\œØ\šX[
+ŒÈÚÚXÙH\›JHŒŒŒŒ›È8 %[\H™YXÝ[ÛœÎÈYÙ[ˆ›ÝÈ˜Z[YŸÛÙ
+ŒÈÚÚXÙH\›JHŒŒŒŒ›È8 %[\H™YXÝ[ÛœÎÈYÙ[ˆ›ÝÈ˜Z[YŸšXÛ×Ú[
+ŒÈÚÚXÙH\›JHÈŒŒŒŒ›È8 %[\H™YXÝ[ÛœÎÈYÙ[ˆ›ÝÈ˜Z[YŸÛ[ÚÙX
+LŽÚÚXÙK[˜]]™HØ]JHÈKŒŒŒÌMŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸ[ÛÝ]
+LŽÚÚXÙK[˜]]™HØ]JHHKŒŒŒLMŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸY™\œØ\šX[
+LŽÚÚXÙK[˜]]™HØ]JHKŒŒŒŽLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸÛÙ
+LŽÚÚXÙK[˜]]™HØ]JHKŒŒŒŒÍŽHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸšXÛ×Ú[
+LŽÚÚXÙK[˜]]™HØ]JHÈKŒŒŒLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸÛ[ÚÙX
+LŽHØXÚYÚÚXÙJHÈKŒŒŒÌMŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸ[ÛÝ]
+LŽHØXÚYÚÚXÙJHHKŒŒŒLMŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸY™\œØ\šX[
+LŽHØXÚYÚÚXÙJHKŒŒŒŽLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸÛÙ
+LŽHØXÚYÚÚXÙJHKŒŒŒŒÍŽHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸšXÛ×Ú[
+LŽHØXÚYÚÚXÙJHÈKŒŒŒLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÈ˜Z[YŸÛ[ÚÙX
+LŽL\™XÝØ[™Y]\ÊHÈKŒŒŒÌMŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÜÈ˜Z[YŸ[ÛÝ]
+LŽL\™XÝØ[™Y]\ÊHHKŒŒŒLMŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÜÈ˜Z[YŸY™\œØ\šX[
+LŽL\™XÝØ[™Y]\ÊHKŒŒŒŽLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÜÈ˜Z[YŸÛÙ
+LŽL\™XÝØ[™Y]\ÊHKŒŒŒŒÍŽHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÜÈ˜Z[YŸšXÛ×Ú[
+LŽL\™XÝØ[™Y]\ÊHÈKŒŒŒLHŒ›È8 %YX[š[™Ù[ŒÈYÙ[ˆ›ÝÜÈ˜Z[YŸÛ[ÚÙX
+LŽLHÛÛ\][ÛˆØXÚJHÈKŒŒŒÌMŒ›È8 %YX[š[™Ù[ŒÈYùë®z¶‰žËkºwµçLMËŒŒÎÈÒH™LNLY™™ÙY™ŒŒMMÙ˜ŒØ™ŽÎYNXÍÍ˜ÌLŽNNMMYMŽX™\ØÝYH\ØY™\Ü\œÚ\Ý[˜ÙK™\Þ[˜È™\šYšXØ][Û‹[™[™\[™[XÚÙ]\Ý[™È\ÜÎÈ™XØ[[\›Ý™\È]šY[]KÚY\˜\˜ÚH™YÜ™\ÜËYX[š[™Ù[Œ[™YÙ[ˆÌNÈÚXÚÜÚ[™Z™XÝYŸŒ‹LËLNHMLŽYLÎM‹YMLË\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZØŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLŽYLÎM‹YMLË\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZËØNHÔH‹XÛÛ^Ý\ÈÈKNH\™Ù]ÚÙ[œÈ[ˆM‹ŽÈœ›ÛHÛX[ˆÛÛ[Z]XØ˜˜YXÈÜÜÈMËÎLŽÈÒH˜LŒNÍ˜ÌÍ˜LŽ˜MÍYØYL˜Œ™˜ÙÌXYŒ˜ŽNÙÙYŒÍX˜ÌÌŽMÍ™X]]ÛX]XÈ\ØY™\Þ[˜È™\šYšXØ][Û‹[™[™\[™[š[™KYš[H\Ý[™È\ÜÎÈYX[š[™Ù[Ü™]Ø\™™XÛÝ™\ˆ]Y\˜\˜ÚH™YÜ™\ÜÙ\ËÝšXÝYX[š[™ÈŒ[™YÙ[ˆÌNÈÚXÚÜÚ[™Z™XÝYŸŒ‹LËLNHMLÌKYLÎM‹YMLÌ\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZØŽ‹ËØXÚÙ]ËÕÙ[™šXÚËÓÜ[•RKØÚXÚÜÚ[ËÙMLÌKYLÎM‹YMLÌ\™\^LL\ÛÝ›ÛLKZÛ™\ÝXÛÛ^\ŒKMZËØNHÔH‹XÛÛ^Ý\ÈÈKNH\™Ù]ÚÙ[œÈ[ˆNKÌœÈœ›ÛHÛX[ˆÛÛ[Z]MÍLØØÈÜÜÈMËŒLNÈÒH˜ŽÌXX˜ÍM˜LÍ™NXLMXXØÌÍÌØŒYYŒÌØMÍLÎLÌÌÌYLÍÎYX˜LÍÍMŒMMØ[›ÛšXØ[\™XÝ™\ØÝYHÞ[˜Ë™\Ü™XÛÛ˜Ú[X][Û‹™\Þ[˜È™\šYšXØ][Û‹[™[™\[™[š[™KYš[H\Ý[™È\ÜÎÈÛYÚÝXÝ\™HØZ[ˆÙ\È›ÝÙ™œÙ]Ù[X[XËÙšY[]KÜ™]Ø\™™YÜ™\ÜÚ[ÛœËÝšXÝYX[š[™ÈŒ[™YÙ[ˆÌNÈÚXÚÜÚ[™Z™XÝYŸŒ‹LËLNHMM‹YMLÌK\›ÛÝ\™Y™\™[˜ÙKX\š]LK\ŒKLØÝ]]ËÜ[œËÙMM‹YMLÌK\›ÛÝ\™Y™\™[˜ÙKX\š]LK\ŒKLËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆL‹ŽLÜÈœ›ÛHÛX[ˆÛÛ[Z]XØŒYXØÈÜÜÈMËŒŒMŽNÈÒH™XÙŒØÎÍÌŒYNNLÙL˜XXLŒÌX™YXÍLX™XÎXØXÙ™YX™N™ŽMÍY^XÚ]K[›Ë\Þ[˜ËXÚXÚÜÚ[ØØÜ˜]ÚXYÛ›ÜÝXËˆÓÑMÛÛ›Û[\›Ý™\ÈÝ™\ˆMLÌKY\˜HXYÛ›ÜÝXÜË]X\›™Y\š]HÙZYÚH\È^XÝH]X[]K[™]]˜[ÝšXÝYX[š[™ÈŒYÙ[ˆÌNÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMMËYMLÌK\›ÛÝ\™Y™\™[˜ÙKX›Ý[™Y\ŒKLØÝ]]ËÜ[œËÙMMËYMLÌK\›ÛÝ\™Y™\™[˜ÙKX›Ý[™Y\ŒKLËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÍËŒMÜÈœ›ÛHÛX[ˆÛÛ[Z]NL™XÈÜÜÈMKLÌŽÈÒHÍ˜™LÍÎLMMYNXY˜Ž˜ŒØŒXMÙY™Y™LÙXÎØÎNMŒÍÌYMNLØLÌLYÙŽL^XÚ]K[›Ë\Þ[˜ËXÚXÚÜÚ[ØØÜ˜]ÚXYÛ›ÜÝXËˆ›Ý[™YÜÜÈÚ\œH[\›Ý™\È]^[X\žHØ[Xœ˜][Û‹]HX]ÚYÓÑ™\^H\ÈXÚ\Ú[Û‹H[™]X[]KZY[XØ[ÈMM‹ÝšXÝYX[š[™ÈŒYÙ[ˆÌNÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMMYMMË\›ÛÝZY[]LK\Œ‹LØÝ]]ËÜ[œËÙMMYMMË\›ÛÝZY[]LK\Œ‹LËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽMœÈœ›ÛHÛX[ˆÛÛ[Z]XÎMØŒØÈÜÜÈMKŒLÍNÈÒHØ™LØÌ˜ŽÌŒNØMYŽÙNLY™™XŒØØØYYMÎMYŽXØÌNMÍMÍŒŒØ^XÚ]K[›Ë\Þ[˜ËXÚXÚÜÚ[ØØÜ˜]ÚXYÛ›ÜÝXËˆ˜[šË[Û›HY[]HXÛÙ[™È[\›Ý™\ÈYX[š[™Ù[]ŒKÝXÝ\™K™XØ[[™TÕ›ÙHŒHÛˆX]ÚYÓÑM]ÝšXÝYX[š[™È[™TÕYÙHŒH™[XZ[ˆŒ[™YÙ[ˆÌNÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMMKYMM\›ÛÝZY[]K[™YÌKXÛÛ›Û\ŒKLØÝ]]ËÜ[œËÙMMKYMM\›ÛÝZY[]K[™YÌKXÛÛ›Û\ŒKLËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÌÈœ›ÛHÛX[ˆÛÛ[Z]ÙNXMÍØÈÜÜÈMKŽMŽNNÈÒHYMMÌLÎÌ™LY™YXÙXÙ˜LØŽML™NÍÍŽÌÌŽYMMÎŒNX˜ÙXMØÍÍ™˜LX^XÚ]K[›Ë\Þ[˜ËXÚXÚÜÚ[ØX]ÚYØÜ˜]ÚÛÛ›ÛˆÓÑYX[š[™Ù[Œ[™YÙ[ˆÌNÈ^˜HÛÛ[X][Ûˆ™YÜ™\ÜÙ\Èœ›ÛHMMÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMMKYMM\›ÛÝZY[]K[™YÍ\Œ‹LØÝ]]ËÜ[œËÙMMKYMM\›ÛÝZY[]K[™YÍ\Œ‹LËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽÈœ›ÛHÛX[ˆÛÛ[Z]ÙNXMÍØÈÜÜÈMKŽNLNÈÒHMÎØÙ˜˜XLMŒXNNY™YLÍÍLÎÌ˜Ì™ÙŒŒY™LØ™ÌL™MŒXYX^XÚ]K[›Ë\Þ[˜ËXÚXÚÜÚ[ØX]ÚYØÜ˜]Ú™X]Y[ˆÛYÚÜ\œÙH™YØ]]™HØ[Xœ˜][ÛˆØZ[ˆ\ÈXÛÙKH[™]X[]K[™]]˜[ÈYÙ[ˆÌNÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMM‹YMM\ÝšXÝ\ÝXœÙ]KXÛÛ›Û\ŒKLØÝ]]ËÜ[œËÙMM‹YMM\ÝšXÝ\ÝXœÙ]KXÛÛ›Û\ŒKLËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆŽKŒLÈœ›ÛHÛX[ˆÛÛ[Z]M™M˜ÈÜÜÈMKŽMŽNNÈÒH˜X˜NLŒÍ™MŒL™Œ˜NMŽM˜XØNYŒXXŽM˜ÎYÍ˜ÍMX^XÚ]›Ë\Þ[˜ÈX]ÚYØÜ˜]ÚÛÛ›ÛÈYX[š[™Ù[Œ[™YÙ[ˆÌNÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMM‹YMM\ÝšXÝ\ÝXœÙ]K\Œ‹LØÝ]]ËÜ[œËÙMM‹YMM\ÝšXÝ\ÝXœÙ]K\Œ‹LËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌN\™Ù]ÚÙ[œÈ[ˆÌLÈœ›ÛHÛX[ˆÛÛ[Z]M™M˜ÈÜÜÈ‹ÌÍNÈÒHLXM˜™˜ÎMLN˜˜NXXXÌNMMMÌÌLÌMØÙXÍX˜Ì™ŒL˜™ÙMÙL˜Y™L˜^XÚ]›Ë\Þ[˜ÈX]ÚYØÜ˜]Ú™X]Y[ÈZ^YšY[]KÝÜÛÙÞHØZ[ˆÚ]Ù]™\™H™XØ[™YÜ™\ÜÚ[Û‹YX[š[™ÈŒ[™YÙ[ˆÌNÈÚXÚÜÚ[›Ý›Û[ÝYŸŒ‹LËLNHMMËYMM\ÝšXÝ\ÝXœÙ]‹\ŒKLØÝ]]ËÜ[œËÙMMËYMM\ÝšXÝ\ÝXœÙ]‹\ŒKLËØ
+ØØ[
+HÔH‹XÛÛ^Ý\ÈÈKÌ\™Ù]ÚÙ[œÈ[ˆÍ‹Èœ›ÛHÛX[ˆÛÛ[Z]˜Y™ŒŒÌÈÜÜÈL‹NÈÒHÍÌ˜™™ØÍŒÙXXÍNY˜ÍLX™ŒÍXMÙYYLMYYLMYXÌXXØ˜ŽMŒŒ˜ÍMØ^XÚ]›Ë\Þ[˜ÈØÜ˜]ÚXYÛ›ÜÝXÎÈ™Y™\œ™Y^ÜÝ\™HÙ][™È›ÜˆÜÛÙÞK]šY[]H[™Ù[X[XÈØ]\È˜Z[ÈÚXÚÜÚ[›Ý›Û[ÝY‚YH›ÝÈ›Üˆ]™\žH™]ÈÜˆ™\XÙYÚXÚÜÚ[
+Š˜]HÜÙˆHX›JŠ‚Š™]Ù\Ýš\œÝ8 %H\Ú›Ø\™[™™XY\œÈÙ[XÝH™]Ù\Ý›ÝÈžHB‘]H
+UÊHÛÛ[[ŠKˆÈ›Ý[]H\ÝÜžK‚‚‹KKB‚ˆÈÈYÙ[ÚXÚÛ\Ý
+Y\ˆXXÚÚXÚÜÚ[
+B‚ŒKˆÞ[˜È\˜X›HÙZYÚÈ
+ˆXÚÙ]›Üˆ[[œÊH8 %ˆØÚXÚÜÚ[XXÚÙ]›YJ\ÚYÛ‹ØÚXÚÜÚ[XXÚÙ]›Y
+K‚Œ‹ˆ\]H
+ŠÝ\œ™[ÚXÚÜÚ[›ÜÝ\ŠŠˆ
+È
+Š‘]˜[X][ÛŠŠˆ
+È
+ŠÚXÚÜÚ[\ÝÜžJŠ‚ˆ[ˆ\Èš[K‚ŒËˆ™Yœ™\ÚH
+Š“[Ù[Ø\™
+Ý[[X\žJJŠˆÙXÝ[Ûˆ[ˆØ‘PQQK›YJ‹‹Ô‘PQQK›Y
+Bˆ
+ÙY\]ÚÜÈ[šÈ\™H›Üˆ]Z[
+K‚ˆÚ[YX\Ý\™Y\™\Ý[ÈÈX]š^ØÜÈ]H™]È[ˆYÚ[ˆ™[]˜[‚Kˆ™XÛÜ™H[‰ÜÈ™\œÚ[ÛˆÝ[\Ú]H]˜[X›NˆÛÙWØÛÛ[Z]\ÈBˆ\›™\ÜË›[Ù[ØZ[™]˜[È]˜[Ë›YX[š[™Ù[Ü›ÙÜ˜[XÈØ]\ËœÚ\ˆ™\œÚ[ÛœÈœ›ÛHØÛÜ™X›Ø\™šœÛÛ˜ˆ
+Ý™\œÚ[Û‹\Ý[\XÛÛ˜XÝ›YJ\ÚYÛ‹Ý™\œÚ[Û‹\Ý[\XÛÛ˜XÝ›Y
+JK‚‹ˆÛÛ[Z]ØÜÈÚ]HÚXÚÜÚ[\›ÙXÚ[™ÈÚ[™ÙK‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÌJBˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÌŠBˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XØ[˜\ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+BˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ‹X›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMXÎYMÍ™‹XÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍ‹X›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLØÍŒ˜KXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÍXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YLKNŒYM˜ÎXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍËXØ[˜\ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÎXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒ[Ü[ZK\ØÚY[YX˜ÞZËMMÌŒÎXÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÎXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÎX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÎKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÎKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌL‹XÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLËXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌMXš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌMKXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌM‹XÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKM™L˜ÙL‹XÌM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹X›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍËXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÎKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLKXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌL‹XÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLËXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMXš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMKXš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌM‹Xš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMËXš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌN‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌNXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌN\ÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌNX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌNK\ÛÝXÛÛ\Û™[Z[™[ÜžKXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒ\ÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒK\ÛÝXÛÛ\Û™[Z[™[ÜžKXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒ‹\ÛÝXÛÛ˜XÝXÛÛ^ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒËXÛÛœÝ˜Z[YÜ˜\ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ\ÛÝXÛÛ˜XÝXÛÛ^ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌKXÛÛœÝ˜Z[YÜ˜\ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌ‹YšY[]KØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌËYYÙKX[YÛ›Y[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŽ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŽXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŽYšY[]KØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŽX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŽKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌŽKYYÙKX[YÛ›Y[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÌ\Ù[X[XËXÛÛ˜\ÝØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZKLŒŒLLŒLYYXØ‹XÌÌK\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹ØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌËXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÍXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌÙÍ™Y‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÍXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÌY™˜ØKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÍXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÍKXØ[˜\ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÌ˜MÙLŽKXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÎXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÌL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌLXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXŒXNMLKXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍKX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍ‹X›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKX˜LÍYXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍËXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎKXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÎKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLKXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌL‹Xš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLËXš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMXš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMKXš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌM‹\ÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌMË\ÛÝXÛÛ\Û™[Z[™[ÜžKXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌN
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌN‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌNXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌN\ÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌNJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌNX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌNK\ÛÝXÛÛ\Û™[Z[™[ÜžKXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒ\ÛÝXÛÛ˜XÝXÛÛ^ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒKXÛÛœÝ˜Z[YÜ˜\ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒ‹\ÛÝXÛÛ˜XÝXÛÛ^ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒËXÛÛœÝ˜Z[YÜ˜\ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌYšY[]KØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌKYYÙKX[YÛ›Y[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌ‹YšY[]KØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌËYYÙKX[YÛ›Y[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽ\Ù[X[XËXÛÛ˜\ÝØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌŽK\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌK\Ù[X[XËXÛÛ˜\ÝØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÌ‹\Ù[X[XËXÛÛ˜\ÝXÛÛ\[\‹[X\™Ú[‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍ\ÛÝX]YÛY[][Û‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍKXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍ‹X˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÍË\ÛÝX]YÛY[][Û‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYNXÌÎMØXKXÌÎ[Z^Y[X\ÚËØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLMŒÙKXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍ‹X›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÎXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLÎXXLXL˜‹XÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMNÌX™‹XÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLYŒÌLÍKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÎKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌL‹XÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLËXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌMXš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMLKXÌMXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLLŒL™MXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKYXXMÎÍŒËXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÍXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKNMØL˜ÌYL‹XÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒÍ™KXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌËX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXNMNMÎKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÌLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌLKXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌL‹XÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMKXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌM‹XÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMËX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌN
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌN‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌNXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌNXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌNJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌNX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌNKXØ[˜\ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒKXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒ‹Xš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒËXš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌXš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌKXš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹ˆ™XÛÛœÝXÝYÜÝZØÎÈHš]™\ˆ™]™\ˆÜ›ÝH\ÈÞXÛIÜÈÞXÛWÚ[™Ù™‹šœÛÛ˜
+ÙYHHX]Ú[™ÈØÜËÙ\ÚYÛ‹Ê‹XÌK\™\Ý[Ë›Y›ÝJK‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ‹Xš[™\‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌË\ÛÝXÛÛ\Û™[YšY[]KXÛÝ\[™ËØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽKX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÌŽKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍËXØ[˜\ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÎXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLŒMØXÌËXÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÍXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŽMÎŒKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKLXÙXÍX‹XÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\ÝœˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍ‹X›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍËXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎXÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎKXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÎKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLKX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌL‹XÛÛ\Û™[YYÙKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLËXÛÛ\Û™[Z[™[ÜžKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌMXš[™\‹]ÜÛÙÞKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌMJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌMKXš[™\‹X\š]KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKXÎLMYËXÌMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌKX›Ý[™ËØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌ‹XÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍX˜]ÚKØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLKÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍKXÛÛ\Û™[\[‹ØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒKXÛÛ[[Ý\Ë[Ü[ZK\ØÚYKMŒLÌŒÎKXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹XÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÎKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹XÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹XÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŽKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌËXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ‹XÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMK\ÛÝX]YÛY[][Û‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹[]\˜[[X\™Ú[‹ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÛÛ™š\›KØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLMËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLN
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLN‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLNXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLNXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLNJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLNX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLNKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŒËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLŽKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌ˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌØ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÌËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒKÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍX‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ[œËØÌŒŒŒXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍLÍKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒ‹ÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒ‹ÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒ‹ÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMM‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŒ‹ÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMM˜‹HÚXÚÜÚ[Îˆ[œËØÌŒŒŒKXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMM‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL‹ÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMJB‚Ÿ\›H\˜[\ÈÝZ]Hˆ\œÙHYX[š[™Ù[ÝXÝ\˜[š[™\ˆŒH]˜[“Ø]HŸKKHKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKHŸÍMKXÛÛ›ÛKŒKÎM8 %8 %8 %8 %8 %8 %[˜ÛÛ\]Nˆ]˜[X][Ûˆ[YYÝ]ŸÍMKXÝ\œ™[\[™ËY]KZX[KŒKÎMÛ[ÚÙHKŒŒÍÍHŒŽNHLÌHËL˜Z[‚‹H™XÚ\NˆØØ[ÔKØÜ˜]ÚÛÛ^H™\]Y\ÝYÝ\Ë˜]ÚÚ^™H‹Ü˜[[X\‹XÛÛœÝ˜Z[™Y\ÚYÛ‹[YXÛÛ^Û™\ÝK‚‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMKÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMK^ØÛÛ›ÛÝ\œ™[\[™ËY]KZX[KØÚXÚÜÚ[ËÛ\Ýœ‚‹HØ[™Y]H˜Z[\™\È[˜ÛYHYX[š[™Ù[\›ÙÜ˜[H˜]KÝXÝ\˜[Ú[Z[\š]KÛÛ\Û™[™XØ[TÕØØ[›ÛšXØ[‘TK[™Z\ÜÚ[™È[[Ý]ÝZ]\ËˆHÛÛ›Û\È›ÈØÛÜ™X›Ø\™ÛÈ›ÈX]ÚYÛÛ\\š\ÛÛˆ^\ÝË‚‹H\ÝÜžNˆ›ÝÚXÚÜÚ[ÈÙ\™HÜ™X]YÛˆŒ‹LL‹ˆ^H\™Hš^\™KÜØÜ˜]Ú\Y˜XÝË[[[Û˜[HØØ[Ú]›ÈXÚÙ]Þ[˜Ë[™\™H›Ý›Û[ÝY‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL‹ÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÌ
+B‚Ÿ\›H\˜[\ÈÝZ]HˆÛÛ\]Hˆ\œÙHYX[š[™Ù[ÝXÝ\˜[š[™\ˆŒH]˜[“Ø]HŸKKHKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKHŸÍMÌXÛÛ›ÛKŒKŽNÛ[ÚÙH8 %8 %8 %8 %N[˜ÛÛ\]NˆXÛÙH[Y[Ý]ÈŸÍMÌXÝ\œ™[\[™ËY]KZX[KŒKÎMÛ[ÚÙHKŒŒŒŒLÍˆLÌHM˜Z[‚‹H™XÚ\NˆØØ[ÔKØÜ˜]ÚÛÛ^MÌÈÝ\Ë˜]ÚÚ^™H‹Ü˜[[X\‹XÛÛœÝ˜Z[™YÌ\ÙXÛÛ™\›HØ[ÎÈÛÛ›Û˜Z[ˆ[Û[X—ÜÝšXÝÝŒ—Ü›ÛWÜØY™XØ[™Y]H˜Z[ˆÛÛ[[Ý\×ÚLLØÛÛ[[Ý\×ÛÜ[ZWÛØØ[ØÍMM—Ú\›™\ÜØ‚‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÌÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÌ^ØÛÛ›ÛÝ\œ™[\[™ËY]KZX[KØÚXÚÜÚ[ËÛ\Ýœ‚‹HØ[™Y]H˜Z[\™\È[˜ÛYHYX[š[™Ù[\›ÙÜ˜[H˜]KÝXÝ\˜[Ú[Z[\š]KÛÛ\Û™[™XØ[TÕØØ[›ÛšXØ[‘TK[™Z\ÜÚ[™È[[Ý]ÝZ]\ËˆHÛÛ›ÛÛÛ\]Y›ÈØÝ[Y[ËÛÈHX]ÚYÛÛ\\š\ÛÛˆ\È[˜ÛÛ\]H[™›Û‹\›Û[ÝX›K‚‹H\ÝÜžNˆ›ÝÚXÚÜÚ[ÈÙ\™HÜ™X]YÛˆŒ‹LL‹ˆ^H\™Hš^\™KÜØÜ˜]Ú\Y˜XÝË[[[Û˜[HØØ[Ú]Þ[˜×ØÚXÚÜÚ[ÏY˜[ÙX›ÈXÚÙ]Þ[˜Ë[™›È›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\Èš^\™HÚXÚÜÚ[È8 %ÍMÌÈ
+Œ‹LLŠB‚Ø[\ZYÛˆÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÌØ˜[ˆHÚ^™K[X]ÚYØØ[ØÜ™Y[š[™ÈZ\‹ˆ›Ý\Y˜XÝÈ\™HØÜ˜]ÚÚXÚÜÚ[Ë›ÝÚ\Ø[™Y]\Ë‚‚ŸÚXÚÜÚ[\˜[\ÈÝZ]Hˆ\œÙHYX[š[™Ù[ÝXÝ\˜[š[™\ˆŒH]˜[“™\Ý[ŸKKHKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKHŸÍMÌËXÛÛ›ÛKŒKŽN8 %8 %8 %8 %8 %]˜[X][Ûˆ[YYÝ]È[˜ÛÛ\]HŸÍMÌËXÝ\œ™[\[™ËY]KZX[KŒKÎMKŒŒŒŒLÍˆLÌHKŒŽHÛ[ÚÙH[™Ú\Ø]\È˜Z[Y‚‹H™XÚ\NˆÔKMÝ\ËØÜ˜]ÚÛÛ^Ù[›Ú\Ù\‹^\ˆÝ]]ÚÙ[š^™\‹ÙYYLMÌËÝšXÝÜ˜[[X\‹XÛÛœÝ˜Z[™Y™YHXÛÙKÞ[˜×ØÚXÚÜÚ[ÏY˜[ÙX‚‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÌËÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÌË^ØÛÛ›ÛÝ\œ™[\[™ËY]KZX[KØÚXÚÜÚ[ËÛ\Ýœ‚‹HØ[™Y]H˜Z[\™\ÎˆÙ\YšYY˜[˜XÚËYX[š[™Ù[\›ÙÜ˜[H˜]KÝXÝ\˜[Ú[Z[\š]KÛÛ\Û™[™XØ[TÕØØ[›ÛšXØ[‘TK[™Z\ÜÚ[™È[[Ý]ÝZ]\ËˆHÛÛ›Û›ÙXÙY›ÈØÛÜ™X›Ø\™ÛÈHÛÛ\\š\ÛÛˆ\È[˜ÛÛ\]H[™›Û‹\›Û[ÝX›K‚‹H\ÝÜžNˆ›ÝÚXÚÜÚ[ÈÙ\™HÜ™X]YÛˆŒ‹LL‹ˆ^H™[XZ[ˆØØ[š^\™H\Y˜XÝÈÚ]›ÈXÚÙ]Þ[˜È[™›È›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\Èš^\™HÚXÚÜÚ[È8 %ÍMÍH
+Œ‹LLŠB‚Ø[\ZYÛˆÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÍX˜[ˆHÚ^™K[X]ÚYØØ[ØÜ™Y[š[™ÈZ\‹ˆ›Ý\Y˜XÝÈ\™HØÜ˜]ÚÚXÚÜÚ[Ë›ÝÚ\Ø[™Y]\Ë‚‚ŸÚXÚÜÚ[\˜[\ÈÝZ]Hˆ\œÙHYX[š[™Ù[ÝXÝ\˜[š[™\ˆŒH]˜[“™\Ý[ŸKKHKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKNˆKKHŸÍMÍKXÛÛ›ÛKŒKŽN8 %8 %8 %8 %8 %]˜[X][Ûˆ[YYÝ]È[˜ÛÛ\]HŸÍMÍKXÝ\œ™[\[™ËY]KZX[KŒKÎMKŒŒŒŒLÍˆLÌHKŒNHÛ[ÚÙH[™Ú\Ø]\È˜Z[Y‚‹H™XÚ\NˆÔKÍÍÝ\ËØÜ˜]ÚÛÛ^Ù[›Ú\Ù\‹^\ˆÝ]]ÚÙ[š^™\‹ÙYYLMÍKÝšXÝÜ˜[[X\‹XÛÛœÝ˜Z[™Y™YHXÛÙKÞ[˜×ØÚXÚÜÚ[ÏY˜[ÙX‚‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÍKÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÍK^ØÛÛ›ÛÝ\œ™[\[™ËY]KZX[KØÚXÚÜÚ[ËÛ\Ýœ‚‹HØ[™Y]H˜Z[\™\ÎˆYX[š[™Ù[\›ÙÜ˜[H˜]KÝXÝ\˜[Ú[Z[\š]KÛÛ\Û™[™XØ[TÕØØ[›ÛšXØ[‘TK[™Z\ÜÚ[™È[[Ý]ÝZ]\ËˆHÛÛ›Û›ÙXÙY›ÈØÛÜ™X›Ø\™ÛÈHÛÛ\\š\ÛÛˆ\È[˜ÛÛ\]H[™›Û‹\›Û[ÝX›K‚‹H\ÝÜžNˆ›ÝÚXÚÜÚ[ÈÙ\™HÜ™X]YÛˆŒ‹LL‹ˆ^H™[XZ[ˆØØ[š^\™H\Y˜XÝÈÚ]›ÈXÚÙ]Þ[˜È[™›È›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LL‹ÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÎ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÎ‹HÚXÚÜÚ[Îˆ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÎXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÎJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÎX‹HÚXÚÜÚ[ˆ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍMÎKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]ÚÛ›NÈ‹LËŒLˆž]\ÊB‹H™XÚ\NˆÛÕÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËÔKÜØÜ˜]ÚÛÛ^ÌŽÝ\ËÙYYLMÎKL™XÛÜ™ËMŽÈ˜Z[ˆ[YK‚‹HÛ[ÚÙH]˜[
+LYÙ[ŠNˆ\œÙHKŒYX[š[™Ù[\›ÙÜ˜[HŒŒÌÌØÝXÝ\˜[ŒLMÎÍXš[™\‹\™Y™\™[˜ÙHŒHLÌLÍX]˜[“ŽÌN][˜ÞHLLÌ‹È\ØÈØ]\È˜Z[Y[™HÛÛ›Û[YYÝ]‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNX‹HÛÛ›ÛÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹ŽL‹Žž]\ÊNÈÛÕÝÙ\‹KŒKŽN\˜[Y]\œËÔKÎNÝ\ËÙYYLNKŒŽH™XÛÜ™ËKŒŽHÈ˜Z[‹š[˜[ÜÜÈKŽMÍ‹‚‹HØ[™Y]HÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹LËŒLˆž]\ÊNÈÛÕÝÙ\‹KŒKÎM\˜[Y]\œËÔKÎNÝ\ËÙYYLNKL™XÛÜ™ËM‹ŒˆÈ˜Z[‹š[˜[ÜÜÈŒLMLÍÍ‹‚‹H]˜[X][ÛŽˆ›Ý\›\È]HÌÈØ\™Y›Ü™H›ÙXÚ[™ÈØÛÜ™X›Ø\™ÎÈ]™\žHY]šXÈ\È[˜]˜Z[X›H[™™Z]\ˆÚXÚÜÚ[\È›Û[Ý[Ûˆ]šY[˜ÙK‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNØ‹HÛÛ›ÛÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹ŽL‹Žž]\ÊNÈÛÕÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËÔKHÝ\ËÙYYLNËŒŽH™XÛÜ™ËŽÈ˜Z[‹š[˜[ÜÜÈ‹ŽLLË‚‹HØ[™Y]HÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËÜ[œËØÌŒŒ‹XÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹LËŒLˆž]\ÊNÈÛÕÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËÔKHÝ\ËÙYYLNËL™XÛÜ™ËM‹È˜Z[‹š[˜[ÜÜÈŒÍLÌK‚‹H]˜[X][ÛŽˆØ[™Y]HÛ[ÚÙHL\œÙHKŒYX[š[™Ù[\›ÙÜ˜[H˜]HŒŒËÝXÝ\˜[Ú[Z[\š]HŒLÍš[™\‹\™Y™\™[˜ÙHŒHLÌLË]˜[“ŒÍMË][˜ÞHL‹ŽˆÎÈYÙ[ˆÎH\ÜÙ\[ÛœÈ\ÜÙY[™Ú\Ø]\È˜Z[YˆÛÛ›Û[YYÝ]™Y›Ü™HHØÛÜ™X›Ø\™ÛÈHÛÛ\\š\ÛÛˆ\È[˜ÛÛ\]K‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNX‹HÛÛ›ÛÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹ŽL‹Žž]\ÊNÈÛÕÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËÔKÝ\ËÙYYLNKŒŽH™XÛÜ™Ë‹ŒŽÈ˜Z[‹š[˜[ÜÜÈ‹ŽLŒLK‚‹HØ[™Y]HÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹LËŒLˆž]\ÊNÈÛÕÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËÔKÝ\ËÙYYLNKL™XÛÜ™ËM‹LˆÈ˜Z[‹š[˜[ÜÜÈŒŽLN‚‹H]˜[X][ÛŽˆ›Ý\›\È]HÌÈØ\ˆØ[™Y]H]˜[“Ø\ÈKŒM‹]Û[ÚÙHLY[˜ÛÛ\]WÙØÝ[Y[ÛL[™XÛÙWÝ[Y[Ý]ØÛÝ[LÈ\œÙKYX[š[™Ù[ÝXÝ\˜[š[™\‹[™][˜ÞHY]šXÜÈ\™H[˜]˜Z[X›K[™\È\È›Ý›Û[Ý[Ûˆ]šY[˜ÙK‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN˜‹HÛÛ›ÛÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN‹Ü[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹ŽL‹Žž]\ÊNÈÛÕÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËÔKHÝ\ËÙYYLN‹ŒŽH™XÛÜ™Ë‹ŒÈÈ˜Z[‹š[˜[ÜÜÈËŒŒÎŽK‚‹HØ[™Y]HÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN‹Ü[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍN‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹LËŒLˆž]\ÊNÈÛÕÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËÔKHÝ\ËÙYYLN‹L™XÛÜ™ËMËŒMHÈ˜Z[‹š[˜[ÜÜÈŒÍÌÎLË‚‹H]˜[X][ÛŽˆ›Ý\›\È]HÌÈØ\ˆØ[™Y]H]˜[“Ø\ÈËŒŽNË]Û[ÚÙHLY[˜ÛÛ\]WÙØÝ[Y[ÛL[™XÛÙWÝ[Y[Ý]ØÛÝ[LÈ\œÙKYX[š[™Ù[ÝXÝ\˜[š[™\‹[™][˜ÞHY]šXÜÈ\™H[˜]˜Z[X›K[™\È\È›Ý›Û[Ý[Ûˆ]šY[˜ÙK‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNØ‹HÛÛ›ÛÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹ŽL‹Žž]\ÊNÈÛÕÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËÔKMÌÈÝ\ËÙYYLNËŒŽH™XÛÜ™ËNKŽMHÈ˜Z[‹š[˜[ÜÜÈLLŒÍ‚‹HØ[™Y]HÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹LËŒLˆž]\ÊNÈÛÕÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËÔKMÌÈÝ\ËÙYYLNËL™XÛÜ™ËŒŒÈÈ˜Z[‹š[˜[ÜÜÈ‹ŒŽNMŒË‚‹H]˜[X][ÛŽˆ›Ý\›\È]HÌÈØ\™Y›Ü™H›ÙXÚ[™ÈØÛÜ™X›Ø\™ÈÜˆ]˜[“È\œÙKYX[š[™Ù[ÝXÝ\˜[š[™\‹[™][˜ÞHY]šXÜÈ\™H[˜]˜Z[X›K[™™Z]\ˆÚXÚÜÚ[\È›Û[Ý[Ûˆ]šY[˜ÙK‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNL
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNL‹HØ[™Y]HÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹LËŒLˆž]\ÊNÈÛÕÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËÔKÎÝ\ËÙYYLNLL™XÛÜ™ËŒÌˆÈ˜Z[‹š[˜[ÜÜÈNML‚‹HÛÛ›ÛÚXÚÜÚ[ˆ›Û™NÈHÛÛ›Û\›H[YYÝ]™Y›Ü™HÜš][™ÈÛ™K‚‹H]˜[X][ÛŽˆ›Ý\›\È]HÌÈØ\™Y›Ü™H›ÙXÚ[™ÈØÛÜ™X›Ø\™ÈÜˆ]˜[“È\œÙKYX[š[™Ù[ÝXÝ\˜[š[™\‹[™][˜ÞHY]šXÜÈ\™H[˜]˜Z[X›K[™HØ[™Y]HÚXÚÜÚ[\È›Ý›Û[Ý[Ûˆ]šY[˜ÙK‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLËÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLX‹HÛÛ›ÛÚXÚÜÚ[ˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLKÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+ØØ[ØÜ˜]Ú‹ŽL‹Žž]\ÊNÈÛÕÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËÔKÎÝ\ËÙYYLNLŒŽH™XÛÜ™ËŒLHÈ˜Z[‹š[˜[ÜÜÈKNMÎ‚‹HØ[™Y]HÚXÚÜÚ[ˆ™]\ÙYÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLÜ[œËØÌŒŒËXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNLXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\ÝœÈ›È™]ÈØ[™Y]HÚXÚÜÚ[Ø\ÈÜš][‹‚‹H]˜[X][ÛŽˆØ[™Y]HÛ[ÚÙHL\œÙHKŒYX[š[™Ù[\›ÙÜ˜[H˜]HŒŒÌÌËÝXÝ\˜[Ú[Z[\š]HŒLÍŒÎËš[™\‹\™Y™\™[˜ÙHŒHLÌLÍKL][˜ÞHÌŽMËŒ\ÎÈÛ™\ÝÛ[ÚÙHØ]\È˜Z[YˆHÛÛ›Û[YYÝ]™Y›Ü™H]˜[X][Û‹ÛÈÛÛ\\š\ÛÛˆ[™]˜[“™[XZ[ˆ[˜]˜Z[X›K‚‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËLLÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËLLÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM˜‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM‹Ü[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMÈÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM‹Ü[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNM‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMÈÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMØ‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMŒˆÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍNMËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMŒˆÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËLÎÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒX‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËLÎHÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËLÎHÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒØ‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËLŒˆÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËLŒˆÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒX‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMŒˆÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMŒˆÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ˜‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹Ü[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹XÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMÍÈÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹Ü[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒ‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMÍÈÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒØ‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËNˆÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËNˆÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒJB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒX‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMÎÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒKXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMÎÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒLŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒL˜‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒL‹Ü[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒL‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËLÍˆÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒM
+B‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒM‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMŠB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒM˜‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒM‹Ü[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒM‹XÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMŒHÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚‚ˆÈÈÛÛ[[Ý\È]]Ý˜Z[ˆ›ÝH
+Œ‹LLŽÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMÊB‚‹HØ[\ZYÛŽˆÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMØ‹HÚXÚÜÚ[ÎˆÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMËXÛÛ›ÛØÚXÚÜÚ[ËÛ\Ýœ
+‹ŽL‹Žž]\ÎÈÛÝÝÙ\‹KŒKŽN˜Z[˜X›H\˜[Y]\œËMŒˆÝ\ËŒŽH™XÛÜ™ÊNÈÝ]]ËØ]]Ü™\ÙX\˜ÚØÛÛ[[Ý\Ë[ÛÜLŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMËÜ[œËØÌŒŒŽXÛÛ[[Ý\Ë[Ü[ZK[ØØ[NÌŒXÍŒMËXÝ\œ™[\[™ËY]KZX[ØÚXÚÜÚ[ËÛ\Ýœ
+‹LËŒLˆž]\ÎÈÛÝÝÙ\‹KŒKÎM˜Z[˜X›H\˜[Y]\œËMŒˆÝ\ËL™XÛÜ™ÊB‹HÛ™\ÝNˆš^\™KÜØÜ˜]ÚÛÛ[[Ý\ÈÞXÛH8 %
+Š››Ý
+ŠˆHÚ\›Û[Ý[Û‹‚
