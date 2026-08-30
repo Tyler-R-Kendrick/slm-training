@@ -1380,7 +1380,7 @@ class AutotrainActionReceiptV1(StrictModel):
     action_index: int = Field(ge=0)
     action_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     action_kind: str = Field(min_length=1)
-    status: Literal["completed", "blocked"]
+    status: Literal["completed", "blocked", "superseded"]
     evidence_uris: tuple[str, ...] = Field(min_length=1)
     evidence: tuple[AutotrainActionEvidenceV1, ...] = ()
     recorded_at: str = Field(default_factory=utc_now)

@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Supersede stale screening-data rebuild actions when a fresh metric-scoped sample-size proof establishes a feasible range, binding the durable receipt to that proof artifact.",
+          "version": "v317"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Retire legacy frozen screening replays that predate the proof-bound evaluation limit so a fresh governed campaign can carry the required measurement field.",
           "version": "v316"
         },
@@ -7185,7 +7190,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v316"
+      "version": "v317"
     },
     "harness.autoresearch.formal": {
       "history": [

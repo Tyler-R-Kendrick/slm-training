@@ -462,6 +462,52 @@ def _self_heal_rebuild_screening_eval(
     from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
 
     n, report = _screening_n_report()
+    if (
+        campaign_id
+        and isinstance(report, dict)
+        and report.get("verdict") == "feasible"
+        and int(n) > 0
+    ):
+        handoff_path = root / campaign_id / "cycle_handoff.json"
+        if handoff_path.is_file():
+            handoff = AutotrainCycleHandoffV1.model_validate_json(
+                handoff_path.read_text(encoding="utf-8")
+            )
+            stale = [
+                (index, action)
+                for index, action in pending_autotrain_actions(root, handoff)
+                if action.kind == "rebuild_data" and "screening suite" in action.reason
+            ]
+            if stale:
+                proof_path = root / campaign_id / "screening_sample_size.json"
+                proof_path.write_text(
+                    json.dumps(
+                        {
+                            "schema_version": "screening_sample_size/v1",
+                            "report": report,
+                            "smoke_n": int(n),
+                            "superseded_action_indices": [index for index, _ in stale],
+                        },
+                        indent=2,
+                        sort_keys=True,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                for index, _action in stale:
+                    _ack_rebuild_data_action(
+                        root,
+                        handoff,
+                        action_index=index,
+                        evidence_uris=["screening_sample_size.json"],
+                        status="superseded",
+                    )
+                print(
+                    "SELF_HEAL_SCREENING_REBUILD_SUPERSEDED "
+                    f"campaign={campaign_id} smoke_n={n}",
+                    flush=True,
+                )
+                return "retire_stale_screening_rebuild"
     if not isinstance(report, dict) or not report.get("must_generate"):
         return None
     n_min = int(report.get("n_min") or 6)
@@ -4641,6 +4687,7 @@ def _ack_rebuild_data_action(
     *,
     action_index: int,
     evidence_uris: Sequence[str],
+    status: str = "completed",
 ) -> None:
     action = handoff.actions[action_index]
     if action.kind != "rebuild_data":
@@ -4655,7 +4702,7 @@ def _ack_rebuild_data_action(
             action_index=action_index,
             action_sha256=autotrain_action_sha256(action),
             action_kind="rebuild_data",
-            status="completed",
+            status=status,
             evidence_uris=uris,
             evidence=evidence,
         ),

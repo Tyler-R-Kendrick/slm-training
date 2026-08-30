@@ -63,7 +63,12 @@ _PREREQUISITE_ACTION_KINDS = frozenset(
 _EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
 _REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
 _DATA_EVIDENCE_NAMES = frozenset(
-    {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
+    {
+        "data_manifest.json",
+        "quality_report.json",
+        "screening_sample_size.json",
+        "synthesis_feedback.json",
+    }
 )
 _MATRIX_CELL_MAX_CHARS = 240
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -379,7 +384,7 @@ def _pending_autotrain_actions(
     handoff: AutotrainCycleHandoffV1,
     *,
     kinds: frozenset[str],
-    acknowledged_statuses: frozenset[str] = frozenset({"completed"}),
+    acknowledged_statuses: frozenset[str] = frozenset({"completed", "superseded"}),
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
     completed: set[tuple[int, str]] = set()

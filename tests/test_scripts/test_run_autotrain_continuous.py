@@ -7790,6 +7790,68 @@ def test_self_heal_rebuild_data_acks_local_artifacts(
     )
 
 
+def test_feasible_proof_supersedes_stale_screening_rebuild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-stale-screening-rebuild"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.eval_nll",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="rebuild_data",
+                owner="synthesis-feedback",
+                reason="screening suite_volume binds: generate smoke n>=96",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json())
+    monkeypatch.setattr(
+        _mod,
+        "_screening_n_report",
+        lambda: (
+            6,
+            {
+                "verdict": "feasible",
+                "chosen_n": 6,
+                "decidability_floor_n": 6,
+                "power_floor_n": None,
+                "budget_ceiling_n": 21,
+                "suite_ceiling_n": 24,
+                "binding_constraints": [],
+            },
+        ),
+    )
+
+    assert (
+        _mod._self_heal_rebuild_screening_eval(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+        )
+        == "retire_stale_screening_rebuild"
+    )
+    assert not _mod.pending_autotrain_actions(root, handoff)
+    receipt = (root / "loops/loop-1/action_receipts.jsonl").read_text()
+    assert '"status":"superseded"' in receipt
+    proof = json.loads((camp / "screening_sample_size.json").read_text())
+    assert proof["smoke_n"] == 6
+
+
 def test_self_heal_rebuild_data_skips_i10_arm_when_leftover_ofat(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
