@@ -2848,3 +2848,9 @@ tests/
 - campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535`
 - checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c535-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c535-current-rung-data-heal/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-30, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2370)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2370`
+- checkpoints: `/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2370/runs/c20260830-continuous-openui-local-8c0b60dd-c2370-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 93 steps, 629 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
