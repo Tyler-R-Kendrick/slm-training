@@ -5455,6 +5455,10 @@ def test_compile_commands_routes_eval_limit() -> None:
     assert evaluate[evaluate.index("--eval-limit") + 1] == "6"
 
 
+def test_campaign_allows_proof_bound_eval_limit() -> None:
+    assert "eval_limit" in campaign().allowed_knobs
+
+
 def _probe_eval_commands(tmp_path: Path) -> tuple[list[str], list[str]]:
     probe = [
         "python",

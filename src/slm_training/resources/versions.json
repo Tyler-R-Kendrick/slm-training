@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Authorize the proof-bound eval_limit field in campaign manifests so the calculated screening sample is executable rather than rejected as a forbidden knob.",
+          "version": "v318"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Supersede stale screening-data rebuild actions when a fresh metric-scoped sample-size proof establishes a feasible range, binding the durable receipt to that proof artifact.",
           "version": "v317"
         },
@@ -7190,7 +7195,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v317"
+      "version": "v318"
     },
     "harness.autoresearch.formal": {
       "history": [

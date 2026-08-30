@@ -230,6 +230,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
         "generate_batch_size",
+        "eval_limit",
         "allow_unconstrained_fallback",
         "asap_decode",
         "bind_encoding",
