@@ -1,0 +1,292 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.5333333333333333,
+    "eval_nll": 9.433029869592197,
+    "latency_ms_p50": 3110.42,
+    "meaningful_program_rate": 0.16666666666666666,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.5333333333333333,
+    "smoke.eval_nll": 9.433029869592197,
+    "smoke.latency_ms_p50": 3110.42,
+    "smoke.meaningful_program_rate": 0.16666666666666666,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.13118333333333335,
+    "structural_similarity": 0.13118333333333335
+  },
+  "checkpoint_recipe": {
+    "checkpoints": [
+      {
+        "backend": "scratch",
+        "bytes": 6692828,
+        "device": "cpu",
+        "elapsed_seconds": 11.427240932011046,
+        "last_loss": 10.342629432678223,
+        "local_path": "/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371/runs/c20260830-continuous-openui-local-8c0b60dd-c2371-control/checkpoints/last.pt",
+        "model": "twotower",
+        "records": 629,
+        "seed": 102371,
+        "steps": 94,
+        "trainable_params": 1661698
+      },
+      {
+        "backend": "scratch",
+        "bytes": 6453212,
+        "device": "cpu",
+        "elapsed_seconds": 4.0346034899994265,
+        "last_loss": 3.927027702331543,
+        "local_path": "/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371/runs/c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal/checkpoints/last.pt",
+        "model": "twotower",
+        "records": 90,
+        "seed": 102371,
+        "steps": 94,
+        "trainable_params": 1601794
+      }
+    ],
+    "sync": "disabled_fixture_scratch"
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.7984126984126984,
+    "eval_nll": 4.623752577150769,
+    "latency_ms_p50": 13070.11,
+    "meaningful_program_rate": 0.3333333333333333,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.7984126984126984,
+    "smoke.eval_nll": 4.623752577150769,
+    "smoke.latency_ms_p50": 13070.11,
+    "smoke.meaningful_program_rate": 0.3333333333333333,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.43296666666666667,
+    "structural_similarity": 0.43296666666666667
+  },
+  "cycle_index": 2371,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260830-continuous-openui-local-8c0b60dd-c2371-control": 0,
+      "c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal": 0
+    },
+    "arm_order": [
+      "c20260830-continuous-openui-local-8c0b60dd-c2371-control",
+      "c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal"
+    ],
+    "arm_seed": 102371,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1661698,
+    "campaign_id": "continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371",
+    "candidate_id": "c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.5333333333333333,
+      "eval_nll": 9.433029869592197,
+      "latency_ms_p50": 3110.42,
+      "meaningful_program_rate": 0.16666666666666666,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.5333333333333333,
+      "smoke.eval_nll": 9.433029869592197,
+      "smoke.latency_ms_p50": 3110.42,
+      "smoke.meaningful_program_rate": 0.16666666666666666,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.13118333333333335,
+      "structural_similarity": 0.13118333333333335
+    },
+    "candidate_trainable_params": 1601794,
+    "climb_policy_sha256": "de8c2d121a7eb6a30595d2d5ca1e9fbc88477027bafa4d7e9609f725dd02318f",
+    "control_id": "c20260830-continuous-openui-local-8c0b60dd-c2371-control",
+    "control_metrics": {
+      "binder_reference_f1": 0.7984126984126984,
+      "eval_nll": 4.623752577150769,
+      "latency_ms_p50": 13070.11,
+      "meaningful_program_rate": 0.3333333333333333,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.7984126984126984,
+      "smoke.eval_nll": 4.623752577150769,
+      "smoke.latency_ms_p50": 13070.11,
+      "smoke.meaningful_program_rate": 0.3333333333333333,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.43296666666666667,
+      "structural_similarity": 0.43296666666666667
+    },
+    "cycle_index": 2371,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-30T23:27:34Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": true,
+    "policy_sha256": "de8c2d121a7eb6a30595d2d5ca1e9fbc88477027bafa4d7e9609f725dd02318f",
+    "policy_version": "v15",
+    "positive": false,
+    "preflight": {
+      "blocked_slugs": [],
+      "schema": "autotrain_preflight/v1",
+      "selected_slug": "current-rung-data-heal",
+      "verdicts": {
+        "current-rung-data-heal": [
+          {
+            "check_id": "concluded_family",
+            "data": {
+              "family_key": "heal-resume+process-arm+process-role+train-version"
+            },
+            "reasons": [
+              "family 'heal-resume+process-arm+process-role+train-version' has no binding closure record"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_dominance",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism dominance check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_no_effect",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism no-effect check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "power_decidability",
+            "data": {
+              "alpha": 0.05,
+              "config_fingerprint": "89bd1b8f4edf7263",
+              "endpoint_metric": "smoke.eval_nll",
+              "max_reasonable_n": 64,
+              "min_attainable_p": 1.0,
+              "min_detectable_effect": 0.8087479899175992,
+              "minimum_effect": 0.05,
+              "n_seeds": 1,
+              "paired": true,
+              "process_arm": true,
+              "required_n_for_effect": 262,
+              "sd": 0.28867513459481287,
+              "sd_source": "conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "steps": 20
+            },
+            "reasons": [
+              "min_attainable_p=1 > alpha=0.05 at n=1 (paired sign test): no result at this n can ever reject",
+              "min_detectable_effect=0.808748 > minimum_effect=0.05 at n=1, sd=0.288675: required_n_for_effect=262",
+              "sd=0.288675 from conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "required_n_for_effect=262 exceeds the reasonable screening ceiling (64); this design cannot become decidable through realistic accumulation",
+              "process/heal arm is not a confirmatory design; power decidability warns instead of blocking first execution"
+            ],
+            "verdict": "warn"
+          },
+          {
+            "check_id": "prior_attempts",
+            "data": {
+              "config_fingerprint": "89bd1b8f4edf7263",
+              "matched": 0,
+              "source": "evidence_store"
+            },
+            "reasons": [
+              "no matching prior attempt (source=evidence_store)"
+            ],
+            "verdict": "pass"
+          }
+        ]
+      }
+    },
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2371-control",
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal",
+      "primary_metric_null_or_worse:smoke.eval_nll:control=4.623752577150769 candidate=9.433029869592197 improvement=-4.809277292441428",
+      "screening_quality_secondary:smoke.structural_similarity:control=0.43296666666666667 candidate=0.13118333333333335:recorded_not_verdict",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371",
+    "cycle_index": 2371,
+    "deltas": {
+      "binder_reference_f1": -0.265079365079365,
+      "eval_nll": 4.809277292441428,
+      "latency_ms_p50": -9959.69,
+      "meaningful_program_rate": -0.16666666666666666,
+      "parse_rate": 0.0,
+      "smoke.binder_reference_f1": -0.265079365079365,
+      "smoke.eval_nll": 4.809277292441428,
+      "smoke.latency_ms_p50": -9959.69,
+      "smoke.meaningful_program_rate": -0.16666666666666666,
+      "smoke.parse_rate": 0.0,
+      "smoke.structural_similarity": -0.3017833333333333,
+      "structural_similarity": -0.3017833333333333
+    },
+    "measurement_complete": true,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2371-control",
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal",
+      "primary_metric_null_or_worse:smoke.eval_nll:control=4.623752577150769 candidate=9.433029869592197 improvement=-4.809277292441428",
+      "screening_quality_secondary:smoke.structural_similarity:control=0.43296666666666667 candidate=0.13118333333333335:recorded_not_verdict",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "keep_rotating_size_matched_arms",
+      "keep_ship_gates_do_not_enqueue_confirm"
+    ],
+    "went_well": [
+      "measurement_complete"
+    ],
+    "went_wrong": [
+      "non_positive",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": true,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2371-control",
+    "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal",
+    "primary_metric_null_or_worse:smoke.eval_nll:control=4.623752577150769 candidate=9.433029869592197 improvement=-4.809277292441428",
+    "screening_quality_secondary:smoke.structural_similarity:control=0.43296666666666667 candidate=0.13118333333333335:recorded_not_verdict",
+    "fixture_insufficient_n_alone",
+    "fixture_volume_gate_ship_only"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "a5dc5a4fa36266c628992b407ede53a7665acac7",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-30T23:28:17.434581+00:00"
+  }
+}
