@@ -1013,6 +1013,24 @@ def test_run_defaults_to_matrix_recommendation(tmp_path: Path) -> None:
     assert events["experiment_id"] == matrix.recommended_experiment_id
 
 
+def test_optimum_feedback_skips_verified_metrics_import_without_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts.autoresearch import _verified_optimum_feedback
+
+    monkeypatch.setitem(
+        sys.modules, "slm_training.harnesses.experiments.verified_metrics", None
+    )
+    assert (
+        _verified_optimum_feedback(
+            SimpleNamespace(metric_evidence=None, metric_certificate=None),
+            campaign_manifest_sha256=None,
+            metric_expectations_sha256=None,
+        )
+        is None
+    )
+
+
 def test_run_execution_requires_lock_and_dry_plan_binds_manifest(
     tmp_path: Path,
 ) -> None:
@@ -1073,6 +1091,7 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
 
     spec = experiment()
     commands = compile_commands(campaign(), spec, output_root=tmp_path)
+    commands.append([*commands[-1], "--eval-limit", "1"])
     train = commands[0]
     source_manifest = experiment_campaign(experiment_id="source-run")
     source_manifest_path = tmp_path / "source-manifest.json"
@@ -1119,10 +1138,11 @@ def test_frozen_training_reuse_verifies_lineage_recipe_and_checkpoint(
         lineage_paths=(source_manifest_path,),
     )
 
-    assert len(prepared) == 1
-    assert "scripts.evaluate_model" in prepared[0]
-    assert prepared[0][prepared[0].index("--checkpoint") + 1] == str(
-        checkpoint.resolve()
+    assert len(prepared) == 2
+    assert all("scripts.evaluate_model" in command for command in prepared)
+    assert all(
+        command[command.index("--checkpoint") + 1] == str(checkpoint.resolve())
+        for command in prepared
     )
     assert receipt["stage_kind"] == "reused_training"
     assert receipt["measurement_complete"] is True
@@ -3165,15 +3185,13 @@ def test_feedback_context_recovers_typed_incomplete_handoff(
     )
 
 
-def test_feedback_context_recovers_model_build_incomplete_handoff(
+def test_feedback_context_recovers_inconclusive_retry_handoff(
     tmp_path: Path,
 ) -> None:
-    """A measurement_incomplete handoff recovers regardless of PriorityArea.
+    """A typed inconclusive retry recovers without a legacy reason prefix.
 
-    The continuous driver legitimately tags a wall/decode-timeout retry
-    priority ``area="model_build"`` (not "harness"/"infrastructure") — this
-    reproduces the exact shape emitted for a dual-arm decode timeout and
-    must recover the same as the "infrastructure"-tagged case above.
+    This reproduces c618: fixture-volume reasons plus an explicit retry
+    priority are incomplete even when ``measurement_incomplete:`` is absent.
     """
 
     from scripts.autoresearch import _feedback_context, _lineage_stores
@@ -3216,7 +3234,11 @@ def test_feedback_context_recovers_model_build_incomplete_handoff(
         climb_state="inconclusive",
         ship_state="blocked",
         primary_metric="score",
-        reasons=("measurement_incomplete:control:decode_timeout_count=3",),
+        reasons=(
+            "fixture_insufficient_n:control-latprobe",
+            "primary_metric_unavailable",
+            "fixture_insufficient_n_alone",
+        ),
         priorities=(
             NextRunPriorityV1(
                 rank=1,
@@ -4217,6 +4239,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_topology_decode_weight=0.4,
             binder_arity_loss_weight=1.2,
             binder_arity_decode_weight=0.3,
+            root_reference_identity_loss_weight=1.0,
+            root_reference_identity_decode_weight=1.0,
             binder_slot_ownership_loss_weight=1.4,
             binder_slot_ownership_decode_weight=0.6,
             symbol_boundary_loss_weight=1.0,
@@ -4290,6 +4314,14 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     )
     assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
     assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
+    assert (
+        commands[0][commands[0].index("--root-reference-identity-loss-weight") + 1]
+        == "1.0"
+    )
+    assert (
+        commands[0][commands[0].index("--root-reference-identity-decode-weight") + 1]
+        == "1.0"
+    )
     assert (
         commands[0][commands[0].index("--binder-slot-ownership-loss-weight") + 1]
         == "1.4"
@@ -5412,6 +5444,15 @@ def test_compile_commands_inserts_latency_probe_stage() -> None:
     assert (
         len([c for c in plain if "scripts.evaluate_model" in c]) == 1
     )
+
+
+def test_compile_commands_routes_eval_limit() -> None:
+    commands = compile_commands(
+        campaign(), experiment(knobs=ExperimentKnobs(steps=2, eval_limit=6))
+    )
+    evaluate = next(c for c in commands if "scripts.evaluate_model" in c)
+
+    assert evaluate[evaluate.index("--eval-limit") + 1] == "6"
 
 
 def _probe_eval_commands(tmp_path: Path) -> tuple[list[str], list[str]]:

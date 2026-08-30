@@ -740,6 +740,202 @@
       "lean_module": "LeverProofLean.ScreeningSampleSize",
       "lean_def": "screeningBudgetUpperBound",
       "digest_sha256": "883e9ce1abd1b4a9f62daf88dc73eb6f875f13b7256809038bb1cd3fc8b5c311"
+    },
+    {
+      "schema_version": "bound_ast/v1",
+      "bound_ast_id": "bound.autotrain.symmetric_arm_wall_seconds.v1",
+      "meaning": "Maximum whole-second equal share for each required autotrain stage after subtracting the canonical process kill grace, command finalization reserve, and cycle finalization reserve from the hard run wall. The arithmetic and fit are proved by LeverProofLean.ScreeningSampleSize.symmetricArmWallSeconds_fits; the run-policy inputs remain declared constraints.",
+      "variables": [
+        {
+          "name": "max_run_seconds",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "second",
+          "meaning": "Canonical hard command wall from slm_training.levers.MAX_RUN_SECONDS"
+        },
+        {
+          "name": "kill_grace_seconds",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "second",
+          "meaning": "Canonical bounded-process kill grace"
+        },
+        {
+          "name": "command_finalization_reserve_seconds",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "second",
+          "meaning": "Canonical reserve before the command interrupt"
+        },
+        {
+          "name": "cycle_finalization_reserve_seconds",
+          "kind": "scalar",
+          "domain": "nat",
+          "unit": "second",
+          "meaning": "Canonical reserve for diagnosis, handoff, and durable cycle evidence"
+        },
+        {
+          "name": "stage_count",
+          "kind": "scalar",
+          "domain": "pos_rat",
+          "unit": "stage",
+          "meaning": "Number of required equal-share stages in the cycle"
+        }
+      ],
+      "expression": {
+        "op": "floor",
+        "arg": {
+          "op": "div",
+          "numerator": {
+            "op": "add",
+            "args": [
+              {
+                "op": "var",
+                "name": "max_run_seconds"
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "const_int",
+                    "value": -1
+                  },
+                  {
+                    "op": "var",
+                    "name": "kill_grace_seconds"
+                  }
+                ]
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "const_int",
+                    "value": -1
+                  },
+                  {
+                    "op": "var",
+                    "name": "command_finalization_reserve_seconds"
+                  }
+                ]
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "const_int",
+                    "value": -1
+                  },
+                  {
+                    "op": "var",
+                    "name": "cycle_finalization_reserve_seconds"
+                  }
+                ]
+              }
+            ]
+          },
+          "denominator": {
+            "op": "var",
+            "name": "stage_count"
+          }
+        }
+      },
+      "predicate": {
+        "op": "le",
+        "left": {
+          "op": "add",
+          "args": [
+            {
+              "op": "mul",
+              "args": [
+                {
+                  "op": "floor",
+                  "arg": {
+                    "op": "div",
+                    "numerator": {
+                      "op": "add",
+                      "args": [
+                        {
+                          "op": "var",
+                          "name": "max_run_seconds"
+                        },
+                        {
+                          "op": "mul",
+                          "args": [
+                            {
+                              "op": "const_int",
+                              "value": -1
+                            },
+                            {
+                              "op": "var",
+                              "name": "kill_grace_seconds"
+                            }
+                          ]
+                        },
+                        {
+                          "op": "mul",
+                          "args": [
+                            {
+                              "op": "const_int",
+                              "value": -1
+                            },
+                            {
+                              "op": "var",
+                              "name": "command_finalization_reserve_seconds"
+                            }
+                          ]
+                        },
+                        {
+                          "op": "mul",
+                          "args": [
+                            {
+                              "op": "const_int",
+                              "value": -1
+                            },
+                            {
+                              "op": "var",
+                              "name": "cycle_finalization_reserve_seconds"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    "denominator": {
+                      "op": "var",
+                      "name": "stage_count"
+                    }
+                  }
+                },
+                {
+                  "op": "var",
+                  "name": "stage_count"
+                }
+              ]
+            },
+            {
+              "op": "var",
+              "name": "kill_grace_seconds"
+            },
+            {
+              "op": "var",
+              "name": "command_finalization_reserve_seconds"
+            },
+            {
+              "op": "var",
+              "name": "cycle_finalization_reserve_seconds"
+            }
+          ]
+        },
+        "right": {
+          "op": "var",
+          "name": "max_run_seconds"
+        }
+      },
+      "evaluable": true,
+      "wall_clock_claim": false,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "symmetricArmWallSeconds",
+      "digest_sha256": "b209e2c18f57ac9a7ec086c4570daee43abfa8bd8d4216cb5ee5363c4f85f59b"
     }
   ]
 }
