@@ -1,6 +1,6 @@
 {
   "schema": "autotrain_climb_policy/v1",
-  "version": "v14",
+  "version": "v15",
   "description": "High-volatility continuous autotrain hill-climb policy. Harness/driver code loads this artifact; change metrics, cadence, caps, and identity fields here without re-authoring classifiers. Dual-regime thrash: isolate (causal OFAT) + climb (residual on sticky champion) + timeout\u2192decode residual routing.",
   "screening_primary": {
     "metric": "smoke.eval_nll",
@@ -42,8 +42,8 @@
     },
     "latency_probe": {
       "schema": "latency_probe_policy/v1",
-      "description": "Per-arm latency pre-check (screening only): a probe eval of probe_records records runs before the full eval under a -latprobe run id. The full eval is skipped with a typed latency_preflight verdict (measurement incomplete, never a model verdict) when the probe projects past the remaining eval wall (probe_wall x planned_n, planned_n = resolved screening n); a probe timeout stops the arm at one record instead of n. Probe metrics never merge into arm metrics.",
-      "enabled": true,
+      "description": "Disabled after continuous cycles 2197-2199 showed the separate one-record process paying full model startup, defeating batched smoke evaluation, and exhausting the arm before the canonical scoreboard. The bounded full evaluator remains authoritative; a successor probe must run in-process and model batch/startup cost explicitly.",
+      "enabled": false,
       "probe_records": 1
     },
     "promotion_suite_n": 24,
