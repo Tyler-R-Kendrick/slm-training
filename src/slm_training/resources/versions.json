@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Re-evaluate the registered symmetric arm-wall proof against the measured whole-second remainder after campaign setup, replacing the arbitrary scheduling margin and fail-only frozen allocation.",
+          "version": "v319"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Authorize the proof-bound eval_limit field in campaign manifests so the calculated screening sample is executable rather than rejected as a forbidden knob.",
           "version": "v318"
         },
@@ -7195,7 +7200,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v318"
+      "version": "v319"
     },
     "harness.autoresearch.formal": {
       "history": [

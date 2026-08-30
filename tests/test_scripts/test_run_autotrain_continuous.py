@@ -6084,16 +6084,21 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
-def test_post_planning_budget_rejects_shrinking_frozen_arms(
+def test_post_planning_budget_consumes_remaining_wall_proof(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
-    with pytest.raises(subprocess.TimeoutExpired, match="symmetric decision-arm"):
-        _mod._fit_symmetric_arm_budget(
-            deadline=10.0 + 149.0,
-            arm_count=2,
-            requested_arm_wall_minutes=70 / 60,
-        )
+    fitted = _mod._fit_symmetric_arm_budget(
+        deadline=10.0 + 149.0,
+        arm_count=2,
+        requested_arm_wall_minutes=70 / 60,
+    )
+    proof = _mod._arm_wall_calculation(
+        formal_required=False,
+        max_run_seconds=149,
+        stage_count=2,
+    )
+    assert fitted * 60 == proof["calculated_seconds"]
 
 
 def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(

@@ -293,22 +293,29 @@ def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
         )
 
 
-def _arm_wall_calculation(*, formal_required: bool) -> dict[str, Any]:
+def _arm_wall_calculation(
+    *,
+    formal_required: bool,
+    max_run_seconds: int | None = None,
+    stage_count: int | None = None,
+) -> dict[str, Any]:
     """Evaluate the registered Lean-parity symmetric arm-wall bound."""
 
-    stage_count = (
+    resolved_stage_count = stage_count or (
         len(("control", "candidate", "formal"))
         if formal_required
         else len(("control", "candidate"))
     )
     env = {
-        "max_run_seconds": int(MAX_RUN_SECONDS),
+        "max_run_seconds": int(
+            MAX_RUN_SECONDS if max_run_seconds is None else max_run_seconds
+        ),
         "kill_grace_seconds": int(KILL_GRACE_SECONDS),
         "command_finalization_reserve_seconds": int(
             HARNESS_FINALIZATION_RESERVE_SECONDS
         ),
         "cycle_finalization_reserve_seconds": int(HARNESS_FINALIZATION_RESERVE_SECONDS),
-        "stage_count": stage_count,
+        "stage_count": resolved_stage_count,
     }
     if (
         sum(
@@ -994,30 +1001,38 @@ def _require_symmetric_arm_budget(
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
-# Leave schedule margin after fit so the fit→execute deadline check cannot
-# fail from monotonic clock drift or float round-trip (observed: remaining
-# 159.788399 < required 159.788414 → both promote arms skipped as
-# deadline_reserve with zero runs).
-_ARM_BUDGET_SCHEDULE_MARGIN_SECONDS = 0.25
-
-
 def _fit_symmetric_arm_budget(
     *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
 ) -> float:
-    """Preserve the frozen arm budget or fail before starting either arm."""
+    """Re-evaluate the registered arm-wall proof against measured remainder."""
 
     if arm_count <= 0:
         raise ValueError("arm_count must be positive")
     remaining = _remaining_timeout(deadline)
-    usable = (
-        remaining
-        - HARNESS_FINALIZATION_RESERVE_SECONDS
-        - _ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
+    calculation = _arm_wall_calculation(
+        formal_required=False,
+        max_run_seconds=int(remaining),
+        stage_count=arm_count,
     )
-    requested = float(requested_arm_wall_minutes)
-    if usable < arm_count * requested * 60:
-        raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
-    return requested
+    proved_seconds = float(calculation["calculated_seconds"])
+    effective_seconds = min(
+        float(requested_arm_wall_minutes) * 60.0,
+        proved_seconds,
+    )
+    print(
+        "ARM_BUDGET_REFIT_PROOF "
+        + json.dumps(
+            {
+                **calculation,
+                "measured_remaining_seconds": remaining,
+                "requested_seconds": float(requested_arm_wall_minutes) * 60.0,
+                "effective_seconds": effective_seconds,
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
+    return effective_seconds / 60.0
 
 
 def _post_formal_arm_budget_request(
