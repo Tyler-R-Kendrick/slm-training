@@ -217,6 +217,18 @@ def _git_commit_evidence(
             raise ValueError(
                 f"{action.kind} evidence must be a repair commit after the campaign"
             )
+    elif action.kind == "document":
+        if (
+            uri == handoff.integration_commit
+            or _git(
+                "merge-base", "--is-ancestor", handoff.integration_commit, uri
+            ).returncode
+        ):
+            raise ValueError("document evidence must be a commit after the campaign")
+        changed = _git("diff-tree", "--no-commit-id", "--name-only", "-r", uri)
+        paths = changed.stdout.decode("utf-8", errors="replace").splitlines()
+        if not any(path == "README.md" or path.startswith("docs/") for path in paths):
+            raise ValueError("document commit evidence must change docs or README")
     else:
         raise ValueError(f"{action.kind} evidence must be a durable file")
     return AutotrainActionEvidenceV1(

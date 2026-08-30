@@ -10619,6 +10619,13 @@ def test_self_heal_document_actions_reuses_clean_connector_evidence(
             }
         ],
     )
+    base_commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+    handoff["integration_commit"] = base_commit
+    handoff_path.write_text(json.dumps(handoff) + "\n", encoding="utf-8")
     md, js = _mod._continuous_docs_paths(repo, campaign_id)
     md.write_text(f"# {campaign_id}\n\nconnector evidence\n", encoding="utf-8")
     js.write_text(
@@ -10638,6 +10645,12 @@ def test_self_heal_document_actions_reuses_clean_connector_evidence(
         cwd=repo,
         stdout=subprocess.DEVNULL,
     )
+    js.write_text(
+        js.read_text(encoding="utf-8").replace(
+            '"code_dirty": false', '"code_dirty": true'
+        ),
+        encoding="utf-8",
+    )
     import slm_training.autoresearch.storage as storage
 
     monkeypatch.setattr(storage, "_REPO_ROOT", repo)
@@ -10654,6 +10667,8 @@ def test_self_heal_document_actions_reuses_clean_connector_evidence(
         == "document_closeout"
     )
     assert "connector evidence" in md.read_text(encoding="utf-8")
+    receipts = (root / "loops" / loop_id / "action_receipts.jsonl").read_text()
+    assert '"kind":"git_commit"' in receipts
     _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 

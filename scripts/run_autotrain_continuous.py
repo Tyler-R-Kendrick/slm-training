@@ -5407,6 +5407,36 @@ def _self_heal_document_actions(
         str(md_path.relative_to(cwd)),
         str(json_path.relative_to(cwd)),
     ]
+    try:
+        delivery_commits = _git(
+            "log",
+            "--format=%H",
+            "--",
+            *rel_docs,
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-document-connector-commits",
+        ).splitlines()
+    except Exception:  # noqa: BLE001 — fall through to file regeneration
+        delivery_commits = []
+    for commit in delivery_commits:
+        try:
+            for index, _action in pending_docs:
+                _ack_document_action(
+                    root,
+                    handoff,
+                    action_index=index,
+                    evidence_uris=[commit],
+                )
+        except ValueError:
+            continue
+        print(
+            f"SELF_HEAL_DOCUMENT_CONNECTOR_REUSE campaign={campaign_id} "
+            f"commit={commit} acked={len(pending_docs)}",
+            flush=True,
+        )
+        return "document_closeout"
     if md_path.is_file() and json_path.is_file():
         try:
             published = _read_json(json_path)

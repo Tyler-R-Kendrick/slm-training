@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Accept a validated post-integration connector commit that changes docs or README as durable document-action evidence, avoiding self-referential code-stamp rewrites and forbidden local Git mutation.",
+          "version": "v320"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Re-evaluate the registered symmetric arm-wall proof against the measured whole-second remainder after campaign setup, replacing the arbitrary scheduling margin and fail-only frozen allocation.",
           "version": "v319"
         },
@@ -7200,7 +7205,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v319"
+      "version": "v320"
     },
     "harness.autoresearch.formal": {
       "history": [
