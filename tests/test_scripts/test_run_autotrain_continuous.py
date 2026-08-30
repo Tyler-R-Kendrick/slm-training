@@ -6088,7 +6088,7 @@ def test_post_planning_budget_consumes_remaining_wall_proof(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
-    fitted = _mod._fit_symmetric_arm_budget(
+    fitted, consumed_proof = _mod._fit_symmetric_arm_budget(
         deadline=10.0 + 149.0,
         arm_count=2,
         requested_arm_wall_minutes=70 / 60,
@@ -6099,6 +6099,8 @@ def test_post_planning_budget_consumes_remaining_wall_proof(
         stage_count=2,
     )
     assert fitted * 60 == proof["calculated_seconds"]
+    assert consumed_proof["effective_seconds"] == fitted * 60
+    assert consumed_proof["measured_remaining_seconds"] == 149.0
 
 
 def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
@@ -6111,7 +6113,7 @@ def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
     monkeypatch.setattr(_mod.time, "monotonic", lambda: now)
     remaining = 160.0
     deadline = now + remaining
-    fitted = _mod._fit_symmetric_arm_budget(
+    fitted, _proof = _mod._fit_symmetric_arm_budget(
         deadline=deadline,
         arm_count=2,
         requested_arm_wall_minutes=1.2,
@@ -9933,11 +9935,13 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
         reasons=["measurement_incomplete:x:missing_scoreboard", "empty_metrics:y"],
         control_metrics={"structural_similarity": None},
         candidate_metrics={},
+        arm_wall_proof={"effective_seconds": 70.0, "calculated_seconds": 70},
     )
     assert path.is_file()
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["schema"] == "thrash_timing/v1"
     assert data["complete"] is False
+    assert data["arm_wall_proof"]["effective_seconds"] == 70.0
     assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
     ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
     assert ledger.is_file()

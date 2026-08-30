@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Carry the measured-remainder arm-wall proof object through execution and persist that exact consumed bound in thrash timing instead of recomputing the initial ceiling during closeout.",
+          "version": "v321"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Accept a validated post-integration connector commit that changes docs or README as durable document-action evidence, avoiding self-referential code-stamp rewrites and forbidden local Git mutation.",
           "version": "v320"
         },
@@ -7205,7 +7210,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v320"
+      "version": "v321"
     },
     "harness.autoresearch.formal": {
       "history": [

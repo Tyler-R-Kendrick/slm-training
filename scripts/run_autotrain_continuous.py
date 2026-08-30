@@ -922,6 +922,7 @@ def _write_thrash_timing(
     control_metrics: dict[str, Any] | None,
     candidate_metrics: dict[str, Any] | None,
     thrash_regime: Mapping[str, Any] | None = None,
+    arm_wall_proof: Mapping[str, Any] | None = None,
 ) -> Path:
     """Durable thrash timing / completeness row for Pareto recalibration."""
 
@@ -952,6 +953,7 @@ def _write_thrash_timing(
         "measurement_complete": bool(measurement_complete),
         "has_dual_arm_ss": has_ss,
         "arm_wall_seconds": arm_wall_seconds,
+        "arm_wall_proof": dict(arm_wall_proof) if arm_wall_proof else None,
         "decode_fit": decode_fit,
         "fitted_steps": (decode_fit or {}).get("fitted_steps")
         if isinstance(decode_fit, dict)
@@ -1003,7 +1005,7 @@ def _require_symmetric_arm_budget(
 
 def _fit_symmetric_arm_budget(
     *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
-) -> float:
+) -> tuple[float, dict[str, Any]]:
     """Re-evaluate the registered arm-wall proof against measured remainder."""
 
     if arm_count <= 0:
@@ -1019,20 +1021,14 @@ def _fit_symmetric_arm_budget(
         float(requested_arm_wall_minutes) * 60.0,
         proved_seconds,
     )
-    print(
-        "ARM_BUDGET_REFIT_PROOF "
-        + json.dumps(
-            {
-                **calculation,
-                "measured_remaining_seconds": remaining,
-                "requested_seconds": float(requested_arm_wall_minutes) * 60.0,
-                "effective_seconds": effective_seconds,
-            },
-            sort_keys=True,
-        ),
-        flush=True,
-    )
-    return effective_seconds / 60.0
+    proof = {
+        **calculation,
+        "measured_remaining_seconds": remaining,
+        "requested_seconds": float(requested_arm_wall_minutes) * 60.0,
+        "effective_seconds": effective_seconds,
+    }
+    print("ARM_BUDGET_REFIT_PROOF " + json.dumps(proof, sort_keys=True), flush=True)
+    return effective_seconds / 60.0, proof
 
 
 def _post_formal_arm_budget_request(
@@ -11359,6 +11355,7 @@ def _phase_a_delivery(
     candidate_id: str | None = None,
     arm_exits: Mapping[str, int] | None = None,
     arm_skipped: Mapping[str, Mapping[str, Any]] | None = None,
+    arm_wall_proof: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
     from slm_training.autoresearch.climb_policy import (
@@ -11534,10 +11531,19 @@ def _phase_a_delivery(
     try:
         from slm_training.autoresearch.climb_policy import stage_wall_minutes_for_role
 
-        arm_s = _arm_wall_seconds(
-            policy_minutes=float(stage_wall_minutes_for_role(policy, role)),
-            formal_required=str(cycle_intent or role) == "promote",
-        )
+        if arm_wall_proof is None:
+            fallback = _arm_wall_calculation(
+                formal_required=str(cycle_intent or role) == "promote"
+            )
+            policy_seconds = float(stage_wall_minutes_for_role(policy, role)) * 60.0
+            arm_s = min(policy_seconds, float(fallback["calculated_seconds"]))
+            arm_wall_proof = {
+                **fallback,
+                "requested_seconds": policy_seconds,
+                "effective_seconds": arm_s,
+            }
+        else:
+            arm_s = float(arm_wall_proof["effective_seconds"])
         decode_fit = None
         if role == "screening":
             _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
@@ -11572,6 +11578,7 @@ def _phase_a_delivery(
             if isinstance(record.get("candidate_metrics"), dict)
             else None,
             thrash_regime=matrix_regime if isinstance(matrix_regime, dict) else None,
+            arm_wall_proof=arm_wall_proof,
         )
     except Exception as exc:  # noqa: BLE001 — never fail Phase A on telemetry
         print(f"THRASH_TIMING_WRITE_SKIP err={exc}", flush=True)
@@ -15712,17 +15719,15 @@ def run_cycle(
         float(stage_wall_minutes_for_role(policy, role)),
         float(arm_wall_proof["calculated_seconds"]) / 60.0,
     )
+    arm_wall_proof = {
+        **arm_wall_proof,
+        "policy_cap_seconds": float(stage_wall_minutes_for_role(policy, role))
+        * 60.0,
+        "effective_seconds": arm_wall_minutes * 60.0,
+    }
     print(
         "ARM_WALL_PROOF "
-        + json.dumps(
-            {
-                **arm_wall_proof,
-                "policy_cap_seconds": float(stage_wall_minutes_for_role(policy, role))
-                * 60.0,
-                "effective_seconds": arm_wall_minutes * 60.0,
-            },
-            sort_keys=True,
-        ),
+        + json.dumps(arm_wall_proof, sort_keys=True),
         flush=True,
     )
     # The campaign records the maximum arm ceiling before outcomes exist. The
@@ -16405,7 +16410,7 @@ def run_cycle(
                 formal_lane_required and promote_formal_status == "proved"
             ),
         )
-        arm_wall_minutes = _fit_symmetric_arm_budget(
+        arm_wall_minutes, arm_wall_proof = _fit_symmetric_arm_budget(
             deadline=deadline,
             arm_count=arm_count,
             requested_arm_wall_minutes=requested_arm_wall_minutes,
@@ -16604,6 +16609,7 @@ def run_cycle(
         candidate_id=candidate_eid,
         arm_exits=arm_exits,
         arm_skipped=arm_skipped,
+        arm_wall_proof=arm_wall_proof,
     )
     # Keep execution completeness explicit in the handoff/result matrix.  A
     # missing arm is a typed scheduling event, never an inferred model reject.
