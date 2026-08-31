@@ -5067,6 +5067,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-08-31",
+          "note": "Persist continuous checkpoint references as repository-relative outputs paths so generated public docs never expose host worktree locations.",
+          "version": "v327"
+        },
+        {
           "date": "2026-08-30",
           "note": "Keep frozen-measurement receipts current after NLL enrichment and render their hash-verified metrics as completed arms in the canonical between-cycle matrix.",
           "version": "v326"
@@ -7235,7 +7240,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v326"
+      "version": "v327"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -11808,6 +11813,11 @@
     },
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-08-31",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2387's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
         {
           "version": "v3",
           "date": "2026-08-31",

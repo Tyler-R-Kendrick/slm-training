@@ -10787,7 +10787,10 @@ def test_checkpoint_recipes_and_existing_notes_are_reusable(tmp_path: Path) -> N
     )
 
     assert recipes[0]["trainable_params"] == 1234
-    assert recipes[0]["local_path"].endswith("runs/cand/checkpoints/last.pt")
+    assert recipes[0]["local_path"] == (
+        "outputs/autoresearch/continuous-loop-test-c3/"
+        "runs/cand/checkpoints/last.pt"
+    )
     assert {path.name for path in first} == {"README.md", "MODEL_CARD.md"}
     assert {path.name for path in second} == {"README.md", "MODEL_CARD.md"}
     assert "1,234 trainable parameters" in (repo / "README.md").read_text()

@@ -5361,10 +5361,7 @@ def _checkpoint_recipes(
         summary = _read_json(summary_path) if summary_path.is_file() else {}
         meta_path = checkpoint.with_suffix(".meta.json")
         meta = _read_json(meta_path) if meta_path.is_file() else {}
-        try:
-            local_path = str(checkpoint.relative_to(cwd))
-        except ValueError:
-            local_path = str(checkpoint)
+        local_path = str(Path("outputs") / root.name / checkpoint.relative_to(root))
         recipe = summary.get("recipe") if isinstance(summary.get("recipe"), dict) else {}
         telemetry = (
             summary.get("telemetry")
