@@ -1961,6 +1961,60 @@ def test_retry_receipt_requires_complete_predecessor_bound_pair(tmp_path: Path) 
     )
 
 
+def test_execution_receipt_binds_direct_successor_artifact(tmp_path: Path) -> None:
+    root = tmp_path / "autoresearch"
+    action = AutotrainActionV1(
+        kind="retry_measurement",
+        owner="autotrain",
+        reason="Replay the incomplete matched pair.",
+        evidence_ids=("campaign:cycle-1",),
+        frozen_manifest_sha256="a" * 64,
+    )
+    handoff = AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id="cycle-1",
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="retry_measurement",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.parse_rate",
+        actions=(action,),
+    )
+    successor = root / "cycle-2"
+    successor.mkdir(parents=True)
+    (successor / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-2",
+                "predecessor_campaign_id": "cycle-1",
+            }
+        )
+    )
+    delivery = successor / "sdlc_delivery.json"
+    delivery.write_text('{"measurement_complete":true}\n')
+
+    evidence = bind_autotrain_action_evidence(
+        root, handoff, action, (str(delivery),)
+    )
+
+    assert evidence[0].kind == "campaign_artifact"
+    assert evidence[0].sha256 == hashlib.sha256(delivery.read_bytes()).hexdigest()
+    (successor / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-2",
+                "predecessor_campaign_id": "unrelated-cycle",
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="existing durable path or commit"):
+        bind_autotrain_action_evidence(root, handoff, action, (str(delivery),))
+
+
 def test_theorem_band_miss_stops_and_requires_formal_repair(tmp_path: Path) -> None:
     from scripts import run_autotrain_continuous as driver
     from scripts.autoresearch import build_parser

@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Authorize content-bound execution receipts to cite artifacts from a direct successor campaign after verifying its predecessor link.",
+          "version": "v324"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Reuse hash-linked completed measurement evidence during frozen retries so the registered arm-wall proof allocates its calculated deadline only across arms that still require execution.",
           "version": "v323"
         },
@@ -7220,7 +7225,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v323"
+      "version": "v324"
     },
     "harness.autoresearch.formal": {
       "history": [

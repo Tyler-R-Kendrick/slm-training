@@ -245,22 +245,40 @@ def _file_evidence(
     uri: str,
 ) -> AutotrainActionEvidenceV1:
     campaign_root = (root / handoff.campaign_id).resolve()
+    artifact_root = root.resolve()
     repo_root = _REPO_ROOT.resolve()
-    candidates = (
-        (campaign_root / uri, "campaign_artifact"),
-        (repo_root / uri, "repo_file"),
-    )
-    resolved = next(
-        (
-            (candidate.resolve(), kind)
-            for candidate, kind in candidates
-            if candidate.is_file()
-            and candidate.resolve().is_relative_to(
-                campaign_root if kind == "campaign_artifact" else repo_root
-            )
-        ),
-        None,
-    )
+    raw = Path(uri)
+    resolved = None
+    for candidate in (campaign_root / raw, raw if raw.is_absolute() else root / raw):
+        if not candidate.is_file():
+            continue
+        path = candidate.resolve()
+        if path.is_relative_to(campaign_root):
+            resolved = (path, "campaign_artifact")
+            break
+        if action.kind not in _EXECUTION_ACTION_KINDS or not path.is_relative_to(
+            artifact_root
+        ):
+            continue
+        relative = path.relative_to(artifact_root)
+        successor_root = artifact_root / relative.parts[0]
+        successor_spec = successor_root / "campaign.json"
+        if not successor_spec.is_file():
+            continue
+        spec = json.loads(successor_spec.read_text(encoding="utf-8"))
+        if (
+            spec.get("campaign_id") == successor_root.name
+            and spec.get("predecessor_campaign_id") == handoff.campaign_id
+        ):
+            resolved = (path, "campaign_artifact")
+            break
+    repo_candidate = repo_root / raw
+    if (
+        resolved is None
+        and repo_candidate.is_file()
+        and repo_candidate.resolve().is_relative_to(repo_root)
+    ):
+        resolved = (repo_candidate.resolve(), "repo_file")
     if resolved is None:
         raise ValueError(
             f"receipt evidence must be an existing durable path or commit: {uri}"
