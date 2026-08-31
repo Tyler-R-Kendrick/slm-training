@@ -35,9 +35,7 @@ def _git_repo(path: Path) -> Path:
     subprocess.check_call(
         ["git", "config", "user.email", "t@example.com"], cwd=path, env=_GIT_ENV
     )
-    subprocess.check_call(
-        ["git", "config", "user.name", "t"], cwd=path, env=_GIT_ENV
-    )
+    subprocess.check_call(["git", "config", "user.name", "t"], cwd=path, env=_GIT_ENV)
     (path / "README.md").write_text("x\n", encoding="utf-8")
     subprocess.check_call(["git", "add", "-A"], cwd=path, env=_GIT_ENV)
     subprocess.check_call(
@@ -91,6 +89,34 @@ def test_handle_hard_pending_records_escalation_and_governs_backoff(
         log_event=events.append,
     )
     assert second["sleep_seconds"] == 60.0
+
+
+def test_hard_backoff_returns_when_action_receipt_lands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    receipt = root / "loops" / "loop-1" / "action_receipts.jsonl"
+    receipt.parent.mkdir(parents=True)
+    elapsed = 0.0
+
+    def monotonic() -> float:
+        return elapsed
+
+    def sleep(seconds: float) -> None:
+        nonlocal elapsed
+        elapsed += seconds
+        receipt.write_text("receipt\n", encoding="utf-8")
+
+    monkeypatch.setattr(_mod.time, "monotonic", monotonic)
+    monkeypatch.setattr(_mod.time, "sleep", sleep)
+
+    assert _mod._wait_for_evidence_change(
+        root=root,
+        loop_id="loop-1",
+        seconds=60.0,
+        poll_seconds=2.0,
+    )
+    assert elapsed == 2.0
 
 
 def _stub_continuous_parked():

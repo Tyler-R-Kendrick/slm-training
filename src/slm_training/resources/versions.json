@@ -97,6 +97,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-08-31",
+          "note": "Wake governed supervisor backoff when a typed action or heal receipt lands so completed self-healing is consumed without waiting out stale escalation delay.",
+          "version": "v4"
+        },
+        {
           "date": "2026-08-30",
           "note": "no-bump: supervisor report regression covers canonical loop-state liveness across process namespaces; heal classification and backoff behavior are unchanged.",
           "version": "v3"
@@ -160,7 +165,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v3"
+      "version": "v4"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5068,6 +5073,11 @@
       "history": [
         {
           "date": "2026-08-31",
+          "note": "Wake governed supervisor backoff when a typed action or heal receipt lands so completed self-healing is consumed without waiting out stale escalation delay.",
+          "version": "v328"
+        },
+        {
+          "date": "2026-08-31",
           "note": "Persist continuous checkpoint references as repository-relative outputs paths so generated public docs never expose host worktree locations.",
           "version": "v327"
         },
@@ -7240,7 +7250,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v327"
+      "version": "v328"
     },
     "harness.autoresearch.formal": {
       "history": [

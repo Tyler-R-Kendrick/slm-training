@@ -58,8 +58,7 @@ def _handle_hard_pending(
         from slm_training.autoresearch.heal.escalation import EscalationLedger
 
         blockers = [
-            {**entry, "_root": root, "_loop_id": loop_id}
-            for entry in hard_pending
+            {**entry, "_root": root, "_loop_id": loop_id} for entry in hard_pending
         ]
         receipts = ()
         if playbooks_enabled:
@@ -81,8 +80,7 @@ def _handle_hard_pending(
         quarantined = [
             r
             for r in receipts
-            if r.outcome == "healed"
-            and r.playbook_id.startswith("quarantine_dirt")
+            if r.outcome == "healed" and r.playbook_id.startswith("quarantine_dirt")
         ]
         if len(quarantined) == 1:
             stash_sha = _stash_head_sha(cwd)
@@ -104,6 +102,40 @@ def _handle_hard_pending(
     except Exception as exc:  # noqa: BLE001 — heal bugs never kill supervision
         log_event({"event": "hard_pending_heal_error", "error": repr(exc)})
         return {"any_healed": False, "sleep_seconds": 30.0, "outcomes": []}
+
+
+def _wait_for_evidence_change(
+    *,
+    root: Path,
+    loop_id: str,
+    seconds: float,
+    poll_seconds: float,
+) -> bool:
+    """Wait for governed backoff, returning early when a repair receipt lands."""
+    receipt_paths = (
+        root / "loops" / loop_id / "action_receipts.jsonl",
+        root / "loops" / loop_id / "heal_receipts.jsonl",
+    )
+
+    def token() -> tuple[tuple[int, int] | None, ...]:
+        values: list[tuple[int, int] | None] = []
+        for path in receipt_paths:
+            try:
+                stat = path.stat()
+            except FileNotFoundError:
+                values.append(None)
+            else:
+                values.append((stat.st_mtime_ns, stat.st_size))
+        return tuple(values)
+
+    initial = token()
+    deadline = time.monotonic() + max(0.0, float(seconds))
+    interval = max(0.0, float(poll_seconds))
+    while (remaining := deadline - time.monotonic()) > 0:
+        time.sleep(min(interval or remaining, remaining))
+        if token() != initial:
+            return True
+    return False
 
 
 def _stash_head_sha(cwd: Path) -> str | None:
@@ -279,15 +311,16 @@ def main(argv: list[str] | None = None) -> int:
                 # not bound a heal-spin — never loop with zero delay.
                 time.sleep(max(0.5, float(args.soft_backoff_seconds)))
                 continue  # re-run the unblock loop
-            time.sleep(
-                max(
-                    1.0,
-                    float(
-                        outcome.get("sleep_seconds")
-                        or args.hard_backoff_seconds
-                    ),
-                )
+            evidence_changed = _wait_for_evidence_change(
+                root=root,
+                loop_id=args.loop_id,
+                seconds=float(
+                    outcome.get("sleep_seconds") or args.hard_backoff_seconds
+                ),
+                poll_seconds=float(args.soft_backoff_seconds),
             )
+            if evidence_changed:
+                log_event({"event": "hard_backoff_evidence_changed", "cycle": cycle})
             continue
 
         cmd = [
@@ -327,10 +360,13 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
         after_campaign = continuous._latest_cycle(root, args.loop_id)[1]
-        passes_without_campaign = passes_without_campaign + 1 if after_campaign == before_campaign else 0
+        passes_without_campaign = (
+            passes_without_campaign + 1 if after_campaign == before_campaign else 0
+        )
         if passes_without_campaign >= no_campaign_threshold:
             try:
                 from slm_training.autoresearch.heal.escalation import EscalationLedger
+
                 ledger = EscalationLedger.load(root, args.loop_id)
                 fingerprint = ledger.observe(
                     kind="loop_stalled_no_campaign",
@@ -339,9 +375,16 @@ def main(argv: list[str] | None = None) -> int:
                     campaign_id=after_campaign or "unknown",
                     owner_skill="autotrain",
                 ).fingerprint
-                ledger.escalate(fingerprint, note="supervisor watchdog threshold reached")
+                ledger.escalate(
+                    fingerprint, note="supervisor watchdog threshold reached"
+                )
                 ledger.save()
-                log_event({"event": "loop_stalled_no_campaign", "passes": passes_without_campaign})
+                log_event(
+                    {
+                        "event": "loop_stalled_no_campaign",
+                        "passes": passes_without_campaign,
+                    }
+                )
             except Exception as exc:  # noqa: BLE001
                 log_event({"event": "watchdog_error", "error": repr(exc)})
             passes_without_campaign = 0
@@ -355,7 +398,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             log_event({"event": "post_cycle_unblock", "cycle": cycle, **report})
             if report.get("hard_pending"):
-                time.sleep(max(1.0, float(args.hard_backoff_seconds)))
+                _wait_for_evidence_change(
+                    root=root,
+                    loop_id=args.loop_id,
+                    seconds=float(args.hard_backoff_seconds),
+                    poll_seconds=float(args.soft_backoff_seconds),
+                )
             else:
                 time.sleep(max(0.5, float(args.soft_backoff_seconds)))
         except Exception as exc:  # noqa: BLE001
