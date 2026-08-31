@@ -1019,11 +1019,98 @@ def loop_result_rows(
                 break
         if not expected:
             continue
-        actual = {str(row["experiment"]) for row in by_campaign.get(campaign.campaign_id, ())}
+        campaign_rows = by_campaign.setdefault(campaign.campaign_id, [])
+        actual = {str(row["experiment"]) for row in campaign_rows}
+        delivery_path = Path(root) / campaign.campaign_id / "sdlc_delivery.json"
+        try:
+            delivery = json.loads(delivery_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            delivery = {}
+        if delivery.get("measurement_complete") is True:
+            for role in ("control", "candidate"):
+                experiment_id = delivery.get(f"{role}_id")
+                metrics = delivery.get(f"{role}_metrics")
+                if (
+                    experiment_id not in expected
+                    or experiment_id in actual
+                    or not isinstance(metrics, dict)
+                ):
+                    continue
+                run_root = Path(root) / campaign.campaign_id / "runs" / experiment_id
+                receipt_path = run_root / "measurement_reuse.json"
+                manifest_path = (
+                    Path(root)
+                    / campaign.campaign_id
+                    / "manifests"
+                    / f"{experiment_id}.json"
+                )
+                try:
+                    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                    artifacts = receipt["artifacts"]
+                    valid_reuse = (
+                        receipt.get("schema") == "frozen_measurement_reuse/v1"
+                        and isinstance(artifacts, dict)
+                        and bool(artifacts)
+                        and manifest_path.is_file()
+                        and hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+                        == receipt.get("target_manifest_sha256")
+                        and all(
+                            Path(name).name == name
+                            and (run_root / name).is_file()
+                            and hashlib.sha256((run_root / name).read_bytes()).hexdigest()
+                            == digest
+                            for name, digest in artifacts.items()
+                        )
+                    )
+                except (OSError, KeyError, TypeError, json.JSONDecodeError):
+                    valid_reuse = False
+                if not valid_reuse:
+                    continue
+                try:
+                    gates_failed = (
+                        json.loads((run_root / "gates.json").read_text(encoding="utf-8"))
+                        .get("pass")
+                        is False
+                    )
+                except (OSError, json.JSONDecodeError):
+                    gates_failed = False
+                primary_metric = str(
+                    handoff.get("primary_metric") or campaign.primary_metric
+                )
+                row = {
+                    "cycle": campaign.cycle_index,
+                    "upstream": (campaign.upstream_commit or "")[:8] or "—",
+                    "integrated": (campaign.integration_commit or "")[:8] or "—",
+                    "experiment": experiment_id,
+                    "params": _metric_text(metrics, "trainable_params"),
+                    "exposure": "—",
+                    "primary": _metric_text(metrics, primary_metric),
+                    "metrics": _metrics_text(
+                        metrics,
+                        {},
+                        omit={"trainable_params", primary_metric},
+                    ),
+                    "lean": _lean_text(None, handoff),
+                    "gates": "fail" if gates_failed else "not evaluated",
+                    "measurement": (
+                        "complete (reused; gate reject)"
+                        if gates_failed
+                        else "complete (reused)"
+                    ),
+                    "diagnosis": "model" if gates_failed else "—",
+                    "evidence_class": handoff.get("evidence_class", "fixture"),
+                    "climb": handoff.get("climb_state", "—"),
+                    "ship": handoff.get("ship_state", "blocked"),
+                    "status": "completed",
+                    "campaign_id": campaign.campaign_id,
+                }
+                rows.append(row)
+                campaign_rows.append(row)
+                actual.add(experiment_id)
         missing = tuple(item for item in expected if item not in actual)
         if not missing:
             continue
-        for row in by_campaign.get(campaign.campaign_id, ()):
+        for row in campaign_rows:
             row["measurement"] = "incomplete (campaign arm missing)"
             row["diagnosis"] = "harness"
             row["status"] = "incomplete"

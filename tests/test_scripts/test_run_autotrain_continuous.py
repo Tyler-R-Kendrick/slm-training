@@ -12001,6 +12001,14 @@ def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
         json.dumps({"suites": {"smoke": {"n": 6, "structural_similarity": 0.1}}}),
         encoding="utf-8",
     )
+    (run_dir / "measurement_reuse.json").write_text(
+        json.dumps(
+            {
+                "schema": "frozen_measurement_reuse/v1",
+                "artifacts": {"scoreboard.json": "stale"},
+            }
+        )
+    )
     out = _mod._run_arm_eval_nll(run_dir, eval_nll=3.25)
     assert out["eval_nll"] == 3.25
     scoreboard = json.loads((run_dir / "scoreboard.json").read_text(encoding="utf-8"))
@@ -12014,6 +12022,10 @@ def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
     metrics = _mod._run_metrics(tmp_path, "arm")
     assert metrics["smoke.eval_nll"] == 3.25
     assert metrics["eval_nll"] == 3.25
+    receipt = json.loads((run_dir / "measurement_reuse.json").read_text())
+    assert receipt["artifacts"]["scoreboard.json"] == hashlib.sha256(
+        (run_dir / "scoreboard.json").read_bytes()
+    ).hexdigest()
 
 
 def test_attach_screening_eval_nll_skips_without_checkpoint(tmp_path: Path) -> None:

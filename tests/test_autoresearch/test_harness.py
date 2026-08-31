@@ -3946,6 +3946,40 @@ def test_loop_result_matrix_marks_missing_paired_arm_as_harness_incomplete(
     assert "incomplete (arm not run)" in rendered
     assert "| control |" in rendered
 
+    run_dir = tmp_path / campaign.campaign_id / "runs" / "control"
+    run_dir.mkdir(parents=True)
+    gates = run_dir / "gates.json"
+    gates.write_text('{"pass":false}\n')
+    manifest = tmp_path / campaign.campaign_id / "manifests" / "control.json"
+    manifest.parent.mkdir()
+    manifest.write_text('{"experiment_id":"control"}\n')
+    (run_dir / "measurement_reuse.json").write_text(
+        json.dumps(
+            {
+                "schema": "frozen_measurement_reuse/v1",
+                "target_manifest_sha256": hashlib.sha256(
+                    manifest.read_bytes()
+                ).hexdigest(),
+                "artifacts": {
+                    "gates.json": hashlib.sha256(gates.read_bytes()).hexdigest()
+                },
+            }
+        )
+    )
+    (tmp_path / campaign.campaign_id / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": True,
+                "control_id": "control",
+                "control_metrics": {"smoke.parse_rate": 1.0},
+            }
+        )
+    )
+
+    rendered = render_loop_result_matrix(tmp_path, "loop-1")
+    assert "incomplete (campaign arm missing)" not in rendered
+    assert "complete (reused; gate reject)" in rendered
+
 
 def test_loop_result_matrix_relabels_reproduced_candidate_runtime_rejection(
     tmp_path: Path,

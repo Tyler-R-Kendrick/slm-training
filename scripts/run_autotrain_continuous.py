@@ -1481,6 +1481,27 @@ def _run_metrics(
     return out
 
 
+def _refresh_measurement_reuse_receipt(run_dir: Path) -> None:
+    receipt_path = Path(run_dir) / "measurement_reuse.json"
+    if not receipt_path.is_file():
+        return
+    try:
+        receipt = _read_json(receipt_path)
+        artifacts = receipt["artifacts"]
+        if receipt.get("schema") != "frozen_measurement_reuse/v1" or not isinstance(
+            artifacts, dict
+        ):
+            return
+        for name in tuple(artifacts):
+            artifact = Path(run_dir) / name
+            if Path(name).name != name or not artifact.is_file():
+                return
+            artifacts[name] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    except (OSError, KeyError, TypeError, json.JSONDecodeError):
+        return
+
+
 def _run_arm_eval_nll(
     run_dir: Path,
     *,
@@ -1558,6 +1579,7 @@ def _run_arm_eval_nll(
     scoreboard_path.write_text(
         json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
     )
+    _refresh_measurement_reuse_receipt(Path(run_dir))
     return {
         "eval_nll": float(value),
         "definition_hash": digest,

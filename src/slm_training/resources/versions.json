@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Keep frozen-measurement receipts current after NLL enrichment and render their hash-verified metrics as completed arms in the canonical between-cycle matrix.",
+          "version": "v326"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Authorize content-bound execution receipts to cite artifacts from a transitively linked successor campaign across interrupted retry cycles.",
           "version": "v325"
         },
@@ -7230,7 +7235,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v325"
+      "version": "v326"
     },
     "harness.autoresearch.formal": {
       "history": [
