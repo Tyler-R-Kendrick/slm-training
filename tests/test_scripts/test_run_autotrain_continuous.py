@@ -8907,6 +8907,12 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
             }
         )
     )
+    (checkpoint.parents[1] / "eval_smoke.json").write_text(
+        json.dumps({"metrics": {"structural_similarity": 0.5}})
+    )
+    (checkpoint.parents[1] / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"eval_nll": 1.0}}})
+    )
 
     reuse = _mod._completed_frozen_train_source(
         root=root,
@@ -8918,6 +8924,45 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     assert reuse is not None
     assert reuse["run_dir"] == source_dir / "runs" / "source-batch1"
     assert reuse["manifest_paths"] == (retry_path, source_path)
+    assert reuse["measurement"] == {
+        "run_dir": source_dir / "runs" / "source-batch1",
+        "manifest_sha256": source_sha,
+    }
+
+
+def test_frozen_replay_reuses_completed_measurement_with_hash_receipt(
+    tmp_path: Path,
+) -> None:
+    source_run = tmp_path / "source-run"
+    target_run = tmp_path / "target-run"
+    source_run.mkdir()
+    eval_payload = json.dumps({"metrics": {"structural_similarity": 0.5}}).encode()
+    (source_run / "eval_smoke.json").write_bytes(eval_payload)
+    source_manifest = tmp_path / "source-manifest.json"
+    target_manifest = tmp_path / "target-manifest.json"
+    source_manifest.write_text('{"source": true}\n')
+    target_manifest.write_text('{"target": true}\n')
+
+    _mod._materialize_frozen_measurement(
+        target_run_dir=target_run,
+        target_manifest_path=target_manifest,
+        reuse={
+            "run_dir": source_run,
+            "manifest_sha256": hashlib.sha256(source_manifest.read_bytes()).hexdigest(),
+        },
+    )
+
+    receipt = json.loads((target_run / "measurement_reuse.json").read_text())
+    assert (target_run / "eval_smoke.json").read_bytes() == eval_payload
+    assert receipt["source_manifest_sha256"] == hashlib.sha256(
+        source_manifest.read_bytes()
+    ).hexdigest()
+    assert receipt["target_manifest_sha256"] == hashlib.sha256(
+        target_manifest.read_bytes()
+    ).hexdigest()
+    assert receipt["artifacts"]["eval_smoke.json"] == hashlib.sha256(
+        eval_payload
+    ).hexdigest()
 
 
 def test_frozen_train_reuse_keeps_completed_checkpoint_when_eval_timed_out(

@@ -13567,6 +13567,7 @@ def _completed_frozen_train_source(
 
     lineage: list[Path] = []
     visited: set[str] = set()
+    measurement: dict[str, Any] | None = None
     current_dir = campaign_dir
     current_manifest = manifest
     current_path = manifest_path
@@ -13577,6 +13578,15 @@ def _completed_frozen_train_source(
         visited.add(digest)
         lineage.append(current_path)
         run_dir = current_dir / "runs" / current_manifest.experiment_id
+        if (
+            measurement is None
+            and (run_dir / "scoreboard.json").is_file()
+            and _run_has_usable_metrics(current_dir, current_manifest.experiment_id)
+        ):
+            measurement = {
+                "run_dir": run_dir,
+                "manifest_sha256": digest,
+            }
         summary_path = run_dir / "train_summary.json"
         if summary_path.is_file():
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
@@ -13587,10 +13597,13 @@ def _completed_frozen_train_source(
                 and int(summary.get("steps") or -1) > 0
                 and checkpoint.is_file()
             ):
-                return {
+                reuse = {
                     "run_dir": run_dir,
                     "manifest_paths": tuple(lineage),
                 }
+                if measurement is not None:
+                    reuse["measurement"] = measurement
+                return reuse
         replay_sha = current_manifest.replay_of_manifest_sha256
         if replay_sha is None:
             return None
@@ -13625,6 +13638,43 @@ def _completed_frozen_train_source(
                 predecessor_id = predecessor_campaign.predecessor_campaign_id
         else:
             raise RuntimeError(f"frozen replay manifest is missing: {replay_sha}")
+
+
+def _materialize_frozen_measurement(
+    *, target_run_dir: Path, target_manifest_path: Path, reuse: Mapping[str, Any]
+) -> None:
+    """Copy immutable measurement evidence and bind it to its replay hashes."""
+
+    source_run_dir = Path(str(reuse["run_dir"]))
+    target_run_dir.mkdir(parents=True, exist_ok=True)
+    artifacts: dict[str, str] = {}
+    for name in (
+        "eval_held_out.json",
+        "eval_smoke.json",
+        "eval.json",
+        "gates.json",
+        "scoreboard.json",
+    ):
+        source = source_run_dir / name
+        if not source.is_file():
+            continue
+        payload = source.read_bytes()
+        (target_run_dir / name).write_bytes(payload)
+        artifacts[name] = hashlib.sha256(payload).hexdigest()
+    if not artifacts:
+        raise RuntimeError(f"frozen measurement has no evidence: {source_run_dir}")
+    receipt = {
+        "schema": "frozen_measurement_reuse/v1",
+        "source_run_dir": str(source_run_dir),
+        "source_manifest_sha256": str(reuse["manifest_sha256"]),
+        "target_manifest_sha256": hashlib.sha256(
+            target_manifest_path.read_bytes()
+        ).hexdigest(),
+        "artifacts": artifacts,
+    }
+    (target_run_dir / "measurement_reuse.json").write_text(
+        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def _apply_frozen_replay(
@@ -16330,6 +16380,25 @@ def run_cycle(
             role=role,
             policy=policy,
         )
+    reused_measurements: dict[str, Mapping[str, Any]] = {}
+    if replay is not None:
+        for eid in order:
+            train_reuse = replay_manifests.get(eid, {}).get("train_reuse") or {}
+            measurement = train_reuse.get("measurement")
+            if measurement is None:
+                continue
+            _materialize_frozen_measurement(
+                target_run_dir=camp_dir / "runs" / eid,
+                target_manifest_path=replay_manifest_paths[eid],
+                reuse=measurement,
+            )
+            reused_measurements[eid] = measurement
+            print(
+                "FROZEN_MEASUREMENT_REUSE "
+                f"experiment={eid} source_run={measurement['run_dir']}",
+                flush=True,
+            )
+        order = [eid for eid in order if eid not in reused_measurements]
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
     if cycle_intent == "promote" and promoting_champion is not None:
@@ -16425,8 +16494,24 @@ def run_cycle(
                 flush=True,
             )
     seen: set[str] = set()
-    arm_exits: dict[str, int] = {}
+    arm_exits: dict[str, int] = {eid: 0 for eid in reused_measurements}
     screening_nll_jobs: list[tuple[Path, Path | None]] = []
+    if role == "screening":
+        for eid in reused_measurements:
+            train_reuse = replay_manifests[eid].get("train_reuse")
+            train_summary = (
+                _read_json(Path(train_reuse["run_dir"]) / "train_summary.json")
+                if train_reuse is not None
+                else {}
+            )
+            screening_nll_jobs.append(
+                (
+                    camp_dir / "runs" / eid,
+                    Path(str(train_summary.get("checkpoint") or ""))
+                    if train_summary
+                    else None,
+                )
+            )
     arm_skipped: dict[str, dict[str, Any]] = {
         row["arm_id"]: {"reason": row["reason"]} for row in multi_arm_skip
     }
