@@ -10980,9 +10980,14 @@ def test_self_heal_restores_loop_owned_generated_dirt(tmp_path: Path) -> None:
     mirror.write_text('{"ok": false, "dirty": true}\n', encoding="utf-8")
     root = repo / "outputs" / "autoresearch"
     root.mkdir(parents=True)
-    report = _mod.self_heal_unblock_loop(
-        cwd=repo, root=root, loop_id="continuous-openui-local"
-    )
+    git_mode = (repo / ".git").stat().st_mode
+    (repo / ".git").chmod(0o555)
+    try:
+        report = _mod.self_heal_unblock_loop(
+            cwd=repo, root=root, loop_id="continuous-openui-local"
+        )
+    finally:
+        (repo / ".git").chmod(git_mode)
     assert "loop_owned_generated_dirt" in report.get("soft_healed", [])
     assert not any(
         item.get("kind") == "foreign_dirty_tree"

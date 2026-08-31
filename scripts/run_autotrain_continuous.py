@@ -5610,16 +5610,16 @@ def _self_heal_loop_owned_generated_dirt(
     ]
     if not owned:
         return None
-    _git(
-        "restore",
-        "--source=HEAD",
-        "--worktree",
-        "--staged",
-        "--",
-        *owned,
-        stage="self-heal-owned-dirt" if root is not None else None,
-        **git_kw,
-    )
+    for path in owned:
+        committed = subprocess.run(  # noqa: S603 — fixed read-only Git command
+            ["git", "show", f"HEAD:{path}"],
+            cwd=cwd,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=_remaining_timeout(),
+        )
+        (cwd / path).write_bytes(committed.stdout)
     print(f"SELF_HEAL_LOOP_OWNED_DIRT files={owned}", flush=True)
     return "loop_owned_generated_dirt"
 

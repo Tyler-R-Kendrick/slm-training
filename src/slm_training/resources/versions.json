@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Restore loop-owned generated mirrors from read-only HEAD content without an index-mutating Git command so continuous cleanup works with shared Git metadata mounted read-only.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Carry the measured-remainder arm-wall proof object through execution and persist that exact consumed bound in thrash timing instead of recomputing the initial ceiling during closeout.",
           "version": "v321"
         },
@@ -7210,7 +7215,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v321"
+      "version": "v322"
     },
     "harness.autoresearch.formal": {
       "history": [
