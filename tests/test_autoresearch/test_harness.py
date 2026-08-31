@@ -1961,7 +1961,7 @@ def test_retry_receipt_requires_complete_predecessor_bound_pair(tmp_path: Path) 
     )
 
 
-def test_execution_receipt_binds_direct_successor_artifact(tmp_path: Path) -> None:
+def test_execution_receipt_binds_transitive_successor_artifact(tmp_path: Path) -> None:
     root = tmp_path / "autoresearch"
     action = AutotrainActionV1(
         kind="retry_measurement",
@@ -1984,13 +1984,23 @@ def test_execution_receipt_binds_direct_successor_artifact(tmp_path: Path) -> No
         primary_metric="smoke.parse_rate",
         actions=(action,),
     )
-    successor = root / "cycle-2"
-    successor.mkdir(parents=True)
-    (successor / "campaign.json").write_text(
+    intermediate = root / "cycle-2"
+    intermediate.mkdir(parents=True)
+    (intermediate / "campaign.json").write_text(
         json.dumps(
             {
                 "campaign_id": "cycle-2",
                 "predecessor_campaign_id": "cycle-1",
+            }
+        )
+    )
+    successor = root / "cycle-3"
+    successor.mkdir(parents=True)
+    (successor / "campaign.json").write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-3",
+                "predecessor_campaign_id": "cycle-2",
             }
         )
     )
@@ -2006,7 +2016,7 @@ def test_execution_receipt_binds_direct_successor_artifact(tmp_path: Path) -> No
     (successor / "campaign.json").write_text(
         json.dumps(
             {
-                "campaign_id": "cycle-2",
+                "campaign_id": "cycle-3",
                 "predecessor_campaign_id": "unrelated-cycle",
             }
         )

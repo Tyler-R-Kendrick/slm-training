@@ -262,15 +262,24 @@ def _file_evidence(
             continue
         relative = path.relative_to(artifact_root)
         successor_root = artifact_root / relative.parts[0]
-        successor_spec = successor_root / "campaign.json"
-        if not successor_spec.is_file():
-            continue
-        spec = json.loads(successor_spec.read_text(encoding="utf-8"))
-        if (
-            spec.get("campaign_id") == successor_root.name
-            and spec.get("predecessor_campaign_id") == handoff.campaign_id
-        ):
-            resolved = (path, "campaign_artifact")
+        visited: set[Path] = set()
+        current_root = successor_root.resolve()
+        while current_root.parent == artifact_root and current_root not in visited:
+            visited.add(current_root)
+            successor_spec = current_root / "campaign.json"
+            if not successor_spec.is_file():
+                break
+            spec = json.loads(successor_spec.read_text(encoding="utf-8"))
+            if spec.get("campaign_id") != current_root.name:
+                break
+            predecessor = spec.get("predecessor_campaign_id")
+            if predecessor == handoff.campaign_id:
+                resolved = (path, "campaign_artifact")
+                break
+            if not isinstance(predecessor, str) or not predecessor:
+                break
+            current_root = (artifact_root / predecessor).resolve()
+        if resolved is not None:
             break
     repo_candidate = repo_root / raw
     if (

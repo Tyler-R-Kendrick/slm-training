@@ -5068,6 +5068,11 @@
       "history": [
         {
           "date": "2026-08-30",
+          "note": "Authorize content-bound execution receipts to cite artifacts from a transitively linked successor campaign across interrupted retry cycles.",
+          "version": "v325"
+        },
+        {
+          "date": "2026-08-30",
           "note": "Authorize content-bound execution receipts to cite artifacts from a direct successor campaign after verifying its predecessor link.",
           "version": "v324"
         },
@@ -7225,7 +7230,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v324"
+      "version": "v325"
     },
     "harness.autoresearch.formal": {
       "history": [
