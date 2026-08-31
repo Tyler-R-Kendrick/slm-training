@@ -2884,3 +2884,9 @@ tests/
 - campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376`
 - checkpoints: `/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376/runs/c20260830-continuous-openui-local-8c0b60dd-c2376-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 128 steps, 629 records); `/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376/runs/c20260830-continuous-openui-local-8c0b60dd-c2376-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 128 steps, 90 records)
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378`
+- checkpoints: `/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378/runs/c20260830-continuous-openui-local-8c0b60dd-c2378-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 167 steps, 629 records); `/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378/runs/c20260830-continuous-openui-local-8c0b60dd-c2378-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 167 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
