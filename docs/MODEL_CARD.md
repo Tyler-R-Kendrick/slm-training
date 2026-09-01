@@ -3590,3 +3590,9 @@ Date (UTC) column). Do not delete history.
 - campaign: `continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2396`
 - checkpoints: `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2396/runs/c20260831-continuous-openui-local-8c0b60dd-c2396-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 105 steps, 90 records)
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-09-01, continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399)
+
+- campaign: `continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399/runs/c20260831-continuous-openui-local-8c0b60dd-c2399-control/checkpoints/last.pt` (6,692,828 bytes; model, 1,661,698 trainable parameters, 0 steps, 0 records); `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399/runs/c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 104 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
