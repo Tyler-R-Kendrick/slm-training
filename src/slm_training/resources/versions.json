@@ -5032,6 +5032,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-01",
+          "note": "Driver closeout self-heal treats checkpoint-note-only versions.json no-bump dirt as continuous closeout, reuses GitHub-published document commits, and publishes closeout through the GitHub git data API when local git commit is blocked so document/foreign_dirty_tree cannot 1h-park the loop.",
+          "version": "v271"
+        },
+        {
           "date": "2026-08-21",
           "note": "Screening data heal allocates a new versioned smoke suite instead of reusing the frozen smoke6 snapshot when n must grow.",
           "version": "v270"
@@ -6920,7 +6925,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v270"
+      "version": "v271"
     },
     "harness.autoresearch.formal": {
       "history": [
