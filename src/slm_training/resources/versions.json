@@ -5073,6 +5073,11 @@
       "history": [
         {
           "date": "2026-08-31",
+          "note": "no-bump: document the c2391-c2392 orchestration startup diagnosis and behavior-neutral light-import repair; experiment campaign semantics are unchanged.",
+          "version": "v328"
+        },
+        {
+          "date": "2026-08-31",
           "note": "Wake governed supervisor backoff when a typed action or heal receipt lands so completed self-healing is consumed without waiting out stale escalation delay.",
           "version": "v328"
         },
@@ -18123,6 +18128,11 @@
     },
     "harness.preference.remine_campaign": {
       "history": [
+        {
+          "date": "2026-08-31",
+          "note": "no-bump: keep orchestration-only autoresearch commands off the OpenUI DSL import path while preserving explicit DSL loading for run and evaluation commands; preference remine behavior is unchanged.",
+          "version": "v6"
+        },
         {
           "date": "2026-08-29",
           "note": "no-bump: return before importing the verified-metrics stack when an autoresearch arm has no metric certificate, preserving the arm wall budget; preference remine behavior is unchanged.",

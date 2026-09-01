@@ -105,3 +105,21 @@ def test_core_import_is_torch_free() -> None:
         cwd=REPO_ROOT,
         env={"PYTHONPATH": str(REPO_ROOT / "src"), "PATH": "/usr/bin:/bin"},
     )
+
+
+def test_autoresearch_cli_import_is_dsl_free() -> None:
+    code = (
+        "import sys; import scripts.autoresearch; "
+        "assert 'slm_training.dsl' not in sys.modules, "
+        "'autoresearch orchestration import pulled the OpenUI DSL'"
+    )
+    subprocess.run(
+        [sys.executable, "-c", code],
+        check=True,
+        cwd=REPO_ROOT,
+        env={
+            "PYTHONPATH": str(REPO_ROOT / "src"),
+            "PATH": "/usr/bin:/bin",
+            "_SLM_TRAINING_LIGHT_IMPORT": "1",
+        },
+    )
