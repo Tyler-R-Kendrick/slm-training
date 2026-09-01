@@ -1,0 +1,292 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373",
+  "candidate_metrics": {
+    "binder_reference_f1": 0.5333333333333333,
+    "eval_nll": 8.158025523987348,
+    "latency_ms_p50": 6533.79,
+    "meaningful_program_rate": 0.16666666666666666,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.5333333333333333,
+    "smoke.eval_nll": 8.158025523987348,
+    "smoke.latency_ms_p50": 6533.79,
+    "smoke.meaningful_program_rate": 0.16666666666666666,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.13118333333333335,
+    "structural_similarity": 0.13118333333333335
+  },
+  "checkpoint_recipe": {
+    "checkpoints": [
+      {
+        "backend": "scratch",
+        "bytes": 6692828,
+        "device": "cpu",
+        "elapsed_seconds": 17.772748276009224,
+        "last_loss": 9.463221549987793,
+        "local_path": "/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373/runs/c20260830-continuous-openui-local-8c0b60dd-c2373-control/checkpoints/last.pt",
+        "model": "twotower",
+        "records": 629,
+        "seed": 102373,
+        "steps": 167,
+        "trainable_params": 1661698
+      },
+      {
+        "backend": "scratch",
+        "bytes": 6453212,
+        "device": "cpu",
+        "elapsed_seconds": 7.477557431004243,
+        "last_loss": 3.319687604904175,
+        "local_path": "/home/codex/.herdr/worktrees/slm-training/worktree-calm-meadow-8469/outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373/runs/c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal/checkpoints/last.pt",
+        "model": "twotower",
+        "records": 90,
+        "seed": 102373,
+        "steps": 167,
+        "trainable_params": 1601794
+      }
+    ],
+    "sync": "disabled_fixture_scratch"
+  },
+  "control_metrics": {
+    "binder_reference_f1": 0.5333333333333333,
+    "eval_nll": 4.4364331289500205,
+    "latency_ms_p50": 8218.74,
+    "meaningful_program_rate": 0.16666666666666666,
+    "parse_rate": 1.0,
+    "smoke.binder_reference_f1": 0.5333333333333333,
+    "smoke.eval_nll": 4.4364331289500205,
+    "smoke.latency_ms_p50": 8218.74,
+    "smoke.meaningful_program_rate": 0.16666666666666666,
+    "smoke.parse_rate": 1.0,
+    "smoke.structural_similarity": 0.3763,
+    "structural_similarity": 0.3763
+  },
+  "cycle_index": 2373,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260830-continuous-openui-local-8c0b60dd-c2373-control": 0,
+      "c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal": 0
+    },
+    "arm_order": [
+      "c20260830-continuous-openui-local-8c0b60dd-c2373-control",
+      "c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal"
+    ],
+    "arm_seed": 102373,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1661698,
+    "campaign_id": "continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373",
+    "candidate_id": "c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.5333333333333333,
+      "eval_nll": 8.158025523987348,
+      "latency_ms_p50": 6533.79,
+      "meaningful_program_rate": 0.16666666666666666,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.5333333333333333,
+      "smoke.eval_nll": 8.158025523987348,
+      "smoke.latency_ms_p50": 6533.79,
+      "smoke.meaningful_program_rate": 0.16666666666666666,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.13118333333333335,
+      "structural_similarity": 0.13118333333333335
+    },
+    "candidate_trainable_params": 1601794,
+    "climb_policy_sha256": "de8c2d121a7eb6a30595d2d5ca1e9fbc88477027bafa4d7e9609f725dd02318f",
+    "control_id": "c20260830-continuous-openui-local-8c0b60dd-c2373-control",
+    "control_metrics": {
+      "binder_reference_f1": 0.5333333333333333,
+      "eval_nll": 4.4364331289500205,
+      "latency_ms_p50": 8218.74,
+      "meaningful_program_rate": 0.16666666666666666,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.5333333333333333,
+      "smoke.eval_nll": 4.4364331289500205,
+      "smoke.latency_ms_p50": 8218.74,
+      "smoke.meaningful_program_rate": 0.16666666666666666,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.3763,
+      "structural_similarity": 0.3763
+    },
+    "cycle_index": 2373,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-08-31T00:29:09Z",
+    "fixture_volume_gate_hits": 2,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": true,
+    "policy_sha256": "de8c2d121a7eb6a30595d2d5ca1e9fbc88477027bafa4d7e9609f725dd02318f",
+    "policy_version": "v15",
+    "positive": false,
+    "preflight": {
+      "blocked_slugs": [],
+      "schema": "autotrain_preflight/v1",
+      "selected_slug": "current-rung-data-heal",
+      "verdicts": {
+        "current-rung-data-heal": [
+          {
+            "check_id": "concluded_family",
+            "data": {
+              "family_key": "heal-resume+process-arm+process-role+train-version"
+            },
+            "reasons": [
+              "family 'heal-resume+process-arm+process-role+train-version' has no binding closure record"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_dominance",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism dominance check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_no_effect",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism no-effect check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "power_decidability",
+            "data": {
+              "alpha": 0.05,
+              "config_fingerprint": "6c81e707d140f4c8",
+              "endpoint_metric": "smoke.eval_nll",
+              "max_reasonable_n": 64,
+              "min_attainable_p": 1.0,
+              "min_detectable_effect": 0.8087479899175992,
+              "minimum_effect": 0.05,
+              "n_seeds": 1,
+              "paired": true,
+              "process_arm": true,
+              "required_n_for_effect": 262,
+              "sd": 0.28867513459481287,
+              "sd_source": "conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "steps": 20
+            },
+            "reasons": [
+              "min_attainable_p=1 > alpha=0.05 at n=1 (paired sign test): no result at this n can ever reject",
+              "min_detectable_effect=0.808748 > minimum_effect=0.05 at n=1, sd=0.288675: required_n_for_effect=262",
+              "sd=0.288675 from conservative default sqrt(0.25/3) (no applicable ledger variance)",
+              "required_n_for_effect=262 exceeds the reasonable screening ceiling (64); this design cannot become decidable through realistic accumulation",
+              "process/heal arm is not a confirmatory design; power decidability warns instead of blocking first execution"
+            ],
+            "verdict": "warn"
+          },
+          {
+            "check_id": "prior_attempts",
+            "data": {
+              "config_fingerprint": "6c81e707d140f4c8",
+              "matched": 0,
+              "source": "evidence_store"
+            },
+            "reasons": [
+              "no matching prior attempt (source=evidence_store)"
+            ],
+            "verdict": "pass"
+          }
+        ]
+      }
+    },
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2373-control",
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal",
+      "primary_metric_null_or_worse:smoke.eval_nll:control=4.4364331289500205 candidate=8.158025523987348 improvement=-3.7215923950373275",
+      "screening_quality_secondary:smoke.structural_similarity:control=0.3763 candidate=0.13118333333333335:recorded_not_verdict",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373",
+    "cycle_index": 2373,
+    "deltas": {
+      "binder_reference_f1": 0.0,
+      "eval_nll": 3.7215923950373275,
+      "latency_ms_p50": -1684.9499999999998,
+      "meaningful_program_rate": 0.0,
+      "parse_rate": 0.0,
+      "smoke.binder_reference_f1": 0.0,
+      "smoke.eval_nll": 3.7215923950373275,
+      "smoke.latency_ms_p50": -1684.9499999999998,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.parse_rate": 0.0,
+      "smoke.structural_similarity": -0.24511666666666668,
+      "structural_similarity": -0.24511666666666668
+    },
+    "measurement_complete": true,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2373-control",
+      "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal",
+      "primary_metric_null_or_worse:smoke.eval_nll:control=4.4364331289500205 candidate=8.158025523987348 improvement=-3.7215923950373275",
+      "screening_quality_secondary:smoke.structural_similarity:control=0.3763 candidate=0.13118333333333335:recorded_not_verdict",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "keep_rotating_size_matched_arms",
+      "keep_ship_gates_do_not_enqueue_confirm"
+    ],
+    "went_well": [
+      "measurement_complete"
+    ],
+    "went_wrong": [
+      "non_positive",
+      "fixture_insufficient_n_alone",
+      "fixture_volume_gate_ship_only"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": true,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2373-control",
+    "fixture_insufficient_n:c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal",
+    "primary_metric_null_or_worse:smoke.eval_nll:control=4.4364331289500205 candidate=8.158025523987348 improvement=-3.7215923950373275",
+    "screening_quality_secondary:smoke.structural_similarity:control=0.3763 candidate=0.13118333333333335:recorded_not_verdict",
+    "fixture_insufficient_n_alone",
+    "fixture_volume_gate_ship_only"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "3ac524aa28a7096fb320eded8636c6602fddce98",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-08-31T00:30:03.290996+00:00"
+  }
+}

@@ -20,7 +20,7 @@ def test_detect_device_missing_torch_raises_actionable_error(monkeypatch) -> Non
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    with pytest.raises(RuntimeError, match="setup_dev_env.sh"):
+    with pytest.raises(RuntimeError, match="platform-compatible pinned CPU wheel"):
         detect_device("cpu")
 
 

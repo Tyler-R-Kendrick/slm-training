@@ -850,6 +850,20 @@ def compile_commands(
             train.extend(
                 ["--binder-arity-decode-weight", str(knobs.binder_arity_decode_weight)]
             )
+        if knobs.root_reference_identity_loss_weight is not None:
+            train.extend(
+                [
+                    "--root-reference-identity-loss-weight",
+                    str(knobs.root_reference_identity_loss_weight),
+                ]
+            )
+        if knobs.root_reference_identity_decode_weight is not None:
+            train.extend(
+                [
+                    "--root-reference-identity-decode-weight",
+                    str(knobs.root_reference_identity_decode_weight),
+                ]
+            )
         if knobs.binder_slot_ownership_loss_weight is not None:
             train.extend(
                 [
@@ -960,6 +974,8 @@ def compile_commands(
         evaluate.extend(["--train-dir", str(train_dir)])
     if knobs.eval_suites:
         evaluate.extend(["--suites", str(knobs.eval_suites)])
+    if knobs.eval_limit is not None:
+        evaluate.extend(["--eval-limit", str(knobs.eval_limit)])
     if knobs.decode_timeout_seconds is not None:
         evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
     commands.append(evaluate)

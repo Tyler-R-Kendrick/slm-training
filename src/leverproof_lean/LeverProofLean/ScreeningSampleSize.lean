@@ -140,6 +140,38 @@ theorem screeningRangeFeasible_fits_budget
   screeningBudgetUpperBound_fits armWall trainFloor overhead minDecode nMin
     hwall (Nat.le_trans h (Nat.min_le_left _ _))
 
+/-- Maximum whole-second symmetric arm allocation after the canonical process
+    and cycle reserves. The inputs are declared run-policy constraints; this
+    function owns their exact allocation arithmetic. -/
+def symmetricArmWallSeconds
+    (maxRun killGrace commandReserve cycleReserve stageCount : Nat) : Nat :=
+  (maxRun - killGrace - commandReserve - cycleReserve) / stageCount
+
+/-- The calculated symmetric allocation fits the declared run wall. -/
+theorem symmetricArmWallSeconds_fits
+    (maxRun killGrace commandReserve cycleReserve stageCount : Nat)
+    (hreserve : killGrace + commandReserve + cycleReserve ≤ maxRun) :
+    symmetricArmWallSeconds maxRun killGrace commandReserve cycleReserve stageCount
+        * stageCount
+      + killGrace + commandReserve + cycleReserve ≤ maxRun := by
+  unfold symmetricArmWallSeconds
+  have hdiv := Nat.div_mul_le_self
+    (maxRun - killGrace - commandReserve - cycleReserve) stageCount
+  omega
+
+/-- No larger whole-second symmetric allocation can fit the same reserves. -/
+theorem symmetricArmWallSeconds_maximal
+    (maxRun killGrace commandReserve cycleReserve stageCount candidate : Nat)
+    (hstage : 0 < stageCount)
+    (hfit : candidate * stageCount + killGrace + commandReserve + cycleReserve
+      ≤ maxRun) :
+    candidate ≤
+      symmetricArmWallSeconds maxRun killGrace commandReserve cycleReserve
+        stageCount := by
+  unfold symmetricArmWallSeconds
+  apply (Nat.le_div_iff_mul_le hstage).2
+  omega
+
 -- Registry parity anchors (mirrored by bound_ast_parity_fixtures.v1.json).
 #guard signTestDecidabilityFloor 1 20 64 = some 6
 #guard signTestDecidabilityFloor 1 20 5 = none
@@ -147,5 +179,7 @@ theorem screeningRangeFeasible_fits_budget
 #guard screeningBudgetUpperBound 70 20 8 14 = 3
 #guard screeningBudgetUpperBound 70 20 8 2 = 21
 #guard screeningBudgetUpperBound 10 20 8 2 = 0
+#guard symmetricArmWallSeconds 180 10 15 15 2 = 70
+#guard symmetricArmWallSeconds 180 10 15 15 3 = 46
 
 end LeverProofLean.ScreeningSampleSize

@@ -230,6 +230,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
         "generate_batch_size",
+        "eval_limit",
         "allow_unconstrained_fallback",
         "asap_decode",
         "bind_encoding",
@@ -268,6 +269,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "binder_topology_decode_weight",
         "binder_arity_loss_weight",
         "binder_arity_decode_weight",
+        "root_reference_identity_loss_weight",
+        "root_reference_identity_decode_weight",
         "binder_slot_ownership_loss_weight",
         "binder_slot_ownership_decode_weight",
         "symbol_boundary_loss_weight",
@@ -614,7 +617,7 @@ class ExperimentKnobs(StrictModel):
     # read-only for old matrices; not used for thrash identity or bank close.
     screening_regime_epoch: int | None = Field(default=None, ge=0, le=1_000_000)
     context_backend: Literal["scratch", "hf"] | None = None
-    output_tokenizer: Literal["compositional", "lexer"] | None = None
+    output_tokenizer: Literal["compositional", "choice", "lexer"] | None = None
     ambiguity_only_loss: bool | None = None
     compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
     compiler_alignment_margin: float | None = Field(default=None, ge=0, le=20)
@@ -668,6 +671,12 @@ class ExperimentKnobs(StrictModel):
     binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_arity_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    root_reference_identity_loss_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
+    root_reference_identity_decode_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
     binder_slot_ownership_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_slot_ownership_decode_weight: float | None = Field(default=None, ge=0, le=20)
     symbol_boundary_loss_weight: float | None = Field(default=None, ge=0, le=20)
@@ -732,6 +741,7 @@ class ExperimentKnobs(StrictModel):
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
         pattern=r"^[A-Za-z0-9_,]+$",
     )
+    eval_limit: int | None = Field(default=None, ge=1)
     # Latency pre-check probe: a small eval (probe_records) runs before the
     # full eval; the full eval is skipped with a typed latency_preflight
     # verdict when the probe times out at the fitted per-record decode budget
@@ -1371,7 +1381,7 @@ class AutotrainActionReceiptV1(StrictModel):
     action_index: int = Field(ge=0)
     action_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     action_kind: str = Field(min_length=1)
-    status: Literal["completed", "blocked"]
+    status: Literal["completed", "blocked", "superseded"]
     evidence_uris: tuple[str, ...] = Field(min_length=1)
     evidence: tuple[AutotrainActionEvidenceV1, ...] = ()
     recorded_at: str = Field(default_factory=utc_now)

@@ -21,6 +21,7 @@ quality-held alone never promotes.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import fcntl
 import hashlib
 import itertools
@@ -113,12 +114,15 @@ from slm_training.harness_core.bounded_process import (
     run_bounded_process,
 )
 from slm_training.harness_core.versioning import build_version_stamp
+from slm_training.formal.bound_ast import (
+    BOUND_AUTOTRAIN_SYMMETRIC_ARM_WALL,
+    evaluate_bound,
+)
 from slm_training.levers import (
     CAPACITY_SCALING_LEVERS,
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
-    MAX_HARNESS_WALL_SECONDS,
     MAX_RUN_SECONDS,
     require_size_matched_arms,
 )
@@ -289,14 +293,68 @@ def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
         )
 
 
-def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
-    """Give required stages equal room while retaining finalization."""
+def _arm_wall_calculation(
+    *,
+    formal_required: bool,
+    max_run_seconds: int | None = None,
+    stage_count: int | None = None,
+) -> dict[str, Any]:
+    """Evaluate the registered Lean-parity symmetric arm-wall bound."""
 
-    stage_count = 3 if formal_required else 2
-    arm_seconds = (
-        float(MAX_HARNESS_WALL_SECONDS) - HARNESS_FINALIZATION_RESERVE_SECONDS
-    ) / stage_count
-    symmetric_minutes = arm_seconds / 60
+    resolved_stage_count = stage_count or (
+        len(("control", "candidate", "formal"))
+        if formal_required
+        else len(("control", "candidate"))
+    )
+    env = {
+        "max_run_seconds": int(
+            MAX_RUN_SECONDS if max_run_seconds is None else max_run_seconds
+        ),
+        "kill_grace_seconds": int(KILL_GRACE_SECONDS),
+        "command_finalization_reserve_seconds": int(
+            HARNESS_FINALIZATION_RESERVE_SECONDS
+        ),
+        "cycle_finalization_reserve_seconds": int(HARNESS_FINALIZATION_RESERVE_SECONDS),
+        "stage_count": resolved_stage_count,
+    }
+    if (
+        sum(
+            env[key]
+            for key in (
+                "kill_grace_seconds",
+                "command_finalization_reserve_seconds",
+                "cycle_finalization_reserve_seconds",
+            )
+        )
+        >= env["max_run_seconds"]
+    ):
+        raise ValueError("run-policy reserves leave no arm wall")
+    result = evaluate_bound(BOUND_AUTOTRAIN_SYMMETRIC_ARM_WALL, env)
+    if result.fraction.denominator != 1 or result.fraction <= 0:
+        raise ValueError(
+            "formal arm-wall calculation must produce positive whole seconds"
+        )
+    calculated_seconds = int(result.fraction)
+    payload_seconds = calculated_seconds - env["command_finalization_reserve_seconds"]
+    if payload_seconds <= 0:
+        raise ValueError("formal arm-wall calculation leaves no payload wall")
+    return {
+        "bound_ast_id": BOUND_AUTOTRAIN_SYMMETRIC_ARM_WALL,
+        "lean_module": "LeverProofLean.ScreeningSampleSize",
+        "lean_def": "symmetricArmWallSeconds",
+        "env": env,
+        "calculated_seconds": calculated_seconds,
+        "payload_seconds": payload_seconds,
+    }
+
+
+def _arm_wall_minutes(policy_minutes: float, *, formal_required: bool) -> float:
+    """Consume the proved symmetric arm wall, capped by declared policy."""
+
+    arm_seconds = _arm_wall_calculation(formal_required=formal_required)[
+        "calculated_seconds"
+    ]
+    symmetric_minutes = float(arm_seconds) / 60
     return min(float(policy_minutes), symmetric_minutes)
 
 
@@ -310,21 +368,26 @@ def _screening_suite_records() -> int | None:
     """Record count of the resolved smoke screening suite (volume ceiling)."""
 
     try:
-        from slm_training.autoresearch.engine import default_eval_version
         from slm_training.data.store import DataStore
 
-        records = (
-            DataStore().resolve_path("eval", default_eval_version())
-            / "suites"
-            / "smoke"
-            / "records.jsonl"
+        store = DataStore()
+        candidates = list(
+            (store.published_root / "eval").glob("*/suites/smoke/records.jsonl")
         )
-        if records.is_file():
-            return sum(
+        candidates += list(
+            (store.local_root / "eval").glob("*/suites/smoke/records.jsonl")
+        )
+        counts = [
+            sum(
                 1
-                for line in records.read_text(encoding="utf-8").splitlines()
+                for line in path.read_text(encoding="utf-8").splitlines()
                 if line.strip()
             )
+            for path in candidates
+            if path.is_file()
+        ]
+        if counts:
+            return max(counts)
     except Exception:  # noqa: BLE001 — telemetry input only, never fatal
         return None
     return None
@@ -347,8 +410,8 @@ def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] 
     )
 
 
-def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
-    """Append unused extra smoke fixtures to the tracked seed file."""
+def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> tuple[list[Path], int]:
+    """Append unused extra smoke fixtures; return (paths, resulting smoke n)."""
     from slm_training.autoresearch.screening_sample_size import (
         extra_smoke_fixtures_for_deficit,
     )
@@ -368,16 +431,18 @@ def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
     need = max(0, int(n_min) - smoke_n)
     extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
     if not extras:
-        return []
+        return [], smoke_n
     with seed_path.open("a", encoding="utf-8") as fh:
         if lines and lines[-1].strip():
             fh.write("\n")
         for rec in extras:
             fh.write(json.dumps(rec, sort_keys=True) + "\n")
-    return [seed_path]
+    return [seed_path], smoke_n + len(extras)
 
 
-def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
+def _local_rebuild_screening_eval_argv(
+    *, eval_version: str, train_manifest: Path
+) -> list[str]:
     return [
         sys.executable,
         "-m",
@@ -404,18 +469,76 @@ def _self_heal_rebuild_screening_eval(
     from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
 
     n, report = _screening_n_report()
+    if (
+        campaign_id
+        and isinstance(report, dict)
+        and report.get("verdict") == "feasible"
+        and int(n) > 0
+    ):
+        handoff_path = root / campaign_id / "cycle_handoff.json"
+        if handoff_path.is_file():
+            handoff = AutotrainCycleHandoffV1.model_validate_json(
+                handoff_path.read_text(encoding="utf-8")
+            )
+            stale = [
+                (index, action)
+                for index, action in pending_autotrain_actions(root, handoff)
+                if action.kind == "rebuild_data" and "screening suite" in action.reason
+            ]
+            if stale:
+                proof_path = root / campaign_id / "screening_sample_size.json"
+                proof_path.write_text(
+                    json.dumps(
+                        {
+                            "schema_version": "screening_sample_size/v1",
+                            "report": report,
+                            "smoke_n": int(n),
+                            "superseded_action_indices": [index for index, _ in stale],
+                        },
+                        indent=2,
+                        sort_keys=True,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                for index, _action in stale:
+                    _ack_rebuild_data_action(
+                        root,
+                        handoff,
+                        action_index=index,
+                        evidence_uris=["screening_sample_size.json"],
+                        status="superseded",
+                    )
+                print(
+                    "SELF_HEAL_SCREENING_REBUILD_SUPERSEDED "
+                    f"campaign={campaign_id} smoke_n={n}",
+                    flush=True,
+                )
+                return "retire_stale_screening_rebuild"
     if not isinstance(report, dict) or not report.get("must_generate"):
         return None
     n_min = int(report.get("n_min") or 6)
-    _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    _seed_paths, achievable_smoke_n = _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    if achievable_smoke_n < n_min:
+        # Fail closed: the fixture pool cannot reach n_min. Publishing a
+        # smaller (or empty) suite under a new id and claiming success is a
+        # vacuous heal; refuse so the pass is classified/escalated instead.
+        print(
+            "SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL "
+            f"reason=fixture_pool_short achievable={achievable_smoke_n} "
+            f"n_min={n_min}",
+            flush=True,
+        )
+        return None
     eval_root = cwd / "src/slm_training/resources/data/eval"
     eval_version = allocate_screening_suite_id(eval_root, n_min)
     train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
     out_dir = cwd / "outputs" / "data" / "eval" / eval_version
     published = cwd / "src/slm_training/resources/data/eval" / eval_version
-    if not (out_dir / "manifest.json").is_file() and not (
-        published / "suites" / "smoke" / "records.jsonl"
-    ).is_file():
+    if (
+        not (out_dir / "manifest.json").is_file()
+        and not (published / "suites" / "smoke" / "records.jsonl").is_file()
+    ):
         argv = _local_rebuild_screening_eval_argv(
             eval_version=eval_version, train_manifest=train_manifest
         )
@@ -451,6 +574,19 @@ def _self_heal_rebuild_screening_eval(
         return None
     sidecar = published / "screening_sample_size.json"
     n_after, report_after = _screening_n_report()
+    if n_after <= 0 or (
+        isinstance(report_after, dict) and report_after.get("must_generate")
+    ):
+        # Postcondition: the rebuild must yield a runnable screen. A pass
+        # that still resolves n=0 / must_generate is a failed heal, never a
+        # "soft_healed" success (the 18-vacuous-pass livelock signature).
+        print(
+            "SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL "
+            f"reason=postcondition_unrunnable n_after={n_after} "
+            f"version={eval_version}",
+            flush=True,
+        )
+        return None
     sidecar.write_text(
         json.dumps(
             {
@@ -473,9 +609,7 @@ def _self_heal_rebuild_screening_eval(
     _git_commit_paths(
         cwd,
         commit_paths,
-        message=(
-            f"data(eval): persist screening smoke n>={n_min} ({eval_version})"
-        ),
+        message=(f"data(eval): persist screening smoke n>={n_min} ({eval_version})"),
         root=root,
         loop_id=loop_id,
         stage="self-heal-screening-eval",
@@ -489,22 +623,20 @@ def _self_heal_rebuild_screening_eval(
             pending = [
                 (index, action)
                 for index, action in pending_autotrain_actions(root, handoff)
-                if action.kind == "rebuild_data"
-                and "screening suite" in action.reason
+                if action.kind == "rebuild_data" and "screening suite" in action.reason
             ]
+            campaign_manifest = root / campaign_id / "data_manifest.json"
+            campaign_manifest.parent.mkdir(parents=True, exist_ok=True)
+            campaign_manifest.write_bytes((published / "manifest.json").read_bytes())
             for index, _action in pending:
                 _ack_rebuild_data_action(
                     root,
                     handoff,
                     action_index=index,
-                    evidence_uris=[
-                        f"src/slm_training/resources/data/eval/{eval_version}/"
-                        "screening_sample_size.json"
-                    ],
+                    evidence_uris=["data_manifest.json"],
                 )
     print(
-        f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
-        f"smoke_n={n_after}",
+        f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} smoke_n={n_after}",
         flush=True,
     )
     return "rebuild_screening_eval"
@@ -579,8 +711,7 @@ def _steps_per_sec_from_train_payload(payload: Mapping[str, Any]) -> float | Non
 def _latest_train_telemetry_payload(root: Path | None) -> dict[str, Any] | None:
     if root is None or not root.is_dir():
         return None
-    newest: Path | None = None
-    newest_mtime = -1.0
+    recent: list[tuple[float, Path]] = []
     try:
         summaries = root.glob("*/runs/*/train_summary.json")
     except OSError:
@@ -590,27 +721,37 @@ def _latest_train_telemetry_payload(root: Path | None) -> dict[str, Any] | None:
             mtime = path.stat().st_mtime
         except OSError:
             continue
-        if mtime > newest_mtime:
-            newest_mtime = mtime
-            newest = path
-    if newest is None:
-        return None
-    try:
-        payload = json.loads(newest.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    payload["_telemetry_path"] = str(newest)
-    tel_path = newest.parent / "train_telemetry.json"
-    if tel_path.is_file() and payload.get("elapsed_wall_seconds") is None:
+        recent.append((mtime, path))
+    campaigns: dict[Path, list[dict[str, Any]]] = {}
+    fallback: dict[str, Any] | None = None
+    for _mtime, path in sorted(recent, reverse=True)[:32]:
         try:
-            tel = json.loads(tel_path.read_text(encoding="utf-8"))
+            payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            tel = None
-        if isinstance(tel, dict) and tel.get("total_ms") is not None:
-            payload["total_ms"] = tel.get("total_ms")
-    return payload
+            continue
+        if not isinstance(payload, dict):
+            continue
+        payload["_telemetry_path"] = str(path)
+        tel_path = path.parent / "train_telemetry.json"
+        if tel_path.is_file() and payload.get("elapsed_wall_seconds") is None:
+            try:
+                tel = json.loads(tel_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                tel = None
+            if isinstance(tel, dict) and tel.get("total_ms") is not None:
+                payload["total_ms"] = tel.get("total_ms")
+        if fallback is None:
+            fallback = payload
+        campaigns.setdefault(path.parents[2], []).append(payload)
+    for payloads in campaigns.values():
+        valid = [p for p in payloads if _steps_per_sec_from_train_payload(p)]
+        if len(valid) >= 2:
+            selected = min(valid, key=lambda p: _steps_per_sec_from_train_payload(p) or 0.0)
+            selected["_telemetry_paths"] = [p["_telemetry_path"] for p in valid]
+            return selected
+    if fallback is not None:
+        fallback["_telemetry_paths"] = [fallback["_telemetry_path"]]
+    return fallback
 
 
 def _fit_screening_steps(
@@ -693,32 +834,41 @@ def _fit_screening_decode_timeout_seconds(
 
     thrash = _thrash_timing_block(policy)
     configured = float(decode_timeout_seconds_for_role(policy, "screening"))
+    arm_wall_proof = _arm_wall_calculation(formal_required=formal_required)
     if arm_wall_seconds is None:
         arm_wall_seconds = _arm_wall_seconds(
             policy_minutes=float(stage_wall_minutes_for_role(policy, "screening")),
             formal_required=formal_required,
         )
+    finalization_reserve = float(
+        arm_wall_proof["env"]["command_finalization_reserve_seconds"]
+    )
+    payload_wall_seconds = float(arm_wall_seconds) - finalization_reserve
+    if payload_wall_seconds <= 0:
+        raise ValueError(
+            "arm wall leaves no train/eval payload after finalization reserve"
+        )
     smoke_n, sample_size_report = screening_smoke_n_for_policy(
         policy,
-        arm_wall_seconds=arm_wall_seconds,
+        arm_wall_seconds=payload_wall_seconds,
         suite_records=_screening_suite_records(),
     )
     min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
     overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
-    usable = float(arm_wall_seconds) - min_train - overhead
+    usable = payload_wall_seconds - min_train - overhead
     if int(smoke_n) <= 0:
         max_decode = max(1.0, usable)
     else:
         max_decode = max(1.0, usable / float(smoke_n))
     fitted = min(configured, max_decode)
     projected_eval = float(fitted) * float(max(int(smoke_n), 0))
-    allocated_eval = max(0.0, float(arm_wall_seconds) - min_train - overhead)
+    allocated_eval = max(0.0, payload_wall_seconds - min_train - overhead)
     residual = max(0.0, allocated_eval - projected_eval)
     grown_floor = min_train + residual
-    wall_headroom = max(0.0, float(arm_wall_seconds) - overhead - projected_eval)
+    wall_headroom = max(0.0, payload_wall_seconds - overhead - projected_eval)
     grown_floor = min(grown_floor, wall_headroom)
-    if grown_floor + projected_eval + overhead > float(arm_wall_seconds) + 1e-9:
-        grown_floor = max(0.0, float(arm_wall_seconds) - overhead - projected_eval)
+    if grown_floor + projected_eval + overhead > payload_wall_seconds + 1e-9:
+        grown_floor = max(0.0, payload_wall_seconds - overhead - projected_eval)
     train_device = _screening_train_device()
     payload = _latest_train_telemetry_payload(telemetry_root)
     sps = _steps_per_sec_from_train_payload(payload) if payload else None
@@ -730,9 +880,14 @@ def _fit_screening_decode_timeout_seconds(
     steps_fit["telemetry_path"] = (
         None if payload is None else payload.get("_telemetry_path")
     )
+    steps_fit["telemetry_paths"] = (
+        [] if payload is None else list(payload.get("_telemetry_paths") or [])
+    )
     steps_fit["requested_steps"] = int(requested_steps)
     meta = {
         "arm_wall_seconds": float(arm_wall_seconds),
+        "payload_wall_seconds": payload_wall_seconds,
+        "command_finalization_reserve_seconds": finalization_reserve,
         "configured_decode_timeout_seconds": configured,
         "fitted_decode_timeout_seconds": float(fitted),
         "smoke_n": float(smoke_n),
@@ -767,6 +922,7 @@ def _write_thrash_timing(
     control_metrics: dict[str, Any] | None,
     candidate_metrics: dict[str, Any] | None,
     thrash_regime: Mapping[str, Any] | None = None,
+    arm_wall_proof: Mapping[str, Any] | None = None,
 ) -> Path:
     """Durable thrash timing / completeness row for Pareto recalibration."""
 
@@ -797,6 +953,7 @@ def _write_thrash_timing(
         "measurement_complete": bool(measurement_complete),
         "has_dual_arm_ss": has_ss,
         "arm_wall_seconds": arm_wall_seconds,
+        "arm_wall_proof": dict(arm_wall_proof) if arm_wall_proof else None,
         "decode_fit": decode_fit,
         "fitted_steps": (decode_fit or {}).get("fitted_steps")
         if isinstance(decode_fit, dict)
@@ -846,29 +1003,32 @@ def _require_symmetric_arm_budget(
         raise subprocess.TimeoutExpired("symmetric decision-arm budget", required)
 
 
-# Leave schedule margin after fit so the fit→execute deadline check cannot
-# fail from monotonic clock drift or float round-trip (observed: remaining
-# 159.788399 < required 159.788414 → both promote arms skipped as
-# deadline_reserve with zero runs).
-_ARM_BUDGET_SCHEDULE_MARGIN_SECONDS = 0.25
-
-
 def _fit_symmetric_arm_budget(
     *, deadline: float, arm_count: int, requested_arm_wall_minutes: float
-) -> float:
-    """Share the post-planning budget equally while preserving finalization."""
+) -> tuple[float, dict[str, Any]]:
+    """Re-evaluate the registered arm-wall proof against measured remainder."""
 
     if arm_count <= 0:
         raise ValueError("arm_count must be positive")
     remaining = _remaining_timeout(deadline)
-    usable = (
-        remaining
-        - HARNESS_FINALIZATION_RESERVE_SECONDS
-        - _ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
+    calculation = _arm_wall_calculation(
+        formal_required=False,
+        max_run_seconds=int(remaining),
+        stage_count=arm_count,
     )
-    if usable <= 0:
-        raise subprocess.TimeoutExpired("symmetric decision-arm budget", remaining)
-    return min(float(requested_arm_wall_minutes), usable / arm_count / 60)
+    proved_seconds = float(calculation["calculated_seconds"])
+    effective_seconds = min(
+        float(requested_arm_wall_minutes) * 60.0,
+        proved_seconds,
+    )
+    proof = {
+        **calculation,
+        "measured_remaining_seconds": remaining,
+        "requested_seconds": float(requested_arm_wall_minutes) * 60.0,
+        "effective_seconds": effective_seconds,
+    }
+    print("ARM_BUDGET_REFIT_PROOF " + json.dumps(proof, sort_keys=True), flush=True)
+    return effective_seconds / 60.0, proof
 
 
 def _post_formal_arm_budget_request(
@@ -969,6 +1129,40 @@ def _fit_screening_candidate_count(
     if fit < requested:
         return fit, "stage_wall_fitted_candidate_count"
     return requested, None
+
+
+def _trim_unexecuted_hypotheses(
+    matrix: dict[str, Any], *, minimum: int = 5
+) -> dict[str, Any]:
+    """Keep required matrix members plus the schema's evidence floor."""
+
+    hypotheses = list(matrix.get("hypotheses") or [])
+    required = {str(matrix.get("recommended_experiment_id") or "")}
+    if hypotheses:
+        required.add(
+            str((hypotheses[0].get("experiment") or {}).get("experiment_id") or "")
+        )
+    required.update(
+        str(priority.get("proposed_experiment_id") or "")
+        for priority in matrix.get("next_run_priorities") or []
+        if priority.get("proposed_experiment_id")
+    )
+    selected = set(required)
+    for item in hypotheses:
+        if len(selected) >= max(minimum, len(required)):
+            break
+        selected.add(str((item.get("experiment") or {}).get("experiment_id") or ""))
+    if len(selected) >= len(hypotheses):
+        return matrix
+    return {
+        **matrix,
+        "hypotheses": [
+            item
+            for item in hypotheses
+            if str((item.get("experiment") or {}).get("experiment_id") or "")
+            in selected
+        ],
+    }
 
 
 def _capacity_view(knobs: Mapping[str, Any]) -> SimpleNamespace:
@@ -1104,9 +1298,7 @@ def _lock_screening_multi_arm_campaign(
 ) -> ExperimentCampaignV1:
     by_eid = {str(exp["experiment_id"]): dict(exp) for exp in experiments}
     rec = str(candidate_ids[0])
-    base = _manifest(
-        campaign_id, by_eid[rec], commit, role=role, policy=policy
-    )
+    base = _manifest(campaign_id, by_eid[rec], commit, role=role, policy=policy)
     arms = [
         CampaignArmV1(
             arm_id=control_id,
@@ -1289,6 +1481,27 @@ def _run_metrics(
     return out
 
 
+def _refresh_measurement_reuse_receipt(run_dir: Path) -> None:
+    receipt_path = Path(run_dir) / "measurement_reuse.json"
+    if not receipt_path.is_file():
+        return
+    try:
+        receipt = _read_json(receipt_path)
+        artifacts = receipt["artifacts"]
+        if receipt.get("schema") != "frozen_measurement_reuse/v1" or not isinstance(
+            artifacts, dict
+        ):
+            return
+        for name in tuple(artifacts):
+            artifact = Path(run_dir) / name
+            if Path(name).name != name or not artifact.is_file():
+                return
+            artifacts[name] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    except (OSError, KeyError, TypeError, json.JSONDecodeError):
+        return
+
+
 def _run_arm_eval_nll(
     run_dir: Path,
     *,
@@ -1366,6 +1579,7 @@ def _run_arm_eval_nll(
     scoreboard_path.write_text(
         json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
     )
+    _refresh_measurement_reuse_receipt(Path(run_dir))
     return {
         "eval_nll": float(value),
         "definition_hash": digest,
@@ -1374,7 +1588,9 @@ def _run_arm_eval_nll(
     }
 
 
-def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
+def _attach_screening_eval_nll(
+    run_dir: Path, *, checkpoint: Path | None = None
+) -> dict[str, Any] | None:
     """Compute canonical smoke.eval_nll after quality eval when missing."""
 
     scoreboard_path = Path(run_dir) / "scoreboard.json"
@@ -1384,8 +1600,9 @@ def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
     smoke = suites.get("smoke") if isinstance(suites, dict) else None
     if isinstance(smoke, dict) and isinstance(smoke.get("eval_nll"), (int, float)):
         return None
-    summary = _read_json(Path(run_dir) / "train_summary.json")
-    checkpoint = Path(str(summary.get("checkpoint") or ""))
+    if checkpoint is None:
+        summary = _read_json(Path(run_dir) / "train_summary.json")
+        checkpoint = Path(str(summary.get("checkpoint") or ""))
     if not checkpoint.is_file():
         print(
             f"EVAL_NLL_SKIP run={Path(run_dir).name} reason=missing_checkpoint",
@@ -1397,9 +1614,7 @@ def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
     eval_id = default_eval_version()
     test_dir = DataStore().resolve_path("eval", eval_id)
     try:
-        out = _run_arm_eval_nll(
-            Path(run_dir), test_dir=test_dir, checkpoint=checkpoint
-        )
+        out = _run_arm_eval_nll(Path(run_dir), test_dir=test_dir, checkpoint=checkpoint)
     except Exception as exc:  # noqa: BLE001 — NLL is diagnostic, never abort quality
         print(
             f"EVAL_NLL_SKIP run={Path(run_dir).name} err={exc!r}",
@@ -1411,6 +1626,22 @@ def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
         flush=True,
     )
     return out
+
+
+def _attach_screening_eval_nll_jobs(
+    jobs: Sequence[tuple[Path, Path | None]],
+) -> list[dict[str, Any] | None]:
+    """Enrich completed decision arms together, after arm scheduling."""
+
+    if not jobs:
+        return []
+
+    def attach(job: tuple[Path, Path | None]) -> dict[str, Any] | None:
+        run_dir, checkpoint = job
+        return _attach_screening_eval_nll(run_dir, checkpoint=checkpoint)
+
+    with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
+        return list(pool.map(attach, jobs))
 
 
 # Phase A positive classification: latency is never a free win over quality.
@@ -1522,6 +1753,8 @@ _LEVER_KNOB_KEYS = (
     "binder_component_plan_decode_weight",
     "binder_arity_loss_weight",
     "binder_arity_decode_weight",
+    "root_reference_identity_loss_weight",
+    "root_reference_identity_decode_weight",
     "slot_component_loss_weight",
     "slot_component_decode_weight",
     "slot_contract_in_context",
@@ -2052,6 +2285,15 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
             "compiler_decode_mode": "tree",
         },
     ),
+    (
+        "root-reference-identity",
+        "Bounded root-reference identity supervision and rank-only decode improve binder_reference_f1 without lowering parse_rate or structural_similarity.",
+        {
+            "root_reference_identity_loss_weight": 1.0,
+            "root_reference_identity_decode_weight": 1.0,
+            "output_tokenizer": "choice",
+        },
+    ),
 )
 # Permanent thrash-arm closure requires this many *distinct seeds* of complete
 # non-positive measurement. A single fixture-noise null must not close the
@@ -2275,36 +2517,31 @@ def _check_regime_parked(
     verdict = _read_json(path)
     predecessor = str(verdict.get("campaign_id") or "") or None
     _load_dynamic_thrash_arms(root, loop_id)
-    if not _selectable_process_arm(
-        root, loop_id, predecessor_campaign_id=predecessor
-    ):
+    if not _selectable_process_arm(root, loop_id, predecessor_campaign_id=predecessor):
         _recover_heal_resume_arm(
             root, loop_id, cwd=cwd, predecessor_campaign_id=predecessor
         )
-    if _selectable_process_arm(
-        root, loop_id, predecessor_campaign_id=predecessor
-    ):
-        resolved = path.with_name(
-            f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
-        )
-        path.replace(resolved)
-        print("REGIME_RESUMED reason=heal_resume_arm_open", flush=True)
-        _clear_loop_blocker(root, loop_id, reason="regime_resumed_heal_resume_arm")
-        return None
-    stored = verdict.get("bank_fingerprint")
-    if stored and stored == _screening_bank_fingerprint():
-        print(
-            f"REGIME_PARKED loop={loop_id} "
-            f"constraint={verdict.get('binding_constraint')}",
-            flush=True,
-        )
-        return _REGIME_PARKED_STATUS
+    if _selectable_process_arm(root, loop_id, predecessor_campaign_id=predecessor):
+        resume_reason = "heal_resume_arm_open"
+    else:
+        stored = verdict.get("bank_fingerprint")
+        if stored and stored == _screening_bank_fingerprint():
+            print(
+                f"REGIME_PARKED loop={loop_id} "
+                f"constraint={verdict.get('binding_constraint')}",
+                flush=True,
+            )
+            return _REGIME_PARKED_STATUS
+        resume_reason = "bank_identity_changed"
     resolved = path.with_name(
         f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
     )
-    path.replace(resolved)
-    print("REGIME_RESUMED reason=bank_identity_changed", flush=True)
-    _clear_loop_blocker(root, loop_id, reason="regime_resumed_bank_identity_changed")
+    try:
+        path.replace(resolved)
+    except FileNotFoundError:
+        pass
+    print(f"REGIME_RESUMED reason={resume_reason}", flush=True)
+    _clear_loop_blocker(root, loop_id, reason=f"regime_resumed_{resume_reason}")
     return None
 
 
@@ -2414,9 +2651,7 @@ def _park_screening_n_deficit(
 
     handoff_path = root / campaign_id / "cycle_handoff.json"
     if not handoff_path.is_file():
-        raise RuntimeError(
-            "screening n deficit without a typed predecessor handoff"
-        )
+        raise RuntimeError("screening n deficit without a typed predecessor handoff")
     handoff = AutotrainCycleHandoffV1.model_validate_json(
         handoff_path.read_text(encoding="utf-8")
     )
@@ -2468,9 +2703,7 @@ def _park_screening_n_deficit(
     return "screening-n-deficit"
 
 
-def _latest_hypothesis_feedback(
-    root: Path, campaign_id: str
-) -> HypothesisFeedback:
+def _latest_hypothesis_feedback(root: Path, campaign_id: str) -> HypothesisFeedback:
     """Load the terminal typed feedback that grounds an objective change.
 
     Incomplete retries may have no hypothesizer event; walk predecessor
@@ -2647,6 +2880,7 @@ def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
             "seed",
             "steps",
             "decode_timeout_seconds",
+            "eval_limit",
             "generate_batch_size",
             "latency_probe_records",
             "latency_probe_planned_n",
@@ -2770,12 +3004,9 @@ def _self_heal_thrash_bank_exhaust(
         # Isolate OFAT bank is done. Remaining snapshot slugs are I10
         # leftovers, not compose fodder — unless a process arm is still
         # selectable (closed slug spelling hides an unused train_version).
-        if _selectable_process_arm(
-            root, loop_id, predecessor_campaign_id=pred
-        ):
+        if _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred):
             print(
-                "SELF_HEAL_BANK_EXHAUST heal_open "
-                "reason=selectable_process_arm",
+                "SELF_HEAL_BANK_EXHAUST heal_open reason=selectable_process_arm",
                 flush=True,
             )
             return _ThrashBankHeal(True, False)
@@ -3072,7 +3303,9 @@ def _integrate_origin_main(
             loop_id=loop_id,
             stage="self-heal-ancestry-ff",
         )
-        print("SELF_HEAL_GIT_ANCESTRY merged origin/main reason=fast_forward", flush=True)
+        print(
+            "SELF_HEAL_GIT_ANCESTRY merged origin/main reason=fast_forward", flush=True
+        )
         return "git_ancestry_fast_forward"
     try:
         _run(
@@ -3960,7 +4193,13 @@ def _yaml_mapping_equal(left: str, right: str) -> bool:
     except ImportError:  # pragma: no cover — PyYAML is a repo dep
         return False
     try:
-        return yaml.safe_load(left) == yaml.safe_load(right)
+        left_value = yaml.safe_load(left)
+        right_value = yaml.safe_load(right)
+        for value in (left_value, right_value):
+            if isinstance(value, dict) and "languages" in value:
+                value.setdefault("language_servers", value["languages"])
+                value.pop("languages", None)
+        return left_value == right_value
     except yaml.YAMLError:
         return False
 
@@ -3979,21 +4218,30 @@ def _maybe_restore_serena_project_yml(
     if not work.is_file():
         return None
     try:
-        head = _git("show", f"HEAD:{_SERENA_PROJECT_YML}", **git_kw)
+        head = subprocess.run(
+            ["git", "show", f"HEAD:{_SERENA_PROJECT_YML}"],
+            cwd=cwd,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
     except Exception:  # noqa: BLE001 — missing HEAD path is not this heal
         return None
     work_text = work.read_text(encoding="utf-8")
     if not _yaml_mapping_equal(head, work_text):
         return None
-    _git(
-        "restore",
-        "--source=HEAD",
-        "--worktree",
-        "--staged",
-        "--",
-        _SERENA_PROJECT_YML,
-        stage="self-heal-serena-yml" if git_kw.get("root") is not None else None,
-        **{k: v for k, v in git_kw.items() if k != "stage"},
+    subprocess.run(
+        [
+            "git",
+            "restore",
+            "--source=HEAD",
+            "--worktree",
+            "--staged",
+            "--",
+            _SERENA_PROJECT_YML,
+        ],
+        cwd=cwd,
+        check=True,
     )
     print("SELF_HEAL_SERENA_PROJECT_YML reason=comment_whitespace_strip", flush=True)
     return "serena_project_yml_comment_strip"
@@ -4472,6 +4720,7 @@ def _ack_rebuild_data_action(
     *,
     action_index: int,
     evidence_uris: Sequence[str],
+    status: str = "completed",
 ) -> None:
     action = handoff.actions[action_index]
     if action.kind != "rebuild_data":
@@ -4486,16 +4735,14 @@ def _ack_rebuild_data_action(
             action_index=action_index,
             action_sha256=autotrain_action_sha256(action),
             action_kind="rebuild_data",
-            status="completed",
+            status=status,
             evidence_uris=uris,
             evidence=evidence,
         ),
     )
 
 
-def _register_i10_heal_arm(
-    root: Path, loop_id: str, *, train_version: str
-) -> None:
+def _register_i10_heal_arm(root: Path, loop_id: str, *, train_version: str) -> None:
     """Add or refresh a selectable I10 successor so the park fingerprint moves."""
     global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
@@ -4528,9 +4775,7 @@ def _register_i10_heal_arm(
                         "slug": slug,
                         "hypothesis": h,
                         "extras": {
-                            k: v
-                            for k, v in ex.items()
-                            if not str(k).startswith("_")
+                            k: v for k, v in ex.items() if not str(k).startswith("_")
                         },
                         "created_at": time.strftime(
                             "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
@@ -4560,6 +4805,9 @@ def _retired_heal_versions(root: Path, loop_id: str) -> set[str]:
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
+            continue
+        if row.get("reason") == "recovered_spent_snapshot":
+            # Legacy recovery retired by shared slug, not exact train version.
             continue
         version = str(row.get("train_version") or "")
         if version:
@@ -4600,14 +4848,14 @@ def _recover_heal_resume_arm(
         if version in retired or train_dir.name in retired:
             continue
         _register_i10_heal_arm(root, loop_id, train_version=version)
-        if predecessor_campaign_id and _HEAL_RESUME_SLUG in (
-            _recent_completed_nonpositive_slugs(root, predecessor_campaign_id)
+        if _train_version_has_complete_nonpositive(
+            root, predecessor_campaign_id, version
         ):
-            _retire_i10_heal_arm(root, loop_id, reason="recovered_spent_snapshot")
+            _retire_i10_heal_arm(
+                root, loop_id, reason="complete_measurement_recovered"
+            )
             continue
-        print(
-            f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True
-        )
+        print(f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True)
         return True
     return False
 
@@ -4687,7 +4935,12 @@ def _retire_i10_heal_arm(root: Path, loop_id: str, *, reason: str) -> bool:
     return True
 
 
-def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
+def _prepare_i10_train_dir_for_sft(
+    train_dir: Path,
+    *,
+    output_parent: Path | None = None,
+    require_harness_prompt: bool = True,
+) -> Path:
     """Filter NL/repair prompts and clear open synthesis feedback for SFT.
 
     ``train_model`` loads prompts via ``parse_harness_task``. Cap0 I10 rebuilds
@@ -4701,26 +4954,71 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
         open_synthesis_recommendations,
     )
     from slm_training.dsl.harness_dsl import parse_harness_task
+    from slm_training.dsl.analysis.templatize import assert_role_safe_output
     from slm_training.harnesses.model_build.data import load_train_records
 
     records_path = train_dir / "records.jsonl"
     if not records_path.is_file():
         return train_dir
+    records_bytes = records_path.read_bytes()
+    source_sha256 = hashlib.sha256(records_bytes).hexdigest()
+    suffix = "harness" if require_harness_prompt else "role_safe"
+    derived_dir = (output_parent or train_dir.parent) / f"{train_dir.name}_{suffix}"
+    filter_mode = "harness_and_role_safe" if require_harness_prompt else "role_safe"
+    source_feedback_path = train_dir / "synthesis_feedback.json"
+    source_feedback_sha256 = (
+        hashlib.sha256(source_feedback_path.read_bytes()).hexdigest()
+        if source_feedback_path.is_file()
+        else None
+    )
+    cached_manifest_path = derived_dir / "manifest.json"
+    cached_records_path = derived_dir / "records.jsonl"
+    if cached_manifest_path.is_file() and cached_records_path.is_file():
+        try:
+            cached_manifest = json.loads(
+                cached_manifest_path.read_text(encoding="utf-8")
+            )
+        except json.JSONDecodeError:
+            cached_manifest = {}
+        cached_actions_path = derived_dir / "synthesis_feedback_actions.json"
+        actions_match = source_feedback_sha256 is None or (
+            cached_actions_path.is_file()
+            and cached_manifest.get("synthesis_feedback_actions_sha256")
+            == hashlib.sha256(cached_actions_path.read_bytes()).hexdigest()
+        )
+        if (
+            cached_manifest.get("sft_filter_schema") == "i10_sft_filter/v1"
+            and cached_manifest.get("derived_from") == train_dir.name
+            and cached_manifest.get("filter_mode") == filter_mode
+            and cached_manifest.get("source_records_sha256") == source_sha256
+            and cached_manifest.get("source_feedback_sha256")
+            == source_feedback_sha256
+            and cached_manifest.get("records_sha256")
+            == hashlib.sha256(cached_records_path.read_bytes()).hexdigest()
+            and actions_match
+        ):
+            print(f"I10_SFT_REUSE version={derived_dir.name}", flush=True)
+            return derived_dir
     kept: list[dict[str, Any]] = []
     dropped = 0
-    for line in records_path.read_text(encoding="utf-8").splitlines():
+    for line in records_bytes.decode("utf-8").splitlines():
         if not line.strip():
             continue
         row = json.loads(line)
         try:
-            parse_harness_task(str(row.get("prompt") or ""))
+            if require_harness_prompt:
+                parse_harness_task(str(row.get("prompt") or ""))
+            assert_role_safe_output(
+                str(row.get("openui") or ""),
+                output_kind=str(row.get("target_kind") or "document"),
+            )
         except Exception:  # noqa: BLE001 — drop non-harness prompts for SFT
             dropped += 1
             continue
         kept.append(row)
     out_dir = train_dir
     if dropped:
-        out_dir = train_dir.parent / f"{train_dir.name}_harness"
+        out_dir = derived_dir
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "records.jsonl").write_text(
             "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in kept),
@@ -4738,28 +5036,27 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
             if src.is_file():
                 (out_dir / name).write_bytes(src.read_bytes())
         man_path = out_dir / "manifest.json"
-        if man_path.is_file():
-            try:
-                man = json.loads(man_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                man = {}
-            man["version"] = out_dir.name
-            man["record_count"] = len(kept)
-            man["derived_from"] = train_dir.name
-            man["derive_note"] = (
-                "filtered to HARNESS_V1 prompts for symbol-only SFT loader; "
-                f"dropped={dropped}"
-            )
-            man["derived_at"] = datetime.now(timezone.utc).isoformat()
-            man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
+        try:
+            man = json.loads(man_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            man = {}
+        man["version"] = out_dir.name
+        man["record_count"] = len(kept)
+        man["derived_from"] = train_dir.name
+        man["filter_mode"] = filter_mode
+        man["derive_note"] = (
+            f"filtered to {filter_mode} outputs for symbol-only SFT loader; "
+            f"dropped={dropped}"
+        )
+        man["derived_at"] = datetime.now(timezone.utc).isoformat()
+        man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
         print(
-            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} "
-            f"dropped={dropped}",
+            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} dropped={dropped}",
             flush=True,
         )
     feedback_path = out_dir / "synthesis_feedback.json"
     actions_path = out_dir / "synthesis_feedback_actions.json"
-    if feedback_path.is_file() and not actions_path.is_file():
+    if feedback_path.is_file():
         feedback = json.loads(feedback_path.read_text(encoding="utf-8"))
         seen: dict[str, dict[str, Any]] = {}
         for rec in open_synthesis_recommendations(feedback):
@@ -4790,7 +5087,10 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
                         "recorded_at": datetime.now(timezone.utc).isoformat(),
                         "honesty_mode": "fixture_or_scratch",
                         "actions": actions,
-                        "experiment_candidates_filed": [],
+                        "experiment_candidates_filed": feedback.get(
+                            "experiment_candidates"
+                        )
+                        or [],
                     },
                     indent=2,
                 )
@@ -4803,6 +5103,18 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
     except Exception as exc:  # noqa: BLE001 — keep original on prepare failure
         print(f"I10_SFT_PREPARE_WARN dir={out_dir} err={exc!r}", flush=True)
         return train_dir
+    if dropped:
+        man["sft_filter_schema"] = "i10_sft_filter/v1"
+        man["source_records_sha256"] = source_sha256
+        man["source_feedback_sha256"] = source_feedback_sha256
+        man["records_sha256"] = hashlib.sha256(
+            (out_dir / "records.jsonl").read_bytes()
+        ).hexdigest()
+        if actions_path.is_file():
+            man["synthesis_feedback_actions_sha256"] = hashlib.sha256(
+                actions_path.read_bytes()
+            ).hexdigest()
+        man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
     return out_dir
 
 
@@ -4863,9 +5175,7 @@ def _self_heal_rebuild_data(
         return None
     sources = _rebuild_data_artifact_sources(train_dir)
     if sources is None:
-        argv = _local_rebuild_data_argv(
-            train_version=train_version, adequacy=adequacy
-        )
+        argv = _local_rebuild_data_argv(train_version=train_version, adequacy=adequacy)
         print(
             f"SELF_HEAL_REBUILD_DATA start campaign={campaign_id} "
             f"version={train_version} argv={argv}",
@@ -4990,6 +5300,7 @@ def _append_checkpoint_doc_notes(
     *,
     campaign_id: str,
     checkpoint_paths: Sequence[str],
+    checkpoint_recipes: Sequence[Mapping[str, Any]] = (),
     loop_id: str | None = None,
 ) -> list[Path]:
     """Minimal honesty-labeled checkpoint notes when handoff requires them."""
@@ -4997,10 +5308,19 @@ def _append_checkpoint_doc_notes(
     if not checkpoint_paths:
         return touched
     stamp = time.strftime("%Y-%m-%d", time.gmtime())
+    checkpoint_text = ", ".join(f"`{p}`" for p in checkpoint_paths)
+    if checkpoint_recipes:
+        checkpoint_text = "; ".join(
+            f"`{r['local_path']}` ({int(r.get('bytes') or 0):,} bytes; "
+            f"{r.get('model') or 'model'}, {int(r.get('trainable_params') or 0):,} "
+            f"trainable parameters, {int(r.get('steps') or 0)} steps, "
+            f"{int(r.get('records') or 0)} records)"
+            for r in checkpoint_recipes
+        )
     note = (
         f"\n## Continuous autotrain note ({stamp}, {campaign_id})\n\n"
         f"- campaign: `{campaign_id}`\n"
-        f"- checkpoints: {', '.join(f'`{p}`' for p in checkpoint_paths)}\n"
+        f"- checkpoints: {checkpoint_text}\n"
         "- honesty: fixture/scratch continuous cycle — **not** a ship promotion.\n"
     )
     touched_rel: list[str] = []
@@ -5011,6 +5331,7 @@ def _append_checkpoint_doc_notes(
         text = path.read_text(encoding="utf-8")
         marker = f"campaign: `{campaign_id}`"
         if marker in text:
+            touched.append(path)
             continue
         path.write_text(text.rstrip() + "\n" + note, encoding="utf-8")
         touched.append(path)
@@ -5025,6 +5346,45 @@ def _append_checkpoint_doc_notes(
         if registry_path is not None:
             touched.append(registry_path)
     return touched
+
+
+def _checkpoint_recipes(
+    *, cwd: Path, root: Path, handoff: AutotrainCycleHandoffV1
+) -> list[dict[str, Any]]:
+    recipes: list[dict[str, Any]] = []
+    for relative in handoff.checkpoint_paths or ():
+        checkpoint = root / handoff.campaign_id / relative
+        if not checkpoint.is_file():
+            continue
+        run_dir = checkpoint.parent.parent
+        summary_path = run_dir / "train_summary.json"
+        summary = _read_json(summary_path) if summary_path.is_file() else {}
+        meta_path = checkpoint.with_suffix(".meta.json")
+        meta = _read_json(meta_path) if meta_path.is_file() else {}
+        local_path = str(Path("outputs") / root.name / checkpoint.relative_to(root))
+        recipe = summary.get("recipe") if isinstance(summary.get("recipe"), dict) else {}
+        telemetry = (
+            summary.get("telemetry")
+            if isinstance(summary.get("telemetry"), dict)
+            else {}
+        )
+        recipes.append(
+            {
+                "backend": "scratch",
+                "bytes": checkpoint.stat().st_size,
+                "device": summary.get("device"),
+                "elapsed_seconds": summary.get("elapsed_wall_seconds"),
+                "last_loss": summary.get("last_loss"),
+                "local_path": local_path,
+                "model": summary.get("model"),
+                "records": summary.get("record_count"),
+                "seed": recipe.get("seed"),
+                "steps": summary.get("steps"),
+                "trainable_params": meta.get("parameter_count")
+                or telemetry.get("trainable_params"),
+            }
+        )
+    return recipes
 
 
 def _self_heal_document_actions(
@@ -5057,6 +5417,88 @@ def _self_heal_document_actions(
     if not pending_docs:
         return None
 
+    md_path, json_path = _continuous_docs_paths(cwd, campaign_id)
+    rel_docs = [
+        str(md_path.relative_to(cwd)),
+        str(json_path.relative_to(cwd)),
+    ]
+    try:
+        delivery_commits = _git(
+            "log",
+            "--format=%H",
+            "--",
+            *rel_docs,
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            stage="self-heal-document-connector-commits",
+        ).splitlines()
+    except Exception:  # noqa: BLE001 — fall through to file regeneration
+        delivery_commits = []
+    for commit in delivery_commits:
+        try:
+            for index, _action in pending_docs:
+                _ack_document_action(
+                    root,
+                    handoff,
+                    action_index=index,
+                    evidence_uris=[commit],
+                )
+        except ValueError:
+            continue
+        print(
+            f"SELF_HEAL_DOCUMENT_CONNECTOR_REUSE campaign={campaign_id} "
+            f"commit={commit} acked={len(pending_docs)}",
+            flush=True,
+        )
+        return "document_closeout"
+    if md_path.is_file() and json_path.is_file():
+        try:
+            published = _read_json(json_path)
+            clean = not _git(
+                "status",
+                "--porcelain",
+                "--",
+                *rel_docs,
+                cwd=cwd,
+                root=root,
+                loop_id=loop_id,
+                stage="self-heal-document-existing-status",
+            ).strip()
+            identity_matches = (
+                published.get("campaign_id") == campaign_id
+                and published.get("loop_id") == loop_id
+                and published.get("version_stamp", {}).get("code_dirty") is False
+            )
+            tracked = all(
+                _git(
+                    "ls-files",
+                    "--error-unmatch",
+                    rel,
+                    cwd=cwd,
+                    root=root,
+                    loop_id=loop_id,
+                    stage="self-heal-document-existing-tracked",
+                ).strip()
+                for rel in rel_docs
+            )
+        except Exception:  # noqa: BLE001 — fall through to normal regeneration
+            clean = identity_matches = tracked = False
+        if clean and identity_matches and tracked:
+            for index, _action in pending_docs:
+                _ack_document_action(
+                    root,
+                    handoff,
+                    action_index=index,
+                    evidence_uris=rel_docs,
+                )
+            print(
+                f"SELF_HEAL_DOCUMENT_REUSE campaign={campaign_id} "
+                f"files={rel_docs} acked={len(pending_docs)}",
+                flush=True,
+            )
+            return "document_closeout"
+
     delivery_path = root / campaign_id / "sdlc_delivery.json"
     delivery: dict[str, Any] = {}
     if delivery_path.is_file():
@@ -5067,7 +5509,6 @@ def _self_heal_document_actions(
         except Exception:  # noqa: BLE001 — still document what we have
             delivery = {}
 
-    md_path, json_path = _continuous_docs_paths(cwd, campaign_id)
     md_path.parent.mkdir(parents=True, exist_ok=True)
     md_text, payload = _render_continuous_cycle_docs(
         campaign_id=campaign_id,
@@ -5075,6 +5516,20 @@ def _self_heal_document_actions(
         handoff=handoff,
         delivery=delivery,
     )
+    checkpoint_recipes = _checkpoint_recipes(cwd=cwd, root=root, handoff=handoff)
+    if checkpoint_recipes:
+        payload["checkpoint_recipe"] = {
+            "checkpoints": checkpoint_recipes,
+            "sync": "disabled_fixture_scratch",
+        }
+        md_text = md_text.rstrip() + "\n\n## Checkpoint recipe\n\n" + "\n".join(
+            f"- `{recipe['local_path']}` ({int(recipe['bytes']):,} bytes); "
+            f"{recipe.get('model') or 'model'}, "
+            f"{int(recipe.get('trainable_params') or 0):,} trainable parameters, "
+            f"{int(recipe.get('steps') or 0)} steps, "
+            f"{int(recipe.get('records') or 0)} records\n"
+            for recipe in checkpoint_recipes
+        )
     md_path.write_text(md_text, encoding="utf-8")
     json_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -5086,6 +5541,7 @@ def _self_heal_document_actions(
                 cwd,
                 campaign_id=campaign_id,
                 checkpoint_paths=tuple(handoff.checkpoint_paths or ()),
+                checkpoint_recipes=checkpoint_recipes,
                 loop_id=loop_id,
             )
         )
@@ -5173,16 +5629,16 @@ def _self_heal_loop_owned_generated_dirt(
     ]
     if not owned:
         return None
-    _git(
-        "restore",
-        "--source=HEAD",
-        "--worktree",
-        "--staged",
-        "--",
-        *owned,
-        stage="self-heal-owned-dirt" if root is not None else None,
-        **git_kw,
-    )
+    for path in owned:
+        committed = subprocess.run(  # noqa: S603 — fixed read-only Git command
+            ["git", "show", f"HEAD:{path}"],
+            cwd=cwd,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=_remaining_timeout(),
+        )
+        (cwd / path).write_bytes(committed.stdout)
     print(f"SELF_HEAL_LOOP_OWNED_DIRT files={owned}", flush=True)
     return "loop_owned_generated_dirt"
 
@@ -5209,18 +5665,9 @@ def _self_heal_continuous_dirty_tree(
     paths = _porcelain_paths(porcelain)
     if not paths:
         return None
-    serena_kind = _maybe_restore_serena_project_yml(
-        cwd=cwd, paths=paths, git_kw=git_kw
-    )
+    serena_kind = _maybe_restore_serena_project_yml(cwd=cwd, paths=paths, git_kw=git_kw)
     if serena_kind:
-        porcelain = _git(
-            "status",
-            "--porcelain",
-            stage="self-heal-dirty-status" if root is not None else None,
-            **git_kw,
-        )
-        if not porcelain.strip():
-            return serena_kind
+        return serena_kind
         paths = _porcelain_paths(porcelain)
         if not paths:
             return serena_kind
@@ -5379,6 +5826,7 @@ def self_heal_unblock_loop(
         foreign = [p for p in paths if _is_foreign_dirty_path(p)]
         try:
             from slm_training.autoresearch.heal.fail_closed import lease_covers
+
             lease = root / "loops" / loop_id / "wip_lease.json"
             leased = [p for p in foreign if lease_covers(lease, p)]
             if leased:
@@ -5450,7 +5898,9 @@ def self_heal_unblock_loop(
         )
         if rebuild_kind:
             soft_healed.append(rebuild_kind)
-            parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
+            parked = (
+                _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
+            )
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK rebuild_warn={exc!r}", flush=True)
 
@@ -6982,7 +7432,9 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
     technically open. A process/heal arm from a local rebuild_data heal is
     the I10 successor and stays selectable.
     """
-    open_slugs = {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
+    open_slugs = {
+        slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed
+    }
     if not _terminal_park_on_exhaust():
         return open_slugs
     extras_by_slug = {slug: extras for slug, _, extras in _all_screening_arm_bank()}
@@ -7116,6 +7568,9 @@ def _lineage_campaign_ids(
     return list(reversed(chain))
 
 
+_RECENT_EXHAUSTION_CACHE: dict[tuple[Any, ...], frozenset[str]] = {}
+
+
 def _recent_completed_nonpositive_slugs(
     root: Path,
     predecessor_campaign_id: str | None,
@@ -7143,13 +7598,51 @@ def _recent_completed_nonpositive_slugs(
         if min_null_seeds is not None
         else _arm_close_min_null_seeds()
     )
+    campaign_ids = _lineage_campaign_ids(
+        root, predecessor_campaign_id, max_cycles=max_cycles
+    )
+    cache_key: tuple[Any, ...] | None = None
+    persisted_cache_key: dict[str, Any] | None = None
+    stats_path: Path | None = None
+    if predecessor_campaign_id:
+        campaign = _read_json(root / predecessor_campaign_id / "campaign.json")
+        loop_id = str(campaign.get("loop_id") or "")
+        ledger = root / "loops" / loop_id / "hillclimb_iterations.jsonl"
+        if loop_id and ledger.is_file():
+            stat = ledger.stat()
+            cache_key = (
+                str(root.resolve()),
+                predecessor_campaign_id,
+                max_cycles,
+                required,
+                stat.st_size,
+                stat.st_mtime_ns,
+            )
+            cached = _RECENT_EXHAUSTION_CACHE.get(cache_key)
+            if cached is not None:
+                return set(cached)
+            persisted_cache_key = {
+                "predecessor_campaign_id": predecessor_campaign_id,
+                "max_cycles": max_cycles,
+                "required_null_seeds": required,
+                "hillclimb_ledger_size": stat.st_size,
+                "hillclimb_ledger_mtime_ns": stat.st_mtime_ns,
+            }
+            stats_path = _slug_stats_path(root, loop_id)
+            persisted = _read_json(stats_path).get("lineage_exhaustion_cache")
+            if isinstance(persisted, dict) and all(
+                persisted.get(key) == value
+                for key, value in persisted_cache_key.items()
+            ):
+                closed = frozenset(map(str, persisted.get("closed_slugs") or ()))
+                _RECENT_EXHAUSTION_CACHE[cache_key] = closed
+                return set(closed)
+
     # slug -> set of seeds with complete non-positive (since last positive)
     null_seeds: dict[str, set[int | None]] = {}
     # train_version -> seeds; snapshot clones share identity, not slug spelling
     tv_null_seeds: dict[str, set[int | None]] = {}
-    for camp_id in _lineage_campaign_ids(
-        root, predecessor_campaign_id, max_cycles=max_cycles
-    ):
+    for camp_id in campaign_ids:
         camp_dir = root / camp_id
         handoff = _read_json(camp_dir / "cycle_handoff.json")
         delivery = _read_json(camp_dir / "sdlc_delivery.json")
@@ -7228,9 +7721,7 @@ def _recent_completed_nonpositive_slugs(
         except (TypeError, ValueError):
             seed = None
         train_version = str(knobs.get("train_version") or "")
-        snapshot_tv = _slug_is_snapshot_arm(
-            slug, {"train_version": train_version}
-        )
+        snapshot_tv = _slug_is_snapshot_arm(slug, {"train_version": train_version})
         # Incomplete / harness outcomes never close a thrash approach — even if
         # a buggy delivery marked measurement_complete or positive=False.
         if not runtime_terminal and (
@@ -7285,6 +7776,20 @@ def _recent_completed_nonpositive_slugs(
         for slug, _, extras in _all_screening_arm_bank():
             if extras.get("train_version") in exhausted_versions:
                 closed.add(slug)
+    if cache_key is not None:
+        if len(_RECENT_EXHAUSTION_CACHE) >= 8:
+            _RECENT_EXHAUSTION_CACHE.pop(next(iter(_RECENT_EXHAUSTION_CACHE)))
+        _RECENT_EXHAUSTION_CACHE[cache_key] = frozenset(closed)
+        if stats_path is not None and stats_path.is_file():
+            payload = _read_json(stats_path)
+            payload["lineage_exhaustion_cache"] = {
+                **(persisted_cache_key or {}),
+                "closed_slugs": sorted(closed),
+            }
+            stats_path.write_text(
+                json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
     return closed
 
 
@@ -7777,9 +8282,7 @@ def _select_recommended_slug(
     candidates (boost interesting residuals; still never reopen skipped arms).
     """
     skip = skip or set()
-    pred = (
-        _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
-    )
+    pred = _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
     for slug, _, extras in _all_screening_arm_bank():
         if not _is_process_arm(extras):
             continue
@@ -7789,9 +8292,7 @@ def _select_recommended_slug(
         if (
             root is not None
             and loop_id
-            and _selectable_process_arm(
-                root, loop_id, predecessor_campaign_id=pred
-            )
+            and _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred)
         ):
             print(
                 f"HEAL_RESUME_SELECT cycle={cycle} slug={slug} "
@@ -8165,7 +8666,9 @@ def _select_cycle_slug(
     if predecessor_priority and predecessor_priority not in skip:
         # A leftover rematch (c78/c96 after a derailed heal) must not outrank
         # an open process/heal first-train.
-        if not process_open or _is_process_arm(extras_by_slug.get(predecessor_priority)):
+        if not process_open or _is_process_arm(
+            extras_by_slug.get(predecessor_priority)
+        ):
             return predecessor_priority
         print(
             f"PROCESS_ARM_OUTRANKS_PREDECESSOR process={process_open[0]} "
@@ -8875,9 +9378,7 @@ def _resolve_confirm_result(
         ckpt = _checkpoint_path_for_candidate(root, campaign_id, cand_id)
         summary: dict[str, Any] = {}
         if cand_id:
-            summary_path = (
-                root / campaign_id / "runs" / cand_id / "train_summary.json"
-            )
+            summary_path = root / campaign_id / "runs" / cand_id / "train_summary.json"
             if summary_path.is_file():
                 try:
                     loaded = _read_json(summary_path)
@@ -10371,14 +10872,12 @@ def _classify_metric_tradeoff(
 
     from slm_training.autoresearch.hillclimb import invalid_grammar_reasons
 
-    grammar_fail = invalid_grammar_reasons(control, arm="control") + invalid_grammar_reasons(
-        candidate, arm="candidate"
-    )
+    grammar_fail = invalid_grammar_reasons(
+        control, arm="control"
+    ) + invalid_grammar_reasons(candidate, arm="candidate")
     reasons.extend(grammar_fail)
     parse_perfect = not grammar_fail
-    parse_held = parse_perfect and (
-        t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
-    )
+    parse_held = parse_perfect and (t_pr is None or c_pr is None or t_pr + _EPS >= c_pr)
     mpr_held = t_mpr is None or c_mpr is None or t_mpr + _EPS >= c_mpr
     mpr_improved = t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
     lat_improved = t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
@@ -10539,11 +11038,7 @@ def _classify_positive(
     )
     control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
     candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
-    if role == "screening":
-        _attach_screening_eval_nll(camp_dir / "runs" / control_id)
-        _attach_screening_eval_nll(camp_dir / "runs" / candidate_id)
-        control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
-        candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
+    control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
     # Merge full primary metric keys when leaf-only maps were collected.
     if (
         effective_metric not in control
@@ -10879,6 +11374,7 @@ def _phase_a_delivery(
     candidate_id: str | None = None,
     arm_exits: Mapping[str, int] | None = None,
     arm_skipped: Mapping[str, Mapping[str, Any]] | None = None,
+    arm_wall_proof: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
     from slm_training.autoresearch.climb_policy import (
@@ -11054,10 +11550,19 @@ def _phase_a_delivery(
     try:
         from slm_training.autoresearch.climb_policy import stage_wall_minutes_for_role
 
-        arm_s = _arm_wall_seconds(
-            policy_minutes=float(stage_wall_minutes_for_role(policy, role)),
-            formal_required=str(cycle_intent or role) == "promote",
-        )
+        if arm_wall_proof is None:
+            fallback = _arm_wall_calculation(
+                formal_required=str(cycle_intent or role) == "promote"
+            )
+            policy_seconds = float(stage_wall_minutes_for_role(policy, role)) * 60.0
+            arm_s = min(policy_seconds, float(fallback["calculated_seconds"]))
+            arm_wall_proof = {
+                **fallback,
+                "requested_seconds": policy_seconds,
+                "effective_seconds": arm_s,
+            }
+        else:
+            arm_s = float(arm_wall_proof["effective_seconds"])
         decode_fit = None
         if role == "screening":
             _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
@@ -11092,6 +11597,7 @@ def _phase_a_delivery(
             if isinstance(record.get("candidate_metrics"), dict)
             else None,
             thrash_regime=matrix_regime if isinstance(matrix_regime, dict) else None,
+            arm_wall_proof=arm_wall_proof,
         )
     except Exception as exc:  # noqa: BLE001 — never fail Phase A on telemetry
         print(f"THRASH_TIMING_WRITE_SKIP err={exc}", flush=True)
@@ -11343,6 +11849,7 @@ def _completed_candidate_priorities(
         "binder_topology_loss_weight",
         "binder_component_plan_loss_weight",
         "binder_arity_loss_weight",
+        "root_reference_identity_loss_weight",
         "symbol_boundary_loss_weight",
         "design_md_dropout",
         "ltr_prefix_loss_weight",
@@ -12658,24 +13165,40 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
 
 
 def _record_pass_outcome(
-    *, root: Path, loop_id: str, before_campaign: str | None,
-    before_receipts: int, typed_action: bool = False,
+    *,
+    root: Path,
+    loop_id: str,
+    before_campaign: str | None,
+    before_receipts: int,
+    typed_action: bool = False,
 ) -> str:
     """Classify one driver pass; a clean no-op is a counted hard failure."""
     _idx, after_campaign = _latest_cycle(root, loop_id)
     receipts_path = root / "loops" / loop_id / "heal_receipts.jsonl"
-    after_receipts = len(receipts_path.read_text(encoding="utf-8").splitlines()) if receipts_path.is_file() else 0
+    after_receipts = (
+        len(receipts_path.read_text(encoding="utf-8").splitlines())
+        if receipts_path.is_file()
+        else 0
+    )
     if after_campaign and after_campaign != before_campaign:
         outcome = "campaign_initialized"
     elif after_receipts > before_receipts:
-        outcome = "verified_heal" if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:] else "heal_attempted"
+        outcome = (
+            "verified_heal"
+            if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:]
+            else "heal_attempted"
+        )
     elif typed_action:
         outcome = "typed_park_or_escalation"
     else:
         outcome = "vacuous_pass"
     path = root / "loops" / loop_id / "pass_outcomes.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    prior = [r for r in path.read_text(encoding="utf-8").splitlines() if r] if path.is_file() else []
+    prior = (
+        [r for r in path.read_text(encoding="utf-8").splitlines() if r]
+        if path.is_file()
+        else []
+    )
     previous_vacuous = 0
     for raw in reversed(prior):
         try:
@@ -12686,15 +13209,42 @@ def _record_pass_outcome(
             previous_vacuous += 1
         else:
             break
-    row = {"schema": "pass_outcome/v1", "loop_id": loop_id, "outcome": outcome,
-           "campaign_before": before_campaign, "campaign_after": after_campaign,
-           "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
-           "recorded_at": utc_now()}
+    row = {
+        "schema": "pass_outcome/v1",
+        "loop_id": loop_id,
+        "outcome": outcome,
+        "campaign_before": before_campaign,
+        "campaign_after": after_campaign,
+        "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
+        "recorded_at": utc_now(),
+    }
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, sort_keys=True) + "\n")
     if row["consecutive_vacuous"] >= 3:
         raise RuntimeError("vacuous_pass: loop_stalled_no_campaign")
     return outcome
+
+
+def _print_status_matrix(*, root: Path, loop_id: str, cwd: Path) -> None:
+    """Render the canonical four-table loop status after a supervised pass."""
+    subprocess.run(  # noqa: S603 — repo-owned module
+        [
+            sys.executable,
+            "-m",
+            "scripts.autoresearch",
+            "--root",
+            str(root),
+            "status",
+            "--loop-id",
+            loop_id,
+            "--matrix",
+            "--last",
+            "5",
+        ],
+        cwd=cwd,
+        timeout=120,
+        check=False,
+    )
 
 
 def _campaign_at_cycle(root: Path, loop_id: str, cycle_index: int) -> str | None:
@@ -12983,14 +13533,25 @@ def _load_frozen_replay(
     control_manifest = ExperimentCampaignV1.model_validate_json(
         control_path.read_text(encoding="utf-8")
     )
+    candidate_experiment = _experiment_artifact(
+        camp_dir, candidate_manifest.experiment_id
+    )
+    if (
+        handoff.cycle_intent == "screening"
+        and (candidate_experiment.get("knobs") or {}).get("eval_limit") is None
+    ):
+        print(
+            "FROZEN_REPLAY_SKIP reason=missing_proved_eval_limit "
+            f"campaign={predecessor_campaign_id} action_index={action_index}",
+            flush=True,
+        )
+        return None
     replay = {
         "handoff": handoff,
         "action_index": action_index,
         "action": action,
         "candidate": {
-            "experiment": _experiment_artifact(
-                camp_dir, candidate_manifest.experiment_id
-            ),
+            "experiment": candidate_experiment,
             "manifest": candidate_manifest,
             "manifest_sha256": action.frozen_manifest_sha256,
             "path": candidate_path,
@@ -13014,70 +13575,6 @@ def _load_frozen_replay(
     return replay
 
 
-def _arm_decode_timeout_count(camp_dir: Path, experiment_id: str) -> int:
-    """Max decode_timeout_count for a finalized arm run (0 if unknown/clean)."""
-
-    timeout_n = 0
-    run_dir = camp_dir / "runs" / experiment_id
-    for name in ("eval_smoke.json", "eval.json", "scoreboard.json"):
-        path = run_dir / name
-        if not path.is_file():
-            continue
-        try:
-            payload = _read_json(path)
-        except Exception:  # noqa: BLE001 — best-effort signal only
-            continue
-        try:
-            timeout_n = max(
-                timeout_n,
-                int(payload.get("decode_timeout_count") or 0),
-                int(payload.get("decode_timeout_document_count") or 0),
-            )
-        except (TypeError, ValueError):
-            pass
-        suites = payload.get("suites")
-        if isinstance(suites, dict):
-            suite_rows: list[Any] = list(suites.values())
-        elif isinstance(suites, list):
-            suite_rows = list(suites)
-        else:
-            suite_rows = []
-        for suite in suite_rows:
-            if not isinstance(suite, dict):
-                continue
-            try:
-                suite_timeout = suite.get("decode_timeout_document_count")
-                if type(suite_timeout) is not int:
-                    suite_timeout = suite.get("decode_timeout_count")
-                timeout_n = max(timeout_n, int(suite_timeout or 0))
-            except (TypeError, ValueError):
-                pass
-    if timeout_n > 0:
-        return timeout_n
-    delivery_path = camp_dir / "sdlc_delivery.json"
-    if not delivery_path.is_file():
-        return 0
-    try:
-        delivery = _read_json(delivery_path)
-    except Exception:  # noqa: BLE001 — best-effort signal only
-        return 0
-    marker = f"measurement_incomplete:{experiment_id}:"
-    for reason in delivery.get("reasons") or []:
-        text = str(reason)
-        if marker not in text or "decode_timeout_count=" not in text:
-            continue
-        try:
-            raw = text.rsplit("decode_timeout_count=", 1)[1]
-            digits = "".join(itertools.takewhile(str.isdigit, raw))
-            if digits:
-                timeout_n = max(timeout_n, int(digits))
-            else:
-                timeout_n = max(timeout_n, 1)
-        except (TypeError, ValueError, IndexError):
-            timeout_n = max(timeout_n, 1)
-    return timeout_n
-
-
 def _completed_frozen_train_source(
     *,
     root: Path,
@@ -13087,19 +13584,9 @@ def _completed_frozen_train_source(
 ) -> dict[str, Any] | None:
     """Find a completed train stage along a hash-linked frozen replay chain."""
 
-    # Fail-closed: a source arm that finalized with decode timeouts must not
-    # reuse train (force a fresh control/candidate eval on the successor).
-    timeout_n = _arm_decode_timeout_count(campaign_dir, manifest.experiment_id)
-    if timeout_n > 0:
-        print(
-            "FROZEN_TRAIN_REUSE_SKIP reason=decode_timeout "
-            f"experiment={manifest.experiment_id} decode_timeout_count={timeout_n}",
-            flush=True,
-        )
-        return None
-
     lineage: list[Path] = []
     visited: set[str] = set()
+    measurement: dict[str, Any] | None = None
     current_dir = campaign_dir
     current_manifest = manifest
     current_path = manifest_path
@@ -13110,6 +13597,15 @@ def _completed_frozen_train_source(
         visited.add(digest)
         lineage.append(current_path)
         run_dir = current_dir / "runs" / current_manifest.experiment_id
+        if (
+            measurement is None
+            and (run_dir / "scoreboard.json").is_file()
+            and _run_has_usable_metrics(current_dir, current_manifest.experiment_id)
+        ):
+            measurement = {
+                "run_dir": run_dir,
+                "manifest_sha256": digest,
+            }
         summary_path = run_dir / "train_summary.json"
         if summary_path.is_file():
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
@@ -13120,10 +13616,13 @@ def _completed_frozen_train_source(
                 and int(summary.get("steps") or -1) > 0
                 and checkpoint.is_file()
             ):
-                return {
+                reuse = {
                     "run_dir": run_dir,
                     "manifest_paths": tuple(lineage),
                 }
+                if measurement is not None:
+                    reuse["measurement"] = measurement
+                return reuse
         replay_sha = current_manifest.replay_of_manifest_sha256
         if replay_sha is None:
             return None
@@ -13160,6 +13659,43 @@ def _completed_frozen_train_source(
             raise RuntimeError(f"frozen replay manifest is missing: {replay_sha}")
 
 
+def _materialize_frozen_measurement(
+    *, target_run_dir: Path, target_manifest_path: Path, reuse: Mapping[str, Any]
+) -> None:
+    """Copy immutable measurement evidence and bind it to its replay hashes."""
+
+    source_run_dir = Path(str(reuse["run_dir"]))
+    target_run_dir.mkdir(parents=True, exist_ok=True)
+    artifacts: dict[str, str] = {}
+    for name in (
+        "eval_held_out.json",
+        "eval_smoke.json",
+        "eval.json",
+        "gates.json",
+        "scoreboard.json",
+    ):
+        source = source_run_dir / name
+        if not source.is_file():
+            continue
+        payload = source.read_bytes()
+        (target_run_dir / name).write_bytes(payload)
+        artifacts[name] = hashlib.sha256(payload).hexdigest()
+    if not artifacts:
+        raise RuntimeError(f"frozen measurement has no evidence: {source_run_dir}")
+    receipt = {
+        "schema": "frozen_measurement_reuse/v1",
+        "source_run_dir": str(source_run_dir),
+        "source_manifest_sha256": str(reuse["manifest_sha256"]),
+        "target_manifest_sha256": hashlib.sha256(
+            target_manifest_path.read_bytes()
+        ).hexdigest(),
+        "artifacts": artifacts,
+    }
+    (target_run_dir / "measurement_reuse.json").write_text(
+        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def _apply_frozen_replay(
     matrix: dict[str, Any], replay: dict[str, Any], campaign_id: str
 ) -> dict[str, dict[str, Any]]:
@@ -13176,6 +13712,11 @@ def _apply_frozen_replay(
         ),
         None,
     )
+    frozen_candidate = replay["candidate"]["experiment"]
+    source_campaign_id = str(frozen_candidate.get("campaign_id") or "")
+    source_prefix = source_campaign_id.replace("continuous-loop-", "c", 1)
+    if slug is None and old_candidate_id.startswith(f"{source_prefix}-"):
+        slug = old_candidate_id.removeprefix(f"{source_prefix}-") or None
     promotion_replay = old_candidate_id.endswith("-promote")
     confirmation_replay = old_candidate_id.endswith("-confirm")
     if promotion_replay:
@@ -13187,9 +13728,17 @@ def _apply_frozen_replay(
             f"unsupported automatic frozen replay arm: {old_candidate_id}"
         )
     new_ids = {"control": f"{prefix}-control", "candidate": f"{prefix}-{slug}"}
-    if promotion_replay or confirmation_replay:
-        frozen_knobs = replay["candidate"]["experiment"].get("knobs") or {}
-        frozen_fingerprint = _knobs_fingerprint(_lever_knobs(frozen_knobs))
+    frozen_knobs = frozen_candidate.get("knobs") or {}
+    frozen_fingerprint = _knobs_fingerprint(_lever_knobs(frozen_knobs))
+    candidate_target = next(
+        (
+            item["experiment"]
+            for item in matrix["hypotheses"]
+            if item["experiment"]["experiment_id"] == new_ids["candidate"]
+        ),
+        None,
+    )
+    if candidate_target is None:
         source_slug = (
             _arm_slug_from_knobs(frozen_knobs, candidate_id=old_candidate_id)
             if confirmation_replay
@@ -13227,7 +13776,13 @@ def _apply_frozen_replay(
             )
         )
         if candidate_target is None:
-            kind = "promotion" if promotion_replay else "confirmation"
+            kind = (
+                "promotion"
+                if promotion_replay
+                else "confirmation"
+                if confirmation_replay
+                else "measurement"
+            )
             raise RuntimeError(f"frozen {kind} replay target is absent from matrix")
         previous_target_id = str(candidate_target["experiment_id"])
         candidate_target["experiment_id"] = new_ids["candidate"]
@@ -13270,6 +13825,7 @@ def _apply_frozen_replay(
             "proposed_experiment_id": new_ids["candidate"],
         }
     )
+    matrix["hypotheses"] = _trim_unexecuted_hypotheses(matrix)["hypotheses"]
     HypothesisMatrix.model_validate(matrix)
     return {new_ids[role]: replay[role] for role in ("control", "candidate")}
 
@@ -13346,9 +13902,22 @@ def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
 def _continuous_evidence_roots(
     root: Path, loop_id: str, predecessor_campaign_id: str | None
 ) -> tuple[Path, ...]:
-    roots = [root / "loops" / loop_id, root / "sdlc_delivery_ledger.jsonl"]
+    loop = root / "loops" / loop_id
+    roots = [
+        loop / "hillclimb_iterations.jsonl",
+        loop / "thrash_timing.jsonl",
+        loop / "exhausted_knob_ledger.json",
+        loop / "champion_queue.jsonl",
+        root / "sdlc_delivery_ledger.jsonl",
+    ]
     if predecessor_campaign_id:
-        roots.insert(0, root / predecessor_campaign_id)
+        predecessor = root / predecessor_campaign_id
+        roots[:0] = [
+            predecessor / "cycle_handoff.json",
+            predecessor / "measured-results-continuous.md",
+            predecessor / "run_insights.json",
+            predecessor / "artifacts" / "hypothesizer_feedback",
+        ]
     return tuple(roots)
 
 
@@ -13559,6 +14128,8 @@ def _matrix(
             "binder_component_plan_decode_weight": 0.0,
             "binder_arity_loss_weight": 0.0,
             "binder_arity_decode_weight": 0.0,
+            "root_reference_identity_loss_weight": 0.0,
+            "root_reference_identity_decode_weight": 0.0,
             "fidelity_loss_weight": 0.5,
             "semantic_contrast_loss_weight": 0.0,
             "symbol_slot_augmentation": False,
@@ -13587,6 +14158,7 @@ def _matrix(
             # every document into one decode chunk, defeating per-record
             # fair-share timeout redistribution.
             base["generate_batch_size"] = 1
+            base["eval_limit"] = int((decode_fit or {})["smoke_n"])
             base.update(latency_probe_knobs)
         base.update(extra_map)
         if initialize_from:
@@ -14085,6 +14657,7 @@ def _matrix(
                 "seed",
                 "steps",
                 "decode_timeout_seconds",
+                "eval_limit",
                 "generate_batch_size",
                 "eval_suites",
             }
@@ -14627,10 +15200,16 @@ def run_cycle(
     # Defaults from external policy when caller still uses legacy pins.
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
+    from slm_training.data.store import DataStore
 
-    _integrate_origin_main(
-        cwd=cwd, root=root, loop_id=loop_id, deadline=deadline
-    )
+    control_dir = DataStore().resolve("train", train_version).path
+    train_version = _prepare_i10_train_dir_for_sft(
+        control_dir,
+        output_parent=cwd / "outputs" / "data" / "train",
+        require_harness_prompt=False,
+    ).name
+
+    _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
     if sync_git and startup_commit is not None:
         integrated = _git(
             "rev-parse",
@@ -14904,7 +15483,7 @@ def run_cycle(
         else:
             cycle_intent = "screening"
     saturation_state: dict[str, Any] | None = None
-    if cycle_intent == "screening" and replay is None:
+    if cycle_intent in {"screening", "retry_measurement"}:
         saturation_state = _screening_saturation_state(
             root,
             loop_id,
@@ -14952,7 +15531,7 @@ def run_cycle(
                     f"streak={saturation_state['tie_streak']}",
                     flush=True,
                 )
-    if cycle_intent == "screening" and replay is None:
+    if cycle_intent in {"screening", "retry_measurement"}:
         smoke_n, ss_report = _screening_n_report(policy)
         if isinstance(ss_report, dict) and (
             ss_report.get("must_generate") or int(smoke_n) <= 0
@@ -14987,9 +15566,7 @@ def run_cycle(
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
         leftover = _thrash_bank_open_slugs(recent_exhausted) - skip_slugs
-        heal_open = _selectable_process_arm(
-            root, loop_id, predecessor_campaign_id=pred
-        )
+        heal_open = _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred)
         if (
             _terminal_park_on_exhaust()
             and pred
@@ -15206,9 +15783,21 @@ def run_cycle(
         cycle_intent=cycle_intent,
         replay=replay,
     )
-    arm_wall_minutes = _arm_wall_minutes(
-        stage_wall_minutes_for_role(policy, role),
-        formal_required=formal_lane_required,
+    arm_wall_proof = _arm_wall_calculation(formal_required=formal_lane_required)
+    arm_wall_minutes = min(
+        float(stage_wall_minutes_for_role(policy, role)),
+        float(arm_wall_proof["calculated_seconds"]) / 60.0,
+    )
+    arm_wall_proof = {
+        **arm_wall_proof,
+        "policy_cap_seconds": float(stage_wall_minutes_for_role(policy, role))
+        * 60.0,
+        "effective_seconds": arm_wall_minutes * 60.0,
+    }
+    print(
+        "ARM_WALL_PROOF "
+        + json.dumps(arm_wall_proof, sort_keys=True),
+        flush=True,
     )
     # The campaign records the maximum arm ceiling before outcomes exist. The
     # driver later passes the exact symmetric post-formal share to each run.
@@ -15628,7 +16217,6 @@ def run_cycle(
     if (
         promote_levers is None
         and confirm_levers is None
-        and replay is None
         and (matrix.get("feedback_ids") or matrix.get("predecessor_matrix_id"))
     ):
         matrix = dict(matrix)
@@ -15639,6 +16227,16 @@ def run_cycle(
             f"campaign={campaign_id} stripped_ids={stripped_ids}",
             flush=True,
         )
+    if cycle_intent == "screening" and replay is None:
+        hypothesis_count = len(matrix.get("hypotheses") or [])
+        matrix = _trim_unexecuted_hypotheses(matrix)
+        if len(matrix["hypotheses"]) < hypothesis_count:
+            print(
+                "HYPOTHESIS_MATRIX_TRIM "
+                f"kept={len(matrix['hypotheses'])} dropped="
+                f"{hypothesis_count - len(matrix['hypotheses'])}",
+                flush=True,
+            )
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
@@ -15801,6 +16399,25 @@ def run_cycle(
             role=role,
             policy=policy,
         )
+    reused_measurements: dict[str, Mapping[str, Any]] = {}
+    if replay is not None:
+        for eid in order:
+            train_reuse = replay_manifests.get(eid, {}).get("train_reuse") or {}
+            measurement = train_reuse.get("measurement")
+            if measurement is None:
+                continue
+            _materialize_frozen_measurement(
+                target_run_dir=camp_dir / "runs" / eid,
+                target_manifest_path=replay_manifest_paths[eid],
+                reuse=measurement,
+            )
+            reused_measurements[eid] = measurement
+            print(
+                "FROZEN_MEASUREMENT_REUSE "
+                f"experiment={eid} source_run={measurement['run_dir']}",
+                flush=True,
+            )
+        order = [eid for eid in order if eid not in reused_measurements]
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
     if cycle_intent == "promote" and promoting_champion is not None:
@@ -15881,7 +16498,7 @@ def run_cycle(
                 formal_lane_required and promote_formal_status == "proved"
             ),
         )
-        arm_wall_minutes = _fit_symmetric_arm_budget(
+        arm_wall_minutes, arm_wall_proof = _fit_symmetric_arm_budget(
             deadline=deadline,
             arm_count=arm_count,
             requested_arm_wall_minutes=requested_arm_wall_minutes,
@@ -15896,7 +16513,24 @@ def run_cycle(
                 flush=True,
             )
     seen: set[str] = set()
-    arm_exits: dict[str, int] = {}
+    arm_exits: dict[str, int] = {eid: 0 for eid in reused_measurements}
+    screening_nll_jobs: list[tuple[Path, Path | None]] = []
+    if role == "screening":
+        for eid in reused_measurements:
+            train_reuse = replay_manifests[eid].get("train_reuse")
+            train_summary = (
+                _read_json(Path(train_reuse["run_dir"]) / "train_summary.json")
+                if train_reuse is not None
+                else {}
+            )
+            screening_nll_jobs.append(
+                (
+                    camp_dir / "runs" / eid,
+                    Path(str(train_summary.get("checkpoint") or ""))
+                    if train_summary
+                    else None,
+                )
+            )
     arm_skipped: dict[str, dict[str, Any]] = {
         row["arm_id"]: {"reason": row["reason"]} for row in multi_arm_skip
     }
@@ -16034,9 +16668,34 @@ def run_cycle(
             code = int(result.returncode or 0)
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
-        if int(code) == 0:
-            _attach_screening_eval_nll(camp_dir / "runs" / eid)
-
+        if role == "screening" and int(code) == 0:
+            reuse_summary = (
+                _read_json(Path(reuse["run_dir"]) / "train_summary.json")
+                if reuse is not None
+                else {}
+            )
+            screening_nll_jobs.append(
+                (
+                    camp_dir / "runs" / eid,
+                    Path(str(reuse_summary.get("checkpoint") or ""))
+                    if reuse_summary
+                    else None,
+                )
+            )
+    if len(screening_nll_jobs) == len(scheduled_order):
+        remaining_seconds = _remaining_timeout(deadline)
+        finalization_reserve = float(
+            _arm_wall_calculation(formal_required=False)["env"]
+            ["cycle_finalization_reserve_seconds"]
+        )
+        if remaining_seconds > finalization_reserve:
+            print(
+                "EVAL_NLL_PAIR_BUDGET "
+                f"remaining_s={remaining_seconds:.6f} "
+                f"finalization_reserve_s={finalization_reserve:.6f}",
+                flush=True,
+            )
+            _attach_screening_eval_nll_jobs(screening_nll_jobs)
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     delivery = _phase_a_delivery(
         cwd=cwd,
@@ -16054,6 +16713,7 @@ def run_cycle(
         candidate_id=candidate_eid,
         arm_exits=arm_exits,
         arm_skipped=arm_skipped,
+        arm_wall_proof=arm_wall_proof,
     )
     # Keep execution completeness explicit in the handoff/result matrix.  A
     # missing arm is a typed scheduling event, never an inferred model reject.
@@ -16081,7 +16741,8 @@ def run_cycle(
         winner = None
         if scored:
             winner = select_best_by_primary_then_smallest(
-                scored, direction=direction  # type: ignore[arg-type]
+                scored,
+                direction=direction,  # type: ignore[arg-type]
             )
             ctrl_metrics = _run_metrics(camp_dir, control_eid)
             ctrl_val = ctrl_metrics.get(effective_primary)
@@ -16452,7 +17113,11 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 _before_cycle, before_campaign = _latest_cycle(root, args.loop_id)
                 _receipts_path = root / "loops" / args.loop_id / "heal_receipts.jsonl"
-                before_receipts = len(_receipts_path.read_text(encoding="utf-8").splitlines()) if _receipts_path.is_file() else 0
+                before_receipts = (
+                    len(_receipts_path.read_text(encoding="utf-8").splitlines())
+                    if _receipts_path.is_file()
+                    else 0
+                )
                 run_cycle(
                     cwd=cwd,
                     root=root,
@@ -16466,10 +17131,16 @@ def main(argv: list[str] | None = None) -> int:
                     require_action_receipts=args.supervised,
                     extra_skip_slugs=extra_skip_slugs,
                 )
-                print("PASS_OUTCOME " + _record_pass_outcome(
-                    root=root, loop_id=args.loop_id, before_campaign=before_campaign,
-                    before_receipts=before_receipts,
-                ), flush=True)
+                print(
+                    "PASS_OUTCOME "
+                    + _record_pass_outcome(
+                        root=root,
+                        loop_id=args.loop_id,
+                        before_campaign=before_campaign,
+                        before_receipts=before_receipts,
+                    ),
+                    flush=True,
+                )
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -16484,15 +17155,18 @@ def main(argv: list[str] | None = None) -> int:
                     loop_id=args.loop_id,
                     integration_commit=code_sha,
                 )
-                try:
+                if str(exc) != "vacuous_pass: loop_stalled_no_campaign":
                     _record_pass_outcome(
-                        root=root, loop_id=args.loop_id,
-                        before_campaign=before_campaign if "before_campaign" in locals() else None,
-                        before_receipts=before_receipts if "before_receipts" in locals() else 0,
+                        root=root,
+                        loop_id=args.loop_id,
+                        before_campaign=before_campaign
+                        if "before_campaign" in locals()
+                        else None,
+                        before_receipts=before_receipts
+                        if "before_receipts" in locals()
+                        else 0,
                         typed_action=bool(report.get("hard_pending")),
                     )
-                except RuntimeError:
-                    raise
                 # Legacy string heal for bank/soft identity / document / residual.
                 heal_kind = _self_heal_cycle_error(
                     root=root,
@@ -16563,6 +17237,11 @@ def main(argv: list[str] | None = None) -> int:
                 continue
         return 0
     finally:
+        if args.supervised:
+            try:
+                _print_status_matrix(root=root, loop_id=args.loop_id, cwd=cwd)
+            except (OSError, subprocess.SubprocessError) as status_exc:
+                print(f"AUTOTRAIN STATUS WARN {status_exc!r}", flush=True)
         # WP-3 closeout: refresh the durable evidence store (guarded — the
         # sync script is concurrent work and may not exist; failure only logs).
         try:

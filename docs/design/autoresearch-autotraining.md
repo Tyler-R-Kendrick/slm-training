@@ -1039,3 +1039,23 @@ This increases supervised semantic-decision coverage without adding parameters
 or changing constrained decode authority, and directly targets the persistent
 zero exact-AST/canonical signal. It is preregistered for the next screening slot;
 c1840 remains a promotion slot with mandatory Lean/formal preflight.
+
+## Continuous-loop c2391-c2392: orchestration startup repair
+
+Both capped cycles failed before producing usable arm scoreboards. Cycle c2391
+exhausted the calculated wall-time remainder before arm launch; c2392 refit the
+registered proof to 18 seconds per arm, then the candidate spent that allowance
+importing the OpenUI DSL through the package root. The autoresearch CLI now uses
+a light package-root import for orchestration-only commands and explicitly loads
+the DSL in commands that require it. A subprocess regression check proves the
+orchestration import stays DSL-free; command-specific model and evaluation paths
+retain their prior imports and behavior.
+
+## Continuous-loop c2394: child import-order repair
+
+Cycle c2394 reached both frozen evaluation stages under a proof-refit 16-second
+arm wall, but each failed immediately because the orchestration-only light-import
+flag was inherited by the evaluation child and exposed the historical data/DSL
+cycle in a different order. The CLI now removes that bootstrap flag after its own
+imports, before spawning train or evaluation commands. A subprocess regression
+check runs the CLI as `__main__` and proves the flag is absent afterward.

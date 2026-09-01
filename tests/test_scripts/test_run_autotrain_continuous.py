@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -24,6 +27,101 @@ _SPEC.loader.exec_module(_mod)
 
 _classify_metric_tradeoff = _mod._classify_metric_tradeoff
 _PRIMARY = "smoke.latency_ms_p50"
+
+
+def test_package_import_defers_dsl_but_preserves_legacy_exports() -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys, slm_training; "
+                "assert 'slm_training.dsl' not in sys.modules; "
+                "from slm_training.data.store import DataStore; "
+                "from slm_training import ExampleRecord, parse; "
+                "from slm_training.dsl import ProductionCodec; "
+                "assert DataStore and ProductionCodec; "
+                "assert ExampleRecord.__module__ == 'slm_training.dsl.schema'; "
+                "assert callable(parse)"
+            ),
+        ],
+        check=True,
+        env={**os.environ, "PYTHONPATH": str(_SCRIPT.parents[1] / "src")},
+    )
+
+
+def test_prepare_control_snapshot_drops_role_unsafe_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = tmp_path / "control"
+    source.mkdir()
+    rows = [
+        {
+            "id": "valid",
+            "prompt": "fixture",
+            "openui": 'root = TextContent(":slot_0")',
+            "placeholders": [":slot_0"],
+            "target_kind": "document",
+        },
+        {
+            "id": "unsafe",
+            "prompt": "fixture",
+            "openui": 'root = Input(":slot_0")',
+            "placeholders": [":slot_0"],
+            "target_kind": "document",
+        },
+    ]
+    (source / "records.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.model_build.data.load_train_records", lambda _path: []
+    )
+    monkeypatch.setattr(
+        "slm_training.autoresearch.hillclimb.assert_synthesis_feedback_cleared_for_sft",
+        lambda _path: None,
+    )
+
+    prepared = _mod._prepare_i10_train_dir_for_sft(
+        source, output_parent=tmp_path, require_harness_prompt=False
+    )
+
+    assert prepared.name == "control_role_safe"
+    assert [
+        json.loads(line)["id"]
+        for line in (prepared / "records.jsonl").read_text().splitlines()
+    ] == ["valid"]
+    records_mtime = (prepared / "records.jsonl").stat().st_mtime_ns
+
+    assert (
+        _mod._prepare_i10_train_dir_for_sft(
+            source, output_parent=tmp_path, require_harness_prompt=False
+        )
+        == prepared
+    )
+    assert (prepared / "records.jsonl").stat().st_mtime_ns == records_mtime
+    assert "I10_SFT_REUSE version=control_role_safe" in capsys.readouterr().out
+
+
+def test_trim_unexecuted_hypotheses_keeps_required_members() -> None:
+    hypotheses = [
+        {"experiment": {"experiment_id": f"e{index}"}} for index in range(8)
+    ]
+    matrix = {
+        "recommended_experiment_id": "e6",
+        "hypotheses": hypotheses,
+        "next_run_priorities": [{"proposed_experiment_id": "e7"}],
+    }
+
+    trimmed = _mod._trim_unexecuted_hypotheses(matrix)
+
+    assert [item["experiment"]["experiment_id"] for item in trimmed["hypotheses"]] == [
+        "e0",
+        "e1",
+        "e2",
+        "e6",
+        "e7",
+    ]
 
 
 @pytest.fixture(autouse=True)
@@ -886,7 +984,7 @@ def test_select_recommended_slug_rotates_and_skips() -> None:
     assert _mod._select_recommended_slug(1) == "bounds"
     assert _mod._select_recommended_slug(2) == "canvas"
     assert _mod._select_recommended_slug(3) == "both"
-    assert _mod._select_recommended_slug(1729) == "canvas"
+    assert _mod._select_recommended_slug(1729) == "bounds"
     # skip bounds → canvas even on cycle 1
     assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
     # all skipped fails closed rather than recycling a rejected approach
@@ -1274,6 +1372,7 @@ def test_screening_role_generate_batch_size_is_a_registered_knob() -> None:
     HypothesisMatrix.model_validate(matrix)
     for row in matrix["hypotheses"]:
         assert row["experiment"]["knobs"]["generate_batch_size"] == 1
+        assert row["experiment"]["knobs"]["eval_limit"] > 0
 
 
 def test_literal_close_arm_is_size_matched_and_changes_only_tail_loss() -> None:
@@ -3005,20 +3104,42 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
     (camp / "cycle_handoff.json").write_text(
         json.dumps({"loop_id": "loop-1", "cycle_intent": "screening"})
     )
-    monkeypatch.setattr(
-        _mod,
-        "_classify_positive",
-        lambda **_kwargs: {
+    ledger = root / "loops" / "loop-1" / "hillclimb_iterations.jsonl"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("{}\n")
+    stats = ledger.with_name("slug_stats.json")
+    stats.write_text(json.dumps({"schema": "thrash_slug_stats/v1", "slugs": {}}))
+    calls = 0
+
+    def classify(**_kwargs: object) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return {
             "positive": False,
             "control_metrics": {"structural_similarity": 0.1},
             "candidate_metrics": {"structural_similarity": 0.2},
             "reasons": ["primary_quality_win_rejected_latency_budget"],
-        },
-    )
+        }
 
+    monkeypatch.setattr(_mod, "_classify_positive", classify)
+
+    for _ in range(2):
+        assert _mod._recent_completed_nonpositive_slugs(
+            root, campaign_id, min_null_seeds=1
+        ) == {"steps"}
+    assert calls == 1
+    _mod._RECENT_EXHAUSTION_CACHE.clear()
     assert _mod._recent_completed_nonpositive_slugs(
         root, campaign_id, min_null_seeds=1
     ) == {"steps"}
+    assert calls == 1
+
+    ledger.write_text("{}\n{}\n")
+    _mod._RECENT_EXHAUSTION_CACHE.clear()
+    assert _mod._recent_completed_nonpositive_slugs(
+        root, campaign_id, min_null_seeds=1
+    ) == {"steps"}
+    assert calls == 2
 
 
 def test_completed_null_does_not_age_out_of_lineage_exhaustion(
@@ -4043,7 +4164,9 @@ def test_dispose_champion_promote_parse_regression_not_promoted() -> None:
         candidate_metrics=candidate,
     )
     assert d["status"] == "promotion_failed"
-    assert any("invalid_grammar:" in r or "promote_parse_regression" in r for r in d["reasons"])
+    assert any(
+        "invalid_grammar:" in r or "promote_parse_regression" in r for r in d["reasons"]
+    )
 
 
 def test_dispose_champion_promote_assumption_miss_five_lane() -> None:
@@ -5069,12 +5192,8 @@ def test_classify_positive_rejects_c1819_quality_regression(tmp_path: Path) -> N
         _write_complete_scoreboard(run, "smoke")
         scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
         # Candidate is the quality regression: higher NLL (worse) + lower SS.
-        scoreboard["suites"]["smoke"]["eval_nll"] = (
-            2.0 if arm == "c-control" else 4.0
-        )
-        (run / "scoreboard.json").write_text(
-            json.dumps(scoreboard), encoding="utf-8"
-        )
+        scoreboard["suites"]["smoke"]["eval_nll"] = 2.0 if arm == "c-control" else 4.0
+        (run / "scoreboard.json").write_text(json.dumps(scoreboard), encoding="utf-8")
 
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -5117,12 +5236,8 @@ def test_classify_positive_rejects_quality_win_with_unbounded_latency_cost(
         )
         _write_complete_scoreboard(run, "smoke")
         scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
-        scoreboard["suites"]["smoke"]["eval_nll"] = (
-            4.0 if arm == "c-control" else 2.0
-        )
-        (run / "scoreboard.json").write_text(
-            json.dumps(scoreboard), encoding="utf-8"
-        )
+        scoreboard["suites"]["smoke"]["eval_nll"] = 4.0 if arm == "c-control" else 2.0
+        (run / "scoreboard.json").write_text(json.dumps(scoreboard), encoding="utf-8")
 
     result = _mod._classify_positive(
         camp_dir=camp,
@@ -5158,12 +5273,8 @@ def test_open_champion_is_revalidated_under_current_policy(tmp_path: Path) -> No
         )
         _write_complete_scoreboard(run, "smoke")
         scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
-        scoreboard["suites"]["smoke"]["eval_nll"] = (
-            4.0 if arm == "c-control" else 2.0
-        )
-        (run / "scoreboard.json").write_text(
-            json.dumps(scoreboard), encoding="utf-8"
-        )
+        scoreboard["suites"]["smoke"]["eval_nll"] = 4.0 if arm == "c-control" else 2.0
+        (run / "scoreboard.json").write_text(json.dumps(scoreboard), encoding="utf-8")
     (camp / "cycle_handoff.json").write_text(
         json.dumps(
             {
@@ -5414,7 +5525,14 @@ def test_classify_positive_promotion_sees_held_out_primary(tmp_path: Path) -> No
     assert result["positive"] is True
 
 
-def test_classify_positive_rejects_missing_scoreboards(tmp_path: Path) -> None:
+def test_classify_positive_rejects_missing_scoreboards(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        _mod,
+        "_attach_screening_eval_nll",
+        lambda *args, **kwargs: pytest.fail("diagnostic NLL ran on decision path"),
+    )
     camp = tmp_path / "camp"
     for arm, similarity in (("c-control", 0.2), ("c-candidate", 0.4)):
         _write_eval(
@@ -5762,32 +5880,33 @@ def test_cycle_deadline_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_arm_wall_budget_accounts_for_formal_stage_and_reserves_orchestration() -> None:
-    from slm_training.levers import (
-        HARNESS_FINALIZATION_RESERVE_SECONDS,
-        MAX_HARNESS_WALL_SECONDS,
+    from slm_training.formal.bound_ast import (
+        BOUND_AUTOTRAIN_SYMMETRIC_ARM_WALL,
     )
 
-    promotion_minutes = _mod._arm_wall_minutes(3, formal_required=True)
-    promotion_expected = min(
-        3.0,
-        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
-    )
-    assert promotion_minutes == pytest.approx(promotion_expected)
-    assert _mod._arm_wall_minutes(0.5, formal_required=True) == pytest.approx(
-        min(
-            0.5,
-            (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 3 / 60,
+    screening = _mod._arm_wall_calculation(formal_required=False)
+    promotion = _mod._arm_wall_calculation(formal_required=True)
+    assert screening["bound_ast_id"] == BOUND_AUTOTRAIN_SYMMETRIC_ARM_WALL
+    assert screening["calculated_seconds"] == 70
+    assert screening["payload_seconds"] == 55
+    assert promotion["calculated_seconds"] == 46
+    assert promotion["payload_seconds"] == 31
+    assert _mod._arm_wall_minutes(3, formal_required=False) == pytest.approx(70 / 60)
+    assert _mod._arm_wall_minutes(3, formal_required=True) == pytest.approx(46 / 60)
+    assert _mod._arm_wall_minutes(0.5, formal_required=True) == pytest.approx(0.5)
+    for calculation in (screening, promotion):
+        env = calculation["env"]
+        allocated = calculation["calculated_seconds"]
+        reserves = sum(
+            env[key]
+            for key in (
+                "kill_grace_seconds",
+                "command_finalization_reserve_seconds",
+                "cycle_finalization_reserve_seconds",
+            )
         )
-    )
-    screening_minutes = _mod._arm_wall_minutes(3, formal_required=False)
-    screening_expected = min(
-        3.0,
-        (MAX_HARNESS_WALL_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS) / 2 / 60,
-    )
-    assert screening_minutes == pytest.approx(screening_expected)
-    assert screening_minutes > promotion_minutes
-    reserved = 2 * screening_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
-    assert reserved == pytest.approx(MAX_HARNESS_WALL_SECONDS)
+        assert allocated * env["stage_count"] + reserves <= env["max_run_seconds"]
+        assert (allocated + 1) * env["stage_count"] + reserves > env["max_run_seconds"]
 
 
 def test_confirmation_during_promotion_cadence_uses_two_arm_budget() -> None:
@@ -5965,27 +6084,23 @@ def test_driver_requires_room_for_both_arms_before_starting(
         )
 
 
-def test_post_planning_budget_is_rebalanced_symmetrically(
+def test_post_planning_budget_consumes_remaining_wall_proof(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
-
     monkeypatch.setattr(_mod.time, "monotonic", lambda: 10.0)
-    remaining = 149.0
-    fitted = _mod._fit_symmetric_arm_budget(
-        deadline=10.0 + remaining,
+    fitted, consumed_proof = _mod._fit_symmetric_arm_budget(
+        deadline=10.0 + 149.0,
         arm_count=2,
         requested_arm_wall_minutes=70 / 60,
     )
-
-    assert fitted * 60 == pytest.approx(
-        (
-            remaining
-            - HARNESS_FINALIZATION_RESERVE_SECONDS
-            - _mod._ARM_BUDGET_SCHEDULE_MARGIN_SECONDS
-        )
-        / 2
+    proof = _mod._arm_wall_calculation(
+        formal_required=False,
+        max_run_seconds=149,
+        stage_count=2,
     )
+    assert fitted * 60 == proof["calculated_seconds"]
+    assert consumed_proof["effective_seconds"] == fitted * 60
+    assert consumed_proof["measured_remaining_seconds"] == 149.0
 
 
 def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
@@ -5998,10 +6113,10 @@ def test_fit_arm_budget_leaves_margin_so_deadline_check_passes(
     monkeypatch.setattr(_mod.time, "monotonic", lambda: now)
     remaining = 160.0
     deadline = now + remaining
-    fitted = _mod._fit_symmetric_arm_budget(
+    fitted, _proof = _mod._fit_symmetric_arm_budget(
         deadline=deadline,
         arm_count=2,
-        requested_arm_wall_minutes=3.0,
+        requested_arm_wall_minutes=1.2,
     )
     # Simulate a few μs of wall time between fit and execute check.
     monkeypatch.setattr(_mod.time, "monotonic", lambda: now + 1e-4)
@@ -6071,11 +6186,76 @@ def test_supervised_cli_runs_exactly_one_agent_owned_cycle(
         "run_cycle",
         lambda **kwargs: calls.append(kwargs) or "cycle-1",
     )
+    monkeypatch.setattr(_mod, "_print_status_matrix", lambda **kwargs: None)
 
     assert _mod.main(["--supervised", "--max-cycles", "1"]) == 0
     assert len(calls) == 1
     assert calls[0]["sync_git"] is False
     assert calls[0]["require_action_receipts"] is True
+
+
+def test_supervised_vacuous_pass_records_failure_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "outputs" / "autoresearch"
+    outcomes = root / "loops" / "loop-1" / "pass_outcomes.jsonl"
+    outcomes.parent.mkdir(parents=True)
+    outcomes.write_text(
+        "".join(
+            json.dumps({"outcome": "vacuous_pass"}) + "\n" for _ in range(2)
+        ),
+        encoding="utf-8",
+    )
+    failures: list[str] = []
+    lock_handle = (tmp_path / "driver.lock").open("w+")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    monkeypatch.setattr(_mod, "acquire_driver_lock", lambda *args, **kwargs: lock_handle)
+    monkeypatch.setattr(_mod, "_latest_cycle", lambda *args, **kwargs: (7, "cycle-7"))
+    monkeypatch.setattr(_mod, "run_cycle", lambda **kwargs: "cycle-7")
+    monkeypatch.setattr(_mod, "_print_status_matrix", lambda **kwargs: None)
+    monkeypatch.setattr(
+        _mod,
+        "self_heal_unblock_loop",
+        lambda **kwargs: {"hard_pending": [], "soft_healed": []},
+    )
+    monkeypatch.setattr(_mod, "_self_heal_cycle_error", lambda **kwargs: None)
+    monkeypatch.setattr(_mod, "_self_heal_git_ancestry", lambda **kwargs: None)
+    monkeypatch.setattr(
+        _mod,
+        "_record_cycle_failure",
+        lambda **kwargs: failures.append(str(kwargs["exc"])) or 1,
+    )
+    monkeypatch.setattr(_mod, "_self_heal_loop_owned_generated_dirt", lambda **kwargs: None)
+
+    assert _mod.main(
+        ["--supervised", "--max-cycles", "1", "--loop-id", "loop-1"]
+    ) == 2
+    assert failures == ["vacuous_pass: loop_stalled_no_campaign"]
+    assert len(outcomes.read_text(encoding="utf-8").splitlines()) == 3
+
+
+def test_print_status_matrix_runs_canonical_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[list[str], dict]] = []
+    monkeypatch.setattr(
+        _mod.subprocess,
+        "run",
+        lambda cmd, **kwargs: calls.append((cmd, kwargs)),
+    )
+
+    _mod._print_status_matrix(root=tmp_path / "ar", loop_id="loop-1", cwd=tmp_path)
+
+    assert calls[0][0][-6:] == [
+        "status",
+        "--loop-id",
+        "loop-1",
+        "--matrix",
+        "--last",
+        "5",
+    ]
+    assert calls[0][1]["timeout"] == 120
 
 
 def test_legacy_unsupervised_cycle_does_not_require_agent_receipts(
@@ -6600,14 +6780,10 @@ def test_self_heal_thrash_bank_compose_only_when_exhausted(
     root = tmp_path / "ar"
     loop = "L"
     closed = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-    result = _mod._self_heal_thrash_bank_exhaust(
-        root, loop, closed=closed, skip=set()
-    )
+    result = _mod._self_heal_thrash_bank_exhaust(root, loop, closed=closed, skip=set())
     assert result.composed
     assert result.available
-    already = _mod._self_heal_thrash_bank_exhaust(
-        root, loop, closed=set(), skip=set()
-    )
+    already = _mod._self_heal_thrash_bank_exhaust(root, loop, closed=set(), skip=set())
     assert already.available
     assert not already.composed
 
@@ -7146,8 +7322,9 @@ def test_handoff_does_not_park_leftover_isolate_ofat(
     monkeypatch.setattr(
         _mod,
         "_recent_completed_nonpositive_slugs",
-        lambda *args, **kwargs: {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
-        - {"legal-edit-hazard"},
+        lambda *args, **kwargs: (
+            {slug for slug, _, _ in _mod._SCREENING_ARM_BANK} - {"legal-edit-hazard"}
+        ),
     )
     root = tmp_path / "autoresearch"
     (root / "cycle-leftover").mkdir(parents=True)
@@ -7228,9 +7405,7 @@ def test_local_rebuild_argv_shaped_by_adequacy_stays_wall_capped() -> None:
 
 
 def test_sample_adequacy_report_reads_fixture_stats(tmp_path: Path) -> None:
-    stats_dir = (
-        tmp_path / "src/slm_training/resources/data/train/wf_smoke_v2"
-    )
+    stats_dir = tmp_path / "src/slm_training/resources/data/train/wf_smoke_v2"
     stats_dir.mkdir(parents=True)
     (stats_dir / "stats.json").write_text(
         json.dumps(
@@ -7285,9 +7460,7 @@ def test_thrash_bank_exhaust_does_not_park_selectable_heal(
     monkeypatch.setattr(
         _mod, "_latest_cycle", lambda *args, **kwargs: (509, "cycle-509")
     )
-    assert _mod._selectable_process_arm(
-        root, loop, predecessor_campaign_id="cycle-509"
-    )
+    assert _mod._selectable_process_arm(root, loop, predecessor_campaign_id="cycle-509")
     assert _mod._self_heal_thrash_bank_exhaust(
         root,
         loop,
@@ -7304,7 +7477,11 @@ def test_thrash_bank_exhaust_does_not_park_selectable_heal(
 def _write_heal_snapshot(cwd: Path, version: str) -> Path:
     train_dir = cwd / "outputs" / "data" / "train" / version
     train_dir.mkdir(parents=True)
-    for name in ("quality_report.json", "synthesis_feedback.json", "data_manifest.json"):
+    for name in (
+        "quality_report.json",
+        "synthesis_feedback.json",
+        "data_manifest.json",
+    ):
         (train_dir / name).write_text("{}\n", encoding="utf-8")
     return train_dir
 
@@ -7332,6 +7509,41 @@ def test_regime_parked_recovers_lost_heal_arm(tmp_path: Path) -> None:
     assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
     slugs = {slug for slug, _, _ in _mod._DYNAMIC_THRASH_ARMS}
     assert _mod._HEAL_RESUME_SLUG in slugs
+    assert not verdict.is_file()
+
+
+def test_regime_parked_recovers_snapshot_from_legacy_slug_tombstone(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "autoresearch"
+    loop = "loop-1"
+    version = "continuous_i10_loop_1_c2190_harness"
+    train_dir = _write_heal_snapshot(tmp_path, version.removesuffix("_harness"))
+    train_dir.with_name(version).mkdir()
+    retired = _mod._heal_retired_versions_path(root, loop)
+    retired.parent.mkdir(parents=True)
+    retired.write_text(
+        json.dumps(
+            {
+                "train_version": version,
+                "reason": "recovered_spent_snapshot",
+            }
+        )
+        + "\n"
+    )
+    verdict = _mod._terminal_verdict_path(root, loop)
+    verdict.write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-parked",
+                "cycle_index": 2190,
+                "bank_fingerprint": _mod._screening_bank_fingerprint(),
+            }
+        )
+    )
+
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
+    assert version not in _mod._retired_heal_versions(root, loop)
     assert not verdict.is_file()
 
 
@@ -7580,8 +7792,71 @@ def test_self_heal_rebuild_data_acks_local_artifacts(
     assert "rebuild_data" in receipts
     assert "sample_adequacy.json" not in receipts
     assert any(
-        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+        slug == _mod._HEAL_RESUME_SLUG
+        for slug, _, extras in _mod._all_screening_arm_bank()
     )
+
+
+def test_feasible_proof_supersedes_stale_screening_rebuild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-stale-screening-rebuild"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.eval_nll",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="rebuild_data",
+                owner="synthesis-feedback",
+                reason="screening suite_volume binds: generate smoke n>=96",
+                evidence_ids=(f"campaign:{campaign_id}",),
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json())
+    monkeypatch.setattr(
+        _mod,
+        "_screening_n_report",
+        lambda: (
+            6,
+            {
+                "verdict": "feasible",
+                "chosen_n": 6,
+                "decidability_floor_n": 6,
+                "power_floor_n": None,
+                "budget_ceiling_n": 21,
+                "suite_ceiling_n": 24,
+                "binding_constraints": [],
+            },
+        ),
+    )
+
+    assert (
+        _mod._self_heal_rebuild_screening_eval(
+            cwd=tmp_path,
+            root=root,
+            loop_id="loop-1",
+            campaign_id=campaign_id,
+        )
+        == "retire_stale_screening_rebuild"
+    )
+    assert not _mod.pending_autotrain_actions(root, handoff)
+    receipt = (root / "loops/loop-1/action_receipts.jsonl").read_text()
+    assert '"status":"superseded"' in receipt
+    proof = json.loads((camp / "screening_sample_size.json").read_text())
+    assert proof["smoke_n"] == 6
 
 
 def test_self_heal_rebuild_data_skips_i10_arm_when_leftover_ofat(
@@ -7625,16 +7900,21 @@ def test_self_heal_rebuild_data_skips_i10_arm_when_leftover_ofat(
         (train_dir / name).write_text(json.dumps({"ok": True, "name": name}) + "\n")
 
     monkeypatch.setattr(
-        _mod, "run_bounded_process", lambda *a, **k: (_ for _ in ()).throw(AssertionError())
+        _mod,
+        "run_bounded_process",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError()),
     )
-    monkeypatch.setattr(_mod, "_thrash_bank_open_slugs", lambda closed: {"legal-edit-hazard"})
+    monkeypatch.setattr(
+        _mod, "_thrash_bank_open_slugs", lambda closed: {"legal-edit-hazard"}
+    )
     monkeypatch.setattr(_mod, "_open_slugs_are_snapshot_leftovers", lambda slugs: False)
     kind = _mod._self_heal_rebuild_data(
         cwd=tmp_path, root=root, loop_id="loop-1", campaign_id=campaign_id
     )
     assert kind == "rebuild_data"
     assert not any(
-        slug == _mod._HEAL_RESUME_SLUG for slug, _, extras in _mod._all_screening_arm_bank()
+        slug == _mod._HEAL_RESUME_SLUG
+        for slug, _, extras in _mod._all_screening_arm_bank()
     )
 
 
@@ -7684,6 +7964,7 @@ def test_supervisor_noops_when_regime_parked(
         },
     )
     monkeypatch.setattr(supervisor, "_load_continuous", lambda: fake_continuous)
+    monkeypatch.setattr(supervisor.time, "sleep", lambda _: None)
     rc = supervisor.main(
         [
             "--loop-id",
@@ -7813,6 +8094,37 @@ def test_regime_parked_early_return_and_fingerprint_resume(
     assert state["blocker_count"] == 0
     # No verdict file means no park check applies at all.
     assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
+
+
+def test_regime_resume_tolerates_concurrent_verdict_archive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "ar"
+    loop = "loop-parked"
+    verdict_path = _mod._terminal_verdict_path(root, loop)
+    verdict_path.parent.mkdir(parents=True, exist_ok=True)
+    verdict_path.write_text(
+        json.dumps(
+            {
+                "campaign_id": "cycle-exhausted",
+                "cycle_index": 1795,
+                "bank_fingerprint": "0" * 64,
+            }
+        )
+    )
+    checks = iter((False, True))
+
+    def _selectable(*args: object, **kwargs: object) -> bool:
+        selected = next(checks)
+        if selected:
+            verdict_path.unlink()
+        return selected
+
+    monkeypatch.setattr(_mod, "_selectable_process_arm", _selectable)
+    monkeypatch.setattr(_mod, "_recover_heal_resume_arm", lambda *a, **k: False)
+
+    assert _mod._check_regime_parked(root=root, loop_id=loop, cwd=tmp_path) is None
+    assert not verdict_path.exists()
 
 
 def test_run_cycle_short_circuits_on_parked_regime(
@@ -8154,6 +8466,7 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     }
 
     replay_manifests = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+    assert len(matrix["hypotheses"]) == 5
     recommended = next(
         row["experiment"]
         for row in matrix["hypotheses"]
@@ -8317,6 +8630,142 @@ def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
     assert confirmation_matrix["recommended_experiment_id"] in applied
 
 
+def test_frozen_replay_preserves_dynamic_process_arm_identity() -> None:
+    old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
+    new_campaign = "continuous-loop-20260801-loop-12345678-c1712"
+    matrix = _mod._matrix(
+        campaign_id=new_campaign,
+        evidence_snapshot_id="snapshot-1",
+        cites=["docs/design/autoresearch-autotraining.md"],
+        role_citations={
+            "research": "docs/design/autoresearch-autotraining.md",
+            "prior_result": "docs/design/autoresearch-autotraining.md",
+        },
+        train_version="wf_smoke_v2",
+        eval_version="e938_role_safe_all_targets_v2",
+        steps=22,
+        cycle=1712,
+        recommended_slug="batch1",
+    )
+    control = json.loads(json.dumps(matrix["hypotheses"][0]["experiment"]))
+    candidate = json.loads(
+        json.dumps(
+            next(
+                row["experiment"]
+                for row in matrix["hypotheses"]
+                if row["experiment"]["experiment_id"].endswith("-batch1")
+            )
+        )
+    )
+    control.update(
+        experiment_id="c20260801-loop-12345678-c1710-control",
+        campaign_id=old_campaign,
+    )
+    candidate.update(
+        experiment_id="c20260801-loop-12345678-c1710-current-rung-data-heal",
+        campaign_id=old_campaign,
+    )
+    candidate["knobs"].update(
+        batch_size=2,
+        train_version="continuous_i10_loop_c1709_harness",
+    )
+    replay = {
+        "control": {
+            "experiment": control,
+            "manifest": _mod._manifest(old_campaign, control, "a" * 40),
+            "manifest_sha256": "b" * 64,
+        },
+        "candidate": {
+            "experiment": candidate,
+            "manifest": _mod._manifest(old_campaign, candidate, "a" * 40),
+            "manifest_sha256": "c" * 64,
+        },
+    }
+
+    applied = _mod._apply_frozen_replay(matrix, replay, new_campaign)
+
+    candidate_id = "c20260801-loop-12345678-c1712-current-rung-data-heal"
+    assert matrix["recommended_experiment_id"] == candidate_id
+    assert candidate_id in applied
+    selected = next(
+        row["experiment"]
+        for row in matrix["hypotheses"]
+        if row["experiment"]["experiment_id"] == candidate_id
+    )
+    assert selected["knobs"] == candidate["knobs"]
+
+
+def test_screening_replay_without_proved_eval_limit_is_retired(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "autoresearch"
+    campaign_id = "cycle-missing-eval-limit"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=1,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="harness_failure",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            _mod.AutotrainActionV1(
+                kind="retry_measurement",
+                owner="autotrain",
+                reason="retry the frozen pair",
+                evidence_ids=(f"campaign:{campaign_id}",),
+                frozen_manifest_sha256="f" * 64,
+            ),
+        ),
+    )
+    (camp / "cycle_handoff.json").write_text(handoff.model_dump_json())
+    (camp / "matrix-proposal.json").write_text(
+        json.dumps({"hypotheses": [{"experiment": {"experiment_id": "control"}}]})
+    )
+    control = camp / "manifests" / "control.json"
+    control.parent.mkdir()
+    control.write_text("{}")
+
+    class _Manifest:
+        experiment_id = "candidate"
+
+    monkeypatch.setattr(
+        _mod, "_manifest_with_sha", lambda *_: (camp / "candidate.json", _Manifest())
+    )
+    monkeypatch.setattr(_mod, "_nonreplayable_configuration_failure", lambda *_: None)
+    monkeypatch.setattr(
+        _mod, "_experiment_artifact", lambda *_: {"knobs": {"eval_limit": None}}
+    )
+    monkeypatch.setattr(
+        _mod.ExperimentCampaignV1, "model_validate_json", lambda *_: _Manifest()
+    )
+
+    assert _mod._load_frozen_replay(root, "loop-1", campaign_id) is None
+    assert "missing_proved_eval_limit" in capsys.readouterr().out
+
+
+def test_root_reference_identity_arm_uses_supported_choice_codec() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.levers import lever_configuration_errors
+
+    extras = next(
+        extras
+        for slug, _hypothesis, extras in _mod._all_screening_arm_bank()
+        if slug == "root-reference-identity"
+    )
+    knobs = _mod._apply_arm_extras(20, extras)
+
+    assert knobs["output_tokenizer"] == "choice"
+    assert lever_configuration_errors(SimpleNamespace(**knobs)) == ()
+
+
 def test_frozen_replay_restores_omitted_formal_claim_from_proved_artifact(
     tmp_path: Path,
 ) -> None:
@@ -8458,6 +8907,12 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
             }
         )
     )
+    (checkpoint.parents[1] / "eval_smoke.json").write_text(
+        json.dumps({"metrics": {"structural_similarity": 0.5}})
+    )
+    (checkpoint.parents[1] / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"eval_nll": 1.0}}})
+    )
 
     reuse = _mod._completed_frozen_train_source(
         root=root,
@@ -8469,12 +8924,51 @@ def test_frozen_replay_finds_completed_train_across_retry_lineage(
     assert reuse is not None
     assert reuse["run_dir"] == source_dir / "runs" / "source-batch1"
     assert reuse["manifest_paths"] == (retry_path, source_path)
+    assert reuse["measurement"] == {
+        "run_dir": source_dir / "runs" / "source-batch1",
+        "manifest_sha256": source_sha,
+    }
 
 
-def test_frozen_train_reuse_skipped_when_source_has_decode_timeouts(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+def test_frozen_replay_reuses_completed_measurement_with_hash_receipt(
+    tmp_path: Path,
 ) -> None:
-    """Fail-closed: do not reuse train when the frozen source eval timed out."""
+    source_run = tmp_path / "source-run"
+    target_run = tmp_path / "target-run"
+    source_run.mkdir()
+    eval_payload = json.dumps({"metrics": {"structural_similarity": 0.5}}).encode()
+    (source_run / "eval_smoke.json").write_bytes(eval_payload)
+    source_manifest = tmp_path / "source-manifest.json"
+    target_manifest = tmp_path / "target-manifest.json"
+    source_manifest.write_text('{"source": true}\n')
+    target_manifest.write_text('{"target": true}\n')
+
+    _mod._materialize_frozen_measurement(
+        target_run_dir=target_run,
+        target_manifest_path=target_manifest,
+        reuse={
+            "run_dir": source_run,
+            "manifest_sha256": hashlib.sha256(source_manifest.read_bytes()).hexdigest(),
+        },
+    )
+
+    receipt = json.loads((target_run / "measurement_reuse.json").read_text())
+    assert (target_run / "eval_smoke.json").read_bytes() == eval_payload
+    assert receipt["source_manifest_sha256"] == hashlib.sha256(
+        source_manifest.read_bytes()
+    ).hexdigest()
+    assert receipt["target_manifest_sha256"] == hashlib.sha256(
+        target_manifest.read_bytes()
+    ).hexdigest()
+    assert receipt["artifacts"]["eval_smoke.json"] == hashlib.sha256(
+        eval_payload
+    ).hexdigest()
+
+
+def test_frozen_train_reuse_keeps_completed_checkpoint_when_eval_timed_out(
+    tmp_path: Path,
+) -> None:
+    """Training reuse skips only training; the successor still reruns evaluation."""
 
     root = tmp_path / "autoresearch"
     source_campaign = "cycle-timeout"
@@ -8525,8 +9019,10 @@ def test_frozen_train_reuse_skipped_when_source_has_decode_timeouts(
         manifest_path=source_path,
     )
 
-    assert reuse is None
-    assert "FROZEN_TRAIN_REUSE_SKIP reason=decode_timeout" in capsys.readouterr().out
+    assert reuse == {
+        "run_dir": checkpoint.parents[1],
+        "manifest_paths": (source_path,),
+    }
 
 
 def test_digestless_frozen_retry_does_not_stall_cycle(
@@ -8718,8 +9214,18 @@ def test_continuous_evidence_is_bounded_to_predecessor_and_loop(tmp_path: Path) 
         tmp_path / "autoresearch", "loop-1", "campaign-6"
     )
     assert roots == (
-        tmp_path / "autoresearch" / "campaign-6",
-        tmp_path / "autoresearch" / "loops" / "loop-1",
+        tmp_path / "autoresearch" / "campaign-6" / "cycle_handoff.json",
+        tmp_path / "autoresearch" / "campaign-6" / "measured-results-continuous.md",
+        tmp_path / "autoresearch" / "campaign-6" / "run_insights.json",
+        tmp_path
+        / "autoresearch"
+        / "campaign-6"
+        / "artifacts"
+        / "hypothesizer_feedback",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "hillclimb_iterations.jsonl",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "thrash_timing.jsonl",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "exhausted_knob_ledger.json",
+        tmp_path / "autoresearch" / "loops" / "loop-1" / "champion_queue.jsonl",
         tmp_path / "autoresearch" / "sdlc_delivery_ledger.jsonl",
     )
 
@@ -9402,10 +9908,13 @@ def test_fit_screening_decode_fits_arm_wall() -> None:
     policy = load_climb_policy()
     fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
     arm = float(meta["arm_wall_seconds"])
+    payload = float(meta["payload_wall_seconds"])
+    reserve = float(meta["command_finalization_reserve_seconds"])
     n = int(meta["smoke_n"])
     train = float(meta["min_train_floor_seconds"])
     overhead = float(meta["eval_overhead_seconds"])
-    assert fitted * n + train + overhead <= arm + 1e-6
+    assert payload + reserve == pytest.approx(arm)
+    assert fitted * n + train + overhead <= payload + 1e-6
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
 
@@ -9471,15 +9980,16 @@ def test_write_thrash_timing_records_completeness(tmp_path: Path) -> None:
         reasons=["measurement_incomplete:x:missing_scoreboard", "empty_metrics:y"],
         control_metrics={"structural_similarity": None},
         candidate_metrics={},
+        arm_wall_proof={"effective_seconds": 70.0, "calculated_seconds": 70},
     )
     assert path.is_file()
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["schema"] == "thrash_timing/v1"
     assert data["complete"] is False
+    assert data["arm_wall_proof"]["effective_seconds"] == 70.0
     assert any("measurement_incomplete" in r for r in data["incomplete_reasons"])
     ledger = root / "loops" / "loop-t" / "thrash_timing.jsonl"
     assert ledger.is_file()
-
 
 
 def test_screening_steps_fitter_telemetry_clamp_and_cold_start() -> None:
@@ -9526,6 +10036,35 @@ def test_screening_steps_from_train_summary_telemetry(tmp_path: Path) -> None:
     assert steps == min(400, int(20.0 * (22 / 3.36) * 0.9))
 
 
+def test_screening_steps_use_slower_arm_from_latest_complete_pair(
+    tmp_path: Path,
+) -> None:
+    older = tmp_path / "continuous-loop-paired" / "runs"
+    newer = tmp_path / "continuous-loop-incomplete" / "runs"
+    for arm, wall in (("control", 20.0), ("candidate", 10.0)):
+        run = older / arm
+        run.mkdir(parents=True)
+        (run / "train_summary.json").write_text(
+            json.dumps({"steps": 100, "elapsed_wall_seconds": wall}),
+            encoding="utf-8",
+        )
+    run = newer / "candidate"
+    run.mkdir(parents=True)
+    newest = run / "train_summary.json"
+    newest.write_text(
+        json.dumps({"steps": 100, "elapsed_wall_seconds": 5.0}),
+        encoding="utf-8",
+    )
+    newest.touch()
+
+    payload = _mod._latest_train_telemetry_payload(tmp_path)
+
+    assert payload is not None
+    assert str(payload["_telemetry_path"]).endswith("paired/runs/control/train_summary.json")
+    assert len(payload["_telemetry_paths"]) == 2
+    assert _mod._steps_per_sec_from_train_payload(payload) == 5.0
+
+
 def test_write_thrash_timing_includes_steps_fit(tmp_path: Path) -> None:
     camp = tmp_path / "c-fit"
     camp.mkdir(parents=True)
@@ -9561,15 +10100,20 @@ def test_grown_train_floor_never_exceeds_arm_wall() -> None:
         policy, arm_wall_seconds=70.0
     )
     wall = float(meta["arm_wall_seconds"])
+    payload = float(meta["payload_wall_seconds"])
+    reserve = float(meta["command_finalization_reserve_seconds"])
     floor = float(meta["grown_train_floor_seconds"])
     eval_s = float(meta["eval_budget_seconds"])
     overhead = float(meta["eval_overhead_seconds"])
-    assert floor + eval_s + overhead <= wall + 1e-9
+    assert payload + reserve == pytest.approx(wall)
+    assert floor + eval_s + overhead <= payload + 1e-9
     assert eval_s == pytest.approx(fitted * float(meta["smoke_n"]))
     assert floor >= float(meta["min_train_floor_seconds"]) - 1e-9
 
 
-def test_screening_cuda_device_falls_back_to_cpu(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_screening_cuda_device_falls_back_to_cpu(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import sys
 
     assert _mod._screening_max_gpu_hours(role="screening", device="cpu") == 0.0
@@ -9615,8 +10159,9 @@ def test_semantic_contrast_thrash_arm_uses_batch_size_at_least_3() -> None:
     assert float(cand["knobs"]["semantic_contrast_loss_weight"]) > 0
 
 
-def test_thrash_matrix_strips_stale_feedback_when_no_live_feedback(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("replay", [None, {"frozen": True}])
+def test_thrash_matrix_strips_stale_feedback_before_agent_rebind(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, replay: dict | None
 ) -> None:
     """Agent hypothesize fails if matrix.feedback_ids disagree with live feedback."""
     from slm_training.autoresearch.schemas import HypothesisMatrix
@@ -9639,11 +10184,9 @@ def test_thrash_matrix_strips_stale_feedback_when_no_live_feedback(
     # Driver thrash path always strips feedback binds (handoff pred ≠ lineage).
     promote_levers = None
     confirm_levers = None
-    replay = None
     if (
         promote_levers is None
         and confirm_levers is None
-        and replay is None
         and (matrix.get("feedback_ids") or matrix.get("predecessor_matrix_id"))
     ):
         matrix = dict(matrix)
@@ -10103,6 +10646,156 @@ def test_self_heal_document_actions_writes_commits_acks(
     _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
+def test_self_heal_document_actions_reuses_clean_connector_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-continuous-openui-local-c2"
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+    )
+    base_commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+    handoff["integration_commit"] = base_commit
+    handoff_path.write_text(json.dumps(handoff) + "\n", encoding="utf-8")
+    md, js = _mod._continuous_docs_paths(repo, campaign_id)
+    md.write_text(f"# {campaign_id}\n\nconnector evidence\n", encoding="utf-8")
+    js.write_text(
+        json.dumps(
+            {
+                "campaign_id": campaign_id,
+                "loop_id": loop_id,
+                "version_stamp": {"code_dirty": False},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    subprocess.check_call(["git", "add", "docs"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "connector docs"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    js.write_text(
+        js.read_text(encoding="utf-8").replace(
+            '"code_dirty": false', '"code_dirty": true'
+        ),
+        encoding="utf-8",
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    monkeypatch.setattr(
+        _mod,
+        "_git_commit_paths",
+        lambda *_args, **_kwargs: pytest.fail("clean connector docs were regenerated"),
+    )
+
+    assert (
+        _mod._self_heal_document_actions(
+            cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+        )
+        == "document_closeout"
+    )
+    assert "connector evidence" in md.read_text(encoding="utf-8")
+    receipts = (root / "loops" / loop_id / "action_receipts.jsonl").read_text()
+    assert '"kind":"git_commit"' in receipts
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_checkpoint_recipes_and_existing_notes_are_reusable(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / "docs").mkdir(parents=True)
+    (repo / "README.md").write_text("# test\n", encoding="utf-8")
+    (repo / "docs" / "MODEL_CARD.md").write_text("# card\n", encoding="utf-8")
+    root = repo / "outputs" / "autoresearch"
+    campaign_id = "continuous-loop-test-c3"
+    checkpoint = root / campaign_id / "runs" / "cand" / "checkpoints" / "last.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (checkpoint.parent.parent / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "model": "twotower",
+                "device": "cpu",
+                "steps": 12,
+                "record_count": 34,
+                "elapsed_wall_seconds": 5.0,
+                "last_loss": 1.25,
+                "recipe": {"seed": 7},
+            }
+        ),
+        encoding="utf-8",
+    )
+    checkpoint.with_suffix(".meta.json").write_text(
+        json.dumps({"parameter_count": 1234}), encoding="utf-8"
+    )
+    handoff = _mod.AutotrainCycleHandoffV1(
+        loop_id="loop-1",
+        campaign_id=campaign_id,
+        cycle_index=3,
+        upstream_commit="a" * 40,
+        integration_commit="b" * 40,
+        cycle_role="screening",
+        cycle_intent="screening",
+        evidence_class="fixture",
+        climb_state="inconclusive",
+        ship_state="blocked",
+        primary_metric="smoke.structural_similarity",
+        actions=(
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist checkpoint docs",
+                "evidence_ids": (f"campaign:{campaign_id}",),
+            },
+        ),
+        checkpoint_paths=("runs/cand/checkpoints/last.pt",),
+        checkpoint_documentation_required=True,
+    )
+
+    recipes = _mod._checkpoint_recipes(cwd=repo, root=root, handoff=handoff)
+    first = _mod._append_checkpoint_doc_notes(
+        repo,
+        campaign_id=campaign_id,
+        checkpoint_paths=handoff.checkpoint_paths,
+        checkpoint_recipes=recipes,
+    )
+    second = _mod._append_checkpoint_doc_notes(
+        repo,
+        campaign_id=campaign_id,
+        checkpoint_paths=handoff.checkpoint_paths,
+        checkpoint_recipes=recipes,
+    )
+
+    assert recipes[0]["trainable_params"] == 1234
+    assert recipes[0]["local_path"] == (
+        "outputs/autoresearch/continuous-loop-test-c3/"
+        "runs/cand/checkpoints/last.pt"
+    )
+    assert {path.name for path in first} == {"README.md", "MODEL_CARD.md"}
+    assert {path.name for path in second} == {"README.md", "MODEL_CARD.md"}
+    assert "1,234 trainable parameters" in (repo / "README.md").read_text()
+
+
 def test_self_heal_does_not_ack_repair_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -10286,7 +10979,10 @@ def test_serena_semantic_edit_still_parks(tmp_path: Path) -> None:
 
 
 def test_serena_local_dirt_is_not_foreign() -> None:
-    assert _mod._normalize_repo_relpath(".serena/memories/note.md") == ".serena/memories/note.md"
+    assert (
+        _mod._normalize_repo_relpath(".serena/memories/note.md")
+        == ".serena/memories/note.md"
+    )
     assert _mod._normalize_repo_relpath("./docs/design/x.json") == "docs/design/x.json"
     assert not _mod._is_foreign_dirty_path(".serena/memories/note.md")
     assert not _mod._is_foreign_dirty_path("./.serena/cache/index")
@@ -10315,7 +11011,14 @@ def test_self_heal_restores_loop_owned_generated_dirt(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
     _init_git_repo(repo)
-    mirror = repo / "src" / "slm_training" / "resources" / "evidence_store" / "local_index.jsonl"
+    mirror = (
+        repo
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "evidence_store"
+        / "local_index.jsonl"
+    )
     mirror.parent.mkdir(parents=True)
     mirror.write_text('{"ok": true}\n', encoding="utf-8")
     subprocess.check_call(["git", "add", str(mirror.relative_to(repo))], cwd=repo)
@@ -10325,9 +11028,14 @@ def test_self_heal_restores_loop_owned_generated_dirt(tmp_path: Path) -> None:
     mirror.write_text('{"ok": false, "dirty": true}\n', encoding="utf-8")
     root = repo / "outputs" / "autoresearch"
     root.mkdir(parents=True)
-    report = _mod.self_heal_unblock_loop(
-        cwd=repo, root=root, loop_id="continuous-openui-local"
-    )
+    git_mode = (repo / ".git").stat().st_mode
+    (repo / ".git").chmod(0o555)
+    try:
+        report = _mod.self_heal_unblock_loop(
+            cwd=repo, root=root, loop_id="continuous-openui-local"
+        )
+    finally:
+        (repo / ".git").chmod(git_mode)
     assert "loop_owned_generated_dirt" in report.get("soft_healed", [])
     assert not any(
         item.get("kind") == "foreign_dirty_tree"
@@ -11004,9 +11712,7 @@ def test_integrate_origin_main_skips_diverged_unmergeable(
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    subprocess.check_call(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo
-    )
+    subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=repo)
     subprocess.check_call(["git", "config", "user.name", "test"], cwd=repo)
     (repo / "conflict.txt").write_text("loop\n", encoding="utf-8")
     subprocess.check_call(["git", "add", "conflict.txt"], cwd=repo)
@@ -11066,9 +11772,7 @@ def test_upstream_commit_for_init_uses_head_when_diverged(tmp_path: Path) -> Non
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    subprocess.check_call(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo
-    )
+    subprocess.check_call(["git", "config", "user.email", "test@example.com"], cwd=repo)
     subprocess.check_call(["git", "config", "user.name", "test"], cwd=repo)
     root = repo / "outputs" / "autoresearch"
     root.mkdir(parents=True)
@@ -11232,8 +11936,8 @@ def test_auto_no_bump_version_registry_noop_without_owning_component(
     assert result is None
 
 
-def test_screening_matrix_sets_latency_probe_knobs() -> None:
-    """Policy latency_probe block compiles per-arm probe knobs (screening)."""
+def test_screening_matrix_omits_disabled_latency_probe_knobs() -> None:
+    """Disabled policy probe does not add a duplicate evaluator process."""
     matrix = _mod._matrix(
         campaign_id="continuous-loop-latprobe-c1",
         evidence_snapshot_id="snap",
@@ -11247,8 +11951,8 @@ def test_screening_matrix_sets_latency_probe_knobs() -> None:
         recommended_slug="bounds",
     )
     knobs = matrix["hypotheses"][0]["experiment"]["knobs"]
-    assert knobs["latency_probe_records"] == 1
-    assert knobs["latency_probe_planned_n"] >= 1
+    assert "latency_probe_records" not in knobs
+    assert "latency_probe_planned_n" not in knobs
 
 
 def test_classify_positive_types_latency_preflight_missing_scoreboard(
@@ -11300,6 +12004,14 @@ def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
         json.dumps({"suites": {"smoke": {"n": 6, "structural_similarity": 0.1}}}),
         encoding="utf-8",
     )
+    (run_dir / "measurement_reuse.json").write_text(
+        json.dumps(
+            {
+                "schema": "frozen_measurement_reuse/v1",
+                "artifacts": {"scoreboard.json": "stale"},
+            }
+        )
+    )
     out = _mod._run_arm_eval_nll(run_dir, eval_nll=3.25)
     assert out["eval_nll"] == 3.25
     scoreboard = json.loads((run_dir / "scoreboard.json").read_text(encoding="utf-8"))
@@ -11313,6 +12025,10 @@ def test_run_arm_eval_nll_writes_smoke_eval_nll(tmp_path: Path) -> None:
     metrics = _mod._run_metrics(tmp_path, "arm")
     assert metrics["smoke.eval_nll"] == 3.25
     assert metrics["eval_nll"] == 3.25
+    receipt = json.loads((run_dir / "measurement_reuse.json").read_text())
+    assert receipt["artifacts"]["scoreboard.json"] == hashlib.sha256(
+        (run_dir / "scoreboard.json").read_bytes()
+    ).hexdigest()
 
 
 def test_attach_screening_eval_nll_skips_without_checkpoint(tmp_path: Path) -> None:
@@ -11324,6 +12040,55 @@ def test_attach_screening_eval_nll_skips_without_checkpoint(tmp_path: Path) -> N
     assert _mod._attach_screening_eval_nll(run_dir) is None
     scoreboard = json.loads((run_dir / "scoreboard.json").read_text(encoding="utf-8"))
     assert "eval_nll" not in scoreboard["suites"]["smoke"]
+
+
+def test_attach_screening_eval_nll_uses_reused_checkpoint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "runs" / "arm"
+    run_dir.mkdir(parents=True)
+    (run_dir / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": {"n": 6}}}), encoding="utf-8"
+    )
+    checkpoint = tmp_path / "source" / "last.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.touch()
+    seen: dict[str, Path] = {}
+
+    monkeypatch.setattr(
+        "slm_training.data.store.DataStore.resolve_path",
+        lambda *_args: tmp_path / "eval",
+    )
+    monkeypatch.setattr(_mod, "default_eval_version", lambda: "test-eval")
+
+    def fake_eval(
+        target: Path, *, test_dir: Path, checkpoint: Path
+    ) -> dict[str, Any]:
+        seen.update(target=target, test_dir=test_dir, checkpoint=checkpoint)
+        return {"eval_nll": 1.25}
+
+    monkeypatch.setattr(_mod, "_run_arm_eval_nll", fake_eval)
+    assert _mod._attach_screening_eval_nll(
+        run_dir, checkpoint=checkpoint
+    ) == {"eval_nll": 1.25}
+    assert seen["checkpoint"] == checkpoint
+
+
+def test_attach_screening_eval_nll_jobs_uses_completed_arm_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    jobs = [(tmp_path / "control", None), (tmp_path / "candidate", tmp_path / "c.pt")]
+    seen: list[tuple[Path, Path | None]] = []
+
+    def fake_attach(
+        run_dir: Path, *, checkpoint: Path | None = None
+    ) -> dict[str, Any]:
+        seen.append((run_dir, checkpoint))
+        return {"eval_nll": 1.0}
+
+    monkeypatch.setattr(_mod, "_attach_screening_eval_nll", fake_attach)
+    assert len(_mod._attach_screening_eval_nll_jobs(jobs)) == len(jobs)
+    assert set(seen) == set(jobs)
 
 
 def test_fit_screening_candidate_count_never_kills_for_k() -> None:
@@ -11463,9 +12228,7 @@ def test_multi_arm_bind_locks_rule_before_experiment_started(tmp_path: Path) -> 
     assert types.index("decision_arms_bound") < types.index(
         "experiment_campaign_locked"
     )
-    assert types.index("experiment_campaign_locked") < types.index(
-        "experiment_started"
-    )
+    assert types.index("experiment_campaign_locked") < types.index("experiment_started")
 
 
 def test_size_match_skip_reason_typed() -> None:

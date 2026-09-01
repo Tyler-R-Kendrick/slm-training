@@ -63,7 +63,12 @@ _PREREQUISITE_ACTION_KINDS = frozenset(
 _EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
 _REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
 _DATA_EVIDENCE_NAMES = frozenset(
-    {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
+    {
+        "data_manifest.json",
+        "quality_report.json",
+        "screening_sample_size.json",
+        "synthesis_feedback.json",
+    }
 )
 _MATRIX_CELL_MAX_CHARS = 240
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -212,6 +217,18 @@ def _git_commit_evidence(
             raise ValueError(
                 f"{action.kind} evidence must be a repair commit after the campaign"
             )
+    elif action.kind == "document":
+        if (
+            uri == handoff.integration_commit
+            or _git(
+                "merge-base", "--is-ancestor", handoff.integration_commit, uri
+            ).returncode
+        ):
+            raise ValueError("document evidence must be a commit after the campaign")
+        changed = _git("diff-tree", "--no-commit-id", "--name-only", "-r", uri)
+        paths = changed.stdout.decode("utf-8", errors="replace").splitlines()
+        if not any(path == "README.md" or path.startswith("docs/") for path in paths):
+            raise ValueError("document commit evidence must change docs or README")
     else:
         raise ValueError(f"{action.kind} evidence must be a durable file")
     return AutotrainActionEvidenceV1(
@@ -228,22 +245,49 @@ def _file_evidence(
     uri: str,
 ) -> AutotrainActionEvidenceV1:
     campaign_root = (root / handoff.campaign_id).resolve()
+    artifact_root = root.resolve()
     repo_root = _REPO_ROOT.resolve()
-    candidates = (
-        (campaign_root / uri, "campaign_artifact"),
-        (repo_root / uri, "repo_file"),
-    )
-    resolved = next(
-        (
-            (candidate.resolve(), kind)
-            for candidate, kind in candidates
-            if candidate.is_file()
-            and candidate.resolve().is_relative_to(
-                campaign_root if kind == "campaign_artifact" else repo_root
-            )
-        ),
-        None,
-    )
+    raw = Path(uri)
+    resolved = None
+    for candidate in (campaign_root / raw, raw if raw.is_absolute() else root / raw):
+        if not candidate.is_file():
+            continue
+        path = candidate.resolve()
+        if path.is_relative_to(campaign_root):
+            resolved = (path, "campaign_artifact")
+            break
+        if action.kind not in _EXECUTION_ACTION_KINDS or not path.is_relative_to(
+            artifact_root
+        ):
+            continue
+        relative = path.relative_to(artifact_root)
+        successor_root = artifact_root / relative.parts[0]
+        visited: set[Path] = set()
+        current_root = successor_root.resolve()
+        while current_root.parent == artifact_root and current_root not in visited:
+            visited.add(current_root)
+            successor_spec = current_root / "campaign.json"
+            if not successor_spec.is_file():
+                break
+            spec = json.loads(successor_spec.read_text(encoding="utf-8"))
+            if spec.get("campaign_id") != current_root.name:
+                break
+            predecessor = spec.get("predecessor_campaign_id")
+            if predecessor == handoff.campaign_id:
+                resolved = (path, "campaign_artifact")
+                break
+            if not isinstance(predecessor, str) or not predecessor:
+                break
+            current_root = (artifact_root / predecessor).resolve()
+        if resolved is not None:
+            break
+    repo_candidate = repo_root / raw
+    if (
+        resolved is None
+        and repo_candidate.is_file()
+        and repo_candidate.resolve().is_relative_to(repo_root)
+    ):
+        resolved = (repo_candidate.resolve(), "repo_file")
     if resolved is None:
         raise ValueError(
             f"receipt evidence must be an existing durable path or commit: {uri}"
@@ -379,7 +423,7 @@ def _pending_autotrain_actions(
     handoff: AutotrainCycleHandoffV1,
     *,
     kinds: frozenset[str],
-    acknowledged_statuses: frozenset[str] = frozenset({"completed"}),
+    acknowledged_statuses: frozenset[str] = frozenset({"completed", "superseded"}),
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
     completed: set[tuple[int, str]] = set()
@@ -975,11 +1019,98 @@ def loop_result_rows(
                 break
         if not expected:
             continue
-        actual = {str(row["experiment"]) for row in by_campaign.get(campaign.campaign_id, ())}
+        campaign_rows = by_campaign.setdefault(campaign.campaign_id, [])
+        actual = {str(row["experiment"]) for row in campaign_rows}
+        delivery_path = Path(root) / campaign.campaign_id / "sdlc_delivery.json"
+        try:
+            delivery = json.loads(delivery_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            delivery = {}
+        if delivery.get("measurement_complete") is True:
+            for role in ("control", "candidate"):
+                experiment_id = delivery.get(f"{role}_id")
+                metrics = delivery.get(f"{role}_metrics")
+                if (
+                    experiment_id not in expected
+                    or experiment_id in actual
+                    or not isinstance(metrics, dict)
+                ):
+                    continue
+                run_root = Path(root) / campaign.campaign_id / "runs" / experiment_id
+                receipt_path = run_root / "measurement_reuse.json"
+                manifest_path = (
+                    Path(root)
+                    / campaign.campaign_id
+                    / "manifests"
+                    / f"{experiment_id}.json"
+                )
+                try:
+                    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                    artifacts = receipt["artifacts"]
+                    valid_reuse = (
+                        receipt.get("schema") == "frozen_measurement_reuse/v1"
+                        and isinstance(artifacts, dict)
+                        and bool(artifacts)
+                        and manifest_path.is_file()
+                        and hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+                        == receipt.get("target_manifest_sha256")
+                        and all(
+                            Path(name).name == name
+                            and (run_root / name).is_file()
+                            and hashlib.sha256((run_root / name).read_bytes()).hexdigest()
+                            == digest
+                            for name, digest in artifacts.items()
+                        )
+                    )
+                except (OSError, KeyError, TypeError, json.JSONDecodeError):
+                    valid_reuse = False
+                if not valid_reuse:
+                    continue
+                try:
+                    gates_failed = (
+                        json.loads((run_root / "gates.json").read_text(encoding="utf-8"))
+                        .get("pass")
+                        is False
+                    )
+                except (OSError, json.JSONDecodeError):
+                    gates_failed = False
+                primary_metric = str(
+                    handoff.get("primary_metric") or campaign.primary_metric
+                )
+                row = {
+                    "cycle": campaign.cycle_index,
+                    "upstream": (campaign.upstream_commit or "")[:8] or "—",
+                    "integrated": (campaign.integration_commit or "")[:8] or "—",
+                    "experiment": experiment_id,
+                    "params": _metric_text(metrics, "trainable_params"),
+                    "exposure": "—",
+                    "primary": _metric_text(metrics, primary_metric),
+                    "metrics": _metrics_text(
+                        metrics,
+                        {},
+                        omit={"trainable_params", primary_metric},
+                    ),
+                    "lean": _lean_text(None, handoff),
+                    "gates": "fail" if gates_failed else "not evaluated",
+                    "measurement": (
+                        "complete (reused; gate reject)"
+                        if gates_failed
+                        else "complete (reused)"
+                    ),
+                    "diagnosis": "model" if gates_failed else "—",
+                    "evidence_class": handoff.get("evidence_class", "fixture"),
+                    "climb": handoff.get("climb_state", "—"),
+                    "ship": handoff.get("ship_state", "blocked"),
+                    "status": "completed",
+                    "campaign_id": campaign.campaign_id,
+                }
+                rows.append(row)
+                campaign_rows.append(row)
+                actual.add(experiment_id)
         missing = tuple(item for item in expected if item not in actual)
         if not missing:
             continue
-        for row in by_campaign.get(campaign.campaign_id, ()):
+        for row in campaign_rows:
             row["measurement"] = "incomplete (campaign arm missing)"
             row["diagnosis"] = "harness"
             row["status"] = "incomplete"

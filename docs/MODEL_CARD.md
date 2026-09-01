@@ -224,8 +224,8 @@ scratch baseline.
 | Playground demo | `playground_demo` | Fixture wiring | `src/slm_training/resources/checkpoints/playground_demo/last.pt` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5, one timeout. Demo only — **not** a quality or ship claim |
 | Restructure CPU verify | `restructure_cpu_scratch_v0` | Fixture scratch train | `outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local) | Train OK; smoke parse **0.0** @ 80 steps — **not** a ship claim ([results](design/restructure-cpu-train-results.json)) |
 | Local DirectML verify | `local_directml_adreno_20260714` | Local GPU scratch train | `outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt` (local) | Adreno DirectML train/checkpoint OK @ 5 steps; not evaluated — **not** a ship claim ([results](design/local-directml-train-results.json)) |
-| Overnight retrain | `overnight_retrain_200` | CPU scratch train | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/checkpoints/last.pt` (local) | 200 steps; all honest suites parse 0.0 — **not promotable or ship** |
-| Overnight retrain extended | `overnight_retrain_1000` | CPU scratch train | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/checkpoints/last.pt` (local) | 1,000 steps; smoke parse 0.0 at steps 200/400/600/800/1000 — **not promotable or ship** |
+| Overnight retrain | `overnight_retrain_200` | CPU scratch train | local scratch artifact (not retained) | 200 steps; all honest suites parse 0.0 — **not promotable or ship** |
+| Overnight retrain extended | `overnight_retrain_1000` | CPU scratch train | local scratch artifact (not retained) | 1,000 steps; smoke parse 0.0 at steps 200/400/600/800/1000 — **not promotable or ship** |
 | E120 singleton diagnostic | `e120_unsandboxed` | CPU scratch decoder diagnostic | `outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed/checkpoints/last.pt` (local) | 8 steps; guarded singleton/root/arity path verified; `rico_held n=1` parse 0.0 — **not promotable or ship** |
 | E121 judged-corpus E53 iteration | `qx_e53_honest_v5_champion` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt` (local) | 405 judge-approved records; 8 train + 30 trust-gate steps; bounded smoke parse 0.0 with decode timeout — **not promotable or ship** |
 | E123 judged-corpus 32-step iteration | `e123_judged_32step_b` | CPU scratch judged-corpus iteration | `outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt` (local) | 405 judge-approved records; loss 10.97; smoke parse 0.0 with unconstrained fallback and canvas cap — **not promotable or ship** ([results](design/iter-e123-judged-corpus-32step-20260715.md)) |
@@ -286,11 +286,11 @@ scratch baseline.
 | E272 MGDA plus SGD preflight | `qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set` | CPU HF-context metric-completeness preflight | `outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local) | Collinear SGD improves aggregate held-out FTPO loss, but every scale regresses per-kind probability/margin metrics; parent restored, five gates fail, AgentV 2/5; **not promotable or ship** ([results](design/iter-e272-mgda-sgd-preflight-20260717.md)) |
 | E174 unfrozen-context 8-step control | `e174-unfrozen-context-8step` | CPU HF-context semantic control | `outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local) | Unfrozen context, loss 39.4253; bounded probe syntax 0.0 and parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e174-unfrozen-context-20260716.md)) |
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
-| P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
-| P13 integrated E50 candidate | `qx_e50_core_remask` | CPU scratch, integrated corpus | `/tmp/slm17-e50-new-honest/` (local) | Strict fidelity gain on both smoke suites; parse 0.0, not promotable or ship |
-| Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | Retired fixed-canvas grammar diffusion | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local) | 80 steps; all suites parse/fidelity/structure/reward 0.0; comparison only, not ship |
+| P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | local scratch artifact (not retained) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
+| P13 integrated E50 candidate | `qx_e50_core_remask` | CPU scratch, integrated corpus | local scratch artifact (not retained) | Strict fidelity gain on both smoke suites; parse 0.0, not promotable or ship |
+| Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | Retired fixed-canvas grammar diffusion | local scratch artifacts (not retained) | 80 steps; all suites parse/fidelity/structure/reward 0.0; comparison only, not ship |
 | Topology implementation smoke | `grammar_diffusion_overfit` | CPU scratch fixture topology v2 | pytest temporary checkpoint (local) | 200 steps; smoke n=2 parse/fidelity 0.5, topology composite 0.482; not reusable or ship |
-| Topology X9/X14 confirmation | `gx_x9_topology_base`, `gx_x14_buffer` seeds 0/1/2 | CPU scratch topology v2 matrix | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | 200 steps; all 6 fail multi-suite gates; not promoted or synced |
+| Topology X9/X14 confirmation | `gx_x9_topology_base`, `gx_x14_buffer` seeds 0/1/2 | CPU scratch topology v2 matrix | local scratch artifacts (not retained) | 200 steps; all 6 fail multi-suite gates; not promoted or synced |
 | ScopeDiff X18 confirmation | `gx_x18_scope_noise_confirm_200` seeds 0/1/2 | CPU scratch topology v2 matrix | `outputs/runs/gx_x18_scope_noise_confirm_200/` (local) | 200 steps; all-suite median parse/fidelity 0.0; not promoted or synced |
 | ScopeDiff X21 confirmation | `gx_x21_scoped_topology_confirm_200` seeds 0/1/2 | CPU scratch topology v2 matrix | `outputs/runs/gx_x21_scoped_topology_confirm_200/` (local) | 200 steps; weak structure, parse/fidelity 0.0; not promoted or synced |
 | EFS0-04 X22 reproduction | `gx_x22_kapur_tree_edit_s0` | CPU scratch tree-edit diffusion | `outputs/runs/gx_x22_kapur_tree_edit_s0/checkpoints/last.pt` (local) | 80-step seed-0 audit-material replay; SHA `a9cfb450…02ff6`; syntax 1.0 but meaningful parse 0.333/0.2/0/0/0.667; ship gates fail, no sync or promotion ([results](design/iter-efs0-04-x22-reproduction-20260717.md)) |
@@ -1321,15 +1321,15 @@ checkpoint is rejected.
 | 2026-07-14 | `restructure_cpu_scratch_v0_cont` | `outputs/runs/restructure_cpu_scratch_v0_cont/` (local) | resume +200 scratch steps; smoke parse still 0.0 | Continues v0; HF Jobs still blocked on missing HF_TOKEN |
 | 2026-07-14 | `qx_e0_baseline` (P13 superseded) | `outputs/slm17/matrix-smoke-baseline/` (local) | `rico_held n=3` parse/fidelity 0.0 | Fixture probe; not comparable to E50; scratch/no-sync |
 | 2026-07-14 | `qx_e50_core_remask` (P13 superseded) | `outputs/slm17/matrix-smoke-champion/` (local) | `rico_held n=3` parse/fidelity 1.0 | System-recipe probe, not a matched data signal; scratch/no-sync |
-| 2026-07-14 | fixture `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-fixture-honest/` (local) | held 0.08 / RICO 0.0667 fidelity; parse 0.0 | Equal-recipe fixture control; scratch/no-sync; not ship |
-| 2026-07-14 | integrated `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-new-honest/` (local) | held 0.12 / RICO 0.10 fidelity; parse 0.0 | Strict two-suite data signal; scratch/no-sync; not promotable or ship |
+| 2026-07-14 | fixture `qx_e50_core_remask` (P13 final) | local scratch artifact (not retained) | held 0.08 / RICO 0.0667 fidelity; parse 0.0 | Equal-recipe fixture control; scratch/no-sync; not ship |
+| 2026-07-14 | integrated `qx_e50_core_remask` (P13 final) | local scratch artifact (not retained) | held 0.12 / RICO 0.10 fidelity; parse 0.0 | Strict two-suite data signal; scratch/no-sync; not promotable or ship |
 | 2026-07-14 | `local_directml_adreno_20260714` | `outputs/runs/local_directml_adreno_20260714/` (local) | DirectML train completed @ 5 steps; last_loss≈61.30 | Adreno GPU/checkpoint wiring; one AdamW op used CPU fallback; CPU generation timed out at 120s; no eval/ship claim |
-| 2026-07-15 | `overnight_retrain_200` | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/` (local) | 200 CPU scratch steps; last_loss≈6.64; all suites parse 0.0 | Full honest eval with AgentV bundle; no promotion; decode-path investigation continues |
-| 2026-07-15 | `overnight_retrain_1000` | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/` (local) | 1,000 CPU scratch steps; last_loss≈1.12; smoke parse 0.0 at every checkpoint | Extended training did not improve generation quality; no promotion |
-| 2026-07-15 | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local) | all five suites parse/fidelity/structure/reward 0.0 | Frozen format-v1 comparison; AgentV complete; not promoted or synced |
+| 2026-07-15 | `overnight_retrain_200` | local scratch artifact (not retained) | 200 CPU scratch steps; last_loss≈6.64; all suites parse 0.0 | Full honest eval with AgentV bundle; no promotion; decode-path investigation continues |
+| 2026-07-15 | `overnight_retrain_1000` | local scratch artifact (not retained) | 1,000 CPU scratch steps; last_loss≈1.12; smoke parse 0.0 at every checkpoint | Extended training did not improve generation quality; no promotion |
+| 2026-07-15 | `gx_x2_codec` seeds 0/1/2 | local scratch artifacts (not retained) | all five suites parse/fidelity/structure/reward 0.0 | Frozen format-v1 comparison; AgentV complete; not promoted or synced |
 | 2026-07-15 | topology `grammar_diffusion_overfit` | pytest temporary local checkpoint | smoke n=2 parse/fidelity 0.5; topology composite 0.4820 | Implementation smoke only; temporary checkpoint, not promoted or synced |
-| 2026-07-15 | `gx_x9_topology_base` seeds 0/1/2 | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | RICO n=3 median parse 0.667, but held/adversarial/OOD parse 0.0 | 200-step CPU scratch confirmation; all seeds fail multi-suite gates; not promoted or synced |
-| 2026-07-15 | `gx_x14_buffer` seeds 0/1/2 | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | all-suite median parse 0.0 | 200-step CPU scratch confirmation; all seeds fail; not promoted or synced |
+| 2026-07-15 | `gx_x9_topology_base` seeds 0/1/2 | local scratch artifacts (not retained) | RICO n=3 median parse 0.667, but held/adversarial/OOD parse 0.0 | 200-step CPU scratch confirmation; all seeds fail multi-suite gates; not promoted or synced |
+| 2026-07-15 | `gx_x14_buffer` seeds 0/1/2 | local scratch artifacts (not retained) | all-suite median parse 0.0 | 200-step CPU scratch confirmation; all seeds fail; not promoted or synced |
 | 2026-07-16 | `gx_x18_scope_noise_confirm_200` seeds 0/1/2 | `outputs/runs/gx_x18_scope_noise_confirm_200/` (local) | all-suite median parse/fidelity/structure 0.0 | 200-step CPU scratch confirmation; all seeds fail; no promotion or sync |
 | 2026-07-16 | `gx_x21_scoped_topology_confirm_200` seeds 0/1/2 | `outputs/runs/gx_x21_scoped_topology_confirm_200/` (local) | all-suite median parse/fidelity 0.0; weak structure | 200-step CPU scratch confirmation; all seeds fail; no promotion or sync |
 | 2026-07-16 | `qx_e53_honest_v5_champion` (E121) | `outputs/runs/iter-e121d-e53-judged-20260715/` (local) | judged corpus 405; smoke n=1 parse/fidelity/structure/reward 0.0; decode timeout | Explicit corpus precedence and evaluator tuple bugs fixed; scratch-only; no promotion |
@@ -3523,4 +3523,76 @@ Date (UTC) column). Do not delete history.
 
 - campaign: `continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535`
 - checkpoints: `runs/c20260820-continuous-openui-local-8c0b60dd-c535-control/checkpoints/last.pt`, `runs/c20260820-continuous-openui-local-8c0b60dd-c535-current-rung-data-heal/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-30, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2370)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2370`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2370/runs/c20260830-continuous-openui-local-8c0b60dd-c2370-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 93 steps, 629 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-30, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371/runs/c20260830-continuous-openui-local-8c0b60dd-c2371-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 94 steps, 629 records); `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2371/runs/c20260830-continuous-openui-local-8c0b60dd-c2371-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 94 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-30, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2372)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2372`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2372/runs/c20260830-continuous-openui-local-8c0b60dd-c2372-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 150 steps, 629 records); `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2372/runs/c20260830-continuous-openui-local-8c0b60dd-c2372-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 150 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373/runs/c20260830-continuous-openui-local-8c0b60dd-c2373-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 167 steps, 629 records); `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2373/runs/c20260830-continuous-openui-local-8c0b60dd-c2373-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 167 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2374)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2374`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2374/runs/c20260830-continuous-openui-local-8c0b60dd-c2374-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 170 steps, 629 records); `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2374/runs/c20260830-continuous-openui-local-8c0b60dd-c2374-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 170 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376/runs/c20260830-continuous-openui-local-8c0b60dd-c2376-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 128 steps, 629 records); `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2376/runs/c20260830-continuous-openui-local-8c0b60dd-c2376-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 128 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378/runs/c20260830-continuous-openui-local-8c0b60dd-c2378-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 167 steps, 629 records); `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2378/runs/c20260830-continuous-openui-local-8c0b60dd-c2378-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 167 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2386)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2386`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2386/runs/c20260830-continuous-openui-local-8c0b60dd-c2386-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 159 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2387)
+
+- campaign: `continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2387`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260830-continuous-openui-local-8c0b60dd-c2387/runs/c20260830-continuous-openui-local-8c0b60dd-c2387-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 159 steps, 629 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-08-31, continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2393)
+
+- campaign: `continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2393`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2393/runs/c20260831-continuous-openui-local-8c0b60dd-c2393-control/checkpoints/last.pt` (6,692,828 bytes; twotower, 1,661,698 trainable parameters, 160 steps, 629 records); `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2393/runs/c20260831-continuous-openui-local-8c0b60dd-c2393-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 160 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-09-01, continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2396)
+
+- campaign: `continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2396`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2396/runs/c20260831-continuous-openui-local-8c0b60dd-c2396-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 105 steps, 90 records)
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-09-01, continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399)
+
+- campaign: `continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399`
+- checkpoints: `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399/runs/c20260831-continuous-openui-local-8c0b60dd-c2399-control/checkpoints/last.pt` (6,692,828 bytes; model, 1,661,698 trainable parameters, 0 steps, 0 records); `outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399/runs/c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal/checkpoints/last.pt` (6,453,212 bytes; twotower, 1,601,794 trainable parameters, 104 steps, 90 records)
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.

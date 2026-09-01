@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import os
 import subprocess
 import time
 from pathlib import Path
+
+if __name__ == "__main__":
+    os.environ["_SLM_TRAINING_LIGHT_IMPORT"] = "1"
 
 from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.autoresearch.engine import (
@@ -28,7 +32,6 @@ from slm_training.autoresearch.formal import (
     run_formal_preflight,
     validate_formal_preflights,
 )
-from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
 from slm_training.autoresearch.literature import (
     HuggingFacePapersClient,
     categorical_discovery_source,
@@ -43,12 +46,6 @@ from slm_training.autoresearch.providers import (
     OpenAIResearchProvider,
 )
 from slm_training.autoresearch.researchers import RESEARCHERS, get_researcher
-from slm_training.autoresearch.researcher_eval import evaluate_researcher
-from slm_training.autoresearch.rl_gate import (
-    assert_rl_ready,
-    assess_rl_readiness,
-    write_rl_readiness,
-)
 from slm_training.autoresearch.schemas import (
     AutotrainActionReceiptV1,
     AutotrainCycleHandoffV1,
@@ -75,12 +72,9 @@ from slm_training.autoresearch.storage import (
     render_loop_result_matrix,
 )
 from slm_training.autoresearch.telemetry import TrackioSink
-from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
-from slm_training.harnesses.experiments.verified_metrics import (
-    optimum_feedback,
-    sha256_file,
-    verify_metric_certificate,
-)
+
+if __name__ == "__main__":
+    os.environ.pop("_SLM_TRAINING_LIGHT_IMPORT", None)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -942,6 +936,12 @@ def _verified_optimum_feedback(
             "optimum feedback requires a locked campaign manifest with "
             "metric_expectations_sha256"
         )
+    from slm_training.harnesses.experiments.verified_metrics import (
+        optimum_feedback,
+        sha256_file,
+        verify_metric_certificate,
+    )
+
     verified = verify_metric_certificate(
         evidence_path=evidence,
         certificate_path=certificate,
@@ -992,6 +992,8 @@ def _prepare_reused_training(
     lineage_paths: tuple[Path, ...],
 ) -> tuple[list[list[str]], dict[str, object]]:
     """Replace a frozen replay's completed train stage with its bound checkpoint."""
+
+    from slm_training.harnesses.experiments.verified_metrics import sha256_file
 
     if campaign.track != "twotower":
         raise ValueError("training reuse currently supports only frozen TwoTower runs")
@@ -1105,6 +1107,8 @@ def _prepare_reused_training(
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    importlib.import_module("slm_training.dsl")
+
     store = _store(args)
     campaign = store.load_campaign()
     matrix = _latest_formed_matrix(store)
@@ -1151,6 +1155,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     if lock is not None and manifest_path is None:
         validate_formal_preflights(store.root, experiment, lock.manifest)
     if lock is not None and lock.manifest.requires_rl:
+        from slm_training.autoresearch.rl_gate import assert_rl_ready
+
         if not experiment.requires_rl or not experiment.rl_readiness_report:
             raise ValueError("RL campaign requires experiment readiness evidence")
         readiness_path = Path(experiment.rl_readiness_report)
@@ -1665,6 +1671,11 @@ def _record_hypothesis_feedback(
 
 
 def cmd_validate_rl(args: argparse.Namespace) -> int:
+    from slm_training.autoresearch.rl_gate import (
+        assess_rl_readiness,
+        write_rl_readiness,
+    )
+
     report = assess_rl_readiness(args.evaluation)
     write_rl_readiness(args.output, report, overwrite=args.overwrite)
     print(report.model_dump_json(indent=2))
@@ -1672,6 +1683,9 @@ def cmd_validate_rl(args: argparse.Namespace) -> int:
 
 
 def cmd_evaluate_researcher(args: argparse.Namespace) -> int:
+    importlib.import_module("slm_training.dsl")
+    from slm_training.autoresearch.researcher_eval import evaluate_researcher
+
     report = evaluate_researcher(
         args.cases,
         args.predictions,
@@ -1687,6 +1701,9 @@ def cmd_evaluate_researcher(args: argparse.Namespace) -> int:
 
 
 def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
+    importlib.import_module("slm_training.dsl")
+    from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
+
     report = evaluate_hypothesizer(
         args.cases,
         args.predictions,
@@ -1792,6 +1809,9 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
 
 def cmd_materialize_mixture(args: argparse.Namespace) -> int:
+    importlib.import_module("slm_training.dsl")
+    from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
+
     weights = json.loads(args.weights_json)
     manifest = MixtureManifest(
         mixture_id=args.mixture_id,

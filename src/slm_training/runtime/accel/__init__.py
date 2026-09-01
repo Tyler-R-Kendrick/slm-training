@@ -30,9 +30,8 @@ def detect_device(preferred: str | None = None) -> AccelInfo:
     except ModuleNotFoundError as exc:
         raise RuntimeError(
             "torch is not installed in this environment. Run "
-            "scripts/setup_dev_env.sh to install the pinned CPU wheel, or "
-            "`pip install --index-url https://download.pytorch.org/whl/cpu "
-            "torch==2.5.1+cpu` directly."
+            "scripts/setup_dev_env.sh to install the platform-compatible "
+            "pinned CPU wheel."
         ) from exc
 
     if preferred and preferred.lower() in {"dml", "directml"}:

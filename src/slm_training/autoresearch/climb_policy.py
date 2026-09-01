@@ -488,9 +488,17 @@ def screening_smoke_n_for_policy(
         if observed_sd is None and minimum_effect is not None:
             from slm_training.autoresearch.screening_sample_size import (
                 MEASURED_PAIRED_SD,
+                MEASURED_PAIRED_SD_METRIC,
             )
 
-            observed_sd = MEASURED_PAIRED_SD
+            # An SD is evidence about the metric it was measured on, never a
+            # transferable prior. Borrowing the structural-similarity SD for
+            # eval_nll produced power_floor_n=96 against a wall ceiling of 21
+            # — a permanently empty range. Without a measured SD for this
+            # metric the power floor is simply unavailable and the exact
+            # decidability floor governs.
+            if str(primary.get("metric") or "") == MEASURED_PAIRED_SD_METRIC:
+                observed_sd = MEASURED_PAIRED_SD
         power_kwargs: dict[str, Any] = {}
         if minimum_effect is not None and observed_sd is not None:
             power_kwargs["minimum_effect"] = str(minimum_effect)

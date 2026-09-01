@@ -349,7 +349,11 @@ def compute_screening_sample_size(
         n_max=n_max,
         chosen_n=chosen,
         binding_constraints=tuple(binding),
-        must_generate="suite_volume" in binding,
+        # Generation only helps when suite volume is the *only* bind: if the
+        # wall budget also binds, no amount of generated records makes the
+        # range non-empty, and must_generate=True would command an unwinnable
+        # heal loop (18 consecutive vacuous passes, 2026-08-22).
+        must_generate="suite_volume" in binding and "wall_budget" not in binding,
         verdict=verdict,
         bounds=tuple(bounds),
         findings=tuple(findings),
@@ -367,7 +371,11 @@ FROZEN_EVAL_SNAPSHOTS = frozenset(
 # Paired-delta SD of smoke.structural_similarity from continuous-openui-local
 # 20260820 control vs candidate eval_smoke.json (n_deltas=405). Budgeting
 # prior for power_floor_n; re-measured in docs/design/screening-power-analysis.
+# Valid ONLY for MEASURED_PAIRED_SD_METRIC — borrowing it for another metric
+# (e.g. eval_nll) manufactured an unsatisfiable power floor (n=96 vs wall 21)
+# and livelocked the loop in vacuous passes.
 MEASURED_PAIRED_SD = 0.1741
+MEASURED_PAIRED_SD_METRIC = "smoke.structural_similarity"
 TARGET_SMOKE_N = 24
 
 
@@ -826,6 +834,7 @@ __all__ = [
     "FROZEN_EVAL_SNAPSHOTS",
     "FrozenEvalSnapshotError",
     "MEASURED_PAIRED_SD",
+    "MEASURED_PAIRED_SD_METRIC",
     "TARGET_SMOKE_N",
     "assert_eval_publish_target_writable",
     "extra_smoke_fixtures_for_deficit",

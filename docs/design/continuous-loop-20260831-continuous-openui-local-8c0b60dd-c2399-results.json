@@ -1,0 +1,169 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "checkpoint_recipe": {
+    "checkpoints": [
+      {
+        "backend": "scratch",
+        "bytes": 6692828,
+        "device": null,
+        "elapsed_seconds": null,
+        "last_loss": null,
+        "local_path": "outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399/runs/c20260831-continuous-openui-local-8c0b60dd-c2399-control/checkpoints/last.pt",
+        "model": null,
+        "records": null,
+        "seed": null,
+        "steps": null,
+        "trainable_params": 1661698
+      },
+      {
+        "backend": "scratch",
+        "bytes": 6453212,
+        "device": "cpu",
+        "elapsed_seconds": 9.853736342047341,
+        "last_loss": 1.1665140390396118,
+        "local_path": "outputs/autoresearch/continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399/runs/c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal/checkpoints/last.pt",
+        "model": "twotower",
+        "records": 90,
+        "seed": 102398,
+        "steps": 104,
+        "trainable_params": 1601794
+      }
+    ],
+    "sync": "disabled_fixture_scratch"
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "cycle_index": 2399,
+  "cycle_intent": "retry_measurement",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260831-continuous-openui-local-8c0b60dd-c2399-control": 124,
+      "c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal": 124
+    },
+    "arm_order": [
+      "c20260831-continuous-openui-local-8c0b60dd-c2399-control",
+      "c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal"
+    ],
+    "arm_seed": 102398,
+    "arm_skipped": {},
+    "baseline_trainable_params": null,
+    "campaign_id": "continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399",
+    "candidate_id": "c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": 1601794,
+    "climb_policy_sha256": "de8c2d121a7eb6a30595d2d5ca1e9fbc88477027bafa4d7e9609f725dd02318f",
+    "control_id": "c20260831-continuous-openui-local-8c0b60dd-c2399-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "cycle_index": 2399,
+    "cycle_intent": "retry_measurement",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-09-01T01:46:56Z",
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "continuous-openui-local",
+    "measurement_complete": false,
+    "policy_sha256": "de8c2d121a7eb6a30595d2d5ca1e9fbc88477027bafa4d7e9609f725dd02318f",
+    "policy_version": "v15",
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260831-continuous-openui-local-8c0b60dd-c2399-control:missing_scoreboard",
+      "measurement_incomplete:c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "isolate",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": false,
+      "reason": "no_climb_baseline_causal_ofat",
+      "regime": "isolate",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2399",
+    "cycle_index": 2399,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260831-continuous-openui-local-8c0b60dd-c2399-control:missing_scoreboard",
+      "measurement_incomplete:c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "continuous-openui-local",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260831-continuous-openui-local-8c0b60dd-c2399-control:missing_scoreboard",
+    "measurement_incomplete:c20260831-continuous-openui-local-8c0b60dd-c2399-current-rung-data-heal:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "6d689cf2efc9831ee1963ff0effc90139d90c062",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v101"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-01T01:48:39.490744+00:00"
+  }
+}

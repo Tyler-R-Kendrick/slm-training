@@ -292,6 +292,22 @@
       "lean_guard": "screeningBudgetUpperBound 70 20 8 2 = 21"
     },
     {
+      "id": "autotrain_symmetric_two_arm_wall",
+      "bound_ast_id": "bound.autotrain.symmetric_arm_wall_seconds.v1",
+      "env": {
+        "max_run_seconds": 180,
+        "kill_grace_seconds": 10,
+        "command_finalization_reserve_seconds": 15,
+        "cycle_finalization_reserve_seconds": 15,
+        "stage_count": 2
+      },
+      "expected_value": "70",
+      "expected_predicate": true,
+      "lean_module": "LeverProofLean.ScreeningSampleSize",
+      "lean_def": "symmetricArmWallSeconds",
+      "lean_guard": "symmetricArmWallSeconds 180 10 15 15 2 = 70"
+    },
+    {
       "id": "screening_budget_saturated_wall",
       "bound_ast_id": "bound.screening_n.budget_upper.v1",
       "env": {
