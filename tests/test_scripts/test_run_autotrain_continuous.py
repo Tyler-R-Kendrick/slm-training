@@ -10238,6 +10238,255 @@ def test_is_continuous_closeout_path_allowlist() -> None:
     )
     assert not _mod._is_continuous_closeout_path("scripts/run_autotrain_continuous.py")
     assert not _mod._is_continuous_closeout_path("docs/design/other-topic.md")
+    assert not _mod._is_continuous_closeout_path(
+        "src/slm_training/resources/versions.json"
+    )
+
+
+def _seed_version_registry(repo: Path) -> Path:
+    path = repo / "src" / "slm_training" / "resources" / "versions.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "versions/v1",
+                "components": {
+                    "harness.demo": {
+                        "version": "v1",
+                        "paths": ["docs/MODEL_CARD.md", "README.md"],
+                        "history": [
+                            {
+                                "version": "v1",
+                                "date": "2026-01-01",
+                                "note": "seed",
+                            }
+                        ],
+                    }
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    subprocess.check_call(["git", "add", str(path.relative_to(repo))], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "seed versions"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    return path
+
+
+def test_versions_json_closeout_only_is_not_foreign(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    path = _seed_version_registry(repo)
+    registry = json.loads(path.read_text(encoding="utf-8"))
+    registry["components"]["harness.demo"]["history"].insert(
+        0,
+        {
+            "version": "v1",
+            "date": "2026-09-01",
+            "note": (
+                "no-bump: record scheduled loop continuous-openui-local "
+                "continuous-loop-c1's checkpoint-note-only doc update "
+                "(fixture/scratch continuous cycle honesty stub); behavior unchanged."
+            ),
+        },
+    )
+    path.write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8")
+    assert _mod._versions_json_is_closeout_only(repo)
+    assert _mod._is_continuous_closeout_path(
+        "src/slm_training/resources/versions.json", cwd=repo
+    )
+    assert not _mod._is_foreign_dirty_path(
+        "src/slm_training/resources/versions.json", cwd=repo
+    )
+
+
+def test_versions_json_real_bump_stays_foreign(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    path = _seed_version_registry(repo)
+    registry = json.loads(path.read_text(encoding="utf-8"))
+    registry["components"]["harness.demo"]["version"] = "v2"
+    registry["components"]["harness.demo"]["history"].insert(
+        0, {"version": "v2", "date": "2026-09-01", "note": "real bump"}
+    )
+    path.write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8")
+    assert not _mod._versions_json_is_closeout_only(repo)
+    assert _mod._is_foreign_dirty_path(
+        "src/slm_training/resources/versions.json", cwd=repo
+    )
+
+
+def test_self_heal_commits_checkpoint_no_bump_versions_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    _seed_version_registry(repo)
+    (repo / "docs" / "MODEL_CARD.md").write_text("# card\n", encoding="utf-8")
+    subprocess.check_call(["git", "add", "docs/MODEL_CARD.md"], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "card"], cwd=repo, stdout=subprocess.DEVNULL
+    )
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-test-c2399"
+    camp = root / campaign_id
+    camp.mkdir(parents=True)
+    (camp / "runs" / "arm" / "checkpoints").mkdir(parents=True)
+    ckpt = camp / "runs" / "arm" / "checkpoints" / "last.pt"
+    ckpt.write_bytes(b"ckpt")
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+    )
+    handoff_path = camp / "cycle_handoff.json"
+    payload = json.loads(handoff_path.read_text(encoding="utf-8"))
+    payload["checkpoint_paths"] = [str(ckpt.relative_to(camp))]
+    payload["checkpoint_documentation_required"] = True
+    handoff_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    (camp / "campaign.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "CampaignSpec",
+                "campaign_id": campaign_id,
+                "loop_id": loop_id,
+                "cycle_index": 2399,
+                "objective": "t",
+                "primary_metric": "smoke.structural_similarity",
+                "upstream_commit": "a" * 40,
+                "integration_commit": "b" * 40,
+            }
+        ),
+        encoding="utf-8",
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    kind = _mod._self_heal_document_actions(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert kind == "document_closeout"
+    report = _mod.self_heal_unblock_loop(cwd=repo, root=root, loop_id=loop_id)
+    assert not any(
+        item.get("kind") == "foreign_dirty_tree"
+        for item in report.get("hard_pending") or []
+    )
+    status = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=repo, text=True
+    )
+    assert "versions.json" not in status
+    assert "MODEL_CARD.md" not in status
+
+
+def test_git_commit_paths_falls_back_to_github_connector(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    target = repo / "docs" / "design" / "continuous-loop-c1-results.md"
+    target.write_text("# closeout\n", encoding="utf-8")
+    seen: dict[str, object] = {}
+
+    def _boom(*args: object, **kwargs: object) -> None:
+        cmd = args[0] if args else kwargs.get("cmd")
+        if isinstance(cmd, list) and "commit" in cmd:
+            raise subprocess.CalledProcessError(1, cmd, output="", stderr="blocked")
+        return original_run(*args, **kwargs)
+
+    original_run = _mod._run
+    monkeypatch.setattr(_mod, "_run", _boom)
+
+    def _publish(cwd: Path, rels: list[str], *, message: str) -> bool:
+        seen["cwd"] = cwd
+        seen["rels"] = list(rels)
+        seen["message"] = message
+        subprocess.check_call(["git", "add", "--", *rels], cwd=cwd)
+        subprocess.check_call(["git", "commit", "-m", message, "--", *rels], cwd=cwd)
+        return True
+
+    monkeypatch.setattr(_mod, "_github_commit_closeout_paths", _publish)
+    assert _mod._git_commit_paths(repo, [target], message="docs(autotrain): closeout")
+    assert seen["rels"] == ["docs/design/continuous-loop-c1-results.md"]
+    status = subprocess.check_output(
+        ["git", "status", "--porcelain"], cwd=repo, text=True
+    )
+    assert status.strip() == ""
+
+
+def test_self_heal_document_reuses_connector_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    root = repo / "outputs" / "autoresearch"
+    loop_id = "continuous-openui-local"
+    campaign_id = "continuous-loop-reuse-c1"
+    _document_handoff_campaign(
+        root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        actions=[
+            {
+                "kind": "document",
+                "owner": "documenting-experiment-results",
+                "reason": "persist docs",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+    )
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+    handoff_path = root / campaign_id / "cycle_handoff.json"
+    payload = json.loads(handoff_path.read_text(encoding="utf-8"))
+    payload["integration_commit"] = head
+    payload["upstream_commit"] = head
+    handoff_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    md = repo / "docs" / "design" / f"{campaign_id}-results.md"
+    js = repo / "docs" / "design" / f"{campaign_id}-results.json"
+    md.write_text(f"# {campaign_id}\n", encoding="utf-8")
+    js.write_text(
+        json.dumps(
+            {
+                "campaign_id": campaign_id,
+                "loop_id": loop_id,
+                "version_stamp": {"code_dirty": False},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    subprocess.check_call(["git", "add", str(md.relative_to(repo)), str(js.relative_to(repo))], cwd=repo)
+    subprocess.check_call(
+        ["git", "commit", "-m", "docs(autotrain): record continuous cycle reuse"],
+        cwd=repo,
+        stdout=subprocess.DEVNULL,
+    )
+    import slm_training.autoresearch.storage as storage
+
+    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    kind = _mod._self_heal_document_actions(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    )
+    assert kind == "document_closeout"
+    _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
 def test_serena_comment_strip_restores_and_continues(tmp_path: Path) -> None:

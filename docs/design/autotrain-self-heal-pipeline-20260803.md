@@ -21,8 +21,8 @@ Human re-prompt is not a control plane for thrash bank or harness park.
 | Causal CAP empties multi-seed-open set | Drop CAP skips | `THRASH_CAUSAL_CAP_RELAX` |
 | Bank empty + promote head | Promote fallback | `BANK_EXHAUST_PROMOTE_FALLBACK` |
 | Harness park + new integration tip | Rearm champion | `CHAMPION_HARNESS_RETRY` |
-| Ordinary `document` closeout unacked | Write + commit + ack continuous results | `SELF_HEAL_DOCUMENT` |
-| Continuous-only dirty tree | Auto-commit closeout paths | `SELF_HEAL_DIRTY_TREE` |
+| Ordinary `document` closeout unacked | Write + commit + ack continuous results; reuse an already-published GitHub closeout commit; if local `git commit` is blocked, publish the same closeout paths through the GitHub git data API | `SELF_HEAL_DOCUMENT`, `SELF_HEAL_DOCUMENT_CONNECTOR_REUSE`, `SELF_HEAL_DOCUMENT_CONNECTOR` |
+| Continuous-only dirty tree | Auto-commit closeout paths (design docs, MODEL_CARD/README honesty stubs, and versions.json **only** when the dirty diff is no-bump checkpoint-note history) | `SELF_HEAL_DIRTY_TREE` |
 | Loop-owned generated dirt (`local_index.jsonl`, registered mirrors) | Restore to HEAD | `SELF_HEAL_LOOP_OWNED_DIRT` |
 | Process/heal first-train blocked by confirmatory power | Warn + keep the arm (`PROCESS_ARM_PREFLIGHT_CONTINUE`) | `power_check` + `_preflight_screening_slug` |
 | Thrash wall/decode timeout residual | Rewrite `repair_harness`→`next_experiment` | `SELF_HEAL_THRASH_TIMEOUT_REPAIR` |

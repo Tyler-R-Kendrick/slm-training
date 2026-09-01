@@ -43,9 +43,14 @@ persistence is the host goal and the append-only campaign event chains.
    - **ordinary cycle `document` closeout** → driver writes
      `docs/design/<campaign_id>-results.{md,json}`, commits **only** those
      continuous closeout paths, and appends a content-bound
-     `document` receipt (`SELF_HEAL_DOCUMENT`). End-of-cycle, pre-gate, cycle
-     error, and startup all run this heal so thrash never blocks on
-     “please document and restart.”
+     `document` receipt (`SELF_HEAL_DOCUMENT`). If the docs are already on
+     HEAD via a GitHub-connector commit, ack that commit
+     (`SELF_HEAL_DOCUMENT_CONNECTOR_REUSE`) instead of waiting for an agent.
+     If local `git commit` is blocked (shared worktree / dirty-tree
+     protection), publish the same closeout paths through the GitHub git
+     data API (`SELF_HEAL_DOCUMENT_CONNECTOR`) and continue. End-of-cycle,
+     pre-gate, cycle error, and startup all run this heal so thrash never
+     blocks on “please document and restart.”
    - **hill-climb iteration outputs** → every Phase A closeout appends
      `loops/<id>/hillclimb_iterations.jsonl` and prints `HILLCLIMB_ITERATION`
      with went-well / went-wrong / speculate plus metric deltas. Cycle
@@ -58,8 +63,10 @@ persistence is the host goal and the append-only campaign event chains.
      continues. Never a parent halt.
    - **continuous-only dirty tree** → if porcelain is only
      `docs/design/continuous-*` closeout files (plus optional MODEL_CARD /
-     README checkpoint notes), auto-commit (`SELF_HEAL_DIRTY_TREE`); foreign
-     WIP still fails closed.
+     README checkpoint notes **and** a versions.json diff that is only
+     `no-bump:` checkpoint-note history), auto-commit
+     (`SELF_HEAL_DIRTY_TREE`); a real component bump or other foreign WIP
+     still fails closed.
    - **thrash decode/wall-timeout residual** → when a screening handoff is
      stuck on `repair_harness` only because of arm-wall / decode timeouts
      (exit 124, `decode_timeout_count`, incomplete smoke docs) — **not** a
@@ -563,6 +570,9 @@ Do **not** treat Phase B as the first time merges happen — that is an A5 miss.
   rotating it away at `PREFLIGHT_BLOCK`
 - Treating driver-written tracked mirrors (`local_index.jsonl` and any
   registered loop-owned generated path) as `foreign_dirty_tree` human WIP
+- Treating checkpoint-note-only `versions.json` no-bump dirt, or a blocked
+  local `git commit` of closeout docs, as a 1 h hard park instead of
+  `SELF_HEAL_DOCUMENT` / GitHub-connector publish + continue
 - Rematching a falsified snapshot identity (`train_version` already
   multi-seed null) as a new hill
 - Leaving the loop because an experiment failed once
