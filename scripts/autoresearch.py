@@ -73,6 +73,9 @@ from slm_training.autoresearch.storage import (
 )
 from slm_training.autoresearch.telemetry import TrackioSink
 
+if __name__ == "__main__":
+    os.environ.pop("_SLM_TRAINING_LIGHT_IMPORT", None)
+
 ROOT = Path(__file__).resolve().parents[1]
 
 

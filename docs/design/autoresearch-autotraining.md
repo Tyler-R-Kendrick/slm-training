@@ -1050,3 +1050,12 @@ a light package-root import for orchestration-only commands and explicitly loads
 the DSL in commands that require it. A subprocess regression check proves the
 orchestration import stays DSL-free; command-specific model and evaluation paths
 retain their prior imports and behavior.
+
+## Continuous-loop c2394: child import-order repair
+
+Cycle c2394 reached both frozen evaluation stages under a proof-refit 16-second
+arm wall, but each failed immediately because the orchestration-only light-import
+flag was inherited by the evaluation child and exposed the historical data/DSL
+cycle in a different order. The CLI now removes that bootstrap flag after its own
+imports, before spawning train or evaluation commands. A subprocess regression
+check runs the CLI as `__main__` and proves the flag is absent afterward.

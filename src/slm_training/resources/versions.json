@@ -5072,6 +5072,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-01",
+          "note": "no-bump: document the c2394 child-environment regression and scoped bootstrap-flag cleanup; experiment campaign semantics are unchanged.",
+          "version": "v328"
+        },
+        {
           "date": "2026-08-31",
           "note": "no-bump: document the c2391-c2392 orchestration startup diagnosis and behavior-neutral light-import repair; experiment campaign semantics are unchanged.",
           "version": "v328"
@@ -18134,6 +18139,11 @@
     "harness.preference.remine_campaign": {
       "history": [
         {
+          "date": "2026-09-01",
+          "note": "Clear the autoresearch-only light-import bootstrap flag before executing child train and evaluation commands, restoring their eager package-root import order while retaining fast orchestration startup.",
+          "version": "v7"
+        },
+        {
           "date": "2026-08-31",
           "note": "no-bump: keep orchestration-only autoresearch commands off the OpenUI DSL import path while preserving explicit DSL loading for run and evaluation commands; preference remine behavior is unchanged.",
           "version": "v6"
@@ -18319,7 +18329,7 @@
         "docs/design/ldi3-04-remine-intervene-campaign-20260718.md",
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
-      "version": "v6"
+      "version": "v7"
     },
     "harness.preference.replay_preference_context_view_variants": {
       "history": [
