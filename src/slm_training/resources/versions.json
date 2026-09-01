@@ -5032,6 +5032,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json from docs/design (8 JSON records landed on main without a ledger rebuild; deterministic rebuild, n_obs 92->100, no schema or selector change).",
+          "version": "v270"
+        },
+        {
           "date": "2026-08-21",
           "note": "Screening data heal allocates a new versioned smoke suite instead of reusing the frozen smoke6 snapshot when n must grow.",
           "version": "v270"

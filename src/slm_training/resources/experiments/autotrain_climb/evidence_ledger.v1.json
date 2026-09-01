@@ -311,7 +311,7 @@
       "n_complete": 75,
       "n_delta": 75,
       "n_null": 75,
-      "n_obs": 92,
+      "n_obs": 100,
       "n_positive": 0
     },
     "edge-alignment": {
@@ -487,8 +487,8 @@
     "gates.ship"
   ],
   "file_counts": {
-    "observations": 382,
-    "scanned": 2294,
+    "observations": 390,
+    "scanned": 2302,
     "unreadable": 0
   },
   "generated_from": "docs/design",
