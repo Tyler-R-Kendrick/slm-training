@@ -11835,6 +11835,11 @@
       "history": [
         {
           "version": "v3",
+          "date": "2026-09-01",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2396's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
           "date": "2026-08-31",
           "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260831-continuous-openui-local-8c0b60dd-c2393's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
