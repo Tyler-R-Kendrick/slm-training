@@ -31,9 +31,30 @@ def _clear_dynamic_thrash_bank_cache() -> None:
     """Isolate loop-local self-heal thrash arms across tests."""
     _mod._DYNAMIC_THRASH_ARMS.clear()
     _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    _mod._SCREENING_PRIMARY_LEAF_OVERRIDE = None
     yield
     _mod._DYNAMIC_THRASH_ARMS.clear()
     _mod._DYNAMIC_THRASH_LOADED_FOR = None
+    _mod._SCREENING_PRIMARY_LEAF_OVERRIDE = None
+
+
+@pytest.fixture
+def latency_primary() -> None:
+    """Pin the screening role primary leaf to ``latency_ms_p50``.
+
+    The latency-only bank (``bounds`` / ``canvas`` / ``both`` / ``steps`` /
+    ``batch1``) is a legal screening candidate only under that primary (P9);
+    tests whose subject is one of those arms opt in here.
+    """
+    _mod._SCREENING_PRIMARY_LEAF_OVERRIDE = "smoke.latency_ms_p50"
+    yield
+    _mod._SCREENING_PRIMARY_LEAF_OVERRIDE = None
+
+
+# P9 (RC7): size-matched arms that can move weights, and the arms moved to
+# the latency-only bank.
+_P9_NEW_ARMS = ("data-certified", "data-strict", "lr-x2", "lr-x0.5", "batch-x2", "steps-fill")
+_P9_LATENCY_ARMS = ("bounds", "canvas", "both", "steps", "batch1")
 
 
 def _inject_terminal_policy(monkeypatch: pytest.MonkeyPatch, *, park: bool) -> "object":
@@ -687,6 +708,216 @@ def test_champion_projection_covers_every_registered_screening_lever() -> None:
     assert registered <= set(_mod._LEVER_KNOB_KEYS)
 
 
+def test_p9_bank_knob_keys_resolve_and_drop_into_experiment_knobs() -> None:
+    from slm_training.autoresearch.schemas import ExperimentKnobs
+    from slm_training.levers import (
+        CAPACITY_SCALING_LEVERS,
+        CONSTRAINT_WEAKENING_LEVERS,
+        lever_catalog,
+    )
+
+    catalog = lever_catalog()
+    categories = _mod._bank_lever_categories()
+    fields = set(ExperimentKnobs.model_fields)
+    for slug, hypothesis, extras in _mod._SCREENING_ARM_BANK + _mod._LATENCY_ARM_BANK:
+        assert hypothesis.strip(), slug
+        for key in extras:
+            name = "steps" if key == "_steps_factor" else key
+            assert name in catalog or name in _mod._EXPERIMENT_ONLY_KNOB_CATEGORIES, (
+                slug,
+                key,
+            )
+            assert categories[name], (slug, key)
+            # Knob dicts drop verbatim into the strict ExperimentKnobs model.
+            assert name in fields, (slug, key)
+            assert name not in CONSTRAINT_WEAKENING_LEVERS, (slug, key)
+            assert name not in CAPACITY_SCALING_LEVERS, (slug, key)
+    assert {"lr", "train_version", "batch_size", "steps"} <= set(_mod._LEVER_KNOB_KEYS)
+    # ``noise_rate`` (policy recipe_tweak_knobs) is StubModel-only and not an
+    # ExperimentKnobs field: it can never be a weight-moving bank arm.
+    assert "noise_rate" not in fields
+    assert not any("noise_rate" in extras for _, _, extras in _mod._SCREENING_ARM_BANK)
+
+
+def test_p9_new_screening_arms_are_size_matched_training_or_data_levers() -> None:
+    import dataclasses
+
+    from slm_training.harnesses.model_build.config import ModelBuildConfig
+    from slm_training.levers import require_size_matched_arms
+
+    categories = _mod._bank_lever_categories()
+    by_slug = {slug: extras for slug, _, extras in _mod._SCREENING_ARM_BANK}
+    control = ModelBuildConfig(
+        train_dir=Path("train"), batch_size=_mod._CONTROL_RECIPE_BATCH_SIZE
+    )
+    names = {field.name for field in dataclasses.fields(ModelBuildConfig)}
+    for slug in _P9_NEW_ARMS:
+        extras = by_slug[slug]
+        assert not _mod._latency_only_arm(extras), slug
+        kinds = {
+            "training" if key == "_steps_factor" else categories[key] for key in extras
+        }
+        assert kinds <= {"training", "data"}, (slug, kinds)
+        knobs = _mod._apply_arm_extras(40, extras)
+        treatment = dataclasses.replace(
+            control, **{k: v for k, v in knobs.items() if k in names}
+        )
+        require_size_matched_arms(control, treatment, context=slug)
+    assert by_slug["lr-x2"] == {"lr": pytest.approx(6e-4)}
+    assert by_slug["lr-x0.5"] == {"lr": pytest.approx(1.5e-4)}
+    assert by_slug["batch-x2"] == {"batch_size": 4}
+    assert by_slug["data-certified"] == {"train_version": "openui_verified_train_v1"}
+    assert by_slug["data-strict"] == {"train_version": "hillclimb_strict_v2"}
+
+
+def test_p9_no_screening_bank_arm_is_latency_only() -> None:
+    from slm_training.autoresearch.thrash_regime import LATENCY_HYPOTHESIS_SLUGS
+
+    screening = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
+    assert set(_P9_NEW_ARMS) <= screening
+    for slug, _, extras in _mod._SCREENING_ARM_BANK:
+        assert not _mod._latency_only_arm(extras), slug
+    assert tuple(slug for slug, _, _ in _mod._LATENCY_ARM_BANK) == _P9_LATENCY_ARMS
+    for slug, hypothesis, extras in _mod._LATENCY_ARM_BANK:
+        assert _mod._latency_only_arm(extras) or slug in LATENCY_HYPOTHESIS_SLUGS, slug
+        assert "latency" in hypothesis, slug
+    assert not screening & set(_P9_LATENCY_ARMS)
+
+
+def test_p9_latency_arms_absent_under_nll_primary() -> None:
+    assert _mod._screening_primary_leaf() == "eval_nll"
+    assert _mod._latency_arms_active() is False
+    slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
+    assert not set(slugs) & set(_P9_LATENCY_ARMS)
+    for slug in ("data-strict", "lr-x2", "lr-x0.5", "batch-x2", "steps-fill"):
+        assert slug in slugs
+
+
+def test_p9_latency_arms_lead_under_latency_primary(latency_primary: None) -> None:
+    assert _mod._latency_arms_active() is True
+    slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
+    assert tuple(slugs[: len(_P9_LATENCY_ARMS)]) == _P9_LATENCY_ARMS
+    # Historical rotation order is preserved for latency loops.
+    assert _mod._select_recommended_slug(1) == "bounds"
+    assert _mod._select_recommended_slug(2) == "canvas"
+    assert _mod._select_recommended_slug(3) == "both"
+    assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
+
+
+def test_p9_selector_on_empty_ledger_picks_training_or_data_arm(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(_mod, "_default_screening_train_version", lambda: "wf_smoke_v2")
+    categories = _mod._bank_lever_categories()
+    by_slug = {slug: extras for slug, _, extras in _mod._all_screening_arm_bank()}
+
+    def _assert_moves_weights(slug: str) -> None:
+        extras = by_slug[slug]
+        assert not _mod._latency_only_arm(extras), slug
+        kinds = {
+            "training" if key == "_steps_factor" else categories[key] for key in extras
+        }
+        assert kinds & {"training", "data"}, (slug, kinds)
+
+    # Empty loop ledgers still carry the committed evidence prior: the
+    # posterior-UCB pick must be a weight-moving arm.
+    for cycle in (1, 2, 7, 1729):
+        _assert_moves_weights(
+            _mod._select_recommended_slug(
+                cycle, root=tmp_path / "autoresearch", loop_id="loop-empty"
+            )
+        )
+    # No evidence at all: static rotation leads with the data-volume arms.
+    monkeypatch.setattr(_mod, "_evidence_ranked_slug", lambda *a, **k: None)
+    picks = [
+        _mod._select_recommended_slug(
+            cycle, root=tmp_path / "autoresearch", loop_id="loop-empty"
+        )
+        for cycle in (1, 2, 3)
+    ]
+    assert picks == ["data-certified", "data-strict", "lr-x2"]
+    for slug in picks:
+        _assert_moves_weights(slug)
+
+
+def test_p9_data_certified_arm_is_dropped_when_control_trains_on_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    # Committed policy: the control already trains on the certified bucket.
+    assert load_climb_policy().defaults.get("train_version") == "openui_verified_train_v1"
+    assert _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION == "openui_verified_train_v1"
+    slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
+    assert "data-certified" not in slugs
+    assert "data-strict" in slugs
+    assert _mod._arm_is_self_control({"train_version": "openui_verified_train_v1"})
+    assert not _mod._arm_is_self_control({"train_version": "hillclimb_strict_v2"})
+    assert not _mod._arm_is_self_control(
+        {"train_version": "openui_verified_train_v1", "lr": 6e-4}
+    )
+    # A legacy fixture control makes the certified corpus a real data arm.
+    monkeypatch.setattr(_mod, "_default_screening_train_version", lambda: "wf_smoke_v2")
+    slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
+    assert slugs[:2] == ["data-certified", "data-strict"]
+
+
+def test_p9_steps_fill_spends_only_the_fitted_floor() -> None:
+    by_slug = {slug: extras for slug, _, extras in _mod._SCREENING_ARM_BANK}
+    extras = by_slug["steps-fill"]
+    assert set(extras) == {"_steps_factor"}
+    assert extras["_steps_factor"] == pytest.approx(1 / _mod._STEPS_PER_SEC_SAFETY, rel=1e-3)
+    # Control = floor x sps x 0.9 = 90 steps -> fill = the full 100-step floor.
+    assert _mod._apply_arm_extras(90, extras) == {"steps": 100}
+    assert _mod._apply_arm_extras(9, extras) == {"steps": 10}
+    # Depth arms keep the +10 depth-confound minimum.
+    assert _mod._apply_arm_extras(4, {"_steps_factor": 2})["steps"] == 14
+    assert _mod._apply_arm_extras(40, {"_steps_factor": 2})["steps"] == 80
+
+
+def test_p9_new_arm_knobs_round_trip_to_slugs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_mod, "_default_screening_train_version", lambda: "wf_smoke_v2")
+    by_slug = {slug: extras for slug, _, extras in _mod._SCREENING_ARM_BANK}
+    for slug in _P9_NEW_ARMS:
+        knobs = {
+            "train_version": "wf_smoke_v2",
+            "steps": 40,
+            "batch_size": _mod._CONTROL_RECIPE_BATCH_SIZE,
+            **_mod._apply_arm_extras(40, by_slug[slug]),
+        }
+        assert _mod._arm_slug_from_knobs(knobs, candidate_id=f"c1-{slug}") == slug
+    # The control corpus never names an arm (controls and steps-fill carry it).
+    assert _mod._arm_slug_from_knobs({"train_version": "wf_smoke_v2", "steps": 44}) is None
+    # Process (heal) arms keep their own identity even on a bank corpus.
+    assert (
+        _mod._arm_slug_from_knobs(
+            {"train_version": "hillclimb_strict_v2", "heal_resume": True}
+        )
+        is None
+    )
+
+
+def test_p9_static_data_arms_are_ofat_levers_not_snapshot_leftovers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        _mod,
+        "_default_screening_train_version",
+        lambda: _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION,
+    )
+    assert _mod._STATIC_DATA_ARM_SLUGS == frozenset({"data-certified", "data-strict"})
+    assert _mod._slug_is_snapshot_arm("data-strict") is False
+    assert (
+        _mod._slug_is_snapshot_arm("data-strict", {"train_version": "hillclimb_strict_v2"})
+        is False
+    )
+    assert (
+        _mod._slug_is_snapshot_arm("heal-c96", {"train_version": "continuous_i10_c96"})
+        is True
+    )
+    assert _mod._open_slugs_are_snapshot_leftovers({"data-strict"}) is False
+
+
 def test_matrix_confirm_path_same_levers_new_seed() -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
 
@@ -881,14 +1112,25 @@ def test_parse_skip_slugs_from_cli_value() -> None:
     )
 
 
-def test_select_recommended_slug_rotates_and_skips() -> None:
-    # cycle 1 → first bank arm (bounds)
-    assert _mod._select_recommended_slug(1) == "bounds"
-    assert _mod._select_recommended_slug(2) == "canvas"
-    assert _mod._select_recommended_slug(3) == "both"
-    assert _mod._select_recommended_slug(1729) == "canvas"
-    # skip bounds → canvas even on cycle 1
-    assert _mod._select_recommended_slug(1, skip={"bounds"}) == "canvas"
+def test_select_recommended_slug_rotates_and_skips(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # NLL primary (policy.v3): the control corpus is the certified bucket, so
+    # ``data-certified`` is a self-control and ``data-strict`` leads.
+    monkeypatch.setattr(
+        _mod,
+        "_default_screening_train_version",
+        lambda: _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION,
+    )
+    assert _mod._select_recommended_slug(1) == "data-strict"
+    assert _mod._select_recommended_slug(2) == "lr-x2"
+    assert _mod._select_recommended_slug(3) == "lr-x0.5"
+    assert _mod._select_recommended_slug(1729) == "lr-x2"
+    # skip data-strict → lr-x2 even on cycle 1
+    assert _mod._select_recommended_slug(1, skip={"data-strict"}) == "lr-x2"
+    # Latency-only arms never enter the NLL rotation.
+    drawn = {_mod._select_recommended_slug(cycle) for cycle in range(1, 40)}
+    assert not drawn & set(_P9_LATENCY_ARMS)
     # all skipped fails closed rather than recycling a rejected approach
     all_slugs = {slug for slug, _, _ in _mod._SCREENING_ARM_BANK}
     with pytest.raises(RuntimeError, match="screening arm bank exhausted"):
@@ -1146,7 +1388,9 @@ def _write_screening_null_camp(
     )
 
 
-def test_single_complete_null_does_not_close_arm(tmp_path: Path) -> None:
+def test_single_complete_null_does_not_close_arm(
+    tmp_path: Path, latency_primary: None
+) -> None:
     """Fixture-noise single-seed null must not permanent-close the thrash arm."""
     root = tmp_path / "autoresearch"
     loop_id = "loop-ms"
@@ -1227,7 +1471,7 @@ def test_positive_clears_prior_null_tally(tmp_path: Path) -> None:
     )
 
 
-def test_matrix_thrash_rotation_recommends_non_bounds() -> None:
+def test_matrix_thrash_rotation_recommends_non_bounds(latency_primary: None) -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
 
     matrix = _mod._matrix(
@@ -2793,7 +3037,7 @@ def test_predecessor_completed_null_drives_next_screening_arm(tmp_path: Path) ->
 
 
 def test_predecessor_rejected_confirmation_uses_outcome_conditioned_successor(
-    tmp_path: Path,
+    tmp_path: Path, latency_primary: None
 ) -> None:
     root = tmp_path / "autoresearch"
     camp = root / "continuous-loop-20260802-c1759"
@@ -2967,7 +3211,7 @@ def test_recent_completed_nonpositive_slugs_follow_predecessor_chain(
 
 
 def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, latency_primary: None
 ) -> None:
     root = tmp_path / "autoresearch"
     campaign_id = "continuous-loop-20260802-c1786"
@@ -3022,7 +3266,7 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
 
 
 def test_completed_null_does_not_age_out_of_lineage_exhaustion(
-    tmp_path: Path,
+    tmp_path: Path, latency_primary: None
 ) -> None:
     root = tmp_path / "autoresearch"
     old_id = "continuous-loop-20260802-c1"
@@ -7228,9 +7472,16 @@ def test_local_rebuild_argv_shaped_by_adequacy_stays_wall_capped() -> None:
 
 
 def test_sample_adequacy_report_reads_fixture_stats(tmp_path: Path) -> None:
-    stats_dir = (
-        tmp_path / "src/slm_training/resources/data/train/wf_smoke_v2"
+    from slm_training.autoresearch.climb_policy import (
+        data_intervention_action,
+        load_climb_policy,
     )
+
+    # The report falls back to the policy's data_intervention corpus
+    # (policy.v3 after P7: openui_verified_train_v1), not a fixed fixture id.
+    corpus = str(data_intervention_action(load_climb_policy()).get("train_version"))
+    assert corpus
+    stats_dir = tmp_path / "src/slm_training/resources/data/train" / corpus
     stats_dir.mkdir(parents=True)
     (stats_dir / "stats.json").write_text(
         json.dumps(
@@ -8107,7 +8358,7 @@ def test_terminal_interrupted_replay_finalizes_without_rerunning_arms(
     "candidate_slug", ("batch1", "component-plan", "literal-close")
 )
 def test_frozen_replay_preserves_recipe_and_links_current_main_successor(
-    candidate_slug: str,
+    candidate_slug: str, latency_primary: None
 ) -> None:
     old_campaign = "continuous-loop-20260801-loop-12345678-c1710"
     new_campaign = "continuous-loop-20260801-loop-12345678-c1712"
@@ -9451,7 +9702,9 @@ def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
         assert int(meta["smoke_n"]) == 0
 
 
-def test_screening_matrix_uses_fitted_decode_and_thrash_steps() -> None:
+def test_screening_matrix_uses_fitted_decode_and_thrash_steps(
+    latency_primary: None,
+) -> None:
     matrix = _mod._matrix(
         campaign_id="continuous-loop-timing-c1",
         evidence_snapshot_id="snap",
@@ -9737,7 +9990,7 @@ def test_thrash_does_not_bind_handoff_pred_feedback_ids(tmp_path: Path) -> None:
     assert result.matrix.predecessor_matrix_id == live.matrix_id
 
 
-def test_matrix_climb_control_uses_champion_baseline() -> None:
+def test_matrix_climb_control_uses_champion_baseline(latency_primary: None) -> None:
     from slm_training.autoresearch.schemas import HypothesisMatrix
     from slm_training.autoresearch.thrash_regime import (
         REGIME_CLIMB,
@@ -9920,7 +10173,9 @@ def test_predecessor_compiler_ms_timeout_from_eval_detail(tmp_path: Path) -> Non
     assert _mod._predecessor_compiler_ms_timeout(root, "missing") is False
 
 
-def test_select_cycle_slug_timeout_outranks_quality_predecessor() -> None:
+def test_select_cycle_slug_timeout_outranks_quality_predecessor(
+    latency_primary: None,
+) -> None:
     from slm_training.autoresearch.thrash_regime import decide_screening_regime
 
     regime = decide_screening_regime(
@@ -9937,6 +10192,31 @@ def test_select_cycle_slug_timeout_outranks_quality_predecessor() -> None:
     )
     assert slug == "bounds"
     assert slug != "binder-arity"
+
+
+def test_select_cycle_slug_timeout_residual_under_nll_primary_skips_latency_arms() -> None:
+    """Under the NLL primary the decode-residual route cannot reach a
+    latency-only arm; it lands on the residual slug that also trains."""
+    from slm_training.autoresearch.thrash_regime import (
+        DECODE_RESIDUAL_SLUGS,
+        decide_screening_regime,
+    )
+
+    regime = decide_screening_regime(
+        climb_baseline_knobs=None,
+        compiler_ms_timeout=True,
+    )
+    slug = _mod._select_cycle_slug(
+        1,
+        predecessor_priority="binder-arity",
+        skip=set(),
+        has_confirm_levers=False,
+        has_promote_levers=False,
+        thrash_regime=regime,
+    )
+    assert slug == "cached-compiler-decision-margin"
+    assert slug in DECODE_RESIDUAL_SLUGS
+    assert slug not in _P9_LATENCY_ARMS
 
 
 def test_write_cycle_handoff_records_thrash_regime(tmp_path: Path) -> None:

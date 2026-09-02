@@ -25,6 +25,7 @@ import fcntl
 import hashlib
 import itertools
 import json
+import math
 import os
 import re
 import subprocess
@@ -61,6 +62,8 @@ from slm_training.autoresearch.experiment_campaign import (
 from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.thrash_regime import (
     DECODE_RESIDUAL_SLUGS,
+    LATENCY_PRIMARY_LEAF,
+    is_latency_only_arm,
     REGIME_CLIMB,
     REGIME_ISOLATE,
     ThrashRegimeDecision,
@@ -1875,6 +1878,7 @@ _LEVER_KNOB_KEYS = (
     "compiler_decode_mode",
     "steps",
     "batch_size",
+    "lr",
     "train_version",
     "context_backend",
     "sync_checkpoints",
@@ -1894,31 +1898,65 @@ _CAUSAL_FAMILY_ATTEMPT_CAP = 2
 # Screening thrash bank — rotate recommended arm each cycle (Change B).
 # Each entry: (slug, hypothesis fragment, knob extras relative to control).
 # Special key "_steps_factor" multiplies base steps (depth confound).
+# Data-volume arms (RC7, docs/design/autotrain-recovery-2-p9-20260902.md).
+# The matched control trains on the climb policy ``defaults.train_version``
+# (policy.v3: the certified, eval-decontaminated train bucket
+# ``openui_verified_train_v1``); each data arm swaps only the corpus id at
+# identical model size. A data arm whose corpus equals the control corpus is
+# a self-control (delta identically 0) and ``_all_screening_arm_bank`` drops
+# it, so ``data-certified`` is live only when a loop trains its control on a
+# smaller corpus (legacy ``wf_smoke_v2`` pins). ``openui_verified_v1`` is
+# never a train arm: it carries the validation/test families the certified
+# smoke suites are sampled from.
+_DATA_ARM_CERTIFIED_TRAIN_VERSION = "openui_verified_train_v1"  # 1,083 records
+_DATA_ARM_STRICT_TRAIN_VERSION = "hillclimb_strict_v2"  # 676 records
+# Control recipe values the size-matched recipe arms are defined against
+# (``_matrix`` control: batch_size=2; ModelBuildConfig.lr default 3e-4, the
+# control never sets ``lr``).
+_CONTROL_RECIPE_LR = 3e-4
+_CONTROL_RECIPE_BATCH_SIZE = 2
+# ``steps-fill``: the fitter sizes control steps at ``floor * sps * 0.9``;
+# the fill arm spends the remaining 10 % of the fitted train floor (charged as
+# wall time, never parameters). ``_apply_arm_extras`` applies the ``base + 10``
+# depth-confound minimum only to depth arms (factor >= 2); a fill factor gets
+# ``base + 1`` so it never overshoots the floor.
+_STEPS_FILL_FACTOR = round(1.0 / _STEPS_PER_SEC_SAFETY, 4)
+# ``noise_rate`` (policy ``recipe_tweak_knobs``) is deliberately absent: it is
+# a ``StubModel``-only lever (``harnesses/model_build/plugin.py``) and not an
+# ``ExperimentKnobs`` field, so a noise-rate arm could never move weights.
+# ExperimentKnobs-only keys with no ``lever_catalog()`` row (category used
+# when classifying bank arms; ``train_version`` selects the data corpus).
+_EXPERIMENT_ONLY_KNOB_CATEGORIES: dict[str, str] = {"train_version": "data"}
 _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     (
-        "bounds",
-        "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-        {"grammar_completion_bounds": True},
+        "data-certified",
+        "Training on the certified, eval-decontaminated openui_verified_train_v1 bucket (1,083 records) instead of the loop control corpus lowers smoke eval_nll at fixed model size without lowering parse_rate.",
+        {"train_version": _DATA_ARM_CERTIFIED_TRAIN_VERSION},
     ),
     (
-        "canvas",
-        "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-        {"compact_active_canvas": True},
+        "data-strict",
+        "Training on the fail-closed hillclimb_strict_v2 corpus (676 records) instead of the loop control corpus lowers smoke eval_nll at fixed model size without lowering parse_rate.",
+        {"train_version": _DATA_ARM_STRICT_TRAIN_VERSION},
     ),
     (
-        "both",
-        "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
-        {"grammar_completion_bounds": True, "compact_active_canvas": True},
+        "lr-x2",
+        "Doubling the learning rate (3e-4 -> 6e-4) at fixed steps and model size lowers smoke eval_nll without lowering parse_rate.",
+        {"lr": _CONTROL_RECIPE_LR * 2},
     ),
     (
-        "steps",
-        "Doubling steps without levers only raises cost and does not improve unit decode latency.",
-        {"_steps_factor": 2},
+        "lr-x0.5",
+        "Halving the learning rate (3e-4 -> 1.5e-4) at fixed steps and model size lowers smoke eval_nll without lowering parse_rate.",
+        {"lr": _CONTROL_RECIPE_LR / 2},
     ),
     (
-        "batch1",
-        "Halving batch_size changes smoke latency vs matched control without lowering parse_rate.",
-        {"batch_size": 1},
+        "batch-x2",
+        "Doubling batch_size (2 -> 4) at fixed steps and model size lowers smoke eval_nll without lowering parse_rate.",
+        {"batch_size": _CONTROL_RECIPE_BATCH_SIZE * 2},
+    ),
+    (
+        "steps-fill",
+        "Filling the fitted train floor (steps x 1/0.9, wall-time charged, no extra parameters) lowers smoke eval_nll without lowering parse_rate.",
+        {"_steps_factor": _STEPS_FILL_FACTOR},
     ),
     (
         "component-plan",
@@ -2389,6 +2427,52 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
 )
+# Latency-only arms (RC7): ``bounds`` / ``canvas`` / ``both`` set only decode
+# cost levers and cannot move trained weights, so under a quality/NLL
+# screening primary they are a guaranteed null (evidence_ledger.v1: ``bounds``
+# n_complete=50, mean_delta=0.0, m2_delta=0.0; ``canvas`` n_complete=5, all
+# null). ``steps`` (x2 depth confound) and ``batch1`` are training-recipe
+# levers whose preregistered hypotheses are latency / cost claims, so they
+# ride with this bank. ``_all_screening_arm_bank`` prepends the bank only when
+# the screening role primary leaf is ``latency_ms_p50`` (historical rotation
+# order preserved under that primary). Slugs are stable so ledger history
+# stays attached. Arms with ``compiler_*_loss_weight`` knobs stay in the
+# screening bank: ``lever_catalog()`` labels them ``decode`` by name prefix,
+# but the weights enter the training objective (``twotower.py``
+# compiler-alignment and decision-token losses).
+_LATENCY_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
+    (
+        "bounds",
+        "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+        {"grammar_completion_bounds": True},
+    ),
+    (
+        "canvas",
+        "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+        {"compact_active_canvas": True},
+    ),
+    (
+        "both",
+        "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
+        {"grammar_completion_bounds": True, "compact_active_canvas": True},
+    ),
+    (
+        "steps",
+        "Doubling steps without levers only raises cost and does not improve unit decode latency.",
+        {"_steps_factor": 2},
+    ),
+    (
+        "batch1",
+        "Halving batch_size changes smoke latency vs matched control without lowering parse_rate.",
+        {"batch_size": 1},
+    ),
+)
+# Static data-volume arm slugs (corpus swap is their only lever).
+_STATIC_DATA_ARM_SLUGS: frozenset[str] = frozenset(
+    slug
+    for slug, _, extras in _SCREENING_ARM_BANK
+    if set(k for k in extras if not str(k).startswith("_")) == {"train_version"}
+)
 # Permanent thrash-arm closure requires this many *distinct seeds* of complete
 # non-positive measurement. A single fixture-noise null must not close the
 # approach forever (aligns with climb recipe_null_cap / promotion min_seeds).
@@ -2449,11 +2533,70 @@ def _driver_lock_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / _DRIVER_LOCK_BASENAME
 
 
+# Test / driver hook: when set, wins over the climb policy's screening primary.
+_SCREENING_PRIMARY_LEAF_OVERRIDE: str | None = None
+
+
+def _screening_primary_leaf() -> str:
+    """Leaf of the screening role primary metric (``smoke.eval_nll`` -> ``eval_nll``)."""
+    if _SCREENING_PRIMARY_LEAF_OVERRIDE:
+        return str(_SCREENING_PRIMARY_LEAF_OVERRIDE).rsplit(".", 1)[-1]
+    try:
+        from slm_training.autoresearch.climb_policy import (
+            load_climb_policy,
+            primary_for_role,
+        )
+
+        metric = str(primary_for_role(load_climb_policy(), "screening").get("metric") or "")
+    except Exception:  # noqa: BLE001 — bank must stay computable without policy
+        return ""
+    return metric.rsplit(".", 1)[-1]
+
+
+def _latency_arms_active() -> bool:
+    """Latency-only arms are legal screening candidates only under a latency primary."""
+    return _screening_primary_leaf() == LATENCY_PRIMARY_LEAF
+
+
+def _arm_is_self_control(extras: Mapping[str, Any] | None) -> bool:
+    """True for a data arm whose only lever is the control's own train corpus.
+
+    Such an arm trains the control recipe twice (delta identically 0), so it
+    is never a legal screening candidate — the policy default corpus decides.
+    """
+    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
+    if set(public) != {"train_version"}:
+        return False
+    return str(public["train_version"] or "") == _default_screening_train_version()
+
+
+def _bank_lever_categories() -> dict[str, str]:
+    """``lever_catalog()`` categories plus the ExperimentKnobs-only knob keys."""
+    from slm_training.levers import lever_catalog
+
+    out = {name: str(spec.get("category") or "") for name, spec in lever_catalog().items()}
+    out.update(_EXPERIMENT_ONLY_KNOB_CATEGORIES)
+    return out
+
+
+def _latency_only_arm(extras: Mapping[str, Any] | None) -> bool:
+    """Bank-row classifier: every public knob is a decode/run cost lever."""
+    return is_latency_only_arm(extras, lever_categories=_bank_lever_categories())
+
+
 def _all_screening_arm_bank() -> tuple[tuple[str, str, dict[str, Any]], ...]:
-    """Static preregistered bank plus loop-local self-heal successors."""
+    """Legal screening bank for the active role primary.
+
+    Static preregistered arms minus self-control data arms; the latency-only
+    bank is prepended only under a ``latency_ms_p50`` primary; loop-local
+    self-heal successors follow.
+    """
+    bank = tuple(row for row in _SCREENING_ARM_BANK if not _arm_is_self_control(row[2]))
+    if _latency_arms_active():
+        bank = _LATENCY_ARM_BANK + bank
     if not _DYNAMIC_THRASH_ARMS:
-        return _SCREENING_ARM_BANK
-    return _SCREENING_ARM_BANK + tuple(_DYNAMIC_THRASH_ARMS)
+        return bank
+    return bank + tuple(_DYNAMIC_THRASH_ARMS)
 
 
 def _recent_exhaustion_cycle_window() -> int:
@@ -7141,6 +7284,31 @@ def _arm_slug_from_knobs(
         return "canvas"
     if knobs.get("batch_size") == 1:
         return "batch1"
+    if knobs.get("batch_size") == _CONTROL_RECIPE_BATCH_SIZE * 2:
+        return "batch-x2"
+    lr_raw = knobs.get("lr")
+    if lr_raw is not None:
+        try:
+            lr_value = float(lr_raw)
+        except (TypeError, ValueError):
+            lr_value = None
+        if lr_value is not None:
+            if math.isclose(lr_value, _CONTROL_RECIPE_LR * 2, rel_tol=1e-6):
+                return "lr-x2"
+            if math.isclose(lr_value, _CONTROL_RECIPE_LR / 2, rel_tol=1e-6):
+                return "lr-x0.5"
+    # Data-volume arms: a corpus swap with no other lever. The control corpus
+    # itself never names an arm (``steps-fill`` and controls carry it too).
+    train_version = str(knobs.get("train_version") or "")
+    if (
+        train_version
+        and not _is_process_arm(knobs)
+        and train_version != _default_screening_train_version()
+    ):
+        if train_version == _DATA_ARM_STRICT_TRAIN_VERSION:
+            return "data-strict"
+        if train_version == _DATA_ARM_CERTIFIED_TRAIN_VERSION:
+            return "data-certified"
     cid = candidate_id or ""
     recovered = _slug_from_candidate_id(cid)
     if recovered:
@@ -7189,6 +7357,10 @@ def _slug_is_snapshot_arm(slug: str, extras: Mapping[str, Any] | None = None) ->
         )
     extras = extras or {}
     if _is_process_arm(extras):
+        return False
+    if slug in _STATIC_DATA_ARM_SLUGS:
+        # Preregistered data-volume arms are isolate OFAT levers, not I10
+        # snapshot leftovers.
         return False
     train_version = str(extras.get("train_version") or "")
     if not train_version:
@@ -8530,11 +8702,17 @@ def _select_cycle_slug(
 
 
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
-    """Materialize arm knob extras (handles _steps_factor)."""
+    """Materialize arm knob extras (handles _steps_factor).
+
+    Depth arms (factor >= 2) keep the ``base + 10`` depth-confound minimum; a
+    floor-fill factor (< 2, ``steps-fill``) gets ``base + 1`` so the arm never
+    spends past the fitted train floor it is charged against.
+    """
     out = {k: v for k, v in extras.items() if not str(k).startswith("_")}
     factor = extras.get("_steps_factor")
     if factor is not None:
-        out["steps"] = max(int(base_steps * float(factor)), base_steps + 10)
+        bump = 10 if float(factor) >= 2 else 1
+        out["steps"] = max(int(round(base_steps * float(factor))), base_steps + bump)
     return out
 
 

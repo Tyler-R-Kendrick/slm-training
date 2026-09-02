@@ -5056,6 +5056,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Screening arm bank gains size-matched arms that can move weights (P9/RC7): data-certified (openui_verified_train_v1), data-strict (hillclimb_strict_v2), lr-x2, lr-x0.5, batch-x2 and steps-fill (wall-time charged); bounds/canvas/both (pure decode-cost, ledger bounds n=50 mean_delta 0.0 m2 0.0) plus the latency-hypothesis arms steps and batch1 move to _LATENCY_ARM_BANK, drawn only when the screening role primary leaf is latency_ms_p50; a train_version-only arm equal to the policy control corpus is dropped as a self-control; lr joins _LEVER_KNOB_KEYS; thrash_regime gains is_latency_only_arm and the latency-bank constants. compiler_*_loss_weight arms stay (training objective).",
+          "version": "v275"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of card P10 (heal executors for code/data classes; crash routing) which also prepended v272 independently; reconciles the component to v274 with both parent histories intact below.",
           "version": "v274"
         },
@@ -6983,7 +6988,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v274"
+      "version": "v275"
     },
     "harness.autoresearch.formal": {
       "history": [
