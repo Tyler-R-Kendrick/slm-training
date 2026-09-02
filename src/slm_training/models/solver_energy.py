@@ -100,7 +100,15 @@ class CandidateEnergyOutput:
 
 
 class CandidateEnergyScorer(nn.Module):
-    """Small MLP mapping (state, hole, candidate) features to a scalar energy."""
+    """Small MLP mapping (state, hole, candidate) features to a scalar energy.
+
+    The learned target is **search cost-to-go** (expected remaining exact
+    search work), not program likelihood; lower energy ranks earlier. The
+    scorer's *only* runtime authority is to **order** the exact live candidates
+    supplied by the solver's `CandidateRanker` seam: it never defines candidate
+    membership, certifies support, suppresses `UNKNOWN`, or bypasses the final
+    verifier. Low energy is a ranking hint, never a correctness claim.
+    """
 
     def __init__(
         self,
