@@ -98,7 +98,7 @@ def test_default_train_corpus_is_disjoint_from_every_scored_suite() -> None:
     suites are sampled from, so disjointness is structural — assert it holds."""
     module = _driver()
     corpus = module._default_screening_train_version()
-    assert corpus == "openui_verified_train_v1"
+    assert corpus == "openui_verified_train_v2"
     for label, counts in _overlap(corpus).items():
         assert counts == {"programs": 0, "prompts": 0, "families": 0}, (
             f"{corpus} leaks into {label}: {counts}"

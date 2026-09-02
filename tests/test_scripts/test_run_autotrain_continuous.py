@@ -768,7 +768,7 @@ def test_p9_new_screening_arms_are_size_matched_training_or_data_levers() -> Non
     assert by_slug["lr-x2"] == {"lr": pytest.approx(6e-4)}
     assert by_slug["lr-x0.5"] == {"lr": pytest.approx(1.5e-4)}
     assert by_slug["batch-x2"] == {"batch_size": 4}
-    assert by_slug["data-certified"] == {"train_version": "openui_verified_train_v1"}
+    assert by_slug["data-certified"] == {"train_version": "openui_verified_train_v2"}
     # hillclimb_strict_v2 overlaps the scored suites (see
     # tests/test_scripts/test_screening_corpus_leakage.py) so it is barred.
     assert "data-strict" not in by_slug
@@ -852,15 +852,15 @@ def test_p9_data_certified_arm_is_dropped_when_control_trains_on_it(
     from slm_training.autoresearch.climb_policy import load_climb_policy
 
     # Committed policy: the control already trains on the certified bucket.
-    assert load_climb_policy().defaults.get("train_version") == "openui_verified_train_v1"
-    assert _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION == "openui_verified_train_v1"
+    assert load_climb_policy().defaults.get("train_version") == "openui_verified_train_v2"
+    assert _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION == "openui_verified_train_v2"
     slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
     assert "data-certified" not in slugs
     assert "data-strict" not in slugs
-    assert _mod._arm_is_self_control({"train_version": "openui_verified_train_v1"})
+    assert _mod._arm_is_self_control({"train_version": "openui_verified_train_v2"})
     assert not _mod._arm_is_self_control({"train_version": "hillclimb_strict_v2"})
     assert not _mod._arm_is_self_control(
-        {"train_version": "openui_verified_train_v1", "lr": 6e-4}
+        {"train_version": "openui_verified_train_v2", "lr": 6e-4}
     )
     # A legacy fixture control makes the certified corpus a real data arm.
     monkeypatch.setattr(_mod, "_default_screening_train_version", lambda: "wf_smoke_v2")
@@ -916,7 +916,7 @@ def test_p9_static_data_arms_are_ofat_levers_not_snapshot_leftovers(
     assert _mod._slug_is_snapshot_arm("data-certified") is False
     assert (
         _mod._slug_is_snapshot_arm(
-            "data-certified", {"train_version": "openui_verified_train_v1"}
+            "data-certified", {"train_version": "openui_verified_train_v2"}
         )
         is False
     )
@@ -7487,7 +7487,7 @@ def test_sample_adequacy_report_reads_fixture_stats(tmp_path: Path) -> None:
     )
 
     # The report falls back to the policy's data_intervention corpus
-    # (policy.v3 after P7: openui_verified_train_v1), not a fixed fixture id.
+    # (policy.v3 after P7: openui_verified_train_v2), not a fixed fixture id.
     corpus = str(data_intervention_action(load_climb_policy()).get("train_version"))
     assert corpus
     stats_dir = tmp_path / "src/slm_training/resources/data/train" / corpus

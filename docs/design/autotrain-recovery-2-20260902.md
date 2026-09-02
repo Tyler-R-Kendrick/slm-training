@@ -247,3 +247,82 @@ leaks, if any data arm's corpus leaks, or if a barred corpus becomes clean
 
 The certified default corpus stays: it is disjoint from every scored suite on
 all three axes, which is what P7's root-family split was for.
+
+## INT-2 — the certified train bucket was untrainable; v2 is the rebuild
+
+Claim class: **data rebuild + harness change / fixture-demo**. No model was
+trained to completion and nothing was promoted. No gate, threshold or output
+contract was weakened; admission became stricter.
+
+### What running the loop found that reading the corpus did not
+
+With the SFT gate cleared (INT-1), one supervised cycle still failed both
+arms. The traceback is not a park and not a crash in the driver:
+
+```
+File "src/slm_training/models/twotower.py", line 16583, in from_records
+    assert_role_safe_output(record.openui, output_kind=record.target_kind)
+ValueError: placeholder ':slot_0' in non-content property RadialChart.labels
+```
+
+`TwoTowerModel.from_records` applies the role-safe output contract to every
+training record and raises on the first violation, which takes the whole arm
+down. Certified records carry no `target_kind`, so the model resolves the
+**document** contract — and admission had been applying a narrower one. A
+first scan missed this entirely by passing the record's own (absent)
+`target_kind`; under the contract the trainer actually resolves, **29 of the
+1,083 admitted records** place a placeholder in a non-content property. Card
+S2 had independently hit the same 29 from the other side: its n-gram builder
+reported "1,083 records, 1,054 encoded, 29 refused by the codec".
+
+The wider scan, under the document kind:
+
+| Dataset | Records | Fail the trainer's contract |
+| --- | --- | --- |
+| `openui_verified_train_v1` | 1,083 | 29 — untrainable |
+| `openui_verified_v1` (parent) | 1,682 | 888 |
+| `wf_smoke_v2` | 101 | 0 |
+| `smoke96_v1/smoke` | 96 | 5 |
+| `smoke96_v1/held_out`, `heldout24_v1/held_out` | 24, 24 | 0 |
+
+### The fix
+
+`partition_certified_corpus` now calls `assert_role_safe_output` under the
+same document output kind at a new `role_safety` admission stage. A failing
+record is refused and written to `rejected.jsonl` like any other refusal —
+nothing is dropped silently — and a `role_unsafe_output` recommendation
+carries the evidence into `synthesis_feedback.json`.
+
+Published datasets are immutable (`DataStore.publish` refuses an existing
+destination) and the `synthesis-feedback` law says to rebuild under a new
+version, so `openui_verified_train_v1` stays exactly as built and
+**`openui_verified_train_v2`** is the rebuild: 1,054 train / 182 validation /
+136 test, with 49 role-unsafe refusals across the three splits (29 of them
+from the train bucket). Re-measured on v2: **0 of 1,054 records fail the
+trainer's contract**, 0 id collisions, 0 exact duplicate pairs, and 0 program,
+prompt or family overlap with any scored suite. Its four recommendations carry
+`action_receipt` records bound to the plan and manifest hashes.
+
+`policy.v3` defaults, the driver's certified data-arm corpus, the certified
+bucket id and the speculative n-gram table all move to v2. The n-gram table is
+content-identical (1,054 sequences, 54,434 tokens, order 3, 493 contexts)
+because the records v2 drops are exactly the ones the codec already refused;
+its `encode_error` count falls from 29 to 0 and its recorded provenance now
+matches the corpus it was built from.
+
+### Left open, deliberately
+
+Five of the 96 `smoke96_v1/smoke` gold targets fail the same contract, so a
+role-safe decoder can never reproduce them. They are not fixed here:
+republishing an eval suite changes what every measurement is scored against,
+which is a preregistration-sensitive change, and the screening verdict is a
+**paired** per-record NLL comparison, so an unattainable target shifts both
+arms equally and biases the absolute level rather than the delta. Recorded as
+a measurement caveat and a successor card.
+
+`hillclimb_strict_v2` remains uncleared for SFT (blocking-class
+`eval_leakage_source`) and barred as a data arm for measured leakage (INT-1).
+The upstream fixes to `openui_verified_v1` — re-certify under
+`symbol_only/v2`, namespace ids, dedupe, and keep placeholders out of
+non-content properties — remain open against that corpus's own feedback
+artifact.

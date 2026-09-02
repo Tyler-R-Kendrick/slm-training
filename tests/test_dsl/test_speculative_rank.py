@@ -391,10 +391,10 @@ def test_committed_table_records_the_certified_train_bucket() -> None:
     )
     assert manifest["kind"] == "train"
     assert payload["source"] == {
-        "dataset_id": "openui_verified_train_v1",
+        "dataset_id": "openui_verified_train_v2",
         "manifest_content_fingerprint": manifest["content_fingerprint"],
         "manifest_kind": "train",
-        "records": "src/slm_training/resources/data/train/openui_verified_train_v1/records.jsonl",
+        "records": "src/slm_training/resources/data/train/openui_verified_train_v2/records.jsonl",
         "records_sha256": certified_sha,
         "records_total": manifest["record_count"],
     }

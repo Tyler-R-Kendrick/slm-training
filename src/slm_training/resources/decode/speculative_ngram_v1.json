@@ -5070,12 +5070,12 @@
   "schema": "speculative_ngram_table/v1",
   "sequences": 1054,
   "source": {
-    "dataset_id": "openui_verified_train_v1",
-    "manifest_content_fingerprint": "8fe079f51d269ab213d5083d3b693ec6272839f6934a449d8b7d0eb34f22b59c",
+    "dataset_id": "openui_verified_train_v2",
+    "manifest_content_fingerprint": "d8786d5940b6f94dbc89194fe1a84942b40f96ce8f955ce33136f990ac1a10c0",
     "manifest_kind": "train",
-    "records": "src/slm_training/resources/data/train/openui_verified_train_v1/records.jsonl",
-    "records_sha256": "7cf64cdda534a1121a228128732cf3a5920981d647af7b90275f793c443ad6ee",
-    "records_total": 1083
+    "records": "src/slm_training/resources/data/train/openui_verified_train_v2/records.jsonl",
+    "records_sha256": "07b3360834063b34c24b0e056b0c4641250a34046785e676714e0211bb41beea",
+    "records_total": 1054
   },
   "tokens": 54434
 }

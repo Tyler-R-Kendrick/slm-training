@@ -927,6 +927,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Certified split admission applies the trainer's role-safe output contract. assert_role_safe_output under the document output kind now runs at a new role_safety admission stage, so a record placing a placeholder in a non-content property is refused and recorded in rejected.jsonl instead of reaching the train bucket and making it untrainable (29 of 1,083 did, and TwoTowerModel.from_records took every screening arm down with the first one). A role_unsafe_output recommendation carries the evidence. Published openui_verified_train_v2 (1,054 train / 182 validation / 136 test; 49 role-unsafe refusals across splits) with its action receipts; v1 is immutable and stays as built. Admission is stricter, never looser.",
+          "version": "v11"
+        },
+        {
+          "date": "2026-09-02",
           "note": "record synthesis_feedback_actions.json for openui_verified_train_v1: one action_receipt per open recommendation (stale_output_contract, id_collision, redundant_expansion), bound to the split-policy plan hash and the dataset manifest hash, with re-measured before/after counts. Clears the SFT gate for this bucket only; the parent corpus fixes stay open. No gate or threshold changed.",
           "version": "v10"
         },
@@ -993,7 +998,7 @@
         "src/slm_training/resources/test_seeds.jsonl",
         "scripts/build_certified_train_bucket.py"
       ],
-      "version": "v10"
+      "version": "v11"
     },
     "decode.invariants": {
       "history": [
@@ -5126,6 +5131,16 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the INT-1/INT-2 recovery-doc sections landed (deterministic rebuild).",
+          "version": "v283"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "policy.v3 defaults.train_version and data_intervention.fixture_train_version -> openui_verified_train_v2 (the trainable rebuild); the driver's certified data-arm corpus follows. No selection rule, arm, seed or gate changed.",
+          "version": "v283"
+        },
+        {
+          "date": "2026-09-02",
           "note": "INT-1: withdraw the data-strict screening arm and bar hillclimb_strict_v2 / wf_smoke_v2 as data-arm corpora. Measured against the scored suites, hillclimb_strict_v2 shares 6 programs and 16 root families with smoke96 and 7 programs with held_out, and its decontamination never indexed those suites, so an arm trained on it would score memorised eval. Historical rows naming that corpus classify as data-leaked:<corpus>; wf_smoke_v2 is excluded from the reverse-classification because it was a control corpus, never an arm. New regression test measures the overlap from the committed data.",
           "version": "v282"
         },
@@ -7143,7 +7158,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v282"
+      "version": "v283"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -19353,6 +19368,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Speculative n-gram table rebuilt from openui_verified_train_v2. Identical content (1,054 sequences, 54,434 tokens, order 3, 493 contexts) because the 29 records v2 drops are exactly the ones the codec already refused, so encode_error falls 29 -> 0 and the recorded provenance now matches the corpus it was built from. Ranker scoring unchanged; lever stays off.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Reconcile S2 with P5 on the integration branch: both landed as v320 in parallel; the S2 n-gram table entry below keeps its content, the P5 compiler-decode entry follows.",
           "version": "v321"
         },
@@ -21350,7 +21370,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v321"
+      "version": "v322"
     },
     "ops.vocab": {
       "history": [

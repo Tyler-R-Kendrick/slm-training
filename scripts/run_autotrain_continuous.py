@@ -2892,14 +2892,14 @@ _CAUSAL_FAMILY_ATTEMPT_CAP = 2
 # Data-volume arms (RC7, docs/design/autotrain-recovery-2-p9-20260902.md).
 # The matched control trains on the climb policy ``defaults.train_version``
 # (policy.v3: the certified, eval-decontaminated train bucket
-# ``openui_verified_train_v1``); each data arm swaps only the corpus id at
+# ``openui_verified_train_v2``); each data arm swaps only the corpus id at
 # identical model size. A data arm whose corpus equals the control corpus is
 # a self-control (delta identically 0) and ``_all_screening_arm_bank`` drops
 # it, so ``data-certified`` is live only when a loop trains its control on a
 # smaller corpus (legacy ``wf_smoke_v2`` pins). ``openui_verified_v1`` is
 # never a train arm: it carries the validation/test families the certified
 # smoke suites are sampled from.
-_DATA_ARM_CERTIFIED_TRAIN_VERSION = "openui_verified_train_v1"  # 1,083 records
+_DATA_ARM_CERTIFIED_TRAIN_VERSION = "openui_verified_train_v2"  # 1,054 records
 # ``hillclimb_strict_v2`` is NOT a legal data arm against the certified smoke
 # suites. Measured 2026-09-02 against e938_role_safe_all_targets_smoke96_v1:
 # 6 identical programs / 3 identical prompts / 16 shared root families with

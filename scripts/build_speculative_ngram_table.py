@@ -8,7 +8,7 @@ legal set — see `docs/design/decode-invariants.md`.
 Train split only: the table is a decode-time prior, and building it from eval
 records would leak the held-out suites into serving decisions. The default
 input is therefore the certified TRAIN bucket of the immutable corpus,
-``openui_verified_train_v1`` — root-family buckets 0–79 of
+``openui_verified_train_v2`` — root-family buckets 0–79 of
 ``openui_verified_v1`` under ``RootFamilySplitPolicyV1``, decontaminated from
 the validation / test buckets by its own build (``scripts/build_certified_train_bucket.py``).
 The split is taken from that bucket's manifest, never re-derived here; on top
@@ -52,7 +52,7 @@ from slm_training.dsl.schema import ExampleRecord, load_jsonl
 ROOT = Path(__file__).resolve().parents[1]
 CERTIFIED_TRAIN_BUCKET = (
     ROOT
-    / "src/slm_training/resources/data/train/openui_verified_train_v1/records.jsonl"
+    / "src/slm_training/resources/data/train/openui_verified_train_v2/records.jsonl"
 )
 DEFAULT_ORDER = 3
 _EVAL_SPLITS = frozenset({"held_out", "smoke", "adversarial", "ood", "rico_held"})
@@ -235,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=CERTIFIED_TRAIN_BUCKET,
         help="Train records .jsonl (or a directory of shards). Default: the "
-        "certified train bucket openui_verified_train_v1.",
+        "certified train bucket openui_verified_train_v2.",
     )
     parser.add_argument(
         "--codec",

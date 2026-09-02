@@ -1,0 +1,40 @@
+{
+  "version": "openui_verified_train_v2",
+  "profile": "certified_split",
+  "source": "certified",
+  "derive_from": "src/slm_training/resources/data/train/openui_verified_v1/records.jsonl",
+  "record_count": 1054,
+  "rejected_total": 310,
+  "rejection_histogram": {
+    "OutputContractError": 90,
+    "duplicate_pair": 171,
+    "role_unsafe_output": 49
+  },
+  "component_histogram": {
+    "corruption_repair": 141,
+    "fixture": 61,
+    "language_contract": 179,
+    "language_contract+aug": 366,
+    "language_contract+design_md_contrastive": 1,
+    "language_contract+template": 3,
+    "programspec_generated": 32,
+    "programspec_generated+aug": 111,
+    "programspec_generated+design_md_contrastive": 11,
+    "programspec_generated+template": 33,
+    "rico": 72,
+    "scope_canonical_document": 23,
+    "scope_identity_document": 21
+  },
+  "with_design_md": 1054,
+  "sanitize_mode": "enforce",
+  "built_at": "2026-09-02T12:00:06.086542+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "23a6eea18cdeee6356dd6c90659d5a8ce61191a9",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v10"
+    },
+    "stamped_at": "2026-09-02T12:00:06.127959+00:00"
+  }
+}

@@ -75,7 +75,7 @@ from slm_training.versioning import build_version_stamp
 
 CERTIFIED_SCHEMA = "certified_eval_candidates/v1"
 CERTIFIED_CORPUS_ID = "openui_verified_v1"
-CERTIFIED_TRAIN_BUCKET_ID = "openui_verified_train_v1"
+CERTIFIED_TRAIN_BUCKET_ID = "openui_verified_train_v2"
 TRAIN_RESOURCE_ROOT = Path("src/slm_training/resources/data/train")
 CERTIFIED_CORPUS_DIR = TRAIN_RESOURCE_ROOT / CERTIFIED_CORPUS_ID
 CERTIFIED_TRAIN_BUCKET_DIR = TRAIN_RESOURCE_ROOT / CERTIFIED_TRAIN_BUCKET_ID
@@ -229,6 +229,30 @@ def _normalize_certified(record: ExampleRecord) -> ExampleRecord:
     return _normalize(record, sanitize=SanitizeOptions(mode="enforce"))
 
 
+#: Output kind the trainer applies. ``TwoTowerModel.from_records`` calls
+#: ``assert_role_safe_output(record.openui, output_kind=record.target_kind)``
+#: and certified records carry no ``target_kind``, so the model resolves the
+#: document contract. Admission must apply the same contract or it admits
+#: records the trainer refuses.
+_ROLE_SAFE_OUTPUT_KIND = "document"
+
+
+def _assert_certified_role_safe(record: ExampleRecord) -> None:
+    """Raise unless the normalized program satisfies the trainer's contract.
+
+    A record that fails here cannot be trained on: ``from_records`` raises on
+    the first violation and takes the whole arm down with it (measured on
+    2026-09-02, 29 of 1,083 admitted records carried a placeholder in a
+    non-content property and every screening arm exited non-zero). The
+    contract itself is never relaxed — the record is refused at admission and
+    recorded in the rejected ledger like any other refusal.
+    """
+
+    from slm_training.dsl.analysis.templatize import assert_role_safe_output
+
+    assert_role_safe_output(record.openui, output_kind=_ROLE_SAFE_OUTPUT_KIND)
+
+
 def partition_certified_corpus(
     corpus_path: Path | str = CERTIFIED_CORPUS_DIR / "records.jsonl",
     *,
@@ -259,7 +283,7 @@ def partition_certified_corpus(
     for record in raw:
         split = split_of_record[record.id]
         try:
-            normalized.append((record, _normalize_certified(record)))
+            candidate = _normalize_certified(record)
         except Exception as exc:  # noqa: BLE001 — recorded, never patched
             reason = type(exc).__name__
             part.rejection_histogram[reason] += 1
@@ -274,6 +298,24 @@ def partition_certified_corpus(
                     "detail": str(exc)[:200],
                 }
             )
+            continue
+        try:
+            _assert_certified_role_safe(candidate)
+        except Exception as exc:  # noqa: BLE001 — recorded, never patched
+            part.rejection_histogram["role_unsafe_output"] += 1
+            part.rejection_by_split[split]["role_unsafe_output"] += 1
+            part.rejected.append(
+                {
+                    "id": record.id,
+                    "split": split,
+                    "source": record.source,
+                    "stage": "role_safety",
+                    "reason": "role_unsafe_output",
+                    "detail": str(exc)[:200],
+                }
+            )
+            continue
+        normalized.append((record, candidate))
 
     seen_pairs: set[str] = set()
     pairs_per_id: dict[str, set[str]] = defaultdict(set)
@@ -646,6 +688,27 @@ def _synthesis_feedback(part: CertifiedPartition) -> dict[str, Any]:
                     "output contract; records carrying free-form string literals "
                     "were certified before symbol_only/v2 and are rejected here, "
                     "never patched"
+                ),
+            }
+        )
+    role_unsafe = part.rejection_histogram.get("role_unsafe_output", 0)
+    if role_unsafe:
+        recommendations.append(
+            {
+                "code": "role_unsafe_output",
+                "family": "corpus_certification",
+                "evidence": {
+                    "rejected": role_unsafe,
+                    "contract": "assert_role_safe_output",
+                    "output_kind": _ROLE_SAFE_OUTPUT_KIND,
+                },
+                "action": (
+                    "certified records place placeholders in non-content "
+                    "properties (for example RadialChart.labels), which the "
+                    "trainer's role-safe output contract refuses at "
+                    "from_records; re-certify openui_verified_v1 so a "
+                    "placeholder only ever occupies a content property. They "
+                    "are refused at admission here, never patched"
                 ),
             }
         )
