@@ -339,6 +339,9 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_draft_window",
         "decode_timeout_seconds",
         "eval_suites",
+        "eval_limit",
+        "eval_partial_scoreboard",
+        "eval_max_records_this_run",
         "latency_probe_records",
         "latency_probe_planned_n",
         "action_embedding_init",
@@ -732,6 +735,13 @@ class ExperimentKnobs(StrictModel):
         description="Comma-separated evaluate_model --suites (e.g. smoke).",
         pattern=r"^[A-Za-z0-9_,]+$",
     )
+    # Chunked promotion measurement (docs/design/chunked-promotion-eval-20260902.md):
+    # eval_limit locks the per-suite record count; eval_partial_scoreboard
+    # persists every decoded record so a later ``--resume-run`` chunk merges
+    # it; eval_max_records_this_run caps newly decoded records per run.
+    eval_limit: int | None = Field(default=None, ge=1)
+    eval_partial_scoreboard: bool | None = None
+    eval_max_records_this_run: int | None = Field(default=None, ge=1)
     # Latency pre-check probe: a small eval (probe_records) runs before the
     # full eval; the full eval is skipped with a typed latency_preflight
     # verdict when the probe times out at the fitted per-record decode budget

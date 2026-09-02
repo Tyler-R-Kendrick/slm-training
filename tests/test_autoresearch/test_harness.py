@@ -5620,3 +5620,75 @@ def test_execute_latency_probe_timeout_stops_before_full_eval(
     assert calls == [probe]
     assert outcome.status == "stopped"
     assert outcome.stage_telemetry[0]["latency_probe"] is True
+
+
+def test_compile_commands_routes_chunked_promotion_eval_knobs() -> None:
+    from slm_training.autoresearch.engine import is_resumable_eval_command
+
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            eval_suites="smoke,held_out",
+            decode_timeout_seconds=24,
+            eval_limit=24,
+            eval_partial_scoreboard=True,
+            eval_max_records_this_run=4,
+        )
+    )
+    commands = compile_commands(campaign(), spec)
+    evaluate = next(c for c in commands if "scripts.evaluate_model" in c)
+    assert evaluate[evaluate.index("--eval-limit") + 1] == "24"
+    assert "--partial-scoreboard" in evaluate
+    assert evaluate[evaluate.index("--max-records-this-run") + 1] == "4"
+    assert is_resumable_eval_command(evaluate)
+    plain = next(
+        c
+        for c in compile_commands(campaign(), experiment(knobs=ExperimentKnobs(steps=20)))
+        if "scripts.evaluate_model" in c
+    )
+    assert not is_resumable_eval_command(plain)
+    assert "--partial-scoreboard" not in plain
+
+
+def test_execute_resumable_eval_pending_exit_is_typed_incomplete_not_failed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+
+    def pending(command, **_kwargs):
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=engine.EVAL_EXIT_RESUME_PENDING,
+            stdout='{"measurement_complete": false, "suites": {"held_out": {"structural_similarity": 0.5}}}',
+            stderr="",
+            duration_seconds=1.0,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", pending)
+    base = [
+        "python",
+        "-m",
+        "scripts.evaluate_model",
+        "--run-root",
+        str(tmp_path / "runs"),
+        "--run-id",
+        "chunk",
+        "--ship-gates",
+    ]
+    command = [*base, "--partial-scoreboard", "--max-records-this-run", "4"]
+    outcome = execute_commands(experiment(), [command], cwd=tmp_path)
+    assert outcome.status == "stopped"
+    assert outcome.exit_code == engine.EVAL_EXIT_RESUME_PENDING
+    assert "resume with --resume-run" in str(outcome.error)
+    stage = outcome.stage_telemetry[0]
+    assert stage["measurement_complete"] is False
+    assert stage["resume_pending"] is True
+    # The same exit on a non-resumable eval stays a failure.
+    failed = execute_commands(experiment(), [list(base)], cwd=tmp_path)
+    assert failed.status == "failed"

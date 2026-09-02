@@ -57,6 +57,9 @@ _NON_LEVER_KEYS: frozenset[str] = frozenset(
         "steps",
         "decode_timeout_seconds",
         "eval_suites",
+        "eval_limit",
+        "eval_partial_scoreboard",
+        "eval_max_records_this_run",
         "generate_batch_size",
     }
 )

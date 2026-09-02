@@ -199,6 +199,84 @@ def _persist_decode_progress(
     return path
 
 
+PARTIAL_SCOREBOARD_SCHEMA = "EvalPartialScoreboardV1"
+# Per-record quality leaves mirrored into the partial scoreboard so a resumed
+# run can be audited record-by-record without re-reading ``details``.
+_PARTIAL_RECORD_METRIC_KEYS = (
+    "parse_ok",
+    "syntax_parse_valid",
+    "meaningful_program",
+    "structural_similarity",
+    "tree_edit_similarity",
+    "placeholder_fidelity",
+    "placeholder_validity",
+    "reward_score",
+    "exact_match",
+    "decode_outcome",
+    "error",
+)
+
+
+def partial_scoreboard_path(run_dir: Path, suite: str) -> Path:
+    """Per-record resumable progress file for one suite under ``run_dir``."""
+    return Path(run_dir) / f"eval_{suite}.partial.json"
+
+
+def load_partial_scoreboard(run_dir: Path | None, suite: str) -> dict[str, Any] | None:
+    """Load a prior partial scoreboard; None when absent or unreadable."""
+    if run_dir is None:
+        return None
+    path = partial_scoreboard_path(run_dir, suite)
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != PARTIAL_SCOREBOARD_SCHEMA
+        or not isinstance(payload.get("records"), dict)
+    ):
+        return None
+    return payload
+
+
+def _write_partial_scoreboard(path: Path, payload: dict[str, Any]) -> None:
+    """Atomically persist per-record progress (survives a mid-chunk kill)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def _partial_scoreboard_resume_rejection(
+    prior: dict[str, Any], identity: dict[str, Any]
+) -> str | None:
+    """Reason a prior partial scoreboard may not be merged into this run.
+
+    Fail closed on evidence reuse: every stored prediction must come from the
+    same checkpoint, suite manifest, record window and decode policy digest.
+    A mismatch never aborts the evaluation; it restarts from record zero.
+    """
+    for key in ("checkpoint_sha256", "eval_suite_manifest_sha"):
+        if identity.get(key) is None or prior.get(key) is None:
+            return f"{key}_unavailable"
+    for key in (
+        "suite",
+        "checkpoint_sha256",
+        "eval_suite_manifest_sha",
+        "eval_limit",
+        "eval_offset",
+        "evaluation_policy_sha256",
+    ):
+        if prior.get(key) != identity.get(key):
+            return f"{key}_mismatch"
+    if list(prior.get("record_ids") or []) != list(identity.get("record_ids") or []):
+        return "record_ids_mismatch"
+    return None
+
+
 def _prediction_diversity(predictions: list[str]) -> dict[str, Any]:
     """Advisory degenerate-output summary over a suite's predictions.
 
@@ -1242,7 +1320,21 @@ def evaluate(
     generation_overrides: dict[str, Any] | None = None,
     evaluation_deadline: float | None = None,
     evaluation_remaining_records: list[int] | None = None,
+    partial_scoreboard: bool = False,
+    resume_from: Path | None = None,
+    max_records_this_run: list[int] | int | None = None,
 ) -> dict:
+    """Score ``config.suite``; optionally as one resumable chunk.
+
+    Resumable mode (``partial_scoreboard`` / ``resume_from`` /
+    ``max_records_this_run``) persists every decoded record to
+    ``eval_<suite>.partial.json`` after its chunk, replays records already
+    stored under ``resume_from`` (same checkpoint, suite and policy) without
+    re-decoding, and stops cleanly at ``max_records_this_run`` newly decoded
+    records or when the evaluation wall cannot fit another full-timeout record.
+    Records left undecoded are ``pending`` (incomplete, never scored), so a
+    partial suite stays non-cacheable evidence until a later run merges it.
+    """
     from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
 
     generation_overrides = dict(generation_overrides or {})
@@ -2200,7 +2292,278 @@ def evaluate(
     # not an observed request latency (all requests complete when the batch
     # returns).
     amortized_latencies: list[float] = []
-    if batch_size > 1 and (
+    partial_mode = bool(
+        partial_scoreboard
+        or resume_from is not None
+        or max_records_this_run is not None
+    )
+    pending_records: list[ExampleRecord] = []
+    resume_report: dict[str, Any] | None = None
+    if partial_mode:
+        from slm_training.models.decode_stats import DecodeStats as _DecodeStats
+
+        record_budget: list[int] | None
+        if max_records_this_run is None:
+            record_budget = None
+        elif isinstance(max_records_this_run, list):
+            record_budget = max_records_this_run
+        else:
+            record_budget = [int(max_records_this_run)]
+        partial_path = partial_scoreboard_path(config.run_dir, config.suite)
+        identity = {
+            "suite": config.suite,
+            "checkpoint_sha256": checkpoint_sha256,
+            "eval_suite_manifest_sha": eval_suite_manifest_sha,
+            "eval_limit": suite_limit,
+            "eval_offset": suite_offset,
+            "evaluation_policy_sha256": hashlib.sha256(
+                json.dumps(evaluation_policy, sort_keys=True, default=str).encode(
+                    "utf-8"
+                )
+            ).hexdigest(),
+            "record_ids": [record.id for record in records],
+        }
+        resume_dir = Path(resume_from) if resume_from is not None else config.run_dir
+        prior = load_partial_scoreboard(resume_dir, config.suite)
+        resume_rejection: str | None = None
+        stored_records: dict[str, dict[str, Any]] = {}
+        if prior is None:
+            resume_rejection = "no_prior_partial_scoreboard"
+        else:
+            resume_rejection = _partial_scoreboard_resume_rejection(prior, identity)
+            if resume_rejection is None:
+                stored_records = {
+                    str(record_id): dict(entry)
+                    for record_id, entry in prior["records"].items()
+                    if isinstance(entry, dict) and "prediction" in entry
+                }
+        partial_payload: dict[str, Any] = {
+            "schema_version": PARTIAL_SCOREBOARD_SCHEMA,
+            "run_id": config.run_id,
+            **identity,
+            "record_n": n,
+            "measurement_complete": False,
+            "resumed_from": str(resume_dir),
+            "resume_rejected": resume_rejection,
+            "records": {},
+            "version_stamp": progress_version_stamp,
+        }
+        unstored_n = sum(record.id not in stored_records for record in records)
+        requested_record_seconds = float(
+            getattr(config, "decode_timeout_seconds", 0) or 0
+        )
+        planned_decode_n = unstored_n
+        if record_budget is not None:
+            planned_decode_n = min(planned_decode_n, max(0, int(record_budget[0])))
+        if evaluation_deadline is not None and requested_record_seconds > 0:
+            # Records that fit under the wall at the full locked timeout; the
+            # rest stay pending for a later chunk instead of being squeezed.
+            wall_fit_n = int(
+                max(
+                    0.0,
+                    evaluation_deadline
+                    - time.monotonic()
+                    - _EVALUATION_FINALIZATION_RESERVE_SECONDS,
+                )
+                // requested_record_seconds
+            )
+            planned_decode_n = min(planned_decode_n, wall_fit_n)
+        if evaluation_remaining_records is not None:
+            # Fair-share only across the records this chunk will decode so the
+            # locked per-record timeout is not shrunk by records left pending.
+            evaluation_remaining_records[0] = planned_decode_n
+        decoded_this_run = 0
+        replayed_n = 0
+        stop_reason: str | None = None
+
+        def _partial_stop_reason(chunk_n: int) -> str | None:
+            if record_budget is not None and chunk_n > max(0, int(record_budget[0])):
+                return "record_budget"
+            if evaluation_deadline is not None and requested_record_seconds > 0:
+                usable = (
+                    evaluation_deadline
+                    - time.monotonic()
+                    - _EVALUATION_FINALIZATION_RESERVE_SECONDS
+                )
+                if usable < requested_record_seconds * chunk_n:
+                    return "evaluation_wall"
+            return None
+
+        def _persist_partial(final: bool = False) -> None:
+            partial_payload["records"] = {
+                record_id: stored_records[record_id]
+                for record_id in identity["record_ids"]
+                if record_id in stored_records
+            }
+            partial_payload["decoded_record_n"] = len(partial_payload["records"])
+            partial_payload["pending_record_ids"] = [
+                record.id for record in records if record.id not in stored_records
+            ]
+            partial_payload["measurement_complete"] = bool(
+                final and not partial_payload["pending_record_ids"]
+            )
+            partial_payload["recorded_at"] = datetime.now(UTC).isoformat()
+            _write_partial_scoreboard(partial_path, partial_payload)
+
+        def _replay_stored(record: ExampleRecord, entry: dict[str, Any]) -> None:
+            nonlocal decode_timeout_count, processed_record_n, replayed_n
+            stats_payload = entry.get("decode_stats")
+            stats = (
+                _DecodeStats.from_dict(stats_payload)
+                if isinstance(stats_payload, dict)
+                else None
+            )
+            if stats is not None:
+                decode_stats_rows.append(stats)
+            timed_out = bool(entry.get("timed_out"))
+            effective = entry.get("effective_timeout_seconds")
+            meta = {
+                "timed_out": timed_out,
+                "stats": stats,
+                "effective_timeout_seconds": effective,
+                "replayed": True,
+            }
+            chunk_decode_meta.append(meta)
+            decode_chunk_sizes.append(1)
+            processed_record_n += 1
+            replayed_n += 1
+            if timed_out:
+                decode_timeout_count += 1
+            if isinstance(effective, (int, float)) and evaluation_deadline is not None:
+                effective_decode_timeouts.append(float(effective))
+            elapsed = float(entry.get("decode_ms") or 0.0)
+            per = float(entry.get("amortized_ms") or elapsed)
+            if timed_out:
+                incomplete_latencies.append(elapsed)
+            else:
+                latencies.append(elapsed)
+            amortized_latencies.append(per)
+            evidence = entry.get("prediction_evidence")
+            _score_one(
+                record,
+                str(entry.get("prediction") or ""),
+                elapsed,
+                evidence if isinstance(evidence, dict) else None,
+                meta,
+            )
+            if details:
+                details[-1]["request_completion_latency_ms"] = round(elapsed, 2)
+                details[-1]["amortized_batch_latency_ms"] = round(per, 2)
+                details[-1]["batch_size"] = int(entry.get("batch_size") or 1)
+                details[-1]["resumed_from_partial"] = True
+
+        def _decode_and_store(chunk: list[ExampleRecord]) -> None:
+            nonlocal decoded_this_run
+            t0 = time.perf_counter()
+            preds, evidence_rows = _generate_chunk(chunk)
+            chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
+            timed_out = bool((chunk_meta or {}).get("timed_out"))
+            elapsed = (time.perf_counter() - t0) * 1000.0
+            per = elapsed / max(1, len(chunk))
+            stats = (chunk_meta or {}).get("stats")
+            for index, (record, pred) in enumerate(zip(chunk, preds)):
+                if timed_out:
+                    incomplete_latencies.append(elapsed)
+                else:
+                    latencies.append(elapsed)
+                amortized_latencies.append(per)
+                evidence = evidence_rows[index] if index < len(evidence_rows) else None
+                _score_one(record, pred, elapsed, evidence, chunk_meta)
+                row = details[-1] if details else {}
+                if details:
+                    row["request_completion_latency_ms"] = round(elapsed, 2)
+                    row["amortized_batch_latency_ms"] = round(per, 2)
+                    row["batch_size"] = len(chunk)
+                stored_records[record.id] = {
+                    "id": record.id,
+                    "index": identity["record_ids"].index(record.id),
+                    "prediction": pred,
+                    "prediction_evidence": (
+                        evidence if isinstance(evidence, dict) else None
+                    ),
+                    "decode_ms": round(elapsed, 3),
+                    "amortized_ms": round(per, 3),
+                    "timed_out": timed_out,
+                    "batch_size": len(chunk),
+                    "effective_timeout_seconds": (chunk_meta or {}).get(
+                        "effective_timeout_seconds"
+                    ),
+                    "decode_stats": (
+                        stats.as_dict() if isinstance(stats, _DecodeStats) else None
+                    ),
+                    "metrics": {
+                        key: row.get(key) for key in _PARTIAL_RECORD_METRIC_KEYS
+                    },
+                    "decoded_at": datetime.now(UTC).isoformat(),
+                }
+                decoded_this_run += 1
+            if record_budget is not None:
+                record_budget[0] = max(0, int(record_budget[0]) - len(chunk))
+            _persist_partial()
+
+        batched = batch_size > 1 and (
+            callable(generate_batch_requests) or callable(generate_batch)
+        )
+        position = 0
+        while position < n:
+            record = records[position]
+            entry = stored_records.get(record.id)
+            if entry is not None:
+                _replay_stored(record, entry)
+                position += 1
+                continue
+            chunk = [record]
+            position += 1
+            if batched:
+                # A batch never exceeds the records this run may still decode
+                # (record budget) or fit under the wall at the full timeout;
+                # the tail of a suite is decoded as a smaller batch, not
+                # refused.
+                max_chunk = int(batch_size)
+                if record_budget is not None:
+                    max_chunk = min(max_chunk, max(1, int(record_budget[0])))
+                if evaluation_deadline is not None and requested_record_seconds > 0:
+                    usable = (
+                        evaluation_deadline
+                        - time.monotonic()
+                        - _EVALUATION_FINALIZATION_RESERVE_SECONDS
+                    )
+                    max_chunk = min(
+                        max_chunk, max(1, int(usable // requested_record_seconds))
+                    )
+                while (
+                    position < n
+                    and len(chunk) < max_chunk
+                    and records[position].id not in stored_records
+                ):
+                    chunk.append(records[position])
+                    position += 1
+            if stop_reason is None:
+                stop_reason = _partial_stop_reason(len(chunk))
+            if stop_reason is not None:
+                # Pending records stay a suffix in record order: nothing after
+                # the first stop is decoded, so index-aligned target evidence
+                # for scored records is unaffected.
+                pending_records.extend(chunk)
+                continue
+            _decode_and_store(chunk)
+        _persist_partial(final=True)
+        resume_report = {
+            "schema": "eval_resume/v1",
+            "partial_scoreboard": str(partial_path),
+            "resumed_from": str(resume_dir),
+            "resume_rejected": resume_rejection,
+            "replayed_record_n": replayed_n,
+            "decoded_this_run_n": decoded_this_run,
+            "decoded_record_n": len(stored_records),
+            "pending_record_n": len(pending_records),
+            "pending_record_ids": [record.id for record in pending_records],
+            "max_records_this_run": (
+                None if max_records_this_run is None else planned_decode_n
+            ),
+            "stop_reason": stop_reason,
+        }
+    elif batch_size > 1 and (
         callable(generate_batch_requests) or callable(generate_batch)
     ):
         for start in range(0, n, batch_size):
@@ -2314,7 +2677,12 @@ def evaluate(
 
     # Quality denominators exclude runtime timeouts (incomplete), not full
     # document_n. All-timeout suites report rates as null, never false 0.0.
-    completed_document_n = document_n - decode_timeout_document_n
+    # Records a resumable chunk left undecoded are incomplete too: unmeasured,
+    # never a false quality 0 and never a completed document.
+    pending_document_n = sum(
+        record.target_kind == "document" for record in pending_records
+    )
+    completed_document_n = document_n - decode_timeout_document_n - pending_document_n
     syntax_rate_evidence = _rate_evidence(syntax_parse_ok, completed_document_n)
     meaningful_rate_evidence = _rate_evidence(parse_ok, completed_document_n)
     timeout_rate_evidence = _rate_evidence(decode_timeout_document_n, document_n)
@@ -2344,7 +2712,7 @@ def evaluate(
         "n": n,
         "document_n": document_n,
         "completed_document_n": completed_document_n,
-        "incomplete_document_n": decode_timeout_document_n,
+        "incomplete_document_n": decode_timeout_document_n + pending_document_n,
         "fragment_n": n - document_n,
         "eval_limit": suite_limit,
         "eval_offset": suite_offset,
@@ -2715,6 +3083,10 @@ def evaluate(
     metrics["decoder_guaranteed"] = decoder_guaranteed
     if cache_bypass_reason is not None:
         metrics["cache_bypass_reason"] = cache_bypass_reason
+    if resume_report is not None:
+        metrics["resume"] = resume_report
+        metrics["pending_document_n"] = pending_document_n
+        metrics["measurement_complete"] = not pending_records
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -2955,8 +3327,19 @@ def evaluate_suites(
     write_gates: bool = False,
     cache: EvalCache | None = None,
     suite_reachability: dict[str, float] | None = None,
+    partial_scoreboard: bool = False,
+    resume_from: Path | None = None,
+    max_records_this_run: int | None = None,
 ) -> dict[str, dict]:
-    """Run eval across multiple suites; write scoreboard.json (and optional gates)."""
+    """Run eval across multiple suites; write scoreboard.json (and optional gates).
+
+    Resumable mode (``partial_scoreboard`` / ``resume_from`` /
+    ``max_records_this_run``) shares one newly-decoded-record budget across the
+    suites, replays per-record progress stored under ``resume_from`` and, while
+    any suite still has pending records, writes ``scoreboard.json`` with
+    ``measurement_complete: false`` and no ship gates (a partial scoreboard is
+    never gate evidence).
+    """
     from dataclasses import replace
 
     from slm_training.harnesses.model_build.ship_gates import write_ship_gates
@@ -3047,6 +3430,14 @@ def evaluate_suites(
         remaining_records = [
             sum(selected_record_n(suite) for suite in suites)
         ]
+    partial_mode = bool(
+        partial_scoreboard
+        or resume_from is not None
+        or max_records_this_run is not None
+    )
+    record_budget: list[int] | None = (
+        None if max_records_this_run is None else [max(0, int(max_records_this_run))]
+    )
     if not board:
         for suite in suites:
             suite_config = replace(config, suite=suite)
@@ -3059,8 +3450,14 @@ def evaluate_suites(
                 cache=cache,
                 evaluation_deadline=evaluation_deadline,
                 evaluation_remaining_records=remaining_records,
+                partial_scoreboard=partial_mode,
+                resume_from=resume_from,
+                max_records_this_run=record_budget,
             )
             board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+    measurement_complete = all(
+        bool(metrics.get("measurement_complete", True)) for metrics in board.values()
+    )
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
     from slm_training.versioning import build_version_stamp
 
@@ -3133,8 +3530,36 @@ def evaluate_suites(
         scoreboard["suite_reachability"] = dict(suite_reachability)
     path = run_dir / "scoreboard.json"
     scoreboard["output"] = str(path)
+    if partial_mode:
+        scoreboard["measurement_complete"] = measurement_complete
+        scoreboard["resume"] = {
+            "schema": "eval_resume/v1",
+            "resumed_from": None if resume_from is None else str(resume_from),
+            "max_records_this_run": max_records_this_run,
+            "pending_record_n": {
+                suite: int(((metrics.get("resume") or {}).get("pending_record_n")) or 0)
+                for suite, metrics in board.items()
+            },
+            "decoded_this_run_n": {
+                suite: int(
+                    ((metrics.get("resume") or {}).get("decoded_this_run_n")) or 0
+                )
+                for suite, metrics in board.items()
+            },
+            "partial_scoreboards": {
+                suite: (metrics.get("resume") or {}).get("partial_scoreboard")
+                for suite, metrics in board.items()
+            },
+        }
     gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
-    if gate_suites:
+    if not measurement_complete:
+        # A resumable chunk left records pending: no AgentV publication and no
+        # ship gates until a later run merges the suite to completion.
+        scoreboard["evals"] = {
+            "skipped": "measurement incomplete: resumable partial scoreboard"
+        }
+        write_gates = False
+    elif gate_suites:
         from slm_training.evals.agentv import publish_model_evaluation
 
         scoreboard["evals"] = publish_model_evaluation(

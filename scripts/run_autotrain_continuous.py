@@ -905,6 +905,483 @@ def _promotion_formal_budget_seconds(
     return min(float(_PROMOTE_FORMAL_TIMEOUT_S), available)
 
 
+# Chunked promotion measurement (docs/design/chunked-promotion-eval-20260902.md):
+# a promotion suite wider than one bounded run is decoded as a locked number of
+# resumable ``scripts.evaluate_model`` runs, each its own <= MAX_HARNESS_WALL
+# subprocess on the same checkpoint and suite.  Exhausting the locked run
+# budget is measurement incomplete, never a model verdict.
+_PROMOTION_CHUNK_LEDGER_SCHEMA = "autotrain_promotion_chunks/v1"
+# Fixed per-run cost outside record decode (model load, suite setup, scoreboard
+# finalization) charged against every chunk run when the policy has no
+# ``thrash_timing.eval_overhead_seconds``.
+_PROMOTION_CHUNK_OVERHEAD_SECONDS_DEFAULT = 8.0
+# evaluate_model exits a chunk may end with and still be resumed: 0 complete,
+# 2 (autoresearch stopped), 8 typed gate rejection, 10 resume pending.
+_PROMOTION_CHUNK_RESUMABLE_EXITS = frozenset({0, 2, 8, 10})
+_PROMOTION_CHUNK_LEDGER_NAME = "promotion_chunks.json"
+
+
+def _promotion_suite_records(suite: str) -> int | None:
+    """Record count of ``suite`` in the resolved default eval version."""
+
+    try:
+        from slm_training.autoresearch.engine import default_eval_version
+        from slm_training.data.store import DataStore
+
+        records = (
+            DataStore().resolve_path("eval", default_eval_version())
+            / "suites"
+            / suite
+            / "records.jsonl"
+        )
+        if records.is_file():
+            return sum(
+                1
+                for line in records.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+    except Exception:  # noqa: BLE001 — plan input only, never fatal
+        return None
+    return None
+
+
+def _measured_promotion_decode_p95_seconds(
+    root: Path | None,
+) -> tuple[float | None, str | None]:
+    """Newest measured eval ``latency_ms_p95`` (seconds) under the campaigns root.
+
+    Promotion suites are preferred (``eval_held_out.json``) and the smoke suite
+    is the fallback; a run whose p95 is null (all timeouts) is skipped.
+    """
+
+    if root is None or not Path(root).is_dir():
+        return None, None
+    candidates: list[tuple[float, Path]] = []
+    for name in ("eval_held_out.json", "eval_smoke.json"):
+        for path in Path(root).glob(f"*/runs/*/{name}"):
+            try:
+                candidates.append((path.stat().st_mtime, path))
+            except OSError:
+                continue
+    for _mtime, path in sorted(candidates, key=lambda row: row[0], reverse=True):
+        payload = _read_json(path)
+        value = payload.get("latency_ms_p95") if isinstance(payload, dict) else None
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
+            return float(value) / 1000.0, str(path)
+    return None, None
+
+
+def _promotion_chunk_plan(
+    policy: Any,
+    *,
+    root: Path | None = None,
+    harness_wall_seconds: float = float(MAX_HARNESS_WALL_SECONDS),
+) -> dict[str, Any]:
+    """Lock the promotion chunk plan before any arm executes.
+
+    ``records_per_run`` is fitted from the measured decode p95 (grown by the
+    policy p95 margin, never below the locked per-record timeout) against the
+    harness wall minus the fixed per-run overhead.  ``run_n`` is the number of
+    resumable runs that cover every planned record of every promotion suite;
+    it is the locked chunk budget.
+    """
+
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        eval_suites_for_role,
+    )
+    from slm_training.autoresearch.experiment_campaign import (
+        PROMOTION_CHUNK_PLAN_SCHEMA,
+    )
+
+    measurement = getattr(policy, "measurement", None)
+    measurement = measurement if isinstance(measurement, Mapping) else {}
+    suites = [str(suite) for suite in eval_suites_for_role(policy, "promotion")]
+    suite_n = max(1, int(measurement.get("promotion_suite_n") or 24))
+    timeout = float(decode_timeout_seconds_for_role(policy, "promotion"))
+    p95_seconds, p95_source = _measured_promotion_decode_p95_seconds(root)
+    thrash = _thrash_timing_block(policy)
+    overhead = float(
+        thrash.get("eval_overhead_seconds") or _PROMOTION_CHUNK_OVERHEAD_SECONDS_DEFAULT
+    )
+    margin = max(0.0, float(thrash.get("p95_margin") or 0.0))
+    per_record = max(timeout, float(p95_seconds or 0.0) * (1.0 + margin))
+    usable = max(0.0, float(harness_wall_seconds) - overhead)
+    records_per_run = max(1, int(usable // per_record))
+    suite_record_plan: dict[str, dict[str, int | None]] = {}
+    total = 0
+    for suite in suites:
+        available = _promotion_suite_records(suite)
+        planned = suite_n if available is None else min(suite_n, available)
+        suite_record_plan[suite] = {"available": available, "planned": planned}
+        total += planned
+    total = max(1, total)
+    run_n = max(1, -(-total // records_per_run))
+    return {
+        "schema": PROMOTION_CHUNK_PLAN_SCHEMA,
+        "suites": suites,
+        "suite_n": suite_n,
+        "suite_record_plan": suite_record_plan,
+        "total_record_n": total,
+        "decode_timeout_seconds": timeout,
+        "measured_decode_p95_seconds": p95_seconds,
+        "measured_decode_p95_source": p95_source,
+        "p95_margin": margin,
+        "per_record_seconds": per_record,
+        "chunk_wall_seconds": float(harness_wall_seconds),
+        "chunk_overhead_seconds": overhead,
+        "records_per_run": records_per_run,
+        "run_n": run_n,
+        "authority": "locked_before_execution",
+    }
+
+
+def _set_command_flag(cmd: list[str], flag: str, value: str) -> list[str]:
+    """Return ``cmd`` with ``flag value`` set exactly once."""
+
+    out = list(cmd)
+    if flag in out:
+        index = out.index(flag)
+        if index + 1 < len(out):
+            out[index + 1] = value
+            return out
+        out.append(value)
+        return out
+    out.extend([flag, value])
+    return out
+
+
+def _command_flag_value(cmd: Sequence[str], flag: str) -> str | None:
+    if flag in cmd:
+        index = list(cmd).index(flag)
+        if index + 1 < len(cmd):
+            return str(cmd[index + 1])
+    return None
+
+
+def _promotion_chunk_eval_command(
+    *,
+    root: Path,
+    campaign_id: str,
+    experiment_path: Path,
+    run_dir: Path,
+    plan: Mapping[str, Any],
+) -> list[str]:
+    """The locked arm's evaluate command, re-armed as one resumable chunk.
+
+    The command is compiled from the same typed knobs the arm ran with (same
+    checkpoint, suites, timeout, eval limit); only the resume flags and the
+    chunk wall are (re)set, so no chunk can drift from the locked measurement.
+    """
+
+    from slm_training.autoresearch.engine import (
+        compile_commands,
+        is_latency_probe_command,
+    )
+    from slm_training.autoresearch.schemas import ExperimentSpec
+
+    store = CampaignStore(campaign_id, root)
+    campaign = store.load_campaign()
+    experiment = ExperimentSpec.model_validate_json(
+        Path(experiment_path).read_text(encoding="utf-8")
+    )
+    evaluates = [
+        list(command)
+        for command in compile_commands(campaign, experiment, output_root=root)
+        if "scripts.evaluate_model" in command
+        and not is_latency_probe_command(command)
+    ]
+    if not evaluates:
+        raise ValueError(f"no evaluate_model command compiled for {experiment_path}")
+    cmd = evaluates[-1]
+    if "--partial-scoreboard" not in cmd:
+        cmd.append("--partial-scoreboard")
+    cmd = _set_command_flag(cmd, "--resume-run", str(run_dir))
+    cmd = _set_command_flag(
+        cmd, "--max-records-this-run", str(int(plan["records_per_run"]))
+    )
+    return _set_command_flag(
+        cmd, "--evaluation-wall-seconds", f"{float(plan['chunk_wall_seconds']):.6f}"
+    )
+
+
+def _promotion_scoreboard_state(run_dir: Path) -> dict[str, Any]:
+    """Completion state of an arm's (possibly partial) ``scoreboard.json``."""
+
+    path = Path(run_dir) / "scoreboard.json"
+    if not path.is_file():
+        return {"exists": False, "complete": False, "pending": None, "decoded": None}
+    board = _read_json(path)
+    resume = board.get("resume") if isinstance(board, dict) else None
+    resume = resume if isinstance(resume, dict) else {}
+
+    def _total(key: str) -> int | None:
+        rows = resume.get(key)
+        if not isinstance(rows, dict):
+            return None
+        return sum(int(value) for value in rows.values() if isinstance(value, int))
+
+    return {
+        "exists": True,
+        # A scoreboard without the key predates resumable evals: complete.
+        "complete": board.get("measurement_complete") is not False,
+        "pending": _total("pending_record_n"),
+        "decoded": _total("decoded_this_run_n"),
+    }
+
+
+def _run_promotion_eval_chunks(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    camp_dir: Path,
+    plan: Mapping[str, Any],
+    experiment_paths: Mapping[str, Path],
+    arm_order: Sequence[str],
+) -> dict[str, Any]:
+    """Finish every executed arm's promotion measurement under the locked plan.
+
+    Runs are launched in sequence, each its own bounded subprocess (fresh
+    ``MAX_RUN_SECONDS`` deadline; eval wall = ``plan.chunk_wall_seconds``) on
+    the arm's locked checkpoint and suites, replaying stored records and
+    decoding the next ``records_per_run``.  The loop stops at a complete merged
+    scoreboard or when ``run_n`` runs are spent (``chunk_budget_exhausted``).
+    The ledger is written to ``camp_dir/promotion_chunks.json``.
+    """
+
+    run_budget = max(1, int(plan["run_n"]))
+    ledger: dict[str, Any] = {
+        "schema": _PROMOTION_CHUNK_LEDGER_SCHEMA,
+        "campaign_id": campaign_id,
+        "plan": dict(plan),
+        "arms": {},
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    for eid in arm_order:
+        run_dir = camp_dir / "runs" / eid
+        arm: dict[str, Any] = {
+            "run_dir": str(run_dir),
+            "run_budget": run_budget,
+            "runs_used": 0,
+            "runs": [],
+            "status": "pending",
+        }
+        ledger["arms"][eid] = arm
+        try:
+            cmd = _promotion_chunk_eval_command(
+                root=root,
+                campaign_id=campaign_id,
+                experiment_path=Path(experiment_paths[eid]),
+                run_dir=run_dir,
+                plan=plan,
+            )
+        except Exception as exc:  # noqa: BLE001 — typed harness failure, never a verdict
+            arm["status"] = "harness_failure"
+            arm["error"] = f"{type(exc).__name__}: {exc}"[:400]
+            continue
+        checkpoint = _command_flag_value(cmd, "--checkpoint")
+        checkpoint_path = (
+            Path(checkpoint) if checkpoint else run_dir / "checkpoints" / "last.pt"
+        )
+        if not checkpoint_path.is_file():
+            arm["status"] = "no_checkpoint"
+            arm["checkpoint"] = str(checkpoint_path)
+            continue
+        arm["command"] = list(cmd)
+        while True:
+            state = _promotion_scoreboard_state(run_dir)
+            if state["exists"] and state["complete"]:
+                arm["status"] = "complete"
+                break
+            if arm["runs_used"] >= run_budget:
+                arm["status"] = "chunk_budget_exhausted"
+                break
+            index = int(arm["runs_used"]) + 1
+            print(
+                f"PROMOTION_CHUNK arm={eid} run={index}/{run_budget} "
+                f"pending={state['pending']} "
+                f"records_per_run={int(plan['records_per_run'])} "
+                f"wall_s={float(plan['chunk_wall_seconds']):.0f}",
+                flush=True,
+            )
+            result = _stage_command(
+                cmd,
+                cwd=cwd,
+                # Each chunk is its own bounded run under the repository cap.
+                deadline=time.monotonic() + float(MAX_RUN_SECONDS),
+                root=root,
+                loop_id=loop_id,
+                stage=f"promotion-chunk:{eid}:{index}",
+            )
+            if result.stderr:
+                print(result.stderr[-4000:], file=sys.stderr, flush=True)
+            if result.timed_out:
+                code = 124
+            elif result.outcome is ProcessOutcome.LAUNCH_FAILED:
+                code = 127
+            else:
+                code = int(result.returncode or 0)
+            arm["runs_used"] = index
+            after = _promotion_scoreboard_state(run_dir)
+            arm["runs"].append(
+                {
+                    "index": index,
+                    "exit_code": code,
+                    "timed_out": bool(result.timed_out),
+                    "duration_seconds": float(
+                        getattr(result, "duration_seconds", 0.0) or 0.0
+                    ),
+                    "pending_before": state["pending"],
+                    "pending_after": after["pending"],
+                    "decoded_this_run_n": after["decoded"],
+                    "measurement_complete": bool(after["exists"] and after["complete"]),
+                }
+            )
+            print(
+                f"PROMOTION_CHUNK_DONE arm={eid} run={index}/{run_budget} "
+                f"exit={code} decoded={after['decoded']} pending={after['pending']} "
+                f"complete={bool(after['exists'] and after['complete'])}",
+                flush=True,
+            )
+            if code not in _PROMOTION_CHUNK_RESUMABLE_EXITS or not after["exists"]:
+                arm["status"] = "harness_failure"
+                arm["error"] = f"chunk {index} exit={code} scoreboard={after['exists']}"
+                break
+    ledger["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    camp_dir.mkdir(parents=True, exist_ok=True)
+    (camp_dir / _PROMOTION_CHUNK_LEDGER_NAME).write_text(
+        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return ledger
+
+
+def _attach_promotion_chunks(
+    delivery: dict[str, Any], ledger: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Fold chunk-stage outcomes into the delivery as typed reasons.
+
+    An exhausted chunk budget or a chunk harness failure marks the measurement
+    incomplete (retryable, refunded); it is never a model reject.
+    """
+
+    reasons = list(delivery.get("reasons") or [])
+    incomplete = False
+    for eid, arm in (ledger.get("arms") or {}).items():
+        status = str(arm.get("status") or "")
+        if status == "chunk_budget_exhausted":
+            reasons.append(
+                f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
+                f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
+            )
+            incomplete = True
+        elif status == "harness_failure":
+            reasons.append(
+                f"harness_failure:{eid}:promotion_chunk:{arm.get('error') or 'exit'}"
+            )
+            incomplete = True
+        elif status == "no_checkpoint":
+            reasons.append(f"measurement_incomplete:{eid}:no_checkpoint_for_chunks")
+            incomplete = True
+    out = {**delivery, "promotion_chunks": dict(ledger), "reasons": reasons}
+    if incomplete:
+        out["measurement_complete"] = False
+    return out
+
+
+def _promotion_measurement_incomplete_reasons(
+    camp_dir: Path,
+    *,
+    control_id: str,
+    candidate_id: str,
+    delivery: Mapping[str, Any],
+) -> list[str]:
+    """Typed reasons a promotion measurement is still partial evidence.
+
+    A partial scoreboard (``measurement_complete: false``) or a spent chunk
+    budget can never be disposed as a model verdict: the disposition is
+    ``promotion_inconclusive`` (retryable) until a later run merges the suite
+    to completion or the locked chunk budget is exhausted for good.
+    """
+
+    reasons: list[str] = []
+    ledger = delivery.get("promotion_chunks")
+    if isinstance(ledger, Mapping):
+        for eid, arm in (ledger.get("arms") or {}).items():
+            status = str(arm.get("status") or "")
+            if status == "chunk_budget_exhausted":
+                reasons.append(
+                    f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
+                    f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
+                )
+    for run_id in (control_id, candidate_id):
+        if not run_id:
+            continue
+        state = _promotion_scoreboard_state(camp_dir / "runs" / run_id)
+        if state["exists"] and not state["complete"]:
+            reasons.append(
+                f"measurement_incomplete:{run_id}:partial_scoreboard:"
+                f"pending={state['pending']}"
+            )
+    return list(dict.fromkeys(reasons))
+
+
+def _merged_promotion_power_feasibility(
+    camp_dir: Path,
+    *,
+    control_id: str,
+    candidate_id: str,
+    locked: dict[str, Any] | None,
+    primary_metric: str,
+) -> dict[str, Any] | None:
+    """Power feasibility at the final merged n, not the planned n.
+
+    The locked report admits the planned geometry; the disposition must judge
+    the records actually completed in *both* arms of the primary suite (the
+    paired sign test cannot use more pairs than the smaller arm completed).
+    When either scoreboard is missing or still partial the locked report is
+    returned unchanged (the incomplete path decides, never this gate).
+    """
+
+    if not isinstance(locked, dict):
+        return None
+    suite = primary_metric.rsplit(".", 1)[0] if "." in primary_metric else "held_out"
+    merged_n: int | None = None
+    for run_id in (control_id, candidate_id):
+        if not run_id:
+            return dict(locked)
+        path = camp_dir / "runs" / run_id / "scoreboard.json"
+        if not path.is_file():
+            return dict(locked)
+        board = _read_json(path)
+        if not isinstance(board, dict) or board.get("measurement_complete") is False:
+            return dict(locked)
+        suites = board.get("suites")
+        row = suites.get(suite) if isinstance(suites, dict) else None
+        completed = row.get("completed_document_n") if isinstance(row, dict) else None
+        if type(completed) is not int or completed < 0:
+            return dict(locked)
+        merged_n = completed if merged_n is None else min(merged_n, completed)
+    if merged_n is None:
+        return dict(locked)
+    from slm_training.autoresearch import evidence_ledger as _ev
+
+    report = _ev.power_feasibility_report(
+        max(1, int(merged_n)), _ev.parse_alpha(locked.get("alpha"))
+    )
+    if merged_n < 1:
+        report["decisive"] = False
+    return {
+        **report,
+        "locked_n": locked.get("n"),
+        "locked_decisive": locked.get("decisive"),
+        "merged_n": int(merged_n),
+        "merged_suite": suite,
+        "source": "merged_scoreboard",
+    }
+
+
 def _counterbalanced_arm_order(
     control_id: str,
     candidate_id: str,
@@ -10072,6 +10549,15 @@ def _gate_promotion_on_replicates(
     }
 
 
+def _PHASE_A_TAGS(phase_a_positive: bool, phase_a_quality_held: bool) -> list[str]:
+    tags: list[str] = []
+    if phase_a_positive:
+        tags.append("phase_a_positive")
+    if phase_a_quality_held:
+        tags.append("phase_a_quality_held")
+    return tags
+
+
 def _resolve_promotion_result(
     *,
     root: Path,
@@ -10196,18 +10682,49 @@ def _resolve_promotion_result(
         from slm_training.autoresearch.climb_policy import load_climb_policy
 
         climb = load_climb_policy()
-        disposition = dispose_champion_promote(
-            formal_preflight_status=formal_preflight_status,
-            certificate=certificate,
-            locked_expectations_sha256=locked_expectations_sha256,
-            phase_a_positive=phase_a_positive,
-            phase_a_quality_held=phase_a_quality,
-            control_metrics=ctrl_metrics,  # type: ignore[arg-type]
-            candidate_metrics=cand_metrics,  # type: ignore[arg-type]
-            promotion_primary=dict(climb.promotion_primary),
-            promotion_dispose=dict(climb.promotion_dispose),
-            power_feasibility=_campaign_power_feasibility(camp, candidate_id),
+        incomplete_reasons = _promotion_measurement_incomplete_reasons(
+            camp,
+            control_id=control_id,
+            candidate_id=candidate_id,
+            delivery=delivery,
         )
+        if incomplete_reasons:
+            # Partial scoreboard or spent chunk budget: the measurement is
+            # incomplete evidence, never a model verdict (retryable, refunded).
+            disposition = {
+                "status": "promotion_inconclusive",
+                "reasons": [*incomplete_reasons, *_PHASE_A_TAGS(phase_a_positive, phase_a_quality)],
+                "cert_policy": None,
+                "diagnosis_lanes": [],
+                "emit_five_lane_matrix": False,
+                "breaches": [],
+                "primary_improvement": None,
+                "promotion_primary_met": None,
+                "inconclusive": True,
+                "measurement_incomplete": True,
+            }
+        else:
+            disposition = dispose_champion_promote(
+                formal_preflight_status=formal_preflight_status,
+                certificate=certificate,
+                locked_expectations_sha256=locked_expectations_sha256,
+                phase_a_positive=phase_a_positive,
+                phase_a_quality_held=phase_a_quality,
+                control_metrics=ctrl_metrics,  # type: ignore[arg-type]
+                candidate_metrics=cand_metrics,  # type: ignore[arg-type]
+                promotion_primary=dict(climb.promotion_primary),
+                promotion_dispose=dict(climb.promotion_dispose),
+                power_feasibility=_merged_promotion_power_feasibility(
+                    camp,
+                    control_id=control_id,
+                    candidate_id=candidate_id,
+                    locked=_campaign_power_feasibility(camp, candidate_id),
+                    primary_metric=str(
+                        (climb.promotion_primary or {}).get("metric")
+                        or "held_out.structural_similarity"
+                    ),
+                ),
+            )
         disposition = _gate_promotion_on_replicates(
             root=root,
             loop_id=loop_id,
@@ -10315,7 +10832,14 @@ def _resolve_promotion_result(
                 ):
                     attempts = int(row.get("promote_attempts") or 0)
                     row["promote_attempts"] = max(0, attempts - 1)
-                    if status == "promotion_inconclusive" or disposition.get("timeout"):
+                    if disposition.get("measurement_incomplete"):
+                        row["last_measurement_incomplete"] = True
+                        row["last_measurement_incomplete_reasons"] = [
+                            str(reason)
+                            for reason in (disposition.get("reasons") or [])
+                            if str(reason).startswith("measurement_incomplete:")
+                        ][:8]
+                    elif status == "promotion_inconclusive" or disposition.get("timeout"):
                         row["last_formal_timeout"] = True
                         row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
                     if status == "harness_failure" or disposition.get(
@@ -13406,6 +13930,7 @@ def _matrix(
     thrash_regime: ThrashRegimeDecision | None = None,
     initialize_from: str | None = None,
     telemetry_root: Path | None = None,
+    chunk_plan: Mapping[str, Any] | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -13582,6 +14107,12 @@ def _matrix(
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
         }
+        if role == "promotion" and chunk_plan:
+            # Locked chunked measurement: per-suite n, per-record persistence
+            # and the per-run decode cap come from the pre-run chunk plan.
+            base["eval_limit"] = int(chunk_plan["suite_n"])
+            base["eval_partial_scoreboard"] = True
+            base["eval_max_records_this_run"] = int(chunk_plan["records_per_run"])
         if role == "screening":
             # Screening smoke suites are tiny: baked generate_batch_size groups
             # every document into one decode chunk, defeating per-record
@@ -14087,6 +14618,9 @@ def _matrix(
                 "decode_timeout_seconds",
                 "generate_batch_size",
                 "eval_suites",
+                "eval_limit",
+                "eval_partial_scoreboard",
+                "eval_max_records_this_run",
             }
         )
 
@@ -14291,6 +14825,7 @@ def _manifest(
     policy: Any | None = None,
     cycle_intent: str | None = None,
     formal_preflight_sha256: str | None = None,
+    chunk_plan: Mapping[str, Any] | None = None,
 ) -> ExperimentCampaignV1:
     from slm_training.autoresearch.climb_policy import (
         load_climb_policy,
@@ -14401,6 +14936,11 @@ def _manifest(
             ),
             _ev.parse_alpha(gate.get("alpha") if isinstance(gate, Mapping) else None),
         )
+        # Chunk plan (records per bounded run, locked run budget) stamped
+        # before execution so every chunk of the measurement is preregistered.
+        measurement_chunk_plan: dict[str, Any] | None = (
+            dict(chunk_plan) if chunk_plan else _promotion_chunk_plan(pol)
+        )
     else:
         claim_class = str(defaults.get("claim_class_screening") or "diagnostic")
         # Screening does not calibrate empirical quality/latency with Lean, but
@@ -14420,6 +14960,7 @@ def _manifest(
         artifact_requirements = (ArtifactRequirementV1(kind="version_stamp"),)
         locked_eval = None
         power_feasibility = None
+        measurement_chunk_plan = None
 
     knobs = experiment["knobs"]
     cfg = hashlib.sha256(json.dumps(knobs, sort_keys=True).encode()).hexdigest()
@@ -14547,6 +15088,7 @@ def _manifest(
             promotion_seed_floor(pol)[0] if role == "promotion" else None
         ),
         power_feasibility=power_feasibility,
+        measurement_chunk_plan=measurement_chunk_plan,
         source_commit=commit,
         source_dirty=False,
         author="autotrain-continuous-driver",
@@ -15570,6 +16112,22 @@ def run_cycle(
                 )
             except OSError as exc:
                 print(f"PREFLIGHT_WARN persist err={exc!r}", flush=True)
+    promotion_chunk_plan: dict[str, Any] | None = (
+        _promotion_chunk_plan(policy, root=root) if role == "promotion" else None
+    )
+    if promotion_chunk_plan is not None:
+        print(
+            "PROMOTION_CHUNK_PLAN "
+            f"suites={','.join(promotion_chunk_plan['suites'])} "
+            f"suite_n={promotion_chunk_plan['suite_n']} "
+            f"total_record_n={promotion_chunk_plan['total_record_n']} "
+            f"per_record_s={promotion_chunk_plan['per_record_seconds']:.3f} "
+            f"p95_s={promotion_chunk_plan['measured_decode_p95_seconds']} "
+            f"records_per_run={promotion_chunk_plan['records_per_run']} "
+            f"run_n={promotion_chunk_plan['run_n']} "
+            f"chunk_wall_s={promotion_chunk_plan['chunk_wall_seconds']:.0f}",
+            flush=True,
+        )
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -15594,6 +16152,7 @@ def run_cycle(
         thrash_regime=thrash_regime,
         initialize_from=initialize_from,
         telemetry_root=root,
+        chunk_plan=promotion_chunk_plan,
     )
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
@@ -15971,6 +16530,7 @@ def run_cycle(
                 formal_preflight_sha256=(
                     promote_preflight_sha if is_promote_arm else None
                 ),
+                chunk_plan=promotion_chunk_plan,
             )
             man_path = camp_dir / "manifests" / f"{eid}.json"
             man_path.parent.mkdir(parents=True, exist_ok=True)
@@ -16037,6 +16597,25 @@ def run_cycle(
         if int(code) == 0:
             _attach_screening_eval_nll(camp_dir / "runs" / eid)
 
+    promotion_chunks: dict[str, Any] | None = None
+    if promotion_chunk_plan is not None and seen:
+        _set_active_stage(root, loop_id, "promotion-chunks")
+        chunk_started = time.monotonic()
+        promotion_chunks = _run_promotion_eval_chunks(
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            camp_dir=camp_dir,
+            plan=promotion_chunk_plan,
+            experiment_paths={eid: by_id[eid] for eid in seen},
+            arm_order=list(dict.fromkeys(eid for eid in order if eid in seen)),
+        )
+        # Every chunk was its own bounded run (fresh MAX_RUN_SECONDS deadline,
+        # eval wall <= MAX_HARNESS_WALL_SECONDS); the cycle clock resumes where
+        # it paused so closeout stages keep the budget they had before.
+        deadline += time.monotonic() - chunk_started
+
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     delivery = _phase_a_delivery(
         cwd=cwd,
@@ -16062,6 +16641,8 @@ def run_cycle(
         "arm_exits": arm_exits,
         "arm_skipped": arm_skipped,
     }
+    if promotion_chunks is not None:
+        delivery = _attach_promotion_chunks(delivery, promotion_chunks)
     if screening_multi:
         direction = str(role_primary.get("direction") or "increase")
         scored: list[tuple[str, float, int]] = []

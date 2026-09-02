@@ -5043,6 +5043,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "P11 promotion tier fits the run cap by chunked evaluation: ExperimentCampaignV1.measurement_chunk_plan (promotion_chunk_plan/v1, validated; legacy digests tolerate its absence) is stamped on every promotion manifest before execution from measured decode p95 (policy p95_margin, never below the locked timeout), MAX_HARNESS_WALL_SECONDS minus eval_overhead_seconds, promotion_suite_n and the available suite records (records_per_run, locked run_n). ExperimentKnobs gain eval_limit/eval_partial_scoreboard/eval_max_records_this_run (measurement keys, excluded from lever signatures); compile_commands routes them; execute_commands types evaluate_model exit 10 on a resumable chunk as stopped/resume_pending (never failed). Driver: promotion knobs lock suite n and per-run cap; after the arms, _run_promotion_eval_chunks launches the remaining chunks in sequence, each its own MAX_RUN_SECONDS-bounded evaluate_model --resume-run subprocess on the same checkpoint/suites (cycle clock paused for the stage), ledger camp/promotion_chunks.json; chunk_budget_exhausted is measurement_incomplete (promotion_inconclusive, refunded), never a model verdict; _resolve_promotion_result refuses partial scoreboards and evaluates power_feasibility at the final merged n (min completed_document_n of the primary suite across both arms).",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
           "version": "v271"
         },
@@ -6940,7 +6945,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v271"
+      "version": "v272"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -16272,6 +16277,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "P11 chunked resumable evaluation (docs/design/chunked-promotion-eval-20260902.md): evaluate()/evaluate_suites() gain partial_scoreboard/resume_from/max_records_this_run; every decoded record is persisted to eval_<suite>.partial.json (EvalPartialScoreboardV1) and replayed without re-decoding on resume (identity: checkpoint sha, suite manifest sha, eval limit/offset, policy digest, record ids); records left undecoded are pending (incomplete_document_n, never a false 0) and a chunk stops at max_records_this_run or when the next record cannot fit the evaluation wall at the full locked timeout (fair-share only over records this run decodes). Partial suites carry measurement_complete=false, skip ship gates/AgentV, and stay non-cacheable. scripts.evaluate_model adds --partial-scoreboard/--resume-run/--max-records-this-run (env SLM_EVAL_*) and exit 10 (EXIT_RESUME_PENDING) when thresholds were requested but records remain.",
+          "version": "v102"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: S4 additive read-only DecodeStats ratios (committed_tokens alias of tokens_emitted, forced_token_fraction, speculative_commit_fraction, speculative_token_fraction, forwards_per_committed_token) as properties, each None on a zero denominator, appended to as_dict() and skipped by merge()/dropped by from_dict(); no counter, gate, or decode behaviour changes; tests in tests/test_models/test_decode_stats_fractions.py.",
           "version": "v101"
         },
@@ -16881,7 +16891,7 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v101"
+      "version": "v102"
     },
     "harness.model_build.train": {
       "history": [
