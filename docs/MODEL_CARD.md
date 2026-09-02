@@ -3548,3 +3548,9 @@ Date (UTC) column). Do not delete history.
 - campaign: `continuous-loop-20260902-recovery2-b552b74b-c2`
 - checkpoints: `runs/c20260902-recovery2-b552b74b-c2-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-09-02, continuous-loop-20260902-recovery2-b552b74b-c3)
+
+- campaign: `continuous-loop-20260902-recovery2-b552b74b-c3`
+- checkpoints: `runs/c20260902-recovery2-b552b74b-c3-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
