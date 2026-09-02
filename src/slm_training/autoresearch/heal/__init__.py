@@ -277,7 +277,24 @@ def run_playbooks(
             if blocker_class in p.handles and _safe_matches(p, blocker)
         ]
         if not matching:
+            # An escalation without a receipt is invisible to the driver's
+            # pass classifier (a pass that only escalated would score as
+            # vacuous). Leave an ``unhandled`` receipt so the attempt is on
+            # the ledger and the escalation is visible.
             ledger.escalate(fingerprint, note="no_matching_playbook")
+            receipts.append(
+                _receipt(
+                    loop_id,
+                    campaign_id,
+                    "none",
+                    fingerprint,
+                    plan=None,
+                    attempts_prior=record.attempts,
+                    outcome="unhandled",
+                    note=f"no_matching_playbook class={blocker_class} kind={kind}",
+                )
+            )
+            _persist(receipts[-1])
             continue
         playbook = matching[0]
         if record.attempts >= max_attempts_per_fingerprint:
@@ -315,6 +332,19 @@ def run_playbooks(
             continue
         if plan is None:
             ledger.escalate(fingerprint, note="playbook_declined")
+            receipts.append(
+                _receipt(
+                    loop_id,
+                    campaign_id,
+                    playbook.playbook_id,
+                    fingerprint,
+                    plan=None,
+                    attempts_prior=record.attempts,
+                    outcome="unhandled",
+                    note=f"playbook_declined class={blocker_class} kind={kind}",
+                )
+            )
+            _persist(receipts[-1])
             continue
         try:
             for step in plan.steps:

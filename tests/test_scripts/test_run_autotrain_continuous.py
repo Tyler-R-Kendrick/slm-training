@@ -9423,6 +9423,15 @@ def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
     if report["verdict"] == "feasible":
         assert int(meta["smoke_n"]) >= 6
         assert report["must_generate"] is False
+    elif report["verdict"] == "insufficient_evidence":
+        # Power SD unmeasured for the policy metric while the exact floor is
+        # affordable: an advisory screen at the affordable n, never a park,
+        # never a generation demand, never an undecidable n below the floor.
+        assert report["power_floor_status"] == "unmeasured"
+        assert report["must_generate"] is False
+        assert report["binding_constraints"] == []
+        assert int(report["chosen_n"]) == int(meta["smoke_n"])
+        assert int(report["n_min"]) <= int(report["chosen_n"])
     else:
         assert report["verdict"] == "infeasible_range_empty"
         assert "suite_volume" in report["binding_constraints"]
@@ -11475,3 +11484,242 @@ def test_size_match_skip_reason_typed() -> None:
     assert reason is not None
     assert reason.startswith("capacity_unmatched:")
     assert _mod._size_match_skip_reason(control, control) is None
+
+
+# --- fail-closed heal postconditions / vacuous-pass park (P6) -----------------
+
+
+def _write_screening_seed_file(cwd: Path, *, smoke_n: int) -> Path:
+    seed_path = cwd / "src/slm_training/resources/test_seeds.jsonl"
+    seed_path.parent.mkdir(parents=True, exist_ok=True)
+    rows = [
+        {"id": f"smoke-{i}", "meta": {"suite": "smoke"}, "text": "x"}
+        for i in range(smoke_n)
+    ]
+    seed_path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    return seed_path
+
+
+def _screening_rebuild_handoff(root: Path, campaign_id: str) -> Path:
+    camp = root / campaign_id
+    camp.mkdir(parents=True, exist_ok=True)
+    handoff = {
+        "schema_version": "AutotrainCycleHandoffV1",
+        "loop_id": "loop-1",
+        "campaign_id": campaign_id,
+        "cycle_index": 7,
+        "upstream_commit": "a" * 40,
+        "integration_commit": "b" * 40,
+        "cycle_role": "screening",
+        "cycle_intent": "screening",
+        "evidence_class": "fixture",
+        "climb_state": "rejected",
+        "ship_state": "blocked",
+        "primary_metric": "smoke.eval_nll",
+        "reasons": ["screening_n_suite_volume"],
+        "priorities": [],
+        "actions": [
+            {
+                "schema_version": "AutotrainActionV1",
+                "kind": "rebuild_data",
+                "owner": "synthesis-feedback",
+                "reason": "grow the screening suite to n_min",
+                "evidence_ids": [f"campaign:{campaign_id}"],
+            }
+        ],
+        "created_at": "2026-09-01T00:00:00Z",
+    }
+    path = camp / "cycle_handoff.json"
+    path.write_text(json.dumps(handoff) + "\n", encoding="utf-8")
+    return path
+
+
+def test_self_heal_rebuild_screening_eval_noop_sampler_is_postcondition_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sampler that returns [] against a deficit is a FAILED heal: receipt,
+    ledger row, no ack, no fresh suite id committed."""
+    from slm_training.autoresearch import screening_sample_size as sss
+    from slm_training.autoresearch.heal import load_heal_receipts
+    from slm_training.autoresearch.heal.escalation import EscalationLedger
+
+    cwd = tmp_path / "repo"
+    root = cwd / "outputs" / "autoresearch"
+    seed_path = _write_screening_seed_file(cwd, smoke_n=24)
+    _screening_rebuild_handoff(root, "cycle-7")
+    monkeypatch.setattr(
+        _mod,
+        "_screening_n_report",
+        lambda policy=None: (0, {"must_generate": True, "n_min": 30}),
+    )
+    monkeypatch.setattr(_mod, "_screening_suite_records", lambda: 24)
+    monkeypatch.setattr(sss, "extra_smoke_fixtures_for_deficit", lambda **kw: [])
+
+    def _forbid_build(*args: object, **kwargs: object) -> object:
+        raise AssertionError("an unfilled seed deficit must never start a build")
+
+    monkeypatch.setattr(_mod, "run_bounded_process", _forbid_build)
+    monkeypatch.setattr(
+        _mod, "_git_commit_paths", lambda *a, **k: pytest.fail("no commit on failed heal")
+    )
+
+    kind = _mod._self_heal_rebuild_screening_eval(
+        cwd=cwd, root=root, loop_id="loop-1", campaign_id="cycle-7"
+    )
+
+    assert kind is None
+    receipts = load_heal_receipts(root, "loop-1")
+    assert [r.outcome for r in receipts] == ["verify_failed"]
+    receipt = receipts[0]
+    assert receipt.playbook_id == "driver:rebuild_screening_eval"
+    assert "heal_postcondition_failed" in receipt.note
+    assert '"seed_smoke_n": 24' in receipt.note
+    assert receipt.verify_result is not None and receipt.verify_result.returncode == 1
+    ledger = EscalationLedger.load(root, "loop-1")
+    record = next(iter(ledger.records.values()))
+    assert record.kind == "heal_postcondition_failed"
+    assert record.status == "healing"  # first attempt of a 3-attempt budget
+    assert not (root / "loops" / "loop-1" / "action_receipts.jsonl").exists()
+    assert not (cwd / "src/slm_training/resources/data/eval").exists()
+    assert seed_path.read_text(encoding="utf-8").count("\n") == 24
+
+
+def test_append_deficit_smoke_seeds_reports_unfilled_deficit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.autoresearch import screening_sample_size as sss
+
+    cwd = tmp_path / "repo"
+    _write_screening_seed_file(cwd, smoke_n=3)
+    monkeypatch.setattr(sss, "extra_smoke_fixtures_for_deficit", lambda **kw: [])
+    empty = _mod._append_deficit_smoke_seeds(cwd, n_min=6)
+    assert empty.deficit_unfilled and empty.need == 3 and empty.paths == []
+
+    monkeypatch.setattr(
+        sss,
+        "extra_smoke_fixtures_for_deficit",
+        lambda **kw: [{"id": "smoke-x", "meta": {"suite": "smoke"}}],
+    )
+    grown = _mod._append_deficit_smoke_seeds(cwd, n_min=6)
+    assert not grown.deficit_unfilled
+    assert (grown.smoke_n_before, grown.smoke_n_after, grown.appended) == (3, 4, 1)
+    # No deficit: an empty sampler is not a failure.
+    monkeypatch.setattr(sss, "extra_smoke_fixtures_for_deficit", lambda **kw: [])
+    assert not _mod._append_deficit_smoke_seeds(cwd, n_min=4).deficit_unfilled
+
+
+def test_ack_rebuild_data_action_refuses_unchanged_counts(tmp_path: Path) -> None:
+    from slm_training.autoresearch.schemas import AutotrainCycleHandoffV1
+
+    root = tmp_path / "ar"
+    path = _screening_rebuild_handoff(root, "cycle-7")
+    handoff = AutotrainCycleHandoffV1.model_validate_json(path.read_text())
+    with pytest.raises(ValueError, match="count postcondition"):
+        _mod._ack_rebuild_data_action(
+            root, handoff, action_index=0, evidence_uris=["x.json"], counts=(24, 24)
+        )
+    assert not (root / "loops" / "loop-1" / "action_receipts.jsonl").exists()
+
+
+def test_record_pass_outcome_reads_receipt_outcome(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    receipts = root / "loops" / "loop-1" / "heal_receipts.jsonl"
+    receipts.parent.mkdir(parents=True)
+    receipts.write_text(json.dumps({"outcome": "verify_failed"}) + "\n")
+    outcome = _mod._record_pass_outcome(
+        root=root, loop_id="loop-1", before_campaign=None, before_receipts=0
+    )
+    assert outcome == "heal_postcondition_failed"
+    receipts.write_text(receipts.read_text() + json.dumps({"outcome": "unhandled"}) + "\n")
+    assert (
+        _mod._record_pass_outcome(
+            root=root, loop_id="loop-1", before_campaign=None, before_receipts=1
+        )
+        == "escalation_unhandled"
+    )
+
+
+def test_three_vacuous_passes_write_typed_park_without_raising(
+    tmp_path: Path,
+) -> None:
+    from slm_training.autoresearch.heal.escalation import EscalationLedger
+    from slm_training.autoresearch.schemas import AutotrainLoopStateV1
+
+    root = tmp_path / "ar"
+    kwargs = dict(root=root, loop_id="loop-1", before_campaign=None, before_receipts=0)
+    receipts = root / "loops" / "loop-1" / "heal_receipts.jsonl"
+    receipts.parent.mkdir(parents=True)
+    receipts.write_text(json.dumps({"outcome": "healed"}) + "\n")
+    assert _mod._record_pass_outcome(**kwargs) == "verified_heal"
+    kwargs["before_receipts"] = 1
+    assert _mod._record_pass_outcome(**kwargs) == "vacuous_pass"
+    assert _mod._record_pass_outcome(**kwargs) == "vacuous_pass"
+    assert not (root / "loops" / "loop-1" / "state.json").exists()
+    assert (
+        _mod._record_pass_outcome(**kwargs, reason="RuntimeError('boom')")
+        == _mod._STALL_FINGERPRINT
+    )
+    state = AutotrainLoopStateV1.model_validate_json(
+        (root / "loops" / "loop-1" / "state.json").read_text()
+    )
+    assert state.state == "BLOCKED"
+    assert state.blocker_fingerprint == "loop_stalled_no_campaign"
+    assert state.blocker_count == 3
+    assert state.next_action is not None
+    assert "last non-vacuous pass: verified_heal" in state.next_action
+    assert "boom" in state.next_action
+    ledger = EscalationLedger.load(root, "loop-1")
+    record = next(iter(ledger.records.values()))
+    assert record.kind == "loop_stalled_no_campaign" and record.status == "escalated"
+    rows = [
+        json.loads(line)
+        for line in (root / "loops" / "loop-1" / "pass_outcomes.jsonl").read_text().splitlines()
+    ]
+    assert [r["consecutive_vacuous"] for r in rows] == [0, 1, 2, 3]
+
+
+def test_main_returns_stall_code_after_three_vacuous_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The driver parks and returns — no RuntimeError escapes main()."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    # main() closes the lock handle on exit: hand each pass a fresh one.
+    monkeypatch.setattr(
+        _mod, "acquire_driver_lock", lambda *a, **k: (tmp_path / "driver.lock").open("w+")
+    )
+    monkeypatch.setattr(_mod, "self_heal_unblock_loop", lambda **kw: {})
+    monkeypatch.setattr(_mod, "run_cycle", lambda **kwargs: "cycle-1")
+    codes = [_mod.main(["--supervised", "--max-cycles", "1"]) for _ in range(3)]
+    assert codes == [0, 0, _mod._STALL_EXIT_CODE]
+    state = json.loads(
+        (tmp_path / "outputs" / "autoresearch" / "loops" / "continuous-openui-local" / "state.json").read_text()
+    )
+    assert state["state"] == "BLOCKED"
+    assert state["blocker_fingerprint"] == "loop_stalled_no_campaign"
+
+
+def test_main_cycle_error_path_parks_instead_of_raising(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "a" * 40)
+    # main() closes the lock handle on exit: hand each pass a fresh one.
+    monkeypatch.setattr(
+        _mod, "acquire_driver_lock", lambda *a, **k: (tmp_path / "driver.lock").open("w+")
+    )
+    monkeypatch.setattr(_mod, "self_heal_unblock_loop", lambda **kw: {})
+    monkeypatch.setattr(_mod, "_self_heal_cycle_error", lambda **kw: None)
+    monkeypatch.setattr(_mod, "_self_heal_git_ancestry", lambda **kw: None)
+
+    def _boom(**kwargs: object) -> str:
+        raise RuntimeError("campaign lock digest mismatch")
+
+    monkeypatch.setattr(_mod, "run_cycle", _boom)
+    codes = [_mod.main(["--supervised", "--max-cycles", "1"]) for _ in range(3)]
+    assert codes[-1] == _mod._STALL_EXIT_CODE
+    state = json.loads(
+        (tmp_path / "outputs" / "autoresearch" / "loops" / "continuous-openui-local" / "state.json").read_text()
+    )
+    assert state["blocker_fingerprint"] == "loop_stalled_no_campaign"
+    assert "campaign lock digest mismatch" in state["next_action"]

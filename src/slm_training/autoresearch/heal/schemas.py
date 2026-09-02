@@ -172,6 +172,7 @@ HealOutcome = Literal[
     "budget_exhausted",
     "cycle_detected",
     "refused_scope",
+    "unhandled",  # no playbook matched / declined: attempted, escalated, never vacuous
 ]
 
 

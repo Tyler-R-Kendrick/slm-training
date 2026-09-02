@@ -122,6 +122,84 @@ def _stash_head_sha(cwd: Path) -> str | None:
     return sha if out.returncode == 0 and len(sha) == 40 else None
 
 
+_POLICY_PRIMARY_FALLBACK = "smoke.eval_nll"
+_NO_CAMPAIGN_THRESHOLD = 5
+_STALL_KIND = "loop_stalled_no_campaign"
+
+
+def _default_primary_metric() -> str:
+    """Driver and supervisor screen on the policy's ``screening_primary.metric``."""
+    try:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+
+        return str(load_climb_policy().screening_primary["metric"])
+    except Exception as exc:  # noqa: BLE001 — a policy load bug must not stop supervision
+        print(
+            f"SUPERVISOR_POLICY_WARN primary metric fallback={_POLICY_PRIMARY_FALLBACK} "
+            f"error={exc!r}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return _POLICY_PRIMARY_FALLBACK
+
+
+def _watchdog_no_campaign(
+    *,
+    root: Path,
+    loop_id: str,
+    passes_without_campaign: int,
+    total_no_campaign_passes: int,
+    campaign_id: str | None,
+    log_event,
+    threshold: int = _NO_CAMPAIGN_THRESHOLD,
+) -> float | None:
+    """No-campaign watchdog: escalate through the ledger, return its backoff.
+
+    Returns the ledger's ``next_backoff_seconds`` for the stall fingerprint once
+    ``passes_without_campaign`` reaches ``threshold`` (``None`` below it). The
+    caller's consecutive counter is never reset here: a chronic stall keeps
+    re-observing the same fingerprint so ``seen_count`` and the governed backoff
+    grow instead of the alarm re-arming from zero every ``threshold`` passes.
+    ``total_no_campaign_passes`` is the running total kept in the ledger note.
+    """
+    if passes_without_campaign < threshold:
+        return None
+    try:
+        from slm_training.autoresearch.heal.escalation import EscalationLedger
+
+        ledger = EscalationLedger.load(root, loop_id)
+        record = ledger.observe(
+            kind=_STALL_KIND,
+            reason="supervised passes without a new campaign",
+            blocker_class="unknown",
+            campaign_id=campaign_id or "unknown",
+            owner_skill="autotrain",
+        )
+        ledger.escalate(
+            record.fingerprint,
+            note=(
+                f"supervisor watchdog: consecutive={passes_without_campaign} "
+                f"total_no_campaign_passes={total_no_campaign_passes} "
+                f"threshold={threshold}"
+            ),
+        )
+        ledger.save()
+        backoff = float(ledger.records[record.fingerprint].next_backoff_seconds)
+        log_event(
+            {
+                "event": _STALL_KIND,
+                "passes": passes_without_campaign,
+                "total_no_campaign_passes": total_no_campaign_passes,
+                "seen_count": record.seen_count,
+                "next_backoff_seconds": backoff,
+            }
+        )
+        return backoff
+    except Exception as exc:  # noqa: BLE001
+        log_event({"event": "watchdog_error", "error": repr(exc)})
+        return None
+
+
 def _write_family_closures(log_event) -> None:
     """Fail-soft post-cycle conclusion writer (WP-4 production caller)."""
     try:
@@ -141,7 +219,7 @@ def _write_family_closures(log_event) -> None:
         log_event({"event": "family_closures_error", "error": repr(exc)})
 
 
-def main(argv: list[str] | None = None) -> int:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--loop-id", default="continuous-openui-local")
     parser.add_argument(
@@ -154,7 +232,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument(
         "--primary-metric",
-        default="smoke.structural_similarity",
+        default=_default_primary_metric(),
+        help="Defaults to climb policy screening_primary.metric (same as the driver)",
     )
     parser.add_argument(
         "--hard-backoff-seconds",
@@ -196,7 +275,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable heal-playbook dispatch (ledger + governed backoff only)",
     )
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _build_parser().parse_args(argv)
 
     cwd = Path.cwd()
     root = args.root if args.root.is_absolute() else cwd / args.root
@@ -219,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
     py = sys.executable
     cycle = 0
     passes_without_campaign = 0
-    no_campaign_threshold = 5
+    total_no_campaign_passes = 0
     while args.max_cycles == 0 or cycle < args.max_cycles:
         cycle += 1
         # Heal first (including local-CPU rebuild_data). Park is not a stop
@@ -327,24 +410,22 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
         after_campaign = continuous._latest_cycle(root, args.loop_id)[1]
-        passes_without_campaign = passes_without_campaign + 1 if after_campaign == before_campaign else 0
-        if passes_without_campaign >= no_campaign_threshold:
-            try:
-                from slm_training.autoresearch.heal.escalation import EscalationLedger
-                ledger = EscalationLedger.load(root, args.loop_id)
-                fingerprint = ledger.observe(
-                    kind="loop_stalled_no_campaign",
-                    reason=f"{passes_without_campaign} supervised passes without a new campaign",
-                    blocker_class="unknown",
-                    campaign_id=after_campaign or "unknown",
-                    owner_skill="autotrain",
-                ).fingerprint
-                ledger.escalate(fingerprint, note="supervisor watchdog threshold reached")
-                ledger.save()
-                log_event({"event": "loop_stalled_no_campaign", "passes": passes_without_campaign})
-            except Exception as exc:  # noqa: BLE001
-                log_event({"event": "watchdog_error", "error": repr(exc)})
+        if after_campaign == before_campaign:
+            passes_without_campaign += 1
+            total_no_campaign_passes += 1
+        else:
             passes_without_campaign = 0
+        if int(proc.returncode) == int(getattr(continuous, "_STALL_EXIT_CODE", 3)):
+            # The driver wrote its typed loop_stalled_no_campaign park.
+            log_event({"event": "driver_parked_stalled", "cycle": cycle})
+        watchdog_backoff = _watchdog_no_campaign(
+            root=root,
+            loop_id=args.loop_id,
+            passes_without_campaign=passes_without_campaign,
+            total_no_campaign_passes=total_no_campaign_passes,
+            campaign_id=after_campaign,
+            log_event=log_event,
+        )
         # Post-cycle unblock regardless of exit code.
         _write_family_closures(log_event)
         try:
@@ -355,12 +436,17 @@ def main(argv: list[str] | None = None) -> int:
             )
             log_event({"event": "post_cycle_unblock", "cycle": cycle, **report})
             if report.get("hard_pending"):
-                time.sleep(max(1.0, float(args.hard_backoff_seconds)))
+                sleep_seconds = max(1.0, float(args.hard_backoff_seconds))
             else:
-                time.sleep(max(0.5, float(args.soft_backoff_seconds)))
+                sleep_seconds = max(0.5, float(args.soft_backoff_seconds))
         except Exception as exc:  # noqa: BLE001
             log_event({"event": "post_cycle_unblock_error", "error": repr(exc)})
-            time.sleep(max(1.0, float(args.soft_backoff_seconds)))
+            sleep_seconds = max(1.0, float(args.soft_backoff_seconds))
+        if watchdog_backoff is not None:
+            # The escalation ledger governs the no-campaign path: never spin
+            # at the soft backoff while the loop is provably stalled.
+            sleep_seconds = max(sleep_seconds, float(watchdog_backoff))
+        time.sleep(sleep_seconds)
     return 0
 
 

@@ -5209,6 +5209,32 @@ def test_default_eval_version_resolves_published_smoke_suite() -> None:
     assert (root / "suites" / "smoke" / "records.jsonl").is_file()
 
 
+def test_default_eval_version_prefers_largest_family_smoke_suite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.autoresearch.engine import default_eval_version
+
+    published = tmp_path / "src/slm_training/resources/data/eval"
+    for name, n in (
+        ("e938_role_safe_all_targets_smoke24_v1", 24),
+        ("e938_role_safe_all_targets_smoke96_v1", 96),
+        ("e938_role_safe_all_targets_smoke6_v1", 6),
+        ("e842_harness_owned_slots_v1", 500),
+    ):
+        records = published / name / "suites" / "smoke" / "records.jsonl"
+        records.parent.mkdir(parents=True)
+        records.write_text("".join(json.dumps({"id": i}) + "\n" for i in range(n)))
+    monkeypatch.chdir(tmp_path)
+    assert default_eval_version() == "e938_role_safe_all_targets_smoke96_v1"
+    # Ties break toward a non-frozen snapshot (a frozen suite can never grow).
+    frozen = published / "e938_role_safe_all_targets_v2" / "suites" / "smoke"
+    frozen.mkdir(parents=True)
+    (frozen / "records.jsonl").write_text(
+        "".join(json.dumps({"id": i}) + "\n" for i in range(96))
+    )
+    assert default_eval_version() == "e938_role_safe_all_targets_smoke96_v1"
+
+
 def test_compile_commands_default_eval_is_not_missing_v1() -> None:
     from slm_training.autoresearch.engine import compile_commands
     from slm_training.autoresearch.schemas import (

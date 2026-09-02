@@ -92,6 +92,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "Driver heal verification primitives (P6): HealVerifyV1-backed record_count_probe + verify_driver_heal write healed / verify_failed (heal_postcondition_failed) receipts and observe the blocker in the escalation ledger; allocate_screening_suite_id scans every _v* of the n family; run_playbooks leaves an 'unhandled' receipt (new HealOutcome) for no_matching_playbook / playbook_declined so escalations are never vacuous.",
+          "version": "v3"
+        },
+        {
           "date": "2026-08-21",
           "note": "Fail-closed loop primitives: typed pass outcomes, watchdog blocker catalog, WIP leases, and per-metric power evidence helpers.",
           "version": "v2"
@@ -135,7 +140,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v2"
+      "version": "v3"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5038,6 +5043,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Fail-closed heal postconditions (P6): the screening-suite grow heal verifies smoke_n growth through HealVerifyV1 (record_count_probe + must_generate == False) and writes heal_postcondition_failed receipts instead of vacuous acks (empty sampler against a deficit and publish FileExistsError are failed heals; rebuild_data acks require records_after > records_before); allocate_screening_suite_id scans every _v*; default_eval_version discovers the largest published e938_role_safe_all_targets_ smoke suite preferring non-frozen snapshots; three vacuous passes write a typed loop_stalled_no_campaign park (state=BLOCKED) and exit 3 without a traceback; the supervisor honours the ledger next_backoff_seconds on the no-campaign path, keeps a running stall total, and defaults --primary-metric to policy screening_primary.metric; run_playbooks leaves unhandled receipts for no_matching_playbook / playbook_declined.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
           "version": "v271"
         },
@@ -6935,7 +6945,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v271"
+      "version": "v272"
     },
     "harness.autoresearch.formal": {
       "history": [

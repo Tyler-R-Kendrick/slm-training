@@ -443,7 +443,15 @@ class TestRunnerLaws:
             cwd=repo,
             playbooks=[NPM_PLAYBOOK],
         )
-        assert receipts == ()
+        # The escalation is visible: an ``unhandled`` receipt lands on the
+        # loop ledger so the driver's pass classifier never scores this pass
+        # as vacuous, and the escalation record names the owner.
+        assert [r.outcome for r in receipts] == ["unhandled"]
+        assert receipts[0].playbook_id == "none"
+        assert "no_matching_playbook" in receipts[0].note
+        assert [r.outcome for r in heal.load_heal_receipts(root, "loop-1")] == [
+            "unhandled"
+        ]
         ledger = EscalationLedger.load(root, "loop-1")
         record = next(iter(ledger.records.values()))
         assert record.status == "escalated"
