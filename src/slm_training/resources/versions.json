@@ -5116,6 +5116,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "P1: type a failed stage's captured output as a harness signal (engine.stage_failure_signals). The SFT data-governance refusal now diagnoses as harness/train_data instead of falling through to untyped infrastructure with an argparse usage dump, so the continuous driver stops defaulting the repair owner to model_build.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the S2 n-gram provenance results JSON landed (deterministic rebuild).",
           "version": "v280"
         },
@@ -7113,7 +7118,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v280"
+      "version": "v281"
     },
     "harness.autoresearch.formal": {
       "history": [
