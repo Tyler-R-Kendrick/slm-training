@@ -2900,7 +2900,24 @@ _CAUSAL_FAMILY_ATTEMPT_CAP = 2
 # never a train arm: it carries the validation/test families the certified
 # smoke suites are sampled from.
 _DATA_ARM_CERTIFIED_TRAIN_VERSION = "openui_verified_train_v1"  # 1,083 records
-_DATA_ARM_STRICT_TRAIN_VERSION = "hillclimb_strict_v2"  # 676 records
+# ``hillclimb_strict_v2`` is NOT a legal data arm against the certified smoke
+# suites. Measured 2026-09-02 against e938_role_safe_all_targets_smoke96_v1:
+# 6 identical programs / 3 identical prompts / 16 shared root families with
+# the smoke suite, and 7 / 2 / 5 with held_out. Its own decontamination
+# indexed e938_..._v2 and the smoke6/smoke24 snapshots, never smoke96_v1 or
+# heldout24_v1, so the overlap was never gated. An arm trained on it would
+# score the eval it memorized: a leakage win, not a capability win. Its
+# synthesis feedback is also uncleared for SFT (blocking-class
+# ``eval_leakage_source`` on three families plus dup_share 0.55-0.93), so the
+# arm could not even train. Re-admit it only after a rebuild that
+# decontaminates against the live suites and clears the SFT gate.
+_LEAKED_TRAIN_VERSIONS: frozenset[str] = frozenset(
+    {"hillclimb_strict_v2", "wf_smoke_v2"}
+)
+#: The one leaked corpus that used to be a screening *arm* (``data-strict``).
+#: Only this one is reverse-classified from historical knobs; ``wf_smoke_v2``
+#: was a control corpus, so naming it there would relabel legacy control rows.
+_EX_DATA_ARM_LEAKED_TRAIN_VERSION = "hillclimb_strict_v2"
 # Control recipe values the size-matched recipe arms are defined against
 # (``_matrix`` control: batch_size=2; ModelBuildConfig.lr default 3e-4, the
 # control never sets ``lr``).
@@ -2923,11 +2940,6 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         "data-certified",
         "Training on the certified, eval-decontaminated openui_verified_train_v1 bucket (1,083 records) instead of the loop control corpus lowers smoke eval_nll at fixed model size without lowering parse_rate.",
         {"train_version": _DATA_ARM_CERTIFIED_TRAIN_VERSION},
-    ),
-    (
-        "data-strict",
-        "Training on the fail-closed hillclimb_strict_v2 corpus (676 records) instead of the loop control corpus lowers smoke eval_nll at fixed model size without lowering parse_rate.",
-        {"train_version": _DATA_ARM_STRICT_TRAIN_VERSION},
     ),
     (
         "lr-x2",
@@ -8324,8 +8336,13 @@ def _arm_slug_from_knobs(
         and not _is_process_arm(knobs)
         and train_version != _default_screening_train_version()
     ):
-        if train_version == _DATA_ARM_STRICT_TRAIN_VERSION:
-            return "data-strict"
+        if train_version == _EX_DATA_ARM_LEAKED_TRAIN_VERSION:
+            # Historical ledger rows still name the withdrawn arm's corpus;
+            # classify them so the ledger stays readable, never so the arm
+            # becomes selectable. ``wf_smoke_v2`` is deliberately absent: it
+            # was a legacy *control* corpus, never a data arm, and naming it
+            # here would relabel every legacy control row as an arm.
+            return f"data-leaked:{train_version}"
         if train_version == _DATA_ARM_CERTIFIED_TRAIN_VERSION:
             return "data-certified"
     cid = candidate_id or ""

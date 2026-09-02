@@ -55,7 +55,7 @@ def latency_primary() -> None:
 
 # P9 (RC7): size-matched arms that can move weights, and the arms moved to
 # the latency-only bank.
-_P9_NEW_ARMS = ("data-certified", "data-strict", "lr-x2", "lr-x0.5", "batch-x2", "steps-fill")
+_P9_NEW_ARMS = ("data-certified", "lr-x2", "lr-x0.5", "batch-x2", "steps-fill")
 _P9_LATENCY_ARMS = ("bounds", "canvas", "both", "steps", "batch1")
 
 
@@ -769,7 +769,10 @@ def test_p9_new_screening_arms_are_size_matched_training_or_data_levers() -> Non
     assert by_slug["lr-x0.5"] == {"lr": pytest.approx(1.5e-4)}
     assert by_slug["batch-x2"] == {"batch_size": 4}
     assert by_slug["data-certified"] == {"train_version": "openui_verified_train_v1"}
-    assert by_slug["data-strict"] == {"train_version": "hillclimb_strict_v2"}
+    # hillclimb_strict_v2 overlaps the scored suites (see
+    # tests/test_scripts/test_screening_corpus_leakage.py) so it is barred.
+    assert "data-strict" not in by_slug
+    assert "hillclimb_strict_v2" in _mod._LEAKED_TRAIN_VERSIONS
 
 
 def test_p9_no_screening_bank_arm_is_latency_only() -> None:
@@ -791,8 +794,9 @@ def test_p9_latency_arms_absent_under_nll_primary() -> None:
     assert _mod._latency_arms_active() is False
     slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
     assert not set(slugs) & set(_P9_LATENCY_ARMS)
-    for slug in ("data-strict", "lr-x2", "lr-x0.5", "batch-x2", "steps-fill"):
+    for slug in ("lr-x2", "lr-x0.5", "batch-x2", "steps-fill"):
         assert slug in slugs
+    assert "data-strict" not in slugs
 
 
 def test_p9_latency_arms_lead_under_latency_primary(latency_primary: None) -> None:
@@ -837,7 +841,7 @@ def test_p9_selector_on_empty_ledger_picks_training_or_data_arm(
         )
         for cycle in (1, 2, 3)
     ]
-    assert picks == ["data-certified", "data-strict", "lr-x2"]
+    assert picks == ["data-certified", "lr-x2", "lr-x0.5"]
     for slug in picks:
         _assert_moves_weights(slug)
 
@@ -852,7 +856,7 @@ def test_p9_data_certified_arm_is_dropped_when_control_trains_on_it(
     assert _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION == "openui_verified_train_v1"
     slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
     assert "data-certified" not in slugs
-    assert "data-strict" in slugs
+    assert "data-strict" not in slugs
     assert _mod._arm_is_self_control({"train_version": "openui_verified_train_v1"})
     assert not _mod._arm_is_self_control({"train_version": "hillclimb_strict_v2"})
     assert not _mod._arm_is_self_control(
@@ -861,7 +865,8 @@ def test_p9_data_certified_arm_is_dropped_when_control_trains_on_it(
     # A legacy fixture control makes the certified corpus a real data arm.
     monkeypatch.setattr(_mod, "_default_screening_train_version", lambda: "wf_smoke_v2")
     slugs = [slug for slug, _, _ in _mod._all_screening_arm_bank()]
-    assert slugs[:2] == ["data-certified", "data-strict"]
+    assert slugs[0] == "data-certified"
+    assert "data-strict" not in slugs
 
 
 def test_p9_steps_fill_spends_only_the_fitted_floor() -> None:
@@ -907,17 +912,19 @@ def test_p9_static_data_arms_are_ofat_levers_not_snapshot_leftovers(
         "_default_screening_train_version",
         lambda: _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION,
     )
-    assert _mod._STATIC_DATA_ARM_SLUGS == frozenset({"data-certified", "data-strict"})
-    assert _mod._slug_is_snapshot_arm("data-strict") is False
+    assert _mod._STATIC_DATA_ARM_SLUGS == frozenset({"data-certified"})
+    assert _mod._slug_is_snapshot_arm("data-certified") is False
     assert (
-        _mod._slug_is_snapshot_arm("data-strict", {"train_version": "hillclimb_strict_v2"})
+        _mod._slug_is_snapshot_arm(
+            "data-certified", {"train_version": "openui_verified_train_v1"}
+        )
         is False
     )
     assert (
         _mod._slug_is_snapshot_arm("heal-c96", {"train_version": "continuous_i10_c96"})
         is True
     )
-    assert _mod._open_slugs_are_snapshot_leftovers({"data-strict"}) is False
+    assert _mod._open_slugs_are_snapshot_leftovers({"data-certified"}) is False
 
 
 def test_matrix_confirm_path_same_levers_new_seed() -> None:
@@ -1118,18 +1125,17 @@ def test_select_recommended_slug_rotates_and_skips(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # NLL primary (policy.v3): the control corpus is the certified bucket, so
-    # ``data-certified`` is a self-control and ``data-strict`` leads.
+    # ``data-certified`` is a self-control; the recipe arms lead.
     monkeypatch.setattr(
         _mod,
         "_default_screening_train_version",
         lambda: _mod._DATA_ARM_CERTIFIED_TRAIN_VERSION,
     )
-    assert _mod._select_recommended_slug(1) == "data-strict"
-    assert _mod._select_recommended_slug(2) == "lr-x2"
-    assert _mod._select_recommended_slug(3) == "lr-x0.5"
-    assert _mod._select_recommended_slug(1729) == "lr-x2"
-    # skip data-strict → lr-x2 even on cycle 1
-    assert _mod._select_recommended_slug(1, skip={"data-strict"}) == "lr-x2"
+    assert _mod._select_recommended_slug(1) == "lr-x2"
+    assert _mod._select_recommended_slug(2) == "lr-x0.5"
+    assert _mod._select_recommended_slug(3) == "batch-x2"
+    # skip lr-x2 → the next recipe arm even on cycle 1
+    assert _mod._select_recommended_slug(1, skip={"lr-x2"}) == "lr-x0.5"
     # Latency-only arms never enter the NLL rotation.
     drawn = {_mod._select_recommended_slug(cycle) for cycle in range(1, 40)}
     assert not drawn & set(_P9_LATENCY_ARMS)
@@ -13192,11 +13198,28 @@ def test_champion_epoch_park_uses_train_manifest_record_count(tmp_path: Path) ->
 
 
 def test_warm_start_cycle_skips_corpus_swap_arms_and_pairs_every_candidate(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """P8 x P9: data arms are cold-start-only; every warm-start pair is asserted."""
+    """P8 x P9: data arms are cold-start-only; every warm-start pair is asserted.
+
+    The committed bank currently has no corpus-swap arm (the certified bucket is
+    the control corpus and hillclimb_strict_v2 is barred for measured eval
+    leakage), so the arm under test is injected here: the mechanism must hold
+    for whatever data arm a future bank carries, not just for today's roster.
+    """
     from slm_training.autoresearch.schemas import HypothesisMatrix
     from slm_training.autoresearch.thrash_regime import REGIME_CLIMB
+
+    injected = (
+        "data-probe",
+        "Training on a different corpus lowers smoke eval_nll at fixed size.",
+        {"train_version": "some_other_corpus_v1"},
+    )
+    monkeypatch.setattr(
+        _mod, "_SCREENING_ARM_BANK", (injected,) + _mod._SCREENING_ARM_BANK
+    )
 
     root = tmp_path / "autoresearch"
     loop_id = "p8p9-warm-loop"
@@ -13233,7 +13256,7 @@ def test_warm_start_cycle_skips_corpus_swap_arms_and_pairs_every_candidate(
         steps=40,
         cycle=2,
         role="screening",
-        recommended_slug="data-strict",
+        recommended_slug="lr-x2",
         thrash_regime=regime,
         initialize_from=str(ckpt),
     )
@@ -13244,16 +13267,16 @@ def test_warm_start_cycle_skips_corpus_swap_arms_and_pairs_every_candidate(
     train_versions = {row["experiment"]["knobs"]["train_version"] for row in rows}
     assert train_versions == {"wf_smoke_v2"}
     ids = {row["experiment"]["experiment_id"] for row in rows}
+    assert not any(eid.endswith("-data-probe") for eid in ids)
     assert not any(eid.endswith("-data-strict") for eid in ids)
     assert not any(eid.endswith("-data-certified") for eid in ids)
     for row in rows[1:]:
         _mod.assert_warm_start_launch(control, row["experiment"]["knobs"])
-    # The recommended data arm was retargeted to a legal warm-start arm.
     assert matrix["recommended_experiment_id"] in ids
     assert not matrix["recommended_experiment_id"].endswith("-control")
     out = capsys.readouterr().out
     assert "WARM_START_SKIP_DATA_ARMS" in out
-    assert "data-strict" in out
+    assert "data-probe" in out
 
     # Cold-start cycle (no champion checkpoint): data arms stay selectable.
     cold = _mod._matrix(
@@ -13266,12 +13289,12 @@ def test_warm_start_cycle_skips_corpus_swap_arms_and_pairs_every_candidate(
         steps=40,
         cycle=3,
         role="screening",
-        recommended_slug="data-strict",
+        recommended_slug="lr-x2",
         thrash_regime=regime,
         initialize_from=None,
     )
     cold_ids = {row["experiment"]["experiment_id"] for row in cold["hypotheses"]}
-    assert any(eid.endswith("-data-strict") for eid in cold_ids)
+    assert any(eid.endswith("-data-probe") for eid in cold_ids)
 
 
 def test_arm_swaps_train_corpus_helper() -> None:

@@ -177,3 +177,73 @@ traceback stays untyped.
   `screening_smoke_n_for_policy(policy.v3 v15, arm_wall=70, suite_records=96)`
   returns `chosen_n=21`, verdict `insufficient_evidence`,
   `must_generate=False`.
+
+## INT-1 — the SFT gate is cleared for the default corpus, and one data arm is withdrawn for measured eval leakage
+
+Claim class: **data governance + harness change / fixture-demo**. No model was
+trained and no gate, threshold or output contract was weakened. Follows the
+`synthesis-feedback` law: act on the evidence, never on the gate.
+
+### Why the loop was blocked
+
+P1 established that every arm exited 2 because
+`assert_synthesis_feedback_cleared_for_sft` correctly refused to train on
+`openui_verified_train_v1`: its `synthesis_feedback.json` carries three open
+recommendations (`stale_output_contract`, `id_collision`,
+`redundant_expansion`) and no action record existed. The refusal was right;
+the missing piece was the audited action record the gate is designed to read.
+
+### What the evidence shows
+
+Each recommendation prescribes an **admission-time** action, and the split
+build already performs it. Re-measured from the committed artifacts rather
+than asserted:
+
+| Recommendation | Prescribed action | Measured on the admitted bucket |
+| --- | --- | --- |
+| `stale_output_contract` | reject, never patch, under `symbol_only/v2` | 90 `OutputContractError` rejections in `rejected.jsonl`; 0 admitted |
+| `id_collision` | namespace ids by source snapshot | parent binds 303 ids to >1 distinct program (1,682 records / 700 ids, max multiplicity 7); admitted bucket is 1,083 records under 1,083 distinct ids, 0 collisions, scheme `root_id__content_digest8` |
+| `redundant_expansion` | dedupe at admission | 175 duplicate pairs rejected; 0 exact prompt/program duplicate pairs among the 1,083 admitted |
+
+`synthesis_feedback_actions.json` now records one `action_receipt` per code,
+bound to the split-policy plan hash and the dataset manifest hash, with the
+before/after counts above. It is not a waiver and not a prose note. It clears
+SFT for `openui_verified_train_v1` only; re-certifying, namespacing and
+deduping the **parent** corpus `openui_verified_v1` remain open against that
+corpus's own feedback artifact.
+
+### The leakage this surfaced
+
+Checking whether the other candidate corpora were safe against the suites the
+loop now scores produced a blocking finding. Overlap with
+`e938_role_safe_all_targets_smoke96_v1`:
+
+| Train corpus | Programs | Prompts | Root families |
+| --- | --- | --- | --- |
+| `openui_verified_train_v1` (policy default) | 0 | 0 | 0 |
+| `hillclimb_strict_v2` (was the `data-strict` arm) | 6 | 3 | 16 |
+| `wf_smoke_v2` (legacy control corpus) | 5 | 2 | 4 |
+
+Against `held_out`, `hillclimb_strict_v2` overlaps 7 programs and 5 families.
+Its own decontamination indexed `e938_..._v2`, `smoke6_v1` and `smoke24_v1`,
+never `smoke96_v1` or `heldout24_v1`, so the overlap was never gated. An arm
+trained on it would have scored the eval it memorised — a leakage win, not a
+capability win, and precisely the kind of first "positive" that would have
+made the recovery look successful while being worthless. Its synthesis
+feedback is also uncleared for SFT (blocking-class `eval_leakage_source` on
+three families, plus `dup_share` 0.55–0.93), so the arm could not have trained
+at all.
+
+Actions: `data-strict` is removed from `_SCREENING_ARM_BANK`;
+`_LEAKED_TRAIN_VERSIONS` bars both corpora from any data arm; historical
+ledger rows naming the withdrawn arm's corpus classify as
+`data-leaked:hillclimb_strict_v2` so the ledger stays readable without the arm
+becoming selectable (`wf_smoke_v2` is deliberately excluded from that
+reverse-classification because it was a control corpus, never an arm).
+`tests/test_scripts/test_screening_corpus_leakage.py` measures the overlap
+from the committed data on every run: it fails if the default corpus ever
+leaks, if any data arm's corpus leaks, or if a barred corpus becomes clean
+(which should be a deliberate re-admission, not a silent one).
+
+The certified default corpus stays: it is disjoint from every scored suite on
+all three axes, which is what P7's root-family split was for.

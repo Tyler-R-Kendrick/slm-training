@@ -927,6 +927,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "record synthesis_feedback_actions.json for openui_verified_train_v1: one action_receipt per open recommendation (stale_output_contract, id_collision, redundant_expansion), bound to the split-policy plan hash and the dataset manifest hash, with re-measured before/after counts. Clears the SFT gate for this bucket only; the parent corpus fixes stay open. No gate or threshold changed.",
+          "version": "v10"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Certified eval source: build_test_data --source certified samples the RootFamilySplitPolicyV1 validation/test buckets of openui_verified_v1 (families closed under recorded links and identical program text), decontaminated against the materialized train bucket openui_verified_train_v1 (scripts/build_certified_train_bucket.py), stratified by source, seeded; publishes e938_role_safe_all_targets_smoke96_v1 / heldout24_v1 with quality_report and screening_sample_size sidecars at the exact decidability floor.",
           "version": "v9"
         },
@@ -988,7 +993,7 @@
         "src/slm_training/resources/test_seeds.jsonl",
         "scripts/build_certified_train_bucket.py"
       ],
-      "version": "v9"
+      "version": "v10"
     },
     "decode.invariants": {
       "history": [
@@ -5121,6 +5126,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "INT-1: withdraw the data-strict screening arm and bar hillclimb_strict_v2 / wf_smoke_v2 as data-arm corpora. Measured against the scored suites, hillclimb_strict_v2 shares 6 programs and 16 root families with smoke96 and 7 programs with held_out, and its decontamination never indexed those suites, so an arm trained on it would score memorised eval. Historical rows naming that corpus classify as data-leaked:<corpus>; wf_smoke_v2 is excluded from the reverse-classification because it was a control corpus, never an arm. New regression test measures the overlap from the committed data.",
+          "version": "v282"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the three P1 continuous-loop closeout results JSON landed (deterministic rebuild); P1 recovery doc section is documentation only.",
           "version": "v281"
         },
@@ -7133,7 +7143,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v281"
+      "version": "v282"
     },
     "harness.autoresearch.formal": {
       "history": [
