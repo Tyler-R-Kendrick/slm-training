@@ -9,7 +9,7 @@
 - measurement_complete: `False`
 - evidence_class: `fixture`
 - reasons: measurement_incomplete:c20260902-recovery2-b552b74b-c3-control:smoke:invalid_counts:document_n=None:completed_document_n=None:incomplete_document_n=None:decode_timeout_count=None, measurement_incomplete:c20260902-recovery2-b552b74b-c3-semantic-contrast-compiler-margin:missing_scoreboard, primary_metric_unavailable
-- control_metrics: `{'latency_ms_p50': None, 'parse_rate': None, 'meaningful_program_rate': None, 'structural_similarity': None, 'binder_reference_f1': None, 'eval_nll': 4.55601100352851, 'smoke.eval_nll': 4.55601100352851}`
+- control_metrics: `{'latency_ms_p50': None, 'parse_rate': None, 'meaningful_program_rate': None, 'structural_similarity': None, 'binder_reference_f1': None, 'eval_nll': 4.568895543732056, 'smoke.eval_nll': 4.568895543732056}`
 - candidate_metrics: `{'latency_ms_p50': None, 'parse_rate': None, 'meaningful_program_rate': None, 'structural_similarity': None, 'binder_reference_f1': None, 'eval_nll': None}`
 
 ## Hill-climb this cycle
