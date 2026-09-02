@@ -62,6 +62,23 @@ execute without a grounded catalog entry **or** the explicit
 | `repo-revmath-policy` | repository_evidence | repository_baseline | revmath policy + owners |
 | `repo-only-hypothesis` | repository_evidence | repository_baseline | Explicit no-external-prior marker |
 
+### Decode-topology transfer set (2026-09-02)
+
+Registered by the two-tower diffusion / automaton-constrained decoding
+transfer audit in
+[research-lineage.md](research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02).
+These are bounded-transfer priors, not RM/computability sources; the three
+`adjacent` rows exist so the continuous-domain papers are never re-discovered
+as candidate levers.
+
+| `source_id` | Type | Trust | Title (short) |
+| --- | --- | --- | --- |
+| `arxiv-2606.26493` | foundational_research | secondary | Nemotron-Labs-TwoTower (frozen AR tower + block denoiser) |
+| `arxiv-2607.07026` | foundational_research | secondary | Constrained decoding for diffusion LMs over finite automata (DFA/NFA only) |
+| `arxiv-2605.23128` | foundational_research | adjacent | pi0-EqM (robotics; do not import) |
+| `arxiv-2608.14706` | foundational_research | adjacent | Equilibrium Forcing (video; do not import) |
+| `arxiv-2602.02928` | foundational_research | adjacent | Distance Marching (continuous; do not import) |
+
 ## What cited work does **not** prove (summary)
 
 - **Simpson / Zoo / constructive RM** do not license Big-Five labels from

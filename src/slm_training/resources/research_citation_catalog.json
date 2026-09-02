@@ -472,6 +472,128 @@
         "path": "docs/design/research-citation-catalog.md",
         "note": "Catalog policy delta baseline on main defines the repository-only gate."
       }
+    },
+    {
+      "source_id": "arxiv-2606.26493",
+      "source_type": "foundational_research",
+      "title": "Nemotron-Labs-TwoTower: frozen autoregressive context tower with a trainable bidirectional block denoiser",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2606.26493",
+      "claim_supported": "A frozen AR context tower plus a trainable bidirectional block denoiser with layer-aligned cross-attention can recover most AR quality at higher decode throughput when block-committing tokens above a confidence threshold, at 30B scale on a multi-trillion-token adaptation budget.",
+      "does_not_prove": [
+        "That the repo's single projected last_hidden_state broadcast to every denoiser layer is equivalent to layer-aligned cross-attention",
+        "That the reported quality/throughput ratios transfer to a 135M frozen tower with a d_model=192 denoiser (I16-I19: scale claims are non-transferable)",
+        "That confidence-threshold block commits may replace the repo's deterministic/singleton bypass or forest-verified commit (I1-I3)"
+      ],
+      "repo_relevance": "External prior for the TwoTower topology already in the repo: frozen SmolLM2-135M context tower (harness_core/lineage/tracks.py), denoiser cross-attention (models/context.py, models/blocks.py), and block_diffusion_decode / block_diffusion_block_size (models/twotower.py).",
+      "repo_application": "Cite when preregistering a layer-aligned cross-attention arm or a block-size ladder; keep the frozen tower and block commits as existing levers, never as a scale argument.",
+      "assumption": "The paper's mechanism claims are separable from its scale claims; only the mechanism is cited.",
+      "falsifier": "A size-matched layer-aligned arm that does not beat the broadcast-context baseline under the preregistered gate, or any citation of its throughput numbers as repo evidence.",
+      "trust_level": "secondary",
+      "derivative_keys": ["RESEARCH-02", "research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "src/slm_training/models/context.py",
+        "note": "Delta baseline: broadcast (non layer-aligned) context projection on main; re-audit before claiming topology parity or difference."
+      }
+    },
+    {
+      "source_id": "arxiv-2607.07026",
+      "source_type": "foundational_research",
+      "title": "Constrained Decoding for Diffusion Language Models via Efficient Inference over Finite Automata",
+      "authors": ["Dang", "Ermon"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2607.07026",
+      "claim_supported": "Exact sampling from the constrained mean-field posterior of a diffusion LM under DFA/NFA constraints, with 100% constraint satisfaction by construction; the paper explicitly excludes context-free grammars.",
+      "does_not_prove": [
+        "Anything about CFG-scoped domains: the repo's CompletionDomainV1 (scope, binder inventory, slot contract, EOS-reachability witness) is outside the paper's DFA/NFA scope",
+        "That the lexeme-level DFA alone is a sufficient legality authority for OpenUI (the N8 audit in research-lineage.md shows every non-singleton decision -- 468 of 468 on the 24-record smoke suite -- is narrower than the DFA next-lexeme set)",
+        "That its BFCL-Live gains on a 7B model transfer to this repo's grammar-constrained symbolic decoder"
+      ],
+      "repo_relevance": "Bounds what a finite-automaton constrained sampler could replace: only the lexeme-level DFA in dsl/grammar/fastpath/engine.py and force_emit.py.",
+      "repo_application": "Cite only for the regular (lexeme-level) layer; any CFG-scoped or scope-aware claim must cite the IG-CD lineage row and CompletionDomainV1 instead.",
+      "assumption": "The OpenUI legality authority is CFG-plus-scope, so a DFA sampler can at most replace the regular sub-layer.",
+      "falsifier": "A measured position set where the DFA next-lexeme set equals the CFG-scoped domain at every non-singleton decision (the N8 audit found none).",
+      "trust_level": "secondary",
+      "derivative_keys": ["RESEARCH-02", "research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "src/slm_training/dsl/grammar/fastpath/engine.py",
+        "note": "Delta baseline: lexeme-level automaton on main; the CFG-scoped domain lives in dsl/pack.py and grammar_capabilities.py."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.23128",
+      "source_type": "foundational_research",
+      "title": "pi0-EqM: equilibrium-matching policies for robotics",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2605.23128",
+      "claim_supported": "Equilibrium-matching training for continuous robot action policies.",
+      "does_not_prove": [
+        "Anything about discrete grammar-constrained token diffusion",
+        "That an equilibrium objective is a lever for the OpenUI denoiser"
+      ],
+      "repo_relevance": "No repo object maps to it; continuous action domain.",
+      "repo_application": "Do not import; recorded so the swarm does not re-discover it as a candidate lever.",
+      "assumption": "Continuous-domain objectives do not transfer to a discrete symbol table without a preregistered discrete analogue.",
+      "falsifier": "A preregistered discrete equilibrium objective with a size-matched arm beating the champion under the decode invariants.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/decode-invariants.md",
+        "note": "Delta baseline: the decode invariants that make continuous-domain objectives non-transferable."
+      }
+    },
+    {
+      "source_id": "arxiv-2608.14706",
+      "source_type": "foundational_research",
+      "title": "Equilibrium Forcing for video generation",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2608.14706",
+      "claim_supported": "Equilibrium forcing improves continuous video-frame generation.",
+      "does_not_prove": [
+        "Anything about discrete grammar-constrained token diffusion",
+        "That frame-level forcing has a symbol-table analogue in this repo"
+      ],
+      "repo_relevance": "No repo object maps to it; continuous video domain.",
+      "repo_application": "Do not import; recorded so the swarm does not re-discover it as a candidate lever.",
+      "assumption": "Continuous-domain objectives do not transfer to a discrete symbol table without a preregistered discrete analogue.",
+      "falsifier": "A preregistered discrete analogue with a size-matched arm beating the champion under the decode invariants.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/decode-invariants.md",
+        "note": "Delta baseline: the decode invariants that make continuous-domain objectives non-transferable."
+      }
+    },
+    {
+      "source_id": "arxiv-2602.02928",
+      "source_type": "foundational_research",
+      "title": "Distance Marching: time-unconditional generative modeling",
+      "authors": ["(see arXiv abstract)"],
+      "year": 2026,
+      "url": "https://arxiv.org/abs/2602.02928",
+      "claim_supported": "Time-unconditional generative modeling reaches lower FID than flow matching on continuous image benchmarks (13.6% lower on average as reported).",
+      "does_not_prove": [
+        "Anything about discrete masked token diffusion under a grammar",
+        "That FID deltas are evidence for a grammar-constrained symbolic decoder"
+      ],
+      "repo_relevance": "No repo object maps to it; continuous image domain.",
+      "repo_application": "Do not import; recorded so the swarm does not re-discover it as a candidate lever.",
+      "assumption": "Continuous-domain objectives do not transfer to a discrete symbol table without a preregistered discrete analogue.",
+      "falsifier": "A preregistered discrete analogue with a size-matched arm beating the champion under the decode invariants.",
+      "trust_level": "adjacent",
+      "derivative_keys": ["research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02"],
+      "delta_baseline": {
+        "kind": "repo_head_link",
+        "path": "docs/design/decode-invariants.md",
+        "note": "Delta baseline: the decode invariants that make continuous-domain objectives non-transferable."
+      }
     }
   ]
 }

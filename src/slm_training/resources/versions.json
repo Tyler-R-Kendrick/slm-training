@@ -28,6 +28,11 @@
     "autoresearch.conclusions": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "load_policy prefers policy.v3.json (the climb default since P2) over policy.v2.json before the v1 fallback; conclusion block unchanged.",
+          "version": "v8"
+        },
+        {
           "date": "2026-08-21",
           "note": "autotrain climb policy now consumes the fail-closed hillclimb_strict_v2 train snapshot.",
           "version": "v7"
@@ -87,10 +92,15 @@
         "docs/design/hypothesis-family-conclusions.md",
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
-      "version": "v7"
+      "version": "v8"
     },
     "autoresearch.heal": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "run_playbooks prefers a playbook in-process execute (harness_crash -> attempted, data_rebuild -> count-postcondition healed) over the subprocess plan/verify path; same attempt budget, single persisted receipt; execute crash records step_failed.",
+          "version": "v5"
+        },
         {
           "date": "2026-09-02",
           "note": "Merge of cards P10 (heal executors) and P6 (fail-closed heal verification) which both prepended v3 independently; reconciles the component to v4.",
@@ -152,7 +162,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -316,6 +326,11 @@
     },
     "config.levers": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "lever_catalog category: *_loss_weight levers of the compiler/solver family classify as training (weights-moving), not decode; no lever added, removed or defaulted.",
+          "version": "v32"
+        },
         {
           "date": "2026-08-09",
           "note": "darkfactory unit M: solver_energy_decode_weight and legal_edit_hazard_decode_weight registered in TRAINED_DECODE_REQUIREMENTS and the compiler-path decode lever group",
@@ -492,7 +507,7 @@
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
-      "version": "v31"
+      "version": "v32"
     },
     "data.abstract_cot_warmup": {
       "history": [
@@ -979,8 +994,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: reconcile S8 (citation-line-only edit to decode-invariants.md, its v9 no-bump entry kept below) with the S2 v10 bump on the integration branch.",
+          "version": "v10"
+        },
+        {
+          "date": "2026-09-02",
           "note": "S2: I3 committed n-gram table provenance -- built from the certified train bucket openui_verified_train_v1 (1,054 encoded sequences, 54,434 tokens, order 3, 493 contexts); doc branch-point numbers are measured and pinned by test; --check asserts the artifact's recorded source (manifest content_fingerprint, records sha256) against the live manifest. No invariant weakened; lever stays off.",
           "version": "v10"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 citation-line-only edit -- add arXiv:2607.07026 (finite-automaton constrained decoding, DFA/NFA only) next to IG-CD/LAVE and point at the research-lineage transfer audit; no invariant text or check logic changed.",
+          "version": "v9"
         },
         {
           "date": "2026-08-20",
@@ -4177,6 +4202,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 adds an exact-path check_changed entry mapping scripts/audit_regular_layer_gap.py to its own test (narrow script hook per the table's exact-match policy); ownership map, owners, and every other mapping unchanged.",
+          "version": "v27"
+        },
+        {
           "date": "2026-08-21",
           "note": "no-bump: check_changed maps loop-owned eval-data resources (resources/data/eval/**, test_seeds.jsonl) to narrow data-integrity suites instead of the full-tests fallback; unlivelocks wall-clock-capped autotrain closeout commits. Ownership map and contract-version checks unchanged.",
           "version": "v27"
@@ -4628,6 +4658,11 @@
     "governance.research_citation_catalog": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "S8: register arXiv:2606.26493, 2607.07026, 2605.23128, 2608.14706, 2602.02928 as foundational_research rows with does_not_prove boundaries (two secondary, three adjacent/do-not-import); ID table in research-citation-catalog.md extended; checker unchanged.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: RESEARCH-02 (SLM-533) docs pointer from citation catalog to research-experiment-preregistry.md; catalog schema/rows unchanged.",
           "version": "v1"
@@ -4646,7 +4681,7 @@
         "src/slm_training/resources/research_citation_catalog.json",
         "tests/test_scripts/test_verify_research_citation_catalog.py"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "governance.research_experiment_preregistry": {
       "history": [
@@ -7643,6 +7678,11 @@
     "harness.experiments": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "SR9 Rsp005CampaignV1.manifest() declares selection_rule=best_by_primary_then_smallest (required for multi-candidate campaigns since the vacuous-pass fail-closed change); arms, seeds, endpoints unchanged.",
+          "version": "v165"
+        },
+        {
           "date": "2026-08-16",
           "note": "data-adequacy ladder: nested-subset marginal-gain measurement with powered flat/rising/undecidable classification; run_scaling_ladder --family data-adequacy",
           "version": "v164"
@@ -8697,7 +8737,7 @@
         "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
-      "version": "v164"
+      "version": "v165"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [
@@ -11651,6 +11691,11 @@
     },
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 appends the two-tower diffusion / automaton-constrained decoding transfer audit (2026-09-02) section to research-lineage.md; SLM-228 spectral disposition behavior unchanged.",
+          "version": "v3"
+        },
         {
           "version": "v3",
           "date": "2026-08-21",

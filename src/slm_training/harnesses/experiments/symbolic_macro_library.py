@@ -83,6 +83,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignControlV1,
     CampaignEndpointV1,
     CampaignGateV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
     campaign_manifest_sha256,
@@ -576,6 +577,7 @@ class Rsp005CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=self.seeds,
             budget=CampaignBudget(
                 max_experiments=len(ARM_IDS) * len(self.seeds),

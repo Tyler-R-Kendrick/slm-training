@@ -582,10 +582,13 @@ def _json_value(value: Any) -> Any:
 def _category(name: str) -> str:
     if name in {"max_wall_minutes", "steps", "target_token_budget"}:
         return "run"
-    if "decode" in name or name.startswith(("grammar_", "compiler_", "solver_")):
-        return "decode"
+    # A loss weight is a training lever even when it belongs to the compiler /
+    # solver family (``compiler_alignment_loss_weight`` moves weights, never
+    # the decode path); test the suffix before the family prefix.
     if name.endswith("_loss_weight") or name in {"lr", "batch_size", "optimizer_name"}:
         return "training"
+    if "decode" in name or name.startswith(("grammar_", "compiler_", "solver_")):
+        return "decode"
     if name.startswith(("mixture_", "replay_")):
         return "data"
     if name.startswith(("eval_", "rico_eval_", "loss_eval_")):

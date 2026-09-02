@@ -2071,6 +2071,126 @@ compaction at unchanged row volume. Its tiny CPU batch was 0.961x in wall time,
 so the evidence supports the divergent-row batching mechanism but not a CPU
 latency speedup or any transfer of the cited systems' reported gains.
 
+## Two-tower diffusion and automaton-constrained decoding transfer audit (2026-09-02)
+
+**Fidelity label: docs-only transfer audit plus one read-only analysis. No
+code, lever, default, checkpoint, or metric changed; nothing here licenses a
+lever change.**
+
+Five external papers had zero mentions in the repository before this audit.
+They are registered in the RESEARCH-01 catalog
+([research-citation-catalog.md](research-citation-catalog.md#decode-topology-transfer-set-2026-09-02))
+as `arxiv-2606.26493`, `arxiv-2607.07026`, `arxiv-2605.23128`,
+`arxiv-2608.14706`, `arxiv-2602.02928`, each with a `does_not_prove` list.
+The table follows the transfer-table convention of
+[`adr-constrained-diffusion-topology-split.md`](adr-constrained-diffusion-topology-split.md#claim-family-b--diffusion--multi-hole-circuit):
+a paper contributes a **bound**, never a control-loop blueprint, and every
+row names the repo object it maps to and the decode invariant
+([`decode-invariants.md`](decode-invariants.md)) that bounds the transfer.
+
+| Paper / claim | Repo object | Verdict | Keep | Reject as blueprint | Bounding invariant |
+| --- | --- | --- | --- | --- | --- |
+| Nemotron-Labs-TwoTower ([arXiv:2606.26493](https://arxiv.org/abs/2606.26493)) — frozen AR context tower | `TWOTOWER_BASE_ID = "HuggingFaceTB/SmolLM2-135M"`, `freeze_context: True` in [`harness_core/lineage/tracks.py`](../../src/slm_training/harness_core/lineage/tracks.py) | **Keep** (already the repo topology) | Frozen tower as the context side of a trainable denoiser | Treating the frozen tower as free capacity | I16 — the tower's parameters are a charged budget even when frozen |
+| Nemotron — block commits (block size S, confidence threshold γ; the first diffusion step commits the most tokens) | `block_diffusion_decode` / `block_diffusion_block_size=4` in [`models/twotower.py`](../../src/slm_training/models/twotower.py) (default-off) | **Keep as lever** | Block scheduling as an existing, default-off lever; "first step commits most" as a measurable | S=16 / γ=0.8 as an operating point; confidence-threshold commit as the legality authority | I1–I3 — deterministic/singleton bypass outranks any confidence; speculation verifies against the forest before commit |
+| Nemotron — layer-aligned cross-attention ("denoiser layer *i* attends to context layer *i*") | Repo **differs**: one projected `last_hidden_state` (`self.proj(hidden)`, [`models/context.py`](../../src/slm_training/models/context.py)) is broadcast as the same `ctx=context` to every denoiser layer ([`models/blocks.py`](../../src/slm_training/models/blocks.py)) | **Preregisterable hypothesis, not a change** | A size-matched `ExperimentCampaignV1` arm comparing per-layer-aligned context against the broadcast baseline | Adopting the topology because the paper did | I17 (`EG_params` ≥ 1), I19 (size-matched arms; scaling is a diagnostic control arm) |
+| Nemotron — scale claims (30B hybrid backbone, ~2.1T adaptation tokens of a 25T pretrain, 98.7 % of AR quality at 2.42× throughput; the model card's Mock-AR mode) | none | **Non-transferable** | nothing | Any quality/throughput ratio as repo evidence; Mock-AR as a target mode | I16–I19 — size is a charged budget; growth needs `EG_params` ≥ 1; promote the smallest sufficient model |
+| Dang & Ermon, *Constrained Decoding for Diffusion Language Models via Efficient Inference over Finite Automata* ([arXiv:2607.07026](https://arxiv.org/abs/2607.07026)) — exact sampling from the constrained mean-field posterior under DFA/NFA constraints, 100 % satisfaction by construction | **Lexeme-level DFA only**: [`dsl/grammar/fastpath/engine.py`](../../src/slm_training/dsl/grammar/fastpath/engine.py) (`next_terminals`, `is_deterministic_next`) and [`force_emit.py`](../../src/slm_training/dsl/grammar/fastpath/force_emit.py) | **Keep as a bound on the regular layer** | Exactness over a DFA as the ceiling for what a regular-only sampler can guarantee | Replacing the legality authority. `CompletionDomainV1` ([`dsl/grammar_capabilities.py`](../../src/slm_training/dsl/grammar_capabilities.py), built by `_openui_completion_domain` in [`dsl/pack.py`](../../src/slm_training/dsl/pack.py)) is **CFG-scoped** (LALR acceptor + binder scope + slot contract + EOS-reachability witness) and the paper **explicitly excludes context-free grammars** — it is outside the paper's scope. Its BFCL-Live numbers (greedy 63.9→71.5, stochastic 22.3→69.0, tree variant +12 at 4 % overhead on a 7B diffusion LM) do not transfer | I1/I2 — deterministic bypass; symbol tables schedule prefills; I5 — the technique is a lever, the grammar authority is not |
+| pi0-EqM ([arXiv:2605.23128](https://arxiv.org/abs/2605.23128)) | none | **Do not import** | nothing | Continuous robot-action equilibrium objective; no discrete symbol-table analogue exists in the repo | I16–I19, I5 |
+| Equilibrium Forcing ([arXiv:2608.14706](https://arxiv.org/abs/2608.14706)) | none | **Do not import** | nothing | Continuous video-frame forcing; no masked-token or grammar object maps to a frame | I16–I19, I5 |
+| Distance Marching ([arXiv:2602.02928](https://arxiv.org/abs/2602.02928)) | none | **Do not import** | nothing | Time-unconditional continuous modeling; its FID delta (13.6 % lower than flow matching on average) is not a symbol-table metric | I6 (parse_rate is the completed-document metric), I16–I19 |
+| LAVE ([arXiv:2602.00612](https://arxiv.org/abs/2602.00612)) — cached-prefix recovery after a failed verify | `asap.penalize` at MaskGIT `admit_fill` rejects and `remask_ratio` in [`models/twotower.py`](../../src/slm_training/models/twotower.py) | **Already covered; measure only** | Existing reject-then-remask path as the diagnostic where recovery cost would be measured | A new prefix-rewrite recovery mechanism; LAVE recovery as primary (the ADR already ranks it diagnostic) | I3 — forest-verified speculative completion is the production path |
+
+### N8 — how much of the legality authority is regular? (read-only analysis)
+
+**Question.** The FA paper can at most replace the regular (lexeme-level)
+layer. On gold programs, how many non-singleton legal-domain decisions are
+*not* expressible by the lexeme-level automaton alone, i.e. where the
+automaton's next-lexeme set (expanded to token ids) is strictly larger than
+the CFG-scoped `CompletionDomainV1`?
+
+**Method** (bounded to the hard run cap; no model, no checkpoint). Probe:
+[`scripts/audit_regular_layer_gap.py`](../../scripts/audit_regular_layer_gap.py)
+(`PYTHONPATH=src python -m scripts.audit_regular_layer_gap`, read-only,
+`--time-budget` guard, JSON report only with `--out`). For each record of
+[`e938_role_safe_all_targets_smoke24_v1/suites/smoke/records.jsonl`](../../src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke24_v1/suites/smoke/records.jsonl)
+the gold `openui` program is encoded with `DSLNativeTokenizer.build()`
+(`add_special=False`, record placeholders, trailing newline) and walked
+position by position (`p = 0 … len(ids)`). At each prefix:
+
+- **automaton set** = `OpenUIIncrementalEngine.next_terminals()` expanded to
+  token ids through the engine's verified token→terminal map (`_direct_map`:
+  punctuation, bool/null, fixed string-literal rows, framed-literal openers,
+  `kind_ids(kind)` for the COMPONENT / BUILTIN / NAME / STATE_NAME / SYM
+  classes, plus `eos_id` when `$END` is accepted); the prefix advances through
+  `feed_token_id` (text fallback via `token_surface_piece`);
+- **domain set** = first token id of every candidate returned by
+  `_openui_completion_domain(CompletionDomainRequestV1(prefix_ids, tokenizer,
+  slot_contract=record placeholders, remaining_tokens=32, state=row_state))`,
+  with one request-local `CompletionSession` reused per record;
+- a decision is **non-singleton** when the domain has ≥ 2 first-token
+  candidates; it is counted when `automaton set ⊋ domain set`.
+
+**Sampling statement.** All 24 records were walked in one run (84.5 s wall,
+1072 gold tokens, 1096 positions); nothing was sampled or discarded. An
+earlier draft of this section walked the first 8 records in file order
+(328 positions, 138/138); the full run reproduces that subset exactly.
+
+| Metric (24 records, 1096 positions) | Value |
+| --- | --- |
+| Singleton-or-empty domain decisions | 628 (224 of them also pinned by the automaton's `is_deterministic_next`, i.e. the I1 bypass) |
+| Non-singleton domain decisions | 468 |
+| Non-singleton decisions where automaton set ⊋ domain set | **468 / 468 (100 %)** |
+| Non-singleton decisions where the two sets coincide | 0 |
+| Mean automaton set size at those decisions | 228.5 token ids |
+| Mean domain size at those decisions | 11.6 token ids |
+| Domain status ≠ `complete` | 79 positions (`incomplete`) |
+| Gold token outside a `complete` domain | 84 positions in 15 records (see caveat 3) |
+
+Narrowing breakdown on the two smallest records (`smoke_button_01`,
+`smoke_callout_01`; 22 non-singleton decisions): **class-level narrowing** —
+the automaton accepts whole terminal classes the domain never materializes
+(expression operators, `STATE_NAME`, `BUILTIN`, `NUMBER`, …) — at 22/22;
+**within-class narrowing** — same terminal class, fewer token ids (which
+binder is in scope, which component, which slot literal) — at 13/22.
+
+**Honest bound.** On this suite the regular layer alone is a strict
+over-approximation of legality at **every** non-singleton decision, by a
+factor of ~20 in set size. A DFA/NFA sampler with "100 % satisfaction by
+construction" would therefore satisfy the automaton and still be free to
+emit programs outside the CFG-scoped domain. What the FA method could
+replace is bounded to the 224 automaton-forced singleton positions (20 % of
+positions), which I1 already bypasses without a forward pass. That is the
+honest ceiling of the transfer: a possible exactness upgrade to the regular
+sub-layer, never a replacement of `CompletionDomainV1`.
+
+Caveats:
+
+1. The "lexeme-level DFA" measured here is the LALR interactive acceptor's
+   per-state lookahead set (`next_terminals`), which is what `force_emit`
+   consumes. That is the most favourable regular approximation the repo
+   offers; a stackless DFA would accept a superset, so 100 % is a lower
+   bound on the gap, not an upper bound.
+2. `remaining_tokens=32` bounds the EOS witness; a larger budget can only
+   add domain candidates, and it cannot make a domain exceed the automaton
+   set, so the ratio is budget-robust in direction.
+3. The 84 gold-outside-domain positions (`gold_misses` in the probe report)
+   fall into three known domain behaviours, none of which enters the ratio:
+   **59** binder-order positions in 15 records (the gold program's binder ids
+   follow declaration order while the domain's `bind_declaration_bound`
+   policy offers only the next canonical slot or demands the outstanding
+   forward-referenced binder be declared next); **21** witness-budget
+   prunings in 12 records (a late `Card` / `Tabs` / `Form` / `Stack`
+   declaration pruned to `{Separator}` or to a shorter component list — the
+   `HONESTY (HV-A)` note in `dsl/pack.py`, `max_path_tokens=8`); **4** elided
+   default arguments (a `Stack([...])` closed without its direction literal,
+   where the domain offers `STR:horizontal` / `STR:vertical`). They are a
+   finding for the domain and data owners and are recorded here without a
+   fix.
+4. Not an experiment: no model was run, no metric or gate changed, and no
+   preregistered endpoint exists for this count. It is a bound on a paper's
+   applicability, filed under the iron law so the number does not live only
+   in chat.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

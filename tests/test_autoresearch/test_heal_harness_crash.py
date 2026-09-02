@@ -85,8 +85,11 @@ def _blocker(kind: str = "repair_harness") -> dict:
 
 class TestEvidence:
     def test_extract_traceback_returns_last_block(self) -> None:
-        text = "junk\n" + _TRACEBACK + "\nmore\n" + _TRACEBACK.replace(
-            "KeyError", "ValueError"
+        text = (
+            "junk\n"
+            + _TRACEBACK
+            + "\nmore\n"
+            + _TRACEBACK.replace("KeyError", "ValueError")
         )
         block = extract_traceback(text)
         assert block.startswith("Traceback (most recent call last):")
@@ -114,13 +117,17 @@ class TestEvidence:
         assert harness_family_for_module("") == "model_build"
 
     def test_test_file_mirror(self, tmp_path: Path) -> None:
-        assert mirrored_test_file("slm_training/autoresearch/heal/classify.py", tmp_path) is None
+        assert (
+            mirrored_test_file("slm_training/autoresearch/heal/classify.py", tmp_path)
+            is None
+        )
         target = tmp_path / "tests" / "test_autoresearch" / "test_heal_classify.py"
         target.parent.mkdir(parents=True)
         target.write_text("def test_ok():\n    assert True\n", encoding="utf-8")
-        assert mirrored_test_file(
-            "slm_training/autoresearch/heal/classify.py", tmp_path
-        ) == target
+        assert (
+            mirrored_test_file("slm_training/autoresearch/heal/classify.py", tmp_path)
+            == target
+        )
 
 
 class TestExecute:
@@ -146,7 +153,9 @@ class TestExecute:
         rows = heal.load_heal_receipts(tmp_path, LOOP)
         assert [r.outcome for r in rows] == ["attempted"]
         # Typed action carrying the traceback, next to the ledger.
-        evidence_files = list((tmp_path / "loops" / LOOP / "heal_harness_crash").glob("*.json"))
+        evidence_files = list(
+            (tmp_path / "loops" / LOOP / "heal_harness_crash").glob("*.json")
+        )
         assert len(evidence_files) == 1
         payload = json.loads(evidence_files[0].read_text(encoding="utf-8"))
         action = AutotrainActionV1.model_validate(payload["action"])
@@ -177,7 +186,11 @@ class TestExecute:
     def test_exit_124_is_noted_as_timeout_not_crash(self, tmp_path: Path) -> None:
         _campaign(tmp_path, exit_code=124, stderr="killed by wall budget\n")
         receipt = harness_crash.execute(
-            _blocker(), cwd=tmp_path, root=tmp_path, loop_id=LOOP, campaign_id=CAMPAIGN,
+            _blocker(),
+            cwd=tmp_path,
+            root=tmp_path,
+            loop_id=LOOP,
+            campaign_id=CAMPAIGN,
             run_tests=False,
         )
         assert receipt.outcome == "attempted"
@@ -220,3 +233,64 @@ class TestRunnerCompatibility:
         assert len(receipts) == 1
         assert receipts[0].outcome != "healed"
         assert receipts[0].outcome in {"verify_failed", "attempted"}
+
+
+class TestRunPlaybooksPrefersExecute:
+    def test_execute_receipt_is_attempted_and_persisted_once(
+        self, tmp_path: Path
+    ) -> None:
+        from slm_training.autoresearch.heal import load_heal_receipts
+        from slm_training.autoresearch.heal.escalation import EscalationLedger
+
+        _campaign(tmp_path, exit_code=2)
+        blocker = {**_blocker(), "_root": tmp_path, "_loop_id": LOOP}
+        receipts = heal.run_playbooks(
+            root=tmp_path,
+            loop_id=LOOP,
+            campaign_id=CAMPAIGN,
+            blockers=[blocker],
+            cwd=tmp_path,
+            playbooks=(PLAYBOOK,),
+        )
+        assert [r.outcome for r in receipts] == ["attempted"]
+        assert receipts[0].playbook_id == PLAYBOOK.playbook_id
+        # The runner persists the receipt; the playbook must not double-write.
+        on_disk = load_heal_receipts(tmp_path, LOOP)
+        assert [r.outcome for r in on_disk] == ["attempted"]
+        ledger = EscalationLedger.load(tmp_path, LOOP)
+        rec = ledger.observe(
+            kind=blocker["kind"],
+            reason=blocker["reason"],
+            blocker_class="code",
+            campaign_id=CAMPAIGN,
+            owner_skill="",
+        )
+        assert rec.attempts == 1
+
+    def test_execute_crash_is_a_failed_attempt_not_a_runner_crash(
+        self, tmp_path: Path
+    ) -> None:
+        class _Boom:
+            playbook_id = "boom/v1"
+            handles = frozenset({"code"})
+
+            def matches(self, blocker: dict) -> bool:
+                return True
+
+            def execute(self, blocker: dict, **kwargs: object) -> None:
+                raise RuntimeError("execute exploded")
+
+            def plan(self, blocker: dict, *, cwd: Path) -> None:
+                raise AssertionError("plan must not run when execute exists")
+
+        blocker = {**_blocker(), "_root": tmp_path, "_loop_id": LOOP}
+        receipts = heal.run_playbooks(
+            root=tmp_path,
+            loop_id=LOOP,
+            campaign_id=CAMPAIGN,
+            blockers=[blocker],
+            cwd=tmp_path,
+            playbooks=(_Boom(),),
+        )
+        assert [r.outcome for r in receipts] == ["step_failed"]
+        assert "execute exploded" in (receipts[0].note or "")
