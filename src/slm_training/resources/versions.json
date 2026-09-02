@@ -5076,6 +5076,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "P8xP9 reconciliation: under a baseline_seed champion warm start the driver skips corpus-swap (train_version) arms and asserts assert_warm_start_launch for every candidate; data arms remain selectable on cold-start cycles.",
+          "version": "v280"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the P8/P9 results JSON landed (deterministic rebuild).",
           "version": "v279"
         },
@@ -7063,7 +7068,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v279"
+      "version": "v280"
     },
     "harness.autoresearch.formal": {
       "history": [
