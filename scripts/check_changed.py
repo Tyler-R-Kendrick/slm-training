@@ -197,6 +197,10 @@ SUITES_BY_PREFIX = (
         ("tests/test_scripts/test_check_changed.py",),
     ),
     (
+        "scripts/audit_regular_layer_gap.py",
+        ("tests/test_scripts/test_audit_regular_layer_gap.py",),
+    ),
+    (
         "src/slm_training/harnesses/reasoning/revmath/",
         ("tests/test_harnesses/reasoning/",),
     ),
