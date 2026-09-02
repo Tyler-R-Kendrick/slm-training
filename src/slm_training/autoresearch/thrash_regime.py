@@ -17,6 +17,13 @@ __all__ = [
     "TIMEOUT_CAUSE_SLOW_DECODE",
     "TIMEOUT_CAUSE_NONE",
     "DECODE_RESIDUAL_SLUGS",
+    "LATENCY_PRIMARY_LEAF",
+    "DECODE_COST_LEVER_CATEGORIES",
+    "DECODE_COST_MODEL_LEVERS",
+    "TRAINING_LOSS_LEVER_SUFFIX",
+    "TRAINING_DURATION_LEVERS",
+    "LATENCY_HYPOTHESIS_SLUGS",
+    "STEPS_FACTOR_KEY",
     "CLIMB_BASELINE_STATUSES",
     "ThrashRegimeDecision",
     "is_compiler_ms_timeout_signal",
@@ -29,6 +36,7 @@ __all__ = [
     "compose_treatment_levers",
     "select_decode_residual_slug",
     "select_recommended_slug_for_regime",
+    "is_latency_only_arm",
 ]
 
 REGIME_ISOLATE = "isolate"
@@ -54,6 +62,66 @@ DECODE_RESIDUAL_SLUGS: tuple[str, ...] = (
     "both",
     "cached-compiler-decision-margin",
 )
+
+# Latency-only arm bank gate (RC7, docs/design/autotrain-recovery-2-p9-20260902.md).
+# Arms whose every knob is a decode/run *cost* lever cannot change trained
+# weights, so they are drawn only when the screening role primary leaf is the
+# latency metric. Under a quality/NLL primary they are a guaranteed null
+# (evidence_ledger.v1: ``bounds`` n_complete=50, mean_delta=0.0,
+# m2_delta=0.0; ``canvas`` n_complete=5, all null).
+LATENCY_PRIMARY_LEAF = "latency_ms_p50"
+# ``lever_catalog()`` categories that never touch the training objective.
+DECODE_COST_LEVER_CATEGORIES: frozenset[str] = frozenset({"decode", "run"})
+# Catalog-``model`` levers that only reshape decode work (no weight effect).
+DECODE_COST_MODEL_LEVERS: frozenset[str] = frozenset({"compact_active_canvas"})
+# ``lever_catalog()`` labels ``compiler_*`` levers "decode" by prefix, but a
+# ``*_loss_weight`` enters the training objective (twotower.py alignment and
+# decision-token losses). The suffix outranks the prefix for cost classification.
+TRAINING_LOSS_LEVER_SUFFIX = "_loss_weight"
+# ``steps`` is catalog-``run`` but changes weights (more optimizer updates), so
+# it is a training-duration lever, never a pure cost lever.
+TRAINING_DURATION_LEVERS: frozenset[str] = frozenset({"steps"})
+# Training-lever arms whose preregistered hypothesis is a latency / cost claim;
+# they ride with the latency bank (``batch1`` ledger: n_complete=11,
+# n_positive=0, mean_delta 0.015; ``steps`` x2 is a depth-confound cost
+# control, never a quality lever).
+LATENCY_HYPOTHESIS_SLUGS: tuple[str, ...] = ("batch1", "steps")
+# Private bank key materialized as ``steps``.
+STEPS_FACTOR_KEY = "_steps_factor"
+
+
+def is_latency_only_arm(
+    extras: Mapping[str, Any] | None,
+    *,
+    lever_categories: Mapping[str, str],
+) -> bool:
+    """True when every public knob of ``extras`` is a decode/run cost lever.
+
+    ``lever_categories`` maps lever name -> ``lever_catalog()`` category.
+    ``_steps_factor`` counts as ``steps``. A ``*_loss_weight`` lever is always
+    a training lever even when its catalog category says ``decode``, and
+    ``steps`` is a training-duration lever even though its category is ``run``.
+    An arm with no public knobs is not latency-only (a no-op, not a cost arm).
+    """
+
+    public: list[str] = []
+    for key in (extras or {}):
+        name = str(key)
+        if name == STEPS_FACTOR_KEY:
+            public.append("steps")
+        elif not name.startswith("_"):
+            public.append(name)
+    if not public:
+        return False
+    for name in public:
+        if name.endswith(TRAINING_LOSS_LEVER_SUFFIX) or name in TRAINING_DURATION_LEVERS:
+            return False
+        if name in DECODE_COST_MODEL_LEVERS:
+            continue
+        if lever_categories.get(name) not in DECODE_COST_LEVER_CATEGORIES:
+            return False
+    return True
+
 
 # Queue statuses that may supply a sticky climb baseline recipe.
 CLIMB_BASELINE_STATUSES: frozenset[str] = frozenset(
