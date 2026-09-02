@@ -1,0 +1,641 @@
+{
+  "schema": "iter_result/v1",
+  "id": "iter-s12-commit-authority-profile-20260902",
+  "hypothesis": "N3 - on grammar-constrained canvases the first-step commit burst is dominated by forced (I2) commits (forced share at step 1 > 50%)",
+  "verdict": "falsified",
+  "honesty": "fixture-demo, not ship",
+  "recipe": {
+    "device": "cpu (4 vCPU, torch threads=2)",
+    "decode_path": "positionwise MaskGIT (_generate_maskgit_one) via grammar_ltr_primary=False",
+    "eval_suites": {
+      "smoke": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke96_v1/suites/smoke (first 8 of 96)",
+      "held_out": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke96_v1/suites/held_out (first 8 of 24)",
+      "adversarial": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2/suites/adversarial (all 4)"
+    },
+    "measurement_checkpoint": {
+      "named_checkpoint": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+      "usable": false,
+      "why": "TwoTowerModel.from_checkpoint raises OutputContractError: the committed fixture carries output_contract_version 0 (absent) and the required contract is symbol_only/v2. scripts/bootstrap_playground.py also no longer runs (its DEMO_RECORDS use non-opaque template markers and fail assert_canonical_template_markers).",
+      "substitute": "playground-scale rebuild, scratch only, never committed",
+      "substitute_recipe": "TwoTowerModel.from_records(load_train_records('src/slm_training/resources/data/train/e937_role_safe_all_targets_v2')[:524], TwoTowerConfig(d_model=96, n_heads=4, context_layers=2, denoiser_layers=3, gen_steps=8, grammar_constrained=True, grammar_ltr_primary=True, grammar_ltr_repair=True, grammar_finalize_validate=True, grammar_ltr_max_tokens=192, context_backend='scratch', design_md_in_context=False, seed=0)); AdamW lr=3e-3, batch=8 cycling the corpus, 900 steps, no scheduler, no grad clipping; CPU, torch threads=2",
+      "substitute_last_loss": 4.4353,
+      "substitute_sha256": "519682e22aad143d324cd2ae721106de4b3b7408e1b8d3cd78dfa42f79dad258",
+      "reproducibility": "recipe-reproducible, not bit-reproducible: CPU thread reduction order makes the final loss vary by ~0.4 between builds of the same recipe."
+    },
+    "max_run_minutes": 3,
+    "timeouts": 0
+  },
+  "rows": [
+    {
+      "suite": "held_out",
+      "parallel_unmask": "adaptive",
+      "seed": 0,
+      "records": 8,
+      "wall_seconds": 35.871,
+      "steps_recorded": 64,
+      "committed_total": 325,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.095525,
+      "forwards_count": 234,
+      "tokens_emitted": 404,
+      "semantic_singleton_bypasses": 20,
+      "step1_forced_share": 0.063953,
+      "step1_confident_share": 0.936047,
+      "step1_share_of_canvas": 0.529231,
+      "per_step": [
+        {
+          "step": 0,
+          "committed": 172,
+          "share_of_canvas": 0.529231,
+          "forced_share": 0.063953,
+          "confident_share": 0.936047,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 1,
+          "committed": 22,
+          "share_of_canvas": 0.067692,
+          "forced_share": 0.5,
+          "confident_share": 0.5,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 2,
+          "committed": 23,
+          "share_of_canvas": 0.070769,
+          "forced_share": 0.478261,
+          "confident_share": 0.521739,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 3,
+          "committed": 22,
+          "share_of_canvas": 0.067692,
+          "forced_share": 0.5,
+          "confident_share": 0.5,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 4,
+          "committed": 22,
+          "share_of_canvas": 0.067692,
+          "forced_share": 0.5,
+          "confident_share": 0.5,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 5,
+          "committed": 22,
+          "share_of_canvas": 0.067692,
+          "forced_share": 0.5,
+          "confident_share": 0.5,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 6,
+          "committed": 21,
+          "share_of_canvas": 0.064615,
+          "forced_share": 0.52381,
+          "confident_share": 0.47619,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 7,
+          "committed": 21,
+          "share_of_canvas": 0.064615,
+          "forced_share": 0.52381,
+          "confident_share": 0.47619,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        }
+      ]
+    },
+    {
+      "suite": "held_out",
+      "parallel_unmask": "confidence",
+      "seed": 0,
+      "records": 8,
+      "wall_seconds": 49.729,
+      "steps_recorded": 64,
+      "committed_total": 787,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.095525,
+      "forwards_count": 295,
+      "tokens_emitted": 508,
+      "semantic_singleton_bypasses": 25,
+      "step1_forced_share": 0.317073,
+      "step1_confident_share": 0.682927,
+      "step1_share_of_canvas": 0.104193,
+      "per_step": [
+        {
+          "step": 0,
+          "committed": 82,
+          "share_of_canvas": 0.104193,
+          "forced_share": 0.317073,
+          "confident_share": 0.682927,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 1,
+          "committed": 84,
+          "share_of_canvas": 0.106734,
+          "forced_share": 0.321429,
+          "confident_share": 0.678571,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 2,
+          "committed": 86,
+          "share_of_canvas": 0.109276,
+          "forced_share": 0.313953,
+          "confident_share": 0.686047,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 3,
+          "committed": 92,
+          "share_of_canvas": 0.1169,
+          "forced_share": 0.293478,
+          "confident_share": 0.706522,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 4,
+          "committed": 175,
+          "share_of_canvas": 0.222363,
+          "forced_share": 0.177143,
+          "confident_share": 0.822857,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 5,
+          "committed": 113,
+          "share_of_canvas": 0.143583,
+          "forced_share": 0.19469,
+          "confident_share": 0.80531,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 6,
+          "committed": 75,
+          "share_of_canvas": 0.095299,
+          "forced_share": 0.226667,
+          "confident_share": 0.773333,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 7,
+          "committed": 80,
+          "share_of_canvas": 0.101652,
+          "forced_share": 0.2375,
+          "confident_share": 0.7625,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        }
+      ]
+    },
+    {
+      "suite": "held_out",
+      "parallel_unmask": "topk",
+      "seed": 0,
+      "records": 8,
+      "wall_seconds": 50.844,
+      "steps_recorded": 64,
+      "committed_total": 534,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.095525,
+      "forwards_count": 313,
+      "tokens_emitted": 542,
+      "semantic_singleton_bypasses": 27,
+      "step1_forced_share": 0.382353,
+      "step1_confident_share": 0.617647,
+      "step1_share_of_canvas": 0.127341,
+      "per_step": [
+        {
+          "step": 0,
+          "committed": 68,
+          "share_of_canvas": 0.127341,
+          "forced_share": 0.382353,
+          "confident_share": 0.617647,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 1,
+          "committed": 57,
+          "share_of_canvas": 0.106742,
+          "forced_share": 0.333333,
+          "confident_share": 0.666667,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 2,
+          "committed": 58,
+          "share_of_canvas": 0.108614,
+          "forced_share": 0.327586,
+          "confident_share": 0.672414,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 3,
+          "committed": 59,
+          "share_of_canvas": 0.110487,
+          "forced_share": 0.322034,
+          "confident_share": 0.677966,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 4,
+          "committed": 62,
+          "share_of_canvas": 0.116105,
+          "forced_share": 0.306452,
+          "confident_share": 0.693548,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 5,
+          "committed": 66,
+          "share_of_canvas": 0.123596,
+          "forced_share": 0.30303,
+          "confident_share": 0.69697,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 6,
+          "committed": 78,
+          "share_of_canvas": 0.146067,
+          "forced_share": 0.25641,
+          "confident_share": 0.74359,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 7,
+          "committed": 86,
+          "share_of_canvas": 0.161049,
+          "forced_share": 0.232558,
+          "confident_share": 0.767442,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        }
+      ]
+    },
+    {
+      "suite": "smoke",
+      "parallel_unmask": "adaptive",
+      "seed": 0,
+      "records": 8,
+      "wall_seconds": 41.724,
+      "steps_recorded": 64,
+      "committed_total": 394,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1381125,
+      "forwards_count": 238,
+      "tokens_emitted": 410,
+      "semantic_singleton_bypasses": 18,
+      "step1_forced_share": 0.132353,
+      "step1_confident_share": 0.867647,
+      "step1_share_of_canvas": 0.345178,
+      "per_step": [
+        {
+          "step": 0,
+          "committed": 136,
+          "share_of_canvas": 0.345178,
+          "forced_share": 0.132353,
+          "confident_share": 0.867647,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 1,
+          "committed": 36,
+          "share_of_canvas": 0.091371,
+          "forced_share": 0.388889,
+          "confident_share": 0.611111,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 2,
+          "committed": 39,
+          "share_of_canvas": 0.098985,
+          "forced_share": 0.358974,
+          "confident_share": 0.641026,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 3,
+          "committed": 39,
+          "share_of_canvas": 0.098985,
+          "forced_share": 0.358974,
+          "confident_share": 0.641026,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 4,
+          "committed": 36,
+          "share_of_canvas": 0.091371,
+          "forced_share": 0.388889,
+          "confident_share": 0.611111,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 5,
+          "committed": 36,
+          "share_of_canvas": 0.091371,
+          "forced_share": 0.388889,
+          "confident_share": 0.611111,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 6,
+          "committed": 36,
+          "share_of_canvas": 0.091371,
+          "forced_share": 0.388889,
+          "confident_share": 0.611111,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 7,
+          "committed": 36,
+          "share_of_canvas": 0.091371,
+          "forced_share": 0.388889,
+          "confident_share": 0.611111,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        }
+      ]
+    },
+    {
+      "suite": "smoke",
+      "parallel_unmask": "confidence",
+      "seed": 0,
+      "records": 8,
+      "wall_seconds": 49.757,
+      "steps_recorded": 64,
+      "committed_total": 760,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1381125,
+      "forwards_count": 256,
+      "tokens_emitted": 437,
+      "semantic_singleton_bypasses": 21,
+      "step1_forced_share": 0.212963,
+      "step1_confident_share": 0.787037,
+      "step1_share_of_canvas": 0.142105,
+      "per_step": [
+        {
+          "step": 0,
+          "committed": 108,
+          "share_of_canvas": 0.142105,
+          "forced_share": 0.212963,
+          "confident_share": 0.787037,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 1,
+          "committed": 104,
+          "share_of_canvas": 0.136842,
+          "forced_share": 0.192308,
+          "confident_share": 0.807692,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 2,
+          "committed": 105,
+          "share_of_canvas": 0.138158,
+          "forced_share": 0.2,
+          "confident_share": 0.8,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 3,
+          "committed": 105,
+          "share_of_canvas": 0.138158,
+          "forced_share": 0.190476,
+          "confident_share": 0.809524,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 4,
+          "committed": 223,
+          "share_of_canvas": 0.293421,
+          "forced_share": 0.134529,
+          "confident_share": 0.865471,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 5,
+          "committed": 43,
+          "share_of_canvas": 0.056579,
+          "forced_share": 0.209302,
+          "confident_share": 0.790698,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 6,
+          "committed": 42,
+          "share_of_canvas": 0.055263,
+          "forced_share": 0.190476,
+          "confident_share": 0.809524,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 7,
+          "committed": 30,
+          "share_of_canvas": 0.039474,
+          "forced_share": 0.2,
+          "confident_share": 0.8,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        }
+      ]
+    },
+    {
+      "suite": "smoke",
+      "parallel_unmask": "topk",
+      "seed": 0,
+      "records": 8,
+      "wall_seconds": 41.208,
+      "steps_recorded": 64,
+      "committed_total": 741,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.1381125,
+      "forwards_count": 218,
+      "tokens_emitted": 385,
+      "semantic_singleton_bypasses": 19,
+      "step1_forced_share": 0.27381,
+      "step1_confident_share": 0.72619,
+      "step1_share_of_canvas": 0.11336,
+      "per_step": [
+        {
+          "step": 0,
+          "committed": 84,
+          "share_of_canvas": 0.11336,
+          "forced_share": 0.27381,
+          "confident_share": 0.72619,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 1,
+          "committed": 81,
+          "share_of_canvas": 0.109312,
+          "forced_share": 0.222222,
+          "confident_share": 0.777778,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 2,
+          "committed": 83,
+          "share_of_canvas": 0.112011,
+          "forced_share": 0.216867,
+          "confident_share": 0.783133,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 3,
+          "committed": 86,
+          "share_of_canvas": 0.116059,
+          "forced_share": 0.174419,
+          "confident_share": 0.825581,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 4,
+          "committed": 90,
+          "share_of_canvas": 0.121457,
+          "forced_share": 0.155556,
+          "confident_share": 0.844444,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 5,
+          "committed": 94,
+          "share_of_canvas": 0.126856,
+          "forced_share": 0.148936,
+          "confident_share": 0.851064,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 6,
+          "committed": 99,
+          "share_of_canvas": 0.133603,
+          "forced_share": 0.141414,
+          "confident_share": 0.858586,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        },
+        {
+          "step": 7,
+          "committed": 124,
+          "share_of_canvas": 0.167341,
+          "forced_share": 0.112903,
+          "confident_share": 0.887097,
+          "speculative_share": 0.0,
+          "forwards": 8,
+          "rows_recorded": 8
+        }
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d4da3045087b86f91594fd75f9974d8a2c127101",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v322",
+      "config.levers": "v33",
+      "harness.model_build.eval": "v104"
+    },
+    "stamped_at": "2026-09-02T12:53:24.418003+00:00"
+  }
+}

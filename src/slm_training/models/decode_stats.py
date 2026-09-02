@@ -149,6 +149,21 @@ class DecodeStats:
     binder_arity_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
+    # S6/N2 context-tower causal ablation (diagnostic arms only; every counter
+    # stays 0 on a production decode because ``context_ablation`` defaults to
+    # "off"). ``_rows`` counts context rows actually corrupted and
+    # ``_degenerate_rows`` counts rows the requested mode could not corrupt
+    # (a 1-row batch under shuffle_batch, a <2-token prompt under
+    # shuffle_positions) so a degenerate arm can never be read as an ablation
+    # that happened. ``_applications`` / ``_choice_changes`` follow the same
+    # argmax-flip accounting as every other factor head above: applications
+    # are non-singleton legal-domain positions probed with both the ablated
+    # (driving) and intact (shadow) context, changes are the positions where
+    # the constrained argmax over the legal set differs.
+    context_ablation_rows: int = 0
+    context_ablation_degenerate_rows: int = 0
+    context_ablation_applications: int = 0
+    context_ablation_choice_changes: int = 0
     # I3 deterministic speculative ranking over the symbol table: how often the
     # corpus scorer was consulted, how often it was confident enough to commit
     # without a forward, and how many tokens that bought.
@@ -360,6 +375,17 @@ class DecodeStats:
     # decision without emitting an unbounded trace for long canvases.
     constrained_selection_traces: list[dict[str, object]] = field(default_factory=list)
     newline_commit_traces: list[dict[str, object]] = field(default_factory=list)
+    # S12/N3 per-step commit-authority histogram. Opt-in: the MaskGIT
+    # recording site does nothing unless the caller sets
+    # ``record_step_commits`` on the active bucket, so default decodes pay
+    # nothing and stay byte-identical. One entry per denoising step that
+    # committed at least one position:
+    # ``{"step", "committed", "forced", "confident", "speculative",
+    #    "forwards", "authority"}`` where ``authority`` is the step-dominant
+    # source. ``merge``/``aggregate_stats`` sum scalars only, so this list is
+    # per-call evidence and is never silently concatenated across decodes.
+    record_step_commits: bool = False
+    step_commits: list[dict[str, object]] = field(default_factory=list)
 
     def add_ms(self, field_name: str, ms: float) -> None:
         setattr(self, field_name, float(getattr(self, field_name)) + float(ms))
@@ -431,6 +457,11 @@ class DecodeStats:
                 )
                 continue
             cur = getattr(self, key)
+            if isinstance(cur, bool) or isinstance(value, bool):
+                # Telemetry switches (``record_step_commits``) are settings, not
+                # counters; ``bool`` is an ``int`` subclass, so summing them
+                # would quietly turn the flag into a count.
+                continue
             if isinstance(cur, (int, float)) and isinstance(value, (int, float)):
                 setattr(self, key, cur + value)
 
@@ -1208,6 +1239,10 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "binder_arity_choice_changes",
         "forced_spans",
         "forced_tokens",
+        "context_ablation_rows",
+        "context_ablation_degenerate_rows",
+        "context_ablation_applications",
+        "context_ablation_choice_changes",
         "speculative_rank_evaluations",
         "speculative_rank_commits",
         "speculative_rank_tokens",

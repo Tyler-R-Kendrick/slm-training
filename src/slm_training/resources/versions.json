@@ -328,6 +328,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "S6: DIAGNOSTIC_ONLY_LEVERS registry (context_ablation, safe value \"off\") checked by require_constrained_production_config alongside CONSTRAINT_WEAKENING_LEVERS, plus _lever_value_is_safe so an enum-valued lever is compared by value instead of truthiness (bool(\"zero\") == bool(\"off\") previously waved every non-bool diagnostic lever through the production guard). Strictly fail-closed: no lever weakened, no default changed; the lever surfaces in lever_catalog with diagnostic_only: true.",
+          "version": "v33"
+        },
+        {
+          "date": "2026-09-02",
           "note": "lever_catalog category: *_loss_weight levers of the compiler/solver family classify as training (weights-moving), not decode; no lever added, removed or defaulted.",
           "version": "v32"
         },
@@ -507,7 +512,7 @@
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
-      "version": "v32"
+      "version": "v33"
     },
     "data.abstract_cot_warmup": {
       "history": [
@@ -5146,8 +5151,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the S6/S12 results JSON landed (deterministic rebuild).",
+          "version": "v286"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Bound the screening decode probe. The fit computed n_probe and nothing consumed it, so the eval decoded the whole published suite (96 records) however small the eval share was: the arm was killed at the wall (exit 124) after 80 records, reported no document counts, and every cycle scored measurement_incomplete -- and because no p95 was ever recorded, the next cycle cold-started into the same deadlock. Screening knobs now carry eval_limit=n_probe, and a cold-start probe is capped at the exact sign-test floor (6) instead of the whole suite. Teacher-forced NLL still spans the full suite, so the screening verdict keeps its pairs.",
           "version": "v285"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after the S6/S12 audit result JSON (iter-s6-context-ablation-20260902.json, iter-s12-commit-authority-profile-20260902.json) landed; deterministic regeneration, no harness behaviour change.",
+          "version": "v281"
         },
         {
           "date": "2026-09-02",
@@ -7193,7 +7208,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v285"
+      "version": "v286"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -11159,6 +11174,11 @@
     },
     "harness.experiments.slm197_direct_bridge_policy": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S6/S12 N2/N3 decode-authority audit (context_ablation arms and the per-step commit-authority histogram). Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: S14 appends the N12 LAVE stall-termination section to docs/design/quality-experiment-matrix.md (fixture-demo telemetry audit rows only, append-only). No bridge-policy code, gate, metric or matrix cell for this component changes.",
@@ -16575,8 +16595,23 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of S6/S12 decode telemetry (step_commits histogram, context-ablation flip counters) with the X1 and S14 counters; both parents' histories preserved. All read-only.",
+          "version": "v106"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of X1's residual_hole_compactions / residual_holes_compacted advisory counters with the S14 admit-rejection telemetry; both parents' histories preserved. Counters are read-only.",
           "version": "v105"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S12 execution coverage for the I2 one-hole singleton-bypass recording site (tests/test_models/test_step_commit_histogram.py seeds a certified canvas with one masked '=' so the exact_commit branch runs and the recorded row is asserted exactly). Tests only; decode_stats.py and the recording sites are unchanged.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S6/S12 decode telemetry (decode_stats.py, additive). S6: context_ablation_rows / _degenerate_rows / _applications / _choice_changes following the existing *_applications / *_choice_changes argmax-flip pattern, added to aggregate_stats. S12: record_step_commits switch and the step_commits per-step authority history, both default-off so a decode that does not arm them is byte-identical. merge() now skips bool fields so the telemetry switch cannot be summed into a count (bool is an int subclass); no existing counter, ratio, or gate semantics changed and S4's derived fraction properties are untouched.",
+          "version": "v104"
         },
         {
           "date": "2026-09-02",
@@ -17214,7 +17249,7 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v105"
+      "version": "v106"
     },
     "harness.model_build.train": {
       "history": [
@@ -19448,8 +19483,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of S6 (context_ablation diagnostic lever and the legal-choice flip probe) and S12 (per-step commit-authority histogram) with the corpus-rebuild and X1/S14 entries; both parents' histories preserved. Ablation is decode-time only, default off, and byte-identical when off.",
+          "version": "v326"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of X1 (completion forest keeps the placeholder-symbol class for a content prop with no slot contract instead of stripping symbols from the broad STRING set, and _compact_interior_holes slides committed tokens left over interior holes so the residual repair is never suffix-blind) with the S14 telemetry and corpus rebuild entries. Both parents' histories preserved. Decode output changes on canvases that had interior holes; that is the point of the I6 fix and is recorded in X1's own entry.",
           "version": "v325"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S6/S12 audit cards. S6: new default-off TwoTowerConfig.context_ablation (off|zero|shuffle_batch|shuffle_positions) applied at the one decode-time seam in _generate_batch_once where the projected context tower output enters the denoiser; \"off\" returns the caller's tensor object so the production decode is byte-identical. Adds _apply_context_ablation and a ctx_shadow decision-level probe in _generate_maskgit_one that re-runs the constrained pick over the same legal set with the intact context and counts argmax flips (non-singleton positions only). S12: per-step commit-authority histogram recorded in the MaskGIT loop, gated on DecodeStats.record_step_commits and therefore inert by default. No production default changed; tests in tests/test_models/test_context_ablation.py and tests/test_models/test_step_commit_histogram.py.",
+          "version": "v322"
         },
         {
           "date": "2026-09-02",
@@ -21475,7 +21520,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v325"
+      "version": "v326"
     },
     "ops.vocab": {
       "history": [
