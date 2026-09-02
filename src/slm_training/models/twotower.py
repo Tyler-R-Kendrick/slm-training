@@ -5528,6 +5528,58 @@ class TwoTowerModel(nn.Module):
             )
         return last
 
+    def _compact_interior_holes(self, ids: torch.Tensor, unknown: torch.Tensor) -> int:
+        """Slide committed tokens left over interior holes (row 0, in place).
+
+        I6, fail-closed direction. ``admit_fill`` / the left-prefix probe never
+        validate tokens **after** the first hole, so a hole that still carries
+        committed non-empty tokens to its right can only be filled from an
+        over-approximation: the picker admits a token that is legal as a
+        prefix, the committed suffix then contradicts it, and the repair
+        dead-ends into an invalid program. That is the suffix-blind blind spot
+        measured at 442/442 probes in
+        ``docs/design/residual-honesty-block-diffusion-20260804.md`` (L-B), and
+        the parallel block commits of L-D are what make interior holes routine.
+
+        A masked position contributes an **empty surface piece** under this
+        system's decode semantics (``token_surface_piece``; the same epsilon
+        fill ``multi_region_support`` searches first), so moving committed
+        tokens left over interior holes leaves the decoded string
+        byte-identical while turning every remaining hole into a genuine
+        left-to-right frontier. Nothing is widened: no candidate set changes,
+        no committed token is edited or dropped (T2M holds — order is
+        preserved and the vacated slots stay masked), and a canvas whose holes
+        are already trailing is left untouched.
+
+        Returns the number of interior holes moved (0 when this is a no-op).
+        """
+        if ids.size(0) == 0 or not bool(unknown[0].any().item()):
+            return 0
+        length = ids.size(1)
+        mask_id = int(self.tokenizer.mask_id)
+        pad_id = int(self.tokenizer.pad_id)
+        row = ids[0].tolist()
+        holes = unknown[0].tolist()
+        last_known = -1
+        for pos in range(length - 1, -1, -1):
+            if not holes[pos] and int(row[pos]) != pad_id:
+                last_known = pos
+                break
+        if last_known < 0:
+            return 0
+        interior = sum(1 for pos in range(last_known) if holes[pos])
+        if interior == 0:
+            return 0
+        kept = [int(row[pos]) for pos in range(last_known + 1) if not holes[pos]]
+        filled = len(kept)
+        rebuilt = kept + [mask_id] * (last_known + 1 - filled)
+        ids[0, : last_known + 1] = torch.tensor(
+            rebuilt, dtype=ids.dtype, device=ids.device
+        )
+        unknown[0, :filled] = False
+        unknown[0, filled : last_known + 1] = True
+        return interior
+
     def _constrained_ltr_repair(
         self,
         ids: torch.Tensor,
@@ -5645,6 +5697,12 @@ class TwoTowerModel(nn.Module):
                         f"at decision {len(repair_commits)}",
                         stacklevel=2,
                     )
+
+        # I6: no hole may carry a committed non-empty token to its right.
+        compacted = self._compact_interior_holes(ids, unknown)
+        if compacted and stats is not None:
+            stats.residual_hole_compactions += 1
+            stats.residual_holes_compacted += compacted
 
         t = 0
         while t < length:

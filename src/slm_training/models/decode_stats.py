@@ -292,6 +292,13 @@ class DecodeStats:
     hybrid_span_commits: int = 0
     hybrid_frontier_commits: int = 0
     hybrid_span_reverts: int = 0
+    # I6: LTR-repair canvases that still carried a committed non-empty token
+    # AFTER a hole, and how many such interior holes were slid out before the
+    # repair ran. Compaction is decode-preserving (masks are empty pieces), so
+    # this counts how often the suffix-blind admit configuration was reached,
+    # not how often output changed.
+    residual_hole_compactions: int = 0
+    residual_holes_compacted: int = 0
     # E20: masked slot positions seeded from the slot-contract template.
     template_slot_positions: int = 0
     asap_positions: int = 0
@@ -1307,6 +1314,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "hybrid_span_commits",
         "hybrid_frontier_commits",
         "hybrid_span_reverts",
+        "residual_hole_compactions",
+        "residual_holes_compacted",
         "template_slot_positions",
         "asap_positions",
         "constraint_graph_edges",
