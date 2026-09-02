@@ -952,3 +952,154 @@ def test_screening_smoke_n_live_policy_is_auto_with_fallback() -> None:
     assert n == int(policy.measurement["screening_smoke_n"])
     assert report is not None
     assert report["verdict"] == "insufficient_evidence"
+    assert report["chosen_n"] is None  # no arm wall: budget undecidable
+
+
+# ---------------------------------------------------------------------------
+# RC1 replay: smoke.eval_nll primary must never park on a borrowed SD
+# ---------------------------------------------------------------------------
+
+
+def test_default_policy_is_v3_with_nll_unit_minimum_effect() -> None:
+    policy = load_climb_policy()
+    assert policy.path.name == "policy.v3.json"
+    assert policy.version == "v15"
+    screening = policy.screening_primary
+    assert screening["metric"] == "smoke.eval_nll"
+    assert screening["minimum_effect"] == pytest.approx(0.02)
+    assert screening["minimum_effect_units"] == "nats/token"
+    assert screening["minimum_effect_rationale"]
+    block = policy.measurement["screening_sample_size"]
+    assert block["observed_sd_by_metric"] == {}
+    assert "observed_sd" not in block  # no untagged scalar to borrow
+    # v3 is v2 plus the RC1 fields only.
+    v2 = json.loads((CLIMB_RESOURCE_DIR / "policy.v2.json").read_text(encoding="utf-8"))
+    v3 = dict(policy.payload)
+    for key, value in v2.items():
+        if key in {"version", "description", "screening_primary", "measurement"}:
+            continue
+        assert v3[key] == value, f"policy.v3.json changed v2 field {key!r}"
+    for key, value in v2["measurement"].items():
+        if key == "screening_sample_size":
+            continue
+        assert v3["measurement"][key] == value
+
+
+@pytest.mark.parametrize("arm_wall_seconds,expected_n", [(180.0, 24), (70.0, 21)])
+def test_screening_smoke_n_rc1_replay_eval_nll_primary_is_runnable(
+    arm_wall_seconds: float, expected_n: int
+) -> None:
+    # RC1 inputs verbatim: policy primary smoke.eval_nll, suite 24 records.
+    # Before: MEASURED_PAIRED_SD (smoke.structural_similarity) was borrowed,
+    # power floor 96 > 24 -> infeasible_range_empty -> n=0 -> park every cycle.
+    policy = load_climb_policy()
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=arm_wall_seconds, suite_records=24
+    )
+    assert report is not None
+    assert n >= 6
+    assert n == expected_n  # min(suite 24, budget ceiling, max_candidate_n 64)
+    assert report["verdict"] in {"insufficient_evidence", "feasible"}
+    assert report["must_generate"] is False
+    assert report["chosen_n"] == n
+    assert report["decidability_floor_n"] == 6
+    assert report["binding_constraints"] == []
+    if report["verdict"] == "insufficient_evidence":
+        assert report["power_floor_status"] == "unmeasured"
+        assert report["power_floor_n"] is None
+        assert report["observed_sd_source"] == "unmeasured"
+        assert report["observed_sd_metric"] == "smoke.eval_nll"
+    else:  # a same-metric SD was recorded (P3): power floor is measured
+        assert report["power_floor_status"] == "measured"
+        assert report["observed_sd_source"] != "unmeasured"
+
+
+def test_screening_smoke_n_unmeasured_sd_generates_only_below_exact_floor() -> None:
+    policy = load_climb_policy()
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=5
+    )
+    assert n == 0
+    assert report is not None
+    assert report["verdict"] == "infeasible_range_empty"
+    assert report["must_generate"] is True
+    assert report["n_min"] == 6
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=6
+    )
+    assert n == 6
+    assert report is not None
+    assert report["must_generate"] is False
+
+
+def test_screening_smoke_n_measured_same_metric_sd_yields_power_floor() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+                "observed_sd_by_metric": {"eval_nll": "1/50"},
+            },
+        },
+        payload={
+            "power_gate": {"enabled": True, "alpha": "1/20"},
+            "screening_primary": {
+                "metric": "smoke.eval_nll",
+                "direction": "decrease",
+                "minimum_effect": 0.02,
+            },
+        },
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_status"] == "measured"
+    assert report["observed_sd_source"] == "policy"
+    assert report["power_floor_n"] == 8  # ((1.96+0.84)*0.02/0.02)^2 -> 8
+    assert report["verdict"] == "feasible"
+    assert n == 8 == report["chosen_n"]
+
+
+def test_screening_smoke_n_never_borrows_another_metrics_sd() -> None:
+    # A scalar observed_sd tagged for structural_similarity must not power a
+    # smoke.eval_nll primary; the floor stays unmeasured.
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+                "observed_sd": "1741/10000",
+                "observed_sd_metric": "smoke.structural_similarity",
+                "observed_sd_by_metric": {"structural_similarity": "1741/10000"},
+            },
+        },
+        payload={
+            "power_gate": {"enabled": True, "alpha": "1/20"},
+            "screening_primary": {
+                "metric": "smoke.eval_nll",
+                "direction": "decrease",
+                "minimum_effect": 0.05,
+            },
+        },
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_status"] == "unmeasured"
+    assert report["power_floor_n"] is None
+    assert n == 24
+    # The same declaration powers its own metric.
+    policy.payload["screening_primary"]["metric"] = "smoke.structural_similarity"
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_status"] == "measured"
+    assert report["power_floor_n"] == 96
+    assert n == 0 and report["verdict"] == "infeasible_range_empty"

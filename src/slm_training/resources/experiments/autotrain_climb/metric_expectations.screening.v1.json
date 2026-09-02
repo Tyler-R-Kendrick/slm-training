@@ -1,6 +1,8 @@
 {
   "schema": "metric_expectations/v1",
   "description": "Locked theorem-backed zero invariants for decision-bearing continuous screening. These are exact runtime/completeness obligations, not empirical quality or latency calibration.",
+  "observed_paired_sd_by_metric": {},
+  "observed_paired_sd_by_metric_contract": "Per-metric paired-delta SD (candidate minus control, same fixture id) consumed by screening_sample_size.lookup_paired_sd_for_metric for the screening power floor and the power_decidability preflight. Keys are the metric leaf (e.g. eval_nll) or the full metric (e.g. smoke.eval_nll); values are a number/fraction string or an object {sd, n_deltas, source}. A metric absent here is unmeasured: the exact decidability floor stands alone and preflight warns instead of blocking. Never copy another metric's SD into a slot.",
   "metrics": [
     {
       "metric_id": "invalid_grammar_count",

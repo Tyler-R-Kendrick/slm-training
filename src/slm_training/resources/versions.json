@@ -140,6 +140,11 @@
     "autoresearch.power_preflight": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "RC2 fix: observed SD is resolved per endpoint metric via screening_sample_size.lookup_paired_sd_for_metric (expectations slot -> metric-keyed ledger -> tagged constant); an unmeasured SD reports sd_source=unmeasured and can only warn (block is a measured determination). Empty endpoint_metric blocks as malformed. Process-arm handling unchanged.",
+          "version": "v5"
+        },
+        {
           "date": "2026-08-15",
           "note": "Process/heal/wiring candidates warn instead of blocking; first-train I10 is not a confirmatory power design.",
           "version": "v4"
@@ -168,7 +173,7 @@
         "tests/test_autoresearch/test_power_preflight_check.py",
         "tests/test_autoresearch/test_power_preflight_math.py"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "autoresearch.preflight": {
       "history": [
@@ -5032,6 +5037,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
+          "version": "v271"
+        },
+        {
           "date": "2026-08-21",
           "note": "Screening data heal allocates a new versioned smoke suite instead of reusing the frozen smoke6 snapshot when n must grow.",
           "version": "v270"
@@ -6920,7 +6930,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v270"
+      "version": "v271"
     },
     "harness.autoresearch.formal": {
       "history": [
