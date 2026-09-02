@@ -1289,6 +1289,107 @@ def _run_metrics(
     return out
 
 
+_EVAL_NLL_RECORDS_SCHEMA = "eval_nll_records/v1"
+_EVAL_NLL_RECORDS_NAME = "eval_nll_records.json"
+_OBSERVED_PAIRED_SD_SCHEMA = "observed_paired_sd/v1"
+_OBSERVED_PAIRED_SD_SOURCE = "continuous_driver"
+
+
+def _read_eval_nll_records(run_dir: Path) -> tuple[dict[str, float], str | None]:
+    """``({record_id: nll}, definition_hash)`` from ``eval_nll_records.json``."""
+
+    data = _read_json(Path(run_dir) / _EVAL_NLL_RECORDS_NAME)
+    if data.get("schema") != _EVAL_NLL_RECORDS_SCHEMA:
+        return {}, None
+    raw = data.get("records")
+    if not isinstance(raw, dict):
+        return {}, None
+    records: dict[str, float] = {}
+    for record_id, value in raw.items():
+        number = _finite_metric(value)
+        if number is not None:
+            records[str(record_id)] = number
+    digest = data.get("definition_hash")
+    return records, (str(digest) if digest else None)
+
+
+def _record_observed_paired_sd(
+    path: Path,
+    *,
+    metric_leaf: str,
+    sd: float,
+    n: int,
+    campaign_id: str,
+    control_id: str,
+    candidate_id: str,
+    date: str | None = None,
+) -> bool:
+    """Append one measured paired-delta SD to ``observed_paired_sd_by_metric``.
+
+    Shape written under ``observed_paired_sd_by_metric[<leaf>]`` (the
+    ``{sd, n_deltas, source}`` object form read by
+    ``screening_sample_size.lookup_paired_sd_for_metric``)::
+
+        {"schema": "observed_paired_sd/v1", "sd": <latest>,
+         "n_deltas": <pairs>, "source": "continuous_driver",
+         "date": "YYYY-MM-DD", "history": [{sd, n_deltas, date, campaign_id,
+         control_id, candidate_id}, ...]}
+
+    Backward compatible: a missing slot is created, a bare number or a
+    history-less mapping is folded into ``history`` as the prior snapshot.
+    Idempotent per (campaign, control, candidate). Returns ``True`` when the
+    file changed.
+    """
+    from datetime import datetime, timezone
+
+    path = Path(path)
+    data = _read_json(path)
+    if not data:
+        raise ValueError(f"screening expectations missing or invalid: {path}")
+    slot = data.get("observed_paired_sd_by_metric")
+    if not isinstance(slot, dict):
+        slot = {}
+        data["observed_paired_sd_by_metric"] = slot
+    entry = slot.get(metric_leaf)
+    history: list[dict[str, Any]] = []
+    if isinstance(entry, dict):
+        if isinstance(entry.get("history"), list):
+            history = [row for row in entry["history"] if isinstance(row, dict)]
+        elif entry.get("sd") is not None:
+            history = [{k: v for k, v in entry.items() if k != "schema"}]
+    elif isinstance(entry, (int, float, str)) and not isinstance(entry, bool):
+        history = [{"sd": entry, "n_deltas": None, "date": None, "source": "prior"}]
+    key = (str(campaign_id), str(control_id), str(candidate_id))
+    for row in history:
+        if (
+            str(row.get("campaign_id")),
+            str(row.get("control_id")),
+            str(row.get("candidate_id")),
+        ) == key:
+            return False
+    stamp = date or datetime.now(timezone.utc).date().isoformat()
+    history.append(
+        {
+            "sd": float(sd),
+            "n_deltas": int(n),
+            "date": stamp,
+            "campaign_id": str(campaign_id),
+            "control_id": str(control_id),
+            "candidate_id": str(candidate_id),
+        }
+    )
+    slot[metric_leaf] = {
+        "schema": _OBSERVED_PAIRED_SD_SCHEMA,
+        "sd": float(sd),
+        "n_deltas": int(n),
+        "source": _OBSERVED_PAIRED_SD_SOURCE,
+        "date": stamp,
+        "history": history,
+    }
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
 def _run_arm_eval_nll(
     run_dir: Path,
     *,
@@ -1298,17 +1399,26 @@ def _run_arm_eval_nll(
     nll_config: Any = None,
     eval_nll: float | None = None,
     definition_hash: str | None = None,
+    records: Mapping[str, float] | None = None,
+    eval_version: str | None = None,
 ) -> dict[str, Any]:
     """Write canonical ``suites.smoke.eval_nll`` (arm loss weights ignored).
 
     Diagnostic only: does not touch ship gates. Uses
-    ``evaluate_loss_suites`` with a cycle-shared baseline ``nll_config``.
+    ``evaluate_loss_suites`` with a cycle-shared baseline ``nll_config`` over
+    the whole smoke suite under ``test_dir``. Per-record broad NLL rows are
+    persisted to ``eval_nll_records.json`` (``{record_id: nll}`` plus the
+    definition hash) so screening can pair arms record-by-record; the suite
+    mean lands in the scoreboard exactly as before.
     """
     from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
 
     digest = definition_hash or screening_nll_definition_hash()
     value = eval_nll
     report: dict[str, Any] | None = None
+    per_record: dict[str, float] | None = (
+        {str(k): float(v) for k, v in records.items()} if records is not None else None
+    )
     if value is None:
         from slm_training.evals.denoising_nll import DenoisingNLLConfig
         from slm_training.evals.loss_suites import (
@@ -1349,6 +1459,9 @@ def _run_arm_eval_nll(
         if not isinstance(mean, (int, float)):
             raise ValueError("evaluate_loss_suites did not yield a finite smoke NLL")
         value = float(mean)
+        from slm_training.evals.loss_suites import per_record_nll_map
+
+        per_record = per_record_nll_map(report)
     scoreboard_path = Path(run_dir) / "scoreboard.json"
     scoreboard = _read_json(scoreboard_path)
     suites = scoreboard.get("suites")
@@ -1363,6 +1476,27 @@ def _run_arm_eval_nll(
     smoke["eval_nll_definition_hash"] = digest
     smoke["eval_nll_claim_class"] = "diagnostic"
     Path(run_dir).mkdir(parents=True, exist_ok=True)
+    records_path: Path | None = None
+    if per_record is not None:
+        smoke["eval_nll_n_records"] = len(per_record)
+        records_path = Path(run_dir) / _EVAL_NLL_RECORDS_NAME
+        records_path.write_text(
+            json.dumps(
+                {
+                    "schema": _EVAL_NLL_RECORDS_SCHEMA,
+                    "definition_hash": digest,
+                    "claim_class": "diagnostic",
+                    "suite": "smoke",
+                    "eval_version": eval_version,
+                    "n_records": len(per_record),
+                    "mean_nll": float(value),
+                    "records": {k: per_record[k] for k in sorted(per_record)},
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     scoreboard_path.write_text(
         json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
     )
@@ -1371,43 +1505,106 @@ def _run_arm_eval_nll(
         "definition_hash": digest,
         "scoreboard": str(scoreboard_path),
         "report": report,
+        "records": per_record,
+        "records_path": str(records_path) if records_path else None,
     }
 
 
-def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
-    """Compute canonical smoke.eval_nll after quality eval when missing."""
+def _find_nested_key(payload: Any, key: str, *, depth: int = 6) -> Any:
+    """First value of ``key`` in a nested JSON payload (depth-limited)."""
 
-    scoreboard_path = Path(run_dir) / "scoreboard.json"
-    if not scoreboard_path.is_file():
+    if depth < 0:
         return None
-    suites = _read_json(scoreboard_path).get("suites")
+    if isinstance(payload, dict):
+        if key in payload and payload[key] not in (None, ""):
+            return payload[key]
+        for value in payload.values():
+            found = _find_nested_key(value, key, depth=depth - 1)
+            if found is not None:
+                return found
+    elif isinstance(payload, list):
+        for value in payload:
+            found = _find_nested_key(value, key, depth=depth - 1)
+            if found is not None:
+                return found
+    return None
+
+
+def _arm_eval_version(run_dir: Path) -> str | None:
+    """Eval snapshot the arm was assigned (train summary, manifest, experiment)."""
+
+    run_dir = Path(run_dir)
+    camp_dir = run_dir.parent.parent
+    candidates = (
+        run_dir / "train_summary.json",
+        camp_dir / "manifests" / f"{run_dir.name}.json",
+        camp_dir / "experiments" / f"{run_dir.name}.json",
+    )
+    for path in candidates:
+        if not path.is_file():
+            continue
+        found = _find_nested_key(_read_json(path), "eval_version")
+        if isinstance(found, str) and found.strip():
+            return found.strip()
+    return None
+
+
+def _attach_screening_eval_nll(
+    run_dir: Path,
+    *,
+    exit_code: int | None = None,
+    eval_version: str | None = None,
+) -> dict[str, Any] | None:
+    """Compute canonical smoke.eval_nll for any arm that has a checkpoint.
+
+    Independent of the decode-heavy quality eval: runs whether that eval
+    succeeded, crashed, or timed out (``exit_code`` is logged only), needs no
+    prior scoreboard, scores the whole smoke suite the arm was assigned, and
+    persists per-record rows. Idempotent once both the aggregate and the
+    per-record file exist.
+    """
+
+    run_dir = Path(run_dir)
+    scoreboard_path = run_dir / "scoreboard.json"
+    suites = (
+        _read_json(scoreboard_path).get("suites") if scoreboard_path.is_file() else None
+    )
     smoke = suites.get("smoke") if isinstance(suites, dict) else None
-    if isinstance(smoke, dict) and isinstance(smoke.get("eval_nll"), (int, float)):
+    has_aggregate = isinstance(smoke, dict) and isinstance(
+        smoke.get("eval_nll"), (int, float)
+    )
+    if has_aggregate and (run_dir / _EVAL_NLL_RECORDS_NAME).is_file():
         return None
-    summary = _read_json(Path(run_dir) / "train_summary.json")
+    summary = _read_json(run_dir / "train_summary.json")
     checkpoint = Path(str(summary.get("checkpoint") or ""))
     if not checkpoint.is_file():
         print(
-            f"EVAL_NLL_SKIP run={Path(run_dir).name} reason=missing_checkpoint",
+            f"EVAL_NLL_SKIP run={run_dir.name} reason=missing_checkpoint"
+            f" exit={exit_code}",
             flush=True,
         )
         return None
     from slm_training.data.store import DataStore
 
-    eval_id = default_eval_version()
+    eval_id = eval_version or _arm_eval_version(run_dir) or default_eval_version()
     test_dir = DataStore().resolve_path("eval", eval_id)
     try:
         out = _run_arm_eval_nll(
-            Path(run_dir), test_dir=test_dir, checkpoint=checkpoint
+            run_dir,
+            test_dir=test_dir,
+            checkpoint=checkpoint,
+            eval_version=eval_id,
         )
     except Exception as exc:  # noqa: BLE001 — NLL is diagnostic, never abort quality
         print(
-            f"EVAL_NLL_SKIP run={Path(run_dir).name} err={exc!r}",
+            f"EVAL_NLL_SKIP run={run_dir.name} exit={exit_code} err={exc!r}",
             flush=True,
         )
         return None
+    n_records = len(out.get("records") or {})
     print(
-        f"EVAL_NLL run={Path(run_dir).name} nll={out.get('eval_nll')}",
+        f"EVAL_NLL run={run_dir.name} nll={out.get('eval_nll')}"
+        f" n_records={n_records} eval_version={eval_id} exit={exit_code}",
         flush=True,
     )
     return out
@@ -10505,6 +10702,7 @@ def _classify_positive(
     candidate_trainable_params: int | None = None,
     eg_params_by_seed: list[float] | None = None,
     policy_path: str | None = None,
+    observed_sd_path: Path | None = None,
 ) -> dict[str, Any]:
     """Classify cycle for SDLC Phase A stack-layer gate.
 
@@ -10513,8 +10711,23 @@ def _classify_positive(
     meaning are not positive; quality may spend a bounded latency budget.
     Fixture insufficient_n / missing metrics / null deltas / uncharged capacity
     growth → non-positive.
+
+    Screening NLL primaries are decided by the policy paired test on the
+    per-record ``eval_nll_records.json`` deltas of both arms. The fixture
+    ``insufficient_n`` clamp keeps nullifying decoded-quality wins and every
+    promotion verdict; it does not nullify a paired NLL win decided on at
+    least ``SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR`` pairs — the quality
+    probe's volume is then recorded as ``fixture_insufficient_n:quality_probe``.
+    Screening positives remain ``claim_class: diagnostic``. I6 is untouched:
+    any measured ``parse_rate < 1`` still yields ``invalid_grammar``.
+
+    Each screening classification with paired deltas appends the measured
+    paired-delta SD to ``observed_paired_sd_by_metric`` in the screening
+    expectations file (``observed_sd_path`` overrides the repo file).
     """
     from slm_training.autoresearch.climb_policy import (
+        FIXTURE_INSUFFICIENT_N_QUALITY_PROBE,
+        PAIRED_PRIMARY_LEAVES,
         classify_positive_metrics,
         load_climb_policy,
         primary_for_role,
@@ -10563,6 +10776,29 @@ def _classify_positive(
         }
 
     reasons_pre: list[str] = []
+    # Per-record NLL pairs (teacher-forced, whole smoke suite) for the paired
+    # screening verdict. Arms scored under different NLL definitions never pair.
+    paired_records: dict[str, dict[str, float]] | None = None
+    paired_records_info: dict[str, Any] = {}
+    if (
+        role == "screening"
+        and effective_metric.rsplit(".", 1)[-1] in PAIRED_PRIMARY_LEAVES
+    ):
+        c_records, c_digest = _read_eval_nll_records(camp_dir / "runs" / control_id)
+        t_records, t_digest = _read_eval_nll_records(camp_dir / "runs" / candidate_id)
+        paired_records_info = {
+            "control_n": len(c_records),
+            "candidate_n": len(t_records),
+            "control_definition_hash": c_digest,
+            "candidate_definition_hash": t_digest,
+        }
+        if c_records and t_records:
+            if c_digest and t_digest and c_digest != t_digest:
+                reasons_pre.append(
+                    f"paired_records_definition_mismatch:{control_id}:{candidate_id}"
+                )
+            else:
+                paired_records = {"control": c_records, "candidate": t_records}
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     # Latency pre-check verdicts per arm (probe timeout / over-budget skip) so
     # a probe-skipped eval reads as its typed cause, not a bare missing file.
@@ -10653,6 +10889,9 @@ def _classify_positive(
         if out.get("metrics") == {} and err:
             reasons_pre.append(f"empty_metrics:{path.stem}")
 
+    # Ship-gate evidence volume (default_min_suite_n) is always short on a
+    # screening smoke suite; it stays a hard clamp for decoded quality wins and
+    # promotion, and an information reason for a decided paired NLL win.
     gate_files = list((camp_dir / "runs").glob("*/gates.json"))
     fixture_only_fails = 0
     for gpath in gate_files:
@@ -10747,7 +10986,10 @@ def _classify_positive(
         eg_params_by_seed=eg_params_by_seed,
         executable_unblock=executable_unblock,
         fixture_insufficient_n=bool(fixture_only_fails),
+        paired_records=paired_records,
     )
+    # Paired NLL win decided on >= the decidability floor with legal grammar.
+    paired_nll_decided = bool(decision.get("fixture_clamp_exempt"))
 
     # Latency primary: tradeoff is authoritative for metric wins (blocks zero-mpr
     # latency greening from direction-signed primary alone).
@@ -10831,28 +11073,63 @@ def _classify_positive(
     if _quality_metrics_identical(delivery_view) and not any(
         str(reason).startswith("mechanism_no_effect:") for reason in reasons
     ):
-        reasons.append("mechanism_no_effect:quality_metrics_identical")
-        decision["positive"] = False
-        decision["stack_layer"] = False
+        if paired_nll_decided:
+            # Identical decoded numbers on a fixture-n probe are not a
+            # no-effect verdict against a paired NLL test decided per record.
+            reasons.append("quality_probe_identical:decoded_quality_metrics_identical")
+        else:
+            reasons.append("mechanism_no_effect:quality_metrics_identical")
+            decision["positive"] = False
+            decision["stack_layer"] = False
     if fixture_only_fails or any(
         str(reason).startswith("fixture_insufficient_n") for reason in reasons
     ):
-        # Tradeoff / primary_metric_win must not re-green fixture ship volume.
-        decision["positive"] = False
-        decision["stack_layer"] = False
-        lean_ok = _lean_floor_measurement(delivery_view)
-        if lean_ok:
-            if not any(
-                str(reason).startswith("fixture_volume_gate_ship_only")
+        if paired_nll_decided:
+            # Quality-probe volume is information here, never the verdict.
+            if FIXTURE_INSUFFICIENT_N_QUALITY_PROBE not in reasons:
+                reasons.append(FIXTURE_INSUFFICIENT_N_QUALITY_PROBE)
+        else:
+            # Tradeoff / primary_metric_win must not re-green fixture ship
+            # volume on decoded quality metrics, latency/efficiency paths, or
+            # any promotion verdict.
+            decision["positive"] = False
+            decision["stack_layer"] = False
+            lean_ok = _lean_floor_measurement(delivery_view)
+            if lean_ok:
+                if not any(
+                    str(reason).startswith("fixture_volume_gate_ship_only")
+                    for reason in reasons
+                ):
+                    reasons.append("fixture_volume_gate_ship_only")
+            elif not any(
+                str(reason).startswith("fixture_insufficient_n_alone")
                 for reason in reasons
             ):
-                reasons.append("fixture_volume_gate_ship_only")
-        elif not any(
-            str(reason).startswith("fixture_insufficient_n_alone") for reason in reasons
-        ):
-            reasons.append("fixture_insufficient_n_alone")
+                reasons.append("fixture_insufficient_n_alone")
+
+    paired = decision.get("paired_test")
+    if (
+        role == "screening"
+        and isinstance(paired, dict)
+        and isinstance(paired.get("paired_sd"), (int, float))
+        and int(paired.get("n_pairs") or 0) >= 2
+    ):
+        # Measured paired-delta SD feeds the screening power calibration.
+        try:
+            _record_observed_paired_sd(
+                observed_sd_path or screening_expectations_path(),
+                metric_leaf=leaf,
+                sd=float(paired["paired_sd"]),
+                n=int(paired["n_pairs"]),
+                campaign_id=camp_dir.name,
+                control_id=control_id,
+                candidate_id=candidate_id,
+            )
+        except Exception as exc:  # noqa: BLE001 — calibration is never a verdict
+            print(f"OBSERVED_PAIRED_SD_SKIP metric={leaf} err={exc!r}", flush=True)
 
     decision["reasons"] = reasons
+    decision["paired_records"] = paired_records_info
     decision["control_id"] = control_id
     decision["candidate_id"] = candidate_id
     decision["baseline_trainable_params"] = base_params
@@ -16034,8 +16311,10 @@ def run_cycle(
             code = int(result.returncode or 0)
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
-        if int(code) == 0:
-            _attach_screening_eval_nll(camp_dir / "runs" / eid)
+        # Teacher-forced NLL is cheap and independent of the decode-heavy
+        # quality eval: score it whenever a checkpoint exists, even when the
+        # quality eval crashed (2) or timed out (124).
+        _attach_screening_eval_nll(camp_dir / "runs" / eid, exit_code=int(code))
 
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     delivery = _phase_a_delivery(

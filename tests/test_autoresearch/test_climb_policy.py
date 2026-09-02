@@ -1103,3 +1103,120 @@ def test_screening_smoke_n_never_borrows_another_metrics_sd() -> None:
     assert report["power_floor_status"] == "measured"
     assert report["power_floor_n"] == 96
     assert n == 0 and report["verdict"] == "infeasible_range_empty"
+
+
+def _nll_pairs(n: int, *, shift: float) -> dict[str, dict[str, float]]:
+    control = {f"rec-{i:02d}": 2.5 + 0.02 * i for i in range(n)}
+    candidate = {
+        k: v - shift - 0.001 * i for i, (k, v) in enumerate(control.items())
+    }
+    return {"control": control, "candidate": candidate}
+
+
+def test_classify_positive_paired_nll_win_exempt_from_fixture_clamp() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    assert policy.screening_primary["metric"] == "smoke.eval_nll"
+    pairs = _nll_pairs(24, shift=0.2)
+    control_metrics = {
+        "smoke.eval_nll": sum(pairs["control"].values()) / 24,
+        "smoke.n": 24,
+        "smoke.completed_document_n": 24,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.05,
+    }
+    candidate_metrics = {
+        "smoke.eval_nll": sum(pairs["candidate"].values()) / 24,
+        "smoke.n": 24,
+        "smoke.completed_document_n": 24,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.05,
+    }
+    win = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=control_metrics,
+        candidate_metrics=candidate_metrics,
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert win["positive"] is True
+    assert win["fixture_clamp_exempt"] is True
+    assert win["paired_test"]["win"] is True
+    assert win["paired_test"]["n_pairs"] == 24
+    assert win["paired_test"]["claim_class"] == "diagnostic"
+    assert "fixture_insufficient_n:quality_probe" in win["reasons"]
+    assert "fixture_insufficient_n_alone" not in win["reasons"]
+    win_reason = next(r for r in win["reasons"] if r.startswith("primary_metric_win:"))
+    assert "n_pairs=24" in win_reason and "paired_win:p=" in win_reason
+
+    # I6: a measured parse_rate < 1 still blocks the paired win.
+    illegal = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=control_metrics,
+        candidate_metrics={**candidate_metrics, "parse_rate": 0.5},
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert illegal["positive"] is False
+    assert illegal["fixture_clamp_exempt"] is False
+    assert any(r.startswith("invalid_grammar:") for r in illegal["reasons"])
+
+
+def test_classify_positive_paired_nll_three_pairs_not_positive() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    pairs = _nll_pairs(3, shift=0.4)
+
+    def metrics(arm: str) -> dict[str, float]:
+        return {
+            "smoke.eval_nll": sum(pairs[arm].values()) / 3,
+            "smoke.n": 3,
+            "smoke.completed_document_n": 3,
+            "parse_rate": 1.0,
+        }
+
+    tick = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=metrics("control"),
+        candidate_metrics=metrics("candidate"),
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert tick["positive"] is False
+    assert tick["fixture_clamp_exempt"] is False
+    null = next(
+        r for r in tick["reasons"] if r.startswith("primary_metric_null_or_worse:")
+    )
+    assert "n_pairs=3" in null and "p=1" in null
+    assert "fixture_insufficient_n_alone" in tick["reasons"]
+
+    # Without per-record files the aggregate path stays fixture-clamped.
+    agg = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=metrics("control"),
+        candidate_metrics=metrics("candidate"),
+        fixture_insufficient_n=True,
+    )
+    assert agg["positive"] is False
+    assert agg["paired_test"] is None
+    assert "paired_records_unavailable:smoke.eval_nll" in agg["reasons"]
+    assert "fixture_insufficient_n_alone" in agg["reasons"]
+
+
+def test_classify_positive_promotion_never_exempt_from_fixture_clamp() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    pairs = _nll_pairs(24, shift=0.2)
+    promo = classify_positive_metrics(
+        policy,
+        role="promotion",
+        control_metrics={"held_out.structural_similarity": 0.4, "parse_rate": 1.0},
+        candidate_metrics={"held_out.structural_similarity": 0.6, "parse_rate": 1.0},
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert promo["positive"] is False
+    assert promo["fixture_clamp_exempt"] is False
+    assert promo["paired_test"] is None
+    assert "fixture_insufficient_n_alone" in promo["reasons"]

@@ -9,8 +9,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from fractions import Fraction
-from statistics import NormalDist
-from typing import Literal, Sequence
+from statistics import NormalDist, median, stdev
+from typing import Any, Literal, Mapping, Sequence
 
 from slm_training.autoresearch.evidence_ledger import (
     parse_alpha,
@@ -225,14 +225,148 @@ def paired_screening_test(
     )
 
 
+@dataclass(frozen=True)
+class PairedRecordDeltas:
+    """Per-record improvement-signed deltas paired by record id.
+
+    ``deltas[i]`` is positive when the candidate is better on ``record_ids[i]``
+    (``control - candidate`` for ``decrease`` metrics such as NLL,
+    ``candidate - control`` for ``increase`` metrics). Records missing on
+    either arm are dropped and counted, never imputed.
+    """
+
+    record_ids: tuple[str, ...]
+    deltas: tuple[float, ...]
+    n_missing_control: int
+    n_missing_candidate: int
+
+    @property
+    def n_pairs(self) -> int:
+        return len(self.deltas)
+
+    @property
+    def median_delta(self) -> float | None:
+        return median(self.deltas) if self.deltas else None
+
+    @property
+    def mean_delta(self) -> float | None:
+        return sum(self.deltas) / len(self.deltas) if self.deltas else None
+
+    @property
+    def sd(self) -> float | None:
+        """Sample SD of the paired deltas (``None`` below two pairs)."""
+        return stdev(self.deltas) if len(self.deltas) >= 2 else None
+
+
+def _finite(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    return number if math.isfinite(number) else None
+
+
+def paired_record_deltas(
+    control: Mapping[str, object],
+    candidate: Mapping[str, object],
+    *,
+    direction: str = "decrease",
+) -> PairedRecordDeltas:
+    """Pair ``{record_id: value}`` maps by id into improvement-signed deltas."""
+
+    if direction not in {"decrease", "increase"}:
+        raise ValueError(f"direction must be decrease|increase, got {direction!r}")
+    ids: list[str] = []
+    deltas: list[float] = []
+    missing_control = 0
+    missing_candidate = 0
+    for record_id in sorted(set(control) | set(candidate)):
+        c_val = _finite(control.get(record_id))
+        t_val = _finite(candidate.get(record_id))
+        if c_val is None:
+            missing_control += 1
+        if t_val is None:
+            missing_candidate += 1
+        if c_val is None or t_val is None:
+            continue
+        raw = t_val - c_val
+        ids.append(str(record_id))
+        deltas.append(-raw if direction == "decrease" else raw)
+    return PairedRecordDeltas(
+        record_ids=tuple(ids),
+        deltas=tuple(deltas),
+        n_missing_control=missing_control,
+        n_missing_candidate=missing_candidate,
+    )
+
+
+def paired_record_screening(
+    control: Mapping[str, object],
+    candidate: Mapping[str, object],
+    *,
+    direction: str = "decrease",
+    alpha: Fraction | str | int = DEFAULT_ALPHA,
+    min_nontied_pairs: int = DEFAULT_MIN_NONTIED_PAIRS,
+    kind: PairedTestKind = "wilcoxon_signed_rank",
+    minimum_effect: float = 0.0,
+) -> dict[str, Any]:
+    """Paired screening verdict on per-record maps.
+
+    ``win`` requires ``p < alpha`` on the paired test **and** a median
+    improvement strictly above ``minimum_effect``. Everything else — an
+    undecidable pair count, ``p >= alpha``, a significant loss, or a
+    significant but sub-threshold gain — is not a win. The result is a plain
+    JSON-serialisable dict for delivery records.
+    """
+
+    pairs = paired_record_deltas(control, candidate, direction=direction)
+    test = paired_screening_test(
+        pairs.deltas,
+        alpha=alpha,
+        min_nontied_pairs=min_nontied_pairs,
+        kind=kind,
+    )
+    median_delta = pairs.median_delta
+    alpha_f = float(parse_alpha(alpha))
+    win = bool(
+        test.verdict == "win"
+        and test.p_value < alpha_f
+        and median_delta is not None
+        and median_delta > float(minimum_effect)
+    )
+    return {
+        "kind": test.kind,
+        "direction": direction,
+        "n_pairs": pairs.n_pairs,
+        "n_nontied": test.n_nontied,
+        "n_ties": test.n_ties,
+        "n_missing_control": pairs.n_missing_control,
+        "n_missing_candidate": pairs.n_missing_candidate,
+        "statistic": test.statistic,
+        "p_value": test.p_value,
+        "alpha": test.alpha,
+        "min_nontied_pairs": int(min_nontied_pairs),
+        "minimum_effect": float(minimum_effect),
+        "median_delta": median_delta,
+        "mean_delta": pairs.mean_delta,
+        "paired_sd": pairs.sd,
+        "verdict": test.verdict,
+        "reason": test.reason,
+        "win": win,
+        "promotion_authority": False,
+    }
+
+
 __all__ = [
     "DEFAULT_ALPHA",
     "DEFAULT_MIN_NONTIED_PAIRS",
     "MECHANISM_NO_EFFECT",
+    "PairedRecordDeltas",
     "PairedTestResult",
     "PairedTestKind",
     "PairedVerdict",
     "exact_sign_test",
+    "paired_record_deltas",
+    "paired_record_screening",
     "paired_screening_test",
     "wilcoxon_signed_rank_p",
 ]

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -408,7 +409,62 @@ def evaluate_loss_suites(
             "missing_categories": missing,
             "complete": not missing,
         },
+        # Per-record rows (additive; aggregate fields above are unchanged).
+        # ``nll`` is the broad denoising NLL of the record — the same quantity
+        # whose suite mean is the screening ``smoke.eval_nll`` primary — so
+        # paired per-record tests pair exactly what the aggregate averages.
+        "per_record": per_record_nll_rows(categories),
     }
+
+
+PER_RECORD_CATEGORY_KEYS: dict[str, str] = {
+    "broad": "nll",
+    "binding": "binding_nll",
+    "structural": "structural_nll",
+    "schema_ood": "schema_ood_nll",
+}
+
+
+def per_record_nll_rows(
+    categories: dict[str, dict[str, Any] | None],
+) -> list[dict[str, Any]]:
+    """Flatten category ``per_record`` rows into one row per record id.
+
+    Rows are sorted by record id. A record scored in the broad category
+    carries ``nll`` (its broad mean NLL) and ``masked_tokens``; categories
+    that did not score the record leave their key ``None``.
+    """
+    rows: dict[str, dict[str, Any]] = {}
+    for category, key in PER_RECORD_CATEGORY_KEYS.items():
+        report = categories.get(category)
+        if not isinstance(report, dict):
+            continue
+        for entry in report.get("per_record") or []:
+            if not isinstance(entry, dict) or entry.get("id") is None:
+                continue
+            record_id = str(entry["id"])
+            row = rows.setdefault(
+                record_id,
+                {
+                    "id": record_id,
+                    **{k: None for k in PER_RECORD_CATEGORY_KEYS.values()},
+                },
+            )
+            mean = entry.get("mean_nll")
+            row[key] = float(mean) if isinstance(mean, (int, float)) else None
+            if category == "broad":
+                row["masked_tokens"] = int(entry.get("masked_tokens") or 0)
+    return [rows[record_id] for record_id in sorted(rows)]
+
+
+def per_record_nll_map(report: dict[str, Any]) -> dict[str, float]:
+    """``{record_id: broad nll}`` for records with a finite broad NLL."""
+    out: dict[str, float] = {}
+    for row in report.get("per_record") or []:
+        value = row.get("nll") if isinstance(row, dict) else None
+        if isinstance(value, (int, float)) and math.isfinite(float(value)):
+            out[str(row["id"])] = float(value)
+    return out
 
 
 def write_loss_suite_report(path: Path | str, report: dict[str, Any]) -> Path:

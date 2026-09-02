@@ -54,6 +54,9 @@ __all__ = [
     "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
     "screening_smoke_n_for_policy",
+    "FIXTURE_INSUFFICIENT_N_QUALITY_PROBE",
+    "PAIRED_PRIMARY_LEAVES",
+    "SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR",
     "eval_suites_for_role",
     "classify_positive_metrics",
     "promotion_primary_effect_met",
@@ -963,15 +966,30 @@ def classify_positive_metrics(
     eg_params_by_seed: Sequence[float] | None = None,
     executable_unblock: bool = False,
     fixture_insufficient_n: bool = False,
+    paired_records: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Direction-signed primary win + optional EG_params for Phase A positive."""
+    """Direction-signed primary win + optional EG_params for Phase A positive.
+
+    ``paired_records`` (``{"control": {record_id: value}, "candidate": {...}}``)
+    switches a screening NLL primary to the policy paired test
+    (``measurement.paired_test``): the win requires ``p < alpha`` on the
+    per-record deltas **and** a median improvement above
+    ``screening_primary.minimum_effect``. A decided paired win with at least
+    ``SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR`` pairs is exempt from the
+    fixture ``insufficient_n`` clamp, which keeps governing decoded quality
+    metrics and every promotion verdict. Screening positives stay
+    ``claim_class: diagnostic``.
+    """
 
     primary = primary_for_role(policy, role)
     metric = str(primary["metric"])
     direction = str(primary["direction"])
     minimum_effect = float(primary.get("minimum_effect") or 0.0)
+    leaf = metric.rsplit(".", 1)[-1]
     reasons: list[str] = []
     positive = False
+    paired: dict[str, Any] | None = None
+    paired_win_decided = False
     reasons.extend(invalid_grammar_reasons(control_metrics, arm="control"))
     reasons.extend(invalid_grammar_reasons(candidate_metrics, arm="candidate"))
     grammar_illegal = any(r.startswith("invalid_grammar:") for r in reasons)
@@ -1015,12 +1033,45 @@ def classify_positive_metrics(
             if nr_imp < nr_min:
                 non_reg_ok = False
                 reasons.append(f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}")
+        use_paired = role == "screening" and leaf in PAIRED_PRIMARY_LEAVES
+        if use_paired:
+            paired = _paired_primary_test(
+                policy,
+                paired_records,
+                direction=direction,
+                minimum_effect=minimum_effect,
+            )
+            if paired is None:
+                reasons.append(f"paired_records_unavailable:{metric}")
         if partial_suite:
             reasons.append(
                 f"primary_metric_incomparable_partial_suite:{metric}:"
                 f"control_completed={c_completed}/{c_n}:"
                 f"candidate_completed={t_completed}/{t_n}"
             )
+        elif paired is not None:
+            detail = (
+                f"paired_{paired['verdict']}:p={paired['p_value']:.6g}"
+                f":alpha={paired['alpha']}:n_pairs={paired['n_pairs']}"
+                f":n_nontied={paired['n_nontied']}"
+                f":median_delta={paired['median_delta']}"
+                f":minimum_effect={minimum_effect}"
+            )
+            if paired["win"] and non_reg_ok and not grammar_illegal:
+                positive = True
+                paired_win_decided = (
+                    int(paired["n_pairs"]) >= SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR
+                )
+                reasons.append(
+                    f"primary_metric_win:{metric}:{c_val}->{t_val}"
+                    f":improvement={improvement}:{detail}"
+                )
+            else:
+                reasons.append(
+                    f"primary_metric_null_or_worse:{metric}:"
+                    f"control={c_val} candidate={t_val} improvement={improvement}"
+                    f":{detail}"
+                )
         elif improvement > minimum_effect and non_reg_ok and not grammar_illegal:
             positive = True
             reasons.append(
@@ -1052,15 +1103,24 @@ def classify_positive_metrics(
         positive = True
         reasons.append("executable_unblock:candidate_completed_after_control_error")
 
+    fixture_clamp_exempt = bool(
+        role == "screening" and paired_win_decided and not grammar_illegal
+    )
     if (
         fixture_insufficient_n
         and pos_cfg.get("fixture_insufficient_n_alone_not_positive", True)
         and not any(r.startswith("executable_unblock") for r in reasons)
     ):
-        # Fixture n cannot mint a climb candidate. A smoke SS tick on
-        # insufficient_n is still fixture noise (c159 queued, c160 tied).
-        positive = False
-        reasons.append("fixture_insufficient_n_alone")
+        if fixture_clamp_exempt:
+            # The decoded-quality probe ran below ship volume; that is
+            # information about the probe, not about the paired NLL verdict
+            # decided on >= SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR records.
+            reasons.append(FIXTURE_INSUFFICIENT_N_QUALITY_PROBE)
+        else:
+            # Fixture n cannot mint a climb candidate. A smoke SS tick on
+            # insufficient_n is still fixture noise (c159 queued, c160 tied).
+            positive = False
+            reasons.append("fixture_insufficient_n_alone")
 
     # Capacity charge
     if pos_cfg.get("require_size_match_or_eg_params", True):
@@ -1102,7 +1162,63 @@ def classify_positive_metrics(
         "candidate_metrics": dict(candidate_metrics),
         "policy_sha256": policy.sha256,
         "policy_version": policy.version,
+        "paired_test": paired,
+        "fixture_clamp_exempt": fixture_clamp_exempt,
     }
+
+
+# Screening primaries decided by the per-record paired test when per-record
+# values are available for both arms (``eval_nll_records.json``).
+PAIRED_PRIMARY_LEAVES: tuple[str, ...] = ("eval_nll",)
+# Exact sign-test decidability floor at alpha=1/20: below six pairs no
+# all-agree pattern can reach p < alpha, so a "win" there is fixture noise.
+SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR = 6
+FIXTURE_INSUFFICIENT_N_QUALITY_PROBE = "fixture_insufficient_n:quality_probe"
+
+
+def _paired_primary_test(
+    policy: ClimbPolicy,
+    paired_records: Mapping[str, Mapping[str, Any]] | None,
+    *,
+    direction: str,
+    minimum_effect: float,
+) -> dict[str, Any] | None:
+    """Policy paired test on per-record maps; ``None`` when either arm lacks them."""
+
+    if not isinstance(paired_records, Mapping):
+        return None
+    control = paired_records.get("control")
+    candidate = paired_records.get("candidate")
+    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
+        return None
+    if not control or not candidate:
+        return None
+    from slm_training.autoresearch.paired_stats import (
+        DEFAULT_ALPHA,
+        DEFAULT_MIN_NONTIED_PAIRS,
+        paired_record_screening,
+    )
+
+    cfg = policy.measurement.get("paired_test")
+    if not isinstance(cfg, Mapping):
+        cfg = {}
+    kind = str(cfg.get("kind") or "wilcoxon_signed_rank")
+    if kind not in {"wilcoxon_signed_rank", "sign_test"}:
+        raise ClimbPolicyError(f"measurement.paired_test.kind unsupported: {kind!r}")
+    result = paired_record_screening(
+        control,
+        candidate,
+        direction="decrease" if direction == "decrease" else "increase",
+        alpha=cfg.get("alpha") or DEFAULT_ALPHA,
+        min_nontied_pairs=int(
+            cfg.get("min_nontied_pairs") or DEFAULT_MIN_NONTIED_PAIRS
+        ),
+        kind=kind,  # type: ignore[arg-type]
+        minimum_effect=float(minimum_effect),
+    )
+    result["claim_class"] = "diagnostic"
+    result["decidability_floor"] = SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR
+    return result
 
 
 def synthesis_policy_allows_sft(

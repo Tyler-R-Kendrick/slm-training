@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import json
 import subprocess
+from fractions import Fraction
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9423,6 +9424,19 @@ def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
     if report["verdict"] == "feasible":
         assert int(meta["smoke_n"]) >= 6
         assert report["must_generate"] is False
+    elif report["verdict"] == "insufficient_evidence":
+        # Same-metric paired SD unmeasured (policy v15+): the exact
+        # decidability floor is affordable, so the screen spends the advisory
+        # affordable n instead of parking; the power floor stays unmeasured
+        # until observed_paired_sd_by_metric[<leaf>] is written.
+        assert report["power_floor_status"] == "unmeasured"
+        assert report["power_floor_n"] is None
+        assert report["chosen_n"] is not None
+        assert int(meta["smoke_n"]) == int(report["chosen_n"]) >= 6
+        assert report["must_generate"] is False
+        assert any(
+            f["code"] == "screening_power_sd_unmeasured" for f in report["findings"]
+        )
     else:
         assert report["verdict"] == "infeasible_range_empty"
         assert "suite_volume" in report["binding_constraints"]
@@ -11475,3 +11489,426 @@ def test_size_match_skip_reason_typed() -> None:
     assert reason is not None
     assert reason.startswith("capacity_unmatched:")
     assert _mod._size_match_skip_reason(control, control) is None
+
+
+# --- P3: paired NLL screening verdict, NLL independent of the quality eval ---
+
+
+def _p3_write_gates_insufficient_n(run: Path) -> None:
+    run.mkdir(parents=True, exist_ok=True)
+    (run / "gates.json").write_text(
+        json.dumps(
+            {
+                "failures": [],
+                "evidence_volume_failures": ["smoke: insufficient_n (3 < 20)"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _p3_write_scoreboard(run: Path, *, n: int, eval_nll: float | None) -> None:
+    run.mkdir(parents=True, exist_ok=True)
+    suite = {
+        "suite": "smoke",
+        "n": n,
+        "document_n": n,
+        "completed_document_n": n,
+        "incomplete_document_n": 0,
+        "decode_timeout_document_count": 0,
+    }
+    if eval_nll is not None:
+        suite["eval_nll"] = eval_nll
+        suite["eval_nll_definition_hash"] = "p3-def"
+    (run / "scoreboard.json").write_text(
+        json.dumps({"suites": {"smoke": suite}}), encoding="utf-8"
+    )
+
+
+def _p3_write_nll_records(
+    run: Path, records: dict[str, float], *, digest: str = "p3-def"
+) -> None:
+    run.mkdir(parents=True, exist_ok=True)
+    (run / "eval_nll_records.json").write_text(
+        json.dumps(
+            {
+                "schema": "eval_nll_records/v1",
+                "definition_hash": digest,
+                "records": records,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _p3_nll_pairs(n: int, *, shift: float) -> tuple[dict[str, float], dict[str, float]]:
+    control = {f"rec-{i:02d}": 2.5 + 0.02 * i for i in range(n)}
+    candidate = {
+        k: v - shift - 0.001 * i for i, (k, v) in enumerate(control.items())
+    }
+    return control, candidate
+
+
+def _p3_expectations(tmp_path: Path) -> Path:
+    path = tmp_path / "metric_expectations.screening.v1.json"
+    path.write_text(
+        json.dumps({"schema": "metric_expectations/v1", "metrics": []}),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _p3_policy(name: str) -> str:
+    from slm_training.autoresearch.climb_policy import CLIMB_RESOURCE_DIR
+
+    return str(CLIMB_RESOURCE_DIR / name)
+
+
+def test_classify_positive_c532_quality_win_at_fixture_n_not_positive(
+    tmp_path: Path,
+) -> None:
+    """c532 replay: SS 0.0534->0.2986 on n=3 with insufficient_n stays negative."""
+    camp = tmp_path / "c532"
+    for arm, ss in (("c532-control", 0.0534), ("c532-cand", 0.2986)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            binder_reference_f1=0.6,
+            structural_similarity=ss,
+            latency_ms_p50=3000.0,
+        )
+        _write_complete_scoreboard(run, "smoke")
+        _p3_write_gates_insufficient_n(run)
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.structural_similarity",
+        control_id="c532-control",
+        candidate_id="c532-cand",
+        role="screening",
+        policy_path=_p3_policy("policy.v1.json"),
+        observed_sd_path=_p3_expectations(tmp_path),
+    )
+    assert result["positive"] is False
+    reasons = result["reasons"]
+    assert any(
+        r.startswith("primary_metric_win:smoke.structural_similarity:") for r in reasons
+    )
+    assert result["fixture_volume_gate_hits"] == 2
+    assert "fixture_insufficient_n:quality_probe" not in reasons
+    assert any(
+        r.startswith(("fixture_insufficient_n_alone", "fixture_volume_gate_ship_only"))
+        for r in reasons
+    )
+    assert result["paired_test"] is None
+
+
+def test_classify_positive_paired_nll_win_survives_fixture_insufficient_n(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "c600"
+    control, candidate = _p3_nll_pairs(24, shift=0.2)
+    for arm, recs in (("c600-control", control), ("c600-cand", candidate)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            binder_reference_f1=0.6,
+            structural_similarity=0.2,
+            latency_ms_p50=3000.0,
+        )
+        _p3_write_scoreboard(run, n=3, eval_nll=sum(recs.values()) / len(recs))
+        _p3_write_nll_records(run, recs)
+        _p3_write_gates_insufficient_n(run)
+    expectations = _p3_expectations(tmp_path)
+    kwargs = dict(
+        camp_dir=camp,
+        primary_metric="smoke.eval_nll",
+        control_id="c600-control",
+        candidate_id="c600-cand",
+        role="screening",
+        policy_path=_p3_policy("policy.v2.json"),
+        observed_sd_path=expectations,
+    )
+    result = _mod._classify_positive(**kwargs)
+    reasons = result["reasons"]
+    assert result["positive"] is True, reasons
+    assert result["stack_layer"] is True
+    assert result["fixture_volume_gate_hits"] == 2
+    paired = result["paired_test"]
+    assert paired["n_pairs"] == 24
+    assert paired["p_value"] < 0.05
+    assert paired["median_delta"] > 0.05
+    assert paired["claim_class"] == "diagnostic"
+    assert result["paired_records"]["control_n"] == 24
+    assert "fixture_insufficient_n:quality_probe" in reasons
+    assert "fixture_insufficient_n_alone" not in reasons
+    assert not any(r.startswith("mechanism_no_effect:") for r in reasons)
+    assert "quality_probe_identical:decoded_quality_metrics_identical" in reasons
+    win = next(r for r in reasons if r.startswith("primary_metric_win:smoke.eval_nll:"))
+    assert "n_pairs=24" in win
+    assert _mod._measurement_is_complete(result)
+    saved = json.loads(expectations.read_text(encoding="utf-8"))
+    entry = saved["observed_paired_sd_by_metric"]["eval_nll"]
+    assert entry["schema"] == "observed_paired_sd/v1"
+    assert entry["n_deltas"] == 24 and entry["sd"] > 0 and entry["date"]
+    assert entry["source"] == "continuous_driver"
+    assert len(entry["history"]) == 1
+    assert entry["history"][0]["campaign_id"] == "c600"
+    # The P2 same-metric power lookup consumes the driver-written SD as
+    # measured for smoke.eval_nll (full name and leaf) and only for it.
+    from slm_training.autoresearch.screening_sample_size import (
+        lookup_paired_sd_for_metric,
+    )
+
+    hit = lookup_paired_sd_for_metric("smoke.eval_nll", expectations_path=expectations)
+    assert hit.measured is True and hit.source == "metric_expectations"
+    assert abs(float(Fraction(hit.observed_sd)) - entry["sd"]) < 1e-9
+    assert hit.detail["key"] == "eval_nll"
+    foreign = lookup_paired_sd_for_metric(
+        "smoke.structural_similarity",
+        expectations_path=expectations,
+        ledger_path=tmp_path / "no-ledger.json",
+    )
+    assert foreign.source != "metric_expectations"
+    # Re-classifying the same cycle (ledger replays) never duplicates the SD.
+    _mod._classify_positive(**kwargs)
+    saved = json.loads(expectations.read_text(encoding="utf-8"))
+    assert len(saved["observed_paired_sd_by_metric"]["eval_nll"]["history"]) == 1
+
+    # I6: a measured parse_rate < 1 on the candidate probe still blocks.
+    _write_eval(
+        camp / "runs" / "c600-cand" / "eval_smoke.json",
+        suite="smoke",
+        parse_rate=0.6666666666666666,
+        meaningful_program_rate=0.3333333333333333,
+        binder_reference_f1=0.6,
+        structural_similarity=0.2,
+        latency_ms_p50=3000.0,
+    )
+    illegal = _mod._classify_positive(**kwargs)
+    assert illegal["positive"] is False
+    assert any(r.startswith("invalid_grammar:candidate") for r in illegal["reasons"])
+
+
+def test_classify_positive_paired_nll_three_pairs_not_positive(tmp_path: Path) -> None:
+    camp = tmp_path / "c601"
+    control, candidate = _p3_nll_pairs(3, shift=0.4)
+    for arm, recs in (("c601-control", control), ("c601-cand", candidate)):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            binder_reference_f1=0.6,
+            structural_similarity=0.2,
+            latency_ms_p50=3000.0,
+        )
+        _p3_write_scoreboard(run, n=3, eval_nll=sum(recs.values()) / len(recs))
+        _p3_write_nll_records(run, recs)
+        _p3_write_gates_insufficient_n(run)
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.eval_nll",
+        control_id="c601-control",
+        candidate_id="c601-cand",
+        role="screening",
+        policy_path=_p3_policy("policy.v2.json"),
+        observed_sd_path=_p3_expectations(tmp_path),
+    )
+    reasons = result["reasons"]
+    assert result["positive"] is False
+    assert result["paired_test"]["n_pairs"] == 3
+    assert result["paired_test"]["win"] is False
+    null = next(r for r in reasons if r.startswith("primary_metric_null_or_worse:"))
+    assert "n_pairs=3" in null and "paired_mechanism_no_effect" in null
+    assert "fixture_insufficient_n:quality_probe" not in reasons
+    assert not any(r.startswith("primary_metric_win:") for r in reasons)
+
+
+def test_classify_positive_paired_nll_definition_mismatch_never_pairs(
+    tmp_path: Path,
+) -> None:
+    camp = tmp_path / "c602"
+    control, candidate = _p3_nll_pairs(24, shift=0.2)
+    for arm, recs, digest in (
+        ("c602-control", control, "def-a"),
+        ("c602-cand", candidate, "def-b"),
+    ):
+        run = camp / "runs" / arm
+        _write_eval(
+            run / "eval_smoke.json",
+            suite="smoke",
+            parse_rate=1.0,
+            meaningful_program_rate=0.3333333333333333,
+            binder_reference_f1=0.6,
+            structural_similarity=0.2,
+            latency_ms_p50=3000.0,
+        )
+        _p3_write_scoreboard(run, n=3, eval_nll=sum(recs.values()) / len(recs))
+        _p3_write_nll_records(run, recs, digest=digest)
+        _p3_write_gates_insufficient_n(run)
+    result = _mod._classify_positive(
+        camp_dir=camp,
+        primary_metric="smoke.eval_nll",
+        control_id="c602-control",
+        candidate_id="c602-cand",
+        role="screening",
+        policy_path=_p3_policy("policy.v2.json"),
+        observed_sd_path=_p3_expectations(tmp_path),
+    )
+    assert result["positive"] is False
+    assert result["paired_test"] is None
+    assert "paired_records_definition_mismatch:c602-control:c602-cand" in result["reasons"]
+
+
+def test_record_observed_paired_sd_folds_prior_and_appends(tmp_path: Path) -> None:
+    path = tmp_path / "exp.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "metric_expectations/v1",
+                "observed_paired_sd_by_metric": {"eval_nll": 0.3},
+                "metrics": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert _mod._record_observed_paired_sd(
+        path,
+        metric_leaf="eval_nll",
+        sd=0.12,
+        n=24,
+        campaign_id="c1",
+        control_id="c1-control",
+        candidate_id="c1-cand",
+        date="2026-09-02",
+    )
+    entry = json.loads(path.read_text(encoding="utf-8"))["observed_paired_sd_by_metric"][
+        "eval_nll"
+    ]
+    assert entry["sd"] == 0.12 and entry["n_deltas"] == 24
+    assert entry["date"] == "2026-09-02" and entry["source"] == "continuous_driver"
+    assert [row["sd"] for row in entry["history"]] == [0.3, 0.12]
+    assert entry["history"][0]["source"] == "prior"
+    # Idempotent per (campaign, control, candidate); a new cycle appends.
+    assert not _mod._record_observed_paired_sd(
+        path,
+        metric_leaf="eval_nll",
+        sd=0.99,
+        n=24,
+        campaign_id="c1",
+        control_id="c1-control",
+        candidate_id="c1-cand",
+    )
+    assert _mod._record_observed_paired_sd(
+        path,
+        metric_leaf="eval_nll",
+        sd=0.15,
+        n=20,
+        campaign_id="c2",
+        control_id="c2-control",
+        candidate_id="c2-cand",
+        date="2026-09-03",
+    )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    entry = data["observed_paired_sd_by_metric"]["eval_nll"]
+    assert entry["sd"] == 0.15 and len(entry["history"]) == 3
+    assert data["metrics"] == [] and data["schema"] == "metric_expectations/v1"
+
+
+def test_attach_screening_eval_nll_runs_on_failed_quality_eval(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exit 124 (timeout) / 2 (crash) with a checkpoint still yields NLL."""
+    run = tmp_path / "camp" / "runs" / "arm"
+    run.mkdir(parents=True)
+    checkpoint = run / "model.pt"
+    checkpoint.write_bytes(b"fake")
+    (run / "train_summary.json").write_text(
+        json.dumps({"checkpoint": str(checkpoint), "eval_version": "assigned-eval"}),
+        encoding="utf-8",
+    )
+    calls: list[tuple[Path, str]] = []
+
+    def fake_run(run_dir: Path, *, test_dir: Path, checkpoint: Path, eval_version: str):
+        calls.append((Path(test_dir), eval_version))
+        return {"eval_nll": 1.25, "records": {"a": 1.0, "b": 1.5}}
+
+    monkeypatch.setattr(_mod, "_run_arm_eval_nll", fake_run)
+    monkeypatch.setattr(_mod, "default_eval_version", lambda: "fallback-eval")
+    # No scoreboard.json exists (quality eval never wrote one).
+    for code in (124, 2):
+        out = _mod._attach_screening_eval_nll(run, exit_code=code)
+        assert out is not None and out["eval_nll"] == 1.25
+    assert len(calls) == 2
+    # The arm's assigned suite wins over the process-wide default.
+    assert calls[0][1] == "assigned-eval"
+    # Once aggregate + per-record rows exist the attach is a no-op.
+    monkeypatch.undo()
+    _mod._run_arm_eval_nll(run, eval_nll=1.25, records={"a": 1.0, "b": 1.5})
+    assert _mod._attach_screening_eval_nll(run, exit_code=124) is None
+    # Driver arm loop no longer gates NLL on exit code 0.
+    source = _SCRIPT.read_text(encoding="utf-8")
+    assert "if int(code) == 0:\n            _attach_screening_eval_nll" not in source
+    assert (
+        '_attach_screening_eval_nll(camp_dir / "runs" / eid, exit_code=int(code))'
+        in source
+    )
+
+
+def test_run_arm_eval_nll_scores_whole_smoke_suite_per_record(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    from slm_training.dsl.schema import ExampleRecord, write_jsonl
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+    records = [
+        ExampleRecord(
+            id=f"smoke-{i}",
+            prompt=f"Call to action {i}",
+            openui='root = Stack([cta])\ncta = Button(":slot_0")',
+            split="smoke",
+            placeholders=[":slot_0"],
+        )
+        for i in range(4)
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1, seed=0
+        ),
+        device="cpu",
+    )
+    test_dir = tmp_path / "eval"
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", records)
+    run = tmp_path / "camp" / "runs" / "arm"
+    run.mkdir(parents=True)
+    checkpoint = run / "model.pt"
+    model.save(checkpoint)
+    (run / "train_summary.json").write_text(
+        json.dumps({"checkpoint": str(checkpoint)}), encoding="utf-8"
+    )
+    # Quality eval timed out: no scoreboard.json, exit 124.
+    out = _mod._attach_screening_eval_nll(
+        run, exit_code=124, eval_version=str(test_dir)
+    )
+    assert out is not None
+    assert set(out["records"]) == {r.id for r in records}
+    saved = json.loads((run / "eval_nll_records.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == "eval_nll_records/v1"
+    assert saved["definition_hash"] == out["definition_hash"]
+    assert saved["records"] == out["records"]
+    assert saved["n_records"] == 4 and saved["claim_class"] == "diagnostic"
+    scoreboard = json.loads((run / "scoreboard.json").read_text(encoding="utf-8"))
+    smoke = scoreboard["suites"]["smoke"]
+    assert smoke["eval_nll"] == out["eval_nll"]
+    assert smoke["eval_nll_n_records"] == 4
+    assert smoke["eval_nll_claim_class"] == "diagnostic"
+    loaded, digest = _mod._read_eval_nll_records(run)
+    assert loaded == out["records"] and digest == out["definition_hash"]
