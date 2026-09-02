@@ -376,8 +376,32 @@ def write_climb_champion(
         raise HillClimbError(f"champion_checkpoint_missing:{src}")
     if src.resolve() != dest.resolve():
         shutil.copy2(src, dest)
+        _copy_checkpoint_tokenizer_sidecars(src, dest)
     dump_climb_champion(sidecar, loop_dir)
     return sidecar
+
+
+#: Tokenizer sidecars ``TwoTowerModel.load`` reads beside a checkpoint when
+#: ``initialize_from`` is set. Suffixes mirror the loader exactly.
+_CHECKPOINT_SIDECAR_SUFFIXES = (".tokenizer.json", ".context.tokenizer.json")
+
+
+def _copy_checkpoint_tokenizer_sidecars(src: Path, dest: Path) -> None:
+    """Carry a checkpoint's tokenizer sidecars along with it.
+
+    A warm start reads ``<stem>.tokenizer.json`` and
+    ``<stem>.context.tokenizer.json`` beside the checkpoint. Copying only
+    ``last.pt`` left the context sidecar missing, so the loader fell back to
+    the *output* tokenizer and refused the warm start with
+    ``scratch-context warm starts require OpenUITokenizer sidecars`` — the
+    champion existed, the regime said climb, and every arm still died. Absent
+    sidecars stay absent; nothing is fabricated.
+    """
+
+    for suffix in _CHECKPOINT_SIDECAR_SUFFIXES:
+        source = src.with_name(src.stem + suffix)
+        if source.is_file():
+            shutil.copy2(source, dest.with_name(dest.stem + suffix))
 
 
 def maybe_advance_climb_champion(

@@ -5146,6 +5146,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "write_climb_champion carries the checkpoint tokenizer sidecars. A warm start reads <stem>.tokenizer.json and <stem>.context.tokenizer.json beside the checkpoint; copying only last.pt left the context sidecar missing, so the loader fell back to the output tokenizer and refused with \"scratch-context warm starts require OpenUITokenizer sidecars\" -- the champion existed, the regime said climb, and every arm still died. Absent sidecars stay absent.",
+          "version": "v284"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the INT-2 recovery-doc correction (deterministic rebuild).",
           "version": "v283"
         },
@@ -7183,7 +7188,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v283"
+      "version": "v284"
     },
     "harness.autoresearch.formal": {
       "history": [

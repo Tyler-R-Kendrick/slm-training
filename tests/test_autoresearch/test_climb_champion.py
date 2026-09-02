@@ -354,3 +354,79 @@ def test_warm_start_launch_rejects_unequal_pair() -> None:
         assert_warm_start_launch(base, {**base, "seed": 8})
     with pytest.raises(HillClimbError, match="unequal_checkpoint"):
         assert_warm_start_launch(base, {**base, "initialize_from": "/d.pt"})
+
+
+def test_write_climb_champion_carries_tokenizer_sidecars(tmp_path: Path) -> None:
+    """A warm start reads the tokenizer sidecars beside the checkpoint.
+
+    Copying only ``last.pt`` left the context sidecar missing, so
+    ``TwoTowerModel.load`` fell back to the output tokenizer and refused the
+    warm start with 'scratch-context warm starts require OpenUITokenizer
+    sidecars' — the champion existed, the regime said climb, and every arm
+    still died.
+    """
+    from slm_training.autoresearch.hillclimb import (
+        CLIMB_CHAMPION_STATUS_BASELINE_SEED,
+        ClimbChampionSidecar,
+        climb_champion_checkpoint_path,
+        write_climb_champion,
+    )
+
+    run = tmp_path / "run" / "checkpoints"
+    run.mkdir(parents=True)
+    (run / "last.pt").write_bytes(b"weights")
+    (run / "last.tokenizer.json").write_text('{"output": 1}', encoding="utf-8")
+    (run / "last.context.tokenizer.json").write_text('{"context": 1}', encoding="utf-8")
+
+    loop_dir = tmp_path / "loop"
+    sidecar = ClimbChampionSidecar(
+        source_campaign="c1",
+        cumulative_steps=53,
+        train_data_manifest_sha="",
+        cumulative_epochs=0.0,
+        status=CLIMB_CHAMPION_STATUS_BASELINE_SEED,
+    )
+    write_climb_champion(loop_dir, checkpoint=run / "last.pt", sidecar=sidecar)
+
+    ckpt = climb_champion_checkpoint_path(loop_dir)
+    assert ckpt.read_bytes() == b"weights"
+    assert (
+        ckpt.with_name("last.tokenizer.json").read_text(encoding="utf-8")
+        == '{"output": 1}'
+    )
+    assert (
+        ckpt.with_name("last.context.tokenizer.json").read_text(encoding="utf-8")
+        == '{"context": 1}'
+    )
+
+
+def test_write_climb_champion_without_sidecars_copies_only_the_checkpoint(
+    tmp_path: Path,
+) -> None:
+    """Absent sidecars stay absent; nothing is fabricated."""
+    from slm_training.autoresearch.hillclimb import (
+        CLIMB_CHAMPION_STATUS_BASELINE_SEED,
+        ClimbChampionSidecar,
+        climb_champion_checkpoint_path,
+        write_climb_champion,
+    )
+
+    run = tmp_path / "run" / "checkpoints"
+    run.mkdir(parents=True)
+    (run / "last.pt").write_bytes(b"weights")
+    loop_dir = tmp_path / "loop"
+    write_climb_champion(
+        loop_dir,
+        checkpoint=run / "last.pt",
+        sidecar=ClimbChampionSidecar(
+            source_campaign="c1",
+            cumulative_steps=1,
+            train_data_manifest_sha="",
+            cumulative_epochs=0.0,
+            status=CLIMB_CHAMPION_STATUS_BASELINE_SEED,
+        ),
+    )
+    ckpt = climb_champion_checkpoint_path(loop_dir)
+    assert ckpt.is_file()
+    assert not ckpt.with_name("last.tokenizer.json").exists()
+    assert not ckpt.with_name("last.context.tokenizer.json").exists()
