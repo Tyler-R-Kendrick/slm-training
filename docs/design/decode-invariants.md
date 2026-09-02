@@ -19,8 +19,12 @@ no torch required). Component: `decode.invariants` in
 `src/slm_training/resources/versions.json`.
 
 Papers this design cites: constrained decoding of diffusion LLMs with CFGs
-(arXiv:2508.10111, "IG-CD"), and Lookahead-then-Verify (arXiv:2602.00612,
-"LAVE").
+(arXiv:2508.10111, "IG-CD"), Lookahead-then-Verify (arXiv:2602.00612,
+"LAVE"), and exact finite-automaton constrained decoding for diffusion LMs
+(arXiv:2607.07026, DFA/NFA only — see
+[`research-lineage.md`](research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02)
+for why it bounds only the lexeme-level DFA, never the CFG-scoped
+`CompletionDomainV1`).
 
 ---
 
