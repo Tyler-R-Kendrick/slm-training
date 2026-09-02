@@ -58,6 +58,20 @@ LATENCY_PROBE_RUN_ID_SUFFIX = "-latprobe"
 LATENCY_PREFLIGHT_SCHEMA = "latency_preflight/v1"
 
 
+# scripts.evaluate_model exit for a resumable chunk that stopped with records
+# still pending (mirrors ``scripts.evaluate_model.EXIT_RESUME_PENDING``).
+EVAL_EXIT_RESUME_PENDING = 10
+_RESUMABLE_EVAL_FLAGS = ("--partial-scoreboard", "--resume-run", "--max-records-this-run")
+
+
+def is_resumable_eval_command(command: list[str]) -> bool:
+    """True for an evaluate_model command that persists per-record progress."""
+
+    return "scripts.evaluate_model" in command and any(
+        flag in command for flag in _RESUMABLE_EVAL_FLAGS
+    )
+
+
 def is_latency_probe_command(command: list[str]) -> bool:
     """True for the latency pre-check probe eval stage of an arm."""
 
@@ -1023,6 +1037,14 @@ def compile_commands(
         evaluate.extend(["--suites", str(knobs.eval_suites)])
     if knobs.decode_timeout_seconds is not None:
         evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
+    if knobs.eval_limit is not None:
+        evaluate.extend(["--eval-limit", str(int(knobs.eval_limit))])
+    if knobs.eval_partial_scoreboard:
+        evaluate.append("--partial-scoreboard")
+    if knobs.eval_max_records_this_run is not None:
+        evaluate.extend(
+            ["--max-records-this-run", str(int(knobs.eval_max_records_this_run))]
+        )
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
@@ -1349,6 +1371,34 @@ def execute_commands(
             stage_entry["latency_probe"] = True
             stage_entry["latency_preflight"] = probe_payload
         stages.append(stage_entry)
+        if (
+            completed.returncode == EVAL_EXIT_RESUME_PENDING
+            and is_resumable_eval_command(command)
+            and not is_probe
+        ):
+            # A resumable chunk stopped with records pending: typed incomplete
+            # measurement (the driver resumes it under its locked chunk plan),
+            # never a failed arm and never a model verdict.
+            stage_entry["measurement_complete"] = False
+            stage_entry["resume_pending"] = True
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="stopped",
+                command=tuple(" ".join(command) for command in commands),
+                exit_code=completed.returncode,
+                error=(
+                    "evaluation chunk left records pending; resume with "
+                    "--resume-run under the locked chunk plan"
+                ),
+                metrics=metrics,
+                data_metrics=data_metrics,
+                wall_time_budget_seconds=timeout_seconds,
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+                campaign_manifest_sha256=campaign_manifest_sha256,
+            )
         if completed.returncode and not expected_gate_rejection:
             if is_probe:
                 # Pre-check failure fails open: run the full measurement.

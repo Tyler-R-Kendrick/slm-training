@@ -754,3 +754,45 @@ def test_best_by_primary_then_smallest_is_deterministic() -> None:
         ("worse", 1.20, 100),
     )
     assert select_best_by_primary_then_smallest(decrease, direction="decrease") == "tiny"
+
+
+def test_measurement_chunk_plan_shape_validation() -> None:
+    from slm_training.autoresearch.experiment_campaign import (
+        PROMOTION_CHUNK_PLAN_SCHEMA,
+    )
+
+    plan = {
+        "schema": PROMOTION_CHUNK_PLAN_SCHEMA,
+        "suites": ["smoke", "held_out"],
+        "suite_n": 24,
+        "total_record_n": 48,
+        "per_record_seconds": 30.0,
+        "chunk_wall_seconds": 155.0,
+        "records_per_run": 4,
+        "run_n": 12,
+    }
+    manifest = _manifest(measurement_chunk_plan=plan)
+    assert manifest.measurement_chunk_plan == plan
+    # The locked plan is decision-bearing: adding it changes the digest, and a
+    # lock digested before the field existed still verifies.
+    assert campaign_manifest_sha256(manifest) != campaign_manifest_sha256(_manifest())
+    legacy_payload = _manifest().model_dump(mode="json")
+    legacy_payload.pop("measurement_chunk_plan")
+    legacy_digest = hashlib.sha256(
+        canonical_json(legacy_payload).encode("utf-8")
+    ).hexdigest()
+    CampaignLockV1.model_validate(
+        {"manifest_sha256": legacy_digest, "manifest": _manifest().model_dump(mode="json")}
+    )
+    with pytest.raises(ValidationError, match="measurement_chunk_plan.schema"):
+        _manifest(measurement_chunk_plan={**plan, "schema": "chunk/v0"})
+    with pytest.raises(ValidationError, match="suites must be a non-empty list"):
+        _manifest(measurement_chunk_plan={**plan, "suites": []})
+    with pytest.raises(ValidationError, match="records_per_run must be a positive"):
+        _manifest(measurement_chunk_plan={**plan, "records_per_run": 0})
+    with pytest.raises(ValidationError, match="run_n must be a positive integer"):
+        _manifest(measurement_chunk_plan={**plan, "run_n": True})
+    with pytest.raises(ValidationError, match="per_record_seconds must be a positive"):
+        _manifest(measurement_chunk_plan={**plan, "per_record_seconds": 0})
+    with pytest.raises(ValidationError, match="must cover total_record_n"):
+        _manifest(measurement_chunk_plan={**plan, "run_n": 11})
