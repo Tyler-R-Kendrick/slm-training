@@ -1,0 +1,104 @@
+{
+  "schema": "recursive_adaptive_depth_h7_arm_configs/v1",
+  "digest_rule": "config_sha256 = sha256(canonical_json(arm_config))",
+  "arm_configs": {
+    "fixed_r_control": {
+      "builder": "scripts/run_slm138_recursive_denoiser_fixture.py::_build_recurrence_health_model",
+      "d_model": 32,
+      "n_heads": 2,
+      "context_layers": 1,
+      "denoiser_layers": 2,
+      "denoiser_arch": "shared_recursive",
+      "recursive_steps": 4,
+      "recursive_transition_layers": 2,
+      "grammar_constrained": false,
+      "ltr_loss_weight": 0.0,
+      "gen_steps": 2,
+      "device": "cpu",
+      "optimizer": {
+        "name": "AdamW",
+        "lr": 0.001,
+        "steps": 4
+      },
+      "fixture_records_sha256": "480ed389f52b4e10b980f92962b9e7b7124c5ef3be8bfc2805c9a7ebd82347aa",
+      "recursion_index_conditioning": "none",
+      "recursive_depth_aux_mode": "off",
+      "recursive_depth_supervision_weights": [],
+      "recursive_depth_aux_weight": 1.0,
+      "halting": null,
+      "role_note": "SLM-421 as_is recipe at fixed R=4; mechanism-off control."
+    },
+    "index_hidden_decayed_supervision": {
+      "builder": "scripts/run_slm138_recursive_denoiser_fixture.py::_build_recurrence_health_model",
+      "d_model": 32,
+      "n_heads": 2,
+      "context_layers": 1,
+      "denoiser_layers": 2,
+      "denoiser_arch": "shared_recursive",
+      "recursive_steps": 4,
+      "recursive_transition_layers": 2,
+      "grammar_constrained": false,
+      "ltr_loss_weight": 0.0,
+      "gen_steps": 2,
+      "device": "cpu",
+      "optimizer": {
+        "name": "AdamW",
+        "lr": 0.001,
+        "steps": 4
+      },
+      "fixture_records_sha256": "480ed389f52b4e10b980f92962b9e7b7124c5ef3be8bfc2805c9a7ebd82347aa",
+      "recursion_index_conditioning": "none",
+      "recursive_depth_aux_mode": "intermediate_only",
+      "recursive_depth_supervision_weights": [
+        0.75,
+        0.5,
+        0.25
+      ],
+      "recursive_depth_aux_weight": 1.0,
+      "halting": null,
+      "role_note": "Index-hidden: no recursion-index conditioning may be added to the tower; per-depth supervision decays linearly to zero at r=R."
+    },
+    "index_hidden_halting_tau": {
+      "builder": "scripts/run_slm138_recursive_denoiser_fixture.py::_build_recurrence_health_model",
+      "d_model": 32,
+      "n_heads": 2,
+      "context_layers": 1,
+      "denoiser_layers": 2,
+      "denoiser_arch": "shared_recursive",
+      "recursive_steps": 4,
+      "recursive_transition_layers": 2,
+      "grammar_constrained": false,
+      "ltr_loss_weight": 0.0,
+      "gen_steps": 2,
+      "device": "cpu",
+      "optimizer": {
+        "name": "AdamW",
+        "lr": 0.001,
+        "steps": 4
+      },
+      "fixture_records_sha256": "480ed389f52b4e10b980f92962b9e7b7124c5ef3be8bfc2805c9a7ebd82347aa",
+      "recursion_index_conditioning": "none",
+      "recursive_depth_aux_mode": "intermediate_only",
+      "recursive_depth_supervision_weights": [
+        0.75,
+        0.5,
+        0.25
+      ],
+      "recursive_depth_aux_weight": 1.0,
+      "halting": {
+        "signal": "RecursiveDepthDiagnosticsV1.y_update_state_ratio",
+        "tau": 0.3,
+        "r_min": 1,
+        "r_max": 4,
+        "rule": "after applying step r (1 <= r <= r_max) compute the batch y_update_state_ratio; if ratio_r < tau stop and emit the state at r; otherwise continue; r_max always stops.",
+        "training": "identical to index_hidden_decayed_supervision (halting is decode-only)"
+      },
+      "role_note": "Index-hidden + decayed supervision + decode-time halting on y_update_state_ratio < tau (tau preregistered)."
+    }
+  },
+  "config_sha256": {
+    "fixed_r_control": "4fe902f3d4eaa545494686c158d18f84bb4588dc20f656e04ae5e2bc68ec55ef",
+    "index_hidden_decayed_supervision": "ceaadd5e929740a19358c6fa4c22447b68e1c36f6a482373d7fcd722544cec53",
+    "index_hidden_halting_tau": "f44b110e851ebb9a7397cb9983cc2c028ab5498ef393528a6004f2548d69178b"
+  }
+}
