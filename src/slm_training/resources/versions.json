@@ -5076,8 +5076,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of card P8 (measured steps/s prior; baseline_seed champion warm start) which prepended v272 independently; reconciles the component to v279 with all parent histories intact below.",
+          "version": "v279"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of card P9 (screening arms that can move weights; latency-only bank gated by primary) which prepended v275 independently; reconciles the component to v278 with all parent histories intact below.",
           "version": "v278"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening steps fitter uses a measured cold-start steps/s prior with provenance; the loop's first complete control run seeds a baseline_seed climb champion (warm start only, never confirmed or promoted); the champion epoch cap follows the train manifest record count.",
+          "version": "v272"
         },
         {
           "date": "2026-09-02",
@@ -7048,7 +7058,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v278"
+      "version": "v279"
     },
     "harness.autoresearch.formal": {
       "history": [

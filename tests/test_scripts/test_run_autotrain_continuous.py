@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import statistics
 import subprocess
 from fractions import Fraction
 from pathlib import Path
@@ -12840,3 +12841,351 @@ def test_run_arm_eval_nll_scores_whole_smoke_suite_per_record(tmp_path: Path) ->
     assert smoke["eval_nll_claim_class"] == "diagnostic"
     loaded, digest = _mod._read_eval_nll_records(run)
     assert loaded == out["records"] and digest == out["definition_hash"]
+
+
+def test_screening_steps_fitter_measured_cold_prior_at_grown_floor() -> None:
+    prior = float(_mod._COLD_START_STEPS_PER_SEC)
+    evidence = _mod._COLD_START_STEPS_PER_SEC_EVIDENCE
+    runs = evidence["runs"]
+    assert runs, "cold-start prior must carry measured provenance"
+    sps_values = sorted(float(run["steps_per_sec"]) for run in runs)
+    assert all(run["stopped_on"] == "steps" for run in runs)
+    # Conservative: never faster than the slowest measured launch-shape run,
+    # so a cold fit never overshoots the train floor under CPU contention.
+    assert prior <= sps_values[0]
+    assert prior == float(evidence["prior_steps_per_sec"])
+    assert evidence["min_steps_per_sec"] == sps_values[0]
+    assert evidence["median_steps_per_sec"] == pytest.approx(
+        statistics.median(sps_values), abs=1e-3
+    )
+    fitted, fit = _mod._fit_screening_steps(
+        floor_seconds=100.0, measured_steps_per_sec=None, steps_max=400
+    )
+    assert fit["cold_start"] is True
+    assert fit["steps_per_sec_source"] == "cold_start_prior"
+    assert fit["cold_start_prior_steps_per_sec"] == prior
+    assert fit["cold_start_prior_evidence"]["runs"] == runs
+    assert fitted == min(400, int(100.0 * prior * _mod._STEPS_PER_SEC_SAFETY))
+    assert fitted == int(evidence["expected_cold_steps_at_100s_floor"])
+    # The measured (median) steps/s on this box buys >= 300 steps per arm at a
+    # 100 s train floor; the fitter reports telemetry as the source.
+    measured, measured_fit = _mod._fit_screening_steps(
+        floor_seconds=100.0,
+        measured_steps_per_sec=float(evidence["median_steps_per_sec"]),
+        steps_max=400,
+    )
+    assert measured_fit["steps_per_sec_source"] == "train_telemetry"
+    assert measured >= 300
+    assert measured == int(evidence["expected_measured_steps_at_100s_floor"])
+    capped, _ = _mod._fit_screening_steps(
+        floor_seconds=10_000.0, measured_steps_per_sec=None, steps_max=400
+    )
+    assert capped == 400
+    warm, warm_fit = _mod._fit_screening_steps(
+        floor_seconds=100.0, measured_steps_per_sec=2.0, steps_max=400
+    )
+    assert warm_fit["steps_per_sec_source"] == "train_telemetry"
+    assert warm == 180
+
+
+def test_baseline_seed_excluded_from_promotion_status_sets() -> None:
+    from slm_training.autoresearch.hillclimb import (
+        CLIMB_CHAMPION_ADVANCE_STATUSES,
+    )
+    from slm_training.autoresearch.hillclimb import (
+        CLIMB_CHAMPION_STATUS_BASELINE_SEED as SEED,
+    )
+    from slm_training.autoresearch.thrash_regime import CLIMB_BASELINE_STATUSES
+
+    assert SEED not in _mod._PROMOTE_AUTHORITY_STATUSES
+    assert SEED not in _mod._CHAMPION_STATUSES
+    assert SEED not in _mod._RETRYABLE_PROMOTE_STATUSES
+    assert SEED not in CLIMB_CHAMPION_ADVANCE_STATUSES
+    assert SEED not in CLIMB_BASELINE_STATUSES
+    assert (
+        _mod._is_decisive_causal_terminal(
+            {"status": SEED, "resolve_reasons": ["primary_metric_win_rejected"]}
+        )
+        is False
+    )
+    assert not _mod._should_enqueue_champion(
+        {"status": SEED, "positive": False, "reasons": []}
+    )
+    # A baseline_seed queue row never seeds a confirmed champion.
+    assert (
+        _mod.seed_climb_champion(
+            Path("/nonexistent-p8"),
+            confirmed_artifacts=[{"status": SEED, "checkpoint": __file__}],
+        )
+        is None
+    )
+
+
+def _p8_control_run(
+    root: Path,
+    campaign_id: str,
+    *,
+    steps: int = 22,
+    stopped_on: str = "steps",
+    train_dir: Path | None = None,
+    with_checkpoint: bool = True,
+) -> Path:
+    prefix = campaign_id.replace("continuous-loop-", "c")
+    run = root / campaign_id / "runs" / f"{prefix}-control"
+    run.mkdir(parents=True, exist_ok=True)
+    if with_checkpoint:
+        (run / "checkpoints").mkdir(exist_ok=True)
+        (run / "checkpoints" / "last.pt").write_bytes(campaign_id.encode("utf-8"))
+    (run / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "steps": steps,
+                "stopped_on": stopped_on,
+                "elapsed_wall_seconds": 3.36,
+                "record_count": 101,
+                "train_dir": str(train_dir) if train_dir else None,
+                "data_manifest_sha": "f" * 64,
+                "initialized_weight_count": 0,
+                "track": {"trainable_params": 1_608_962},
+            }
+        ),
+        encoding="utf-8",
+    )
+    return run
+
+
+def _p8_policy(**warm: object) -> SimpleNamespace:
+    block: dict[str, object] = {"enabled": True, "max_cumulative_epochs": 50}
+    block.update(warm)
+    return SimpleNamespace(
+        measurement={
+            "warm_start": block,
+            "thrash_timing": {"min_train_floor_seconds": 20},
+        }
+    )
+
+
+def test_warm_start_policy_defaults_baseline_seed_on() -> None:
+    warm = _mod._warm_start_policy(SimpleNamespace(measurement={}))
+    assert warm["enabled"] is True
+    assert warm["seed_from_baseline_control"] is True
+    assert warm["max_cumulative_epochs"] == _mod.DEFAULT_MAX_CUMULATIVE_EPOCHS
+    off = _mod._warm_start_policy(
+        SimpleNamespace(
+            measurement={"warm_start": {"seed_from_baseline_control": False}}
+        )
+    )
+    assert off["seed_from_baseline_control"] is False
+
+
+def test_baseline_seed_champion_two_cycle_warm_start(tmp_path: Path) -> None:
+    from slm_training.autoresearch.hillclimb import (
+        CLIMB_CHAMPION_STATUS_BASELINE_SEED,
+        load_climb_champion,
+    )
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+    from slm_training.autoresearch.thrash_regime import REGIME_CLIMB
+
+    root = tmp_path / "autoresearch"
+    loop_id = "p8-warm-loop"
+    loop_dir = _mod._loop_champion_dir(root, loop_id)
+    policy = _p8_policy()
+    train_dir = tmp_path / "train" / "wf_smoke_v2"
+    train_dir.mkdir(parents=True)
+    (train_dir / "manifest.json").write_text(
+        json.dumps({"record_count": 101}), encoding="utf-8"
+    )
+    ckpt = _mod.climb_champion_checkpoint_path(loop_dir)
+
+    # Cycle 1: nothing to seed -> cold start, no checkpoint.
+    assert (
+        _mod._ensure_climb_champion(
+            root=root,
+            loop_id=loop_id,
+            queue_entries=[],
+            eval_data_manifest_sha=None,
+            policy=policy,
+        )
+        is None
+    )
+    assert load_climb_champion(loop_dir) is None
+    assert not ckpt.is_file()
+    c1 = _mod._campaign_id(loop_id, 1, date="20260902")
+    # A wall-truncated control is never a seed; nor is a foreign loop's run.
+    _p8_control_run(root, c1, stopped_on="wall_time_budget", train_dir=train_dir)
+    _p8_control_run(
+        root, _mod._campaign_id("other-loop", 1, date="20260902"), train_dir=train_dir
+    )
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[{"status": "rejected", "candidate_id": "x"}],
+        eval_data_manifest_sha=None,
+        policy=policy,
+    )
+    assert load_climb_champion(loop_dir) is None
+
+    # Cycle 2 completes its control -> baseline_seed champion appears.
+    c2 = _mod._campaign_id(loop_id, 2, date="20260902")
+    run2 = _p8_control_run(root, c2, steps=22, train_dir=train_dir)
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=policy,
+    )
+    sidecar = load_climb_champion(loop_dir)
+    assert sidecar is not None
+    assert sidecar.status == CLIMB_CHAMPION_STATUS_BASELINE_SEED
+    assert sidecar.source_campaign == c2
+    assert sidecar.cumulative_steps == 22
+    assert sidecar.record_count == 101
+    assert sidecar.train_dir == str(train_dir)
+    assert sidecar.trainable_params == 1_608_962
+    assert sidecar.knobs == {}
+    assert ckpt.read_bytes() == (run2 / "checkpoints" / "last.pt").read_bytes()
+    assert _mod._park_champion_epochs_if_needed(policy, loop_dir) is None
+
+    # Cycle 3 launch: both arms initialize from the seeded champion.
+    warm = _mod._warm_start_policy(policy)
+    initialize_from = (
+        str(ckpt) if warm.get("enabled", True) and ckpt.is_file() else None
+    )
+    assert initialize_from == str(ckpt)
+    regime = _mod._screening_regime_decision(
+        queue_entries=[], compiler_ms_timeout=False, root=root, loop_id=loop_id
+    )
+    assert regime.regime == REGIME_CLIMB
+    assert regime.reason == "climb_champion_checkpoint_available"
+    c3 = _mod._campaign_id(loop_id, 3, date="20260902")
+    matrix = _mod._matrix(
+        campaign_id=c3,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=3,
+        role="screening",
+        recommended_slug="bounds",
+        thrash_regime=regime,
+        initialize_from=initialize_from,
+    )
+    HypothesisMatrix.model_validate(matrix)
+    knobs_by_id = {
+        row["experiment"]["experiment_id"]: row["experiment"]["knobs"]
+        for row in matrix["hypotheses"]
+    }
+    prefix = c3.replace("continuous-loop-", "c")
+    control = knobs_by_id[f"{prefix}-control"]
+    assert control["initialize_from"] == str(ckpt)
+    assert all(k["initialize_from"] == str(ckpt) for k in knobs_by_id.values())
+    recommended = knobs_by_id[matrix["recommended_experiment_id"]]
+    assert recommended["steps"] == control["steps"]
+    assert recommended["seed"] == control["seed"]
+    assert recommended["train_version"] == control["train_version"]
+    _mod.assert_warm_start_launch(control, recommended)
+
+    # Seeding is sticky: a later control never replaces the baseline seed.
+    _p8_control_run(root, c3, steps=40, train_dir=train_dir)
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=policy,
+    )
+    again = load_climb_champion(loop_dir)
+    assert again is not None and again.source_campaign == c2
+
+
+def test_baseline_seed_disabled_by_policy_and_missing_checkpoint(
+    tmp_path: Path,
+) -> None:
+    from slm_training.autoresearch.hillclimb import load_climb_champion
+
+    root = tmp_path / "autoresearch"
+    loop_id = "p8-off-loop"
+    loop_dir = _mod._loop_champion_dir(root, loop_id)
+    c1 = _mod._campaign_id(loop_id, 1, date="20260902")
+    _p8_control_run(root, c1, with_checkpoint=False)
+    on = _p8_policy()
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=on,
+    )
+    assert load_climb_champion(loop_dir) is None
+    _p8_control_run(root, c1)
+    off = _p8_policy(seed_from_baseline_control=False)
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=off,
+    )
+    assert load_climb_champion(loop_dir) is None
+    disabled = _p8_policy(enabled=False)
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=disabled,
+    )
+    assert load_climb_champion(loop_dir) is None
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=on,
+    )
+    seeded = load_climb_champion(loop_dir)
+    assert seeded is not None and seeded.status == "baseline_seed"
+
+
+def test_champion_epoch_park_uses_train_manifest_record_count(tmp_path: Path) -> None:
+    from slm_training.autoresearch.hillclimb import (
+        ClimbChampionSidecar,
+        write_climb_champion,
+    )
+
+    loop_dir = tmp_path / "loop"
+    src = tmp_path / "src.pt"
+    src.write_bytes(b"s")
+    train_dir = tmp_path / "train" / "corpus"
+    train_dir.mkdir(parents=True)
+    (train_dir / "manifest.json").write_text(
+        json.dumps({"record_count": 676}), encoding="utf-8"
+    )
+    sidecar = ClimbChampionSidecar(
+        source_campaign="c",
+        cumulative_steps=5100,
+        train_data_manifest_sha="t" * 64,
+        cumulative_epochs=5100 / 101,  # accumulated against 101 records
+        train_dir=str(train_dir),
+        record_count=101,
+    )
+    write_climb_champion(loop_dir, checkpoint=src, sidecar=sidecar)
+    policy = _p8_policy(max_cumulative_epochs=50)
+    # 5100 / 676 = 7.5 epochs on the current corpus: not parked.
+    assert _mod._park_champion_epochs_if_needed(policy, loop_dir) is None
+    (train_dir / "manifest.json").write_text(
+        json.dumps({"record_count": 100}), encoding="utf-8"
+    )
+    assert (
+        _mod._park_champion_epochs_if_needed(policy, loop_dir)
+        == _mod._REGIME_PARKED_STATUS
+    )
+    # Unresolvable manifest falls back to the sidecar's accumulated epochs.
+    (train_dir / "manifest.json").unlink()
+    assert (
+        _mod._park_champion_epochs_if_needed(policy, loop_dir)
+        == _mod._REGIME_PARKED_STATUS
+    )
