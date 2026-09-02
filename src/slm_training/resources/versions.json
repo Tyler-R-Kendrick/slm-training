@@ -7673,6 +7673,11 @@
     "harness.experiments": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "SR9 Rsp005CampaignV1.manifest() declares selection_rule=best_by_primary_then_smallest (required for multi-candidate campaigns since the vacuous-pass fail-closed change); arms, seeds, endpoints unchanged.",
+          "version": "v165"
+        },
+        {
           "date": "2026-08-16",
           "note": "data-adequacy ladder: nested-subset marginal-gain measurement with powered flat/rising/undecidable classification; run_scaling_ladder --family data-adequacy",
           "version": "v164"
@@ -8727,7 +8732,7 @@
         "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
-      "version": "v164"
+      "version": "v165"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [
