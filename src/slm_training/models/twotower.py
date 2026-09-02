@@ -2290,6 +2290,23 @@ class TwoTowerModel(nn.Module):
                 return
 
     @staticmethod
+    def _note_admit_rejection(run: int) -> int:
+        """N12 (read-only): record one admit-probe rejection.
+
+        ``run`` is the caller's count of consecutive rejections with no
+        intervening commit; the returned value is the extended run. Nothing in
+        the decode path reads the counters back, so the proposal sequence and
+        the emitted canvas are identical whether or not a collector is active.
+        """
+        run = int(run) + 1
+        stats = get_active_stats()
+        if stats is not None:
+            stats.admit_probe_rejections += 1
+            if run > stats.admit_probe_reject_run_max:
+                stats.admit_probe_reject_run_max = run
+        return run
+
+    @staticmethod
     def _fold_state_engine_stats(states: list | None) -> None:
         """Fold each state engine's lifetime counters into the active stats.
 
@@ -15257,6 +15274,8 @@ class TwoTowerModel(nn.Module):
             if use_grammar and bool(getattr(self.config, "asap_decode", False))
             else None
         )
+        # N12 (read-only): consecutive admit-probe rejections with no commit.
+        admit_reject_run = 0
         for step in range(steps):
             from slm_training.models.decode_stats import check_decode_deadline
 
@@ -15675,6 +15694,9 @@ class TwoTowerModel(nn.Module):
                                         candidate,
                                         float(probs[b, t, int(candidate)].item()),
                                     )
+                                admit_reject_run = self._note_admit_rejection(
+                                    admit_reject_run
+                                )
                                 continue  # leave masked; try later / repair
                         except Exception:  # noqa: BLE001
                             if asap is not None:
@@ -15683,10 +15705,14 @@ class TwoTowerModel(nn.Module):
                                     candidate,
                                     float(probs[b, t, int(candidate)].item()),
                                 )
+                            admit_reject_run = self._note_admit_rejection(
+                                admit_reject_run
+                            )
                             continue  # reject on admit probe failure
                     ids[b, t] = candidate
                     unknown[b, t] = False
                     if b == 0:
+                        admit_reject_run = 0
                         newly.append(t)
                         if rec is not None:
                             forced = (

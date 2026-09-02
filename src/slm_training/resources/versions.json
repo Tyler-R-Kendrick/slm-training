@@ -5121,6 +5121,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after docs/design/iter-s14-exhaustion-rate-20260902.json landed (S14 N12 stall-termination telemetry audit, fixture-demo claim class, not a campaign result; only the scanned-file count moves). Deterministic rebuild; campaign behavior unchanged.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the three P1 continuous-loop closeout results JSON landed (deterministic rebuild); P1 recovery doc section is documentation only.",
           "version": "v281"
         },
@@ -11100,6 +11105,11 @@
     "harness.experiments.slm197_direct_bridge_policy": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: S14 appends the N12 LAVE stall-termination section to docs/design/quality-experiment-matrix.md (fixture-demo telemetry audit rows only, append-only). No bridge-policy code, gate, metric or matrix cell for this component changes.",
+          "version": "v1"
+        },
+        {
           "date": "2026-08-04",
           "note": "no-bump: correct a stale fixed-output-vocab figure (296 -> 569) in docs/design/quality-experiment-matrix.md; the registry pins vocab_size 569 and the wrong number had misled an external reviewer. Documentation only.",
           "version": "v1"
@@ -16485,6 +16495,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "S14: DecodeStats gains the read-only N12 counters admit_probe_rejections and admit_probe_reject_run_max (the latter merges as a maximum, never a sum); admit_probe_rejections joins the aggregate_stats key set. Additive only -- from_dict defaults both to 0 for historical payloads, and no gate, metric or scoreboard field changes.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of cards P3 (per-record NLL rows) and P11 (chunked resumable eval) which both prepended v102 independently; reconciles the component to v103.",
           "version": "v103"
         },
@@ -17109,7 +17124,7 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v103"
+      "version": "v104"
     },
     "harness.model_build.train": {
       "history": [
@@ -19343,6 +19358,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "S14: read-only N12 stall telemetry in the positionwise MaskGIT unmask lane (TwoTowerModel._note_admit_rejection) counting admit-probe rejections and the longest run of consecutive rejections with no intervening commit. No decode path reads the counters; proposal order, commits and emitted bytes are unchanged with or without an active collector (tests/test_models/test_admit_rejection_telemetry.py, docs/design/iter-s14-exhaustion-rate-20260902.md).",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Reconcile S2 with P5 on the integration branch: both landed as v320 in parallel; the S2 n-gram table entry below keeps its content, the P5 compiler-decode entry follows.",
           "version": "v321"
         },
@@ -21340,7 +21360,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v321"
+      "version": "v322"
     },
     "ops.vocab": {
       "history": [

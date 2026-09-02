@@ -257,6 +257,14 @@ class DecodeStats:
     # cannot validate (left-prefix over-approximation; see residual_support).
     admit_probe_canvases: int = 0
     admit_probe_committed_suffix: int = 0
+    # N12 (LAVE stall audit, read-only): admit-probe proposal rejections in the
+    # positionwise MaskGIT unmask lane, and the longest run of consecutive
+    # rejections with no intervening commit. Purely observational -- no decode
+    # path reads either field, so a decode with no active collector is
+    # byte-identical to one with a collector attached
+    # (tests/test_models/test_admit_rejection_telemetry.py).
+    admit_probe_rejections: int = 0
+    admit_probe_reject_run_max: int = 0
     # L-D: parallel block-step commits reverted because the joint canvas was
     # PROVEN uncompletable by multi_region_support (never on unknown/budget).
     block_joint_rejections: int = 0
@@ -408,6 +416,12 @@ class DecodeStats:
                 continue  # recomputed from the merged raw counters
             if key == "attempts":
                 self.attempts = max(self.attempts, int(value))
+                continue
+            if key == "admit_probe_reject_run_max":
+                # N12: a longest-run statistic, never a sum.
+                self.admit_probe_reject_run_max = max(
+                    self.admit_probe_reject_run_max, int(value)
+                )
                 continue
             cur = getattr(self, key)
             if isinstance(cur, (int, float)) and isinstance(value, (int, float)):
@@ -1282,6 +1296,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "asap_penalties",
         "admit_probe_canvases",
         "admit_probe_committed_suffix",
+        "admit_probe_rejections",
         "block_joint_rejections",
         "witness_pruned_unsupported",
         "witness_pruned_unknown",
