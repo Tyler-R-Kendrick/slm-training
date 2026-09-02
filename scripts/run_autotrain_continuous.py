@@ -1322,9 +1322,16 @@ def _fit_screening_decode_timeout_seconds(
             effective_floor_seconds=float(effective_floor),
         )
     else:
-        # Cold start: no measured cost, so the resolver's n is the probe count
-        # (0 when the certified range is empty: nothing runnable to project).
-        n_probe_base = max(0, int(smoke_n))
+        # Cold start: no measured cost. Sizing the probe at the whole suite is
+        # a deadlock — decoding 96 records cannot fit the eval share, the arm
+        # is killed at the wall (exit 124), no p95 is ever recorded, and the
+        # next cycle cold-starts again. Measured 2026-09-02: the control
+        # decoded 80 of 96 records and was interrupted, so it produced an NLL
+        # but no document counts, and every cycle scored
+        # ``measurement_incomplete``. Spend a bounded probe instead: enough to
+        # be decidable, cheap enough to finish and yield the p95 the next
+        # cycle fits from.
+        n_probe_base = max(0, min(int(smoke_n), _COLD_START_PROBE_RECORDS))
         n_probe = n_probe_base
         cap = configured
     if n_probe > 0 and usable > 0:
@@ -2929,6 +2936,12 @@ _CONTROL_RECIPE_BATCH_SIZE = 2
 # depth-confound minimum only to depth arms (factor >= 2); a fill factor gets
 # ``base + 1`` so it never overshoots the floor.
 _STEPS_FILL_FACTOR = round(1.0 / _STEPS_PER_SEC_SAFETY, 4)
+#: Decoded-probe records to spend on a cold-start cycle, before any per-record
+#: decode cost has been measured. The exact sign test at alpha = 1/20 needs 6
+#: pairs, so 6 is the smallest probe that can be decisive on its own; sizing
+#: the cold probe at the whole suite instead deadlocks the loop (see the
+#: cold-start branch of the decode fit).
+_COLD_START_PROBE_RECORDS = 6
 # ``noise_rate`` (policy ``recipe_tweak_knobs``) is deliberately absent: it is
 # a ``StubModel``-only lever (``harnesses/model_build/plugin.py``) and not an
 # ``ExperimentKnobs`` field, so a noise-rate arm could never move weights.
@@ -15549,6 +15562,16 @@ def _matrix(
             # fair-share timeout redistribution.
             base["generate_batch_size"] = 1
             base.update(latency_probe_knobs)
+            # The decode probe is bounded by the fitted n_probe. Without this
+            # the eval decodes the whole published suite (96 records) however
+            # small the eval share is, so the arm is killed at the wall and
+            # reports no document counts at all: the fit computed n_probe and
+            # nothing consumed it. NLL still spans the full suite -- it is
+            # teacher-forced and cheap -- so the screening verdict keeps its
+            # pairs while the decoded quality probe stays inside its budget.
+            probe_n = (decode_fit or {}).get("n_probe")
+            if isinstance(probe_n, int) and probe_n > 0:
+                base["eval_limit"] = int(probe_n)
         base.update(extra_map)
         if initialize_from:
             base["initialize_from"] = initialize_from

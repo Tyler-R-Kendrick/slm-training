@@ -5146,6 +5146,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Bound the screening decode probe. The fit computed n_probe and nothing consumed it, so the eval decoded the whole published suite (96 records) however small the eval share was: the arm was killed at the wall (exit 124) after 80 records, reported no document counts, and every cycle scored measurement_incomplete -- and because no p95 was ever recorded, the next cycle cold-started into the same deadlock. Screening knobs now carry eval_limit=n_probe, and a cold-start probe is capped at the exact sign-test floor (6) instead of the whole suite. Teacher-forced NLL still spans the full suite, so the screening verdict keeps its pairs.",
+          "version": "v285"
+        },
+        {
+          "date": "2026-09-02",
           "note": "write_climb_champion carries the checkpoint tokenizer sidecars. A warm start reads <stem>.tokenizer.json and <stem>.context.tokenizer.json beside the checkpoint; copying only last.pt left the context sidecar missing, so the loader fell back to the output tokenizer and refused with \"scratch-context warm starts require OpenUITokenizer sidecars\" -- the champion existed, the regime said climb, and every arm still died. Absent sidecars stay absent.",
           "version": "v284"
         },
@@ -7188,7 +7193,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v284"
+      "version": "v285"
     },
     "harness.autoresearch.formal": {
       "history": [

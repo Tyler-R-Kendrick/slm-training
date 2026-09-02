@@ -9664,15 +9664,22 @@ def test_resolve_promotion_formal_timeout_refunds_attempt_and_stays_retriable(
 
 
 def test_fit_screening_decode_fits_arm_wall() -> None:
-    """n×decode + train floor must not exceed the symmetric arm wall."""
+    """n_probe×decode + train floor must not exceed the symmetric arm wall.
+
+    The budget is projected over the *probe* count, not the published suite
+    size: decoding the whole suite never fitted, so the arm was killed at the
+    wall and no decode cost was ever measured to fit the next cycle from.
+    """
     from slm_training.autoresearch.climb_policy import load_climb_policy
 
     policy = load_climb_policy()
     fitted, meta = _mod._fit_screening_decode_timeout_seconds(policy)
     arm = float(meta["arm_wall_seconds"])
-    n = int(meta["smoke_n"])
+    n = int(meta["n_probe"])
     train = float(meta["min_train_floor_seconds"])
     overhead = float(meta["eval_overhead_seconds"])
+    assert n >= 1
+    assert n <= int(meta["smoke_n"])
     assert fitted * n + train + overhead <= arm + 1e-6
     assert fitted <= 12.0  # thrash-calibrated, not ship 24s
 
@@ -9855,7 +9862,7 @@ def test_grown_train_floor_never_exceeds_arm_wall() -> None:
     eval_s = float(meta["eval_budget_seconds"])
     overhead = float(meta["eval_overhead_seconds"])
     assert floor + eval_s + overhead <= wall + 1e-9
-    assert eval_s == pytest.approx(fitted * float(meta["smoke_n"]))
+    assert eval_s == pytest.approx(fitted * float(meta["n_probe"]))
     assert floor >= float(meta["min_train_floor_seconds"]) - 1e-9
 
 
