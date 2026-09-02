@@ -28,6 +28,11 @@
     "autoresearch.conclusions": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "load_policy prefers policy.v3.json (the climb default since P2) over policy.v2.json before the v1 fallback; conclusion block unchanged.",
+          "version": "v8"
+        },
+        {
           "date": "2026-08-21",
           "note": "autotrain climb policy now consumes the fail-closed hillclimb_strict_v2 train snapshot.",
           "version": "v7"
@@ -87,7 +92,7 @@
         "docs/design/hypothesis-family-conclusions.md",
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
-      "version": "v7"
+      "version": "v8"
     },
     "autoresearch.heal": {
       "history": [

@@ -26,7 +26,7 @@ data:
    condition from the policy holds: a lever key that was not part of the
    closing evidence, or a changed harness component version.
 
-Policy lives in ``policy.v2.json`` (superset of ``policy.v1.json`` plus the
+Policy lives in ``policy.v3.json`` (newest; ``policy.v2.json`` fallback; both carry the
 ``conclusion_policy`` block); :func:`load_policy` falls back to v1 with a
 single logged notice, reusing :func:`climb_policy.load_climb_policy`.
 """
@@ -84,6 +84,9 @@ logger = logging.getLogger(__name__)
 CLOSED_APPROACHES_SCHEMA = "closed_approaches/v1"
 POLICY_V1_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
 POLICY_V2_PATH = CLIMB_RESOURCE_DIR / "policy.v2.json"
+POLICY_V3_PATH = CLIMB_RESOURCE_DIR / "policy.v3.json"
+#: Newest first: the loader picks the first file that exists.
+_POLICY_PREFERENCE: tuple[Path, ...] = (POLICY_V3_PATH, POLICY_V2_PATH)
 DEFAULT_CLOSED_APPROACHES_PATH = CLIMB_RESOURCE_DIR / "closed_approaches.v1.json"
 
 #: Outcomes that count as an approach failure for conclusion purposes.
@@ -107,24 +110,27 @@ _fallback_notified: set[str] = set()
 
 
 def load_policy(resource_dir: Path | str | None = None) -> ClimbPolicy:
-    """Load ``policy.v2.json`` when present, else fall back to ``policy.v1.json``.
+    """Load the newest climb policy (``policy.v3.json``, then ``policy.v2.json``).
 
-    Reuses the cached :func:`load_climb_policy` loader (v2 is a strict
-    superset of the v1 schema family, so the same validation applies). The
-    fallback emits a single logged notice per resource directory.
+    Falls back to ``policy.v1.json`` when neither newer file exists. Reuses
+    the cached :func:`load_climb_policy` loader (every version shares the
+    ``autotrain_climb_policy/v1`` schema family, so the same validation
+    applies). The fallback emits a single logged notice per resource
+    directory.
     """
     base = Path(resource_dir) if resource_dir else CLIMB_RESOURCE_DIR
-    v2 = base / POLICY_V2_PATH.name
+    for preferred in _POLICY_PREFERENCE:
+        candidate = base / preferred.name
+        if candidate.is_file():
+            return load_climb_policy(str(candidate))
     v1 = base / POLICY_V1_PATH.name
-    if v2.is_file():
-        return load_climb_policy(str(v2))
     key = str(base.resolve())
     if key not in _fallback_notified:
         _fallback_notified.add(key)
         logger.info(
             "conclusion policy: %s absent; falling back to %s "
             "(default conclusion_policy applies)",
-            v2.name,
+            " / ".join(p.name for p in _POLICY_PREFERENCE),
             v1,
         )
     return load_climb_policy(str(v1))
@@ -153,9 +159,7 @@ def canonicalize_lever_key(key: str) -> str:
 
 def family_key_for_levers(lever_keys: Iterable[str]) -> str:
     """Canonical family key: deduplicated sorted canonical keys joined with ``+``."""
-    keys = sorted(
-        {canonicalize_lever_key(k) for k in lever_keys if str(k).strip()}
-    )
+    keys = sorted({canonicalize_lever_key(k) for k in lever_keys if str(k).strip()})
     return "+".join(keys)
 
 
@@ -209,9 +213,9 @@ class ConclusionEvidenceRecord(BaseModel):
         return self.outcome in FAILURE_OUTCOMES
 
 
-def _coerce_record(raw: Mapping[str, Any] | ConclusionEvidenceRecord) -> (
-    ConclusionEvidenceRecord
-):
+def _coerce_record(
+    raw: Mapping[str, Any] | ConclusionEvidenceRecord,
+) -> ConclusionEvidenceRecord:
     if isinstance(raw, ConclusionEvidenceRecord):
         return raw
     data = dict(raw)
@@ -235,8 +239,7 @@ def _coerce_record(raw: Mapping[str, Any] | ConclusionEvidenceRecord) -> (
         ),
         reasons=tuple(str(r) for r in reasons),
         harness_versions={
-            str(k): str(v)
-            for k, v in (data.get("harness_versions") or {}).items()
+            str(k): str(v) for k, v in (data.get("harness_versions") or {}).items()
         },
         run_date=str(data["run_date"]) if data.get("run_date") else None,
     )
@@ -339,9 +342,7 @@ class FamilyLedger:
             families.setdefault(record.family_key, []).append(record)
         return cls(
             taxonomy=tax,
-            families={
-                key: tuple(rows) for key, rows in sorted(families.items())
-            },
+            families={key: tuple(rows) for key, rows in sorted(families.items())},
             excluded=tuple(excluded),
         )
 
@@ -408,9 +409,7 @@ def load_closed_approaches(
         not isinstance(payload, Mapping)
         or payload.get("schema") != CLOSED_APPROACHES_SCHEMA
     ):
-        raise ClimbPolicyError(
-            f"{target}: schema must be {CLOSED_APPROACHES_SCHEMA!r}"
-        )
+        raise ClimbPolicyError(f"{target}: schema must be {CLOSED_APPROACHES_SCHEMA!r}")
     records = payload.get("records")
     if not isinstance(records, list):
         raise ClimbPolicyError(f"{target}: 'records' must be a list")
@@ -454,9 +453,7 @@ def _record_reopened(
     if "new_lever_key" in reopen and current_lever_keys is not None:
         closed_levers = _family_levers(str(record.get("family_key") or ""))
         current = {
-            canonicalize_lever_key(k)
-            for k in current_lever_keys
-            if str(k).strip()
+            canonicalize_lever_key(k) for k in current_lever_keys if str(k).strip()
         }
         if current - closed_levers:
             return True
@@ -465,9 +462,7 @@ def _record_reopened(
         if isinstance(stored, Mapping):
             for name, version in stored.items():
                 current_version = harness_versions.get(str(name))
-                if current_version is not None and str(current_version) != str(
-                    version
-                ):
+                if current_version is not None and str(current_version) != str(version):
                     return True
     return False
 
@@ -547,14 +542,10 @@ def conclude(
     """
     target = Path(path) if path else DEFAULT_CLOSED_APPROACHES_PATH
     block = conclusion_policy(policy or load_policy())
-    threshold = int(
-        block.get("family_close_after_adequately_powered_failures") or 0
-    )
+    threshold = int(block.get("family_close_after_adequately_powered_failures") or 0)
     if threshold < 1:
         return []
-    reopen_conditions = [
-        str(x) for x in (block.get("closed_families_reopen_on") or [])
-    ]
+    reopen_conditions = [str(x) for x in (block.get("closed_families_reopen_on") or [])]
     versions = (
         dict(harness_versions)
         if harness_versions is not None
