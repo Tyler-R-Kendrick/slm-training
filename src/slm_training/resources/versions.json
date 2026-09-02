@@ -1107,6 +1107,11 @@
     "dsl.completion_kernel": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "P5: terminal_witness exact early exit -- once a query's node allowance is spent and a sibling already returned UNKNOWN, remaining non-EOS children are not advanced (their verdict cannot change the frame's UNKNOWN result, which is never persisted); EOS paths still certify. New session counter witness_children_skipped. Witness results replayed against the previous kernel in lockstep are identical (docs/design/compiler-decode-cost-20260902.md).",
+          "version": "v26"
+        },
+        {
           "date": "2026-08-11",
           "note": "no-bump: externalize the request-authority mismatch regression into the canonical generated case resource; completion behavior is unchanged.",
           "version": "v25"
@@ -1318,7 +1323,7 @@
         "docs/design/adr-constrained-diffusion-topology-split.md",
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
-      "version": "v25"
+      "version": "v26"
     },
     "dsl.ecosystem_tier": {
       "history": [
@@ -19197,6 +19202,11 @@
     "model.twotower": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "P5: cut per-record strict compiler-tree decode cost with byte-identical output. compiler_draft: sorted-terminal tuple and per-candidate decision kind computed once per completion-forest build instead of once per admitted path; token_map: the cached allowed-id lookup's vocabulary fingerprint is memoized per tokenizer instead of re-sorting the vocabulary on every build (uncached lookups still never touch it). No candidate added, no verification skipped, forwards_count unchanged; parity proven by output hashes and per-build forest equality against the previous builder (docs/design/compiler-decode-cost-20260902.md).",
+          "version": "v320"
+        },
+        {
           "date": "2026-08-21",
           "note": "Domain-restricted speculative rank backoff and regenerated train-only n-gram table; I2 singleton bypass unchanged.",
           "version": "v319"
@@ -21180,7 +21190,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v319"
+      "version": "v320"
     },
     "ops.vocab": {
       "history": [

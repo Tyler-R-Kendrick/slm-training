@@ -1971,6 +1971,29 @@ def _build_openui_completion_forest_direct(
 
     terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals, use_cache=True) or set()
+    # The sorted terminal tuple and each admitted candidate's decision kind
+    # are pure functions of this build's inputs (tokenizer, prefix, accept
+    # set, schema, interned semantic state).  Compute each once per build
+    # instead of once per admitted path: identical labels, no authority
+    # change (docs/design/compiler-decode-cost-20260902.md).
+    sorted_terminals = tuple(sorted(str(term) for term in terminals))
+    decision_kind_memo: dict[int, str] = {}
+
+    def _path_decision_kind(candidate: int) -> str:
+        kind = decision_kind_memo.get(candidate)
+        if kind is None:
+            kind = _decision_kind(
+                tokenizer,
+                candidate,
+                prefix_ids,
+                sorted_terminals,
+                engine,
+                schema,
+                semantic_state=sstate,
+            )
+            decision_kind_memo[candidate] = kind
+        return kind
+
     kind_ids = getattr(tokenizer, "kind_ids", None)
     try:
         component_ids = (
@@ -2608,18 +2631,7 @@ def _build_openui_completion_forest_direct(
                     )
                     continue
                 paths.append(
-                    CompletionPath(
-                        tuple(memo_drafted),
-                        _decision_kind(
-                            tokenizer,
-                            candidate,
-                            prefix_ids,
-                            tuple(sorted(str(term) for term in terminals)),
-                            engine,
-                            schema,
-                            semantic_state=sstate,
-                        ),
-                    )
+                    CompletionPath(tuple(memo_drafted), _path_decision_kind(candidate))
                 )
                 if evidence is not None:
                     evidence.append(
@@ -2717,20 +2729,7 @@ def _build_openui_completion_forest_direct(
             branch_synced = True
         if memo_key is not None:
             branch_memo[memo_key] = ("ok", tuple(drafted))
-        paths.append(
-            CompletionPath(
-                tuple(drafted),
-                _decision_kind(
-                    tokenizer,
-                    candidate,
-                    prefix_ids,
-                    tuple(sorted(str(term) for term in terminals)),
-                    engine,
-                    schema,
-                    semantic_state=sstate,
-                ),
-            )
-        )
+        paths.append(CompletionPath(tuple(drafted), _path_decision_kind(candidate)))
         if evidence is not None:
             evidence.append(
                 ConstraintEvidence(
