@@ -2854,3 +2854,9 @@ tests/
 - campaign: `continuous-loop-20260902-climb-b-cad96bc5-c1`
 - checkpoints: `runs/c20260902-climb-b-cad96bc5-c1-control/checkpoints/last.pt`
 - honesty: fixture/scratch continuous cycle — **not** a ship promotion.
+
+## Continuous autotrain note (2026-09-02, continuous-loop-20260902-climb-c-7a4ba2f4-c1)
+
+- campaign: `continuous-loop-20260902-climb-c-7a4ba2f4-c1`
+- checkpoints: `runs/c20260902-climb-c-7a4ba2f4-c1-control/checkpoints/last.pt`
+- honesty: fixture/scratch continuous cycle — **not** a ship promotion.
