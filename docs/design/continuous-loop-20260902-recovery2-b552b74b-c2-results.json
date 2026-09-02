@@ -11,11 +11,11 @@
   },
   "control_metrics": {
     "binder_reference_f1": null,
-    "eval_nll": 4.55601100352851,
+    "eval_nll": 4.568895543732056,
     "latency_ms_p50": null,
     "meaningful_program_rate": null,
     "parse_rate": null,
-    "smoke.eval_nll": 4.55601100352851,
+    "smoke.eval_nll": 4.568895543732056,
     "structural_similarity": null
   },
   "cycle_index": 2,
@@ -49,18 +49,18 @@
     "control_id": "c20260902-recovery2-b552b74b-c2-control",
     "control_metrics": {
       "binder_reference_f1": null,
-      "eval_nll": 4.55601100352851,
+      "eval_nll": 4.568895543732056,
       "latency_ms_p50": null,
       "meaningful_program_rate": null,
       "parse_rate": null,
-      "smoke.eval_nll": 4.55601100352851,
+      "smoke.eval_nll": 4.568895543732056,
       "structural_similarity": null
     },
     "cycle_index": 2,
     "cycle_intent": "screening",
     "cycle_role": "screening",
     "direction": "decrease",
-    "finished_at": "2026-09-02T12:53:09Z",
+    "finished_at": "2026-09-02T13:06:13Z",
     "fixture_clamp_exempt": false,
     "fixture_volume_gate_hits": 0,
     "has_tracked_delta": false,
@@ -209,7 +209,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "2d8d879dd6a8f4069a1c43ea8ed390d357a55862",
+    "code_commit": "fe57d18bf7f6a0cb5b75f098e8a105c606d28993",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -218,6 +218,6 @@
       "harness.model_build.eval": "v105"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-09-02T12:53:09.701236+00:00"
+    "stamped_at": "2026-09-02T13:06:13.484327+00:00"
   }
 }
