@@ -172,6 +172,13 @@ HealOutcome = Literal[
     "budget_exhausted",
     "cycle_detected",
     "refused_scope",
+    # Diagnosis-only attempt (code-class crash triage): evidence was captured
+    # and a typed repair action emitted, but nothing was repaired and nothing
+    # is claimed verified. Never consumed by any driver rewrite.
+    "attempted",
+    # A repair ran but its measured postcondition (e.g. record count grew)
+    # did not hold — a heal_postcondition_failed receipt, never a heal.
+    "postcondition_failed",
 ]
 
 

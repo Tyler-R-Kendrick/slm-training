@@ -3182,58 +3182,47 @@ def _delivery_is_thrash_timeout_residual(
 ) -> bool:
     """True when incomplete measurement is thrash wall/decode residual, not a hard harness bug.
 
-    Bare ``measurement_incomplete`` is **not** enough — that also appears on real
-    harness crashes. Require an explicit timeout signal (exit 124, decode_timeout*
-    counters, wall_timeout, or repair text about internal decode timeout).
+    Residual requires **explicit timeout evidence**: some arm exit of 124 or a
+    ``wall_timeout`` / ``decode_timeout`` style marker in the reasons. Bare
+    ``measurement_incomplete`` / ``missing_scoreboard`` /
+    ``primary_metric_unavailable`` never suffice — those also appear when an
+    arm process crashed (``harness_failure:<arm>:experiment_failed`` with exit
+    2), and reading that crash as a soft residual dropped the
+    ``repair_harness`` blocker for cycles c536..c543. A crash exit (non-zero,
+    non-124) next to the harness-failure marker is always a harness failure.
     """
+    # Single source of truth shared with the heal-playbook classifier so the
+    # emission-time markers and the crash/residual split can never drift.
+    from slm_training.autoresearch.heal.classify import (
+        HARD_HARNESS_MARKERS,
+        HARNESS_CRASH_REASON_RE,
+        TIMEOUT_RESIDUAL_MARKERS,
+        crash_arm_exits,
+        timeout_arm_exits,
+    )
+
     reasons: list[str] = []
-    timeout_exit = False
+    exits: Mapping[str, Any] = {}
     if delivery:
         reasons.extend(str(r) for r in (delivery.get("reasons") or []))
-        exits = delivery.get("arm_exits") or {}
-        if isinstance(exits, dict) and exits:
-            codes: list[int] = []
-            for v in exits.values():
-                try:
-                    codes.append(int(v))  # type: ignore[arg-type]
-                except (TypeError, ValueError):
-                    continue
-            # 124 = wall/timeout from bounded process convention in this driver.
-            if codes and all(c == 124 for c in codes):
-                timeout_exit = True
+        raw_exits = delivery.get("arm_exits") or {}
+        if isinstance(raw_exits, Mapping):
+            exits = raw_exits
     if handoff is not None:
         reasons.extend(str(r) for r in (handoff.reasons or ()))
         for action in handoff.actions:
             reasons.append(str(action.reason or ""))
     joined = " ".join(reasons).lower()
-    # Single source of truth shared with the heal-playbook classifier so the
-    # emission-time markers and the environment/code split can never drift.
-    from slm_training.autoresearch.heal.classify import HARD_HARNESS_MARKERS
-
     if any(m in joined for m in HARD_HARNESS_MARKERS):
         return False
-    timeout_markers = (
-        "decode_timeout",
-        "decode timeout",
-        "decode_timeout_count",
-        "wall_timeout",
-        "timed out",
-        "timeout residual",
-        "internal decode timeout",
-    )
-    # Incomplete thrash measurement with exhausted frozen-replay budget is also
-    # a residual (missing scoreboard / wall race), not a true harness crash —
-    # unless hard harness markers already matched above.
-    incomplete_residual_markers = (
-        "incomplete replay budget exhausted",
-        "missing_scoreboard",
-        "primary_metric_unavailable",
-    )
-    return (
-        timeout_exit
-        or any(m in joined for m in timeout_markers)
-        or any(m in joined for m in incomplete_residual_markers)
-    )
+    timeout_exit = timeout_arm_exits(exits)
+    crash_exit = crash_arm_exits(exits)
+    explicit_timeout = any(m in joined for m in TIMEOUT_RESIDUAL_MARKERS)
+    if crash_exit and HARNESS_CRASH_REASON_RE.search(joined):
+        # An arm process died (exit != 124) without a scoreboard: a harness
+        # failure regardless of any wall exit elsewhere in the delivery.
+        return False
+    return timeout_exit or explicit_timeout
 
 
 def _merge_head_path(cwd: Path) -> Path | None:

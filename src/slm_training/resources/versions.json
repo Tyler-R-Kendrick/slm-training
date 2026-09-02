@@ -92,6 +92,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "harness_crash playbook (class code): captures the failing arm's exit, stderr tail and traceback, names module + harness_family, emits a typed repair_harness action, runs the module's mirrored test file once, and writes an attempted (never healed) receipt. data_rebuild playbook (class data): invokes the driver's rebuild seam under a records_after > records_before postcondition (healed / postcondition_failed). classify routes harness_failure:*:experiment_failed with a non-124 exit to code and rebuild_data prerequisites to data; HealOutcome gains attempted and postcondition_failed.",
+          "version": "v3"
+        },
+        {
           "date": "2026-08-21",
           "note": "Fail-closed loop primitives: typed pass outcomes, watchdog blocker catalog, WIP leases, and per-metric power evidence helpers.",
           "version": "v2"
@@ -133,9 +138,11 @@
         "tests/test_autoresearch/test_heal_escalation.py",
         "tests/test_autoresearch/test_heal_playbooks.py",
         "tests/test_scripts/test_env_repair_rewrite.py",
-        "tests/test_scripts/test_run_autotrain_supervisor.py"
+        "tests/test_scripts/test_run_autotrain_supervisor.py",
+        "tests/test_autoresearch/test_heal_harness_crash.py",
+        "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v2"
+      "version": "v3"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5049,8 +5056,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of card P10 (heal executors for code/data classes; crash routing) which also prepended v272 independently; reconciles the component to v274 with both parent histories intact below.",
+          "version": "v274"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of independently versioned cards P4 (decode-budget feedback) and P7 (certified-corpus screening heal): both prepended v272 on disjoint driver functions; this entry reconciles the component to v273 and keeps both parent histories intact below.",
           "version": "v273"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Heal layer gains harness_crash (code-class crash triage: traceback capture, typed repair_harness action, module test run, attempted-only receipt) and data_rebuild (rebuild seam under a records_after > records_before postcondition) playbooks; harness_failure:*:experiment_failed with a non-124 exit classifies as code and the driver's thrash-timeout residual check requires explicit timeout evidence (arm exit 124 or wall/decode timeout markers) so missing_scoreboard alone never drops a repair_harness blocker.",
+          "version": "v272"
         },
         {
           "date": "2026-09-02",
@@ -6966,7 +6983,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v273"
+      "version": "v274"
     },
     "harness.autoresearch.formal": {
       "history": [
