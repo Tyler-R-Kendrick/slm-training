@@ -5038,6 +5038,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Screening decode budget feedback loop: the predecessor's measured per-record decode p95 is the decode floor passed to screening_smoke_n_for_policy (decode_floor_source measured_p95 vs policy_default), n_probe = floor(eval_share / p95) with timeout = min(eval_share / n_probe, p95 x (1 + p95_margin)), the thrash_timing Pareto rule (incomplete_rate_high / incomplete_rate_low) shrinks or grows n_probe, and budget timeouts (p95 > applied timeout) are classified budget_timeout and never routed into decode residual arms.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
           "version": "v271"
         },
@@ -6935,7 +6940,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v271"
+      "version": "v272"
     },
     "harness.autoresearch.formal": {
       "history": [
