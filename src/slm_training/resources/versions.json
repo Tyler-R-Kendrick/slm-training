@@ -93,7 +93,17 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of cards P10 (heal executors) and P6 (fail-closed heal verification) which both prepended v3 independently; reconciles the component to v4.",
+          "version": "v4"
+        },
+        {
+          "date": "2026-09-02",
           "note": "harness_crash playbook (class code): captures the failing arm's exit, stderr tail and traceback, names module + harness_family, emits a typed repair_harness action, runs the module's mirrored test file once, and writes an attempted (never healed) receipt. data_rebuild playbook (class data): invokes the driver's rebuild seam under a records_after > records_before postcondition (healed / postcondition_failed). classify routes harness_failure:*:experiment_failed with a non-124 exit to code and rebuild_data prerequisites to data; HealOutcome gains attempted and postcondition_failed.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Driver heal verification primitives (P6): HealVerifyV1-backed record_count_probe + verify_driver_heal write healed / verify_failed (heal_postcondition_failed) receipts and observe the blocker in the escalation ledger; allocate_screening_suite_id scans every _v* of the n family; run_playbooks leaves an 'unhandled' receipt (new HealOutcome) for no_matching_playbook / playbook_declined so escalations are never vacuous.",
           "version": "v3"
         },
         {
@@ -142,7 +152,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v3"
+      "version": "v4"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5056,8 +5066,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of card P6 (fail-closed heals, honest pass outcomes, non-crashing driver) which also prepended v272 independently; reconciles the component to v275 with all parent histories intact below.",
+          "version": "v275"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of card P10 (heal executors for code/data classes; crash routing) which also prepended v272 independently; reconciles the component to v274 with both parent histories intact below.",
           "version": "v274"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Fail-closed heal postconditions (P6): the screening-suite grow heal verifies smoke_n growth through HealVerifyV1 (record_count_probe + must_generate == False) and writes heal_postcondition_failed receipts instead of vacuous acks (empty sampler against a deficit and publish FileExistsError are failed heals; rebuild_data acks require records_after > records_before); allocate_screening_suite_id scans every _v*; default_eval_version discovers the largest published e938_role_safe_all_targets_ smoke suite preferring non-frozen snapshots; three vacuous passes write a typed loop_stalled_no_campaign park (state=BLOCKED) and exit 3 without a traceback; the supervisor honours the ledger next_backoff_seconds on the no-campaign path, keeps a running stall total, and defaults --primary-metric to policy screening_primary.metric; run_playbooks leaves unhandled receipts for no_matching_playbook / playbook_declined.",
+          "version": "v272"
         },
         {
           "date": "2026-09-02",
@@ -6983,7 +7003,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v274"
+      "version": "v275"
     },
     "harness.autoresearch.formal": {
       "history": [

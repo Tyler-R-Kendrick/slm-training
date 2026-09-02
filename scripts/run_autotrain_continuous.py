@@ -347,8 +347,31 @@ def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] 
     )
 
 
-def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
-    """Append unused extra smoke fixtures to the tracked seed file."""
+class _SeedAppendResult(NamedTuple):
+    """Honest accounting for one seed-file growth attempt."""
+
+    paths: list[Path]
+    seed_path: Path
+    lines_before: int
+    smoke_n_before: int
+    smoke_n_after: int
+    need: int
+    appended: int
+
+    @property
+    def deficit_unfilled(self) -> bool:
+        """A deficit existed and the sampler produced nothing: a failed heal."""
+        return self.need > 0 and self.appended == 0
+
+
+def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> _SeedAppendResult:
+    """Append unused extra smoke fixtures to the tracked seed file.
+
+    Wraps the sampler (``extra_smoke_fixtures_for_deficit``) with before/after
+    counts so the caller can verify growth instead of trusting the return
+    value; an empty sampler result against a real deficit is reported as
+    ``deficit_unfilled`` — never silently as success.
+    """
     from slm_training.autoresearch.screening_sample_size import (
         extra_smoke_fixtures_for_deficit,
     )
@@ -365,16 +388,27 @@ def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
         suite = str((rec.get("meta") or {}).get("suite") or rec.get("split") or "")
         if suite == "smoke":
             smoke_n += 1
+    lines_before = sum(1 for line in lines if line.strip())
     need = max(0, int(n_min) - smoke_n)
     extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
     if not extras:
-        return []
+        return _SeedAppendResult(
+            [], seed_path, lines_before, smoke_n, smoke_n, need, 0
+        )
     with seed_path.open("a", encoding="utf-8") as fh:
         if lines and lines[-1].strip():
             fh.write("\n")
         for rec in extras:
             fh.write(json.dumps(rec, sort_keys=True) + "\n")
-    return [seed_path]
+    return _SeedAppendResult(
+        [seed_path],
+        seed_path,
+        lines_before,
+        smoke_n,
+        smoke_n + len(extras),
+        need,
+        len(extras),
+    )
 
 
 def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
@@ -391,6 +425,9 @@ def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Pat
     ]
 
 
+_SCREENING_EVAL_HEAL_ID = "rebuild_screening_eval"
+
+
 def _self_heal_rebuild_screening_eval(
     *,
     cwd: Path,
@@ -398,8 +435,23 @@ def _self_heal_rebuild_screening_eval(
     loop_id: str,
     campaign_id: str | None,
 ) -> str | None:
-    """Grow smoke to the Lean floor, publish under resources/, commit."""
-    from slm_training.autoresearch.heal.fail_closed import allocate_screening_suite_id
+    """Grow smoke to the Lean floor, publish under resources/, commit.
+
+    Fail-closed (``docs/design/autotrain-fail-closed-self-healing.md`` §3):
+    the heal counts only when the postcondition probe
+    (:func:`verify_driver_heal`) observes the resolved smoke suite grow
+    (``smoke_n_after > smoke_n_before``) and the policy resolver no longer
+    demands generation (``must_generate == False``). An empty sampler against
+    a real deficit, a publish conflict, or an unchanged suite each leave a
+    ``heal_postcondition_failed`` receipt and return ``None`` — no sidecar,
+    no commit of the fresh suite id, no action ack.
+    """
+    from slm_training.autoresearch.heal.fail_closed import (
+        allocate_screening_suite_id,
+        count_records,
+        record_count_probe,
+        verify_driver_heal,
+    )
     from slm_training.data.store import DataStore
     from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
 
@@ -407,15 +459,64 @@ def _self_heal_rebuild_screening_eval(
     if not isinstance(report, dict) or not report.get("must_generate"):
         return None
     n_min = int(report.get("n_min") or 6)
-    _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    smoke_n_before = int(_screening_suite_records() or 0)
+    seeds = _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    counts_before = {
+        "smoke_n": smoke_n_before,
+        "seed_smoke_n": seeds.smoke_n_before,
+    }
+
+    def _failed(
+        stage: str,
+        *,
+        probe_path: Path,
+        must_exceed: int,
+        counts_after: dict[str, int],
+        conditions: dict[str, bool] | None = None,
+        note: str = "",
+    ) -> None:
+        receipt = verify_driver_heal(
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            heal_id=_SCREENING_EVAL_HEAL_ID,
+            verify=record_count_probe(probe_path, must_exceed=must_exceed),
+            cwd=cwd,
+            counts_before=counts_before,
+            counts_after=counts_after,
+            extra_conditions=conditions,
+            note=f"stage={stage} {note}".strip(),
+        )
+        print(
+            f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL stage={stage} "
+            f"outcome={receipt.outcome} n_min={n_min} "
+            f"counts_before={json.dumps(counts_before, sort_keys=True)} "
+            f"counts_after={json.dumps(counts_after, sort_keys=True)}",
+            flush=True,
+        )
+        return None
+
+    if seeds.deficit_unfilled:
+        # The sampler had nothing to add: the seed file did not grow, so no
+        # bigger suite can be built from it. Probe the seed file itself.
+        return _failed(
+            "seed_sampler_empty",
+            probe_path=seeds.seed_path,
+            must_exceed=seeds.lines_before,
+            counts_after={
+                "smoke_n": smoke_n_before,
+                "seed_smoke_n": seeds.smoke_n_after,
+            },
+            conditions={"seed_deficit_filled": False},
+            note=f"need={seeds.need} appended=0",
+        )
     eval_root = cwd / "src/slm_training/resources/data/eval"
     eval_version = allocate_screening_suite_id(eval_root, n_min)
     train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
     out_dir = cwd / "outputs" / "data" / "eval" / eval_version
-    published = cwd / "src/slm_training/resources/data/eval" / eval_version
-    if not (out_dir / "manifest.json").is_file() and not (
-        published / "suites" / "smoke" / "records.jsonl"
-    ).is_file():
+    published = eval_root / eval_version
+    published_records = published / "suites" / "smoke" / "records.jsonl"
+    if not (out_dir / "manifest.json").is_file() and not published_records.is_file():
         argv = _local_rebuild_screening_eval_argv(
             eval_version=eval_version, train_manifest=train_manifest
         )
@@ -438,25 +539,70 @@ def _self_heal_rebuild_screening_eval(
             )
             return None
     store = DataStore(root=cwd)
-    if not (published / "suites" / "smoke" / "records.jsonl").is_file():
+    if not published_records.is_file():
         try:
             store.publish("eval", eval_version)
-        except FileExistsError:
-            pass
+        except FileExistsError as exc:
+            # A conflict on a freshly allocated id means the allocator and
+            # the store disagree: that is a failed heal, never a silent pass.
+            return _failed(
+                "publish_conflict",
+                probe_path=published_records,
+                must_exceed=count_records(published_records),
+                counts_after={
+                    "smoke_n": smoke_n_before,
+                    "seed_smoke_n": seeds.smoke_n_after,
+                },
+                conditions={"published_fresh_suite": False},
+                note=f"version={eval_version} {exc!r}"[:300],
+            )
         except Exception as exc:  # noqa: BLE001
             print(f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL publish={exc!r}", flush=True)
             return None
-    smoke = published / "suites" / "smoke" / "records.jsonl"
-    if not smoke.is_file():
+    n_after, report_after = _screening_n_report()
+    smoke_n_after = int(_screening_suite_records() or 0)
+    must_generate_after = bool(
+        isinstance(report_after, dict) and report_after.get("must_generate")
+    )
+    counts_after = {
+        "smoke_n": smoke_n_after,
+        "seed_smoke_n": seeds.smoke_n_after,
+        "published_records": count_records(published_records),
+    }
+    receipt = verify_driver_heal(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        heal_id=_SCREENING_EVAL_HEAL_ID,
+        verify=record_count_probe(published_records, must_exceed=smoke_n_before),
+        cwd=cwd,
+        counts_before=counts_before,
+        counts_after=counts_after,
+        extra_conditions={
+            "must_generate_false": not must_generate_after,
+            "resolver_reports_growth": smoke_n_after > smoke_n_before,
+        },
+        note=f"stage=published version={eval_version}",
+    )
+    if receipt.outcome != "healed":
+        print(
+            f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL stage=postcondition "
+            f"outcome={receipt.outcome} version={eval_version} "
+            f"counts_before={json.dumps(counts_before, sort_keys=True)} "
+            f"counts_after={json.dumps(counts_after, sort_keys=True)} "
+            f"must_generate_after={must_generate_after}",
+            flush=True,
+        )
         return None
     sidecar = published / "screening_sample_size.json"
-    n_after, report_after = _screening_n_report()
     sidecar.write_text(
         json.dumps(
             {
                 "schema_version": "screening_sample_size/v1",
                 "eval_version": eval_version,
                 "smoke_n": n_after,
+                "smoke_n_before": smoke_n_before,
+                "smoke_n_after": smoke_n_after,
                 "report": report_after,
             },
             indent=2,
@@ -501,13 +647,15 @@ def _self_heal_rebuild_screening_eval(
                         f"src/slm_training/resources/data/eval/{eval_version}/"
                         "screening_sample_size.json"
                     ],
+                    counts=(smoke_n_before, smoke_n_after),
                 )
     print(
         f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
-        f"smoke_n={n_after}",
+        f"smoke_n={n_after} smoke_n_before={smoke_n_before} "
+        f"smoke_n_after={smoke_n_after}",
         flush=True,
     )
-    return "rebuild_screening_eval"
+    return _SCREENING_EVAL_HEAL_ID
 
 
 # Conservative CPU prior until a train_summary exists (c527 ~6.5 steps/s).
@@ -4797,10 +4945,24 @@ def _ack_rebuild_data_action(
     *,
     action_index: int,
     evidence_uris: Sequence[str],
+    counts: tuple[int, int] | None = None,
 ) -> None:
+    """Acknowledge one ``rebuild_data`` action with bound evidence.
+
+    ``counts`` is the heal's ``(records_before, records_after)`` postcondition:
+    when given, an ack is refused unless the count actually grew — a sidecar
+    path alone is never evidence that data changed.
+    """
     action = handoff.actions[action_index]
     if action.kind != "rebuild_data":
         raise ValueError(f"refusing to ack non-rebuild_data action: {action.kind}")
+    if counts is not None:
+        before, after = int(counts[0]), int(counts[1])
+        if after <= before:
+            raise ValueError(
+                "refusing to ack rebuild_data without a count postcondition: "
+                f"records_before={before} records_after={after}"
+            )
     uris = tuple(evidence_uris)
     evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
     append_autotrain_action_receipt(
@@ -13009,18 +13171,113 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     return best_idx, completed_id or best_id
 
 
+_STALL_FINGERPRINT = "loop_stalled_no_campaign"
+_VACUOUS_PASS_LIMIT = 3
+#: Driver exit code for the typed loop-stalled park (2 = hard pending).
+_STALL_EXIT_CODE = 3
+
+
+def _last_heal_receipt_outcome(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    for raw in reversed(path.read_text(encoding="utf-8").splitlines()):
+        if not raw.strip():
+            continue
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        return str(row.get("outcome") or "") if isinstance(row, dict) else None
+    return None
+
+
+def _park_loop_stalled(
+    *,
+    root: Path,
+    loop_id: str,
+    cycle_index: int,
+    campaign_id: str | None,
+    consecutive: int,
+    last_non_vacuous: dict[str, Any] | None,
+    reason: str | None,
+) -> Path:
+    """Write the typed ``loop_stalled_no_campaign`` park (state=BLOCKED)."""
+    if last_non_vacuous:
+        last = (
+            f"last non-vacuous pass: {last_non_vacuous.get('outcome')} "
+            f"campaign={last_non_vacuous.get('campaign_after')} "
+            f"at {last_non_vacuous.get('recorded_at')}"
+        )
+    else:
+        last = "no non-vacuous pass recorded for this loop"
+    if reason:
+        last = f"{last}; last cycle error: {reason}"
+    next_action = (
+        f"{_STALL_FINGERPRINT}: {consecutive} consecutive vacuous passes "
+        f"(no campaign, no verified heal, no typed action); {last}"
+    )[:1000]
+    path = _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="BLOCKED",
+            phase="blocked",
+            last_completed_campaign_id=campaign_id,
+            cycle_index=max(0, int(cycle_index)),
+            next_action=next_action,
+            blocker_fingerprint=_STALL_FINGERPRINT,
+            blocker_count=int(consecutive),
+            pid=os.getpid(),
+            heartbeat_at=utc_now(),
+        ),
+    )
+    try:
+        from slm_training.autoresearch.heal.escalation import EscalationLedger
+
+        ledger = EscalationLedger.load(root, loop_id)
+        record = ledger.observe(
+            kind=_STALL_FINGERPRINT,
+            reason="consecutive vacuous driver passes without a new campaign",
+            blocker_class="unknown",
+            campaign_id=campaign_id or "unknown",
+            owner_skill="autotrain",
+        )
+        ledger.escalate(record.fingerprint, note=next_action[:400])
+        ledger.save()
+    except Exception as exc:  # noqa: BLE001 — ledger bugs never mask the park
+        print(f"LOOP_PARKED_LEDGER_WARN {exc!r}", flush=True)
+    print(
+        f"LOOP_PARKED fingerprint={_STALL_FINGERPRINT} consecutive={consecutive} "
+        f"state={path}",
+        flush=True,
+    )
+    return path
+
+
 def _record_pass_outcome(
     *, root: Path, loop_id: str, before_campaign: str | None,
-    before_receipts: int, typed_action: bool = False,
+    before_receipts: int, typed_action: bool = False, reason: str | None = None,
 ) -> str:
-    """Classify one driver pass; a clean no-op is a counted hard failure."""
+    """Classify one driver pass; a clean no-op is a counted hard failure.
+
+    Returns the outcome. ``loop_stalled_no_campaign`` means
+    ``_VACUOUS_PASS_LIMIT`` consecutive vacuous passes were observed and the
+    typed park (``state=BLOCKED``) has been written: the caller exits non-zero
+    without raising. Heal receipts are read by outcome, so a driver heal whose
+    postcondition failed scores ``heal_postcondition_failed`` (visible,
+    counted) rather than ``vacuous_pass`` or ``verified_heal``.
+    """
     _idx, after_campaign = _latest_cycle(root, loop_id)
     receipts_path = root / "loops" / loop_id / "heal_receipts.jsonl"
     after_receipts = len(receipts_path.read_text(encoding="utf-8").splitlines()) if receipts_path.is_file() else 0
     if after_campaign and after_campaign != before_campaign:
         outcome = "campaign_initialized"
     elif after_receipts > before_receipts:
-        outcome = "verified_heal" if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:] else "heal_attempted"
+        outcome = {
+            "healed": "verified_heal",
+            "verify_failed": "heal_postcondition_failed",
+            "unhandled": "escalation_unhandled",
+        }.get(_last_heal_receipt_outcome(receipts_path) or "", "heal_attempted")
     elif typed_action:
         outcome = "typed_park_or_escalation"
     else:
@@ -13029,23 +13286,37 @@ def _record_pass_outcome(
     path.parent.mkdir(parents=True, exist_ok=True)
     prior = [r for r in path.read_text(encoding="utf-8").splitlines() if r] if path.is_file() else []
     previous_vacuous = 0
+    last_non_vacuous: dict[str, Any] | None = None
+    counting = True
     for raw in reversed(prior):
         try:
             previous = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if previous.get("outcome") == "vacuous_pass":
-            previous_vacuous += 1
-        else:
-            break
+        if previous.get("outcome") in {"vacuous_pass", _STALL_FINGERPRINT}:
+            if counting:
+                previous_vacuous += 1
+            continue
+        counting = False
+        last_non_vacuous = previous
+        break
     row = {"schema": "pass_outcome/v1", "loop_id": loop_id, "outcome": outcome,
            "campaign_before": before_campaign, "campaign_after": after_campaign,
            "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
-           "recorded_at": utc_now()}
+           "reason": reason, "recorded_at": utc_now()}
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, sort_keys=True) + "\n")
-    if row["consecutive_vacuous"] >= 3:
-        raise RuntimeError("vacuous_pass: loop_stalled_no_campaign")
+    if row["consecutive_vacuous"] >= _VACUOUS_PASS_LIMIT:
+        _park_loop_stalled(
+            root=root,
+            loop_id=loop_id,
+            cycle_index=_idx,
+            campaign_id=after_campaign,
+            consecutive=int(row["consecutive_vacuous"]),
+            last_non_vacuous=last_non_vacuous,
+            reason=reason,
+        )
+        return _STALL_FINGERPRINT
     return outcome
 
 
@@ -16821,10 +17092,15 @@ def main(argv: list[str] | None = None) -> int:
                     require_action_receipts=args.supervised,
                     extra_skip_slugs=extra_skip_slugs,
                 )
-                print("PASS_OUTCOME " + _record_pass_outcome(
+                pass_outcome = _record_pass_outcome(
                     root=root, loop_id=args.loop_id, before_campaign=before_campaign,
                     before_receipts=before_receipts,
-                ), flush=True)
+                )
+                print(f"PASS_OUTCOME {pass_outcome}", flush=True)
+                if pass_outcome == _STALL_FINGERPRINT:
+                    # Typed park already written (state=BLOCKED); exit
+                    # non-zero so the supervisor's governed backoff applies.
+                    return _STALL_EXIT_CODE
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -16840,14 +17116,19 @@ def main(argv: list[str] | None = None) -> int:
                     integration_commit=code_sha,
                 )
                 try:
-                    _record_pass_outcome(
+                    pass_outcome = _record_pass_outcome(
                         root=root, loop_id=args.loop_id,
                         before_campaign=before_campaign if "before_campaign" in locals() else None,
                         before_receipts=before_receipts if "before_receipts" in locals() else 0,
                         typed_action=bool(report.get("hard_pending")),
+                        reason=repr(exc)[:300],
                     )
-                except RuntimeError:
-                    raise
+                except Exception as outcome_exc:  # noqa: BLE001 — classifier bugs never mask the cycle error
+                    print(f"PASS_OUTCOME_WARN {outcome_exc!r}", flush=True)
+                    pass_outcome = "unclassified"
+                print(f"PASS_OUTCOME {pass_outcome}", flush=True)
+                if pass_outcome == _STALL_FINGERPRINT:
+                    return _STALL_EXIT_CODE
                 # Legacy string heal for bank/soft identity / document / residual.
                 heal_kind = _self_heal_cycle_error(
                     root=root,

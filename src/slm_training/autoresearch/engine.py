@@ -8,7 +8,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Mapping
+from typing import TYPE_CHECKING, Mapping
 
 from slm_training.autoresearch.hillclimb import data_generation_sha256
 from slm_training.autoresearch.rl_gate import assert_rl_ready
@@ -38,6 +38,9 @@ from slm_training.levers import (
     KILL_GRACE_SECONDS,
     MAX_RUN_SECONDS,
 )
+
+if TYPE_CHECKING:
+    from slm_training.data.store import DataStore
 
 
 RESEARCH_SOURCE_KINDS = {
@@ -112,11 +115,69 @@ _TWOTOWER_RUNTIME_FLAG_FIELDS = (
 )
 
 
+_SCREENING_SUITE_FAMILY_PREFIX = "e938_role_safe_all_targets_"
+
+
+def _smoke_records_path(root: Path) -> Path:
+    return root / "suites" / "smoke" / "records.jsonl"
+
+
+def _smoke_record_count(root: Path) -> int | None:
+    path = _smoke_records_path(root)
+    if not path.is_file():
+        return None
+    try:
+        return sum(
+            1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+        )
+    except OSError:
+        return None
+
+
+def largest_family_smoke_suite(
+    store: DataStore, *, family_prefix: str = _SCREENING_SUITE_FAMILY_PREFIX
+) -> str | None:
+    """Largest published smoke suite (by record count) of one eval family.
+
+    Discovery replaces the hard-coded candidate list so a freshly published,
+    bigger suite (``..._smoke96_v1``) is visible to the screening-n resolver
+    the moment it lands. Ties break toward non-frozen snapshots (frozen ones
+    are immutable and can never grow), then toward the lexically latest id.
+    """
+    from slm_training.autoresearch.screening_sample_size import FROZEN_EVAL_SNAPSHOTS
+
+    best: tuple[int, int, str] | None = None
+    seen: set[str] = set()
+    for base in (store.local_root / "eval", store.published_root / "eval"):
+        if not base.is_dir():
+            continue
+        for child in sorted(base.iterdir()):
+            name = child.name
+            if not child.is_dir() or not name.startswith(family_prefix) or name in seen:
+                continue
+            count = _smoke_record_count(child)
+            if count is None or count <= 0:
+                continue
+            seen.add(name)
+            key = (count, 0 if name in FROZEN_EVAL_SNAPSHOTS else 1, name)
+            if best is None or key > best:
+                best = key
+    return best[2] if best else None
+
+
 def default_eval_version() -> str:
-    """Return a published eval snapshot that has a smoke suite on disk."""
+    """Return the published eval snapshot whose smoke suite screening should use.
+
+    Prefers the largest published smoke suite of the role-safe family (see
+    :func:`largest_family_smoke_suite`); falls back to the legacy candidate
+    list and then to any snapshot with a smoke suite on disk.
+    """
     from slm_training.data.store import DataStore
 
     store = DataStore()
+    family = largest_family_smoke_suite(store)
+    if family is not None:
+        return family
     for name in _DEFAULT_EVAL_VERSION_CANDIDATES:
         root = store.resolve_path("eval", name)
         if (root / "suites" / "smoke" / "records.jsonl").is_file():

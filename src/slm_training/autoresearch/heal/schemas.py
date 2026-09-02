@@ -179,6 +179,7 @@ HealOutcome = Literal[
     # A repair ran but its measured postcondition (e.g. record count grew)
     # did not hold — a heal_postcondition_failed receipt, never a heal.
     "postcondition_failed",
+    "unhandled",  # no playbook matched / declined: attempted, escalated, never vacuous
 ]
 
 
