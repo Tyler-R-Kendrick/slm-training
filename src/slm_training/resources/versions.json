@@ -11757,6 +11757,11 @@
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
         {
+          "version": "v3",
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop climb-b continuous-loop-20260902-climb-b-cad96bc5-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
           "date": "2026-09-02",
           "note": "no-bump: S8 appends the two-tower diffusion / automaton-constrained decoding transfer audit (2026-09-02) section to research-lineage.md; SLM-228 spectral disposition behavior unchanged.",
           "version": "v3"
