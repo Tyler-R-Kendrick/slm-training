@@ -5038,6 +5038,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Screening steps fitter uses a measured cold-start steps/s prior with provenance; the loop's first complete control run seeds a baseline_seed climb champion (warm start only, never confirmed or promoted); the champion epoch cap follows the train manifest record count.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
           "version": "v271"
         },
@@ -6935,7 +6940,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v271"
+      "version": "v272"
     },
     "harness.autoresearch.formal": {
       "history": [

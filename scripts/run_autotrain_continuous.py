@@ -38,14 +38,18 @@ from typing import Any, NamedTuple
 from slm_training.autoresearch.engine import default_eval_version
 from slm_training.autoresearch.hillclimb import (
     CHAMPION_EPOCHS_EXHAUSTED,
+    CLIMB_CHAMPION_ADVANCE_STATUSES,
     DEFAULT_MAX_CUMULATIVE_EPOCHS,
+    ClimbChampionSidecar,
     assert_champion_eval_disjoint,
     assert_warm_start_launch,
+    champion_cumulative_epochs,
     champion_epoch_park_reason,
     climb_champion_checkpoint_path,
     load_climb_champion,
     maybe_advance_climb_champion,
     seed_climb_champion,
+    train_manifest_record_count,
 )
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
@@ -510,8 +514,162 @@ def _self_heal_rebuild_screening_eval(
     return "rebuild_screening_eval"
 
 
-# Conservative CPU prior until a train_summary exists (c527 ~6.5 steps/s).
-_COLD_START_STEPS_PER_SEC = 5.0
+# Cold-start steps/s prior until a train_summary exists. Measured 2026-09-02
+# on the 4-CPU (no GPU) autotrain box with the canonical trainer
+# (``python -m scripts.train_model``) on ``wf_smoke_v2`` (101 records) at the
+# exact screening launch shape from ``autoresearch/engine.py`` (scratch
+# context, batch 2 / 3, lr 3e-4, seed 0, ``--no-full-state-checkpoint``) and
+# at the E53 recipe architecture (d_model 192, 6 heads, 3+6 layers, scratch
+# context: the frozen SmolLM2 ``hf`` tower is not installable here), while
+# sibling agents shared the CPUs. 12 complete 200-step runs spanned
+# 2.906-19.633 steps/s (median 16.091; the spread is CPU contention, not
+# recipe variance). The prior is the slowest run rounded down to 0.1 so a
+# cold fit never overshoots the train floor under contention. Telemetry from
+# ``*/runs/*/train_summary.json`` replaces it after the first arm. Provenance:
+# ``docs/design/p8-screening-cold-start-steps-prior-20260902.md`` (+ ``.json``).
+_COLD_START_STEPS_PER_SEC = 2.9
+_COLD_START_STEPS_PER_SEC_EVIDENCE: dict[str, Any] = {'doc': 'docs/design/p8-screening-cold-start-steps-prior-20260902.md',
+ 'e53_scratch_arch': '--d-model 192 --n-heads 6 --context-layers 3 '
+                     '--denoiser-layers 6 --mask-pattern mixed (E53 recipe shape; '
+                     'hf context tower not installable here, so scratch context)',
+ 'expected_cold_steps_at_100s_floor': 261,
+ 'expected_measured_steps_at_100s_floor': 400,
+ 'host': '4 CPU, no GPU; sibling agents shared the CPUs (1-min load average at '
+         'launch recorded per run)',
+ 'launch_shape': '--context-backend scratch --device cpu --lr 3e-4 --seed 0 '
+                 '--train-version wf_smoke_v2 --local-files-only '
+                 '--no-sync-checkpoints --no-full-state-checkpoint (engine.py '
+                 'screening train command)',
+ 'max_steps_per_sec': 19.633,
+ 'measured_at': '2026-09-02',
+ 'median_steps_per_sec': 16.091,
+ 'min_steps_per_sec': 2.906,
+ 'prior_steps_per_sec': 2.9,
+ 'record_count': 101,
+ 'rule': 'prior = min(measured steps/s) rounded down to 0.1; train telemetry '
+         'replaces it after the first arm',
+ 'runs': [{'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 68.82,
+           'load_avg_1m_at_launch': 4.17,
+           'process_wall_seconds': 79.02,
+           'run_id': 'initial_b2_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 2.906,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.47,
+           'load_avg_1m_at_launch': 10.83,
+           'process_wall_seconds': 16.06,
+           'run_id': 'initial_b2_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 19.107,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 11.15,
+           'load_avg_1m_at_launch': 8.25,
+           'process_wall_seconds': 16.75,
+           'run_id': 'initial_b2_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 17.939,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 3,
+           'elapsed_wall_seconds': 12.68,
+           'load_avg_1m_at_launch': 7.18,
+           'process_wall_seconds': 18.38,
+           'run_id': 'initial_b3_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 15.767,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 3,
+           'elapsed_wall_seconds': 12.82,
+           'load_avg_1m_at_launch': 5.87,
+           'process_wall_seconds': 18.55,
+           'run_id': 'initial_b3_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 15.606,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 3,
+           'elapsed_wall_seconds': 12.18,
+           'load_avg_1m_at_launch': 5.09,
+           'process_wall_seconds': 17.93,
+           'run_id': 'initial_b3_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 16.416,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'e53_scratch_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 19.92,
+           'load_avg_1m_at_launch': 3.24,
+           'process_wall_seconds': 25.33,
+           'run_id': 'e53_b2_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 10.04,
+           'stopped_on': 'steps',
+           'trainable_params': 5125058},
+          {'arch': 'e53_scratch_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 19.93,
+           'load_avg_1m_at_launch': 3.42,
+           'process_wall_seconds': 25.95,
+           'run_id': 'e53_b2_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 10.037,
+           'stopped_on': 'steps',
+           'trainable_params': 5125058},
+          {'arch': 'e53_scratch_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 18.52,
+           'load_avg_1m_at_launch': 3.41,
+           'process_wall_seconds': 24.55,
+           'run_id': 'e53_b2_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 10.798,
+           'stopped_on': 'steps',
+           'trainable_params': 5125058},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.19,
+           'load_avg_1m_at_launch': 2.32,
+           'process_wall_seconds': 15.81,
+           'run_id': 'final_b2_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 19.633,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.64,
+           'load_avg_1m_at_launch': 2.33,
+           'process_wall_seconds': 16.18,
+           'run_id': 'final_b2_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 18.801,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.87,
+           'load_avg_1m_at_launch': 2.49,
+           'process_wall_seconds': 16.64,
+           'run_id': 'final_b2_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 18.398,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962}],
+ 'train_dir': 'src/slm_training/resources/data/train/wf_smoke_v2',
+ 'trainer': 'python -m scripts.train_model'}
 _STEPS_PER_SEC_SAFETY = 0.9
 _SCREENING_THRASH_STEPS_MAX_DEFAULT = 400
 
@@ -619,6 +777,14 @@ def _fit_screening_steps(
     measured_steps_per_sec: float | None,
     steps_max: int,
 ) -> tuple[int, dict[str, Any]]:
+    """Fit train steps to the (grown) train floor handed over by the decode fit.
+
+    ``steps = clamp(floor_seconds * sps * safety, 1, steps_max)`` where ``sps``
+    is measured telemetry when available and the measured cold-start prior
+    otherwise. ``steps_max`` (policy ``screening_thrash_steps_max``, 400) is
+    the only cap: a larger floor buys more steps, never a larger model.
+    """
+
     cold = measured_steps_per_sec is None or measured_steps_per_sec <= 0.0
     sps = _COLD_START_STEPS_PER_SEC if cold else float(measured_steps_per_sec)
     raw = float(floor_seconds) * float(sps) * float(_STEPS_PER_SEC_SAFETY)
@@ -627,6 +793,9 @@ def _fit_screening_steps(
         "floor_seconds": float(floor_seconds),
         "measured_steps_per_sec": None if cold else float(measured_steps_per_sec),
         "steps_per_sec_used": float(sps),
+        "steps_per_sec_source": "cold_start_prior" if cold else "train_telemetry",
+        "cold_start_prior_steps_per_sec": float(_COLD_START_STEPS_PER_SEC),
+        "cold_start_prior_evidence": dict(_COLD_START_STEPS_PER_SEC_EVIDENCE),
         "safety": float(_STEPS_PER_SEC_SAFETY),
         "raw_steps": float(raw),
         "fitted_steps": int(fitted),
@@ -8060,7 +8229,132 @@ def _warm_start_policy(policy: Any) -> dict[str, Any]:
     block = dict(raw) if isinstance(raw, Mapping) else {}
     block.setdefault("enabled", True)
     block.setdefault("max_cumulative_epochs", DEFAULT_MAX_CUMULATIVE_EPOCHS)
+    # With no confirmed champion, the loop's first complete control checkpoint
+    # seeds a ``baseline_seed`` champion so both arms warm start from the same
+    # weights (directive §2.6). It never counts as confirmed / promoted.
+    block.setdefault("seed_from_baseline_control", True)
     return block
+
+
+_CONTROL_RUN_SUFFIXES = ("-control", "_control")
+
+
+def _loop_campaign_dirs(root: Path, loop_id: str) -> list[Path]:
+    """This loop's campaign dirs, newest cycle first (``_campaign_id`` layout)."""
+
+    digest = hashlib.sha256(loop_id.encode("utf-8")).hexdigest()[:8]
+    found: list[tuple[int, str, Path]] = []
+    try:
+        candidates = list(root.glob(f"continuous-loop-*-{digest}-c*"))
+    except OSError:
+        return []
+    for path in candidates:
+        if not path.is_dir():
+            continue
+        match = re.search(r"-c(\d+)$", path.name)
+        if match is None:
+            continue
+        found.append((int(match.group(1)), path.name, path))
+    found.sort(reverse=True)
+    return [item[2] for item in found]
+
+
+def _first_complete_control_run(
+    root: Path, loop_id: str
+) -> tuple[Path, Path, dict[str, Any]] | None:
+    """First complete control run found scanning the newest cycle backwards.
+
+    In a fresh loop this is the loop's first complete control; in a long
+    history it is the latest one, so the seed matches the current recipe and
+    corpus. Returns ``(campaign_dir, run_dir, train_summary)`` or None. A run
+    counts as complete only when ``train_summary.json`` reports
+    ``stopped_on == "steps"`` with ``steps > 0`` and ``checkpoints/last.pt``
+    exists; wall or token-budget truncations are never a warm-start seed.
+    """
+
+    for camp_dir in _loop_campaign_dirs(root, loop_id):
+        runs_dir = camp_dir / "runs"
+        if not runs_dir.is_dir():
+            continue
+        try:
+            run_dirs = sorted(p for p in runs_dir.iterdir() if p.is_dir())
+        except OSError:
+            continue
+        for run_dir in run_dirs:
+            if not run_dir.name.endswith(_CONTROL_RUN_SUFFIXES):
+                continue
+            summary_path = run_dir / "train_summary.json"
+            ckpt = run_dir / "checkpoints" / "last.pt"
+            if not summary_path.is_file() or not ckpt.is_file():
+                continue
+            try:
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(summary, dict):
+                continue
+            try:
+                steps = int(summary.get("steps") or 0)
+            except (TypeError, ValueError):
+                steps = 0
+            if steps <= 0 or str(summary.get("stopped_on") or "") != "steps":
+                continue
+            return camp_dir, run_dir, summary
+    return None
+
+
+def _seed_baseline_champion(root: Path, loop_id: str) -> ClimbChampionSidecar | None:
+    """Seed a ``baseline_seed`` champion from the first complete control run."""
+
+    loop_dir = _loop_champion_dir(root, loop_id)
+    found = _first_complete_control_run(root, loop_id)
+    if found is None:
+        return None
+    camp_dir, run_dir, summary = found
+    try:
+        steps = int(summary.get("steps") or 0)
+    except (TypeError, ValueError):
+        steps = 0
+    train_dir = str(summary.get("train_dir") or "")
+    record_count = train_manifest_record_count(train_dir) if train_dir else None
+    if record_count is None:
+        try:
+            record_count = int(summary.get("record_count") or 0) or None
+        except (TypeError, ValueError):
+            record_count = None
+    params = summary.get("trainable_params")
+    if params is None:
+        params = (summary.get("track") or {}).get("trainable_params")
+    try:
+        trainable = int(params) if params is not None else None
+    except (TypeError, ValueError):
+        trainable = None
+    sidecar = seed_climb_champion(
+        loop_dir,
+        baseline_checkpoint=run_dir / "checkpoints" / "last.pt",
+        source_campaign=camp_dir.name,
+        extra_steps=steps,
+        train_data_manifest_sha=str(
+            summary.get("train_data_manifest_sha")
+            or summary.get("data_manifest_sha")
+            or ""
+        ),
+        record_count=int(record_count or 1),
+        # Baseline knobs stay empty: the control keeps the baseline recipe and
+        # every treatment is baseline + one residual (directive §2.6).
+        knobs={},
+        trainable_params=trainable,
+        train_dir=train_dir or None,
+    )
+    if sidecar is not None:
+        print(
+            "CLIMB_CHAMPION_SEEDED "
+            f"status={sidecar.status} campaign={camp_dir.name} run={run_dir.name} "
+            f"steps={steps} record_count={record_count} "
+            f"checkpoint={climb_champion_checkpoint_path(loop_dir)}",
+            flush=True,
+        )
+    return sidecar
 
 
 def _ensure_climb_champion(
@@ -8069,19 +8363,19 @@ def _ensure_climb_champion(
     loop_id: str,
     queue_entries: Sequence[Mapping[str, Any]] | None,
     eval_data_manifest_sha: str | None,
+    policy: Any | None = None,
 ) -> str | None:
-    """Seed champion from confirmed artifact; park if epochs exhausted.
+    """Seed champion from a confirmed artifact, else the first complete control.
 
+    Confirmed / climb_accepted / promoted queue rows seed a ``confirmed``
+    champion. When none exists, the loop's first complete control run seeds a
+    ``baseline_seed`` champion (warm start only; never confirmed or promoted).
     Returns a park reason or None to continue.
     """
     loop_dir = _loop_champion_dir(root, loop_id)
     artifacts: list[dict[str, Any]] = []
     for row in queue_entries or ():
-        if str(row.get("status") or "") not in {
-            "confirmed",
-            "climb_accepted",
-            "promoted",
-        }:
+        if str(row.get("status") or "") not in CLIMB_CHAMPION_ADVANCE_STATUSES:
             continue
         item = dict(row)
         camp = str(row.get("confirm_campaign_id") or row.get("campaign_id") or "")
@@ -8092,6 +8386,12 @@ def _ensure_climb_champion(
         artifacts.append(item)
     seed_climb_champion(loop_dir, confirmed_artifacts=artifacts)
     sidecar = load_climb_champion(loop_dir)
+    if sidecar is None:
+        warm = _warm_start_policy(policy) if policy is not None else {}
+        if bool(warm.get("enabled", True)) and bool(
+            warm.get("seed_from_baseline_control", True)
+        ):
+            sidecar = _seed_baseline_champion(root, loop_id)
     if (
         sidecar is not None
         and sidecar.train_data_manifest_sha
@@ -8105,18 +8405,37 @@ def _ensure_climb_champion(
 
 
 def _park_champion_epochs_if_needed(policy: Any, loop_dir: Path) -> str | None:
+    """Park when the champion exceeds ``max_cumulative_epochs`` on the corpus.
+
+    Epochs are recomputed against the current train corpus record count from
+    the train manifest (``<train_dir>/manifest.json``) recorded on the sidecar;
+    the sidecar's accumulated value is the fallback when unresolvable.
+    """
+
     warm = _warm_start_policy(policy)
     sidecar = load_climb_champion(loop_dir)
+    record_count: int | None = None
+    if sidecar is not None:
+        record_count = train_manifest_record_count(sidecar.train_dir)
+        if record_count is None:
+            record_count = sidecar.record_count
     reason = champion_epoch_park_reason(
         sidecar,
         max_cumulative_epochs=float(
             warm.get("max_cumulative_epochs") or DEFAULT_MAX_CUMULATIVE_EPOCHS
         ),
+        record_count=record_count,
     )
     if reason:
+        epochs = (
+            champion_cumulative_epochs(sidecar, record_count=record_count)
+            if sidecar is not None
+            else None
+        )
         print(
             f"REGIME_PARKED reason={CHAMPION_EPOCHS_EXHAUSTED} "
-            f"epochs={sidecar.cumulative_epochs if sidecar else None}",
+            f"epochs={epochs} record_count={record_count} "
+            f"cumulative_steps={sidecar.cumulative_steps if sidecar else None}",
             flush=True,
         )
         return _REGIME_PARKED_STATUS
@@ -15491,6 +15810,7 @@ def run_cycle(
             loop_id=loop_id,
             queue_entries=queue_entries,
             eval_data_manifest_sha=None,
+            policy=policy,
         )
         parked_epochs = _park_champion_epochs_if_needed(policy, loop_dir)
         if parked_epochs:
