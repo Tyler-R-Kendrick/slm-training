@@ -5076,6 +5076,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the P8/P9 results JSON landed (deterministic rebuild).",
+          "version": "v279"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of card P8 (measured steps/s prior; baseline_seed champion warm start) which prepended v272 independently; reconciles the component to v279 with all parent histories intact below.",
           "version": "v279"
         },
