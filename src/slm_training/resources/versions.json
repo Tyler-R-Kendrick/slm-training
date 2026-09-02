@@ -11774,6 +11774,11 @@
         {
           "version": "v3",
           "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-09-02",
           "note": "no-bump: record scheduled loop climb-c continuous-loop-20260902-climb-c-7a4ba2f4-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
         },
         {
