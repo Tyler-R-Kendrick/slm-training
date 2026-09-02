@@ -327,6 +327,11 @@
     "config.levers": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "lever_catalog category: *_loss_weight levers of the compiler/solver family classify as training (weights-moving), not decode; no lever added, removed or defaulted.",
+          "version": "v32"
+        },
+        {
           "date": "2026-08-09",
           "note": "darkfactory unit M: solver_energy_decode_weight and legal_edit_hazard_decode_weight registered in TRAINED_DECODE_REQUIREMENTS and the compiler-path decode lever group",
           "version": "v31"
@@ -502,7 +507,7 @@
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
-      "version": "v31"
+      "version": "v32"
     },
     "data.abstract_cot_warmup": {
       "history": [
