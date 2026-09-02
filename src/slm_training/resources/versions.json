@@ -5116,6 +5116,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after docs/design/eqm-oracle-field-20260902.json landed (S7 exact perfect-training EqM field study, claim class analysis, not a campaign result; only the scanned-file count moves). Deterministic rebuild; campaign behavior unchanged.",
+          "version": "v280"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the S2 n-gram provenance results JSON landed (deterministic rebuild).",
           "version": "v280"
         },

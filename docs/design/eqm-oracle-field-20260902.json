@@ -1,0 +1,1296 @@
+{
+  "schema": "eqm_oracle_field_analysis/v1",
+  "claim_class": "analysis",
+  "honesty": "external_paper_rederivation_not_repo_model_claim",
+  "seed": 20260902,
+  "paper": {
+    "arxiv": "2510.02300",
+    "schedule": "trunc",
+    "trunc_a": 0.8,
+    "lambda": 4.0,
+    "eta": 0.0017,
+    "steps": 250,
+    "g_min_latent": 10.0
+  },
+  "field_definition": "f*(xh) = lam * E[c(g)/(1-g) * (xh - x_i) | x_g = xh], posterior over (i,g) \u221d exp(-|xh - g x_i|^2/(2(1-g)^2) - d log(1-g)), g ~ U(0,1-u_min) on a log-spaced u=1-g trapezoid grid",
+  "midpoint": [
+    {
+      "d": 2,
+      "norm_x1": 1.41421,
+      "schedule": "trunc",
+      "f_at_midpoint_norm": 3.75376e-16,
+      "rms_f_along_axis": 4.21112,
+      "f0_over_rms": 8.91393e-17,
+      "max_off_axis_component_over_rms": 4.21941e-16,
+      "s_profile": {
+        "-1.500": -4.35093,
+        "-1.450": -4.0808,
+        "-1.400": -3.80476,
+        "-1.350": -3.52169,
+        "-1.300": -3.22932,
+        "-1.250": -2.92237,
+        "-1.200": -2.58847,
+        "-1.150": -2.20064,
+        "-1.100": -1.7064,
+        "-1.050": -1.01642,
+        "-1.000": -1.75785e-06,
+        "-0.950": 0.951876,
+        "-0.900": 1.8242,
+        "-0.850": 2.58142,
+        "-0.800": 3.19342,
+        "-0.750": 3.64375,
+        "-0.700": 3.93378,
+        "-0.650": 4.08065,
+        "-0.600": 4.11014,
+        "-0.550": 4.04837,
+        "-0.500": 3.91582,
+        "-0.450": 3.72533,
+        "-0.400": 3.48319,
+        "-0.350": 3.19176,
+        "-0.300": 2.85191,
+        "-0.250": 2.46499,
+        "-0.200": 2.03387,
+        "-0.150": 1.56356,
+        "-0.100": 1.06135,
+        "-0.050": 0.536532,
+        "0.000": 2.6543e-16,
+        "0.050": -0.536532,
+        "0.100": -1.06135,
+        "0.150": -1.56356,
+        "0.200": -2.03387,
+        "0.250": -2.46499,
+        "0.300": -2.85191,
+        "0.350": -3.19176,
+        "0.400": -3.48319,
+        "0.450": -3.72533,
+        "0.500": -3.91582,
+        "0.550": -4.04837,
+        "0.600": -4.11014,
+        "0.650": -4.08065,
+        "0.700": -3.93378,
+        "0.750": -3.64375,
+        "0.800": -3.19342,
+        "0.850": -2.58142,
+        "0.900": -1.8242,
+        "0.950": -0.951876,
+        "1.000": 1.75785e-06,
+        "1.050": 1.01642,
+        "1.100": 1.7064,
+        "1.150": 2.20064,
+        "1.200": 2.58847,
+        "1.250": 2.92237,
+        "1.300": 3.22932,
+        "1.350": 3.52169,
+        "1.400": 3.80476,
+        "1.450": 4.0808,
+        "1.500": 4.35093
+      },
+      "ds_dalpha_at_0plus": {
+        "0.0001": -10.7703,
+        "0.001": -10.7703,
+        "0.01": -10.7687
+      },
+      "d2E_along_axis": -10.7703,
+      "d2E_orthogonal": [
+        6.25676,
+        6.25676,
+        6.25676
+      ],
+      "classification": "saddle (max along data axis, min orthogonally)",
+      "kappa_eff_minus_1_over_Eg": 1.72139,
+      "posterior_gamma_mean_at_midpoint": 0.31718,
+      "kappa_eff": 2.72139
+    },
+    {
+      "d": 64,
+      "norm_x1": 8.0,
+      "schedule": "trunc",
+      "f_at_midpoint_norm": 1.18013e-15,
+      "rms_f_along_axis": 37.7536,
+      "f0_over_rms": 3.12587e-17,
+      "max_off_axis_component_over_rms": 4.42453e-16,
+      "s_profile": {
+        "-1.500": -2.49342,
+        "-1.450": -2.4448,
+        "-1.400": -2.4369,
+        "-1.350": -2.43641,
+        "-1.300": -2.4364,
+        "-1.250": -2.4364,
+        "-1.200": -2.4364,
+        "-1.150": -2.43436,
+        "-1.100": -1.99598,
+        "-1.050": -1.0,
+        "-1.000": 0.0,
+        "-0.950": 1.0,
+        "-0.900": 2.0,
+        "-0.850": 3.0,
+        "-0.800": 4.0,
+        "-0.750": 4.99997,
+        "-0.700": 5.96485,
+        "-0.650": 6.40586,
+        "-0.600": 6.42365,
+        "-0.550": 6.42366,
+        "-0.500": 6.42366,
+        "-0.450": 6.42366,
+        "-0.400": 6.42366,
+        "-0.350": 6.42366,
+        "-0.300": 6.42366,
+        "-0.250": 6.42366,
+        "-0.200": 6.42366,
+        "-0.150": 6.42366,
+        "-0.100": 6.42362,
+        "-0.050": 6.40024,
+        "0.000": -1.03505e-17,
+        "0.050": -6.40024,
+        "0.100": -6.42362,
+        "0.150": -6.42366,
+        "0.200": -6.42366,
+        "0.250": -6.42366,
+        "0.300": -6.42366,
+        "0.350": -6.42366,
+        "0.400": -6.42366,
+        "0.450": -6.42366,
+        "0.500": -6.42366,
+        "0.550": -6.42366,
+        "0.600": -6.42365,
+        "0.650": -6.40586,
+        "0.700": -5.96485,
+        "0.750": -4.99997,
+        "0.800": -4.0,
+        "0.850": -3.0,
+        "0.900": -2.0,
+        "0.950": -1.0,
+        "1.000": 0.0,
+        "1.050": 1.0,
+        "1.100": 1.99598,
+        "1.150": 2.43436,
+        "1.200": 2.4364,
+        "1.250": 2.4364,
+        "1.300": 2.4364,
+        "1.350": 2.43641,
+        "1.400": 2.4369,
+        "1.450": 2.4448,
+        "1.500": 2.49342
+      },
+      "ds_dalpha_at_0plus": {
+        "0.0001": -404.685,
+        "0.001": -404.156,
+        "0.01": -358.483
+      },
+      "d2E_along_axis": -404.156,
+      "d2E_orthogonal": [
+        6.42366,
+        6.42366,
+        6.42366
+      ],
+      "classification": "saddle (max along data axis, min orthogonally)",
+      "kappa_eff_minus_1_over_Eg": 62.9991,
+      "posterior_gamma_mean_at_midpoint": 0.374538,
+      "kappa_eff": 63.9991
+    },
+    {
+      "d": 4096,
+      "norm_x1": 64.0,
+      "schedule": "trunc",
+      "f_at_midpoint_norm": 9.82292e-15,
+      "rms_f_along_axis": 304.251,
+      "f0_over_rms": 3.22855e-17,
+      "max_off_axis_component_over_rms": 3.78881e-16,
+      "s_profile": {
+        "-1.500": -2.47158,
+        "-1.450": -2.47158,
+        "-1.400": -2.47158,
+        "-1.350": -2.47158,
+        "-1.300": -2.47158,
+        "-1.250": -2.47158,
+        "-1.200": -2.47158,
+        "-1.150": -2.47158,
+        "-1.100": -2.0,
+        "-1.050": -1.0,
+        "-1.000": 0.0,
+        "-0.950": 1.0,
+        "-0.900": 2.0,
+        "-0.850": 3.0,
+        "-0.800": 4.0,
+        "-0.750": 5.0,
+        "-0.700": 6.0,
+        "-0.650": 6.47138,
+        "-0.600": 6.47138,
+        "-0.550": 6.47138,
+        "-0.500": 6.47138,
+        "-0.450": 6.47138,
+        "-0.400": 6.47138,
+        "-0.350": 6.47138,
+        "-0.300": 6.47138,
+        "-0.250": 6.47138,
+        "-0.200": 6.47138,
+        "-0.150": 6.47138,
+        "-0.100": 6.47138,
+        "-0.050": 6.47138,
+        "0.000": -1.04757e-18,
+        "0.050": -6.47138,
+        "0.100": -6.47138,
+        "0.150": -6.47138,
+        "0.200": -6.47138,
+        "0.250": -6.47138,
+        "0.300": -6.47138,
+        "0.350": -6.47138,
+        "0.400": -6.47138,
+        "0.450": -6.47138,
+        "0.500": -6.47138,
+        "0.550": -6.47138,
+        "0.600": -6.47138,
+        "0.650": -6.47138,
+        "0.700": -6.0,
+        "0.750": -5.0,
+        "0.800": -4.0,
+        "0.850": -3.0,
+        "0.900": -2.0,
+        "0.950": -1.0,
+        "1.000": 0.0,
+        "1.050": 1.0,
+        "1.100": 2.0,
+        "1.150": 2.47158,
+        "1.200": 2.47158,
+        "1.250": 2.47158,
+        "1.300": 2.47158,
+        "1.350": 2.47158,
+        "1.400": 2.47158,
+        "1.450": 2.47158,
+        "1.500": 2.47158
+      },
+      "ds_dalpha_at_0plus": {
+        "0.0001": -25112.1,
+        "0.001": -6467.79,
+        "0.01": -647.138
+      },
+      "d2E_along_axis": -6467.79,
+      "d2E_orthogonal": [
+        6.47138,
+        6.47138,
+        6.47138
+      ],
+      "classification": "saddle (max along data axis, min orthogonally)",
+      "kappa_eff_minus_1_over_Eg": 3880.49,
+      "posterior_gamma_mean_at_midpoint": 0.381852,
+      "kappa_eff": 3881.49
+    }
+  ],
+  "midpoint_linear": [
+    {
+      "d": 2,
+      "norm_x1": 1.41421,
+      "schedule": "linear",
+      "f_at_midpoint_norm": 6.70991e-17,
+      "rms_f_along_axis": 2.00636,
+      "f0_over_rms": 3.34432e-17,
+      "max_off_axis_component_over_rms": 4.94933e-16,
+      "s_profile": {
+        "-1.500": -3.33333,
+        "-1.450": -3.04138,
+        "-1.400": -2.74286,
+        "-1.350": -2.43704,
+        "-1.300": -2.12308,
+        "-1.250": -1.8,
+        "-1.200": -1.46667,
+        "-1.150": -1.12174,
+        "-1.100": -0.763636,
+        "-1.050": -0.390476,
+        "-1.000": -1.51572e-06,
+        "-0.950": 0.179874,
+        "-0.900": 0.352693,
+        "-0.850": 0.516862,
+        "-0.800": 0.670539,
+        "-0.750": 0.811627,
+        "-0.700": 0.937776,
+        "-0.650": 1.0464,
+        "-0.600": 1.13474,
+        "-0.550": 1.19991,
+        "-0.500": 1.23904,
+        "-0.450": 1.24945,
+        "-0.400": 1.22883,
+        "-0.350": 1.17554,
+        "-0.300": 1.08885,
+        "-0.250": 0.969266,
+        "-0.200": 0.818712,
+        "-0.150": 0.640719,
+        "-0.100": 0.4404,
+        "-0.050": 0.224292,
+        "0.000": 4.73396e-17,
+        "0.050": -0.224292,
+        "0.100": -0.4404,
+        "0.150": -0.640719,
+        "0.200": -0.818712,
+        "0.250": -0.969266,
+        "0.300": -1.08885,
+        "0.350": -1.17554,
+        "0.400": -1.22883,
+        "0.450": -1.24945,
+        "0.500": -1.23904,
+        "0.550": -1.19991,
+        "0.600": -1.13474,
+        "0.650": -1.0464,
+        "0.700": -0.937776,
+        "0.750": -0.811627,
+        "0.800": -0.670539,
+        "0.850": -0.516862,
+        "0.900": -0.352693,
+        "0.950": -0.179874,
+        "1.000": 1.51572e-06,
+        "1.050": 0.390476,
+        "1.100": 0.763636,
+        "1.150": 1.12174,
+        "1.200": 1.46667,
+        "1.250": 1.8,
+        "1.300": 2.12308,
+        "1.350": 2.43704,
+        "1.400": 2.74286,
+        "1.450": 3.04138,
+        "1.500": 3.33333
+      },
+      "ds_dalpha_at_0plus": {
+        "0.0001": -4.51352,
+        "0.001": -4.51351,
+        "0.01": -4.51241
+      },
+      "d2E_along_axis": -4.51351,
+      "d2E_orthogonal": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "classification": "saddle (max along data axis, min orthogonally)",
+      "kappa_eff_minus_1_over_Eg": 1.12838,
+      "posterior_gamma_mean_at_midpoint": 0.31718,
+      "kappa_eff": 2.12838
+    },
+    {
+      "d": 64,
+      "norm_x1": 8.0,
+      "schedule": "linear",
+      "f_at_midpoint_norm": 8.78596e-16,
+      "rms_f_along_axis": 15.4836,
+      "f0_over_rms": 5.67438e-17,
+      "max_off_axis_component_over_rms": 6.62531e-16,
+      "s_profile": {
+        "-1.500": -2.03521,
+        "-1.450": -1.80537,
+        "-1.400": -1.60033,
+        "-1.350": -1.40001,
+        "-1.300": -1.2,
+        "-1.250": -1.0,
+        "-1.200": -0.8,
+        "-1.150": -0.6,
+        "-1.100": -0.4,
+        "-1.050": -0.2,
+        "-1.000": 0.0,
+        "-0.950": 0.2,
+        "-0.900": 0.4,
+        "-0.850": 0.6,
+        "-0.800": 0.8,
+        "-0.750": 1.0,
+        "-0.700": 1.2,
+        "-0.650": 1.4,
+        "-0.600": 1.6,
+        "-0.550": 1.8,
+        "-0.500": 2.0,
+        "-0.450": 2.2,
+        "-0.400": 2.4,
+        "-0.350": 2.6,
+        "-0.300": 2.8,
+        "-0.250": 3.0,
+        "-0.200": 3.2,
+        "-0.150": 3.4,
+        "-0.100": 3.59997,
+        "-0.050": 3.78541,
+        "0.000": 1.90394e-17,
+        "0.050": -3.78541,
+        "0.100": -3.59997,
+        "0.150": -3.4,
+        "0.200": -3.2,
+        "0.250": -3.0,
+        "0.300": -2.8,
+        "0.350": -2.6,
+        "0.400": -2.4,
+        "0.450": -2.2,
+        "0.500": -2.0,
+        "0.550": -1.8,
+        "0.600": -1.6,
+        "0.650": -1.4,
+        "0.700": -1.2,
+        "0.750": -1.0,
+        "0.800": -0.8,
+        "0.850": -0.6,
+        "0.900": -0.4,
+        "0.950": -0.2,
+        "1.000": 0.0,
+        "1.050": 0.2,
+        "1.100": 0.4,
+        "1.150": 0.6,
+        "1.200": 0.8,
+        "1.250": 1.0,
+        "1.300": 1.2,
+        "1.350": 1.40001,
+        "1.400": 1.60033,
+        "1.450": 1.80537,
+        "1.500": 2.03521
+      },
+      "ds_dalpha_at_0plus": {
+        "0.0001": -247.997,
+        "0.001": -247.667,
+        "0.01": -219.227
+      },
+      "d2E_along_axis": -247.667,
+      "d2E_orthogonal": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "classification": "saddle (max along data axis, min orthogonally)",
+      "kappa_eff_minus_1_over_Eg": 61.9992,
+      "posterior_gamma_mean_at_midpoint": 0.374538,
+      "kappa_eff": 62.9992
+    },
+    {
+      "d": 4096,
+      "norm_x1": 64.0,
+      "schedule": "linear",
+      "f_at_midpoint_norm": 5.59154e-15,
+      "rms_f_along_axis": 123.841,
+      "f0_over_rms": 4.51511e-17,
+      "max_off_axis_component_over_rms": 5.2868e-16,
+      "s_profile": {
+        "-1.500": -2.0,
+        "-1.450": -1.8,
+        "-1.400": -1.6,
+        "-1.350": -1.4,
+        "-1.300": -1.2,
+        "-1.250": -1.0,
+        "-1.200": -0.8,
+        "-1.150": -0.6,
+        "-1.100": -0.4,
+        "-1.050": -0.2,
+        "-1.000": 0.0,
+        "-0.950": 0.2,
+        "-0.900": 0.4,
+        "-0.850": 0.6,
+        "-0.800": 0.8,
+        "-0.750": 1.0,
+        "-0.700": 1.2,
+        "-0.650": 1.4,
+        "-0.600": 1.6,
+        "-0.550": 1.8,
+        "-0.500": 2.0,
+        "-0.450": 2.2,
+        "-0.400": 2.4,
+        "-0.350": 2.6,
+        "-0.300": 2.8,
+        "-0.250": 3.0,
+        "-0.200": 3.2,
+        "-0.150": 3.4,
+        "-0.100": 3.6,
+        "-0.050": 3.8,
+        "0.000": -1.76936e-17,
+        "0.050": -3.8,
+        "0.100": -3.6,
+        "0.150": -3.4,
+        "0.200": -3.2,
+        "0.250": -3.0,
+        "0.300": -2.8,
+        "0.350": -2.6,
+        "0.400": -2.4,
+        "0.450": -2.2,
+        "0.500": -2.0,
+        "0.550": -1.8,
+        "0.600": -1.6,
+        "0.650": -1.4,
+        "0.700": -1.2,
+        "0.750": -1.0,
+        "0.800": -0.8,
+        "0.850": -0.6,
+        "0.900": -0.4,
+        "0.950": -0.2,
+        "1.000": 0.0,
+        "1.050": 0.2,
+        "1.100": 0.4,
+        "1.150": 0.6,
+        "1.200": 0.8,
+        "1.250": 1.0,
+        "1.300": 1.2,
+        "1.350": 1.4,
+        "1.400": 1.6,
+        "1.450": 1.8,
+        "1.500": 2.0
+      },
+      "ds_dalpha_at_0plus": {
+        "0.0001": -15517.9,
+        "0.001": -3993.78,
+        "0.01": -396.0
+      },
+      "d2E_along_axis": -3993.78,
+      "d2E_orthogonal": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "classification": "saddle (max along data axis, min orthogonally)",
+      "kappa_eff_minus_1_over_Eg": 3879.48,
+      "posterior_gamma_mean_at_midpoint": 0.381852,
+      "kappa_eff": 3880.48
+    }
+  ],
+  "gd_montecarlo": [
+    {
+      "d": 2,
+      "norm_x1": 1.41421,
+      "n_traj": 1024,
+      "eta": 0.0017,
+      "steps": 250,
+      "ball_radius": 0.141421,
+      "fnorm_at_init_mean": 5.79044,
+      "fnorm_final_mean": 0.547211,
+      "min_fnorm_over_trajectories": 7.56972e-05,
+      "final_dist_to_data_mean_over_norm": 0.0425693,
+      "final_dist_to_midpoint_min_over_norm": 0.014556,
+      "frac_ever_in_midpoint_ball": 0.00878906,
+      "by_gmin": [
+        {
+          "rho": 0.01,
+          "g_min": 0.0565685,
+          "frac_terminated": 0.50293,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 0.50293,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 204.068
+        },
+        {
+          "rho": 0.04,
+          "g_min": 0.226274,
+          "frac_terminated": 0.705078,
+          "frac_terminated_in_midpoint_ball": 0.000976562,
+          "frac_terminated_near_data": 0.704102,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 182.064
+        },
+        {
+          "rho": 0.1,
+          "g_min": 0.565685,
+          "frac_terminated": 0.813477,
+          "frac_terminated_in_midpoint_ball": 0.00292969,
+          "frac_terminated_near_data": 0.810547,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 164.947
+        },
+        {
+          "rho": 0.3,
+          "g_min": 1.69706,
+          "frac_terminated": 0.916016,
+          "frac_terminated_in_midpoint_ball": 0.00195312,
+          "frac_terminated_near_data": 0.875977,
+          "frac_terminated_elsewhere": 0.0380859,
+          "mean_stop_step": 133.652
+        }
+      ]
+    },
+    {
+      "d": 64,
+      "norm_x1": 8.0,
+      "n_traj": 1024,
+      "eta": 0.0017,
+      "steps": 250,
+      "ball_radius": 0.8,
+      "fnorm_at_init_mean": 35.9701,
+      "fnorm_final_mean": 0.514057,
+      "min_fnorm_over_trajectories": 0.137736,
+      "final_dist_to_data_mean_over_norm": 0.00321286,
+      "final_dist_to_midpoint_min_over_norm": 0.986994,
+      "frac_ever_in_midpoint_ball": 0.0,
+      "by_gmin": [
+        {
+          "rho": 0.01,
+          "g_min": 0.32,
+          "frac_terminated": 0.204102,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 0.204102,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 244.574
+        },
+        {
+          "rho": 0.04,
+          "g_min": 1.28,
+          "frac_terminated": 0.982422,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 0.982422,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 220.743
+        },
+        {
+          "rho": 0.1,
+          "g_min": 3.2,
+          "frac_terminated": 1.0,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 1.0,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 194.846
+        },
+        {
+          "rho": 0.3,
+          "g_min": 9.6,
+          "frac_terminated": 1.0,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 1.0,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 163.094
+        }
+      ]
+    },
+    {
+      "d": 4096,
+      "norm_x1": 64.0,
+      "n_traj": 256,
+      "eta": 0.0017,
+      "steps": 250,
+      "ball_radius": 6.4,
+      "fnorm_at_init_mean": 280.455,
+      "fnorm_final_mean": 3.73539,
+      "min_fnorm_over_trajectories": 3.18524,
+      "final_dist_to_data_mean_over_norm": 0.00291827,
+      "final_dist_to_midpoint_min_over_norm": 0.997591,
+      "frac_ever_in_midpoint_ball": 0.0,
+      "by_gmin": [
+        {
+          "rho": 0.01,
+          "g_min": 2.56,
+          "frac_terminated": 0.0,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 0.0,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": null
+        },
+        {
+          "rho": 0.04,
+          "g_min": 10.24,
+          "frac_terminated": 1.0,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 1.0,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 221.32
+        },
+        {
+          "rho": 0.1,
+          "g_min": 25.6,
+          "frac_terminated": 1.0,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 1.0,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 194.777
+        },
+        {
+          "rho": 0.3,
+          "g_min": 76.8,
+          "frac_terminated": 1.0,
+          "frac_terminated_in_midpoint_ball": 0.0,
+          "frac_terminated_near_data": 1.0,
+          "frac_terminated_elsewhere": 0.0,
+          "mean_stop_step": 163.059
+        }
+      ]
+    }
+  ],
+  "training_points": [
+    {
+      "d": 2,
+      "n_points": 16,
+      "by_u_min": [
+        {
+          "u_min": 0.01,
+          "gamma_max": 0.99,
+          "rms_f_at_N01_inits": 3.92594,
+          "f_at_training_points_over_rms_mean": 0.0538142,
+          "f_at_training_points_over_rms_max": 0.0948551,
+          "f_at_training_points_abs_max": 0.372396,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.480448,
+          "probe_radial_stiffness_mean": 19.6942,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        },
+        {
+          "u_min": 0.001,
+          "gamma_max": 0.999,
+          "rms_f_at_N01_inits": 3.92594,
+          "f_at_training_points_over_rms_mean": 0.0057579,
+          "f_at_training_points_over_rms_max": 0.010121,
+          "f_at_training_points_abs_max": 0.0397345,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.371787,
+          "probe_radial_stiffness_mean": 17.5679,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        }
+      ]
+    },
+    {
+      "d": 8,
+      "n_points": 16,
+      "by_u_min": [
+        {
+          "u_min": 0.01,
+          "gamma_max": 0.99,
+          "rms_f_at_N01_inits": 11.84,
+          "f_at_training_points_over_rms_mean": 5.93334e-13,
+          "f_at_training_points_over_rms_max": 2.04981e-12,
+          "f_at_training_points_abs_max": 2.42698e-11,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.214325,
+          "probe_radial_stiffness_mean": 19.9989,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        },
+        {
+          "u_min": 0.001,
+          "gamma_max": 0.999,
+          "rms_f_at_N01_inits": 11.84,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.214301,
+          "probe_radial_stiffness_mean": 19.9974,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        }
+      ]
+    },
+    {
+      "d": 64,
+      "n_points": 16,
+      "by_u_min": [
+        {
+          "u_min": 0.01,
+          "gamma_max": 0.99,
+          "rms_f_at_N01_inits": 33.6516,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.239511,
+          "probe_radial_stiffness_mean": 20.0,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        },
+        {
+          "u_min": 0.001,
+          "gamma_max": 0.999,
+          "rms_f_at_N01_inits": 33.6516,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.239511,
+          "probe_radial_stiffness_mean": 20.0,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        }
+      ]
+    },
+    {
+      "d": 512,
+      "n_points": 16,
+      "by_u_min": [
+        {
+          "u_min": 0.01,
+          "gamma_max": 0.99,
+          "rms_f_at_N01_inits": 95.7176,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.236944,
+          "probe_radial_stiffness_mean": 20.0,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        },
+        {
+          "u_min": 0.001,
+          "gamma_max": 0.999,
+          "rms_f_at_N01_inits": 95.7176,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.236944,
+          "probe_radial_stiffness_mean": 20.0,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        }
+      ]
+    },
+    {
+      "d": 4096,
+      "n_points": 16,
+      "by_u_min": [
+        {
+          "u_min": 0.01,
+          "gamma_max": 0.99,
+          "rms_f_at_N01_inits": 268.433,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.239187,
+          "probe_radial_stiffness_mean": 20.0,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        },
+        {
+          "u_min": 0.001,
+          "gamma_max": 0.999,
+          "rms_f_at_N01_inits": 268.433,
+          "f_at_training_points_over_rms_mean": 0.0,
+          "f_at_training_points_over_rms_max": 0.0,
+          "f_at_training_points_abs_max": 0.0,
+          "probe_radius_rel": 0.05,
+          "f_at_probe_over_rms_mean": 0.239187,
+          "probe_radial_stiffness_mean": 20.0,
+          "expected_stiffness_lambda_over_1_minus_a": 20.0
+        }
+      ]
+    }
+  ],
+  "training_points_fit": {
+    "umin_1e-2": {
+      "loglog_slope": null,
+      "n_nonzero": 2,
+      "exact_zero_at_d": [
+        64,
+        512,
+        4096
+      ]
+    },
+    "umin_1e-3": {
+      "loglog_slope": null,
+      "n_nonzero": 1,
+      "exact_zero_at_d": [
+        8,
+        64,
+        512,
+        4096
+      ]
+    },
+    "probe": {
+      "loglog_slope": -0.0360432,
+      "n_nonzero": 5,
+      "exact_zero_at_d": []
+    },
+    "hypothesis_N7_predicted_slope": -0.5,
+    "analytic": "at xh = x_i the i-th term has weight \u221d u^{-d} (non-integrable at u=0): the posterior is a point mass at (i, gamma=1) whose target g\u00b7(x_i \u2212 x_i) = 0, so f*(x_i) = 0 exactly for every d; with a cutoff u_min the i-th term keeps mass ~u_min^(1-d) while the j\u2260i terms keep O(1) mass, so the residual scales like u_min^(d-1) (d=2 check: 10x smaller cutoff gives 0.107x, predicted 0.1x)"
+  },
+  "equilateral": [
+    {
+      "d": 2,
+      "radius": 1.4142135623730951,
+      "grid": {
+        "points_per_side": 121,
+        "half_width_over_radius": 1.6
+      },
+      "rms_f_on_grid": 6.85984,
+      "stationary_points": [
+        {
+          "point_plane_coords_over_radius": [
+            -0.499926,
+            -0.865896
+          ],
+          "fnorm_over_rms": 2.56915e-11,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.000148897,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            19.9649,
+            22.7628
+          ],
+          "orthogonal_d2E": null,
+          "type": "strict local minimum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            -0.499926,
+            0.865896
+          ],
+          "fnorm_over_rms": 2.57394e-11,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.000148897,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            19.9649,
+            22.7628
+          ],
+          "orthogonal_d2E": null,
+          "type": "strict local minimum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            -0.209953,
+            -1.97558e-17
+          ],
+          "fnorm_over_rms": 6.47789e-17,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.913306,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -6.55798,
+            2.08461
+          ],
+          "orthogonal_d2E": null,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.0,
+            0.0
+          ],
+          "fnorm_over_rms": 1.51202e-17,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 1.0,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -2.25676,
+            -2.25676
+          ],
+          "orthogonal_d2E": null,
+          "type": "local maximum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.104976,
+            -0.181824
+          ],
+          "fnorm_over_rms": 2.69678e-15,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.913306,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -6.55798,
+            2.08461
+          ],
+          "orthogonal_d2E": null,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.104976,
+            0.181824
+          ],
+          "fnorm_over_rms": 2.34512e-15,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.913306,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -6.55798,
+            2.08461
+          ],
+          "orthogonal_d2E": null,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.999851,
+            -1.52677e-21
+          ],
+          "fnorm_over_rms": 7.63696e-12,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.000148897,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            19.965,
+            22.763
+          ],
+          "orthogonal_d2E": null,
+          "type": "strict local minimum"
+        }
+      ],
+      "n_spurious_strict_minima": 0,
+      "gd_endpoints": {
+        "n_traj": 128,
+        "frac_within_0p1R_of_datum": 0.929688,
+        "frac_within_0p1R_of_centroid": 0.0,
+        "max_dist_to_datum_over_radius": 0.930648
+      }
+    },
+    {
+      "d": 2,
+      "radius": 6.0,
+      "grid": {
+        "points_per_side": 121,
+        "half_width_over_radius": 1.6
+      },
+      "rms_f_on_grid": 25.0395,
+      "stationary_points": [
+        {
+          "point_plane_coords_over_radius": [
+            -0.499995,
+            -0.866017
+          ],
+          "fnorm_over_rms": 2.71409e-11,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 9.23455e-06,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            19.9591,
+            23.6124
+          ],
+          "orthogonal_d2E": null,
+          "type": "strict local minimum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            -0.499995,
+            0.866017
+          ],
+          "fnorm_over_rms": 2.71496e-11,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 9.23455e-06,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            19.9591,
+            23.6124
+          ],
+          "orthogonal_d2E": null,
+          "type": "strict local minimum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            -0.410913,
+            -1.83087e-18
+          ],
+          "fnorm_over_rms": 1.41885e-16,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.870596,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -23.2068,
+            4.35001
+          ],
+          "orthogonal_d2E": null,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.0,
+            0.0
+          ],
+          "fnorm_over_rms": 1.50271e-17,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 1.0,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -9.5746,
+            -9.5746
+          ],
+          "orthogonal_d2E": null,
+          "type": "local maximum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.205456,
+            -0.355861
+          ],
+          "fnorm_over_rms": 1.98413e-12,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.870596,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -23.2068,
+            4.35001
+          ],
+          "orthogonal_d2E": null,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.205456,
+            0.355861
+          ],
+          "fnorm_over_rms": 1.98381e-12,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.870596,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -23.2068,
+            4.35001
+          ],
+          "orthogonal_d2E": null,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.999991,
+            4.67342e-23
+          ],
+          "fnorm_over_rms": 2.98151e-11,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 9.23455e-06,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            19.9706,
+            23.6274
+          ],
+          "orthogonal_d2E": null,
+          "type": "strict local minimum"
+        }
+      ],
+      "n_spurious_strict_minima": 0,
+      "gd_endpoints": {
+        "n_traj": 128,
+        "frac_within_0p1R_of_datum": 1.0,
+        "frac_within_0p1R_of_centroid": 0.0,
+        "max_dist_to_datum_over_radius": 0.0915649
+      }
+    },
+    {
+      "d": 64,
+      "radius": 8.0,
+      "grid": {
+        "points_per_side": 121,
+        "half_width_over_radius": 1.6
+      },
+      "rms_f_on_grid": 37.9912,
+      "stationary_points": [
+        {
+          "point_plane_coords_over_radius": [
+            -0.5,
+            -0.866025
+          ],
+          "fnorm_over_rms": 3.17897e-14,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 7.53971e-15,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            20.0,
+            20.0
+          ],
+          "orthogonal_d2E": 20.0,
+          "type": "strict local minimum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            -0.5,
+            0.866025
+          ],
+          "fnorm_over_rms": 1.63167e-13,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 3.87067e-14,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            20.0,
+            20.0
+          ],
+          "orthogonal_d2E": 20.0,
+          "type": "strict local minimum"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            -0.5,
+            2.7982e-17
+          ],
+          "fnorm_over_rms": 6.08856e-11,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.866025,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -439.52,
+            6.97663
+          ],
+          "orthogonal_d2E": 6.97662,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.0,
+            0.0
+          ],
+          "fnorm_over_rms": 2.441e-15,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 1.0,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -199.133,
+            -199.133
+          ],
+          "orthogonal_d2E": 6.42366,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.25,
+            -0.433013
+          ],
+          "fnorm_over_rms": 5.10319e-10,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.866025,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -439.523,
+            6.97663
+          ],
+          "orthogonal_d2E": 6.97662,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            0.25,
+            0.433013
+          ],
+          "fnorm_over_rms": 5.10324e-10,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 0.866025,
+          "on_data": false,
+          "inplane_hessian_eigs": [
+            -439.523,
+            6.97663
+          ],
+          "orthogonal_d2E": 6.97662,
+          "type": "saddle"
+        },
+        {
+          "point_plane_coords_over_radius": [
+            1.0,
+            -2.59551e-16
+          ],
+          "fnorm_over_rms": 2.11496e-15,
+          "is_stationary": true,
+          "dist_to_nearest_datum_over_radius": 5.14375e-16,
+          "on_data": true,
+          "inplane_hessian_eigs": [
+            20.0,
+            20.0
+          ],
+          "orthogonal_d2E": 20.0,
+          "type": "strict local minimum"
+        }
+      ],
+      "n_spurious_strict_minima": 0,
+      "gd_endpoints": {
+        "n_traj": 128,
+        "frac_within_0p1R_of_datum": 1.0,
+        "frac_within_0p1R_of_centroid": 0.0,
+        "max_dist_to_datum_over_radius": 0.00778377
+      }
+    }
+  ],
+  "quadrature_check": [
+    {
+      "d": 2,
+      "max_rel_err_sweep_grid_vs_fine": 0.00565878
+    },
+    {
+      "d": 64,
+      "max_rel_err_sweep_grid_vs_fine": 1.42194e-05
+    },
+    {
+      "d": 4096,
+      "max_rel_err_sweep_grid_vs_fine": 0.00114707
+    }
+  ],
+  "wall_seconds": 25.1,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e4a8dd5c9edd23b68a72c15e26889ce10071dc73",
+    "code_dirty": true,
+    "components": {
+      "decode.invariants": "v10"
+    },
+    "stamped_at": "2026-09-02T11:13:08.131735+00:00"
+  }
+}

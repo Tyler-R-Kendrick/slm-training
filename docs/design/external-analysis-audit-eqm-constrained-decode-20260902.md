@@ -219,10 +219,10 @@ All cards are independent, own disjoint files, and run in parallel from a fresh 
 
 ### S7 — Exact perfect-training EqM field: saddle classification and dimension sweep
 
-**Owns:** `scripts/analysis/eqm_oracle_field.py` (new; confirm placement with `organize-repository`; if `scripts/analysis/` is not canonical, use the directory the skill names), `docs/design/eqm-oracle-field-20260902.md` + `.json`.
+**Owns:** `scripts/analyze_eqm_oracle_field.py` (new; `scripts/analyze_*.py` is the canonical analysis-entrypoint convention per `organize-repository`), `docs/design/eqm-oracle-field-20260902.md` + `.json`.
 **Facts:** for a finite dataset `{x_i}`, forward `x_γ = γx + (1−γ)ε`, `γ~U(0,1)`, the perfectly trained field is `f*(x̂) = E[c(γ)/(1−γ)·(x̂ − x) | x_γ = x̂]`, computable by a 1-D quadrature over γ of a softmax posterior over data points with log-likelihood `−‖x̂ − γx_i‖²/(2(1−γ)²) − d·log(1−γ)`. Use `c_trunc(a=0.8)`, λ=4 (paper default) and `c_linear`. Numpy only; no torch; seconds of compute.
 **Deliverable:** (1) reproduce the antipodal-midpoint zero at d ∈ {2, 64, 4096}; (2) finite-difference Hessian of E along the data axis and an orthogonal direction to classify the midpoint (expect max/min = saddle); (3) Monte-Carlo the fraction of Gaussian-init GD trajectories (paper GD, η from Table 2) that terminate under `‖f‖<g_min` within a ball around the midpoint, vs d (N6); (4) `‖f*(x_i)‖/RMS` at training points for a 16-point random dataset vs d (N7); (5) a 3-point equilateral case to look for any spurious *minimum*. Write numbers and plots into the doc; keep the script deterministic (seeded) and under 60 s.
-**Done when:** script runs in CI-free mode (`python scripts/analysis/eqm_oracle_field.py --out …`), doc records each number with the falsifier from Part D, `no-bump:`.
+**Done when:** script runs in CI-free mode (`python scripts/analyze_eqm_oracle_field.py --out …`), doc records each number with the falsifier from Part D, `no-bump:`.
 
 ### S8 — Literature ledger: honest transfer table for the four new papers
 
@@ -290,7 +290,7 @@ All cards are independent, own disjoint files, and run in parallel from a fresh 
 1. `python -m scripts.verify_decode_invariants && python -m scripts.verify_agent_surfaces && python -m scripts.verify_version_stamps --check && python -m scripts.refresh_test_cases --check --changed`.
 2. `pytest tests/test_dsl/test_speculative_rank.py tests/test_models -q -k "context_ablation or step_commit or h9 or decode_stats"`.
 3. `python scripts/build_speculative_ngram_table.py --check` (S2 fingerprint assertion).
-4. `python scripts/analysis/eqm_oracle_field.py` reproduces the numbers in `docs/design/eqm-oracle-field-20260902.md`.
+4. `python scripts/analyze_eqm_oracle_field.py --out <dir>` reproduces the numbers in `docs/design/eqm-oracle-field-20260902.md`.
 5. Read `docs/design/external-analysis-audit-eqm-constrained-decode-20260902.md` and its addendum: every UNVERIFIED row in Part B has a VERIFIED / CONTRADICTED / UNRETRIEVABLE disposition.
 6. Confirm no production default changed: `git diff origin/main -- src/slm_training/harnesses/model_build/config.py` shows no lever default flipped; new levers carry `diagnostic_only: true`.
 7. Push branch, open one PR titled "Audit of external EqM/constrained-decode analyses + decode-authority evidence" listing card ids; subscribe to PR activity.
