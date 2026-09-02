@@ -7692,6 +7692,10 @@ def test_supervisor_noops_when_regime_parked(
             str(root),
             "--max-cycles",
             "3",
+            # Park is a wait state: without this the default 300 s backoff
+            # sleeps 3 x 300 s (15 min) in a unit test, past MAX_RUN_MINUTES.
+            "--park-backoff-seconds",
+            "1",
             "--train-version",
             "wf_smoke_v2",
             "--steps",
@@ -9420,8 +9424,21 @@ def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
     assert report["schema_version"] == "screening_sample_size/v1"
     assert report["decidability_floor_n"] == 6  # exact sign-test floor, alpha=1/20
     assert report["promotion_authority"] is False
+    # Without a predecessor scoreboard the fitted floor falls back to the
+    # policy default (only a fallback: measured p95 replaces it in-loop).
+    assert meta["decode_floor_source"] == "policy_default"
+    budget_bounds = [
+        b for b in report["bounds"] if "budget_upper" in str(b["bound_ast_id"])
+    ]
+    assert budget_bounds and budget_bounds[0]["env"]["min_decode_seconds"] == 2
     if report["verdict"] == "feasible":
         assert int(meta["smoke_n"]) >= 6
+        assert report["must_generate"] is False
+    elif report["verdict"] == "insufficient_evidence":
+        # Primary paired SD unmeasured: exact floor affordable, screen at the
+        # advisory affordable n (never parks, never generates).
+        assert report["power_floor_status"] == "unmeasured"
+        assert report["chosen_n"] == int(meta["smoke_n"]) >= 6
         assert report["must_generate"] is False
     else:
         assert report["verdict"] == "infeasible_range_empty"
@@ -11475,3 +11492,324 @@ def test_size_match_skip_reason_typed() -> None:
     assert reason is not None
     assert reason.startswith("capacity_unmatched:")
     assert _mod._size_match_skip_reason(control, control) is None
+
+
+# --- P4: screening decode budget feedback loop -------------------------------
+
+
+def _p4_budget_policy(**thrash: object) -> SimpleNamespace:
+    block = {
+        "incomplete_rate_high": 0.15,
+        "incomplete_rate_low": 0.05,
+        "p95_margin": 0.15,
+        "min_train_floor_seconds": 20,
+        "eval_overhead_seconds": 8,
+        "screening_thrash_steps_max": 400,
+    }
+    block.update(thrash)
+    return SimpleNamespace(
+        measurement={
+            "screening_decode_timeout_seconds": 12,
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "fixed",
+            "screening_sample_size": {"default_decode_floor_seconds": 2},
+            "thrash_timing": block,
+        }
+    )
+
+
+def _p4_write_predecessor_scoreboard(
+    root: Path,
+    campaign_id: str,
+    *,
+    latencies_ms: list[float],
+    timeout_flags: list[bool],
+    applied_timeout_seconds: float = 12.0,
+) -> Path:
+    run = root / campaign_id / "runs" / f"{campaign_id}-control"
+    run.mkdir(parents=True)
+    details = [
+        {
+            "id": f"smoke_{i:02d}",
+            "latency_ms": ms,
+            "incomplete": flag,
+            "decode_outcome_detail": (
+                f"timeout_dominant_phase=compiler_ms({ms:.0f}ms/{ms:.0f}ms)"
+                if flag
+                else "ok"
+            ),
+        }
+        for i, (ms, flag) in enumerate(zip(latencies_ms, timeout_flags))
+    ]
+    timeouts = sum(1 for flag in timeout_flags if flag)
+    (run / "eval_smoke.json").write_text(
+        json.dumps(
+            {
+                "decode_timeout_count": timeouts,
+                "decode_timeout_document_count": timeouts,
+                "completed_latency_n": len(details) - timeouts,
+                "incomplete_latency_n": timeouts,
+                "evaluation_policy": {"decode_timeout_seconds": applied_timeout_seconds},
+                "details": details,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / campaign_id / "sdlc_delivery.json").write_text(
+        json.dumps(
+            {
+                "measurement_complete": timeouts == 0,
+                "reasons": (
+                    [
+                        f"measurement_incomplete:{campaign_id}-control:smoke:"
+                        f"incomplete_document_n={timeouts}:decode_timeout_count={timeouts}"
+                    ]
+                    if timeouts
+                    else []
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+    return run
+
+
+def test_predecessor_decode_p95_reads_scoreboard_records(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    # Ten decoded records, p95 (nearest rank) = 30 s, one timed out (rate 0.10).
+    latencies = [5000.0] * 8 + [30000.0, 30000.0]
+    flags = [False] * 9 + [True]
+    _p4_write_predecessor_scoreboard(
+        root, "pred-c1", latencies_ms=latencies, timeout_flags=flags
+    )
+    ev = _mod._predecessor_decode_p95_seconds(root, "pred-c1")
+    assert ev["source"] == "measured_p95"
+    assert ev["field"] == "details.latency_ms"
+    assert ev["p95_seconds"] == pytest.approx(30.0)
+    assert ev["decoded_records"] == 10
+    assert ev["timeout_records"] == 1
+    assert ev["incomplete_rate"] == pytest.approx(0.1)
+    assert ev["timeout_seconds"] == 12.0
+    assert ev["campaign_id"] == "pred-c1"
+    # Without an explicit predecessor the newest scoreboard campaign is used.
+    assert _mod._predecessor_decode_p95_seconds(root)["campaign_id"] == "pred-c1"
+    # No scoreboard at all: policy default floor.
+    empty = _mod._predecessor_decode_p95_seconds(tmp_path / "missing", None)
+    assert empty["source"] == "policy_default"
+    assert empty["p95_seconds"] is None
+
+
+def test_fit_screening_decode_uses_measured_p95_as_floor(tmp_path: Path) -> None:
+    """p95=30 s, eval share 100 s -> n_probe=3; timeout=min(100/3, 30x1.15)."""
+    root = tmp_path / "ar"
+    latencies = [5000.0] * 8 + [30000.0, 30000.0]
+    flags = [False] * 9 + [True]  # incomplete rate 0.10: inside the Pareto band
+    _p4_write_predecessor_scoreboard(
+        root, "pred-c1", latencies_ms=latencies, timeout_flags=flags
+    )
+    policy = _p4_budget_policy()
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        policy,
+        arm_wall_seconds=128.0,  # 128 - 20 train - 8 overhead = 100 s eval share
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c1",
+    )
+    assert meta["decode_floor_source"] == "measured_p95"
+    assert meta["decode_floor_seconds"] == pytest.approx(30.0)
+    assert meta["eval_share_seconds"] == pytest.approx(100.0)
+    assert meta["n_probe"] == 3
+    assert meta["n_probe_base"] == 3
+    assert meta["p95_margin_timeout_seconds"] == pytest.approx(34.5)
+    # The wall cap (100/3) binds just below p95+margin (34.5); never wall++.
+    assert fitted == pytest.approx(min(100.0 / 3.0, 34.5))
+    assert meta["fitted_decode_timeout_seconds"] == fitted
+    assert fitted * meta["n_probe"] <= meta["eval_share_seconds"] + 1e-9
+    assert meta["pareto"]["decision"] == "hold"
+    assert meta["exceeds_configured"] is True  # 12 s policy constant was infeasible
+    # Budget timeout: p95 (30 s) exceeded the applied 12 s timeout.
+    assert meta["timeout_cause"] == "budget_timeout"
+    # Train floor is never grown past the wall.
+    assert (
+        meta["grown_train_floor_seconds"]
+        + meta["eval_budget_seconds"]
+        + meta["eval_overhead_seconds"]
+        <= meta["arm_wall_seconds"] + 1e-9
+    )
+    # With a 105 s eval share the p95+margin cap is what binds: exactly 34.5 s.
+    fitted_105, meta_105 = _mod._fit_screening_decode_timeout_seconds(
+        policy,
+        arm_wall_seconds=133.0,
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c1",
+    )
+    assert meta_105["n_probe"] == 3
+    assert fitted_105 == pytest.approx(34.5)
+
+
+def test_fit_screening_decode_pareto_shrinks_on_incomplete_rate(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    _p4_write_predecessor_scoreboard(
+        root,
+        "pred-c2",
+        latencies_ms=[23042.0, 30000.0, 29000.0],
+        timeout_flags=[True, True, True],  # incomplete rate 1.0
+    )
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        _p4_budget_policy(),
+        arm_wall_seconds=128.0,
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c2",
+    )
+    pareto = meta["pareto"]
+    assert pareto["incomplete_rate"] == pytest.approx(1.0)
+    assert pareto["decision"] == "shrink"
+    assert "incomplete_rate=1.000>high=0.150" in pareto["reason"]
+    assert pareto["effective_floor_seconds"] == pytest.approx(34.5)
+    assert meta["n_probe_base"] == 3
+    assert meta["n_probe"] == 2  # floor(100 / 34.5)
+    assert fitted == pytest.approx(34.5)
+    assert meta["timeout_cause"] == "budget_timeout"
+    # Train-bound: a 60 s arm leaves 32 s; one probe cannot fit p95+margin
+    # (34.5 s), so the eval share stays with decode instead of growing the
+    # train floor (fitted steps shrink) -- and no wall is raised.
+    fitted_60, meta_60 = _mod._fit_screening_decode_timeout_seconds(
+        _p4_budget_policy(),
+        arm_wall_seconds=60.0,
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c2",
+    )
+    assert meta_60["n_probe"] == 1
+    assert meta_60["pareto"]["decision"] == "shrink_steps"
+    assert fitted_60 == pytest.approx(32.0)
+    assert meta_60["eval_slack_reassigned_seconds"] == 0.0
+    assert meta_60["grown_train_floor_seconds"] == pytest.approx(20.0)
+    assert meta_60["arm_wall_seconds"] == 60.0
+    # A 70 s arm (42 s share) fits one probe at p95+margin: plain shrink and
+    # the 7.5 s of unused eval share flows back to the train floor.
+    fitted_70, meta_70 = _mod._fit_screening_decode_timeout_seconds(
+        _p4_budget_policy(),
+        arm_wall_seconds=70.0,
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c2",
+    )
+    assert meta_70["n_probe"] == 1
+    assert meta_70["pareto"]["decision"] == "shrink"
+    assert fitted_70 == pytest.approx(34.5)
+    assert meta_70["eval_slack_reassigned_seconds"] == pytest.approx(7.5)
+
+
+def test_fit_screening_decode_pareto_grows_below_low_rate(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    _p4_write_predecessor_scoreboard(
+        root,
+        "pred-c3",
+        latencies_ms=[20000.0] * 10,
+        timeout_flags=[False] * 10,  # incomplete rate 0.0 < low
+        applied_timeout_seconds=24.0,
+    )
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        _p4_budget_policy(),
+        arm_wall_seconds=128.0,
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c3",
+    )
+    assert meta["pareto"]["decision"] == "grow"
+    assert meta["n_probe_base"] == 5  # floor(100 / 20)
+    assert meta["n_probe"] == 5  # floor(100 / (20 / 1.15)) = 5
+    assert fitted == pytest.approx(20.0)  # 100 / 5 binds below 23.0
+    assert meta["timeout_cause"] == "none"
+
+
+def test_fit_screening_decode_policy_default_without_predecessor(
+    tmp_path: Path,
+) -> None:
+    fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        _p4_budget_policy(),
+        arm_wall_seconds=70.0,
+        telemetry_root=tmp_path / "empty",
+    )
+    assert meta["decode_floor_source"] == "policy_default"
+    assert meta["decode_floor_seconds"] == 2.0
+    assert meta["pareto"]["decision"] == "cold_start"
+    assert meta["p95_margin_timeout_seconds"] is None
+    assert meta["n_probe"] == 3  # configured smoke_n in fixed mode
+    assert fitted <= 12.0
+    assert meta["exceeds_configured"] is False
+    assert meta["timeout_cause"] == "none"
+
+
+def test_write_thrash_timing_lifts_budget_feedback_keys(tmp_path: Path) -> None:
+    root = tmp_path / "ar"
+    _p4_write_predecessor_scoreboard(
+        root,
+        "pred-c4",
+        latencies_ms=[30000.0] * 3,
+        timeout_flags=[True] * 3,
+    )
+    _fitted, meta = _mod._fit_screening_decode_timeout_seconds(
+        _p4_budget_policy(),
+        arm_wall_seconds=128.0,
+        telemetry_root=root,
+        predecessor_campaign_id="pred-c4",
+    )
+    camp = root / "c-next"
+    camp.mkdir(parents=True)
+    path = _mod._write_thrash_timing(
+        camp,
+        loop_id="loop-p4",
+        campaign_id="c-next",
+        cycle_index=5,
+        role="screening",
+        measurement_complete=False,
+        arm_wall_seconds=128.0,
+        decode_fit=meta,
+        reasons=["measurement_incomplete:x:decode_timeout_count=3"],
+        control_metrics={},
+        candidate_metrics={},
+    )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["decode_floor_source"] == "measured_p95"
+    assert data["decode_floor_seconds"] == pytest.approx(30.0)
+    assert data["n_probe"] == 2
+    assert data["fitted_decode_timeout_seconds"] == pytest.approx(34.5)
+    assert data["pareto"]["decision"] == "shrink"
+    assert data["timeout_cause"] == "budget_timeout"
+    # Existing keys stay for older readers.
+    assert data["decode_fit"]["fitted_decode_timeout_seconds"] == pytest.approx(34.5)
+    assert data["decode_fit"]["smoke_n"] == 3.0
+    assert "fitted_steps" in data and "steps_fit" in data
+
+
+def test_predecessor_budget_timeout_does_not_route_decode_residual(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    # Budget-bound: p95 30 s > applied 12 s timeout -> not a decode residual.
+    _p4_write_predecessor_scoreboard(
+        root,
+        "pred-budget",
+        latencies_ms=[23042.0, 30000.0, 34535.0],
+        timeout_flags=[True, True, True],
+        applied_timeout_seconds=12.0,
+    )
+    assert _mod._predecessor_timeout_cause(root, "pred-budget") == "budget_timeout"
+    assert _mod._predecessor_compiler_ms_timeout(root, "pred-budget") is False
+    decision = _mod._screening_regime_decision(
+        queue_entries=None,
+        compiler_ms_timeout=_mod._predecessor_compiler_ms_timeout(root, "pred-budget"),
+    )
+    assert decision.timeout_residual is False
+    assert decision.regime != "timeout_decode_residual"
+    # Slow tail with a feasible budget (p95 10 s <= 12 s timeout, one timeout):
+    # residual routing stays.
+    _p4_write_predecessor_scoreboard(
+        root,
+        "pred-slow",
+        latencies_ms=[9000.0] * 19 + [15000.0],
+        timeout_flags=[False] * 19 + [True],
+        applied_timeout_seconds=12.0,
+    )
+    assert _mod._predecessor_timeout_cause(root, "pred-slow") == "slow_decode_timeout"
+    assert _mod._predecessor_compiler_ms_timeout(root, "pred-slow") is True

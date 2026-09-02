@@ -5049,6 +5049,16 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of independently versioned cards P4 (decode-budget feedback) and P7 (certified-corpus screening heal): both prepended v272 on disjoint driver functions; this entry reconciles the component to v273 and keeps both parent histories intact below.",
+          "version": "v273"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening decode budget feedback loop: the predecessor's measured per-record decode p95 is the decode floor passed to screening_smoke_n_for_policy (decode_floor_source measured_p95 vs policy_default), n_probe = floor(eval_share / p95) with timeout = min(eval_share / n_probe, p95 x (1 + p95_margin)), the thrash_timing Pareto rule (incomplete_rate_high / incomplete_rate_low) shrinks or grows n_probe, and budget timeouts (p95 > applied timeout) are classified budget_timeout and never routed into decode residual arms.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the certified-eval-suites results JSON landed (deterministic rebuild, no schema or selector change).",
           "version": "v272"
         },
@@ -6956,7 +6966,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v272"
+      "version": "v273"
     },
     "harness.autoresearch.formal": {
       "history": [

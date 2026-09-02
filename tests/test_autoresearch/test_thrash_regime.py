@@ -174,3 +174,73 @@ def test_wrong_control_baseline_fails_assertions() -> None:
         assert control == {}
     with pytest.raises(AssertionError):
         assert "grammar_completion_bounds" not in control
+
+
+# --- P4: timeout cause gates decode residual routing ---------------------------
+
+
+def test_classify_timeout_cause_budget_vs_slow_tail() -> None:
+    from slm_training.autoresearch.thrash_regime import (
+        TIMEOUT_CAUSE_BUDGET,
+        TIMEOUT_CAUSE_NONE,
+        TIMEOUT_CAUSE_SLOW_DECODE,
+        classify_timeout_cause,
+    )
+
+    # Measured p95 (30 s) exceeds the applied 12 s timeout: the budget was
+    # infeasible, so the timeout is a budget fact.
+    assert (
+        classify_timeout_cause(p95_seconds=30.0, timeout_seconds=12.0, timeout_count=3)
+        == TIMEOUT_CAUSE_BUDGET
+    )
+    # p95 fits the timeout yet a tail record timed out: genuinely slow decode.
+    assert (
+        classify_timeout_cause(p95_seconds=9.0, timeout_seconds=12.0, timeout_count=1)
+        == TIMEOUT_CAUSE_SLOW_DECODE
+    )
+    assert (
+        classify_timeout_cause(p95_seconds=9.0, timeout_seconds=12.0, timeout_count=0)
+        == TIMEOUT_CAUSE_NONE
+    )
+    # Undecidable without a measured cost or an applied timeout.
+    assert (
+        classify_timeout_cause(p95_seconds=None, timeout_seconds=12.0, timeout_count=2)
+        == TIMEOUT_CAUSE_NONE
+    )
+    assert (
+        classify_timeout_cause(p95_seconds=30.0, timeout_seconds=None, timeout_count=2)
+        == TIMEOUT_CAUSE_NONE
+    )
+
+
+def test_budget_timeout_never_routes_to_decode_residual_slugs() -> None:
+    from slm_training.autoresearch.thrash_regime import TIMEOUT_CAUSE_BUDGET
+
+    baseline = {"component_plan_loss_weight": 1.0, "compiler_decode_mode": "tree"}
+    decision = decide_screening_regime(
+        climb_baseline_knobs=baseline,
+        compiler_ms_timeout=True,
+        timeout_cause=TIMEOUT_CAUSE_BUDGET,
+    )
+    assert decision.timeout_residual is False
+    assert decision.regime == REGIME_CLIMB
+    assert decision.base_regime == REGIME_CLIMB
+    assert "budget_timeout" in decision.reason
+    assert "recalibrate_budget_not_residual" in decision.reason
+    bank = list(DECODE_RESIDUAL_SLUGS) + ["binder-arity", "fidelity"]
+    slug = select_recommended_slug_for_regime(
+        decision=decision,
+        cycle=1,
+        skip=set(),
+        bank_slugs=bank,
+        isolate_selector=lambda c, s: "binder-arity",
+    )
+    assert slug == "binder-arity"
+    assert slug not in DECODE_RESIDUAL_SLUGS
+    # A feasible-budget slow tail keeps the residual route.
+    slow = decide_screening_regime(
+        climb_baseline_knobs=baseline,
+        compiler_ms_timeout=True,
+        timeout_cause="slow_decode_timeout",
+    )
+    assert slow.timeout_residual is True

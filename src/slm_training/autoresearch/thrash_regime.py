@@ -13,10 +13,14 @@ __all__ = [
     "REGIME_ISOLATE",
     "REGIME_CLIMB",
     "REGIME_TIMEOUT_DECODE_RESIDUAL",
+    "TIMEOUT_CAUSE_BUDGET",
+    "TIMEOUT_CAUSE_SLOW_DECODE",
+    "TIMEOUT_CAUSE_NONE",
     "DECODE_RESIDUAL_SLUGS",
     "CLIMB_BASELINE_STATUSES",
     "ThrashRegimeDecision",
     "is_compiler_ms_timeout_signal",
+    "classify_timeout_cause",
     "select_climb_baseline_entry",
     "decide_screening_regime",
     "lever_overlay",
@@ -30,6 +34,17 @@ __all__ = [
 REGIME_ISOLATE = "isolate"
 REGIME_CLIMB = "climb"
 REGIME_TIMEOUT_DECODE_RESIDUAL = "timeout_decode_residual"
+
+# Why the predecessor timed out. A ``budget_timeout`` means the measured
+# per-record work (p95) exceeded the per-record timeout the recipe could afford
+# under the arm wall: the budget was infeasible, so the fix is recalibrating
+# n_probe / timeout from measured cost (Pareto rule), never a decode-cost
+# residual arm (measured effect of those arms under budget timeouts: 0.0).
+# ``slow_decode_timeout`` means the budget was feasible (p95 <= timeout) and a
+# tail of records still exceeded it: a genuine decode-cost residual candidate.
+TIMEOUT_CAUSE_BUDGET = "budget_timeout"
+TIMEOUT_CAUSE_SLOW_DECODE = "slow_decode_timeout"
+TIMEOUT_CAUSE_NONE = "none"
 
 # Registered thrash arms whose extras are decode-cost / completeness levers.
 # Production thrash never routes timeouts to unconstrained / compiler_decode_mode=off.
@@ -115,6 +130,43 @@ def is_compiler_ms_timeout_signal(
     return False
 
 
+def classify_timeout_cause(
+    *,
+    p95_seconds: float | None,
+    timeout_seconds: float | None,
+    timeout_count: int | float | None = None,
+) -> str:
+    """Classify a predecessor's decode timeouts as budget-bound or tail-slow.
+
+    ``budget_timeout`` when the measured per-record p95 exceeds the timeout
+    that was applied (the recipe could not fit the work: recalibrate budget).
+    ``slow_decode_timeout`` when p95 fits the timeout yet records timed out
+    (feasible budget, slow tail: decode residual arms stay eligible).
+    ``none`` when there were no timeouts or the cause is undecidable because
+    the measured p95 or the applied timeout is unknown.
+    """
+
+    try:
+        count = float(timeout_count) if timeout_count is not None else None
+    except (TypeError, ValueError):
+        count = None
+    if count is not None and count <= 0:
+        return TIMEOUT_CAUSE_NONE
+    if p95_seconds is None or timeout_seconds is None:
+        return TIMEOUT_CAUSE_NONE
+    try:
+        p95 = float(p95_seconds)
+        timeout = float(timeout_seconds)
+    except (TypeError, ValueError):
+        return TIMEOUT_CAUSE_NONE
+    if p95 <= 0 or timeout <= 0:
+        return TIMEOUT_CAUSE_NONE
+    if count is None and p95 <= timeout:
+        # No timeout evidence at all: a fitting p95 is simply "no timeout".
+        return TIMEOUT_CAUSE_NONE
+    return TIMEOUT_CAUSE_BUDGET if p95 > timeout else TIMEOUT_CAUSE_SLOW_DECODE
+
+
 def select_climb_baseline_entry(
     queue_entries: Sequence[Mapping[str, Any]] | None,
 ) -> Mapping[str, Any] | None:
@@ -138,8 +190,14 @@ def decide_screening_regime(
     climb_baseline_knobs: Mapping[str, Any] | None,
     compiler_ms_timeout: bool,
     climb_champion_available: bool = False,
+    timeout_cause: str | None = None,
 ) -> ThrashRegimeDecision:
-    """Decide isolate vs climb vs timeout residual routing for screening thrash."""
+    """Decide isolate vs climb vs timeout residual routing for screening thrash.
+
+    ``timeout_cause`` (see :func:`classify_timeout_cause`) gates the residual
+    route: a ``budget_timeout`` never routes into ``DECODE_RESIDUAL_SLUGS`` —
+    the budget feedback loop recalibrates n_probe / timeout instead.
+    """
 
     has_climb = bool(climb_baseline_knobs) or bool(climb_champion_available)
     climb_payload = (
@@ -148,6 +206,18 @@ def decide_screening_regime(
         else ({} if climb_champion_available else None)
     )
     base = REGIME_CLIMB if has_climb else REGIME_ISOLATE
+    budget_bound = str(timeout_cause or "") == TIMEOUT_CAUSE_BUDGET
+    if compiler_ms_timeout and budget_bound:
+        return ThrashRegimeDecision(
+            regime=base,
+            base_regime=base,
+            climb_baseline=climb_payload if has_climb else None,
+            timeout_residual=False,
+            reason=(
+                "prior_incomplete_budget_timeout;"
+                f"baseline={base};recalibrate_budget_not_residual"
+            ),
+        )
     if compiler_ms_timeout:
         return ThrashRegimeDecision(
             regime=REGIME_TIMEOUT_DECODE_RESIDUAL,

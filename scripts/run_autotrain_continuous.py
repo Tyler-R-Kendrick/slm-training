@@ -670,6 +670,208 @@ def _screening_thrash_steps(
     return int(fitted)
 
 
+def _policy_default_decode_floor_seconds(policy: Any) -> float:
+    """``measurement.screening_sample_size.default_decode_floor_seconds`` (2 s)."""
+
+    measurement = getattr(policy, "measurement", None) or {}
+    block = (
+        measurement.get("screening_sample_size")
+        if isinstance(measurement, dict)
+        else None
+    )
+    raw = block.get("default_decode_floor_seconds") if isinstance(block, dict) else None
+    try:
+        return max(0.0, float(raw)) if raw is not None else 2.0
+    except (TypeError, ValueError):
+        return 2.0
+
+
+def _nearest_rank_p95(values: Sequence[float]) -> float | None:
+    """Nearest-rank p95 (no interpolation; censored walls count as observed)."""
+
+    import math
+
+    ordered = sorted(float(v) for v in values if isinstance(v, (int, float)))
+    if not ordered:
+        return None
+    rank = max(1, min(len(ordered), math.ceil(0.95 * len(ordered))))
+    return float(ordered[rank - 1])
+
+
+def _predecessor_decode_p95_seconds(
+    root: Path | None, predecessor_campaign_id: str | None = None
+) -> dict[str, Any]:
+    """Measured per-record decode cost of the predecessor screening cycle.
+
+    Reads the predecessor's ``runs/*/eval_smoke.json`` scoreboards and returns
+    the pooled per-record p95 in seconds (``details[].latency_ms`` includes
+    timed-out records because ``eval_runner`` measures the true wall around
+    ``generate``), falling back to the scoreboard headline
+    ``latency_ms_p95_including_incomplete`` / ``latency_ms_p95`` /
+    ``compiler_ms_mean``. Also reports the decoded-record count, the timeout
+    count, the resulting incomplete rate and the per-record timeout that was
+    applied (``evaluation_policy.decode_timeout_seconds`` -> matrix knobs ->
+    ``thrash_timing.json``). ``source`` is ``measured_p95`` when a cost was
+    read, else ``policy_default``. Never raises; without a predecessor the
+    caller falls back to the policy floor.
+    """
+
+    out: dict[str, Any] = {
+        "p95_seconds": None,
+        "source": "policy_default",
+        "field": None,
+        "campaign_id": None,
+        "scoreboards": 0,
+        "decoded_records": 0,
+        "timeout_records": 0,
+        "incomplete_rate": None,
+        "timeout_seconds": None,
+    }
+    if root is None or not root.is_dir():
+        return out
+    camp_dir: Path | None = None
+    if predecessor_campaign_id:
+        camp_dir = root / str(predecessor_campaign_id)
+    else:
+        newest_mtime = -1.0
+        try:
+            boards = list(root.glob("*/runs/*/eval_smoke.json"))
+        except OSError:
+            boards = []
+        for path in boards:
+            try:
+                mtime = path.stat().st_mtime
+            except OSError:
+                continue
+            if mtime > newest_mtime:
+                newest_mtime = mtime
+                camp_dir = path.parents[2]
+    if camp_dir is None or not camp_dir.is_dir():
+        return out
+    out["campaign_id"] = camp_dir.name
+    latencies_ms: list[float] = []
+    headline: dict[str, list[float]] = {
+        "latency_ms_p95_including_incomplete": [],
+        "latency_ms_p95": [],
+        "compiler_ms_mean": [],
+    }
+    decoded = 0
+    timeouts = 0
+    timeout_used: float | None = None
+    boards_n = 0
+    for path in sorted(camp_dir.glob("runs/*/eval_smoke.json")):
+        payload = _read_json(path)
+        if not payload:
+            continue
+        boards_n += 1
+        details = [d for d in (payload.get("details") or []) if isinstance(d, dict)]
+        latencies_ms.extend(
+            float(d["latency_ms"])
+            for d in details
+            if isinstance(d.get("latency_ms"), (int, float))
+        )
+        n_docs = len(details)
+        if n_docs <= 0:
+            try:
+                n_docs = int(payload.get("completed_latency_n") or 0) + int(
+                    payload.get("incomplete_latency_n") or 0
+                )
+            except (TypeError, ValueError):
+                n_docs = 0
+        if n_docs <= 0:
+            try:
+                n_docs = int(payload.get("document_n") or 0)
+            except (TypeError, ValueError):
+                n_docs = 0
+        decoded += max(0, n_docs)
+        raw_timeouts = payload.get("decode_timeout_document_count")
+        if raw_timeouts is None:
+            raw_timeouts = payload.get("decode_timeout_count")
+        try:
+            timeouts += max(0, int(raw_timeouts or 0))
+        except (TypeError, ValueError):
+            pass
+        metrics = (
+            payload.get("metrics") if isinstance(payload.get("metrics"), dict) else {}
+        )
+        for key, bucket in headline.items():
+            value = payload.get(key)
+            if value is None:
+                value = metrics.get(key)
+            if isinstance(value, (int, float)) and float(value) > 0:
+                bucket.append(float(value))
+        eval_policy = payload.get("evaluation_policy")
+        if isinstance(eval_policy, dict):
+            applied = eval_policy.get("decode_timeout_seconds")
+            if isinstance(applied, (int, float)) and float(applied) > 0:
+                timeout_used = max(float(applied), timeout_used or 0.0)
+    if timeout_used is None:
+        matrix = _read_json(camp_dir / "matrix-proposal.json")
+        for hyp in matrix.get("hypotheses") or []:
+            exp = hyp.get("experiment") if isinstance(hyp, dict) else None
+            knobs = exp.get("knobs") if isinstance(exp, dict) else None
+            applied = (
+                knobs.get("decode_timeout_seconds") if isinstance(knobs, dict) else None
+            )
+            if isinstance(applied, (int, float)) and float(applied) > 0:
+                timeout_used = max(float(applied), timeout_used or 0.0)
+    if timeout_used is None:
+        timing = _read_json(camp_dir / "thrash_timing.json")
+        fit = (
+            timing.get("decode_fit")
+            if isinstance(timing.get("decode_fit"), dict)
+            else {}
+        )
+        applied = fit.get("fitted_decode_timeout_seconds")
+        if isinstance(applied, (int, float)) and float(applied) > 0:
+            timeout_used = float(applied)
+    p95_ms: float | None = None
+    field: str | None = None
+    if latencies_ms:
+        p95_ms = _nearest_rank_p95(latencies_ms)
+        field = "details.latency_ms"
+    else:
+        for key, bucket in headline.items():
+            if bucket:
+                p95_ms = max(bucket)
+                field = key
+                break
+    if p95_ms is not None and p95_ms > 0:
+        out["p95_seconds"] = float(p95_ms) / 1000.0
+        out["source"] = "measured_p95"
+        out["field"] = field
+    out["scoreboards"] = int(boards_n)
+    out["decoded_records"] = int(decoded)
+    out["timeout_records"] = int(timeouts)
+    out["incomplete_rate"] = (
+        float(min(1.0, timeouts / decoded)) if decoded > 0 else None
+    )
+    out["timeout_seconds"] = timeout_used
+    return out
+
+
+def _predecessor_timeout_cause(
+    root: Path | None,
+    predecessor_campaign_id: str | None,
+    *,
+    evidence: Mapping[str, Any] | None = None,
+) -> str:
+    """``budget_timeout`` / ``slow_decode_timeout`` / ``none`` for the predecessor."""
+
+    from slm_training.autoresearch.thrash_regime import classify_timeout_cause
+
+    ev = (
+        dict(evidence)
+        if evidence is not None
+        else _predecessor_decode_p95_seconds(root, predecessor_campaign_id)
+    )
+    return classify_timeout_cause(
+        p95_seconds=ev.get("p95_seconds"),
+        timeout_seconds=ev.get("timeout_seconds"),
+        timeout_count=ev.get("timeout_records"),
+    )
+
+
 def _fit_screening_decode_timeout_seconds(
     policy: Any,
     *,
@@ -677,14 +879,30 @@ def _fit_screening_decode_timeout_seconds(
     formal_required: bool = False,
     telemetry_root: Path | None = None,
     requested_steps: int = 20,
+    predecessor_campaign_id: str | None = None,
+    decode_floor_evidence: Mapping[str, Any] | None = None,
 ) -> tuple[float, dict[str, Any]]:
-    """Clamp screening decode so n×decode + train floor fits the arm wall.
+    """Fit the screening decode budget to measured per-record cost.
 
-    Timeouts are optima: if this clamp always binds, either the arm share model
-    or the thrash recipe (steps/n) needs recalibration — not silent wall++.
-    After decode fit, unused eval allocation is reassigned to the train floor
-    (never past the arm wall).
+    Budget feedback loop (policy ``measurement.thrash_timing``): the
+    predecessor's per-record decode p95 is the decode floor handed to
+    ``screening_smoke_n_for_policy`` (``decode_floor_source=measured_p95``;
+    ``policy_default`` only when no predecessor scoreboard exists). The number
+    of decoded quality-probe records is what fits the eval share,
+    ``n_probe = max(1, floor(eval_share / floor))``, and the per-record timeout
+    is ``min(eval_share / n_probe, p95 x (1 + p95_margin))`` -- timeouts ~
+    p95(work) + margin, never wall++. The Pareto rule then recalibrates from
+    the predecessor's incomplete rate: above ``incomplete_rate_high`` the
+    floor is inflated by the margin (n_probe shrinks; with n_probe already 1
+    and a train-bound wall the decode share is kept whole instead of growing
+    the train floor -- ``shrink_steps``); below ``incomplete_rate_low`` the
+    floor is deflated (n_probe grows). Timeouts whose cause is budget
+    (``p95 > applied timeout``) are classified ``budget_timeout``. Unused
+    eval allocation is reassigned to the train floor (never past the wall).
     """
+
+    import math
+
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
         screening_smoke_n_for_policy,
@@ -698,21 +916,104 @@ def _fit_screening_decode_timeout_seconds(
             policy_minutes=float(stage_wall_minutes_for_role(policy, "screening")),
             formal_required=formal_required,
         )
+    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
+    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
+    usable = max(0.0, float(arm_wall_seconds) - min_train - overhead)
+    evidence = (
+        dict(decode_floor_evidence)
+        if decode_floor_evidence is not None
+        else _predecessor_decode_p95_seconds(telemetry_root, predecessor_campaign_id)
+    )
+    raw_p95 = evidence.get("p95_seconds")
+    p95 = (
+        float(raw_p95) if isinstance(raw_p95, (int, float)) and raw_p95 > 0 else None
+    )
+    measured = p95 is not None
+    policy_floor = _policy_default_decode_floor_seconds(policy)
+    decode_floor = p95 if p95 is not None else policy_floor
+    decode_floor_source = "measured_p95" if measured else "policy_default"
     smoke_n, sample_size_report = screening_smoke_n_for_policy(
         policy,
         arm_wall_seconds=arm_wall_seconds,
+        per_record_decode_floor_seconds=decode_floor if decode_floor > 0 else None,
         suite_records=_screening_suite_records(),
     )
-    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
-    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
-    usable = float(arm_wall_seconds) - min_train - overhead
-    if int(smoke_n) <= 0:
-        max_decode = max(1.0, usable)
+    try:
+        margin = max(0.0, float(thrash.get("p95_margin", 0.15)))
+    except (TypeError, ValueError):
+        margin = 0.15
+    try:
+        rate_high = float(thrash.get("incomplete_rate_high", 0.15))
+        rate_low = float(thrash.get("incomplete_rate_low", 0.05))
+    except (TypeError, ValueError):
+        rate_high, rate_low = 0.15, 0.05
+    raw_rate = evidence.get("incomplete_rate")
+    rate = float(raw_rate) if isinstance(raw_rate, (int, float)) else None
+    pareto: dict[str, Any] = {
+        "incomplete_rate": rate,
+        "incomplete_rate_high": rate_high,
+        "incomplete_rate_low": rate_low,
+        "p95_margin": margin,
+        "decoded_records": int(evidence.get("decoded_records") or 0),
+        "timeout_records": int(evidence.get("timeout_records") or 0),
+        "decision": "cold_start",
+        "reason": "no_measured_predecessor_decode_cost",
+        "effective_floor_seconds": None,
+    }
+    margin_cap: float | None = None
+    if p95 is not None:
+        n_probe_base = max(1, int(math.floor(usable / p95))) if usable > 0 else 1
+        margin_cap = p95 * (1.0 + margin)
+        effective_floor = p95
+        if rate is None:
+            decision, reason = "hold", "incomplete_rate_unmeasured"
+        elif rate > rate_high:
+            effective_floor = p95 * (1.0 + margin)
+            decision, reason = "shrink", (
+                f"incomplete_rate={rate:.3f}>high={rate_high:.3f};"
+                "floor_inflated_by_margin"
+            )
+        elif rate < rate_low:
+            effective_floor = p95 / (1.0 + margin)
+            decision, reason = "grow", (
+                f"incomplete_rate={rate:.3f}<low={rate_low:.3f};"
+                "floor_deflated_by_margin"
+            )
+        else:
+            decision, reason = "hold", (
+                f"incomplete_rate={rate:.3f}_within_band"
+                f"[{rate_low:.3f},{rate_high:.3f}]"
+            )
+        n_probe = (
+            max(1, int(math.floor(usable / effective_floor))) if usable > 0 else 1
+        )
+        cap = margin_cap
+        if decision == "shrink" and n_probe == 1 and cap > usable:
+            # Train-bound: one probe record cannot fit p95+margin under the
+            # train floor. Keep the whole eval share for decode (no slack
+            # reassigned to the train floor, so fitted steps shrink) rather
+            # than raising any wall.
+            decision = "shrink_steps"
+            reason += ";train_bound_keep_eval_share_for_decode"
+            cap = max(1.0, usable)
+        pareto.update(
+            decision=decision,
+            reason=reason,
+            effective_floor_seconds=float(effective_floor),
+        )
     else:
-        max_decode = max(1.0, usable / float(smoke_n))
-    fitted = min(configured, max_decode)
-    projected_eval = float(fitted) * float(max(int(smoke_n), 0))
-    allocated_eval = max(0.0, float(arm_wall_seconds) - min_train - overhead)
+        # Cold start: no measured cost, so the resolver's n is the probe count
+        # (0 when the certified range is empty: nothing runnable to project).
+        n_probe_base = max(0, int(smoke_n))
+        n_probe = n_probe_base
+        cap = configured
+    if n_probe > 0 and usable > 0:
+        per_probe = usable / float(n_probe)
+    else:
+        per_probe = usable if usable > 0 else 1.0
+    fitted = max(1.0, min(per_probe, cap))
+    projected_eval = float(fitted) * float(n_probe)
+    allocated_eval = usable
     residual = max(0.0, allocated_eval - projected_eval)
     grown_floor = min_train + residual
     wall_headroom = max(0.0, float(arm_wall_seconds) - overhead - projected_eval)
@@ -731,11 +1032,24 @@ def _fit_screening_decode_timeout_seconds(
         None if payload is None else payload.get("_telemetry_path")
     )
     steps_fit["requested_steps"] = int(requested_steps)
+    timeout_cause = _predecessor_timeout_cause(
+        telemetry_root, predecessor_campaign_id, evidence=evidence
+    )
     meta = {
         "arm_wall_seconds": float(arm_wall_seconds),
         "configured_decode_timeout_seconds": configured,
         "fitted_decode_timeout_seconds": float(fitted),
         "smoke_n": float(smoke_n),
+        "n_probe": int(n_probe),
+        "n_probe_base": int(n_probe_base),
+        "decode_floor_seconds": float(decode_floor),
+        "decode_floor_source": decode_floor_source,
+        "decode_floor_evidence": evidence,
+        "p95_margin": float(margin),
+        "p95_margin_timeout_seconds": margin_cap,
+        "eval_share_seconds": float(usable),
+        "pareto": pareto,
+        "timeout_cause": timeout_cause,
         "min_train_floor_seconds": min_train,
         "grown_train_floor_seconds": float(grown_floor),
         "eval_overhead_seconds": overhead,
@@ -743,6 +1057,7 @@ def _fit_screening_decode_timeout_seconds(
         "allocated_eval_seconds": float(allocated_eval),
         "eval_slack_reassigned_seconds": float(residual),
         "clamp_bound": 1.0 if fitted + 1e-9 < configured else 0.0,
+        "exceeds_configured": bool(fitted > configured + 1e-9),
         "train_device": train_device,
         "fitted_steps": int(fitted_steps),
         "steps_fit": steps_fit,
@@ -805,6 +1120,27 @@ def _write_thrash_timing(
         if isinstance(decode_fit, dict)
         else None,
         "train_device": (decode_fit or {}).get("train_device")
+        if isinstance(decode_fit, dict)
+        else None,
+        # Budget feedback loop (measured decode floor + Pareto recalibration).
+        "decode_floor_source": (decode_fit or {}).get("decode_floor_source")
+        if isinstance(decode_fit, dict)
+        else None,
+        "decode_floor_seconds": (decode_fit or {}).get("decode_floor_seconds")
+        if isinstance(decode_fit, dict)
+        else None,
+        "n_probe": (decode_fit or {}).get("n_probe")
+        if isinstance(decode_fit, dict)
+        else None,
+        "fitted_decode_timeout_seconds": (decode_fit or {}).get(
+            "fitted_decode_timeout_seconds"
+        )
+        if isinstance(decode_fit, dict)
+        else None,
+        "pareto": (decode_fit or {}).get("pareto")
+        if isinstance(decode_fit, dict)
+        else None,
+        "timeout_cause": (decode_fit or {}).get("timeout_cause")
         if isinstance(decode_fit, dict)
         else None,
         "incomplete_reasons": incomplete_reasons,
@@ -8011,12 +8347,35 @@ def _predecessor_compiler_ms_timeout(
             break
     if not incomplete and timeout_n <= 0 and not detail:
         return False
-    return is_compiler_ms_timeout_signal(
+    signal = is_compiler_ms_timeout_signal(
         reasons=reasons,
         decode_outcome_detail=detail or None,
         incomplete=incomplete or timeout_n > 0,
         decode_timeout_count=timeout_n,
     )
+    if not signal:
+        return False
+    # Budget feedback loop: a timeout whose measured per-record p95 exceeds
+    # the timeout the recipe could afford is a budget fact, not a decode-cost
+    # residual. It is recalibrated by _fit_screening_decode_timeout_seconds
+    # (n_probe / timeout from p95), never routed into DECODE_RESIDUAL_SLUGS.
+    from slm_training.autoresearch.thrash_regime import TIMEOUT_CAUSE_BUDGET
+
+    evidence = _predecessor_decode_p95_seconds(root, predecessor_campaign_id)
+    cause = _predecessor_timeout_cause(
+        root, predecessor_campaign_id, evidence=evidence
+    )
+    if cause == TIMEOUT_CAUSE_BUDGET:
+        print(
+            "THRASH_TIMEOUT_CAUSE budget_timeout "
+            f"pred={predecessor_campaign_id} "
+            f"p95_s={evidence.get('p95_seconds')} "
+            f"timeout_s={evidence.get('timeout_seconds')} "
+            "route=recalibrate_budget_not_residual",
+            flush=True,
+        )
+        return False
+    return True
 
 
 def _screening_regime_decision(
@@ -11060,10 +11419,14 @@ def _phase_a_delivery(
         )
         decode_fit = None
         if role == "screening":
+            # Fit from this campaign's own scoreboards: the timing record is
+            # the budget its successor cycle inherits (decode_floor_source
+            # measured_p95 once eval_smoke.json exists, else policy_default).
             _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
                 policy,
                 arm_wall_seconds=arm_s,
                 telemetry_root=root,
+                predecessor_campaign_id=campaign_id,
             )
         matrix_regime = None
         matrix_path = camp_dir / "matrix-proposal.json"
@@ -13406,6 +13769,7 @@ def _matrix(
     thrash_regime: ThrashRegimeDecision | None = None,
     initialize_from: str | None = None,
     telemetry_root: Path | None = None,
+    predecessor_campaign_id: str | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -13429,6 +13793,7 @@ def _matrix(
             pol,
             telemetry_root=telemetry_root,
             requested_steps=int(steps),
+            predecessor_campaign_id=predecessor_campaign_id,
         )
         steps = int(
             (decode_fit or {}).get("fitted_steps")
@@ -15594,6 +15959,7 @@ def run_cycle(
         thrash_regime=thrash_regime,
         initialize_from=initialize_from,
         telemetry_root=root,
+        predecessor_campaign_id=pred,
     )
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
