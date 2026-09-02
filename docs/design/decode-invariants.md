@@ -126,11 +126,11 @@ the grammar oracle before it commits.
 
 **The committed table.** `src/slm_training/resources/decode/speculative_ngram_v1.json`
 is built train-split-only from the certified TRAIN bucket of the immutable
-corpus, `openui_verified_train_v1` (root-family buckets 0–79 of
-`openui_verified_v1`; 1,083 records, of which 1,054 encode — the symbol codec
-refuses 29 whose placeholder lands in a non-content property — 54,434 native
-tokens, order 3, 493 contexts; manifest `content_fingerprint`
-`8fe079f5…f22b59c`, table `corpus_fingerprint` `96ef8ffd…3ac3f08e5`). The split
+corpus, `openui_verified_train_v2` (root-family buckets 0–79 of
+`openui_verified_v1`; 893 records, all of which encode — admission refuses
+every record the trainer's own contracts refuse, so the codec no longer meets
+one — 47,692 native tokens, order 3, 493 contexts; manifest
+`content_fingerprint` `ba0d8003…5fe7f58c`). The split
 is the bucket's own manifest, never re-derived by the builder. Targets are
 templatized first, so the table is keyed on symbols and placeholders and never
 on free-form string content. Setting `speculative_rank="ngram"` without naming
@@ -143,9 +143,9 @@ other field drifts from the rebuild.
 
 It ranks real branch points confidently (measured, margin threshold 0.5): after
 `root = ` (27 legal candidates) it picks `Stack(` at margin 15.000 — every one
-of the 1,054 train programs opens with `Stack(`, so the runner-up `Button(`
+of the 893 train programs opens with `Stack(`, so the runner-up `Button(`
 carries only floor mass — and after `root = Stack([` (26 candidates) it picks
-`b1` (the first bound-symbol reference) over `TextContent(` at margin 1.738 —
+`b1` (the first bound-symbol reference) over `TextContent(` at margin 1.767 —
 both decided from the symbol table with no forward. The numbers are pinned by
 `tests/test_dsl/test_speculative_rank.py::test_committed_table_pins_the_documented_branch_points`;
 the measurement behind them, and the old smoke-built table's, is

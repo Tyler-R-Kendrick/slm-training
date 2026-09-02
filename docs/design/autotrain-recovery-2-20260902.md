@@ -287,8 +287,15 @@ The wider scan, under the document kind:
 
 ### The fix
 
-`partition_certified_corpus` now calls `assert_role_safe_output` under the
-same document output kind at a new `role_safety` admission stage. A failing
+`partition_certified_corpus` now applies **every** contract
+`from_records` applies — `assert_no_template_semantic_labels`,
+`assert_canonical_template_markers`, `assert_symbol_only_output` and
+`assert_role_safe_output` — at a new `role_safety` admission stage, using the
+record's own `target_kind` and falling back to the document kind the model
+resolves. Checking only the role-safety one was not enough: the next cycle
+failed on `template markers are opaque; semantic role labels are prohibited`
+from a different contract, so the check is now kept in lock-step with the
+trainer's list rather than extended one violation at a time. A failing
 record is refused and written to `rejected.jsonl` like any other refusal —
 nothing is dropped silently — and a `role_unsafe_output` recommendation
 carries the evidence into `synthesis_feedback.json`.
@@ -296,19 +303,21 @@ carries the evidence into `synthesis_feedback.json`.
 Published datasets are immutable (`DataStore.publish` refuses an existing
 destination) and the `synthesis-feedback` law says to rebuild under a new
 version, so `openui_verified_train_v1` stays exactly as built and
-**`openui_verified_train_v2`** is the rebuild: 1,054 train / 182 validation /
-136 test, with 49 role-unsafe refusals across the three splits (29 of them
-from the train bucket). Re-measured on v2: **0 of 1,054 records fail the
-trainer's contract**, 0 id collisions, 0 exact duplicate pairs, and 0 program,
-prompt or family overlap with any scored suite. Its four recommendations carry
+**`openui_verified_train_v2`** is the rebuild: 893 train / 154 validation /
+118 test, with 256 contract refusals across the three splits. Re-measured on
+v2: **0 of 893 records fail any of the four trainer contracts**, 0 id
+collisions, 0 exact duplicate pairs, and 0 program, prompt or family overlap
+with any scored suite. v2's definition was corrected once, before any
+measurement used it: the first cut checked one contract and admitted 1,054
+records that still could not train. Its four recommendations carry
 `action_receipt` records bound to the plan and manifest hashes.
 
 `policy.v3` defaults, the driver's certified data-arm corpus, the certified
-bucket id and the speculative n-gram table all move to v2. The n-gram table is
-content-identical (1,054 sequences, 54,434 tokens, order 3, 493 contexts)
-because the records v2 drops are exactly the ones the codec already refused;
-its `encode_error` count falls from 29 to 0 and its recorded provenance now
-matches the corpus it was built from.
+bucket id and the speculative n-gram table all move to v2. The n-gram table is rebuilt from v2
+(893 sequences, 47,692 tokens, order 3, 493 contexts, 0 encode errors) and its
+pinned branch points re-measured: `root = ` still picks `Stack(` at margin
+15.000, and `root = Stack([` still picks `b1`, at margin 1.767 rather than
+1.738. The doc paragraph, the artifact and the test moved together.
 
 ### Left open, deliberately
 

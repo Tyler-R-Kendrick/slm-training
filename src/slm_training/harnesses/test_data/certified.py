@@ -238,19 +238,34 @@ _ROLE_SAFE_OUTPUT_KIND = "document"
 
 
 def _assert_certified_role_safe(record: ExampleRecord) -> None:
-    """Raise unless the normalized program satisfies the trainer's contract.
+    """Raise unless the record satisfies every contract the trainer applies.
 
-    A record that fails here cannot be trained on: ``from_records`` raises on
-    the first violation and takes the whole arm down with it (measured on
-    2026-09-02, 29 of 1,083 admitted records carried a placeholder in a
-    non-content property and every screening arm exited non-zero). The
-    contract itself is never relaxed — the record is refused at admission and
-    recorded in the rejected ledger like any other refusal.
+    ``TwoTowerModel.from_records`` asserts four record contracts before it
+    builds anything and raises on the first violation, which takes the whole
+    training arm down. Admission must apply the same four or it admits records
+    the trainer refuses: measured on 2026-09-02, the certified bucket carried
+    29 programs with a placeholder in a non-content property and a further set
+    of prompts carrying semantic role labels, and every screening arm exited
+    non-zero. The contracts themselves are never relaxed — a failing record is
+    refused at admission and recorded in the rejected ledger like any other
+    refusal.
+
+    Kept deliberately in lock-step with ``from_records``: if that list grows,
+    this one grows with it.
     """
 
+    from slm_training.data.contract import (
+        assert_canonical_template_markers,
+        assert_no_template_semantic_labels,
+    )
     from slm_training.dsl.analysis.templatize import assert_role_safe_output
+    from slm_training.dsl.language_contract import assert_symbol_only_output
 
-    assert_role_safe_output(record.openui, output_kind=_ROLE_SAFE_OUTPUT_KIND)
+    kind = record.target_kind or _ROLE_SAFE_OUTPUT_KIND
+    assert_no_template_semantic_labels(record.prompt, record.design_md)
+    assert_canonical_template_markers(record)
+    assert_symbol_only_output(record.openui, output_kind=kind)
+    assert_role_safe_output(record.openui, output_kind=kind)
 
 
 def partition_certified_corpus(

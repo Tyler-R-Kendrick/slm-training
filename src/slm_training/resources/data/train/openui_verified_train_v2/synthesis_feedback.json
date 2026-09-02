@@ -14,7 +14,7 @@
       "code": "role_unsafe_output",
       "family": "corpus_certification",
       "evidence": {
-        "rejected": 49,
+        "rejected": 256,
         "contract": "assert_role_safe_output",
         "output_kind": "document"
       },
@@ -26,7 +26,7 @@
       "evidence": {
         "corpus_records": 1682,
         "distinct_source_ids": 700,
-        "reidentified": 1066
+        "reidentified": 857
       },
       "action": "certification merges several source snapshots that reuse record ids for distinct prompt/program variants; namespace ids by source snapshot so consumers stop re-identifying"
     },

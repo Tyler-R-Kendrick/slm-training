@@ -23,12 +23,23 @@ artifact in the tree:
 
 | | doc claim (before) | artifact (before, measured) | artifact (after, measured) |
 | --- | --- | --- | --- |
-| corpus | `openui_verified_v1` | `wf_smoke_v2` (builder default fell back to the smoke fixture) | `openui_verified_train_v1` (certified TRAIN bucket, root-family buckets 0–79) |
-| records / sequences | 1,682 | 101 | 1,083 records, 1,054 encoded (29 refused by the symbol codec: placeholder in a non-content property) |
-| tokens | 89,415 | 4,633 | 54,434 |
+| corpus | `openui_verified_v1` | `wf_smoke_v2` (builder default fell back to the smoke fixture) | `openui_verified_train_v2` (certified TRAIN bucket, root-family buckets 0–79) |
+| records / sequences | 1,682 | 101 | 893 records, 893 encoded |
+| tokens | 89,415 | 4,633 | 47,692 |
 | order / contexts | 3 / 523 | 4 / 538 | 3 / 493 |
 | `root = ` (n candidates → pick @ margin) | 27 → `Stack(` @ 1.0 | 27 → `Stack(` @ 1.941 | 27 → `Stack(` @ 15.000 |
-| `root = Stack([` | 25 → `<BIND_1>` @ 1.59 | 26 → `b1` @ 15.916 | 26 → `b1` @ 1.738 |
+| `root = Stack([` | 25 → `<BIND_1>` @ 1.59 | 26 → `b1` @ 15.916 | 26 → `b1` @ 1.767 |
+
+**Corpus superseded after this card measured it (INT-2).** S2 built against
+`openui_verified_train_v1`, whose 1,083 admitted records included 29 the symbol
+codec refused (`encode_error: 29`, placeholder in a non-content property) —
+the same 29 that made the bucket untrainable. The certified split now applies
+every contract `TwoTowerModel.from_records` applies, and the rebuilt
+`openui_verified_train_v2` holds 893 records that all encode. The table's
+`order`, `contexts` and both picks are unchanged; the margin at
+`root = Stack([` moves 1.738 → 1.767 and the token count 54,434 → 47,692. The
+right-hand column above is the current artifact; the N1 comparison below was
+measured on the v1 table and is left as recorded.
 
 No test pinned the numbers and `--check` only compared the artifact to a
 rebuild from the same (wrong) default, so the drift was invisible to CI.

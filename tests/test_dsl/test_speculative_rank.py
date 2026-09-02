@@ -347,7 +347,7 @@ def test_committed_table_ranks_real_branch_points_confidently() -> None:
 # did not follow.
 DOCUMENTED_BRANCH_POINTS = {
     "root = ": (27, "Stack(", 15.000),
-    "root = Stack([": (26, "b1", 1.738),
+    "root = Stack([": (26, "b1", 1.767),
 }
 
 
@@ -400,8 +400,8 @@ def test_committed_table_records_the_certified_train_bucket() -> None:
     }
     assert payload["order"] == 3
     assert (payload["sequences"], payload["tokens"], len(payload["counts"])) == (
-        1054,
-        54434,
+        893,
+        47692,
         493,
     )
     # The loader tolerates the provenance block: the ranker sees the same table.

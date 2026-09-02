@@ -927,6 +927,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Certified split admission applies every record contract TwoTowerModel.from_records applies (assert_no_template_semantic_labels, assert_canonical_template_markers, assert_symbol_only_output, assert_role_safe_output) at a role_safety stage, using the record target_kind and falling back to the document kind the model resolves. Checking only one of the four still left the bucket untrainable. Refusals are recorded in rejected.jsonl and raise a role_unsafe_output recommendation. openui_verified_train_v2 rebuilt: 893 train / 154 validation / 118 test, 256 role refusals across splits, 0 admitted records failing any contract. Admission is stricter, never looser.",
+          "version": "v12"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Certified split admission applies the trainer's role-safe output contract. assert_role_safe_output under the document output kind now runs at a new role_safety admission stage, so a record placing a placeholder in a non-content property is refused and recorded in rejected.jsonl instead of reaching the train bucket and making it untrainable (29 of 1,083 did, and TwoTowerModel.from_records took every screening arm down with the first one). A role_unsafe_output recommendation carries the evidence. Published openui_verified_train_v2 (1,054 train / 182 validation / 136 test; 49 role-unsafe refusals across splits) with its action receipts; v1 is immutable and stays as built. Admission is stricter, never looser.",
           "version": "v11"
         },
@@ -998,10 +1003,15 @@
         "src/slm_training/resources/test_seeds.jsonl",
         "scripts/build_certified_train_bucket.py"
       ],
-      "version": "v11"
+      "version": "v12"
     },
     "decode.invariants": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "I3 committed-table paragraph re-measured against openui_verified_train_v2: 893 records all encoding (was 1,083 with 29 codec refusals), 47,692 tokens, order 3 and 493 contexts unchanged, and the root = Stack([ margin 1.738 -> 1.767. Both picks unchanged; no invariant text changed and the lever stays off.",
+          "version": "v11"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: reconcile S8 (citation-line-only edit to decode-invariants.md, its v9 no-bump entry kept below) with the S2 v10 bump on the integration branch.",
@@ -1074,7 +1084,7 @@
         "scripts/verify_decode_invariants.py",
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
-      "version": "v10"
+      "version": "v11"
     },
     "dsl.abstract_plan": {
       "history": [
@@ -5129,6 +5139,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the INT-2 recovery-doc correction (deterministic rebuild).",
+          "version": "v283"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the INT-1/INT-2 recovery-doc sections landed (deterministic rebuild).",
@@ -19368,6 +19383,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Speculative n-gram table rebuilt from openui_verified_train_v2 (893 sequences, 47,692 tokens, order 3, 493 contexts, 0 encode errors). Pinned branch points re-measured: root =  -> Stack( at 15.000 unchanged, root = Stack([ -> b1 at 1.767 (was 1.738). Ranker scoring unchanged; lever stays off.",
+          "version": "v323"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Speculative n-gram table rebuilt from openui_verified_train_v2. Identical content (1,054 sequences, 54,434 tokens, order 3, 493 contexts) because the 29 records v2 drops are exactly the ones the codec already refused, so encode_error falls 29 -> 0 and the recorded provenance now matches the corpus it was built from. Ranker scoring unchanged; lever stays off.",
           "version": "v322"
         },
@@ -21370,7 +21390,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v322"
+      "version": "v323"
     },
     "ops.vocab": {
       "history": [
