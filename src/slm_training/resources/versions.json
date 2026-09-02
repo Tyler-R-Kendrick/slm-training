@@ -2289,6 +2289,11 @@
     "dsl.solver.goal_support": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: test_unknown_unobserved_never_certified_removed_reference built its ActionEvidenceV1 fixtures under the pre-EVID-09 contract, where replay_ok + hard_profile authorized certified removal. refutation_authority.py states that exhausted / coverage=complete / replay_ok are telemetry and never authorize removal alone, and certified_removable now delegates to evidence_authorizes_removal, so the unsupported action was no longer removable and the reference assertion failed. Fixture updated to give all three actions identical authority-grade exact-replay evidence so partition is the only discriminator (mirrors Lean GoalSupport.unknown_not_certified_removable / unobserved_not_certified_removable), plus a new assertion that telemetry-only replay_ok removes nothing. Test-only; no product behavior changed and no gate relaxed.",
+          "version": "v11"
+        },
+        {
           "date": "2026-08-11",
           "note": "no-bump: remove duplicate GoalSupportResultV1 import and identical schema-map entry introduced while reconciling I02; generated schema bytes and behavior are unchanged.",
           "version": "v11"
@@ -16455,6 +16460,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "DecodeStats gains residual_hole_compactions / residual_holes_compacted: how often an LTR-repair canvas still carried a committed non-empty token AFTER a hole (the suffix-blind admit_fill configuration measured at 442/442 probes in residual-honesty-block-diffusion-20260804.md L-B) and how many such interior holes were slid out before the repair ran. Advisory counters only; both are zero on canvases whose holes are already trailing.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of cards P3 (per-record NLL rows) and P11 (chunked resumable eval) which both prepended v102 independently; reconciles the component to v103.",
           "version": "v103"
         },
@@ -17079,7 +17089,7 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v103"
+      "version": "v104"
     },
     "harness.model_build.train": {
       "history": [
@@ -19313,6 +19323,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "I6/I9 fail-closed decode fixes behind test_block_diffusion_lever_generates_valid_output. (1) compiler_draft, string-typed TEMPLATIZABLE (content) prop with no slot contract: the completion forest kept the broad STRING set and then stripped placeholder symbols, so it admitted exactly the byte-framed literals the OpenUI placeholder content policy rejects (Col.label -> \"baseline\") and excluded the placeholder symbols the policy requires. The slot is now the tokenizer's placeholder-symbol class (plus null for a nullable slot), and the later binding stage counts a content prop as a symbol slot instead of stripping symbols from it. This is a correction to the oracle, not a relaxation: the removed literals cannot appear in any valid program, and the re-admitted symbols are witnessed valid by dsl.parser.validate. Tokenizers with no symbol class (no kind_ids) are untouched. (2) twotower._compact_interior_holes slides committed tokens left over interior holes before _constrained_ltr_repair runs. A masked position contributes an empty surface piece, so the decoded string is unchanged by the slide, but every committed-suffix-after-a-hole leaves the canvas. That configuration is the one admit_fill over-approximates (it never validates past the first hole; 442/442 probes in residual-honesty-block-diffusion-20260804.md L-B), where the repair would commit a prefix-legal token the committed suffix contradicts and then dead-end into an invalid program. T2M holds: order preserved, no committed token edited or dropped, vacated slots stay masked, and canvases whose holes are already trailing are untouched. Decode output does change on canvases that had interior holes - the L-D byte-identical result was a measured delta at that time, not a forward guarantee.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Reconcile S2 with P5 on the integration branch: both landed as v320 in parallel; the S2 n-gram table entry below keeps its content, the P5 compiler-decode entry follows.",
           "version": "v321"
         },
@@ -21310,7 +21325,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v321"
+      "version": "v322"
     },
     "ops.vocab": {
       "history": [

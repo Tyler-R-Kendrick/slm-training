@@ -38,6 +38,10 @@ from slm_training.formal.goal_support_mapping import (
     classify_domain_adequacy as ref_classify_domain_adequacy,
     validate_well_formed_partitions,
 )
+from slm_training.formal.refutation_authority import (
+    BindingIdsV1,
+    make_exact_replay_evidence,
+)
 from slm_training.dsl.solver.state import (
     DomainValue,
     FiniteDomainState,
@@ -993,14 +997,49 @@ def test_unknown_unobserved_never_certified_removed_reference() -> None:
         unknown=(1,),
         unobserved=(2,),
     )
+    # EVID-09 / SLM-542: certified removal needs checked, identity-bound
+    # refutation evidence — ``replay_ok`` alone is telemetry. Every action
+    # carries the same authority-grade evidence so the only thing separating
+    # them is the partition (mirrors Lean ``unknown_not_certified_removable``
+    # / ``unobserved_not_certified_removable``).
+    binding = BindingIdsV1(
+        state_id="state-1", problem_id="problem-1", source_id="source-1", tool_id="tool-1"
+    )
+    checked = make_exact_replay_evidence(binding, evidence_digest="digest-1")
     evidence = (
-        ActionEvidenceV1(action=0, partition="unsupported", replay_ok=True, hard_profile=True),
-        ActionEvidenceV1(action=1, partition="unknown", replay_ok=False, hard_profile=True),
-        ActionEvidenceV1(action=2, partition="unobserved", replay_ok=False, hard_profile=True),
+        ActionEvidenceV1(
+            action=0,
+            partition="unsupported",
+            replay_ok=True,
+            hard_profile=True,
+            refutation_evidence=checked,
+            expected_binding=binding,
+        ),
+        ActionEvidenceV1(
+            action=1,
+            partition="unknown",
+            replay_ok=False,
+            hard_profile=True,
+            refutation_evidence=checked,
+            expected_binding=binding,
+        ),
+        ActionEvidenceV1(
+            action=2,
+            partition="unobserved",
+            replay_ok=False,
+            hard_profile=True,
+            refutation_evidence=checked,
+            expected_binding=binding,
+        ),
     )
     removed = certified_removal_set(partitions, evidence)
     assert removed == (0,)
     assert 1 not in removed and 2 not in removed
+    # Telemetry-only replay bits never authorize removal on their own.
+    telemetry_only = (
+        ActionEvidenceV1(action=0, partition="unsupported", replay_ok=True, hard_profile=True),
+    )
+    assert certified_removal_set(partitions, telemetry_only) == ()
 
 
 def test_structural_support_differs_from_goal_support() -> None:
