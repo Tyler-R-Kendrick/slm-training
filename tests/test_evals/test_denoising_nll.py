@@ -237,3 +237,30 @@ def test_loss_suites_missing_suite_is_explicit(tmp_path: Path) -> None:
     assert "schema_ood" in report["aggregate"]["missing_categories"]
     # Aggregate still computed over present categories (renormalized).
     assert report["aggregate"]["weighted_nll"] is not None
+
+
+def test_loss_suites_per_record_rows_match_broad_category(tmp_path: Path) -> None:
+    from slm_training.evals.loss_suites import per_record_nll_map
+
+    model = _model()
+    test_dir = tmp_path / "eval"
+    _write_suite(test_dir, "held_out", _records("held_out"))
+    _write_suite(test_dir, "ood", _records("ood"))
+    report = evaluate_loss_suites(model, test_dir)
+    rows = report["per_record"]
+    assert [row["id"] for row in rows] == ["h1", "h2"]
+    broad = {
+        row["id"]: row["mean_nll"]
+        for row in report["categories"]["broad"]["per_record"]
+    }
+    assert {row["id"]: row["nll"] for row in rows} == broad
+    assert all(row["masked_tokens"] > 0 for row in rows)
+    assert all("schema_ood_nll" in row and "binding_nll" in row for row in rows)
+    assert per_record_nll_map(report) == broad
+    # Aggregate fields are untouched by the additive rows.
+    assert set(report["aggregate"]) == {
+        "weighted_nll",
+        "weight_used",
+        "missing_categories",
+        "complete",
+    }

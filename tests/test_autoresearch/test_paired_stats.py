@@ -54,3 +54,65 @@ def test_sign_test_fallback_for_tiny_n() -> None:
     result = paired_screening_test(deltas, min_nontied_pairs=5)
     assert result.kind == "sign_test"
     assert result.verdict == "win"
+
+
+def test_paired_record_deltas_pairs_by_id_and_signs_by_direction() -> None:
+    from slm_training.autoresearch.paired_stats import paired_record_deltas
+
+    control = {"r1": 2.0, "r2": 3.0, "r3": 1.0, "only_control": 9.0, "nan": float("nan")}
+    candidate = {"r1": 1.5, "r2": 3.5, "r3": 1.0, "only_candidate": 0.1, "nan": 1.0}
+    pairs = paired_record_deltas(control, candidate, direction="decrease")
+    assert pairs.record_ids == ("r1", "r2", "r3")
+    # decrease: control - candidate (positive = candidate better).
+    assert pairs.deltas == (0.5, -0.5, 0.0)
+    assert pairs.n_pairs == 3
+    assert pairs.n_missing_control == 2  # only_control absent + NaN control
+    assert pairs.n_missing_candidate == 1
+    assert pairs.median_delta == 0.0
+    assert pairs.sd is not None and pairs.sd > 0
+    increase = paired_record_deltas(control, candidate, direction="increase")
+    assert increase.deltas == (-0.5, 0.5, 0.0)
+
+
+def test_paired_record_screening_win_requires_alpha_and_minimum_effect() -> None:
+    from slm_training.autoresearch.paired_stats import paired_record_screening
+
+    control = {f"r{i}": 3.0 + 0.01 * i for i in range(24)}
+    candidate = {
+        k: v - 0.2 - 0.001 * i for i, (k, v) in enumerate(control.items())
+    }
+    win = paired_record_screening(
+        control, candidate, direction="decrease", minimum_effect=0.05
+    )
+    assert win["win"] is True
+    assert win["n_pairs"] == 24
+    assert win["p_value"] < 0.05
+    assert win["median_delta"] > 0.05
+    assert win["paired_sd"] is not None
+    assert win["promotion_authority"] is False
+
+    # Significant but below the policy minimum effect: not a win.
+    small = {k: v - 0.02 for k, v in control.items()}
+    sub = paired_record_screening(
+        control, small, direction="decrease", minimum_effect=0.05
+    )
+    assert sub["win"] is False
+    assert sub["p_value"] < 0.05
+
+    # Three pairs can never reach alpha: mechanism_no_effect, never a win.
+    tiny = paired_record_screening(
+        dict(list(control.items())[:3]),
+        dict(list(candidate.items())[:3]),
+        direction="decrease",
+        minimum_effect=0.05,
+    )
+    assert tiny["win"] is False
+    assert tiny["verdict"] == "mechanism_no_effect"
+    assert tiny["n_pairs"] == 3
+
+    # A significant regression is a loss, not a win.
+    worse = {k: v + 0.3 for k, v in control.items()}
+    loss = paired_record_screening(
+        control, worse, direction="decrease", minimum_effect=0.05
+    )
+    assert loss["win"] is False and loss["verdict"] == "loss"

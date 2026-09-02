@@ -2795,6 +2795,11 @@
     "evals.loss_suite": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: evaluate_loss_suites adds an additive per_record row list (broad/binding/structural/schema_ood NLL per record id) and per_record_nll_map; aggregate fields, weights, LOSS_SUITE_VERSION unchanged.",
+          "version": "v1"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: SLM-577 emptiness_probe.minimal_valid_program logs rejected candidates instead of silent continue; LOSS_SUITE_VERSION and scoring behavior unchanged.",
           "version": "v1"
@@ -5066,8 +5071,18 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Merge of card P3 (paired per-record NLL screening verdict; NLL independent of the quality eval) which also prepended v272 independently; reconciles the component to v276 with all parent histories intact below.",
+          "version": "v276"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of card P6 (fail-closed heals, honest pass outcomes, non-crashing driver) which also prepended v272 independently; reconciles the component to v275 with all parent histories intact below.",
           "version": "v275"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening NLL primary is decided by the policy paired test (measurement.paired_test) on per-record eval_nll_records.json deltas: primary_metric_win requires p < alpha and a median improvement above screening_primary.minimum_effect, otherwise primary_metric_null_or_worse carries p and n_pairs. The fixture insufficient_n clamp keeps nullifying decoded-quality, latency/efficiency, and every promotion verdict but no longer nullifies a paired NLL screening win decided on >= 6 pairs (recorded as fixture_insufficient_n:quality_probe); I6 invalid_grammar still blocks. The continuous driver computes teacher-forced smoke NLL for every arm with a checkpoint regardless of the quality-eval exit code and appends the measured paired-delta SD to metric_expectations.screening.v1.json observed_paired_sd_by_metric.",
+          "version": "v272"
         },
         {
           "date": "2026-09-02",
@@ -7003,7 +7018,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v275"
+      "version": "v276"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -16335,6 +16350,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Screening eval NLL persists per-record broad denoising NLL rows to runs/<arm>/eval_nll_records.json ({record_id: nll} + definition hash) and eval_nll_n_records beside the unchanged scoreboard smoke.eval_nll aggregate; ship gates unchanged.",
+          "version": "v102"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: S4 additive read-only DecodeStats ratios (committed_tokens alias of tokens_emitted, forced_token_fraction, speculative_commit_fraction, speculative_token_fraction, forwards_per_committed_token) as properties, each None on a zero denominator, appended to as_dict() and skipped by merge()/dropped by from_dict(); no counter, gate, or decode behaviour changes; tests in tests/test_models/test_decode_stats_fractions.py.",
           "version": "v101"
         },
@@ -16944,7 +16964,7 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v101"
+      "version": "v102"
     },
     "harness.model_build.train": {
       "history": [
