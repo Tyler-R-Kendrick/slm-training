@@ -5116,6 +5116,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the three P1 continuous-loop closeout results JSON landed (deterministic rebuild); P1 recovery doc section is documentation only.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
           "note": "P1: type a failed stage's captured output as a harness signal (engine.stage_failure_signals). The SFT data-governance refusal now diagnoses as harness/train_data instead of falling through to untyped infrastructure with an argparse usage dump, so the continuous driver stops defaulting the repair owner to model_build.",
           "version": "v281"
         },
