@@ -5076,6 +5076,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the compiler-decode-cost results JSON landed (deterministic rebuild).",
+          "version": "v276"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of card P3 (paired per-record NLL screening verdict; NLL independent of the quality eval) which also prepended v272 independently; reconciles the component to v276 with all parent histories intact below.",
           "version": "v276"
         },
