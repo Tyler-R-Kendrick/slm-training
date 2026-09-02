@@ -22,6 +22,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignControlV1,
     CampaignEndpointV1,
     CampaignGateV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
 )
@@ -171,7 +172,9 @@ class _TerminalFixtureExpander:
     def __init__(self, state: FiniteDomainState, case: _Case) -> None:
         self._state = state
         self._programs = {
-            hashlib.sha256(candidate.program.encode("utf-8")).hexdigest(): candidate.program
+            hashlib.sha256(
+                candidate.program.encode("utf-8")
+            ).hexdigest(): candidate.program
             for candidate in case.candidates
         }
 
@@ -276,6 +279,7 @@ class GoalSupportDomainAdequacyCampaignV1:
                 )
                 for arm_id in ARM_IDS
             ),
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.seed,),
             budget=CampaignBudget(
                 max_experiments=len(ARM_IDS) * len(_CASES),
@@ -526,9 +530,7 @@ def _summarize_goal_reports(
             classifications.count("coverage_unknown"), len(reports)
         ),
         obstruction_core_emission_rate=_rate(len(cores), unsupported_n),
-        obstruction_core_replay_rate=(
-            1.0 if cores and not replay_failures else 0.0
-        ),
+        obstruction_core_replay_rate=(1.0 if cores and not replay_failures else 0.0),
         mean_obstruction_core_size=(
             round(sum(len(core.core_atoms) for core in cores) / len(cores), 6)
             if cores
@@ -556,7 +558,9 @@ def _run_goal_arm(
     providers: list[GoalSupportProvider] = []
     for case in _CASES:
         if time.monotonic() >= deadline:
-            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
+            raise TimeoutError(
+                "goal-support fixture campaign exceeded max_wall_minutes"
+            )
         state, selected = _state(case, context.constraints.digest)
         provider = _provider(state, context, case)
         cap = min(campaign.exact_action_cap, len(state.holes[0].values), remaining)
@@ -607,7 +611,9 @@ def _run_structural_arm(
     remaining = campaign.goal_support_query_cap
     for case in _CASES:
         if time.monotonic() >= deadline:
-            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
+            raise TimeoutError(
+                "goal-support fixture campaign exceeded max_wall_minutes"
+            )
         state, selected = _state(case, constraint_version)
         expander = _TerminalFixtureExpander(state, case)
         values = tuple(sorted(state.holes[0].values, key=action_id_from_value))
@@ -628,7 +634,9 @@ def _run_structural_arm(
             replay_failures += int(not replay.ok)
             supported_n += int(verdict is SupportVerdict.SUPPORTED)
             unknown_n += int(verdict is SupportVerdict.UNKNOWN)
-            verifier_calls += result.counters.verifier_calls + replay.counters.verifier_calls
+            verifier_calls += (
+                result.counters.verifier_calls + replay.counters.verifier_calls
+            )
             expanded_nodes += result.counters.nodes + replay.counters.nodes
             backtracks += result.counters.backtracks + replay.counters.backtracks
             action_digest = action_id_from_value(value)
@@ -705,7 +713,9 @@ def _run_certified_arm(
     closure_verifier_calls = closure_nodes = closure_backtracks = 0
     for case, report in zip(_CASES, reports, strict=True):
         if time.monotonic() >= deadline:
-            raise TimeoutError("goal-support fixture campaign exceeded max_wall_minutes")
+            raise TimeoutError(
+                "goal-support fixture campaign exceeded max_wall_minutes"
+            )
         state, _ = _state(case, context.constraints.digest)
         legal = {
             *report.partitions.supported,
@@ -743,9 +753,7 @@ def _run_certified_arm(
         closure_verifier_calls += closure.counters.verifier_calls
         closure_nodes += closure.counters.expanded_nodes
         closure_backtracks += closure.counters.backtracks
-        live = {
-            action_id_from_value(value) for value in closure.state.holes[0].values
-        }
+        live = {action_id_from_value(value) for value in closure.state.holes[0].values}
         removed = legal - live
         false_prunes += len(removed - unsupported)
         pruned_n += len(removed)

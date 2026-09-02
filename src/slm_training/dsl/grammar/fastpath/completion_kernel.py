@@ -169,6 +169,7 @@ class CompletionSession:
             "reachability_cache_hits": 0,
             "reachability_cache_misses": 0,
             "witness_states_expanded": 0,
+            "witness_children_skipped": 0,
             "forced_closure_hits": 0,
             "forced_closure_tokens": 0,
             "direct_terminal_feeds": 0,
@@ -578,6 +579,26 @@ class CompletionSession:
                         if path.kind == "eos":
                             result = WitnessResult(WitnessStatus.SUPPORTED, tokens)
                             break
+                        if nodes_left <= 0 and saw_unknown:
+                            # Exact early exit.  Once the node allowance is
+                            # spent and a sibling already came back UNKNOWN,
+                            # this frame's verdict is fixed: a non-EOS child
+                            # can only be UNKNOWN (no nodes left to expand),
+                            # UNSUPPORTED (room or bound prune), or a hit on a
+                            # query-local entry — and no SUPPORTED entry can
+                            # exist while the query is still iterating, since
+                            # SUPPORTED unwinds every frame immediately.  None
+                            # of those outcomes changes ``saw_unknown`` or the
+                            # for/else result below, and the frame returns
+                            # UNKNOWN, which is never persisted.  Advancing
+                            # the child anyway costs a parser fork, a token
+                            # feed, and a semantic step per sibling, which
+                            # dominated compiler-tree decode wall time
+                            # (docs/design/compiler-decode-cost-20260902.md).
+                            # EOS paths above are still honoured because they
+                            # need no expansion to certify.
+                            self._counters["witness_children_skipped"] += 1
+                            continue
                         child = self.advance_path(current, tokens)
                         if child is None:
                             continue

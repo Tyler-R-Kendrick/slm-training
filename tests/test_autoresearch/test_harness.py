@@ -16,12 +16,14 @@ from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.autoresearch.engine import (
+    SFT_GATE_SIGNAL_CODE,
     _suite_headline_metrics,
     compile_commands,
     create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
     normalized_knobs_sha256,
+    stage_failure_signals,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -3542,6 +3544,76 @@ def test_frozen_harness_signal_routes_one_canonical_owner() -> None:
     assert unconfirmed.target == "infrastructure"
 
 
+#: Verbatim control-arm stderr from continuous-openui-local cycles c536..c543
+#: (reproduced by loop p1-merged, campaign
+#: continuous-loop-20260902-p1-merged-f6bb706d-c1): the SFT data-governance
+#: gate refuses the train stage through ``argparse.error``, so the arm exits 2
+#: with an argparse usage dump wrapped around the gate's own message.
+_SFT_GATE_STDERR = (
+    "usage: train_model.py [-h] [--train-dir TRAIN_DIR]\n"
+    "                      [--allow-open-synthesis-feedback]\n"
+    "train_model.py: error: SFT blocked: open synthesis_feedback "
+    "recommendations without action/waiver record: ['id_collision', "
+    "'redundant_expansion', 'stale_output_contract']. Write "
+    "src/slm_training/resources/data/train/openui_verified_train_v1/"
+    "synthesis_feedback_actions.json after fixing the synthesizer "
+    "(or an explicit waiver).\n"
+)
+
+
+def test_sft_gate_refusal_routes_to_train_data_not_model_build() -> None:
+    """A refused train stage is typed ``train_data``, not an untyped crash.
+
+    Before the fix the failed-stage outcome carried no ``harness_signals`` at
+    all, so ``diagnose_outcome`` fell through to ``target="infrastructure"``
+    with the whole argparse usage dump as its evidence string, and the
+    continuous driver's ``_primary_harness_family`` found no signal to read
+    and defaulted the repair owner to ``model_build``.
+    """
+
+    # The original defect, reproduced: an untyped failed stage diagnoses as
+    # generic infrastructure and hands the driver the argparse dump verbatim.
+    untyped = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="c-control",
+            campaign_id="test-campaign",
+            status="failed",
+            exit_code=2,
+            error=_SFT_GATE_STDERR,
+        )
+    )
+    assert untyped.target == "infrastructure"
+    assert untyped.harness_family is None
+    assert untyped.evidence == (_SFT_GATE_STDERR,)
+
+    signals = stage_failure_signals("", _SFT_GATE_STDERR)
+    assert [signal.family for signal in signals] == ["train_data"]
+    assert signals[0].code == SFT_GATE_SIGNAL_CODE
+    assert signals[0].evidence_uri.endswith(
+        "openui_verified_train_v1/synthesis_feedback_actions.json"
+    )
+    assert signals[0].reproduced_on_frozen_input and signals[0].primary
+
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="c-control",
+            campaign_id="test-campaign",
+            status="failed",
+            exit_code=2,
+            error=_SFT_GATE_STDERR,
+            harness_signals=signals,
+        )
+    )
+    assert diagnosis.target == "harness"
+    assert diagnosis.harness_family == "train_data"
+    assert any("train_data" in action for action in diagnosis.recommended_actions)
+    # The evidence is the actionable path, not the argparse usage dump.
+    assert diagnosis.evidence == (f"{SFT_GATE_SIGNAL_CODE}: {signals[0].evidence_uri}",)
+
+    # An ordinary stage crash stays untyped: the classifier never guesses.
+    assert stage_failure_signals("", "Traceback ...\nRuntimeError: boom") == ()
+
+
 def test_loop_result_matrix_is_derived_from_verified_campaign_chain(
     tmp_path: Path,
 ) -> None:
@@ -5209,6 +5281,32 @@ def test_default_eval_version_resolves_published_smoke_suite() -> None:
     assert (root / "suites" / "smoke" / "records.jsonl").is_file()
 
 
+def test_default_eval_version_prefers_largest_family_smoke_suite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.autoresearch.engine import default_eval_version
+
+    published = tmp_path / "src/slm_training/resources/data/eval"
+    for name, n in (
+        ("e938_role_safe_all_targets_smoke24_v1", 24),
+        ("e938_role_safe_all_targets_smoke96_v1", 96),
+        ("e938_role_safe_all_targets_smoke6_v1", 6),
+        ("e842_harness_owned_slots_v1", 500),
+    ):
+        records = published / name / "suites" / "smoke" / "records.jsonl"
+        records.parent.mkdir(parents=True)
+        records.write_text("".join(json.dumps({"id": i}) + "\n" for i in range(n)))
+    monkeypatch.chdir(tmp_path)
+    assert default_eval_version() == "e938_role_safe_all_targets_smoke96_v1"
+    # Ties break toward a non-frozen snapshot (a frozen suite can never grow).
+    frozen = published / "e938_role_safe_all_targets_v2" / "suites" / "smoke"
+    frozen.mkdir(parents=True)
+    (frozen / "records.jsonl").write_text(
+        "".join(json.dumps({"id": i}) + "\n" for i in range(96))
+    )
+    assert default_eval_version() == "e938_role_safe_all_targets_smoke96_v1"
+
+
 def test_compile_commands_default_eval_is_not_missing_v1() -> None:
     from slm_training.autoresearch.engine import compile_commands
     from slm_training.autoresearch.schemas import (
@@ -5620,3 +5718,75 @@ def test_execute_latency_probe_timeout_stops_before_full_eval(
     assert calls == [probe]
     assert outcome.status == "stopped"
     assert outcome.stage_telemetry[0]["latency_probe"] is True
+
+
+def test_compile_commands_routes_chunked_promotion_eval_knobs() -> None:
+    from slm_training.autoresearch.engine import is_resumable_eval_command
+
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="wf_smoke_v2",
+            steps=20,
+            eval_suites="smoke,held_out",
+            decode_timeout_seconds=24,
+            eval_limit=24,
+            eval_partial_scoreboard=True,
+            eval_max_records_this_run=4,
+        )
+    )
+    commands = compile_commands(campaign(), spec)
+    evaluate = next(c for c in commands if "scripts.evaluate_model" in c)
+    assert evaluate[evaluate.index("--eval-limit") + 1] == "24"
+    assert "--partial-scoreboard" in evaluate
+    assert evaluate[evaluate.index("--max-records-this-run") + 1] == "4"
+    assert is_resumable_eval_command(evaluate)
+    plain = next(
+        c
+        for c in compile_commands(campaign(), experiment(knobs=ExperimentKnobs(steps=20)))
+        if "scripts.evaluate_model" in c
+    )
+    assert not is_resumable_eval_command(plain)
+    assert "--partial-scoreboard" not in plain
+
+
+def test_execute_resumable_eval_pending_exit_is_typed_incomplete_not_failed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import slm_training.autoresearch.engine as engine
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+
+    def pending(command, **_kwargs):
+        return BoundedProcessResult(
+            command=tuple(command),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=engine.EVAL_EXIT_RESUME_PENDING,
+            stdout='{"measurement_complete": false, "suites": {"held_out": {"structural_similarity": 0.5}}}',
+            stderr="",
+            duration_seconds=1.0,
+        )
+
+    monkeypatch.setattr(engine, "run_bounded_process", pending)
+    base = [
+        "python",
+        "-m",
+        "scripts.evaluate_model",
+        "--run-root",
+        str(tmp_path / "runs"),
+        "--run-id",
+        "chunk",
+        "--ship-gates",
+    ]
+    command = [*base, "--partial-scoreboard", "--max-records-this-run", "4"]
+    outcome = execute_commands(experiment(), [command], cwd=tmp_path)
+    assert outcome.status == "stopped"
+    assert outcome.exit_code == engine.EVAL_EXIT_RESUME_PENDING
+    assert "resume with --resume-run" in str(outcome.error)
+    stage = outcome.stage_telemetry[0]
+    assert stage["measurement_complete"] is False
+    assert stage["resume_pending"] is True
+    # The same exit on a non-resumable eval stays a failure.
+    failed = execute_commands(experiment(), [list(base)], cwd=tmp_path)
+    assert failed.status == "failed"

@@ -25,6 +25,7 @@ import fcntl
 import hashlib
 import itertools
 import json
+import math
 import os
 import re
 import subprocess
@@ -38,14 +39,18 @@ from typing import Any, NamedTuple
 from slm_training.autoresearch.engine import default_eval_version
 from slm_training.autoresearch.hillclimb import (
     CHAMPION_EPOCHS_EXHAUSTED,
+    CLIMB_CHAMPION_ADVANCE_STATUSES,
     DEFAULT_MAX_CUMULATIVE_EPOCHS,
+    ClimbChampionSidecar,
     assert_champion_eval_disjoint,
     assert_warm_start_launch,
+    champion_cumulative_epochs,
     champion_epoch_park_reason,
     climb_champion_checkpoint_path,
     load_climb_champion,
     maybe_advance_climb_champion,
     seed_climb_champion,
+    train_manifest_record_count,
 )
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
@@ -61,6 +66,8 @@ from slm_training.autoresearch.experiment_campaign import (
 from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.thrash_regime import (
     DECODE_RESIDUAL_SLUGS,
+    LATENCY_PRIMARY_LEAF,
+    is_latency_only_arm,
     REGIME_CLIMB,
     REGIME_ISOLATE,
     ThrashRegimeDecision,
@@ -347,8 +354,31 @@ def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] 
     )
 
 
-def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
-    """Append unused extra smoke fixtures to the tracked seed file."""
+class _SeedAppendResult(NamedTuple):
+    """Honest accounting for one seed-file growth attempt."""
+
+    paths: list[Path]
+    seed_path: Path
+    lines_before: int
+    smoke_n_before: int
+    smoke_n_after: int
+    need: int
+    appended: int
+
+    @property
+    def deficit_unfilled(self) -> bool:
+        """A deficit existed and the sampler produced nothing: a failed heal."""
+        return self.need > 0 and self.appended == 0
+
+
+def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> _SeedAppendResult:
+    """Append unused extra smoke fixtures to the tracked seed file.
+
+    Wraps the sampler (``extra_smoke_fixtures_for_deficit``) with before/after
+    counts so the caller can verify growth instead of trusting the return
+    value; an empty sampler result against a real deficit is reported as
+    ``deficit_unfilled`` — never silently as success.
+    """
     from slm_training.autoresearch.screening_sample_size import (
         extra_smoke_fixtures_for_deficit,
     )
@@ -365,16 +395,27 @@ def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> list[Path]:
         suite = str((rec.get("meta") or {}).get("suite") or rec.get("split") or "")
         if suite == "smoke":
             smoke_n += 1
+    lines_before = sum(1 for line in lines if line.strip())
     need = max(0, int(n_min) - smoke_n)
     extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
     if not extras:
-        return []
+        return _SeedAppendResult(
+            [], seed_path, lines_before, smoke_n, smoke_n, need, 0
+        )
     with seed_path.open("a", encoding="utf-8") as fh:
         if lines and lines[-1].strip():
             fh.write("\n")
         for rec in extras:
             fh.write(json.dumps(rec, sort_keys=True) + "\n")
-    return [seed_path]
+    return _SeedAppendResult(
+        [seed_path],
+        seed_path,
+        lines_before,
+        smoke_n,
+        smoke_n + len(extras),
+        need,
+        len(extras),
+    )
 
 
 def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
@@ -391,6 +432,9 @@ def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Pat
     ]
 
 
+_SCREENING_EVAL_HEAL_ID = "rebuild_screening_eval"
+
+
 def _self_heal_rebuild_screening_eval(
     *,
     cwd: Path,
@@ -398,8 +442,23 @@ def _self_heal_rebuild_screening_eval(
     loop_id: str,
     campaign_id: str | None,
 ) -> str | None:
-    """Grow smoke to the Lean floor, publish under resources/, commit."""
-    from slm_training.autoresearch.heal.fail_closed import allocate_screening_suite_id
+    """Grow smoke to the Lean floor, publish under resources/, commit.
+
+    Fail-closed (``docs/design/autotrain-fail-closed-self-healing.md`` §3):
+    the heal counts only when the postcondition probe
+    (:func:`verify_driver_heal`) observes the resolved smoke suite grow
+    (``smoke_n_after > smoke_n_before``) and the policy resolver no longer
+    demands generation (``must_generate == False``). An empty sampler against
+    a real deficit, a publish conflict, or an unchanged suite each leave a
+    ``heal_postcondition_failed`` receipt and return ``None`` — no sidecar,
+    no commit of the fresh suite id, no action ack.
+    """
+    from slm_training.autoresearch.heal.fail_closed import (
+        allocate_screening_suite_id,
+        count_records,
+        record_count_probe,
+        verify_driver_heal,
+    )
     from slm_training.data.store import DataStore
     from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
 
@@ -407,15 +466,64 @@ def _self_heal_rebuild_screening_eval(
     if not isinstance(report, dict) or not report.get("must_generate"):
         return None
     n_min = int(report.get("n_min") or 6)
-    _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    smoke_n_before = int(_screening_suite_records() or 0)
+    seeds = _append_deficit_smoke_seeds(cwd, n_min=n_min)
+    counts_before = {
+        "smoke_n": smoke_n_before,
+        "seed_smoke_n": seeds.smoke_n_before,
+    }
+
+    def _failed(
+        stage: str,
+        *,
+        probe_path: Path,
+        must_exceed: int,
+        counts_after: dict[str, int],
+        conditions: dict[str, bool] | None = None,
+        note: str = "",
+    ) -> None:
+        receipt = verify_driver_heal(
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            heal_id=_SCREENING_EVAL_HEAL_ID,
+            verify=record_count_probe(probe_path, must_exceed=must_exceed),
+            cwd=cwd,
+            counts_before=counts_before,
+            counts_after=counts_after,
+            extra_conditions=conditions,
+            note=f"stage={stage} {note}".strip(),
+        )
+        print(
+            f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL stage={stage} "
+            f"outcome={receipt.outcome} n_min={n_min} "
+            f"counts_before={json.dumps(counts_before, sort_keys=True)} "
+            f"counts_after={json.dumps(counts_after, sort_keys=True)}",
+            flush=True,
+        )
+        return None
+
+    if seeds.deficit_unfilled:
+        # The sampler had nothing to add: the seed file did not grow, so no
+        # bigger suite can be built from it. Probe the seed file itself.
+        return _failed(
+            "seed_sampler_empty",
+            probe_path=seeds.seed_path,
+            must_exceed=seeds.lines_before,
+            counts_after={
+                "smoke_n": smoke_n_before,
+                "seed_smoke_n": seeds.smoke_n_after,
+            },
+            conditions={"seed_deficit_filled": False},
+            note=f"need={seeds.need} appended=0",
+        )
     eval_root = cwd / "src/slm_training/resources/data/eval"
     eval_version = allocate_screening_suite_id(eval_root, n_min)
     train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
     out_dir = cwd / "outputs" / "data" / "eval" / eval_version
-    published = cwd / "src/slm_training/resources/data/eval" / eval_version
-    if not (out_dir / "manifest.json").is_file() and not (
-        published / "suites" / "smoke" / "records.jsonl"
-    ).is_file():
+    published = eval_root / eval_version
+    published_records = published / "suites" / "smoke" / "records.jsonl"
+    if not (out_dir / "manifest.json").is_file() and not published_records.is_file():
         argv = _local_rebuild_screening_eval_argv(
             eval_version=eval_version, train_manifest=train_manifest
         )
@@ -438,25 +546,70 @@ def _self_heal_rebuild_screening_eval(
             )
             return None
     store = DataStore(root=cwd)
-    if not (published / "suites" / "smoke" / "records.jsonl").is_file():
+    if not published_records.is_file():
         try:
             store.publish("eval", eval_version)
-        except FileExistsError:
-            pass
+        except FileExistsError as exc:
+            # A conflict on a freshly allocated id means the allocator and
+            # the store disagree: that is a failed heal, never a silent pass.
+            return _failed(
+                "publish_conflict",
+                probe_path=published_records,
+                must_exceed=count_records(published_records),
+                counts_after={
+                    "smoke_n": smoke_n_before,
+                    "seed_smoke_n": seeds.smoke_n_after,
+                },
+                conditions={"published_fresh_suite": False},
+                note=f"version={eval_version} {exc!r}"[:300],
+            )
         except Exception as exc:  # noqa: BLE001
             print(f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL publish={exc!r}", flush=True)
             return None
-    smoke = published / "suites" / "smoke" / "records.jsonl"
-    if not smoke.is_file():
+    n_after, report_after = _screening_n_report()
+    smoke_n_after = int(_screening_suite_records() or 0)
+    must_generate_after = bool(
+        isinstance(report_after, dict) and report_after.get("must_generate")
+    )
+    counts_after = {
+        "smoke_n": smoke_n_after,
+        "seed_smoke_n": seeds.smoke_n_after,
+        "published_records": count_records(published_records),
+    }
+    receipt = verify_driver_heal(
+        root=root,
+        loop_id=loop_id,
+        campaign_id=campaign_id,
+        heal_id=_SCREENING_EVAL_HEAL_ID,
+        verify=record_count_probe(published_records, must_exceed=smoke_n_before),
+        cwd=cwd,
+        counts_before=counts_before,
+        counts_after=counts_after,
+        extra_conditions={
+            "must_generate_false": not must_generate_after,
+            "resolver_reports_growth": smoke_n_after > smoke_n_before,
+        },
+        note=f"stage=published version={eval_version}",
+    )
+    if receipt.outcome != "healed":
+        print(
+            f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL stage=postcondition "
+            f"outcome={receipt.outcome} version={eval_version} "
+            f"counts_before={json.dumps(counts_before, sort_keys=True)} "
+            f"counts_after={json.dumps(counts_after, sort_keys=True)} "
+            f"must_generate_after={must_generate_after}",
+            flush=True,
+        )
         return None
     sidecar = published / "screening_sample_size.json"
-    n_after, report_after = _screening_n_report()
     sidecar.write_text(
         json.dumps(
             {
                 "schema_version": "screening_sample_size/v1",
                 "eval_version": eval_version,
                 "smoke_n": n_after,
+                "smoke_n_before": smoke_n_before,
+                "smoke_n_after": smoke_n_after,
                 "report": report_after,
             },
             indent=2,
@@ -501,17 +654,173 @@ def _self_heal_rebuild_screening_eval(
                         f"src/slm_training/resources/data/eval/{eval_version}/"
                         "screening_sample_size.json"
                     ],
+                    counts=(smoke_n_before, smoke_n_after),
                 )
     print(
         f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
-        f"smoke_n={n_after}",
+        f"smoke_n={n_after} smoke_n_before={smoke_n_before} "
+        f"smoke_n_after={smoke_n_after}",
         flush=True,
     )
-    return "rebuild_screening_eval"
+    return _SCREENING_EVAL_HEAL_ID
 
 
-# Conservative CPU prior until a train_summary exists (c527 ~6.5 steps/s).
-_COLD_START_STEPS_PER_SEC = 5.0
+# Cold-start steps/s prior until a train_summary exists. Measured 2026-09-02
+# on the 4-CPU (no GPU) autotrain box with the canonical trainer
+# (``python -m scripts.train_model``) on ``wf_smoke_v2`` (101 records) at the
+# exact screening launch shape from ``autoresearch/engine.py`` (scratch
+# context, batch 2 / 3, lr 3e-4, seed 0, ``--no-full-state-checkpoint``) and
+# at the E53 recipe architecture (d_model 192, 6 heads, 3+6 layers, scratch
+# context: the frozen SmolLM2 ``hf`` tower is not installable here), while
+# sibling agents shared the CPUs. 12 complete 200-step runs spanned
+# 2.906-19.633 steps/s (median 16.091; the spread is CPU contention, not
+# recipe variance). The prior is the slowest run rounded down to 0.1 so a
+# cold fit never overshoots the train floor under contention. Telemetry from
+# ``*/runs/*/train_summary.json`` replaces it after the first arm. Provenance:
+# ``docs/design/p8-screening-cold-start-steps-prior-20260902.md`` (+ ``.json``).
+_COLD_START_STEPS_PER_SEC = 2.9
+_COLD_START_STEPS_PER_SEC_EVIDENCE: dict[str, Any] = {'doc': 'docs/design/p8-screening-cold-start-steps-prior-20260902.md',
+ 'e53_scratch_arch': '--d-model 192 --n-heads 6 --context-layers 3 '
+                     '--denoiser-layers 6 --mask-pattern mixed (E53 recipe shape; '
+                     'hf context tower not installable here, so scratch context)',
+ 'expected_cold_steps_at_100s_floor': 261,
+ 'expected_measured_steps_at_100s_floor': 400,
+ 'host': '4 CPU, no GPU; sibling agents shared the CPUs (1-min load average at '
+         'launch recorded per run)',
+ 'launch_shape': '--context-backend scratch --device cpu --lr 3e-4 --seed 0 '
+                 '--train-version wf_smoke_v2 --local-files-only '
+                 '--no-sync-checkpoints --no-full-state-checkpoint (engine.py '
+                 'screening train command)',
+ 'max_steps_per_sec': 19.633,
+ 'measured_at': '2026-09-02',
+ 'median_steps_per_sec': 16.091,
+ 'min_steps_per_sec': 2.906,
+ 'prior_steps_per_sec': 2.9,
+ 'record_count': 101,
+ 'rule': 'prior = min(measured steps/s) rounded down to 0.1; train telemetry '
+         'replaces it after the first arm',
+ 'runs': [{'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 68.82,
+           'load_avg_1m_at_launch': 4.17,
+           'process_wall_seconds': 79.02,
+           'run_id': 'initial_b2_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 2.906,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.47,
+           'load_avg_1m_at_launch': 10.83,
+           'process_wall_seconds': 16.06,
+           'run_id': 'initial_b2_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 19.107,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 11.15,
+           'load_avg_1m_at_launch': 8.25,
+           'process_wall_seconds': 16.75,
+           'run_id': 'initial_b2_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 17.939,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 3,
+           'elapsed_wall_seconds': 12.68,
+           'load_avg_1m_at_launch': 7.18,
+           'process_wall_seconds': 18.38,
+           'run_id': 'initial_b3_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 15.767,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 3,
+           'elapsed_wall_seconds': 12.82,
+           'load_avg_1m_at_launch': 5.87,
+           'process_wall_seconds': 18.55,
+           'run_id': 'initial_b3_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 15.606,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 3,
+           'elapsed_wall_seconds': 12.18,
+           'load_avg_1m_at_launch': 5.09,
+           'process_wall_seconds': 17.93,
+           'run_id': 'initial_b3_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 16.416,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'e53_scratch_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 19.92,
+           'load_avg_1m_at_launch': 3.24,
+           'process_wall_seconds': 25.33,
+           'run_id': 'e53_b2_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 10.04,
+           'stopped_on': 'steps',
+           'trainable_params': 5125058},
+          {'arch': 'e53_scratch_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 19.93,
+           'load_avg_1m_at_launch': 3.42,
+           'process_wall_seconds': 25.95,
+           'run_id': 'e53_b2_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 10.037,
+           'stopped_on': 'steps',
+           'trainable_params': 5125058},
+          {'arch': 'e53_scratch_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 18.52,
+           'load_avg_1m_at_launch': 3.41,
+           'process_wall_seconds': 24.55,
+           'run_id': 'e53_b2_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 10.798,
+           'stopped_on': 'steps',
+           'trainable_params': 5125058},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.19,
+           'load_avg_1m_at_launch': 2.32,
+           'process_wall_seconds': 15.81,
+           'run_id': 'final_b2_s200_r1',
+           'steps': 200,
+           'steps_per_sec': 19.633,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.64,
+           'load_avg_1m_at_launch': 2.33,
+           'process_wall_seconds': 16.18,
+           'run_id': 'final_b2_s200_r2',
+           'steps': 200,
+           'steps_per_sec': 18.801,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962},
+          {'arch': 'trainer_default_arch',
+           'batch_size': 2,
+           'elapsed_wall_seconds': 10.87,
+           'load_avg_1m_at_launch': 2.49,
+           'process_wall_seconds': 16.64,
+           'run_id': 'final_b2_s200_r3',
+           'steps': 200,
+           'steps_per_sec': 18.398,
+           'stopped_on': 'steps',
+           'trainable_params': 1608962}],
+ 'train_dir': 'src/slm_training/resources/data/train/wf_smoke_v2',
+ 'trainer': 'python -m scripts.train_model'}
 _STEPS_PER_SEC_SAFETY = 0.9
 _SCREENING_THRASH_STEPS_MAX_DEFAULT = 400
 
@@ -619,6 +928,14 @@ def _fit_screening_steps(
     measured_steps_per_sec: float | None,
     steps_max: int,
 ) -> tuple[int, dict[str, Any]]:
+    """Fit train steps to the (grown) train floor handed over by the decode fit.
+
+    ``steps = clamp(floor_seconds * sps * safety, 1, steps_max)`` where ``sps``
+    is measured telemetry when available and the measured cold-start prior
+    otherwise. ``steps_max`` (policy ``screening_thrash_steps_max``, 400) is
+    the only cap: a larger floor buys more steps, never a larger model.
+    """
+
     cold = measured_steps_per_sec is None or measured_steps_per_sec <= 0.0
     sps = _COLD_START_STEPS_PER_SEC if cold else float(measured_steps_per_sec)
     raw = float(floor_seconds) * float(sps) * float(_STEPS_PER_SEC_SAFETY)
@@ -627,6 +944,9 @@ def _fit_screening_steps(
         "floor_seconds": float(floor_seconds),
         "measured_steps_per_sec": None if cold else float(measured_steps_per_sec),
         "steps_per_sec_used": float(sps),
+        "steps_per_sec_source": "cold_start_prior" if cold else "train_telemetry",
+        "cold_start_prior_steps_per_sec": float(_COLD_START_STEPS_PER_SEC),
+        "cold_start_prior_evidence": dict(_COLD_START_STEPS_PER_SEC_EVIDENCE),
         "safety": float(_STEPS_PER_SEC_SAFETY),
         "raw_steps": float(raw),
         "fitted_steps": int(fitted),
@@ -670,6 +990,208 @@ def _screening_thrash_steps(
     return int(fitted)
 
 
+def _policy_default_decode_floor_seconds(policy: Any) -> float:
+    """``measurement.screening_sample_size.default_decode_floor_seconds`` (2 s)."""
+
+    measurement = getattr(policy, "measurement", None) or {}
+    block = (
+        measurement.get("screening_sample_size")
+        if isinstance(measurement, dict)
+        else None
+    )
+    raw = block.get("default_decode_floor_seconds") if isinstance(block, dict) else None
+    try:
+        return max(0.0, float(raw)) if raw is not None else 2.0
+    except (TypeError, ValueError):
+        return 2.0
+
+
+def _nearest_rank_p95(values: Sequence[float]) -> float | None:
+    """Nearest-rank p95 (no interpolation; censored walls count as observed)."""
+
+    import math
+
+    ordered = sorted(float(v) for v in values if isinstance(v, (int, float)))
+    if not ordered:
+        return None
+    rank = max(1, min(len(ordered), math.ceil(0.95 * len(ordered))))
+    return float(ordered[rank - 1])
+
+
+def _predecessor_decode_p95_seconds(
+    root: Path | None, predecessor_campaign_id: str | None = None
+) -> dict[str, Any]:
+    """Measured per-record decode cost of the predecessor screening cycle.
+
+    Reads the predecessor's ``runs/*/eval_smoke.json`` scoreboards and returns
+    the pooled per-record p95 in seconds (``details[].latency_ms`` includes
+    timed-out records because ``eval_runner`` measures the true wall around
+    ``generate``), falling back to the scoreboard headline
+    ``latency_ms_p95_including_incomplete`` / ``latency_ms_p95`` /
+    ``compiler_ms_mean``. Also reports the decoded-record count, the timeout
+    count, the resulting incomplete rate and the per-record timeout that was
+    applied (``evaluation_policy.decode_timeout_seconds`` -> matrix knobs ->
+    ``thrash_timing.json``). ``source`` is ``measured_p95`` when a cost was
+    read, else ``policy_default``. Never raises; without a predecessor the
+    caller falls back to the policy floor.
+    """
+
+    out: dict[str, Any] = {
+        "p95_seconds": None,
+        "source": "policy_default",
+        "field": None,
+        "campaign_id": None,
+        "scoreboards": 0,
+        "decoded_records": 0,
+        "timeout_records": 0,
+        "incomplete_rate": None,
+        "timeout_seconds": None,
+    }
+    if root is None or not root.is_dir():
+        return out
+    camp_dir: Path | None = None
+    if predecessor_campaign_id:
+        camp_dir = root / str(predecessor_campaign_id)
+    else:
+        newest_mtime = -1.0
+        try:
+            boards = list(root.glob("*/runs/*/eval_smoke.json"))
+        except OSError:
+            boards = []
+        for path in boards:
+            try:
+                mtime = path.stat().st_mtime
+            except OSError:
+                continue
+            if mtime > newest_mtime:
+                newest_mtime = mtime
+                camp_dir = path.parents[2]
+    if camp_dir is None or not camp_dir.is_dir():
+        return out
+    out["campaign_id"] = camp_dir.name
+    latencies_ms: list[float] = []
+    headline: dict[str, list[float]] = {
+        "latency_ms_p95_including_incomplete": [],
+        "latency_ms_p95": [],
+        "compiler_ms_mean": [],
+    }
+    decoded = 0
+    timeouts = 0
+    timeout_used: float | None = None
+    boards_n = 0
+    for path in sorted(camp_dir.glob("runs/*/eval_smoke.json")):
+        payload = _read_json(path)
+        if not payload:
+            continue
+        boards_n += 1
+        details = [d for d in (payload.get("details") or []) if isinstance(d, dict)]
+        latencies_ms.extend(
+            float(d["latency_ms"])
+            for d in details
+            if isinstance(d.get("latency_ms"), (int, float))
+        )
+        n_docs = len(details)
+        if n_docs <= 0:
+            try:
+                n_docs = int(payload.get("completed_latency_n") or 0) + int(
+                    payload.get("incomplete_latency_n") or 0
+                )
+            except (TypeError, ValueError):
+                n_docs = 0
+        if n_docs <= 0:
+            try:
+                n_docs = int(payload.get("document_n") or 0)
+            except (TypeError, ValueError):
+                n_docs = 0
+        decoded += max(0, n_docs)
+        raw_timeouts = payload.get("decode_timeout_document_count")
+        if raw_timeouts is None:
+            raw_timeouts = payload.get("decode_timeout_count")
+        try:
+            timeouts += max(0, int(raw_timeouts or 0))
+        except (TypeError, ValueError):
+            pass
+        metrics = (
+            payload.get("metrics") if isinstance(payload.get("metrics"), dict) else {}
+        )
+        for key, bucket in headline.items():
+            value = payload.get(key)
+            if value is None:
+                value = metrics.get(key)
+            if isinstance(value, (int, float)) and float(value) > 0:
+                bucket.append(float(value))
+        eval_policy = payload.get("evaluation_policy")
+        if isinstance(eval_policy, dict):
+            applied = eval_policy.get("decode_timeout_seconds")
+            if isinstance(applied, (int, float)) and float(applied) > 0:
+                timeout_used = max(float(applied), timeout_used or 0.0)
+    if timeout_used is None:
+        matrix = _read_json(camp_dir / "matrix-proposal.json")
+        for hyp in matrix.get("hypotheses") or []:
+            exp = hyp.get("experiment") if isinstance(hyp, dict) else None
+            knobs = exp.get("knobs") if isinstance(exp, dict) else None
+            applied = (
+                knobs.get("decode_timeout_seconds") if isinstance(knobs, dict) else None
+            )
+            if isinstance(applied, (int, float)) and float(applied) > 0:
+                timeout_used = max(float(applied), timeout_used or 0.0)
+    if timeout_used is None:
+        timing = _read_json(camp_dir / "thrash_timing.json")
+        fit = (
+            timing.get("decode_fit")
+            if isinstance(timing.get("decode_fit"), dict)
+            else {}
+        )
+        applied = fit.get("fitted_decode_timeout_seconds")
+        if isinstance(applied, (int, float)) and float(applied) > 0:
+            timeout_used = float(applied)
+    p95_ms: float | None = None
+    field: str | None = None
+    if latencies_ms:
+        p95_ms = _nearest_rank_p95(latencies_ms)
+        field = "details.latency_ms"
+    else:
+        for key, bucket in headline.items():
+            if bucket:
+                p95_ms = max(bucket)
+                field = key
+                break
+    if p95_ms is not None and p95_ms > 0:
+        out["p95_seconds"] = float(p95_ms) / 1000.0
+        out["source"] = "measured_p95"
+        out["field"] = field
+    out["scoreboards"] = int(boards_n)
+    out["decoded_records"] = int(decoded)
+    out["timeout_records"] = int(timeouts)
+    out["incomplete_rate"] = (
+        float(min(1.0, timeouts / decoded)) if decoded > 0 else None
+    )
+    out["timeout_seconds"] = timeout_used
+    return out
+
+
+def _predecessor_timeout_cause(
+    root: Path | None,
+    predecessor_campaign_id: str | None,
+    *,
+    evidence: Mapping[str, Any] | None = None,
+) -> str:
+    """``budget_timeout`` / ``slow_decode_timeout`` / ``none`` for the predecessor."""
+
+    from slm_training.autoresearch.thrash_regime import classify_timeout_cause
+
+    ev = (
+        dict(evidence)
+        if evidence is not None
+        else _predecessor_decode_p95_seconds(root, predecessor_campaign_id)
+    )
+    return classify_timeout_cause(
+        p95_seconds=ev.get("p95_seconds"),
+        timeout_seconds=ev.get("timeout_seconds"),
+        timeout_count=ev.get("timeout_records"),
+    )
+
+
 def _fit_screening_decode_timeout_seconds(
     policy: Any,
     *,
@@ -677,14 +1199,30 @@ def _fit_screening_decode_timeout_seconds(
     formal_required: bool = False,
     telemetry_root: Path | None = None,
     requested_steps: int = 20,
+    predecessor_campaign_id: str | None = None,
+    decode_floor_evidence: Mapping[str, Any] | None = None,
 ) -> tuple[float, dict[str, Any]]:
-    """Clamp screening decode so n×decode + train floor fits the arm wall.
+    """Fit the screening decode budget to measured per-record cost.
 
-    Timeouts are optima: if this clamp always binds, either the arm share model
-    or the thrash recipe (steps/n) needs recalibration — not silent wall++.
-    After decode fit, unused eval allocation is reassigned to the train floor
-    (never past the arm wall).
+    Budget feedback loop (policy ``measurement.thrash_timing``): the
+    predecessor's per-record decode p95 is the decode floor handed to
+    ``screening_smoke_n_for_policy`` (``decode_floor_source=measured_p95``;
+    ``policy_default`` only when no predecessor scoreboard exists). The number
+    of decoded quality-probe records is what fits the eval share,
+    ``n_probe = max(1, floor(eval_share / floor))``, and the per-record timeout
+    is ``min(eval_share / n_probe, p95 x (1 + p95_margin))`` -- timeouts ~
+    p95(work) + margin, never wall++. The Pareto rule then recalibrates from
+    the predecessor's incomplete rate: above ``incomplete_rate_high`` the
+    floor is inflated by the margin (n_probe shrinks; with n_probe already 1
+    and a train-bound wall the decode share is kept whole instead of growing
+    the train floor -- ``shrink_steps``); below ``incomplete_rate_low`` the
+    floor is deflated (n_probe grows). Timeouts whose cause is budget
+    (``p95 > applied timeout``) are classified ``budget_timeout``. Unused
+    eval allocation is reassigned to the train floor (never past the wall).
     """
+
+    import math
+
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
         screening_smoke_n_for_policy,
@@ -698,21 +1236,111 @@ def _fit_screening_decode_timeout_seconds(
             policy_minutes=float(stage_wall_minutes_for_role(policy, "screening")),
             formal_required=formal_required,
         )
+    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
+    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
+    usable = max(0.0, float(arm_wall_seconds) - min_train - overhead)
+    evidence = (
+        dict(decode_floor_evidence)
+        if decode_floor_evidence is not None
+        else _predecessor_decode_p95_seconds(telemetry_root, predecessor_campaign_id)
+    )
+    raw_p95 = evidence.get("p95_seconds")
+    p95 = (
+        float(raw_p95) if isinstance(raw_p95, (int, float)) and raw_p95 > 0 else None
+    )
+    measured = p95 is not None
+    policy_floor = _policy_default_decode_floor_seconds(policy)
+    decode_floor = p95 if p95 is not None else policy_floor
+    decode_floor_source = "measured_p95" if measured else "policy_default"
     smoke_n, sample_size_report = screening_smoke_n_for_policy(
         policy,
         arm_wall_seconds=arm_wall_seconds,
+        per_record_decode_floor_seconds=decode_floor if decode_floor > 0 else None,
         suite_records=_screening_suite_records(),
     )
-    min_train = float(thrash.get("min_train_floor_seconds") or 20.0)
-    overhead = float(thrash.get("eval_overhead_seconds") or 8.0)
-    usable = float(arm_wall_seconds) - min_train - overhead
-    if int(smoke_n) <= 0:
-        max_decode = max(1.0, usable)
+    try:
+        margin = max(0.0, float(thrash.get("p95_margin", 0.15)))
+    except (TypeError, ValueError):
+        margin = 0.15
+    try:
+        rate_high = float(thrash.get("incomplete_rate_high", 0.15))
+        rate_low = float(thrash.get("incomplete_rate_low", 0.05))
+    except (TypeError, ValueError):
+        rate_high, rate_low = 0.15, 0.05
+    raw_rate = evidence.get("incomplete_rate")
+    rate = float(raw_rate) if isinstance(raw_rate, (int, float)) else None
+    pareto: dict[str, Any] = {
+        "incomplete_rate": rate,
+        "incomplete_rate_high": rate_high,
+        "incomplete_rate_low": rate_low,
+        "p95_margin": margin,
+        "decoded_records": int(evidence.get("decoded_records") or 0),
+        "timeout_records": int(evidence.get("timeout_records") or 0),
+        "decision": "cold_start",
+        "reason": "no_measured_predecessor_decode_cost",
+        "effective_floor_seconds": None,
+    }
+    margin_cap: float | None = None
+    if p95 is not None:
+        n_probe_base = max(1, int(math.floor(usable / p95))) if usable > 0 else 1
+        margin_cap = p95 * (1.0 + margin)
+        effective_floor = p95
+        if rate is None:
+            decision, reason = "hold", "incomplete_rate_unmeasured"
+        elif rate > rate_high:
+            effective_floor = p95 * (1.0 + margin)
+            decision, reason = "shrink", (
+                f"incomplete_rate={rate:.3f}>high={rate_high:.3f};"
+                "floor_inflated_by_margin"
+            )
+        elif rate < rate_low:
+            effective_floor = p95 / (1.0 + margin)
+            decision, reason = "grow", (
+                f"incomplete_rate={rate:.3f}<low={rate_low:.3f};"
+                "floor_deflated_by_margin"
+            )
+        else:
+            decision, reason = "hold", (
+                f"incomplete_rate={rate:.3f}_within_band"
+                f"[{rate_low:.3f},{rate_high:.3f}]"
+            )
+        n_probe = (
+            max(1, int(math.floor(usable / effective_floor))) if usable > 0 else 1
+        )
+        cap = margin_cap
+        if decision == "shrink" and n_probe == 1 and cap > usable:
+            # Train-bound: one probe record cannot fit p95+margin under the
+            # train floor. Keep the whole eval share for decode (no slack
+            # reassigned to the train floor, so fitted steps shrink) rather
+            # than raising any wall.
+            decision = "shrink_steps"
+            reason += ";train_bound_keep_eval_share_for_decode"
+            cap = max(1.0, usable)
+        pareto.update(
+            decision=decision,
+            reason=reason,
+            effective_floor_seconds=float(effective_floor),
+        )
     else:
-        max_decode = max(1.0, usable / float(smoke_n))
-    fitted = min(configured, max_decode)
-    projected_eval = float(fitted) * float(max(int(smoke_n), 0))
-    allocated_eval = max(0.0, float(arm_wall_seconds) - min_train - overhead)
+        # Cold start: no measured cost. Sizing the probe at the whole suite is
+        # a deadlock — decoding 96 records cannot fit the eval share, the arm
+        # is killed at the wall (exit 124), no p95 is ever recorded, and the
+        # next cycle cold-starts again. Measured 2026-09-02: the control
+        # decoded 80 of 96 records and was interrupted, so it produced an NLL
+        # but no document counts, and every cycle scored
+        # ``measurement_incomplete``. Spend a bounded probe instead: enough to
+        # be decidable, cheap enough to finish and yield the p95 the next
+        # cycle fits from.
+        n_probe_base = max(0, min(int(smoke_n), _COLD_START_PROBE_RECORDS))
+        n_probe = n_probe_base
+        cap = configured
+    if n_probe > 0 and usable > 0:
+        per_probe = usable / float(n_probe)
+    else:
+        per_probe = usable if usable > 0 else 1.0
+    fitted = max(1.0, min(per_probe, cap))
+    projected_eval = float(fitted) * float(n_probe)
+    allocated_eval = usable
     residual = max(0.0, allocated_eval - projected_eval)
     grown_floor = min_train + residual
     wall_headroom = max(0.0, float(arm_wall_seconds) - overhead - projected_eval)
@@ -731,11 +1359,24 @@ def _fit_screening_decode_timeout_seconds(
         None if payload is None else payload.get("_telemetry_path")
     )
     steps_fit["requested_steps"] = int(requested_steps)
+    timeout_cause = _predecessor_timeout_cause(
+        telemetry_root, predecessor_campaign_id, evidence=evidence
+    )
     meta = {
         "arm_wall_seconds": float(arm_wall_seconds),
         "configured_decode_timeout_seconds": configured,
         "fitted_decode_timeout_seconds": float(fitted),
         "smoke_n": float(smoke_n),
+        "n_probe": int(n_probe),
+        "n_probe_base": int(n_probe_base),
+        "decode_floor_seconds": float(decode_floor),
+        "decode_floor_source": decode_floor_source,
+        "decode_floor_evidence": evidence,
+        "p95_margin": float(margin),
+        "p95_margin_timeout_seconds": margin_cap,
+        "eval_share_seconds": float(usable),
+        "pareto": pareto,
+        "timeout_cause": timeout_cause,
         "min_train_floor_seconds": min_train,
         "grown_train_floor_seconds": float(grown_floor),
         "eval_overhead_seconds": overhead,
@@ -743,6 +1384,7 @@ def _fit_screening_decode_timeout_seconds(
         "allocated_eval_seconds": float(allocated_eval),
         "eval_slack_reassigned_seconds": float(residual),
         "clamp_bound": 1.0 if fitted + 1e-9 < configured else 0.0,
+        "exceeds_configured": bool(fitted > configured + 1e-9),
         "train_device": train_device,
         "fitted_steps": int(fitted_steps),
         "steps_fit": steps_fit,
@@ -805,6 +1447,27 @@ def _write_thrash_timing(
         if isinstance(decode_fit, dict)
         else None,
         "train_device": (decode_fit or {}).get("train_device")
+        if isinstance(decode_fit, dict)
+        else None,
+        # Budget feedback loop (measured decode floor + Pareto recalibration).
+        "decode_floor_source": (decode_fit or {}).get("decode_floor_source")
+        if isinstance(decode_fit, dict)
+        else None,
+        "decode_floor_seconds": (decode_fit or {}).get("decode_floor_seconds")
+        if isinstance(decode_fit, dict)
+        else None,
+        "n_probe": (decode_fit or {}).get("n_probe")
+        if isinstance(decode_fit, dict)
+        else None,
+        "fitted_decode_timeout_seconds": (decode_fit or {}).get(
+            "fitted_decode_timeout_seconds"
+        )
+        if isinstance(decode_fit, dict)
+        else None,
+        "pareto": (decode_fit or {}).get("pareto")
+        if isinstance(decode_fit, dict)
+        else None,
+        "timeout_cause": (decode_fit or {}).get("timeout_cause")
         if isinstance(decode_fit, dict)
         else None,
         "incomplete_reasons": incomplete_reasons,
@@ -903,6 +1566,483 @@ def _promotion_formal_budget_seconds(
     if available <= 0:
         raise subprocess.TimeoutExpired("promotion formal preflight budget", reserved)
     return min(float(_PROMOTE_FORMAL_TIMEOUT_S), available)
+
+
+# Chunked promotion measurement (docs/design/chunked-promotion-eval-20260902.md):
+# a promotion suite wider than one bounded run is decoded as a locked number of
+# resumable ``scripts.evaluate_model`` runs, each its own <= MAX_HARNESS_WALL
+# subprocess on the same checkpoint and suite.  Exhausting the locked run
+# budget is measurement incomplete, never a model verdict.
+_PROMOTION_CHUNK_LEDGER_SCHEMA = "autotrain_promotion_chunks/v1"
+# Fixed per-run cost outside record decode (model load, suite setup, scoreboard
+# finalization) charged against every chunk run when the policy has no
+# ``thrash_timing.eval_overhead_seconds``.
+_PROMOTION_CHUNK_OVERHEAD_SECONDS_DEFAULT = 8.0
+# evaluate_model exits a chunk may end with and still be resumed: 0 complete,
+# 2 (autoresearch stopped), 8 typed gate rejection, 10 resume pending.
+_PROMOTION_CHUNK_RESUMABLE_EXITS = frozenset({0, 2, 8, 10})
+_PROMOTION_CHUNK_LEDGER_NAME = "promotion_chunks.json"
+
+
+def _promotion_suite_records(suite: str) -> int | None:
+    """Record count of ``suite`` in the resolved default eval version."""
+
+    try:
+        from slm_training.autoresearch.engine import default_eval_version
+        from slm_training.data.store import DataStore
+
+        records = (
+            DataStore().resolve_path("eval", default_eval_version())
+            / "suites"
+            / suite
+            / "records.jsonl"
+        )
+        if records.is_file():
+            return sum(
+                1
+                for line in records.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            )
+    except Exception:  # noqa: BLE001 — plan input only, never fatal
+        return None
+    return None
+
+
+def _measured_promotion_decode_p95_seconds(
+    root: Path | None,
+) -> tuple[float | None, str | None]:
+    """Newest measured eval ``latency_ms_p95`` (seconds) under the campaigns root.
+
+    Promotion suites are preferred (``eval_held_out.json``) and the smoke suite
+    is the fallback; a run whose p95 is null (all timeouts) is skipped.
+    """
+
+    if root is None or not Path(root).is_dir():
+        return None, None
+    candidates: list[tuple[float, Path]] = []
+    for name in ("eval_held_out.json", "eval_smoke.json"):
+        for path in Path(root).glob(f"*/runs/*/{name}"):
+            try:
+                candidates.append((path.stat().st_mtime, path))
+            except OSError:
+                continue
+    for _mtime, path in sorted(candidates, key=lambda row: row[0], reverse=True):
+        payload = _read_json(path)
+        value = payload.get("latency_ms_p95") if isinstance(payload, dict) else None
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
+            return float(value) / 1000.0, str(path)
+    return None, None
+
+
+def _promotion_chunk_plan(
+    policy: Any,
+    *,
+    root: Path | None = None,
+    harness_wall_seconds: float = float(MAX_HARNESS_WALL_SECONDS),
+) -> dict[str, Any]:
+    """Lock the promotion chunk plan before any arm executes.
+
+    ``records_per_run`` is fitted from the measured decode p95 (grown by the
+    policy p95 margin, never below the locked per-record timeout) against the
+    harness wall minus the fixed per-run overhead.  ``run_n`` is the number of
+    resumable runs that cover every planned record of every promotion suite;
+    it is the locked chunk budget.
+    """
+
+    from slm_training.autoresearch.climb_policy import (
+        decode_timeout_seconds_for_role,
+        eval_suites_for_role,
+    )
+    from slm_training.autoresearch.experiment_campaign import (
+        PROMOTION_CHUNK_PLAN_SCHEMA,
+    )
+
+    measurement = getattr(policy, "measurement", None)
+    measurement = measurement if isinstance(measurement, Mapping) else {}
+    suites = [str(suite) for suite in eval_suites_for_role(policy, "promotion")]
+    suite_n = max(1, int(measurement.get("promotion_suite_n") or 24))
+    timeout = float(decode_timeout_seconds_for_role(policy, "promotion"))
+    p95_seconds, p95_source = _measured_promotion_decode_p95_seconds(root)
+    thrash = _thrash_timing_block(policy)
+    overhead = float(
+        thrash.get("eval_overhead_seconds") or _PROMOTION_CHUNK_OVERHEAD_SECONDS_DEFAULT
+    )
+    margin = max(0.0, float(thrash.get("p95_margin") or 0.0))
+    per_record = max(timeout, float(p95_seconds or 0.0) * (1.0 + margin))
+    usable = max(0.0, float(harness_wall_seconds) - overhead)
+    records_per_run = max(1, int(usable // per_record))
+    suite_record_plan: dict[str, dict[str, int | None]] = {}
+    total = 0
+    for suite in suites:
+        available = _promotion_suite_records(suite)
+        planned = suite_n if available is None else min(suite_n, available)
+        suite_record_plan[suite] = {"available": available, "planned": planned}
+        total += planned
+    total = max(1, total)
+    run_n = max(1, -(-total // records_per_run))
+    return {
+        "schema": PROMOTION_CHUNK_PLAN_SCHEMA,
+        "suites": suites,
+        "suite_n": suite_n,
+        "suite_record_plan": suite_record_plan,
+        "total_record_n": total,
+        "decode_timeout_seconds": timeout,
+        "measured_decode_p95_seconds": p95_seconds,
+        "measured_decode_p95_source": p95_source,
+        "p95_margin": margin,
+        "per_record_seconds": per_record,
+        "chunk_wall_seconds": float(harness_wall_seconds),
+        "chunk_overhead_seconds": overhead,
+        "records_per_run": records_per_run,
+        "run_n": run_n,
+        "authority": "locked_before_execution",
+    }
+
+
+def _set_command_flag(cmd: list[str], flag: str, value: str) -> list[str]:
+    """Return ``cmd`` with ``flag value`` set exactly once."""
+
+    out = list(cmd)
+    if flag in out:
+        index = out.index(flag)
+        if index + 1 < len(out):
+            out[index + 1] = value
+            return out
+        out.append(value)
+        return out
+    out.extend([flag, value])
+    return out
+
+
+def _command_flag_value(cmd: Sequence[str], flag: str) -> str | None:
+    if flag in cmd:
+        index = list(cmd).index(flag)
+        if index + 1 < len(cmd):
+            return str(cmd[index + 1])
+    return None
+
+
+def _promotion_chunk_eval_command(
+    *,
+    root: Path,
+    campaign_id: str,
+    experiment_path: Path,
+    run_dir: Path,
+    plan: Mapping[str, Any],
+) -> list[str]:
+    """The locked arm's evaluate command, re-armed as one resumable chunk.
+
+    The command is compiled from the same typed knobs the arm ran with (same
+    checkpoint, suites, timeout, eval limit); only the resume flags and the
+    chunk wall are (re)set, so no chunk can drift from the locked measurement.
+    """
+
+    from slm_training.autoresearch.engine import (
+        compile_commands,
+        is_latency_probe_command,
+    )
+    from slm_training.autoresearch.schemas import ExperimentSpec
+
+    store = CampaignStore(campaign_id, root)
+    campaign = store.load_campaign()
+    experiment = ExperimentSpec.model_validate_json(
+        Path(experiment_path).read_text(encoding="utf-8")
+    )
+    evaluates = [
+        list(command)
+        for command in compile_commands(campaign, experiment, output_root=root)
+        if "scripts.evaluate_model" in command
+        and not is_latency_probe_command(command)
+    ]
+    if not evaluates:
+        raise ValueError(f"no evaluate_model command compiled for {experiment_path}")
+    cmd = evaluates[-1]
+    if "--partial-scoreboard" not in cmd:
+        cmd.append("--partial-scoreboard")
+    cmd = _set_command_flag(cmd, "--resume-run", str(run_dir))
+    cmd = _set_command_flag(
+        cmd, "--max-records-this-run", str(int(plan["records_per_run"]))
+    )
+    return _set_command_flag(
+        cmd, "--evaluation-wall-seconds", f"{float(plan['chunk_wall_seconds']):.6f}"
+    )
+
+
+def _promotion_scoreboard_state(run_dir: Path) -> dict[str, Any]:
+    """Completion state of an arm's (possibly partial) ``scoreboard.json``."""
+
+    path = Path(run_dir) / "scoreboard.json"
+    if not path.is_file():
+        return {"exists": False, "complete": False, "pending": None, "decoded": None}
+    board = _read_json(path)
+    resume = board.get("resume") if isinstance(board, dict) else None
+    resume = resume if isinstance(resume, dict) else {}
+
+    def _total(key: str) -> int | None:
+        rows = resume.get(key)
+        if not isinstance(rows, dict):
+            return None
+        return sum(int(value) for value in rows.values() if isinstance(value, int))
+
+    return {
+        "exists": True,
+        # A scoreboard without the key predates resumable evals: complete.
+        "complete": board.get("measurement_complete") is not False,
+        "pending": _total("pending_record_n"),
+        "decoded": _total("decoded_this_run_n"),
+    }
+
+
+def _run_promotion_eval_chunks(
+    *,
+    cwd: Path,
+    root: Path,
+    loop_id: str,
+    campaign_id: str,
+    camp_dir: Path,
+    plan: Mapping[str, Any],
+    experiment_paths: Mapping[str, Path],
+    arm_order: Sequence[str],
+) -> dict[str, Any]:
+    """Finish every executed arm's promotion measurement under the locked plan.
+
+    Runs are launched in sequence, each its own bounded subprocess (fresh
+    ``MAX_RUN_SECONDS`` deadline; eval wall = ``plan.chunk_wall_seconds``) on
+    the arm's locked checkpoint and suites, replaying stored records and
+    decoding the next ``records_per_run``.  The loop stops at a complete merged
+    scoreboard or when ``run_n`` runs are spent (``chunk_budget_exhausted``).
+    The ledger is written to ``camp_dir/promotion_chunks.json``.
+    """
+
+    run_budget = max(1, int(plan["run_n"]))
+    ledger: dict[str, Any] = {
+        "schema": _PROMOTION_CHUNK_LEDGER_SCHEMA,
+        "campaign_id": campaign_id,
+        "plan": dict(plan),
+        "arms": {},
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    for eid in arm_order:
+        run_dir = camp_dir / "runs" / eid
+        arm: dict[str, Any] = {
+            "run_dir": str(run_dir),
+            "run_budget": run_budget,
+            "runs_used": 0,
+            "runs": [],
+            "status": "pending",
+        }
+        ledger["arms"][eid] = arm
+        try:
+            cmd = _promotion_chunk_eval_command(
+                root=root,
+                campaign_id=campaign_id,
+                experiment_path=Path(experiment_paths[eid]),
+                run_dir=run_dir,
+                plan=plan,
+            )
+        except Exception as exc:  # noqa: BLE001 — typed harness failure, never a verdict
+            arm["status"] = "harness_failure"
+            arm["error"] = f"{type(exc).__name__}: {exc}"[:400]
+            continue
+        checkpoint = _command_flag_value(cmd, "--checkpoint")
+        checkpoint_path = (
+            Path(checkpoint) if checkpoint else run_dir / "checkpoints" / "last.pt"
+        )
+        if not checkpoint_path.is_file():
+            arm["status"] = "no_checkpoint"
+            arm["checkpoint"] = str(checkpoint_path)
+            continue
+        arm["command"] = list(cmd)
+        while True:
+            state = _promotion_scoreboard_state(run_dir)
+            if state["exists"] and state["complete"]:
+                arm["status"] = "complete"
+                break
+            if arm["runs_used"] >= run_budget:
+                arm["status"] = "chunk_budget_exhausted"
+                break
+            index = int(arm["runs_used"]) + 1
+            print(
+                f"PROMOTION_CHUNK arm={eid} run={index}/{run_budget} "
+                f"pending={state['pending']} "
+                f"records_per_run={int(plan['records_per_run'])} "
+                f"wall_s={float(plan['chunk_wall_seconds']):.0f}",
+                flush=True,
+            )
+            result = _stage_command(
+                cmd,
+                cwd=cwd,
+                # Each chunk is its own bounded run under the repository cap.
+                deadline=time.monotonic() + float(MAX_RUN_SECONDS),
+                root=root,
+                loop_id=loop_id,
+                stage=f"promotion-chunk:{eid}:{index}",
+            )
+            if result.stderr:
+                print(result.stderr[-4000:], file=sys.stderr, flush=True)
+            if result.timed_out:
+                code = 124
+            elif result.outcome is ProcessOutcome.LAUNCH_FAILED:
+                code = 127
+            else:
+                code = int(result.returncode or 0)
+            arm["runs_used"] = index
+            after = _promotion_scoreboard_state(run_dir)
+            arm["runs"].append(
+                {
+                    "index": index,
+                    "exit_code": code,
+                    "timed_out": bool(result.timed_out),
+                    "duration_seconds": float(
+                        getattr(result, "duration_seconds", 0.0) or 0.0
+                    ),
+                    "pending_before": state["pending"],
+                    "pending_after": after["pending"],
+                    "decoded_this_run_n": after["decoded"],
+                    "measurement_complete": bool(after["exists"] and after["complete"]),
+                }
+            )
+            print(
+                f"PROMOTION_CHUNK_DONE arm={eid} run={index}/{run_budget} "
+                f"exit={code} decoded={after['decoded']} pending={after['pending']} "
+                f"complete={bool(after['exists'] and after['complete'])}",
+                flush=True,
+            )
+            if code not in _PROMOTION_CHUNK_RESUMABLE_EXITS or not after["exists"]:
+                arm["status"] = "harness_failure"
+                arm["error"] = f"chunk {index} exit={code} scoreboard={after['exists']}"
+                break
+    ledger["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    camp_dir.mkdir(parents=True, exist_ok=True)
+    (camp_dir / _PROMOTION_CHUNK_LEDGER_NAME).write_text(
+        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return ledger
+
+
+def _attach_promotion_chunks(
+    delivery: dict[str, Any], ledger: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Fold chunk-stage outcomes into the delivery as typed reasons.
+
+    An exhausted chunk budget or a chunk harness failure marks the measurement
+    incomplete (retryable, refunded); it is never a model reject.
+    """
+
+    reasons = list(delivery.get("reasons") or [])
+    incomplete = False
+    for eid, arm in (ledger.get("arms") or {}).items():
+        status = str(arm.get("status") or "")
+        if status == "chunk_budget_exhausted":
+            reasons.append(
+                f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
+                f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
+            )
+            incomplete = True
+        elif status == "harness_failure":
+            reasons.append(
+                f"harness_failure:{eid}:promotion_chunk:{arm.get('error') or 'exit'}"
+            )
+            incomplete = True
+        elif status == "no_checkpoint":
+            reasons.append(f"measurement_incomplete:{eid}:no_checkpoint_for_chunks")
+            incomplete = True
+    out = {**delivery, "promotion_chunks": dict(ledger), "reasons": reasons}
+    if incomplete:
+        out["measurement_complete"] = False
+    return out
+
+
+def _promotion_measurement_incomplete_reasons(
+    camp_dir: Path,
+    *,
+    control_id: str,
+    candidate_id: str,
+    delivery: Mapping[str, Any],
+) -> list[str]:
+    """Typed reasons a promotion measurement is still partial evidence.
+
+    A partial scoreboard (``measurement_complete: false``) or a spent chunk
+    budget can never be disposed as a model verdict: the disposition is
+    ``promotion_inconclusive`` (retryable) until a later run merges the suite
+    to completion or the locked chunk budget is exhausted for good.
+    """
+
+    reasons: list[str] = []
+    ledger = delivery.get("promotion_chunks")
+    if isinstance(ledger, Mapping):
+        for eid, arm in (ledger.get("arms") or {}).items():
+            status = str(arm.get("status") or "")
+            if status == "chunk_budget_exhausted":
+                reasons.append(
+                    f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
+                    f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
+                )
+    for run_id in (control_id, candidate_id):
+        if not run_id:
+            continue
+        state = _promotion_scoreboard_state(camp_dir / "runs" / run_id)
+        if state["exists"] and not state["complete"]:
+            reasons.append(
+                f"measurement_incomplete:{run_id}:partial_scoreboard:"
+                f"pending={state['pending']}"
+            )
+    return list(dict.fromkeys(reasons))
+
+
+def _merged_promotion_power_feasibility(
+    camp_dir: Path,
+    *,
+    control_id: str,
+    candidate_id: str,
+    locked: dict[str, Any] | None,
+    primary_metric: str,
+) -> dict[str, Any] | None:
+    """Power feasibility at the final merged n, not the planned n.
+
+    The locked report admits the planned geometry; the disposition must judge
+    the records actually completed in *both* arms of the primary suite (the
+    paired sign test cannot use more pairs than the smaller arm completed).
+    When either scoreboard is missing or still partial the locked report is
+    returned unchanged (the incomplete path decides, never this gate).
+    """
+
+    if not isinstance(locked, dict):
+        return None
+    suite = primary_metric.rsplit(".", 1)[0] if "." in primary_metric else "held_out"
+    merged_n: int | None = None
+    for run_id in (control_id, candidate_id):
+        if not run_id:
+            return dict(locked)
+        path = camp_dir / "runs" / run_id / "scoreboard.json"
+        if not path.is_file():
+            return dict(locked)
+        board = _read_json(path)
+        if not isinstance(board, dict) or board.get("measurement_complete") is False:
+            return dict(locked)
+        suites = board.get("suites")
+        row = suites.get(suite) if isinstance(suites, dict) else None
+        completed = row.get("completed_document_n") if isinstance(row, dict) else None
+        if type(completed) is not int or completed < 0:
+            return dict(locked)
+        merged_n = completed if merged_n is None else min(merged_n, completed)
+    if merged_n is None:
+        return dict(locked)
+    from slm_training.autoresearch import evidence_ledger as _ev
+
+    report = _ev.power_feasibility_report(
+        max(1, int(merged_n)), _ev.parse_alpha(locked.get("alpha"))
+    )
+    if merged_n < 1:
+        report["decisive"] = False
+    return {
+        **report,
+        "locked_n": locked.get("n"),
+        "locked_decisive": locked.get("decisive"),
+        "merged_n": int(merged_n),
+        "merged_suite": suite,
+        "source": "merged_scoreboard",
+    }
 
 
 def _counterbalanced_arm_order(
@@ -1289,6 +2429,107 @@ def _run_metrics(
     return out
 
 
+_EVAL_NLL_RECORDS_SCHEMA = "eval_nll_records/v1"
+_EVAL_NLL_RECORDS_NAME = "eval_nll_records.json"
+_OBSERVED_PAIRED_SD_SCHEMA = "observed_paired_sd/v1"
+_OBSERVED_PAIRED_SD_SOURCE = "continuous_driver"
+
+
+def _read_eval_nll_records(run_dir: Path) -> tuple[dict[str, float], str | None]:
+    """``({record_id: nll}, definition_hash)`` from ``eval_nll_records.json``."""
+
+    data = _read_json(Path(run_dir) / _EVAL_NLL_RECORDS_NAME)
+    if data.get("schema") != _EVAL_NLL_RECORDS_SCHEMA:
+        return {}, None
+    raw = data.get("records")
+    if not isinstance(raw, dict):
+        return {}, None
+    records: dict[str, float] = {}
+    for record_id, value in raw.items():
+        number = _finite_metric(value)
+        if number is not None:
+            records[str(record_id)] = number
+    digest = data.get("definition_hash")
+    return records, (str(digest) if digest else None)
+
+
+def _record_observed_paired_sd(
+    path: Path,
+    *,
+    metric_leaf: str,
+    sd: float,
+    n: int,
+    campaign_id: str,
+    control_id: str,
+    candidate_id: str,
+    date: str | None = None,
+) -> bool:
+    """Append one measured paired-delta SD to ``observed_paired_sd_by_metric``.
+
+    Shape written under ``observed_paired_sd_by_metric[<leaf>]`` (the
+    ``{sd, n_deltas, source}`` object form read by
+    ``screening_sample_size.lookup_paired_sd_for_metric``)::
+
+        {"schema": "observed_paired_sd/v1", "sd": <latest>,
+         "n_deltas": <pairs>, "source": "continuous_driver",
+         "date": "YYYY-MM-DD", "history": [{sd, n_deltas, date, campaign_id,
+         control_id, candidate_id}, ...]}
+
+    Backward compatible: a missing slot is created, a bare number or a
+    history-less mapping is folded into ``history`` as the prior snapshot.
+    Idempotent per (campaign, control, candidate). Returns ``True`` when the
+    file changed.
+    """
+    from datetime import datetime, timezone
+
+    path = Path(path)
+    data = _read_json(path)
+    if not data:
+        raise ValueError(f"screening expectations missing or invalid: {path}")
+    slot = data.get("observed_paired_sd_by_metric")
+    if not isinstance(slot, dict):
+        slot = {}
+        data["observed_paired_sd_by_metric"] = slot
+    entry = slot.get(metric_leaf)
+    history: list[dict[str, Any]] = []
+    if isinstance(entry, dict):
+        if isinstance(entry.get("history"), list):
+            history = [row for row in entry["history"] if isinstance(row, dict)]
+        elif entry.get("sd") is not None:
+            history = [{k: v for k, v in entry.items() if k != "schema"}]
+    elif isinstance(entry, (int, float, str)) and not isinstance(entry, bool):
+        history = [{"sd": entry, "n_deltas": None, "date": None, "source": "prior"}]
+    key = (str(campaign_id), str(control_id), str(candidate_id))
+    for row in history:
+        if (
+            str(row.get("campaign_id")),
+            str(row.get("control_id")),
+            str(row.get("candidate_id")),
+        ) == key:
+            return False
+    stamp = date or datetime.now(timezone.utc).date().isoformat()
+    history.append(
+        {
+            "sd": float(sd),
+            "n_deltas": int(n),
+            "date": stamp,
+            "campaign_id": str(campaign_id),
+            "control_id": str(control_id),
+            "candidate_id": str(candidate_id),
+        }
+    )
+    slot[metric_leaf] = {
+        "schema": _OBSERVED_PAIRED_SD_SCHEMA,
+        "sd": float(sd),
+        "n_deltas": int(n),
+        "source": _OBSERVED_PAIRED_SD_SOURCE,
+        "date": stamp,
+        "history": history,
+    }
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
 def _run_arm_eval_nll(
     run_dir: Path,
     *,
@@ -1298,17 +2539,26 @@ def _run_arm_eval_nll(
     nll_config: Any = None,
     eval_nll: float | None = None,
     definition_hash: str | None = None,
+    records: Mapping[str, float] | None = None,
+    eval_version: str | None = None,
 ) -> dict[str, Any]:
     """Write canonical ``suites.smoke.eval_nll`` (arm loss weights ignored).
 
     Diagnostic only: does not touch ship gates. Uses
-    ``evaluate_loss_suites`` with a cycle-shared baseline ``nll_config``.
+    ``evaluate_loss_suites`` with a cycle-shared baseline ``nll_config`` over
+    the whole smoke suite under ``test_dir``. Per-record broad NLL rows are
+    persisted to ``eval_nll_records.json`` (``{record_id: nll}`` plus the
+    definition hash) so screening can pair arms record-by-record; the suite
+    mean lands in the scoreboard exactly as before.
     """
     from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
 
     digest = definition_hash or screening_nll_definition_hash()
     value = eval_nll
     report: dict[str, Any] | None = None
+    per_record: dict[str, float] | None = (
+        {str(k): float(v) for k, v in records.items()} if records is not None else None
+    )
     if value is None:
         from slm_training.evals.denoising_nll import DenoisingNLLConfig
         from slm_training.evals.loss_suites import (
@@ -1349,6 +2599,9 @@ def _run_arm_eval_nll(
         if not isinstance(mean, (int, float)):
             raise ValueError("evaluate_loss_suites did not yield a finite smoke NLL")
         value = float(mean)
+        from slm_training.evals.loss_suites import per_record_nll_map
+
+        per_record = per_record_nll_map(report)
     scoreboard_path = Path(run_dir) / "scoreboard.json"
     scoreboard = _read_json(scoreboard_path)
     suites = scoreboard.get("suites")
@@ -1363,6 +2616,27 @@ def _run_arm_eval_nll(
     smoke["eval_nll_definition_hash"] = digest
     smoke["eval_nll_claim_class"] = "diagnostic"
     Path(run_dir).mkdir(parents=True, exist_ok=True)
+    records_path: Path | None = None
+    if per_record is not None:
+        smoke["eval_nll_n_records"] = len(per_record)
+        records_path = Path(run_dir) / _EVAL_NLL_RECORDS_NAME
+        records_path.write_text(
+            json.dumps(
+                {
+                    "schema": _EVAL_NLL_RECORDS_SCHEMA,
+                    "definition_hash": digest,
+                    "claim_class": "diagnostic",
+                    "suite": "smoke",
+                    "eval_version": eval_version,
+                    "n_records": len(per_record),
+                    "mean_nll": float(value),
+                    "records": {k: per_record[k] for k in sorted(per_record)},
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     scoreboard_path.write_text(
         json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
     )
@@ -1371,43 +2645,106 @@ def _run_arm_eval_nll(
         "definition_hash": digest,
         "scoreboard": str(scoreboard_path),
         "report": report,
+        "records": per_record,
+        "records_path": str(records_path) if records_path else None,
     }
 
 
-def _attach_screening_eval_nll(run_dir: Path) -> dict[str, Any] | None:
-    """Compute canonical smoke.eval_nll after quality eval when missing."""
+def _find_nested_key(payload: Any, key: str, *, depth: int = 6) -> Any:
+    """First value of ``key`` in a nested JSON payload (depth-limited)."""
 
-    scoreboard_path = Path(run_dir) / "scoreboard.json"
-    if not scoreboard_path.is_file():
+    if depth < 0:
         return None
-    suites = _read_json(scoreboard_path).get("suites")
+    if isinstance(payload, dict):
+        if key in payload and payload[key] not in (None, ""):
+            return payload[key]
+        for value in payload.values():
+            found = _find_nested_key(value, key, depth=depth - 1)
+            if found is not None:
+                return found
+    elif isinstance(payload, list):
+        for value in payload:
+            found = _find_nested_key(value, key, depth=depth - 1)
+            if found is not None:
+                return found
+    return None
+
+
+def _arm_eval_version(run_dir: Path) -> str | None:
+    """Eval snapshot the arm was assigned (train summary, manifest, experiment)."""
+
+    run_dir = Path(run_dir)
+    camp_dir = run_dir.parent.parent
+    candidates = (
+        run_dir / "train_summary.json",
+        camp_dir / "manifests" / f"{run_dir.name}.json",
+        camp_dir / "experiments" / f"{run_dir.name}.json",
+    )
+    for path in candidates:
+        if not path.is_file():
+            continue
+        found = _find_nested_key(_read_json(path), "eval_version")
+        if isinstance(found, str) and found.strip():
+            return found.strip()
+    return None
+
+
+def _attach_screening_eval_nll(
+    run_dir: Path,
+    *,
+    exit_code: int | None = None,
+    eval_version: str | None = None,
+) -> dict[str, Any] | None:
+    """Compute canonical smoke.eval_nll for any arm that has a checkpoint.
+
+    Independent of the decode-heavy quality eval: runs whether that eval
+    succeeded, crashed, or timed out (``exit_code`` is logged only), needs no
+    prior scoreboard, scores the whole smoke suite the arm was assigned, and
+    persists per-record rows. Idempotent once both the aggregate and the
+    per-record file exist.
+    """
+
+    run_dir = Path(run_dir)
+    scoreboard_path = run_dir / "scoreboard.json"
+    suites = (
+        _read_json(scoreboard_path).get("suites") if scoreboard_path.is_file() else None
+    )
     smoke = suites.get("smoke") if isinstance(suites, dict) else None
-    if isinstance(smoke, dict) and isinstance(smoke.get("eval_nll"), (int, float)):
+    has_aggregate = isinstance(smoke, dict) and isinstance(
+        smoke.get("eval_nll"), (int, float)
+    )
+    if has_aggregate and (run_dir / _EVAL_NLL_RECORDS_NAME).is_file():
         return None
-    summary = _read_json(Path(run_dir) / "train_summary.json")
+    summary = _read_json(run_dir / "train_summary.json")
     checkpoint = Path(str(summary.get("checkpoint") or ""))
     if not checkpoint.is_file():
         print(
-            f"EVAL_NLL_SKIP run={Path(run_dir).name} reason=missing_checkpoint",
+            f"EVAL_NLL_SKIP run={run_dir.name} reason=missing_checkpoint"
+            f" exit={exit_code}",
             flush=True,
         )
         return None
     from slm_training.data.store import DataStore
 
-    eval_id = default_eval_version()
+    eval_id = eval_version or _arm_eval_version(run_dir) or default_eval_version()
     test_dir = DataStore().resolve_path("eval", eval_id)
     try:
         out = _run_arm_eval_nll(
-            Path(run_dir), test_dir=test_dir, checkpoint=checkpoint
+            run_dir,
+            test_dir=test_dir,
+            checkpoint=checkpoint,
+            eval_version=eval_id,
         )
     except Exception as exc:  # noqa: BLE001 — NLL is diagnostic, never abort quality
         print(
-            f"EVAL_NLL_SKIP run={Path(run_dir).name} err={exc!r}",
+            f"EVAL_NLL_SKIP run={run_dir.name} exit={exit_code} err={exc!r}",
             flush=True,
         )
         return None
+    n_records = len(out.get("records") or {})
     print(
-        f"EVAL_NLL run={Path(run_dir).name} nll={out.get('eval_nll')}",
+        f"EVAL_NLL run={run_dir.name} nll={out.get('eval_nll')}"
+        f" n_records={n_records} eval_version={eval_id} exit={exit_code}",
         flush=True,
     )
     return out
@@ -1539,6 +2876,7 @@ _LEVER_KNOB_KEYS = (
     "compiler_decode_mode",
     "steps",
     "batch_size",
+    "lr",
     "train_version",
     "context_backend",
     "sync_checkpoints",
@@ -1558,31 +2896,83 @@ _CAUSAL_FAMILY_ATTEMPT_CAP = 2
 # Screening thrash bank — rotate recommended arm each cycle (Change B).
 # Each entry: (slug, hypothesis fragment, knob extras relative to control).
 # Special key "_steps_factor" multiplies base steps (depth confound).
+# Data-volume arms (RC7, docs/design/autotrain-recovery-2-p9-20260902.md).
+# The matched control trains on the climb policy ``defaults.train_version``
+# (policy.v3: the certified, eval-decontaminated train bucket
+# ``openui_verified_train_v2``); each data arm swaps only the corpus id at
+# identical model size. A data arm whose corpus equals the control corpus is
+# a self-control (delta identically 0) and ``_all_screening_arm_bank`` drops
+# it, so ``data-certified`` is live only when a loop trains its control on a
+# smaller corpus (legacy ``wf_smoke_v2`` pins). ``openui_verified_v1`` is
+# never a train arm: it carries the validation/test families the certified
+# smoke suites are sampled from.
+_DATA_ARM_CERTIFIED_TRAIN_VERSION = "openui_verified_train_v2"  # 1,054 records
+# ``hillclimb_strict_v2`` is NOT a legal data arm against the certified smoke
+# suites. Measured 2026-09-02 against e938_role_safe_all_targets_smoke96_v1:
+# 6 identical programs / 3 identical prompts / 16 shared root families with
+# the smoke suite, and 7 / 2 / 5 with held_out. Its own decontamination
+# indexed e938_..._v2 and the smoke6/smoke24 snapshots, never smoke96_v1 or
+# heldout24_v1, so the overlap was never gated. An arm trained on it would
+# score the eval it memorized: a leakage win, not a capability win. Its
+# synthesis feedback is also uncleared for SFT (blocking-class
+# ``eval_leakage_source`` on three families plus dup_share 0.55-0.93), so the
+# arm could not even train. Re-admit it only after a rebuild that
+# decontaminates against the live suites and clears the SFT gate.
+_LEAKED_TRAIN_VERSIONS: frozenset[str] = frozenset(
+    {"hillclimb_strict_v2", "wf_smoke_v2"}
+)
+#: The one leaked corpus that used to be a screening *arm* (``data-strict``).
+#: Only this one is reverse-classified from historical knobs; ``wf_smoke_v2``
+#: was a control corpus, so naming it there would relabel legacy control rows.
+_EX_DATA_ARM_LEAKED_TRAIN_VERSION = "hillclimb_strict_v2"
+# Control recipe values the size-matched recipe arms are defined against
+# (``_matrix`` control: batch_size=2; ModelBuildConfig.lr default 3e-4, the
+# control never sets ``lr``).
+_CONTROL_RECIPE_LR = 3e-4
+_CONTROL_RECIPE_BATCH_SIZE = 2
+# ``steps-fill``: the fitter sizes control steps at ``floor * sps * 0.9``;
+# the fill arm spends the remaining 10 % of the fitted train floor (charged as
+# wall time, never parameters). ``_apply_arm_extras`` applies the ``base + 10``
+# depth-confound minimum only to depth arms (factor >= 2); a fill factor gets
+# ``base + 1`` so it never overshoots the floor.
+_STEPS_FILL_FACTOR = round(1.0 / _STEPS_PER_SEC_SAFETY, 4)
+#: Decoded-probe records to spend on a cold-start cycle, before any per-record
+#: decode cost has been measured. The exact sign test at alpha = 1/20 needs 6
+#: pairs, so 6 is the smallest probe that can be decisive on its own; sizing
+#: the cold probe at the whole suite instead deadlocks the loop (see the
+#: cold-start branch of the decode fit).
+_COLD_START_PROBE_RECORDS = 6
+# ``noise_rate`` (policy ``recipe_tweak_knobs``) is deliberately absent: it is
+# a ``StubModel``-only lever (``harnesses/model_build/plugin.py``) and not an
+# ``ExperimentKnobs`` field, so a noise-rate arm could never move weights.
+# ExperimentKnobs-only keys with no ``lever_catalog()`` row (category used
+# when classifying bank arms; ``train_version`` selects the data corpus).
+_EXPERIMENT_ONLY_KNOB_CATEGORIES: dict[str, str] = {"train_version": "data"}
 _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     (
-        "bounds",
-        "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-        {"grammar_completion_bounds": True},
+        "data-certified",
+        "Training on the certified, eval-decontaminated openui_verified_train_v1 bucket (1,083 records) instead of the loop control corpus lowers smoke eval_nll at fixed model size without lowering parse_rate.",
+        {"train_version": _DATA_ARM_CERTIFIED_TRAIN_VERSION},
     ),
     (
-        "canvas",
-        "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
-        {"compact_active_canvas": True},
+        "lr-x2",
+        "Doubling the learning rate (3e-4 -> 6e-4) at fixed steps and model size lowers smoke eval_nll without lowering parse_rate.",
+        {"lr": _CONTROL_RECIPE_LR * 2},
     ),
     (
-        "both",
-        "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
-        {"grammar_completion_bounds": True, "compact_active_canvas": True},
+        "lr-x0.5",
+        "Halving the learning rate (3e-4 -> 1.5e-4) at fixed steps and model size lowers smoke eval_nll without lowering parse_rate.",
+        {"lr": _CONTROL_RECIPE_LR / 2},
     ),
     (
-        "steps",
-        "Doubling steps without levers only raises cost and does not improve unit decode latency.",
-        {"_steps_factor": 2},
+        "batch-x2",
+        "Doubling batch_size (2 -> 4) at fixed steps and model size lowers smoke eval_nll without lowering parse_rate.",
+        {"batch_size": _CONTROL_RECIPE_BATCH_SIZE * 2},
     ),
     (
-        "batch1",
-        "Halving batch_size changes smoke latency vs matched control without lowering parse_rate.",
-        {"batch_size": 1},
+        "steps-fill",
+        "Filling the fitted train floor (steps x 1/0.9, wall-time charged, no extra parameters) lowers smoke eval_nll without lowering parse_rate.",
+        {"_steps_factor": _STEPS_FILL_FACTOR},
     ),
     (
         "component-plan",
@@ -2053,6 +3443,52 @@ _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
         },
     ),
 )
+# Latency-only arms (RC7): ``bounds`` / ``canvas`` / ``both`` set only decode
+# cost levers and cannot move trained weights, so under a quality/NLL
+# screening primary they are a guaranteed null (evidence_ledger.v1: ``bounds``
+# n_complete=50, mean_delta=0.0, m2_delta=0.0; ``canvas`` n_complete=5, all
+# null). ``steps`` (x2 depth confound) and ``batch1`` are training-recipe
+# levers whose preregistered hypotheses are latency / cost claims, so they
+# ride with this bank. ``_all_screening_arm_bank`` prepends the bank only when
+# the screening role primary leaf is ``latency_ms_p50`` (historical rotation
+# order preserved under that primary). Slugs are stable so ledger history
+# stays attached. Arms with ``compiler_*_loss_weight`` knobs stay in the
+# screening bank: ``lever_catalog()`` labels them ``decode`` by name prefix,
+# but the weights enter the training objective (``twotower.py``
+# compiler-alignment and decision-token losses).
+_LATENCY_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
+    (
+        "bounds",
+        "grammar_completion_bounds reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+        {"grammar_completion_bounds": True},
+    ),
+    (
+        "canvas",
+        "compact_active_canvas reduces smoke latency_ms_p50 versus the matched control without lowering parse_rate.",
+        {"compact_active_canvas": True},
+    ),
+    (
+        "both",
+        "Combined bounds and canvas beat either single lever on smoke latency_ms_p50.",
+        {"grammar_completion_bounds": True, "compact_active_canvas": True},
+    ),
+    (
+        "steps",
+        "Doubling steps without levers only raises cost and does not improve unit decode latency.",
+        {"_steps_factor": 2},
+    ),
+    (
+        "batch1",
+        "Halving batch_size changes smoke latency vs matched control without lowering parse_rate.",
+        {"batch_size": 1},
+    ),
+)
+# Static data-volume arm slugs (corpus swap is their only lever).
+_STATIC_DATA_ARM_SLUGS: frozenset[str] = frozenset(
+    slug
+    for slug, _, extras in _SCREENING_ARM_BANK
+    if set(k for k in extras if not str(k).startswith("_")) == {"train_version"}
+)
 # Permanent thrash-arm closure requires this many *distinct seeds* of complete
 # non-positive measurement. A single fixture-noise null must not close the
 # approach forever (aligns with climb recipe_null_cap / promotion min_seeds).
@@ -2113,11 +3549,84 @@ def _driver_lock_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / _DRIVER_LOCK_BASENAME
 
 
+# Test / driver hook: when set, wins over the climb policy's screening primary.
+_SCREENING_PRIMARY_LEAF_OVERRIDE: str | None = None
+
+
+def _screening_primary_leaf() -> str:
+    """Leaf of the screening role primary metric (``smoke.eval_nll`` -> ``eval_nll``)."""
+    if _SCREENING_PRIMARY_LEAF_OVERRIDE:
+        return str(_SCREENING_PRIMARY_LEAF_OVERRIDE).rsplit(".", 1)[-1]
+    try:
+        from slm_training.autoresearch.climb_policy import (
+            load_climb_policy,
+            primary_for_role,
+        )
+
+        metric = str(primary_for_role(load_climb_policy(), "screening").get("metric") or "")
+    except Exception:  # noqa: BLE001 — bank must stay computable without policy
+        return ""
+    return metric.rsplit(".", 1)[-1]
+
+
+def _latency_arms_active() -> bool:
+    """Latency-only arms are legal screening candidates only under a latency primary."""
+    return _screening_primary_leaf() == LATENCY_PRIMARY_LEAF
+
+
+def _arm_is_self_control(extras: Mapping[str, Any] | None) -> bool:
+    """True for a data arm whose only lever is the control's own train corpus.
+
+    Such an arm trains the control recipe twice (delta identically 0), so it
+    is never a legal screening candidate — the policy default corpus decides.
+    """
+    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
+    if set(public) != {"train_version"}:
+        return False
+    return str(public["train_version"] or "") == _default_screening_train_version()
+
+
+def _arm_swaps_train_corpus(
+    extras: Mapping[str, Any] | None, *, control_train_version: str
+) -> bool:
+    """True when the arm's ``train_version`` differs from the control corpus.
+
+    Warm-start cycles fork the champion for both arms on identical data, so a
+    corpus-swap arm cannot be paired there (``warm_start:unequal_train_data``).
+    """
+    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
+    if "train_version" not in public:
+        return False
+    return str(public["train_version"] or "") != str(control_train_version or "")
+
+
+def _bank_lever_categories() -> dict[str, str]:
+    """``lever_catalog()`` categories plus the ExperimentKnobs-only knob keys."""
+    from slm_training.levers import lever_catalog
+
+    out = {name: str(spec.get("category") or "") for name, spec in lever_catalog().items()}
+    out.update(_EXPERIMENT_ONLY_KNOB_CATEGORIES)
+    return out
+
+
+def _latency_only_arm(extras: Mapping[str, Any] | None) -> bool:
+    """Bank-row classifier: every public knob is a decode/run cost lever."""
+    return is_latency_only_arm(extras, lever_categories=_bank_lever_categories())
+
+
 def _all_screening_arm_bank() -> tuple[tuple[str, str, dict[str, Any]], ...]:
-    """Static preregistered bank plus loop-local self-heal successors."""
+    """Legal screening bank for the active role primary.
+
+    Static preregistered arms minus self-control data arms; the latency-only
+    bank is prepended only under a ``latency_ms_p50`` primary; loop-local
+    self-heal successors follow.
+    """
+    bank = tuple(row for row in _SCREENING_ARM_BANK if not _arm_is_self_control(row[2]))
+    if _latency_arms_active():
+        bank = _LATENCY_ARM_BANK + bank
     if not _DYNAMIC_THRASH_ARMS:
-        return _SCREENING_ARM_BANK
-    return _SCREENING_ARM_BANK + tuple(_DYNAMIC_THRASH_ARMS)
+        return bank
+    return bank + tuple(_DYNAMIC_THRASH_ARMS)
 
 
 def _recent_exhaustion_cycle_window() -> int:
@@ -2846,58 +4355,47 @@ def _delivery_is_thrash_timeout_residual(
 ) -> bool:
     """True when incomplete measurement is thrash wall/decode residual, not a hard harness bug.
 
-    Bare ``measurement_incomplete`` is **not** enough — that also appears on real
-    harness crashes. Require an explicit timeout signal (exit 124, decode_timeout*
-    counters, wall_timeout, or repair text about internal decode timeout).
+    Residual requires **explicit timeout evidence**: some arm exit of 124 or a
+    ``wall_timeout`` / ``decode_timeout`` style marker in the reasons. Bare
+    ``measurement_incomplete`` / ``missing_scoreboard`` /
+    ``primary_metric_unavailable`` never suffice — those also appear when an
+    arm process crashed (``harness_failure:<arm>:experiment_failed`` with exit
+    2), and reading that crash as a soft residual dropped the
+    ``repair_harness`` blocker for cycles c536..c543. A crash exit (non-zero,
+    non-124) next to the harness-failure marker is always a harness failure.
     """
+    # Single source of truth shared with the heal-playbook classifier so the
+    # emission-time markers and the crash/residual split can never drift.
+    from slm_training.autoresearch.heal.classify import (
+        HARD_HARNESS_MARKERS,
+        HARNESS_CRASH_REASON_RE,
+        TIMEOUT_RESIDUAL_MARKERS,
+        crash_arm_exits,
+        timeout_arm_exits,
+    )
+
     reasons: list[str] = []
-    timeout_exit = False
+    exits: Mapping[str, Any] = {}
     if delivery:
         reasons.extend(str(r) for r in (delivery.get("reasons") or []))
-        exits = delivery.get("arm_exits") or {}
-        if isinstance(exits, dict) and exits:
-            codes: list[int] = []
-            for v in exits.values():
-                try:
-                    codes.append(int(v))  # type: ignore[arg-type]
-                except (TypeError, ValueError):
-                    continue
-            # 124 = wall/timeout from bounded process convention in this driver.
-            if codes and all(c == 124 for c in codes):
-                timeout_exit = True
+        raw_exits = delivery.get("arm_exits") or {}
+        if isinstance(raw_exits, Mapping):
+            exits = raw_exits
     if handoff is not None:
         reasons.extend(str(r) for r in (handoff.reasons or ()))
         for action in handoff.actions:
             reasons.append(str(action.reason or ""))
     joined = " ".join(reasons).lower()
-    # Single source of truth shared with the heal-playbook classifier so the
-    # emission-time markers and the environment/code split can never drift.
-    from slm_training.autoresearch.heal.classify import HARD_HARNESS_MARKERS
-
     if any(m in joined for m in HARD_HARNESS_MARKERS):
         return False
-    timeout_markers = (
-        "decode_timeout",
-        "decode timeout",
-        "decode_timeout_count",
-        "wall_timeout",
-        "timed out",
-        "timeout residual",
-        "internal decode timeout",
-    )
-    # Incomplete thrash measurement with exhausted frozen-replay budget is also
-    # a residual (missing scoreboard / wall race), not a true harness crash —
-    # unless hard harness markers already matched above.
-    incomplete_residual_markers = (
-        "incomplete replay budget exhausted",
-        "missing_scoreboard",
-        "primary_metric_unavailable",
-    )
-    return (
-        timeout_exit
-        or any(m in joined for m in timeout_markers)
-        or any(m in joined for m in incomplete_residual_markers)
-    )
+    timeout_exit = timeout_arm_exits(exits)
+    crash_exit = crash_arm_exits(exits)
+    explicit_timeout = any(m in joined for m in TIMEOUT_RESIDUAL_MARKERS)
+    if crash_exit and HARNESS_CRASH_REASON_RE.search(joined):
+        # An arm process died (exit != 124) without a scoreboard: a harness
+        # failure regardless of any wall exit elsewhere in the delivery.
+        return False
+    return timeout_exit or explicit_timeout
 
 
 def _merge_head_path(cwd: Path) -> Path | None:
@@ -4472,10 +5970,24 @@ def _ack_rebuild_data_action(
     *,
     action_index: int,
     evidence_uris: Sequence[str],
+    counts: tuple[int, int] | None = None,
 ) -> None:
+    """Acknowledge one ``rebuild_data`` action with bound evidence.
+
+    ``counts`` is the heal's ``(records_before, records_after)`` postcondition:
+    when given, an ack is refused unless the count actually grew — a sidecar
+    path alone is never evidence that data changed.
+    """
     action = handoff.actions[action_index]
     if action.kind != "rebuild_data":
         raise ValueError(f"refusing to ack non-rebuild_data action: {action.kind}")
+    if counts is not None:
+        before, after = int(counts[0]), int(counts[1])
+        if after <= before:
+            raise ValueError(
+                "refusing to ack rebuild_data without a count postcondition: "
+                f"records_before={before} records_after={after}"
+            )
     uris = tuple(evidence_uris)
     evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
     append_autotrain_action_receipt(
@@ -6816,6 +8328,36 @@ def _arm_slug_from_knobs(
         return "canvas"
     if knobs.get("batch_size") == 1:
         return "batch1"
+    if knobs.get("batch_size") == _CONTROL_RECIPE_BATCH_SIZE * 2:
+        return "batch-x2"
+    lr_raw = knobs.get("lr")
+    if lr_raw is not None:
+        try:
+            lr_value = float(lr_raw)
+        except (TypeError, ValueError):
+            lr_value = None
+        if lr_value is not None:
+            if math.isclose(lr_value, _CONTROL_RECIPE_LR * 2, rel_tol=1e-6):
+                return "lr-x2"
+            if math.isclose(lr_value, _CONTROL_RECIPE_LR / 2, rel_tol=1e-6):
+                return "lr-x0.5"
+    # Data-volume arms: a corpus swap with no other lever. The control corpus
+    # itself never names an arm (``steps-fill`` and controls carry it too).
+    train_version = str(knobs.get("train_version") or "")
+    if (
+        train_version
+        and not _is_process_arm(knobs)
+        and train_version != _default_screening_train_version()
+    ):
+        if train_version == _EX_DATA_ARM_LEAKED_TRAIN_VERSION:
+            # Historical ledger rows still name the withdrawn arm's corpus;
+            # classify them so the ledger stays readable, never so the arm
+            # becomes selectable. ``wf_smoke_v2`` is deliberately absent: it
+            # was a legacy *control* corpus, never a data arm, and naming it
+            # here would relabel every legacy control row as an arm.
+            return f"data-leaked:{train_version}"
+        if train_version == _DATA_ARM_CERTIFIED_TRAIN_VERSION:
+            return "data-certified"
     cid = candidate_id or ""
     recovered = _slug_from_candidate_id(cid)
     if recovered:
@@ -6864,6 +8406,10 @@ def _slug_is_snapshot_arm(slug: str, extras: Mapping[str, Any] | None = None) ->
         )
     extras = extras or {}
     if _is_process_arm(extras):
+        return False
+    if slug in _STATIC_DATA_ARM_SLUGS:
+        # Preregistered data-volume arms are isolate OFAT levers, not I10
+        # snapshot leftovers.
         return False
     train_version = str(extras.get("train_version") or "")
     if not train_version:
@@ -8011,12 +9557,35 @@ def _predecessor_compiler_ms_timeout(
             break
     if not incomplete and timeout_n <= 0 and not detail:
         return False
-    return is_compiler_ms_timeout_signal(
+    signal = is_compiler_ms_timeout_signal(
         reasons=reasons,
         decode_outcome_detail=detail or None,
         incomplete=incomplete or timeout_n > 0,
         decode_timeout_count=timeout_n,
     )
+    if not signal:
+        return False
+    # Budget feedback loop: a timeout whose measured per-record p95 exceeds
+    # the timeout the recipe could afford is a budget fact, not a decode-cost
+    # residual. It is recalibrated by _fit_screening_decode_timeout_seconds
+    # (n_probe / timeout from p95), never routed into DECODE_RESIDUAL_SLUGS.
+    from slm_training.autoresearch.thrash_regime import TIMEOUT_CAUSE_BUDGET
+
+    evidence = _predecessor_decode_p95_seconds(root, predecessor_campaign_id)
+    cause = _predecessor_timeout_cause(
+        root, predecessor_campaign_id, evidence=evidence
+    )
+    if cause == TIMEOUT_CAUSE_BUDGET:
+        print(
+            "THRASH_TIMEOUT_CAUSE budget_timeout "
+            f"pred={predecessor_campaign_id} "
+            f"p95_s={evidence.get('p95_seconds')} "
+            f"timeout_s={evidence.get('timeout_seconds')} "
+            "route=recalibrate_budget_not_residual",
+            flush=True,
+        )
+        return False
+    return True
 
 
 def _screening_regime_decision(
@@ -8060,7 +9629,132 @@ def _warm_start_policy(policy: Any) -> dict[str, Any]:
     block = dict(raw) if isinstance(raw, Mapping) else {}
     block.setdefault("enabled", True)
     block.setdefault("max_cumulative_epochs", DEFAULT_MAX_CUMULATIVE_EPOCHS)
+    # With no confirmed champion, the loop's first complete control checkpoint
+    # seeds a ``baseline_seed`` champion so both arms warm start from the same
+    # weights (directive §2.6). It never counts as confirmed / promoted.
+    block.setdefault("seed_from_baseline_control", True)
     return block
+
+
+_CONTROL_RUN_SUFFIXES = ("-control", "_control")
+
+
+def _loop_campaign_dirs(root: Path, loop_id: str) -> list[Path]:
+    """This loop's campaign dirs, newest cycle first (``_campaign_id`` layout)."""
+
+    digest = hashlib.sha256(loop_id.encode("utf-8")).hexdigest()[:8]
+    found: list[tuple[int, str, Path]] = []
+    try:
+        candidates = list(root.glob(f"continuous-loop-*-{digest}-c*"))
+    except OSError:
+        return []
+    for path in candidates:
+        if not path.is_dir():
+            continue
+        match = re.search(r"-c(\d+)$", path.name)
+        if match is None:
+            continue
+        found.append((int(match.group(1)), path.name, path))
+    found.sort(reverse=True)
+    return [item[2] for item in found]
+
+
+def _first_complete_control_run(
+    root: Path, loop_id: str
+) -> tuple[Path, Path, dict[str, Any]] | None:
+    """First complete control run found scanning the newest cycle backwards.
+
+    In a fresh loop this is the loop's first complete control; in a long
+    history it is the latest one, so the seed matches the current recipe and
+    corpus. Returns ``(campaign_dir, run_dir, train_summary)`` or None. A run
+    counts as complete only when ``train_summary.json`` reports
+    ``stopped_on == "steps"`` with ``steps > 0`` and ``checkpoints/last.pt``
+    exists; wall or token-budget truncations are never a warm-start seed.
+    """
+
+    for camp_dir in _loop_campaign_dirs(root, loop_id):
+        runs_dir = camp_dir / "runs"
+        if not runs_dir.is_dir():
+            continue
+        try:
+            run_dirs = sorted(p for p in runs_dir.iterdir() if p.is_dir())
+        except OSError:
+            continue
+        for run_dir in run_dirs:
+            if not run_dir.name.endswith(_CONTROL_RUN_SUFFIXES):
+                continue
+            summary_path = run_dir / "train_summary.json"
+            ckpt = run_dir / "checkpoints" / "last.pt"
+            if not summary_path.is_file() or not ckpt.is_file():
+                continue
+            try:
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(summary, dict):
+                continue
+            try:
+                steps = int(summary.get("steps") or 0)
+            except (TypeError, ValueError):
+                steps = 0
+            if steps <= 0 or str(summary.get("stopped_on") or "") != "steps":
+                continue
+            return camp_dir, run_dir, summary
+    return None
+
+
+def _seed_baseline_champion(root: Path, loop_id: str) -> ClimbChampionSidecar | None:
+    """Seed a ``baseline_seed`` champion from the first complete control run."""
+
+    loop_dir = _loop_champion_dir(root, loop_id)
+    found = _first_complete_control_run(root, loop_id)
+    if found is None:
+        return None
+    camp_dir, run_dir, summary = found
+    try:
+        steps = int(summary.get("steps") or 0)
+    except (TypeError, ValueError):
+        steps = 0
+    train_dir = str(summary.get("train_dir") or "")
+    record_count = train_manifest_record_count(train_dir) if train_dir else None
+    if record_count is None:
+        try:
+            record_count = int(summary.get("record_count") or 0) or None
+        except (TypeError, ValueError):
+            record_count = None
+    params = summary.get("trainable_params")
+    if params is None:
+        params = (summary.get("track") or {}).get("trainable_params")
+    try:
+        trainable = int(params) if params is not None else None
+    except (TypeError, ValueError):
+        trainable = None
+    sidecar = seed_climb_champion(
+        loop_dir,
+        baseline_checkpoint=run_dir / "checkpoints" / "last.pt",
+        source_campaign=camp_dir.name,
+        extra_steps=steps,
+        train_data_manifest_sha=str(
+            summary.get("train_data_manifest_sha")
+            or summary.get("data_manifest_sha")
+            or ""
+        ),
+        record_count=int(record_count or 1),
+        # Baseline knobs stay empty: the control keeps the baseline recipe and
+        # every treatment is baseline + one residual (directive §2.6).
+        knobs={},
+        trainable_params=trainable,
+        train_dir=train_dir or None,
+    )
+    if sidecar is not None:
+        print(
+            "CLIMB_CHAMPION_SEEDED "
+            f"status={sidecar.status} campaign={camp_dir.name} run={run_dir.name} "
+            f"steps={steps} record_count={record_count} "
+            f"checkpoint={climb_champion_checkpoint_path(loop_dir)}",
+            flush=True,
+        )
+    return sidecar
 
 
 def _ensure_climb_champion(
@@ -8069,19 +9763,19 @@ def _ensure_climb_champion(
     loop_id: str,
     queue_entries: Sequence[Mapping[str, Any]] | None,
     eval_data_manifest_sha: str | None,
+    policy: Any | None = None,
 ) -> str | None:
-    """Seed champion from confirmed artifact; park if epochs exhausted.
+    """Seed champion from a confirmed artifact, else the first complete control.
 
+    Confirmed / climb_accepted / promoted queue rows seed a ``confirmed``
+    champion. When none exists, the loop's first complete control run seeds a
+    ``baseline_seed`` champion (warm start only; never confirmed or promoted).
     Returns a park reason or None to continue.
     """
     loop_dir = _loop_champion_dir(root, loop_id)
     artifacts: list[dict[str, Any]] = []
     for row in queue_entries or ():
-        if str(row.get("status") or "") not in {
-            "confirmed",
-            "climb_accepted",
-            "promoted",
-        }:
+        if str(row.get("status") or "") not in CLIMB_CHAMPION_ADVANCE_STATUSES:
             continue
         item = dict(row)
         camp = str(row.get("confirm_campaign_id") or row.get("campaign_id") or "")
@@ -8092,6 +9786,12 @@ def _ensure_climb_champion(
         artifacts.append(item)
     seed_climb_champion(loop_dir, confirmed_artifacts=artifacts)
     sidecar = load_climb_champion(loop_dir)
+    if sidecar is None:
+        warm = _warm_start_policy(policy) if policy is not None else {}
+        if bool(warm.get("enabled", True)) and bool(
+            warm.get("seed_from_baseline_control", True)
+        ):
+            sidecar = _seed_baseline_champion(root, loop_id)
     if (
         sidecar is not None
         and sidecar.train_data_manifest_sha
@@ -8105,18 +9805,37 @@ def _ensure_climb_champion(
 
 
 def _park_champion_epochs_if_needed(policy: Any, loop_dir: Path) -> str | None:
+    """Park when the champion exceeds ``max_cumulative_epochs`` on the corpus.
+
+    Epochs are recomputed against the current train corpus record count from
+    the train manifest (``<train_dir>/manifest.json``) recorded on the sidecar;
+    the sidecar's accumulated value is the fallback when unresolvable.
+    """
+
     warm = _warm_start_policy(policy)
     sidecar = load_climb_champion(loop_dir)
+    record_count: int | None = None
+    if sidecar is not None:
+        record_count = train_manifest_record_count(sidecar.train_dir)
+        if record_count is None:
+            record_count = sidecar.record_count
     reason = champion_epoch_park_reason(
         sidecar,
         max_cumulative_epochs=float(
             warm.get("max_cumulative_epochs") or DEFAULT_MAX_CUMULATIVE_EPOCHS
         ),
+        record_count=record_count,
     )
     if reason:
+        epochs = (
+            champion_cumulative_epochs(sidecar, record_count=record_count)
+            if sidecar is not None
+            else None
+        )
         print(
             f"REGIME_PARKED reason={CHAMPION_EPOCHS_EXHAUSTED} "
-            f"epochs={sidecar.cumulative_epochs if sidecar else None}",
+            f"epochs={epochs} record_count={record_count} "
+            f"cumulative_steps={sidecar.cumulative_steps if sidecar else None}",
             flush=True,
         )
         return _REGIME_PARKED_STATUS
@@ -8182,11 +9901,17 @@ def _select_cycle_slug(
 
 
 def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
-    """Materialize arm knob extras (handles _steps_factor)."""
+    """Materialize arm knob extras (handles _steps_factor).
+
+    Depth arms (factor >= 2) keep the ``base + 10`` depth-confound minimum; a
+    floor-fill factor (< 2, ``steps-fill``) gets ``base + 1`` so the arm never
+    spends past the fitted train floor it is charged against.
+    """
     out = {k: v for k, v in extras.items() if not str(k).startswith("_")}
     factor = extras.get("_steps_factor")
     if factor is not None:
-        out["steps"] = max(int(base_steps * float(factor)), base_steps + 10)
+        bump = 10 if float(factor) >= 2 else 1
+        out["steps"] = max(int(round(base_steps * float(factor))), base_steps + bump)
     return out
 
 
@@ -10072,6 +11797,15 @@ def _gate_promotion_on_replicates(
     }
 
 
+def _PHASE_A_TAGS(phase_a_positive: bool, phase_a_quality_held: bool) -> list[str]:
+    tags: list[str] = []
+    if phase_a_positive:
+        tags.append("phase_a_positive")
+    if phase_a_quality_held:
+        tags.append("phase_a_quality_held")
+    return tags
+
+
 def _resolve_promotion_result(
     *,
     root: Path,
@@ -10196,18 +11930,49 @@ def _resolve_promotion_result(
         from slm_training.autoresearch.climb_policy import load_climb_policy
 
         climb = load_climb_policy()
-        disposition = dispose_champion_promote(
-            formal_preflight_status=formal_preflight_status,
-            certificate=certificate,
-            locked_expectations_sha256=locked_expectations_sha256,
-            phase_a_positive=phase_a_positive,
-            phase_a_quality_held=phase_a_quality,
-            control_metrics=ctrl_metrics,  # type: ignore[arg-type]
-            candidate_metrics=cand_metrics,  # type: ignore[arg-type]
-            promotion_primary=dict(climb.promotion_primary),
-            promotion_dispose=dict(climb.promotion_dispose),
-            power_feasibility=_campaign_power_feasibility(camp, candidate_id),
+        incomplete_reasons = _promotion_measurement_incomplete_reasons(
+            camp,
+            control_id=control_id,
+            candidate_id=candidate_id,
+            delivery=delivery,
         )
+        if incomplete_reasons:
+            # Partial scoreboard or spent chunk budget: the measurement is
+            # incomplete evidence, never a model verdict (retryable, refunded).
+            disposition = {
+                "status": "promotion_inconclusive",
+                "reasons": [*incomplete_reasons, *_PHASE_A_TAGS(phase_a_positive, phase_a_quality)],
+                "cert_policy": None,
+                "diagnosis_lanes": [],
+                "emit_five_lane_matrix": False,
+                "breaches": [],
+                "primary_improvement": None,
+                "promotion_primary_met": None,
+                "inconclusive": True,
+                "measurement_incomplete": True,
+            }
+        else:
+            disposition = dispose_champion_promote(
+                formal_preflight_status=formal_preflight_status,
+                certificate=certificate,
+                locked_expectations_sha256=locked_expectations_sha256,
+                phase_a_positive=phase_a_positive,
+                phase_a_quality_held=phase_a_quality,
+                control_metrics=ctrl_metrics,  # type: ignore[arg-type]
+                candidate_metrics=cand_metrics,  # type: ignore[arg-type]
+                promotion_primary=dict(climb.promotion_primary),
+                promotion_dispose=dict(climb.promotion_dispose),
+                power_feasibility=_merged_promotion_power_feasibility(
+                    camp,
+                    control_id=control_id,
+                    candidate_id=candidate_id,
+                    locked=_campaign_power_feasibility(camp, candidate_id),
+                    primary_metric=str(
+                        (climb.promotion_primary or {}).get("metric")
+                        or "held_out.structural_similarity"
+                    ),
+                ),
+            )
         disposition = _gate_promotion_on_replicates(
             root=root,
             loop_id=loop_id,
@@ -10315,7 +12080,14 @@ def _resolve_promotion_result(
                 ):
                     attempts = int(row.get("promote_attempts") or 0)
                     row["promote_attempts"] = max(0, attempts - 1)
-                    if status == "promotion_inconclusive" or disposition.get("timeout"):
+                    if disposition.get("measurement_incomplete"):
+                        row["last_measurement_incomplete"] = True
+                        row["last_measurement_incomplete_reasons"] = [
+                            str(reason)
+                            for reason in (disposition.get("reasons") or [])
+                            if str(reason).startswith("measurement_incomplete:")
+                        ][:8]
+                    elif status == "promotion_inconclusive" or disposition.get("timeout"):
                         row["last_formal_timeout"] = True
                         row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
                     if status == "harness_failure" or disposition.get(
@@ -10505,6 +12277,7 @@ def _classify_positive(
     candidate_trainable_params: int | None = None,
     eg_params_by_seed: list[float] | None = None,
     policy_path: str | None = None,
+    observed_sd_path: Path | None = None,
 ) -> dict[str, Any]:
     """Classify cycle for SDLC Phase A stack-layer gate.
 
@@ -10513,8 +12286,23 @@ def _classify_positive(
     meaning are not positive; quality may spend a bounded latency budget.
     Fixture insufficient_n / missing metrics / null deltas / uncharged capacity
     growth → non-positive.
+
+    Screening NLL primaries are decided by the policy paired test on the
+    per-record ``eval_nll_records.json`` deltas of both arms. The fixture
+    ``insufficient_n`` clamp keeps nullifying decoded-quality wins and every
+    promotion verdict; it does not nullify a paired NLL win decided on at
+    least ``SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR`` pairs — the quality
+    probe's volume is then recorded as ``fixture_insufficient_n:quality_probe``.
+    Screening positives remain ``claim_class: diagnostic``. I6 is untouched:
+    any measured ``parse_rate < 1`` still yields ``invalid_grammar``.
+
+    Each screening classification with paired deltas appends the measured
+    paired-delta SD to ``observed_paired_sd_by_metric`` in the screening
+    expectations file (``observed_sd_path`` overrides the repo file).
     """
     from slm_training.autoresearch.climb_policy import (
+        FIXTURE_INSUFFICIENT_N_QUALITY_PROBE,
+        PAIRED_PRIMARY_LEAVES,
         classify_positive_metrics,
         load_climb_policy,
         primary_for_role,
@@ -10563,6 +12351,29 @@ def _classify_positive(
         }
 
     reasons_pre: list[str] = []
+    # Per-record NLL pairs (teacher-forced, whole smoke suite) for the paired
+    # screening verdict. Arms scored under different NLL definitions never pair.
+    paired_records: dict[str, dict[str, float]] | None = None
+    paired_records_info: dict[str, Any] = {}
+    if (
+        role == "screening"
+        and effective_metric.rsplit(".", 1)[-1] in PAIRED_PRIMARY_LEAVES
+    ):
+        c_records, c_digest = _read_eval_nll_records(camp_dir / "runs" / control_id)
+        t_records, t_digest = _read_eval_nll_records(camp_dir / "runs" / candidate_id)
+        paired_records_info = {
+            "control_n": len(c_records),
+            "candidate_n": len(t_records),
+            "control_definition_hash": c_digest,
+            "candidate_definition_hash": t_digest,
+        }
+        if c_records and t_records:
+            if c_digest and t_digest and c_digest != t_digest:
+                reasons_pre.append(
+                    f"paired_records_definition_mismatch:{control_id}:{candidate_id}"
+                )
+            else:
+                paired_records = {"control": c_records, "candidate": t_records}
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     # Latency pre-check verdicts per arm (probe timeout / over-budget skip) so
     # a probe-skipped eval reads as its typed cause, not a bare missing file.
@@ -10653,6 +12464,9 @@ def _classify_positive(
         if out.get("metrics") == {} and err:
             reasons_pre.append(f"empty_metrics:{path.stem}")
 
+    # Ship-gate evidence volume (default_min_suite_n) is always short on a
+    # screening smoke suite; it stays a hard clamp for decoded quality wins and
+    # promotion, and an information reason for a decided paired NLL win.
     gate_files = list((camp_dir / "runs").glob("*/gates.json"))
     fixture_only_fails = 0
     for gpath in gate_files:
@@ -10747,7 +12561,10 @@ def _classify_positive(
         eg_params_by_seed=eg_params_by_seed,
         executable_unblock=executable_unblock,
         fixture_insufficient_n=bool(fixture_only_fails),
+        paired_records=paired_records,
     )
+    # Paired NLL win decided on >= the decidability floor with legal grammar.
+    paired_nll_decided = bool(decision.get("fixture_clamp_exempt"))
 
     # Latency primary: tradeoff is authoritative for metric wins (blocks zero-mpr
     # latency greening from direction-signed primary alone).
@@ -10831,28 +12648,63 @@ def _classify_positive(
     if _quality_metrics_identical(delivery_view) and not any(
         str(reason).startswith("mechanism_no_effect:") for reason in reasons
     ):
-        reasons.append("mechanism_no_effect:quality_metrics_identical")
-        decision["positive"] = False
-        decision["stack_layer"] = False
+        if paired_nll_decided:
+            # Identical decoded numbers on a fixture-n probe are not a
+            # no-effect verdict against a paired NLL test decided per record.
+            reasons.append("quality_probe_identical:decoded_quality_metrics_identical")
+        else:
+            reasons.append("mechanism_no_effect:quality_metrics_identical")
+            decision["positive"] = False
+            decision["stack_layer"] = False
     if fixture_only_fails or any(
         str(reason).startswith("fixture_insufficient_n") for reason in reasons
     ):
-        # Tradeoff / primary_metric_win must not re-green fixture ship volume.
-        decision["positive"] = False
-        decision["stack_layer"] = False
-        lean_ok = _lean_floor_measurement(delivery_view)
-        if lean_ok:
-            if not any(
-                str(reason).startswith("fixture_volume_gate_ship_only")
+        if paired_nll_decided:
+            # Quality-probe volume is information here, never the verdict.
+            if FIXTURE_INSUFFICIENT_N_QUALITY_PROBE not in reasons:
+                reasons.append(FIXTURE_INSUFFICIENT_N_QUALITY_PROBE)
+        else:
+            # Tradeoff / primary_metric_win must not re-green fixture ship
+            # volume on decoded quality metrics, latency/efficiency paths, or
+            # any promotion verdict.
+            decision["positive"] = False
+            decision["stack_layer"] = False
+            lean_ok = _lean_floor_measurement(delivery_view)
+            if lean_ok:
+                if not any(
+                    str(reason).startswith("fixture_volume_gate_ship_only")
+                    for reason in reasons
+                ):
+                    reasons.append("fixture_volume_gate_ship_only")
+            elif not any(
+                str(reason).startswith("fixture_insufficient_n_alone")
                 for reason in reasons
             ):
-                reasons.append("fixture_volume_gate_ship_only")
-        elif not any(
-            str(reason).startswith("fixture_insufficient_n_alone") for reason in reasons
-        ):
-            reasons.append("fixture_insufficient_n_alone")
+                reasons.append("fixture_insufficient_n_alone")
+
+    paired = decision.get("paired_test")
+    if (
+        role == "screening"
+        and isinstance(paired, dict)
+        and isinstance(paired.get("paired_sd"), (int, float))
+        and int(paired.get("n_pairs") or 0) >= 2
+    ):
+        # Measured paired-delta SD feeds the screening power calibration.
+        try:
+            _record_observed_paired_sd(
+                observed_sd_path or screening_expectations_path(),
+                metric_leaf=leaf,
+                sd=float(paired["paired_sd"]),
+                n=int(paired["n_pairs"]),
+                campaign_id=camp_dir.name,
+                control_id=control_id,
+                candidate_id=candidate_id,
+            )
+        except Exception as exc:  # noqa: BLE001 — calibration is never a verdict
+            print(f"OBSERVED_PAIRED_SD_SKIP metric={leaf} err={exc!r}", flush=True)
 
     decision["reasons"] = reasons
+    decision["paired_records"] = paired_records_info
     decision["control_id"] = control_id
     decision["candidate_id"] = candidate_id
     decision["baseline_trainable_params"] = base_params
@@ -11060,10 +12912,14 @@ def _phase_a_delivery(
         )
         decode_fit = None
         if role == "screening":
+            # Fit from this campaign's own scoreboards: the timing record is
+            # the budget its successor cycle inherits (decode_floor_source
+            # measured_p95 once eval_smoke.json exists, else policy_default).
             _fitted, decode_fit = _fit_screening_decode_timeout_seconds(
                 policy,
                 arm_wall_seconds=arm_s,
                 telemetry_root=root,
+                predecessor_campaign_id=campaign_id,
             )
         matrix_regime = None
         matrix_path = camp_dir / "matrix-proposal.json"
@@ -12657,18 +14513,113 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     return best_idx, completed_id or best_id
 
 
+_STALL_FINGERPRINT = "loop_stalled_no_campaign"
+_VACUOUS_PASS_LIMIT = 3
+#: Driver exit code for the typed loop-stalled park (2 = hard pending).
+_STALL_EXIT_CODE = 3
+
+
+def _last_heal_receipt_outcome(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    for raw in reversed(path.read_text(encoding="utf-8").splitlines()):
+        if not raw.strip():
+            continue
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        return str(row.get("outcome") or "") if isinstance(row, dict) else None
+    return None
+
+
+def _park_loop_stalled(
+    *,
+    root: Path,
+    loop_id: str,
+    cycle_index: int,
+    campaign_id: str | None,
+    consecutive: int,
+    last_non_vacuous: dict[str, Any] | None,
+    reason: str | None,
+) -> Path:
+    """Write the typed ``loop_stalled_no_campaign`` park (state=BLOCKED)."""
+    if last_non_vacuous:
+        last = (
+            f"last non-vacuous pass: {last_non_vacuous.get('outcome')} "
+            f"campaign={last_non_vacuous.get('campaign_after')} "
+            f"at {last_non_vacuous.get('recorded_at')}"
+        )
+    else:
+        last = "no non-vacuous pass recorded for this loop"
+    if reason:
+        last = f"{last}; last cycle error: {reason}"
+    next_action = (
+        f"{_STALL_FINGERPRINT}: {consecutive} consecutive vacuous passes "
+        f"(no campaign, no verified heal, no typed action); {last}"
+    )[:1000]
+    path = _write_loop_state(
+        root,
+        AutotrainLoopStateV1(
+            loop_id=loop_id,
+            state="BLOCKED",
+            phase="blocked",
+            last_completed_campaign_id=campaign_id,
+            cycle_index=max(0, int(cycle_index)),
+            next_action=next_action,
+            blocker_fingerprint=_STALL_FINGERPRINT,
+            blocker_count=int(consecutive),
+            pid=os.getpid(),
+            heartbeat_at=utc_now(),
+        ),
+    )
+    try:
+        from slm_training.autoresearch.heal.escalation import EscalationLedger
+
+        ledger = EscalationLedger.load(root, loop_id)
+        record = ledger.observe(
+            kind=_STALL_FINGERPRINT,
+            reason="consecutive vacuous driver passes without a new campaign",
+            blocker_class="unknown",
+            campaign_id=campaign_id or "unknown",
+            owner_skill="autotrain",
+        )
+        ledger.escalate(record.fingerprint, note=next_action[:400])
+        ledger.save()
+    except Exception as exc:  # noqa: BLE001 — ledger bugs never mask the park
+        print(f"LOOP_PARKED_LEDGER_WARN {exc!r}", flush=True)
+    print(
+        f"LOOP_PARKED fingerprint={_STALL_FINGERPRINT} consecutive={consecutive} "
+        f"state={path}",
+        flush=True,
+    )
+    return path
+
+
 def _record_pass_outcome(
     *, root: Path, loop_id: str, before_campaign: str | None,
-    before_receipts: int, typed_action: bool = False,
+    before_receipts: int, typed_action: bool = False, reason: str | None = None,
 ) -> str:
-    """Classify one driver pass; a clean no-op is a counted hard failure."""
+    """Classify one driver pass; a clean no-op is a counted hard failure.
+
+    Returns the outcome. ``loop_stalled_no_campaign`` means
+    ``_VACUOUS_PASS_LIMIT`` consecutive vacuous passes were observed and the
+    typed park (``state=BLOCKED``) has been written: the caller exits non-zero
+    without raising. Heal receipts are read by outcome, so a driver heal whose
+    postcondition failed scores ``heal_postcondition_failed`` (visible,
+    counted) rather than ``vacuous_pass`` or ``verified_heal``.
+    """
     _idx, after_campaign = _latest_cycle(root, loop_id)
     receipts_path = root / "loops" / loop_id / "heal_receipts.jsonl"
     after_receipts = len(receipts_path.read_text(encoding="utf-8").splitlines()) if receipts_path.is_file() else 0
     if after_campaign and after_campaign != before_campaign:
         outcome = "campaign_initialized"
     elif after_receipts > before_receipts:
-        outcome = "verified_heal" if "healed" in receipts_path.read_text(encoding="utf-8")[-2000:] else "heal_attempted"
+        outcome = {
+            "healed": "verified_heal",
+            "verify_failed": "heal_postcondition_failed",
+            "unhandled": "escalation_unhandled",
+        }.get(_last_heal_receipt_outcome(receipts_path) or "", "heal_attempted")
     elif typed_action:
         outcome = "typed_park_or_escalation"
     else:
@@ -12677,23 +14628,37 @@ def _record_pass_outcome(
     path.parent.mkdir(parents=True, exist_ok=True)
     prior = [r for r in path.read_text(encoding="utf-8").splitlines() if r] if path.is_file() else []
     previous_vacuous = 0
+    last_non_vacuous: dict[str, Any] | None = None
+    counting = True
     for raw in reversed(prior):
         try:
             previous = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if previous.get("outcome") == "vacuous_pass":
-            previous_vacuous += 1
-        else:
-            break
+        if previous.get("outcome") in {"vacuous_pass", _STALL_FINGERPRINT}:
+            if counting:
+                previous_vacuous += 1
+            continue
+        counting = False
+        last_non_vacuous = previous
+        break
     row = {"schema": "pass_outcome/v1", "loop_id": loop_id, "outcome": outcome,
            "campaign_before": before_campaign, "campaign_after": after_campaign,
            "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
-           "recorded_at": utc_now()}
+           "reason": reason, "recorded_at": utc_now()}
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, sort_keys=True) + "\n")
-    if row["consecutive_vacuous"] >= 3:
-        raise RuntimeError("vacuous_pass: loop_stalled_no_campaign")
+    if row["consecutive_vacuous"] >= _VACUOUS_PASS_LIMIT:
+        _park_loop_stalled(
+            root=root,
+            loop_id=loop_id,
+            cycle_index=_idx,
+            campaign_id=after_campaign,
+            consecutive=int(row["consecutive_vacuous"]),
+            last_non_vacuous=last_non_vacuous,
+            reason=reason,
+        )
+        return _STALL_FINGERPRINT
     return outcome
 
 
@@ -13406,6 +15371,8 @@ def _matrix(
     thrash_regime: ThrashRegimeDecision | None = None,
     initialize_from: str | None = None,
     telemetry_root: Path | None = None,
+    predecessor_campaign_id: str | None = None,
+    chunk_plan: Mapping[str, Any] | None = None,
 ) -> dict:
     from slm_training.autoresearch.climb_policy import (
         decode_timeout_seconds_for_role,
@@ -13429,6 +15396,7 @@ def _matrix(
             pol,
             telemetry_root=telemetry_root,
             requested_steps=int(steps),
+            predecessor_campaign_id=predecessor_campaign_id,
         )
         steps = int(
             (decode_fit or {}).get("fitted_steps")
@@ -13582,12 +15550,28 @@ def _matrix(
             "decode_timeout_seconds": decode_timeout,
             "eval_suites": eval_suites,
         }
+        if role == "promotion" and chunk_plan:
+            # Locked chunked measurement: per-suite n, per-record persistence
+            # and the per-run decode cap come from the pre-run chunk plan.
+            base["eval_limit"] = int(chunk_plan["suite_n"])
+            base["eval_partial_scoreboard"] = True
+            base["eval_max_records_this_run"] = int(chunk_plan["records_per_run"])
         if role == "screening":
             # Screening smoke suites are tiny: baked generate_batch_size groups
             # every document into one decode chunk, defeating per-record
             # fair-share timeout redistribution.
             base["generate_batch_size"] = 1
             base.update(latency_probe_knobs)
+            # The decode probe is bounded by the fitted n_probe. Without this
+            # the eval decodes the whole published suite (96 records) however
+            # small the eval share is, so the arm is killed at the wall and
+            # reports no document counts at all: the fit computed n_probe and
+            # nothing consumed it. NLL still spans the full suite -- it is
+            # teacher-forced and cheap -- so the screening verdict keeps its
+            # pairs while the decoded quality probe stays inside its budget.
+            probe_n = (decode_fit or {}).get("n_probe")
+            if isinstance(probe_n, int) and probe_n > 0:
+                base["eval_limit"] = int(probe_n)
         base.update(extra_map)
         if initialize_from:
             base["initialize_from"] = initialize_from
@@ -14087,6 +16071,9 @@ def _matrix(
                 "decode_timeout_seconds",
                 "generate_batch_size",
                 "eval_suites",
+                "eval_limit",
+                "eval_partial_scoreboard",
+                "eval_max_records_this_run",
             }
         )
 
@@ -14096,6 +16083,7 @@ def _matrix(
             )
 
         seen_lever_sigs: set[str] = set()
+        warm_skipped_data_arms: list[str] = []
         control_knobs = candidates[0]["experiment"]["knobs"]
         seen_lever_sigs.add(_materialized_sig(control_knobs))
         for i, (slug, hyp, extras) in enumerate(_all_screening_arm_bank(), start=1):
@@ -14109,6 +16097,15 @@ def _matrix(
                 # knob-signature requirement without adding information.
                 continue
             arm_extra = _apply_arm_extras(steps, extras)
+            if initialize_from and _arm_swaps_train_corpus(
+                extras, control_train_version=train_version
+            ):
+                # Warm start forks the champion for both arms with identical
+                # data (``assert_warm_start_launch``); a data arm changes the
+                # corpus, so it is only a legal candidate on a cold-start
+                # cycle. Skipped here, never silently rewritten.
+                warm_skipped_data_arms.append(slug)
+                continue
             if climb_active:
                 arm_extra = compose_treatment_levers(
                     control_levers=control_levers,
@@ -14146,11 +16143,19 @@ def _matrix(
                 }
             )
         rec = f"{prefix}-{rec_slug}"
-        if initialize_from and len(candidates) >= 2:
-            assert_warm_start_launch(
-                candidates[0]["experiment"]["knobs"],
-                candidates[1]["experiment"]["knobs"],
-            )
+        if initialize_from:
+            if warm_skipped_data_arms:
+                print(
+                    "WARM_START_SKIP_DATA_ARMS "
+                    f"arms={','.join(warm_skipped_data_arms)} "
+                    "reason=warm_start_requires_equal_train_data",
+                    flush=True,
+                )
+            for row in candidates[1:]:
+                assert_warm_start_launch(
+                    candidates[0]["experiment"]["knobs"],
+                    row["experiment"]["knobs"],
+                )
         candidate_ids = {
             str((row.get("experiment") or {}).get("experiment_id") or "")
             for row in candidates
@@ -14291,6 +16296,7 @@ def _manifest(
     policy: Any | None = None,
     cycle_intent: str | None = None,
     formal_preflight_sha256: str | None = None,
+    chunk_plan: Mapping[str, Any] | None = None,
 ) -> ExperimentCampaignV1:
     from slm_training.autoresearch.climb_policy import (
         load_climb_policy,
@@ -14401,6 +16407,11 @@ def _manifest(
             ),
             _ev.parse_alpha(gate.get("alpha") if isinstance(gate, Mapping) else None),
         )
+        # Chunk plan (records per bounded run, locked run budget) stamped
+        # before execution so every chunk of the measurement is preregistered.
+        measurement_chunk_plan: dict[str, Any] | None = (
+            dict(chunk_plan) if chunk_plan else _promotion_chunk_plan(pol)
+        )
     else:
         claim_class = str(defaults.get("claim_class_screening") or "diagnostic")
         # Screening does not calibrate empirical quality/latency with Lean, but
@@ -14420,6 +16431,7 @@ def _manifest(
         artifact_requirements = (ArtifactRequirementV1(kind="version_stamp"),)
         locked_eval = None
         power_feasibility = None
+        measurement_chunk_plan = None
 
     knobs = experiment["knobs"]
     cfg = hashlib.sha256(json.dumps(knobs, sort_keys=True).encode()).hexdigest()
@@ -14547,6 +16559,7 @@ def _manifest(
             promotion_seed_floor(pol)[0] if role == "promotion" else None
         ),
         power_feasibility=power_feasibility,
+        measurement_chunk_plan=measurement_chunk_plan,
         source_commit=commit,
         source_dirty=False,
         author="autotrain-continuous-driver",
@@ -15491,6 +17504,7 @@ def run_cycle(
             loop_id=loop_id,
             queue_entries=queue_entries,
             eval_data_manifest_sha=None,
+            policy=policy,
         )
         parked_epochs = _park_champion_epochs_if_needed(policy, loop_dir)
         if parked_epochs:
@@ -15570,6 +17584,22 @@ def run_cycle(
                 )
             except OSError as exc:
                 print(f"PREFLIGHT_WARN persist err={exc!r}", flush=True)
+    promotion_chunk_plan: dict[str, Any] | None = (
+        _promotion_chunk_plan(policy, root=root) if role == "promotion" else None
+    )
+    if promotion_chunk_plan is not None:
+        print(
+            "PROMOTION_CHUNK_PLAN "
+            f"suites={','.join(promotion_chunk_plan['suites'])} "
+            f"suite_n={promotion_chunk_plan['suite_n']} "
+            f"total_record_n={promotion_chunk_plan['total_record_n']} "
+            f"per_record_s={promotion_chunk_plan['per_record_seconds']:.3f} "
+            f"p95_s={promotion_chunk_plan['measured_decode_p95_seconds']} "
+            f"records_per_run={promotion_chunk_plan['records_per_run']} "
+            f"run_n={promotion_chunk_plan['run_n']} "
+            f"chunk_wall_s={promotion_chunk_plan['chunk_wall_seconds']:.0f}",
+            flush=True,
+        )
     matrix = _matrix(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
@@ -15594,6 +17624,8 @@ def run_cycle(
         thrash_regime=thrash_regime,
         initialize_from=initialize_from,
         telemetry_root=root,
+        predecessor_campaign_id=pred,
+        chunk_plan=promotion_chunk_plan,
     )
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
@@ -15971,6 +18003,7 @@ def run_cycle(
                 formal_preflight_sha256=(
                     promote_preflight_sha if is_promote_arm else None
                 ),
+                chunk_plan=promotion_chunk_plan,
             )
             man_path = camp_dir / "manifests" / f"{eid}.json"
             man_path.parent.mkdir(parents=True, exist_ok=True)
@@ -16034,8 +18067,29 @@ def run_cycle(
             code = int(result.returncode or 0)
         arm_exits[eid] = int(code)
         print(f"experiment {eid} exit={code}", flush=True)
-        if int(code) == 0:
-            _attach_screening_eval_nll(camp_dir / "runs" / eid)
+        # Teacher-forced NLL is cheap and independent of the decode-heavy
+        # quality eval: score it whenever a checkpoint exists, even when the
+        # quality eval crashed (2) or timed out (124).
+        _attach_screening_eval_nll(camp_dir / "runs" / eid, exit_code=int(code))
+
+    promotion_chunks: dict[str, Any] | None = None
+    if promotion_chunk_plan is not None and seen:
+        _set_active_stage(root, loop_id, "promotion-chunks")
+        chunk_started = time.monotonic()
+        promotion_chunks = _run_promotion_eval_chunks(
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            camp_dir=camp_dir,
+            plan=promotion_chunk_plan,
+            experiment_paths={eid: by_id[eid] for eid in seen},
+            arm_order=list(dict.fromkeys(eid for eid in order if eid in seen)),
+        )
+        # Every chunk was its own bounded run (fresh MAX_RUN_SECONDS deadline,
+        # eval wall <= MAX_HARNESS_WALL_SECONDS); the cycle clock resumes where
+        # it paused so closeout stages keep the budget they had before.
+        deadline += time.monotonic() - chunk_started
 
     _set_active_stage(root, loop_id, "diagnosis-and-handoff")
     delivery = _phase_a_delivery(
@@ -16062,6 +18116,8 @@ def run_cycle(
         "arm_exits": arm_exits,
         "arm_skipped": arm_skipped,
     }
+    if promotion_chunks is not None:
+        delivery = _attach_promotion_chunks(delivery, promotion_chunks)
     if screening_multi:
         direction = str(role_primary.get("direction") or "increase")
         scored: list[tuple[str, float, int]] = []
@@ -16466,10 +18522,15 @@ def main(argv: list[str] | None = None) -> int:
                     require_action_receipts=args.supervised,
                     extra_skip_slugs=extra_skip_slugs,
                 )
-                print("PASS_OUTCOME " + _record_pass_outcome(
+                pass_outcome = _record_pass_outcome(
                     root=root, loop_id=args.loop_id, before_campaign=before_campaign,
                     before_receipts=before_receipts,
-                ), flush=True)
+                )
+                print(f"PASS_OUTCOME {pass_outcome}", flush=True)
+                if pass_outcome == _STALL_FINGERPRINT:
+                    # Typed park already written (state=BLOCKED); exit
+                    # non-zero so the supervisor's governed backoff applies.
+                    return _STALL_EXIT_CODE
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -16485,14 +18546,19 @@ def main(argv: list[str] | None = None) -> int:
                     integration_commit=code_sha,
                 )
                 try:
-                    _record_pass_outcome(
+                    pass_outcome = _record_pass_outcome(
                         root=root, loop_id=args.loop_id,
                         before_campaign=before_campaign if "before_campaign" in locals() else None,
                         before_receipts=before_receipts if "before_receipts" in locals() else 0,
                         typed_action=bool(report.get("hard_pending")),
+                        reason=repr(exc)[:300],
                     )
-                except RuntimeError:
-                    raise
+                except Exception as outcome_exc:  # noqa: BLE001 — classifier bugs never mask the cycle error
+                    print(f"PASS_OUTCOME_WARN {outcome_exc!r}", flush=True)
+                    pass_outcome = "unclassified"
+                print(f"PASS_OUTCOME {pass_outcome}", flush=True)
+                if pass_outcome == _STALL_FINGERPRINT:
+                    return _STALL_EXIT_CODE
                 # Legacy string heal for bank/soft identity / document / residual.
                 heal_kind = _self_heal_cycle_error(
                     root=root,

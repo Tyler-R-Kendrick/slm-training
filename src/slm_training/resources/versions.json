@@ -28,6 +28,11 @@
     "autoresearch.conclusions": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "load_policy prefers policy.v3.json (the climb default since P2) over policy.v2.json before the v1 fallback; conclusion block unchanged.",
+          "version": "v8"
+        },
+        {
           "date": "2026-08-21",
           "note": "autotrain climb policy now consumes the fail-closed hillclimb_strict_v2 train snapshot.",
           "version": "v7"
@@ -87,10 +92,30 @@
         "docs/design/hypothesis-family-conclusions.md",
         "tests/test_autoresearch/test_conclusions_family_closure.py"
       ],
-      "version": "v7"
+      "version": "v8"
     },
     "autoresearch.heal": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "run_playbooks prefers a playbook in-process execute (harness_crash -> attempted, data_rebuild -> count-postcondition healed) over the subprocess plan/verify path; same attempt budget, single persisted receipt; execute crash records step_failed.",
+          "version": "v5"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of cards P10 (heal executors) and P6 (fail-closed heal verification) which both prepended v3 independently; reconciles the component to v4.",
+          "version": "v4"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "harness_crash playbook (class code): captures the failing arm's exit, stderr tail and traceback, names module + harness_family, emits a typed repair_harness action, runs the module's mirrored test file once, and writes an attempted (never healed) receipt. data_rebuild playbook (class data): invokes the driver's rebuild seam under a records_after > records_before postcondition (healed / postcondition_failed). classify routes harness_failure:*:experiment_failed with a non-124 exit to code and rebuild_data prerequisites to data; HealOutcome gains attempted and postcondition_failed.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Driver heal verification primitives (P6): HealVerifyV1-backed record_count_probe + verify_driver_heal write healed / verify_failed (heal_postcondition_failed) receipts and observe the blocker in the escalation ledger; allocate_screening_suite_id scans every _v* of the n family; run_playbooks leaves an 'unhandled' receipt (new HealOutcome) for no_matching_playbook / playbook_declined so escalations are never vacuous.",
+          "version": "v3"
+        },
         {
           "date": "2026-08-21",
           "note": "Fail-closed loop primitives: typed pass outcomes, watchdog blocker catalog, WIP leases, and per-metric power evidence helpers.",
@@ -133,12 +158,19 @@
         "tests/test_autoresearch/test_heal_escalation.py",
         "tests/test_autoresearch/test_heal_playbooks.py",
         "tests/test_scripts/test_env_repair_rewrite.py",
-        "tests/test_scripts/test_run_autotrain_supervisor.py"
+        "tests/test_scripts/test_run_autotrain_supervisor.py",
+        "tests/test_autoresearch/test_heal_harness_crash.py",
+        "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v2"
+      "version": "v5"
     },
     "autoresearch.power_preflight": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "RC2 fix: observed SD is resolved per endpoint metric via screening_sample_size.lookup_paired_sd_for_metric (expectations slot -> metric-keyed ledger -> tagged constant); an unmeasured SD reports sd_source=unmeasured and can only warn (block is a measured determination). Empty endpoint_metric blocks as malformed. Process-arm handling unchanged.",
+          "version": "v5"
+        },
         {
           "date": "2026-08-15",
           "note": "Process/heal/wiring candidates warn instead of blocking; first-train I10 is not a confirmatory power design.",
@@ -168,7 +200,7 @@
         "tests/test_autoresearch/test_power_preflight_check.py",
         "tests/test_autoresearch/test_power_preflight_math.py"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "autoresearch.preflight": {
       "history": [
@@ -294,6 +326,16 @@
     },
     "config.levers": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "S6: DIAGNOSTIC_ONLY_LEVERS registry (context_ablation, safe value \"off\") checked by require_constrained_production_config alongside CONSTRAINT_WEAKENING_LEVERS, plus _lever_value_is_safe so an enum-valued lever is compared by value instead of truthiness (bool(\"zero\") == bool(\"off\") previously waved every non-bool diagnostic lever through the production guard). Strictly fail-closed: no lever weakened, no default changed; the lever surfaces in lever_catalog with diagnostic_only: true.",
+          "version": "v33"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "lever_catalog category: *_loss_weight levers of the compiler/solver family classify as training (weights-moving), not decode; no lever added, removed or defaulted.",
+          "version": "v32"
+        },
         {
           "date": "2026-08-09",
           "note": "darkfactory unit M: solver_energy_decode_weight and legal_edit_hazard_decode_weight registered in TRAINED_DECODE_REQUIREMENTS and the compiler-path decode lever group",
@@ -470,7 +512,7 @@
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
-      "version": "v31"
+      "version": "v33"
     },
     "data.abstract_cot_warmup": {
       "history": [
@@ -889,6 +931,26 @@
     "data.test_build": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "Certified split admission applies every record contract TwoTowerModel.from_records applies (assert_no_template_semantic_labels, assert_canonical_template_markers, assert_symbol_only_output, assert_role_safe_output) at a role_safety stage, using the record target_kind and falling back to the document kind the model resolves. Checking only one of the four still left the bucket untrainable. Refusals are recorded in rejected.jsonl and raise a role_unsafe_output recommendation. openui_verified_train_v2 rebuilt: 893 train / 154 validation / 118 test, 256 role refusals across splits, 0 admitted records failing any contract. Admission is stricter, never looser.",
+          "version": "v12"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Certified split admission applies the trainer's role-safe output contract. assert_role_safe_output under the document output kind now runs at a new role_safety admission stage, so a record placing a placeholder in a non-content property is refused and recorded in rejected.jsonl instead of reaching the train bucket and making it untrainable (29 of 1,083 did, and TwoTowerModel.from_records took every screening arm down with the first one). A role_unsafe_output recommendation carries the evidence. Published openui_verified_train_v2 (1,054 train / 182 validation / 136 test; 49 role-unsafe refusals across splits) with its action receipts; v1 is immutable and stays as built. Admission is stricter, never looser.",
+          "version": "v11"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "record synthesis_feedback_actions.json for openui_verified_train_v1: one action_receipt per open recommendation (stale_output_contract, id_collision, redundant_expansion), bound to the split-policy plan hash and the dataset manifest hash, with re-measured before/after counts. Clears the SFT gate for this bucket only; the parent corpus fixes stay open. No gate or threshold changed.",
+          "version": "v10"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Certified eval source: build_test_data --source certified samples the RootFamilySplitPolicyV1 validation/test buckets of openui_verified_v1 (families closed under recorded links and identical program text), decontaminated against the materialized train bucket openui_verified_train_v1 (scripts/build_certified_train_bucket.py), stratified by source, seeded; publishes e938_role_safe_all_targets_smoke96_v1 / heldout24_v1 with quality_report and screening_sample_size sidecars at the exact decidability floor.",
+          "version": "v9"
+        },
+        {
           "date": "2026-08-21",
           "note": "Publish e938_role_safe_all_targets_smoke24_v1 for powered screening; frozen e938_* snapshots unchanged.",
           "version": "v8"
@@ -943,12 +1005,33 @@
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/",
-        "src/slm_training/resources/test_seeds.jsonl"
+        "src/slm_training/resources/test_seeds.jsonl",
+        "scripts/build_certified_train_bucket.py"
       ],
-      "version": "v8"
+      "version": "v12"
     },
     "decode.invariants": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "I3 committed-table paragraph re-measured against openui_verified_train_v2: 893 records all encoding (was 1,083 with 29 codec refusals), 47,692 tokens, order 3 and 493 contexts unchanged, and the root = Stack([ margin 1.738 -> 1.767. Both picks unchanged; no invariant text changed and the lever stays off.",
+          "version": "v11"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: reconcile S8 (citation-line-only edit to decode-invariants.md, its v9 no-bump entry kept below) with the S2 v10 bump on the integration branch.",
+          "version": "v10"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S2: I3 committed n-gram table provenance -- built from the certified train bucket openui_verified_train_v1 (1,054 encoded sequences, 54,434 tokens, order 3, 493 contexts); doc branch-point numbers are measured and pinned by test; --check asserts the artifact's recorded source (manifest content_fingerprint, records sha256) against the live manifest. No invariant weakened; lever stays off.",
+          "version": "v10"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 citation-line-only edit -- add arXiv:2607.07026 (finite-automaton constrained decoding, DFA/NFA only) next to IG-CD/LAVE and point at the research-lineage transfer audit; no invariant text or check logic changed.",
+          "version": "v9"
+        },
         {
           "date": "2026-08-20",
           "note": "I6: completed-document parse_rate is perfect (1.0) or the decode is invalid; autotrain PARSE_RATE_PERFECT is not a lever.",
@@ -1006,7 +1089,7 @@
         "scripts/verify_decode_invariants.py",
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
-      "version": "v9"
+      "version": "v11"
     },
     "dsl.abstract_plan": {
       "history": [
@@ -1078,6 +1161,11 @@
     },
     "dsl.completion_kernel": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "P5: terminal_witness exact early exit -- once a query's node allowance is spent and a sibling already returned UNKNOWN, remaining non-EOS children are not advanced (their verdict cannot change the frame's UNKNOWN result, which is never persisted); EOS paths still certify. New session counter witness_children_skipped. Witness results replayed against the previous kernel in lockstep are identical (docs/design/compiler-decode-cost-20260902.md).",
+          "version": "v26"
+        },
         {
           "date": "2026-08-11",
           "note": "no-bump: externalize the request-authority mismatch regression into the canonical generated case resource; completion behavior is unchanged.",
@@ -1290,7 +1378,7 @@
         "docs/design/adr-constrained-diffusion-topology-split.md",
         "docs/design/hybrid-unmask-hx5-20260804.md"
       ],
-      "version": "v25"
+      "version": "v26"
     },
     "dsl.ecosystem_tier": {
       "history": [
@@ -2226,6 +2314,11 @@
     "dsl.solver.goal_support": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: test_unknown_unobserved_never_certified_removed_reference built its ActionEvidenceV1 fixtures under the pre-EVID-09 contract, where replay_ok + hard_profile authorized certified removal. refutation_authority.py states that exhausted / coverage=complete / replay_ok are telemetry and never authorize removal alone, and certified_removable now delegates to evidence_authorizes_removal, so the unsupported action was no longer removable and the reference assertion failed. Fixture updated to give all three actions identical authority-grade exact-replay evidence so partition is the only discriminator (mirrors Lean GoalSupport.unknown_not_certified_removable / unobserved_not_certified_removable), plus a new assertion that telemetry-only replay_ok removes nothing. Test-only; no product behavior changed and no gate relaxed.",
+          "version": "v11"
+        },
+        {
           "date": "2026-08-11",
           "note": "no-bump: remove duplicate GoalSupportResultV1 import and identical schema-map entry introduced while reconciling I02; generated schema bytes and behavior are unchanged.",
           "version": "v11"
@@ -2730,6 +2823,11 @@
     "evals.evaluator_calibration_protocol": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-09",
           "note": "initial registration; VCE-010/SLM-469 evaluator calibration, blinded adjudication, and risk-coverage protocol -- composes the existing SemanticContrastBuilder frozen sample, judge_independence agreement/calibration statistics, judge_audit blinded pair-study freeze/import, and trust_train.gate_calibration_report risk/coverage curve into a four-arm ExperimentCampaignV1 (deterministic_only control, external_only_missing_human / human_only_missing_external negative-control arms proving missing evidence is reported blocked rather than assumed valid, full_triple_judge). Preregisters the calibration_error_max rollback-gate threshold before any external-judge or human-label evidence is gathered; adds reason_family_confusion_matrix as the one genuinely new statistic (no crosstab owner existed elsewhere).",
           "version": "v1"
@@ -2743,7 +2841,7 @@
         "docs/design/vce010-evaluator-calibration-protocol.md",
         "docs/design/vce010-evaluator-calibration-results.json"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "evals.judge_resolution": {
       "history": [
@@ -2766,6 +2864,11 @@
     },
     "evals.loss_suite": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: evaluate_loss_suites adds an additive per_record row list (broad/binding/structural/schema_ood NLL per record id) and per_record_nll_map; aggregate fields, weights, LOSS_SUITE_VERSION unchanged.",
+          "version": "v1"
+        },
         {
           "date": "2026-08-12",
           "note": "no-bump: SLM-577 emptiness_probe.minimal_valid_program logs rejected candidates instead of silent continue; LOSS_SUITE_VERSION and scoring behavior unchanged.",
@@ -3275,6 +3378,11 @@
     },
     "features.openfeature": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: gate_metric_keys skips the min_n evidence-volume knob (a policy key, not a metric); fixes the red-on-main lineage metric-contract test.",
+          "version": "v13"
+        },
         {
           "date": "2026-08-09",
           "note": "Dashboard PostHog init gains exception autocapture and an env-gated enable_replay bootstrap flag (SLM_POSTHOG_ENABLE_REPLAY); provider wiring unchanged.",
@@ -4129,6 +4237,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 adds an exact-path check_changed entry mapping scripts/audit_regular_layer_gap.py to its own test (narrow script hook per the table's exact-match policy); ownership map, owners, and every other mapping unchanged.",
+          "version": "v27"
+        },
+        {
           "date": "2026-08-21",
           "note": "no-bump: check_changed maps loop-owned eval-data resources (resources/data/eval/**, test_seeds.jsonl) to narrow data-integrity suites instead of the full-tests fallback; unlivelocks wall-clock-capped autotrain closeout commits. Ownership map and contract-version checks unchanged.",
           "version": "v27"
@@ -4580,6 +4693,11 @@
     "governance.research_citation_catalog": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "S8: register arXiv:2606.26493, 2607.07026, 2605.23128, 2608.14706, 2602.02928 as foundational_research rows with does_not_prove boundaries (two secondary, three adjacent/do-not-import); ID table in research-citation-catalog.md extended; checker unchanged.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: RESEARCH-02 (SLM-533) docs pointer from citation catalog to research-experiment-preregistry.md; catalog schema/rows unchanged.",
           "version": "v1"
@@ -4598,7 +4716,7 @@
         "src/slm_training/resources/research_citation_catalog.json",
         "tests/test_scripts/test_verify_research_citation_catalog.py"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "governance.research_experiment_preregistry": {
       "history": [
@@ -5031,6 +5149,186 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S5 lands the decode_only_authority_ladder_v1 ExperimentCampaignV1 manifest (new resource directory, read by nothing yet) and regenerates evidence_ledger.v1.json deterministically; no harness code, contract, gate, or threshold changed.",
+          "version": "v286"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: recovery doc gains the INT-6 three-cycle run record and the evidence ledger is regenerated (documentation + deterministic rebuild).",
+          "version": "v286"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the S6/S12 results JSON landed (deterministic rebuild).",
+          "version": "v286"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Bound the screening decode probe. The fit computed n_probe and nothing consumed it, so the eval decoded the whole published suite (96 records) however small the eval share was: the arm was killed at the wall (exit 124) after 80 records, reported no document counts, and every cycle scored measurement_incomplete -- and because no p95 was ever recorded, the next cycle cold-started into the same deadlock. Screening knobs now carry eval_limit=n_probe, and a cold-start probe is capped at the exact sign-test floor (6) instead of the whole suite. Teacher-forced NLL still spans the full suite, so the screening verdict keeps its pairs.",
+          "version": "v285"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after the S6/S12 audit result JSON (iter-s6-context-ablation-20260902.json, iter-s12-commit-authority-profile-20260902.json) landed; deterministic regeneration, no harness behaviour change.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "write_climb_champion carries the checkpoint tokenizer sidecars. A warm start reads <stem>.tokenizer.json and <stem>.context.tokenizer.json beside the checkpoint; copying only last.pt left the context sidecar missing, so the loader fell back to the output tokenizer and refused with \"scratch-context warm starts require OpenUITokenizer sidecars\" -- the champion existed, the regime said climb, and every arm still died. Absent sidecars stay absent.",
+          "version": "v284"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the INT-2 recovery-doc correction (deterministic rebuild).",
+          "version": "v283"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after docs/design/iter-s14-exhaustion-rate-20260902.json landed (S14 N12 stall-termination telemetry audit, fixture-demo claim class, not a campaign result; only the scanned-file count moves). Deterministic rebuild; campaign behavior unchanged.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the INT-1/INT-2 recovery-doc sections landed (deterministic rebuild).",
+          "version": "v283"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "policy.v3 defaults.train_version and data_intervention.fixture_train_version -> openui_verified_train_v2 (the trainable rebuild); the driver's certified data-arm corpus follows. No selection rule, arm, seed or gate changed.",
+          "version": "v283"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "INT-1: withdraw the data-strict screening arm and bar hillclimb_strict_v2 / wf_smoke_v2 as data-arm corpora. Measured against the scored suites, hillclimb_strict_v2 shares 6 programs and 16 root families with smoke96 and 7 programs with held_out, and its decontamination never indexed those suites, so an arm trained on it would score memorised eval. Historical rows naming that corpus classify as data-leaked:<corpus>; wf_smoke_v2 is excluded from the reverse-classification because it was a control corpus, never an arm. New regression test measures the overlap from the committed data.",
+          "version": "v282"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the three P1 continuous-loop closeout results JSON landed (deterministic rebuild); P1 recovery doc section is documentation only.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "P1: type a failed stage's captured output as a harness signal (engine.stage_failure_signals). The SFT data-governance refusal now diagnoses as harness/train_data instead of falling through to untyped infrastructure with an argparse usage dump, so the continuous driver stops defaulting the repair owner to model_build.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after docs/design/eqm-oracle-field-20260902.json landed (S7 exact perfect-training EqM field study, claim class analysis, not a campaign result; only the scanned-file count moves). Deterministic rebuild; campaign behavior unchanged.",
+          "version": "v280"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the S2 n-gram provenance results JSON landed (deterministic rebuild).",
+          "version": "v280"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "P8xP9 reconciliation: under a baseline_seed champion warm start the driver skips corpus-swap (train_version) arms and asserts assert_warm_start_launch for every candidate; data arms remain selectable on cold-start cycles.",
+          "version": "v280"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the P8/P9 results JSON landed (deterministic rebuild).",
+          "version": "v279"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of card P8 (measured steps/s prior; baseline_seed champion warm start) which prepended v272 independently; reconciles the component to v279 with all parent histories intact below.",
+          "version": "v279"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of card P9 (screening arms that can move weights; latency-only bank gated by primary) which prepended v275 independently; reconciles the component to v278 with all parent histories intact below.",
+          "version": "v278"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening steps fitter uses a measured cold-start steps/s prior with provenance; the loop's first complete control run seeds a baseline_seed climb champion (warm start only, never confirmed or promoted); the champion epoch cap follows the train manifest record count.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of card P11 (chunked, resumable promotion evaluation under the run cap) which also prepended v272 independently; reconciles the component to v277 with all parent histories intact below.",
+          "version": "v277"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening arm bank gains size-matched arms that can move weights (P9/RC7): data-certified (openui_verified_train_v1), data-strict (hillclimb_strict_v2), lr-x2, lr-x0.5, batch-x2 and steps-fill (wall-time charged); bounds/canvas/both (pure decode-cost, ledger bounds n=50 mean_delta 0.0 m2 0.0) plus the latency-hypothesis arms steps and batch1 move to _LATENCY_ARM_BANK, drawn only when the screening role primary leaf is latency_ms_p50; a train_version-only arm equal to the policy control corpus is dropped as a self-control; lr joins _LEVER_KNOB_KEYS; thrash_regime gains is_latency_only_arm and the latency-bank constants. compiler_*_loss_weight arms stay (training objective).",
+          "version": "v275"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the compiler-decode-cost results JSON landed (deterministic rebuild).",
+          "version": "v276"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "P11 promotion tier fits the run cap by chunked evaluation: ExperimentCampaignV1.measurement_chunk_plan (promotion_chunk_plan/v1, validated; legacy digests tolerate its absence) is stamped on every promotion manifest before execution from measured decode p95 (policy p95_margin, never below the locked timeout), MAX_HARNESS_WALL_SECONDS minus eval_overhead_seconds, promotion_suite_n and the available suite records (records_per_run, locked run_n). ExperimentKnobs gain eval_limit/eval_partial_scoreboard/eval_max_records_this_run (measurement keys, excluded from lever signatures); compile_commands routes them; execute_commands types evaluate_model exit 10 on a resumable chunk as stopped/resume_pending (never failed). Driver: promotion knobs lock suite n and per-run cap; after the arms, _run_promotion_eval_chunks launches the remaining chunks in sequence, each its own MAX_RUN_SECONDS-bounded evaluate_model --resume-run subprocess on the same checkpoint/suites (cycle clock paused for the stage), ledger camp/promotion_chunks.json; chunk_budget_exhausted is measurement_incomplete (promotion_inconclusive, refunded), never a model verdict; _resolve_promotion_result refuses partial scoreboards and evaluates power_feasibility at the final merged n (min completed_document_n of the primary suite across both arms).",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of card P3 (paired per-record NLL screening verdict; NLL independent of the quality eval) which also prepended v272 independently; reconciles the component to v276 with all parent histories intact below.",
+          "version": "v276"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of card P6 (fail-closed heals, honest pass outcomes, non-crashing driver) which also prepended v272 independently; reconciles the component to v275 with all parent histories intact below.",
+          "version": "v275"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening NLL primary is decided by the policy paired test (measurement.paired_test) on per-record eval_nll_records.json deltas: primary_metric_win requires p < alpha and a median improvement above screening_primary.minimum_effect, otherwise primary_metric_null_or_worse carries p and n_pairs. The fixture insufficient_n clamp keeps nullifying decoded-quality, latency/efficiency, and every promotion verdict but no longer nullifies a paired NLL screening win decided on >= 6 pairs (recorded as fixture_insufficient_n:quality_probe); I6 invalid_grammar still blocks. The continuous driver computes teacher-forced smoke NLL for every arm with a checkpoint regardless of the quality-eval exit code and appends the measured paired-delta SD to metric_expectations.screening.v1.json observed_paired_sd_by_metric.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of card P10 (heal executors for code/data classes; crash routing) which also prepended v272 independently; reconciles the component to v274 with both parent histories intact below.",
+          "version": "v274"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Fail-closed heal postconditions (P6): the screening-suite grow heal verifies smoke_n growth through HealVerifyV1 (record_count_probe + must_generate == False) and writes heal_postcondition_failed receipts instead of vacuous acks (empty sampler against a deficit and publish FileExistsError are failed heals; rebuild_data acks require records_after > records_before); allocate_screening_suite_id scans every _v*; default_eval_version discovers the largest published e938_role_safe_all_targets_ smoke suite preferring non-frozen snapshots; three vacuous passes write a typed loop_stalled_no_campaign park (state=BLOCKED) and exit 3 without a traceback; the supervisor honours the ledger next_backoff_seconds on the no-campaign path, keeps a running stall total, and defaults --primary-metric to policy screening_primary.metric; run_playbooks leaves unhandled receipts for no_matching_playbook / playbook_declined.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of independently versioned cards P4 (decode-budget feedback) and P7 (certified-corpus screening heal): both prepended v272 on disjoint driver functions; this entry reconciles the component to v273 and keeps both parent histories intact below.",
+          "version": "v273"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Heal layer gains harness_crash (code-class crash triage: traceback capture, typed repair_harness action, module test run, attempted-only receipt) and data_rebuild (rebuild seam under a records_after > records_before postcondition) playbooks; harness_failure:*:experiment_failed with a non-124 exit classifies as code and the driver's thrash-timeout residual check requires explicit timeout evidence (arm exit 124 or wall/decode timeout markers) so missing_scoreboard alone never drops a repair_harness blocker.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening decode budget feedback loop: the predecessor's measured per-record decode p95 is the decode floor passed to screening_smoke_n_for_policy (decode_floor_source measured_p95 vs policy_default), n_probe = floor(eval_share / p95) with timeout = min(eval_share / n_probe, p95 x (1 + p95_margin)), the thrash_timing Pareto rule (incomplete_rate_high / incomplete_rate_low) shrinks or grows n_probe, and budget timeouts (p95 > applied timeout) are classified budget_timeout and never routed into decode residual arms.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the certified-eval-suites results JSON landed (deterministic rebuild, no schema or selector change).",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening deficit heal draws from the certified corpus: extra_smoke_fixtures_for_deficit samples validation-bucket records via harnesses.test_data.certified (decontaminated against the certified train bucket and the policy train set) instead of the exhausted 21-tuple; policy.v3 defaults.train_version and data_intervention.fixture_train_version -> openui_verified_train_v1.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
+          "version": "v271"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json from docs/design (8 JSON records landed on main without a ledger rebuild; deterministic rebuild, n_obs 92->100, no schema or selector change).",
+          "version": "v270"
+        },
         {
           "date": "2026-08-21",
           "note": "Screening data heal allocates a new versioned smoke suite instead of reusing the frozen smoke6 snapshot when n must grow.",
@@ -6920,7 +7218,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v270"
+      "version": "v286"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -7484,6 +7782,16 @@
     },
     "harness.experiments": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
+          "version": "v166"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "SR9 Rsp005CampaignV1.manifest() declares selection_rule=best_by_primary_then_smallest (required for multi-candidate campaigns since the vacuous-pass fail-closed change); arms, seeds, endpoints unchanged.",
+          "version": "v165"
+        },
         {
           "date": "2026-08-16",
           "note": "data-adequacy ladder: nested-subset marginal-gain measurement with powered flat/rising/undecidable classification; run_scaling_ladder --family data-adequacy",
@@ -8539,7 +8847,7 @@
         "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
-      "version": "v164"
+      "version": "v166"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [
@@ -10877,6 +11185,21 @@
     "harness.experiments.slm197_direct_bridge_policy": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S5/N4 decode-only authority ladder, plus removal of three committed merge-conflict marker lines (from merge 7bdc348) that fenced two additive sibling sections; both sections are kept in full. Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S6/S12 N2/N3 decode-authority audit (context_ablation arms and the per-step commit-authority histogram). Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S14 appends the N12 LAVE stall-termination section to docs/design/quality-experiment-matrix.md (fixture-demo telemetry audit rows only, append-only). No bridge-policy code, gate, metric or matrix cell for this component changes.",
+          "version": "v1"
+        },
+        {
           "date": "2026-08-04",
           "note": "no-bump: correct a stale fixed-output-vocab figure (296 -> 569) in docs/design/quality-experiment-matrix.md; the registry pins vocab_size 569 and the wrong number had misled an external reviewer. Documentation only.",
           "version": "v1"
@@ -11493,6 +11816,36 @@
     },
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop climb-c continuous-loop-20260902-climb-c-7a4ba2f4-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "version": "v3",
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop climb-b continuous-loop-20260902-climb-b-cad96bc5-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 appends the two-tower diffusion / automaton-constrained decoding transfer audit (2026-09-02) section to research-lineage.md; SLM-228 spectral disposition behavior unchanged.",
+          "version": "v3"
+        },
         {
           "version": "v3",
           "date": "2026-08-21",
@@ -15190,6 +15543,11 @@
     "harness.experiments.slm476_sie002_oracle_localization": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-10",
           "note": "no-bump: remove an extraneous f-string prefix (ruff F541, no placeholders) -- pure lint fix, no behavior change.",
           "version": "v1"
@@ -15209,7 +15567,7 @@
         "docs/design/iter-slm476-sie-002-oracle-localization-20260810.json",
         "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "harness.experiments.slm478_sie005_blinded_packet": {
       "history": [
@@ -16251,6 +16609,56 @@
     "harness.model_build.eval": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "Merge of S6/S12 decode telemetry (step_commits histogram, context-ablation flip counters) with the X1 and S14 counters; both parents' histories preserved. All read-only.",
+          "version": "v106"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of X1's residual_hole_compactions / residual_holes_compacted advisory counters with the S14 admit-rejection telemetry; both parents' histories preserved. Counters are read-only.",
+          "version": "v105"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S12 execution coverage for the I2 one-hole singleton-bypass recording site (tests/test_models/test_step_commit_histogram.py seeds a certified canvas with one masked '=' so the exact_commit branch runs and the recorded row is asserted exactly). Tests only; decode_stats.py and the recording sites are unchanged.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S6/S12 decode telemetry (decode_stats.py, additive). S6: context_ablation_rows / _degenerate_rows / _applications / _choice_changes following the existing *_applications / *_choice_changes argmax-flip pattern, added to aggregate_stats. S12: record_step_commits switch and the step_commits per-step authority history, both default-off so a decode that does not arm them is byte-identical. merge() now skips bool fields so the telemetry switch cannot be summed into a count (bool is an int subclass); no existing counter, ratio, or gate semantics changed and S4's derived fraction properties are untouched.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "DecodeStats gains residual_hole_compactions / residual_holes_compacted: how often an LTR-repair canvas still carried a committed non-empty token AFTER a hole (the suffix-blind admit_fill configuration measured at 442/442 probes in residual-honesty-block-diffusion-20260804.md L-B) and how many such interior holes were slid out before the repair ran. Advisory counters only; both are zero on canvases whose holes are already trailing.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S14: DecodeStats gains the read-only N12 counters admit_probe_rejections and admit_probe_reject_run_max (the latter merges as a maximum, never a sum); admit_probe_rejections joins the aggregate_stats key set. Additive only -- from_dict defaults both to 0 for historical payloads, and no gate, metric or scoreboard field changes.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of cards P3 (per-record NLL rows) and P11 (chunked resumable eval) which both prepended v102 independently; reconciles the component to v103.",
+          "version": "v103"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Screening eval NLL persists per-record broad denoising NLL rows to runs/<arm>/eval_nll_records.json ({record_id: nll} + definition hash) and eval_nll_n_records beside the unchanged scoreboard smoke.eval_nll aggregate; ship gates unchanged.",
+          "version": "v102"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "P11 chunked resumable evaluation (docs/design/chunked-promotion-eval-20260902.md): evaluate()/evaluate_suites() gain partial_scoreboard/resume_from/max_records_this_run; every decoded record is persisted to eval_<suite>.partial.json (EvalPartialScoreboardV1) and replayed without re-decoding on resume (identity: checkpoint sha, suite manifest sha, eval limit/offset, policy digest, record ids); records left undecoded are pending (incomplete_document_n, never a false 0) and a chunk stops at max_records_this_run or when the next record cannot fit the evaluation wall at the full locked timeout (fair-share only over records this run decodes). Partial suites carry measurement_complete=false, skip ship gates/AgentV, and stay non-cacheable. scripts.evaluate_model adds --partial-scoreboard/--resume-run/--max-records-this-run (env SLM_EVAL_*) and exit 10 (EXIT_RESUME_PENDING) when thresholds were requested but records remain.",
+          "version": "v102"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S4 additive read-only DecodeStats ratios (committed_tokens alias of tokens_emitted, forced_token_fraction, speculative_commit_fraction, speculative_token_fraction, forwards_per_committed_token) as properties, each None on a zero denominator, appended to as_dict() and skipped by merge()/dropped by from_dict(); no counter, gate, or decode behaviour changes; tests in tests/test_models/test_decode_stats_fractions.py.",
+          "version": "v101"
+        },
+        {
           "date": "2026-08-13",
           "note": "--learnability-diagnostics writes on default single-suite evals using suite prompts; ship gates unchanged",
           "version": "v101"
@@ -16853,9 +17261,10 @@
         "tests/test_harnesses/model_build/test_eval_seed.py",
         "tests/test_harnesses/model_build/test_decode_deadline.py",
         "tests/test_harnesses/model_build/test_eval_metric_semantics.py",
-        "tests/test_harnesses/model_build/test_eval_gates.py"
+        "tests/test_harnesses/model_build/test_eval_gates.py",
+        "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v101"
+      "version": "v106"
     },
     "harness.model_build.train": {
       "history": [
@@ -19088,6 +19497,61 @@
     "model.twotower": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "Merge of S6 (context_ablation diagnostic lever and the legal-choice flip probe) and S12 (per-step commit-authority histogram) with the corpus-rebuild and X1/S14 entries; both parents' histories preserved. Ablation is decode-time only, default off, and byte-identical when off.",
+          "version": "v326"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of X1 (completion forest keeps the placeholder-symbol class for a content prop with no slot contract instead of stripping symbols from the broad STRING set, and _compact_interior_holes slides committed tokens left over interior holes so the residual repair is never suffix-blind) with the S14 telemetry and corpus rebuild entries. Both parents' histories preserved. Decode output changes on canvases that had interior holes; that is the point of the I6 fix and is recorded in X1's own entry.",
+          "version": "v325"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S6/S12 audit cards. S6: new default-off TwoTowerConfig.context_ablation (off|zero|shuffle_batch|shuffle_positions) applied at the one decode-time seam in _generate_batch_once where the projected context tower output enters the denoiser; \"off\" returns the caller's tensor object so the production decode is byte-identical. Adds _apply_context_ablation and a ctx_shadow decision-level probe in _generate_maskgit_one that re-runs the constrained pick over the same legal set with the intact context and counts argmax flips (non-singleton positions only). S12: per-step commit-authority histogram recorded in the MaskGIT loop, gated on DecodeStats.record_step_commits and therefore inert by default. No production default changed; tests in tests/test_models/test_context_ablation.py and tests/test_models/test_step_commit_histogram.py.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Merge of S14 (read-only admit-rejection stall telemetry in the positionwise MaskGIT lane; no decode path reads the counters and emitted bytes are unchanged) with the corpus-rebuild n-gram table entry. Both parents' histories preserved.",
+          "version": "v324"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "I6/I9 fail-closed decode fixes behind test_block_diffusion_lever_generates_valid_output. (1) compiler_draft, string-typed TEMPLATIZABLE (content) prop with no slot contract: the completion forest kept the broad STRING set and then stripped placeholder symbols, so it admitted exactly the byte-framed literals the OpenUI placeholder content policy rejects (Col.label -> \"baseline\") and excluded the placeholder symbols the policy requires. The slot is now the tokenizer's placeholder-symbol class (plus null for a nullable slot), and the later binding stage counts a content prop as a symbol slot instead of stripping symbols from it. This is a correction to the oracle, not a relaxation: the removed literals cannot appear in any valid program, and the re-admitted symbols are witnessed valid by dsl.parser.validate. Tokenizers with no symbol class (no kind_ids) are untouched. (2) twotower._compact_interior_holes slides committed tokens left over interior holes before _constrained_ltr_repair runs. A masked position contributes an empty surface piece, so the decoded string is unchanged by the slide, but every committed-suffix-after-a-hole leaves the canvas. That configuration is the one admit_fill over-approximates (it never validates past the first hole; 442/442 probes in residual-honesty-block-diffusion-20260804.md L-B), where the repair would commit a prefix-legal token the committed suffix contradicts and then dead-end into an invalid program. T2M holds: order preserved, no committed token edited or dropped, vacated slots stay masked, and canvases whose holes are already trailing are untouched. Decode output does change on canvases that had interior holes - the L-D byte-identical result was a measured delta at that time, not a forward guarantee.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Speculative n-gram table rebuilt from openui_verified_train_v2 (893 sequences, 47,692 tokens, order 3, 493 contexts, 0 encode errors). Pinned branch points re-measured: root =  -> Stack( at 15.000 unchanged, root = Stack([ -> b1 at 1.767 (was 1.738). Ranker scoring unchanged; lever stays off.",
+          "version": "v323"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S14: read-only N12 stall telemetry in the positionwise MaskGIT unmask lane (TwoTowerModel._note_admit_rejection) counting admit-probe rejections and the longest run of consecutive rejections with no intervening commit. No decode path reads the counters; proposal order, commits and emitted bytes are unchanged with or without an active collector (tests/test_models/test_admit_rejection_telemetry.py, docs/design/iter-s14-exhaustion-rate-20260902.md).",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Speculative n-gram table rebuilt from openui_verified_train_v2. Identical content (1,054 sequences, 54,434 tokens, order 3, 493 contexts) because the 29 records v2 drops are exactly the ones the codec already refused, so encode_error falls 29 -> 0 and the recorded provenance now matches the corpus it was built from. Ranker scoring unchanged; lever stays off.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "Reconcile S2 with P5 on the integration branch: both landed as v320 in parallel; the S2 n-gram table entry below keeps its content, the P5 compiler-decode entry follows.",
+          "version": "v321"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S2: speculative n-gram builder defaults to the certified train bucket (no split re-derivation, no wf_smoke_v2 fallback); artifact regenerated at order 3 and carries a source provenance block; --check verifies provenance against the live manifest. Ranker scoring unchanged.",
+          "version": "v320"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "P5: cut per-record strict compiler-tree decode cost with byte-identical output. compiler_draft: sorted-terminal tuple and per-candidate decision kind computed once per completion-forest build instead of once per admitted path; token_map: the cached allowed-id lookup's vocabulary fingerprint is memoized per tokenizer instead of re-sorting the vocabulary on every build (uncached lookups still never touch it). No candidate added, no verification skipped, forwards_count unchanged; parity proven by output hashes and per-build forest equality against the previous builder (docs/design/compiler-decode-cost-20260902.md).",
+          "version": "v320"
+        },
+        {
           "date": "2026-08-21",
           "note": "Domain-restricted speculative rank backoff and regenerated train-only n-gram table; I2 singleton bypass unchanged.",
           "version": "v319"
@@ -21071,7 +21535,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v319"
+      "version": "v326"
     },
     "ops.vocab": {
       "history": [

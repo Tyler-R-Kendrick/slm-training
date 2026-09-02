@@ -1,0 +1,223 @@
+{
+  "auto": true,
+  "campaign_id": "continuous-loop-20260902-recovery2-b552b74b-c2",
+  "candidate_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": null,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "structural_similarity": null
+  },
+  "control_metrics": {
+    "binder_reference_f1": null,
+    "eval_nll": 4.568895543732056,
+    "latency_ms_p50": null,
+    "meaningful_program_rate": null,
+    "parse_rate": null,
+    "smoke.eval_nll": 4.568895543732056,
+    "structural_similarity": null
+  },
+  "cycle_index": 2,
+  "cycle_intent": "screening",
+  "cycle_role": "screening",
+  "delivery": {
+    "agent_required": "continue loop; local commits/docs only",
+    "arm_exits": {
+      "c20260902-recovery2-b552b74b-c2-control": 124,
+      "c20260902-recovery2-b552b74b-c2-semantic-contrast-compiler-margin": 124
+    },
+    "arm_order": [
+      "c20260902-recovery2-b552b74b-c2-semantic-contrast-compiler-margin",
+      "c20260902-recovery2-b552b74b-c2-control"
+    ],
+    "arm_seed": 100002,
+    "arm_skipped": {},
+    "baseline_trainable_params": 1689346,
+    "campaign_id": "continuous-loop-20260902-recovery2-b552b74b-c2",
+    "candidate_id": "c20260902-recovery2-b552b74b-c2-semantic-contrast-compiler-margin",
+    "candidate_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": null,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "structural_similarity": null
+    },
+    "candidate_trainable_params": null,
+    "climb_policy_sha256": "67ee67d6802372fa4a060c65dc06b92db5eb03131431c5879b0fb0acd0d2b4ea",
+    "control_id": "c20260902-recovery2-b552b74b-c2-control",
+    "control_metrics": {
+      "binder_reference_f1": null,
+      "eval_nll": 4.568895543732056,
+      "latency_ms_p50": null,
+      "meaningful_program_rate": null,
+      "parse_rate": null,
+      "smoke.eval_nll": 4.568895543732056,
+      "structural_similarity": null
+    },
+    "cycle_index": 2,
+    "cycle_intent": "screening",
+    "cycle_role": "screening",
+    "direction": "decrease",
+    "finished_at": "2026-09-02T13:06:13Z",
+    "fixture_clamp_exempt": false,
+    "fixture_volume_gate_hits": 0,
+    "has_tracked_delta": false,
+    "loop_id": "recovery2",
+    "measurement_complete": false,
+    "paired_records": {
+      "candidate_definition_hash": null,
+      "candidate_n": 0,
+      "control_definition_hash": "5a75d3f9bc45b60be7392e951559f97c36b220ab74e024b3010fbfc21492a942",
+      "control_n": 96
+    },
+    "paired_test": null,
+    "policy_sha256": "67ee67d6802372fa4a060c65dc06b92db5eb03131431c5879b0fb0acd0d2b4ea",
+    "policy_version": "v15",
+    "positive": false,
+    "preflight": {
+      "blocked_slugs": [],
+      "schema": "autotrain_preflight/v1",
+      "selected_slug": "semantic-contrast-compiler-margin",
+      "verdicts": {
+        "semantic-contrast-compiler-margin": [
+          {
+            "check_id": "concluded_family",
+            "data": {
+              "family_key": "batch-size+compiler-alignment-kind-filter+compiler-alignment-loss-weight+compiler-alignment-margin+compiler-alignment-stratified+compiler-decode-mode+semantic-contrast-dir+semantic-contrast-fraction+semantic-contrast-loss-weight+semantic-contrast-margin"
+            },
+            "reasons": [
+              "family 'batch-size+compiler-alignment-kind-filter+compiler-alignment-loss-weight+compiler-alignment-margin+compiler-alignment-stratified+compiler-decode-mode+semantic-contrast-dir+semantic-contrast-fraction+semantic-contrast-loss-weight+semantic-contrast-margin' has no binding closure record"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_dominance",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism dominance check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "mechanism_no_effect",
+            "data": {},
+            "reasons": [
+              "no mechanism_id on candidate; mechanism no-effect check idle"
+            ],
+            "verdict": "pass"
+          },
+          {
+            "check_id": "power_decidability",
+            "data": {
+              "alpha": 0.05,
+              "config_fingerprint": "468bac6299c3399f",
+              "endpoint_metric": "smoke.eval_nll",
+              "max_reasonable_n": 64,
+              "min_attainable_p": 1.0,
+              "min_detectable_effect": 0.8087479899175992,
+              "minimum_effect": 0.02,
+              "n_seeds": 1,
+              "paired": true,
+              "required_n_for_effect": 1636,
+              "sd": 0.28867513459481287,
+              "sd_measured": false,
+              "sd_source": "unmeasured",
+              "steps": 20
+            },
+            "reasons": [
+              "min_attainable_p=1 > alpha=0.05 at n=1 (paired sign test): no result at this n can ever reject",
+              "min_detectable_effect=0.808748 > minimum_effect=0.02 at n=1, sd=0.288675: required_n_for_effect=1636",
+              "paired SD for smoke.eval_nll is unmeasured; advisory conservative default sd=0.288675 (sqrt(0.25/3)) reported only \u2014 record observed_paired_sd_by_metric[eval_nll] in metric_expectations.screening.v1.json to power this design",
+              "power cannot block on an unmeasured SD; verdict is advisory (required_n_for_effect=1636 under the conservative default is not a measured determination)"
+            ],
+            "verdict": "warn"
+          },
+          {
+            "check_id": "prior_attempts",
+            "data": {
+              "config_fingerprint": "468bac6299c3399f",
+              "matched": 1,
+              "powered_refutations": 0,
+              "source": "evidence_store"
+            },
+            "reasons": [
+              "config attempted before without adequate power (1 record(s), source=evidence_store); a repeat must add power (seeds), not merely re-observe"
+            ],
+            "verdict": "warn"
+          }
+        ]
+      }
+    },
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "measurement_incomplete:c20260902-recovery2-b552b74b-c2-control:smoke:invalid_counts:document_n=None:completed_document_n=None:incomplete_document_n=None:decode_timeout_count=None",
+      "measurement_incomplete:c20260902-recovery2-b552b74b-c2-semantic-contrast-compiler-margin:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "role": "screening",
+    "schema": "autotrain_sdlc_delivery/v1",
+    "sdlc_phase": "A",
+    "stack_action": "no_stack_layer_non_positive",
+    "stack_layer": false,
+    "thrash_regime": {
+      "base_regime": "climb",
+      "climb_baseline_keys": [],
+      "has_climb_baseline": true,
+      "reason": "climb_champion_checkpoint_available",
+      "regime": "climb",
+      "timeout_residual": false
+    }
+  },
+  "evidence_class": "fixture",
+  "hillclimb": {
+    "campaign_id": "continuous-loop-20260902-recovery2-b552b74b-c2",
+    "cycle_index": 2,
+    "deltas": {},
+    "measurement_complete": false,
+    "positive": false,
+    "primary_metric": "smoke.eval_nll",
+    "progress": false,
+    "reasons": [
+      "measurement_incomplete:c20260902-recovery2-b552b74b-c2-control:smoke:invalid_counts:document_n=None:completed_document_n=None:incomplete_document_n=None:decode_timeout_count=None",
+      "measurement_incomplete:c20260902-recovery2-b552b74b-c2-semantic-contrast-compiler-margin:missing_scoreboard",
+      "primary_metric_unavailable"
+    ],
+    "schema": "hillclimb_iteration/v1",
+    "speculate": [
+      "replay_frozen_or_fit_decode_to_wall",
+      "keep_rotating_size_matched_arms",
+      "fit_decode_timeout_to_n_times_p50"
+    ],
+    "went_well": [],
+    "went_wrong": [
+      "measurement_incomplete",
+      "non_positive"
+    ]
+  },
+  "honesty": "fixture_screening_only_not_ship",
+  "loop_id": "recovery2",
+  "measurement_complete": false,
+  "positive": false,
+  "primary_metric": "smoke.eval_nll",
+  "reasons": [
+    "measurement_incomplete:c20260902-recovery2-b552b74b-c2-control:smoke:invalid_counts:document_n=None:completed_document_n=None:incomplete_document_n=None:decode_timeout_count=None",
+    "measurement_incomplete:c20260902-recovery2-b552b74b-c2-semantic-contrast-compiler-margin:missing_scoreboard",
+    "primary_metric_unavailable"
+  ],
+  "schema": "continuous_cycle_results/v1",
+  "stack_layer": false,
+  "version_stamp": {
+    "code_commit": "fe57d18bf7f6a0cb5b75f098e8a105c606d28993",
+    "code_dirty": false,
+    "components": {
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v26",
+      "gates.ship": "openui_ship_gates_v6",
+      "harness.model_build.eval": "v105"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-02T13:06:13.484327+00:00"
+  }
+}

@@ -103,9 +103,7 @@ def discovered_playbooks() -> tuple[HealPlaybook, ...]:
     found: list[HealPlaybook] = []
     for info in sorted(pkgutil.iter_modules(_pkg.__path__), key=lambda m: m.name):
         try:
-            module = importlib.import_module(
-                f"{_pkg.__name__}.{info.name}"
-            )
+            module = importlib.import_module(f"{_pkg.__name__}.{info.name}")
         except Exception:  # noqa: BLE001 — one broken playbook never blocks others
             continue
         candidate = getattr(module, "PLAYBOOK", None)
@@ -118,9 +116,7 @@ def heal_receipts_path(root: Path, loop_id: str) -> Path:
     return Path(root) / "loops" / loop_id / HEAL_RECEIPTS_FILENAME
 
 
-def write_heal_receipt(
-    root: Path, receipt: HealAttemptReceiptV1
-) -> Path:
+def write_heal_receipt(root: Path, receipt: HealAttemptReceiptV1) -> Path:
     """Append one receipt to the loop's append-only heal ledger."""
     path = heal_receipts_path(root, receipt.loop_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -129,9 +125,7 @@ def write_heal_receipt(
     return path
 
 
-def load_heal_receipts(
-    root: Path, loop_id: str
-) -> tuple[HealAttemptReceiptV1, ...]:
+def load_heal_receipts(root: Path, loop_id: str) -> tuple[HealAttemptReceiptV1, ...]:
     path = heal_receipts_path(root, loop_id)
     if not path.is_file():
         return ()
@@ -179,8 +173,7 @@ def _scope_violation(
             p
             for p in fresh
             if not any(
-                _normalize_path_prefix(p).startswith(prefix)
-                for prefix in normalized
+                _normalize_path_prefix(p).startswith(prefix) for prefix in normalized
             )
         )
     )
@@ -245,9 +238,7 @@ def run_playbooks(
     # A plan that already healed is not a cycle: the environment can regress
     # (container rebuild drops node_modules) and the deterministic repair must
     # stay available. Only unresolved/failed plans count toward cycles.
-    seen_plan_shas = {
-        r.plan_sha256 for r in prior_receipts if r.outcome != "healed"
-    }
+    seen_plan_shas = {r.plan_sha256 for r in prior_receipts if r.outcome != "healed"}
     available = tuple(playbooks) if playbooks is not None else discovered_playbooks()
 
     def _persist(receipt: HealAttemptReceiptV1) -> None:
@@ -277,7 +268,24 @@ def run_playbooks(
             if blocker_class in p.handles and _safe_matches(p, blocker)
         ]
         if not matching:
+            # An escalation without a receipt is invisible to the driver's
+            # pass classifier (a pass that only escalated would score as
+            # vacuous). Leave an ``unhandled`` receipt so the attempt is on
+            # the ledger and the escalation is visible.
             ledger.escalate(fingerprint, note="no_matching_playbook")
+            receipts.append(
+                _receipt(
+                    loop_id,
+                    campaign_id,
+                    "none",
+                    fingerprint,
+                    plan=None,
+                    attempts_prior=record.attempts,
+                    outcome="unhandled",
+                    note=f"no_matching_playbook class={blocker_class} kind={kind}",
+                )
+            )
+            _persist(receipts[-1])
             continue
         playbook = matching[0]
         if record.attempts >= max_attempts_per_fingerprint:
@@ -294,6 +302,43 @@ def run_playbooks(
                 )
             )
             _persist(receipts[-1])
+            continue
+        execute = getattr(playbook, "execute", None)
+        if callable(execute):
+            # In-process attempt: the playbook decides its own outcome (e.g.
+            # ``attempted`` for a crash triage that repairs nothing, or a
+            # count-postcondition ``healed``) instead of the subprocess verify
+            # probe. Same attempt budget and receipt persistence as ``plan``.
+            ledger.record_attempt(fingerprint, playbook.playbook_id)
+            try:
+                receipt = execute(
+                    {
+                        **blocker,
+                        "campaign_id": blocker.get("campaign_id") or campaign_id,
+                    },
+                    cwd=cwd,
+                    root=root,
+                    loop_id=loop_id,
+                    campaign_id=str(blocker.get("campaign_id") or campaign_id),
+                    write_receipt=False,
+                )
+            except Exception as exc:  # noqa: BLE001 — execute crash is a failed attempt
+                receipt = _receipt(
+                    loop_id,
+                    campaign_id,
+                    playbook.playbook_id,
+                    fingerprint,
+                    plan=None,
+                    attempts_prior=record.attempts,
+                    outcome="step_failed",
+                    note=_crash_summary(exc),
+                )
+            receipts.append(receipt)
+            if receipt.outcome == "healed":
+                ledger.resolve(fingerprint, note=f"healed_by:{playbook.playbook_id}")
+            elif receipt.outcome == "step_timeout":
+                ledger.escalate(fingerprint, note="step_timeout_under_run_cap")
+            _persist(receipt)
             continue
         try:
             plan = playbook.plan(dict(blocker), cwd=cwd)
@@ -315,6 +360,19 @@ def run_playbooks(
             continue
         if plan is None:
             ledger.escalate(fingerprint, note="playbook_declined")
+            receipts.append(
+                _receipt(
+                    loop_id,
+                    campaign_id,
+                    playbook.playbook_id,
+                    fingerprint,
+                    plan=None,
+                    attempts_prior=record.attempts,
+                    outcome="unhandled",
+                    note=f"playbook_declined class={blocker_class} kind={kind}",
+                )
+            )
+            _persist(receipts[-1])
             continue
         try:
             for step in plan.steps:
@@ -433,7 +491,9 @@ def _execute_plan(
         if violation:
             outcome = "refused_scope"
             step_results[-1] = result.model_copy(
-                update={"tail": (result.tail + f"\nscope_violation={violation[:8]}")[:2000]}
+                update={
+                    "tail": (result.tail + f"\nscope_violation={violation[:8]}")[:2000]
+                }
             )
             break
         # Re-baseline: dirt a step legally produced must not be re-judged
@@ -445,9 +505,7 @@ def _execute_plan(
             cwd=cwd / plan.verify.cwd if plan.verify.cwd else cwd,
             env_clears=plan.verify.env_clears,
             env_sets={},
-            timeout_seconds=min(
-                int(plan.verify.timeout_seconds), int(MAX_RUN_SECONDS)
-            ),
+            timeout_seconds=min(int(plan.verify.timeout_seconds), int(MAX_RUN_SECONDS)),
             step_id="verify",
         )
         if verify_result.outcome != ProcessOutcome.COMPLETED.value:

@@ -19,8 +19,12 @@ no torch required). Component: `decode.invariants` in
 `src/slm_training/resources/versions.json`.
 
 Papers this design cites: constrained decoding of diffusion LLMs with CFGs
-(arXiv:2508.10111, "IG-CD"), and Lookahead-then-Verify (arXiv:2602.00612,
-"LAVE").
+(arXiv:2508.10111, "IG-CD"), Lookahead-then-Verify (arXiv:2602.00612,
+"LAVE"), and exact finite-automaton constrained decoding for diffusion LMs
+(arXiv:2607.07026, DFA/NFA only — see
+[`research-lineage.md`](research-lineage.md#two-tower-diffusion-and-automaton-constrained-decoding-transfer-audit-2026-09-02)
+for why it bounds only the lexeme-level DFA, never the CFG-scoped
+`CompletionDomainV1`).
 
 ---
 
@@ -121,18 +125,31 @@ nothing in that module can add a candidate. And speculation verifies against
 the grammar oracle before it commits.
 
 **The committed table.** `src/slm_training/resources/decode/speculative_ngram_v1.json`
-is built train-split-only from the immutable certified corpus
-(`openui_verified_v1`, 1682 records, 89,415 native tokens, order 3, 523
-contexts). Targets are templatized first, so the table is keyed on symbols and
-placeholders and never on free-form string content. Setting
-`speculative_rank="ngram"` without naming a table resolves to it, so the lever
-is reachable with no build step. `scripts/build_speculative_ngram_table.py
---check` fails when the artifact and its builder disagree.
+is built train-split-only from the certified TRAIN bucket of the immutable
+corpus, `openui_verified_train_v2` (root-family buckets 0–79 of
+`openui_verified_v1`; 893 records, all of which encode — admission refuses
+every record the trainer's own contracts refuse, so the codec no longer meets
+one — 47,692 native tokens, order 3, 493 contexts; manifest
+`content_fingerprint` `ba0d8003…5fe7f58c`). The split
+is the bucket's own manifest, never re-derived by the builder. Targets are
+templatized first, so the table is keyed on symbols and placeholders and never
+on free-form string content. Setting `speculative_rank="ngram"` without naming
+a table resolves to it, so the lever is reachable with no build step. The
+artifact records its `source` (dataset id, manifest content fingerprint,
+records sha256); `scripts/build_speculative_ngram_table.py --check` fails when
+that block disagrees with the live manifest, when the recorded
+`corpus_fingerprint` is not the rebuilt train-sequence fingerprint, or when any
+other field drifts from the rebuild.
 
-It ranks real branch points confidently: after `root = ` (27 legal candidates)
-it picks `Stack(` at margin 1.0, and after `root = Stack([` (25 candidates) it
-picks `<BIND_1>` at margin 1.59 — both decided from the symbol table with no
-forward.
+It ranks real branch points confidently (measured, margin threshold 0.5): after
+`root = ` (27 legal candidates) it picks `Stack(` at margin 15.000 — every one
+of the 893 train programs opens with `Stack(`, so the runner-up `Button(`
+carries only floor mass — and after `root = Stack([` (26 candidates) it picks
+`b1` (the first bound-symbol reference) over `TextContent(` at margin 1.767 —
+both decided from the symbol table with no forward. The numbers are pinned by
+`tests/test_dsl/test_speculative_rank.py::test_committed_table_pins_the_documented_branch_points`;
+the measurement behind them, and the old smoke-built table's, is
+[`iter-s2-ngram-table-provenance-20260902.md`](iter-s2-ngram-table-provenance-20260902.md).
 
 **Status: machinery shipped and reachable, default `off`.** Turning it on for
 serving needs a preregistered `ExperimentCampaignV1` binding the table's

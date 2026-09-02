@@ -153,7 +153,9 @@ def test_span_refuses_to_speculate_past_an_incomplete_proof() -> None:
     def build(prefix: list[int]) -> CompletionForest:
         return _forest([[7]]) if not prefix else _forest([[8]], coverage="partial")
 
-    span = speculative_span([], build, max_tokens=4, ranker=SpeculativeRankerV1(_table()))
+    span = speculative_span(
+        [], build, max_tokens=4, ranker=SpeculativeRankerV1(_table())
+    )
     assert span.token_ids == (7,)
     assert span.stop_reason == "incomplete_coverage"
 
@@ -278,7 +280,7 @@ def test_builder_rejects_eval_manifest(tmp_path) -> None:
             {
                 "id": "smoke_x",
                 "prompt": "p",
-                "openui": "root = TextContent(\":slot_0\")",
+                "openui": 'root = TextContent(":slot_0")',
                 "split": "smoke",
             }
         )
@@ -297,9 +299,7 @@ def test_builder_is_deterministic_from_a_fixed_manifest(tmp_path) -> None:
     (src / "manifest.json").write_text(
         json.dumps({"kind": "train", "version": "fixture"}), encoding="utf-8"
     )
-    program = (
-        "root = Stack([v0])\nv0 = TextContent(\":slot_0\")\n"
-    )
+    program = 'root = Stack([v0])\nv0 = TextContent(":slot_0")\n'
     line = json.dumps(
         {
             "id": "train_a",
@@ -338,3 +338,116 @@ def test_committed_table_ranks_real_branch_points_confidently() -> None:
     assert choice.confident
     # The chosen path is one the forest offered — ranking never widens.
     assert paths[choice.best_index] in paths
+
+
+# The two branch points `docs/design/decode-invariants.md` (§ I3, "The
+# committed table") quotes. These are measured from the committed artifact, not
+# typed: `iter-s2-ngram-table-provenance-20260902.md` records the run. A drift
+# here means the doc, the artifact, or the builder changed and the other two
+# did not follow.
+DOCUMENTED_BRANCH_POINTS = {
+    "root = ": (27, "Stack(", 15.000),
+    "root = Stack([": (26, "b1", 1.767),
+}
+
+
+def test_committed_table_pins_the_documented_branch_points() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        build_completion_forest,
+    )
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ranker = load_ranker(None, margin=0.5)
+    assert ranker is not None
+    for text, (n_candidates, pick, margin) in DOCUMENTED_BRANCH_POINTS.items():
+        prefix = list(tok.encode(text, add_special=False))
+        forest = build_completion_forest(tok, prefix, remaining_tokens=32)
+        paths = tuple(path for path in forest.paths if path.token_ids)
+        assert forest.coverage == "complete", text
+        assert len(paths) == n_candidates, text
+        choice = ranker.choose(prefix, paths)
+        assert choice is not None and choice.confident, text
+        assert tok.decode(list(paths[choice.best_index].token_ids)) == pick, text
+        assert choice.margin == pytest.approx(margin, abs=0.01), text
+
+
+def test_committed_table_records_the_certified_train_bucket() -> None:
+    """The artifact names the corpus it was built from, and that corpus is the
+    certified TRAIN bucket -- the numbers the doc quotes follow from it."""
+    from scripts.build_speculative_ngram_table import CERTIFIED_TRAIN_BUCKET
+    from slm_training.dsl.grammar.fastpath.speculative_rank import (
+        COMMITTED_NGRAM_TABLE,
+    )
+
+    payload = json.loads(COMMITTED_NGRAM_TABLE.read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (CERTIFIED_TRAIN_BUCKET.parent / "manifest.json").read_text(encoding="utf-8")
+    )
+    certified_sha = next(
+        item["sha256"]
+        for item in manifest["artifacts"]
+        if item["path"] == "records.jsonl"
+    )
+    assert manifest["kind"] == "train"
+    assert payload["source"] == {
+        "dataset_id": "openui_verified_train_v2",
+        "manifest_content_fingerprint": manifest["content_fingerprint"],
+        "manifest_kind": "train",
+        "records": "src/slm_training/resources/data/train/openui_verified_train_v2/records.jsonl",
+        "records_sha256": certified_sha,
+        "records_total": manifest["record_count"],
+    }
+    assert payload["order"] == 3
+    assert (payload["sequences"], payload["tokens"], len(payload["counts"])) == (
+        893,
+        47692,
+        493,
+    )
+    # The loader tolerates the provenance block: the ranker sees the same table.
+    assert (
+        NgramTableV1.load(COMMITTED_NGRAM_TABLE).corpus_fingerprint
+        == (payload["corpus_fingerprint"])
+    )
+
+
+def test_check_fails_when_the_recorded_source_drifts_from_the_manifest(
+    tmp_path,
+) -> None:
+    """`--check` binds the artifact to the corpus manifest, not only to a rebuild."""
+    from scripts.build_speculative_ngram_table import main as build
+
+    src = tmp_path / "train"
+    src.mkdir()
+    manifest = {"kind": "train", "version": "fixture", "content_fingerprint": "a" * 64}
+    (src / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    line = json.dumps(
+        {
+            "id": "train_a",
+            "prompt": "p",
+            "openui": 'root = Stack([v0])\nv0 = TextContent(":slot_0")\n',
+            "split": "train",
+        }
+    )
+    (src / "records.jsonl").write_text(line + "\n", encoding="utf-8")
+    out = tmp_path / "table.json"
+    records = src / "records.jsonl"
+    assert build(["--records", str(records), "--output", str(out)]) == 0
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload["source"]["dataset_id"] == "fixture"
+    assert payload["source"]["manifest_content_fingerprint"] == "a" * 64
+    assert build(["--records", str(records), "--output", str(out), "--check"]) == 0
+
+    # The corpus is re-certified under a new manifest fingerprint: the same
+    # counts no longer prove the artifact came from the corpus the docs claim.
+    manifest["content_fingerprint"] = "b" * 64
+    (src / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    assert build(["--records", str(records), "--output", str(out), "--check"]) == 1
+
+    # And a tampered records file is refused outright when the manifest
+    # certifies its sha256.
+    manifest["content_fingerprint"] = "a" * 64
+    manifest["artifacts"] = [{"path": "records.jsonl", "sha256": "0" * 64}]
+    (src / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        build(["--records", str(records), "--output", str(out), "--check"])

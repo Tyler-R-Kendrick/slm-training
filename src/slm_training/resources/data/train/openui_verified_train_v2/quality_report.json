@@ -1,0 +1,165 @@
+{
+  "schema": "certified_split_quality/v1",
+  "dataset_id": "openui_verified_train_v2",
+  "corpus_id": "openui_verified_v1",
+  "corpus_records": 1682,
+  "distinct_source_ids": 700,
+  "families": 120,
+  "split_policy": {
+    "schema_version": "root_family_split/v1",
+    "modulus": 100,
+    "validation_buckets": [
+      80,
+      89
+    ],
+    "test_buckets": [
+      90,
+      99
+    ],
+    "family_links": [
+      "root_parent_id",
+      "split_group_id",
+      "parent_id"
+    ],
+    "program_text_closure": true
+  },
+  "family_closure": {
+    "link_families": 190,
+    "families": 120,
+    "merged_by_program_text": 70
+  },
+  "admitted": {
+    "train": 893,
+    "validation": 154,
+    "test": 118
+  },
+  "family_counts": {
+    "train": 82,
+    "validation": 15,
+    "test": 10
+  },
+  "by_source": {
+    "train": {
+      "corruption_repair": 127,
+      "fixture": 50,
+      "language_contract": 143,
+      "language_contract+aug": 293,
+      "language_contract+design_md_contrastive": 1,
+      "language_contract+template": 3,
+      "programspec_generated": 27,
+      "programspec_generated+aug": 89,
+      "programspec_generated+design_md_contrastive": 11,
+      "programspec_generated+template": 33,
+      "rico": 72,
+      "scope_canonical_document": 23,
+      "scope_identity_document": 21
+    },
+    "validation": {
+      "corruption_repair": 27,
+      "fixture": 16,
+      "language_contract": 28,
+      "language_contract+aug": 52,
+      "programspec_generated": 4,
+      "programspec_generated+aug": 9,
+      "programspec_generated+design_md_contrastive": 1,
+      "programspec_generated+template": 3,
+      "rico": 10,
+      "scope_canonical_document": 2,
+      "scope_identity_document": 2
+    },
+    "test": {
+      "corruption_repair": 21,
+      "fixture": 4,
+      "language_contract": 16,
+      "language_contract+aug": 32,
+      "programspec_generated": 1,
+      "programspec_generated+aug": 8,
+      "programspec_generated+design_md_contrastive": 1,
+      "programspec_generated+template": 3,
+      "rico": 19,
+      "scope_canonical_document": 2,
+      "scope_identity_document": 2,
+      "web_distilled": 1,
+      "web_distilled+aug": 4,
+      "web_distilled+design_md_contrastive": 1,
+      "web_distilled+template": 3
+    }
+  },
+  "rejection_histogram": {
+    "OutputContractError": 90,
+    "duplicate_pair": 171,
+    "role_unsafe_output": 256
+  },
+  "rejection_by_split": {
+    "test": {
+      "duplicate_pair": 18,
+      "role_unsafe_output": 17
+    },
+    "train": {
+      "OutputContractError": 56,
+      "duplicate_pair": 134,
+      "role_unsafe_output": 195
+    },
+    "validation": {
+      "OutputContractError": 34,
+      "duplicate_pair": 19,
+      "role_unsafe_output": 44
+    }
+  },
+  "reidentified": 857,
+  "eval_pool": {
+    "validation": {
+      "records": 154,
+      "families": 15,
+      "by_source": {
+        "corruption_repair": 27,
+        "fixture": 16,
+        "language_contract": 28,
+        "language_contract+aug": 52,
+        "programspec_generated": 4,
+        "programspec_generated+aug": 9,
+        "programspec_generated+design_md_contrastive": 1,
+        "programspec_generated+template": 3,
+        "rico": 10,
+        "scope_canonical_document": 2,
+        "scope_identity_document": 2
+      }
+    },
+    "test": {
+      "records": 118,
+      "families": 10,
+      "by_source": {
+        "corruption_repair": 21,
+        "fixture": 4,
+        "language_contract": 16,
+        "language_contract+aug": 32,
+        "programspec_generated": 1,
+        "programspec_generated+aug": 8,
+        "programspec_generated+design_md_contrastive": 1,
+        "programspec_generated+template": 3,
+        "rico": 19,
+        "scope_canonical_document": 2,
+        "scope_identity_document": 2,
+        "web_distilled": 1,
+        "web_distilled+aug": 4,
+        "web_distilled+design_md_contrastive": 1,
+        "web_distilled+template": 3
+      }
+    }
+  },
+  "warnings": [
+    "90 certified records violate symbol_only/v2 and were rejected"
+  ],
+  "recommendations": [
+    "keep strict leakage gates; do not weaken"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9a65719a02e9e4d075ab565abd97d89ccd7681a0",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v11"
+    },
+    "stamped_at": "2026-09-02T12:17:28.530637+00:00"
+  }
+}

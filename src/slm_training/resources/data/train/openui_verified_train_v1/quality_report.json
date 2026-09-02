@@ -1,0 +1,161 @@
+{
+  "schema": "certified_split_quality/v1",
+  "dataset_id": "openui_verified_train_v1",
+  "corpus_id": "openui_verified_v1",
+  "corpus_records": 1682,
+  "distinct_source_ids": 700,
+  "families": 120,
+  "split_policy": {
+    "schema_version": "root_family_split/v1",
+    "modulus": 100,
+    "validation_buckets": [
+      80,
+      89
+    ],
+    "test_buckets": [
+      90,
+      99
+    ],
+    "family_links": [
+      "root_parent_id",
+      "split_group_id",
+      "parent_id"
+    ],
+    "program_text_closure": true
+  },
+  "family_closure": {
+    "link_families": 190,
+    "families": 120,
+    "merged_by_program_text": 70
+  },
+  "admitted": {
+    "train": 1083,
+    "validation": 198,
+    "test": 136
+  },
+  "family_counts": {
+    "train": 84,
+    "validation": 16,
+    "test": 10
+  },
+  "by_source": {
+    "train": {
+      "corruption_repair": 144,
+      "fixture": 61,
+      "language_contract": 185,
+      "language_contract+aug": 386,
+      "language_contract+design_md_contrastive": 1,
+      "language_contract+template": 3,
+      "programspec_generated": 32,
+      "programspec_generated+aug": 111,
+      "programspec_generated+design_md_contrastive": 11,
+      "programspec_generated+template": 33,
+      "rico": 72,
+      "scope_canonical_document": 23,
+      "scope_identity_document": 21
+    },
+    "validation": {
+      "corruption_repair": 30,
+      "fixture": 19,
+      "language_contract": 40,
+      "language_contract+aug": 75,
+      "programspec_generated": 5,
+      "programspec_generated+aug": 11,
+      "programspec_generated+design_md_contrastive": 1,
+      "programspec_generated+template": 3,
+      "rico": 10,
+      "scope_canonical_document": 2,
+      "scope_identity_document": 2
+    },
+    "test": {
+      "corruption_repair": 23,
+      "fixture": 5,
+      "language_contract": 20,
+      "language_contract+aug": 40,
+      "programspec_generated": 1,
+      "programspec_generated+aug": 10,
+      "programspec_generated+design_md_contrastive": 1,
+      "programspec_generated+template": 3,
+      "rico": 19,
+      "scope_canonical_document": 2,
+      "scope_identity_document": 2,
+      "web_distilled": 1,
+      "web_distilled+aug": 5,
+      "web_distilled+design_md_contrastive": 1,
+      "web_distilled+template": 3
+    }
+  },
+  "rejection_histogram": {
+    "OutputContractError": 90,
+    "duplicate_pair": 175
+  },
+  "rejection_by_split": {
+    "test": {
+      "duplicate_pair": 18
+    },
+    "train": {
+      "OutputContractError": 56,
+      "duplicate_pair": 137
+    },
+    "validation": {
+      "OutputContractError": 34,
+      "duplicate_pair": 20
+    }
+  },
+  "reidentified": 1106,
+  "eval_pool": {
+    "validation": {
+      "records": 198,
+      "families": 16,
+      "by_source": {
+        "corruption_repair": 30,
+        "fixture": 19,
+        "language_contract": 40,
+        "language_contract+aug": 75,
+        "programspec_generated": 5,
+        "programspec_generated+aug": 11,
+        "programspec_generated+design_md_contrastive": 1,
+        "programspec_generated+template": 3,
+        "rico": 10,
+        "scope_canonical_document": 2,
+        "scope_identity_document": 2
+      }
+    },
+    "test": {
+      "records": 136,
+      "families": 10,
+      "by_source": {
+        "corruption_repair": 23,
+        "fixture": 5,
+        "language_contract": 20,
+        "language_contract+aug": 40,
+        "programspec_generated": 1,
+        "programspec_generated+aug": 10,
+        "programspec_generated+design_md_contrastive": 1,
+        "programspec_generated+template": 3,
+        "rico": 19,
+        "scope_canonical_document": 2,
+        "scope_identity_document": 2,
+        "web_distilled": 1,
+        "web_distilled+aug": 5,
+        "web_distilled+design_md_contrastive": 1,
+        "web_distilled+template": 3
+      }
+    }
+  },
+  "warnings": [
+    "90 certified records violate symbol_only/v2 and were rejected"
+  ],
+  "recommendations": [
+    "keep strict leakage gates; do not weaken"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8ccc9abca0ac2496a34d28fb4c6ef29e62eca1cf",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v9"
+    },
+    "stamped_at": "2026-09-02T04:49:45.948740+00:00"
+  }
+}

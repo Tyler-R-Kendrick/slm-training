@@ -9,7 +9,10 @@ from tests.casefiles import case_values
 from slm_training.autoresearch.heal.classify import (
     HARD_HARNESS_MARKERS,
     classify_blocker,
+    crash_arm_exits,
+    is_harness_crash,
     missing_js_module,
+    timeout_arm_exits,
 )
 
 
@@ -133,3 +136,59 @@ class TestMarkers:
             "@agentv/core"
         )
         assert missing_js_module("no js error here") is None
+
+
+class TestHarnessCrashVsResidual:
+    """``harness_failure:*:experiment_failed`` is a crash unless timeout evidence says otherwise."""
+
+    def test_experiment_failed_without_timeout_evidence_is_code(self) -> None:
+        reason = "harness_failure:c-control:experiment_failed"
+        assert classify_blocker("repair_harness", reason) == "code"
+        assert (
+            classify_blocker("repair_harness", reason, arm_exits={"c-control": 2})
+            == "code"
+        )
+        assert is_harness_crash(reason, {"c-control": 2})
+        assert crash_arm_exits({"c-control": 2, "cand": 0})
+        assert not crash_arm_exits({"c-control": 124})
+
+    def test_experiment_failed_with_wall_exit_is_not_a_crash(self) -> None:
+        reason = "harness_failure:c-control:experiment_failed"
+        assert not is_harness_crash(reason, {"c-control": 124})
+        assert not is_harness_crash(reason + " wall_timeout:180s")
+        assert timeout_arm_exits({"c-control": 124, "cand": 0})
+
+    def test_crash_exit_beside_wall_exit_stays_a_crash(self) -> None:
+        assert is_harness_crash(
+            "harness_failure:c-control:experiment_failed",
+            {"c-control": 2, "cand": 124},
+        )
+
+    def test_rebuild_prerequisites_route_to_data(self) -> None:
+        assert (
+            classify_blocker(
+                "heal_postcondition_failed",
+                "data_rebuild records_after=4 records_before=4",
+            )
+            == "data"
+        )
+        assert (
+            classify_blocker(
+                "retry_measurement",
+                "blocked: missing quality_report.json for rebuild_data",
+            )
+            == "data"
+        )
+        assert (
+            classify_blocker("repair_harness", "screening suite smoke fixture deficit")
+            == "data"
+        )
+        # Unrelated postcondition failures stay unknown; repo crashes stay code.
+        assert classify_blocker("heal_postcondition_failed", "npm probe") == "unknown"
+        assert (
+            classify_blocker(
+                "repair_harness",
+                "No module named slm_training.harnesses.train_data.records_after",
+            )
+            == "code"
+        )

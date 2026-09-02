@@ -38,6 +38,15 @@ def _apply_profile_flags(model: TwoTowerModel, args: argparse.Namespace) -> None
         cfg.grammar_finalize_validate = False
     if args.maskgit:
         cfg.grammar_ltr_primary = False
+    if args.compiler_tree:
+        # The screening eval's honest policy (grammar_ltr_primary, tree-mode
+        # compiler decode, lexer output).  Applied last so it overrides the
+        # flags above the same way apply_evaluation_policy does in the harness.
+        from slm_training.harnesses.model_build.eval_policy import (
+            apply_strict_compiler_tree_policy,
+        )
+
+        apply_strict_compiler_tree_policy(cfg)
     if args.quant:
         model.apply_dynamic_quant()
     if args.compile:
@@ -76,6 +85,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-repair", action="store_true")
     parser.add_argument("--no-finalize", action="store_true")
     parser.add_argument("--maskgit", action="store_true")
+    parser.add_argument(
+        "--compiler-tree",
+        action="store_true",
+        help=(
+            "Apply the strict compiler-tree evaluation policy "
+            "(compiler_decode_mode=tree, output_tokenizer=lexer) before profiling."
+        ),
+    )
     parser.add_argument("--quant", action="store_true")
     parser.add_argument("--compile", action="store_true")
     parser.add_argument(
@@ -133,6 +150,12 @@ def main(argv: list[str] | None = None) -> int:
             "grammar_ltr_repair": bool(model.config.grammar_ltr_repair),
             "grammar_finalize_validate": bool(model.config.grammar_finalize_validate),
             "use_dynamic_quant": bool(model.config.use_dynamic_quant),
+            "compiler_decode_mode": str(
+                getattr(model.config, "compiler_decode_mode", "off") or "off"
+            ),
+            "evaluation_policy": str(
+                getattr(model.config, "evaluation_policy", "") or ""
+            ),
         },
         "summary": summary,
         "per_call": [r.as_dict() for r in rows],

@@ -5,10 +5,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
-from typing import Mapping
+from typing import TYPE_CHECKING, Mapping
 
 from slm_training.autoresearch.hillclimb import data_generation_sha256
 from slm_training.autoresearch.rl_gate import assert_rl_ready
@@ -19,6 +20,7 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    HarnessSignalV1,
     HypothesisFeedback,
     HypothesisMatrix,
     OptimumFeedbackV1,
@@ -39,6 +41,9 @@ from slm_training.levers import (
     MAX_RUN_SECONDS,
 )
 
+if TYPE_CHECKING:
+    from slm_training.data.store import DataStore
+
 
 RESEARCH_SOURCE_KINDS = {
     "repo_lineage",
@@ -53,6 +58,20 @@ RESEARCH_SOURCE_KINDS = {
 #: model judgment).
 LATENCY_PROBE_RUN_ID_SUFFIX = "-latprobe"
 LATENCY_PREFLIGHT_SCHEMA = "latency_preflight/v1"
+
+
+# scripts.evaluate_model exit for a resumable chunk that stopped with records
+# still pending (mirrors ``scripts.evaluate_model.EXIT_RESUME_PENDING``).
+EVAL_EXIT_RESUME_PENDING = 10
+_RESUMABLE_EVAL_FLAGS = ("--partial-scoreboard", "--resume-run", "--max-records-this-run")
+
+
+def is_resumable_eval_command(command: list[str]) -> bool:
+    """True for an evaluate_model command that persists per-record progress."""
+
+    return "scripts.evaluate_model" in command and any(
+        flag in command for flag in _RESUMABLE_EVAL_FLAGS
+    )
 
 
 def is_latency_probe_command(command: list[str]) -> bool:
@@ -112,11 +131,69 @@ _TWOTOWER_RUNTIME_FLAG_FIELDS = (
 )
 
 
+_SCREENING_SUITE_FAMILY_PREFIX = "e938_role_safe_all_targets_"
+
+
+def _smoke_records_path(root: Path) -> Path:
+    return root / "suites" / "smoke" / "records.jsonl"
+
+
+def _smoke_record_count(root: Path) -> int | None:
+    path = _smoke_records_path(root)
+    if not path.is_file():
+        return None
+    try:
+        return sum(
+            1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+        )
+    except OSError:
+        return None
+
+
+def largest_family_smoke_suite(
+    store: DataStore, *, family_prefix: str = _SCREENING_SUITE_FAMILY_PREFIX
+) -> str | None:
+    """Largest published smoke suite (by record count) of one eval family.
+
+    Discovery replaces the hard-coded candidate list so a freshly published,
+    bigger suite (``..._smoke96_v1``) is visible to the screening-n resolver
+    the moment it lands. Ties break toward non-frozen snapshots (frozen ones
+    are immutable and can never grow), then toward the lexically latest id.
+    """
+    from slm_training.autoresearch.screening_sample_size import FROZEN_EVAL_SNAPSHOTS
+
+    best: tuple[int, int, str] | None = None
+    seen: set[str] = set()
+    for base in (store.local_root / "eval", store.published_root / "eval"):
+        if not base.is_dir():
+            continue
+        for child in sorted(base.iterdir()):
+            name = child.name
+            if not child.is_dir() or not name.startswith(family_prefix) or name in seen:
+                continue
+            count = _smoke_record_count(child)
+            if count is None or count <= 0:
+                continue
+            seen.add(name)
+            key = (count, 0 if name in FROZEN_EVAL_SNAPSHOTS else 1, name)
+            if best is None or key > best:
+                best = key
+    return best[2] if best else None
+
+
 def default_eval_version() -> str:
-    """Return a published eval snapshot that has a smoke suite on disk."""
+    """Return the published eval snapshot whose smoke suite screening should use.
+
+    Prefers the largest published smoke suite of the role-safe family (see
+    :func:`largest_family_smoke_suite`); falls back to the legacy candidate
+    list and then to any snapshot with a smoke suite on disk.
+    """
     from slm_training.data.store import DataStore
 
     store = DataStore()
+    family = largest_family_smoke_suite(store)
+    if family is not None:
+        return family
     for name in _DEFAULT_EVAL_VERSION_CANDIDATES:
         root = store.resolve_path("eval", name)
         if (root / "suites" / "smoke" / "records.jsonl").is_file():
@@ -962,6 +1039,14 @@ def compile_commands(
         evaluate.extend(["--suites", str(knobs.eval_suites)])
     if knobs.decode_timeout_seconds is not None:
         evaluate.extend(["--decode-timeout-seconds", str(knobs.decode_timeout_seconds)])
+    if knobs.eval_limit is not None:
+        evaluate.extend(["--eval-limit", str(int(knobs.eval_limit))])
+    if knobs.eval_partial_scoreboard:
+        evaluate.append("--partial-scoreboard")
+    if knobs.eval_max_records_this_run is not None:
+        evaluate.extend(
+            ["--max-records-this-run", str(int(knobs.eval_max_records_this_run))]
+        )
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
@@ -1288,6 +1373,34 @@ def execute_commands(
             stage_entry["latency_probe"] = True
             stage_entry["latency_preflight"] = probe_payload
         stages.append(stage_entry)
+        if (
+            completed.returncode == EVAL_EXIT_RESUME_PENDING
+            and is_resumable_eval_command(command)
+            and not is_probe
+        ):
+            # A resumable chunk stopped with records pending: typed incomplete
+            # measurement (the driver resumes it under its locked chunk plan),
+            # never a failed arm and never a model verdict.
+            stage_entry["measurement_complete"] = False
+            stage_entry["resume_pending"] = True
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="stopped",
+                command=tuple(" ".join(command) for command in commands),
+                exit_code=completed.returncode,
+                error=(
+                    "evaluation chunk left records pending; resume with "
+                    "--resume-run under the locked chunk plan"
+                ),
+                metrics=metrics,
+                data_metrics=data_metrics,
+                wall_time_budget_seconds=timeout_seconds,
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+                campaign_manifest_sha256=campaign_manifest_sha256,
+            )
         if completed.returncode and not expected_gate_rejection:
             if is_probe:
                 # Pre-check failure fails open: run the full measurement.
@@ -1303,6 +1416,9 @@ def execute_commands(
                 data_metrics=data_metrics,
                 wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
+                harness_signals=stage_failure_signals(
+                    completed.stdout, completed.stderr
+                ),
                 started_at=started,
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
@@ -1344,6 +1460,53 @@ def _stage_artifact_path(command: list[str], *, cwd: Path | str) -> Path | None:
     if not root.is_absolute():
         root = Path(cwd) / root
     return root / run_id / artifact_name
+
+
+#: Harness-signal code for a train stage refused by the SFT data-governance
+#: gate (``assert_synthesis_feedback_cleared_for_sft``: open
+#: ``synthesis_feedback`` recommendations with no action/waiver record).
+SFT_GATE_SIGNAL_CODE = "sft_blocked_open_synthesis_feedback"
+
+#: Verbatim prefix of the gate's ``HillClimbError``. ``scripts.train_model``
+#: re-raises it through ``parser.error`` so it reaches us on stderr as an
+#: argparse usage dump with exit code 2.
+_SFT_GATE_MARKER = (
+    "SFT blocked: open synthesis_feedback recommendations without "
+    "action/waiver record"
+)
+
+_SFT_GATE_ACTION_PATH_RE = re.compile(r"(\S*synthesis_feedback_actions\.json)")
+
+
+def stage_failure_signals(stdout: str, stderr: str) -> tuple[HarnessSignalV1, ...]:
+    """Type a failed stage's captured output as canonical-harness evidence.
+
+    Purely observational: it reads what the stage actually printed and never
+    re-evaluates (nor relaxes) any gate — the stage-side gate stays the only
+    authority on whether the stage may run. Without this, every non-zero stage
+    exit reaches ``diagnose_outcome`` untyped, which falls through to
+    ``target="infrastructure"`` with the raw argparse usage dump as evidence,
+    and leaves ``_primary_harness_family`` in the continuous driver with no
+    signal to read so it defaults the repair owner to ``model_build``.
+
+    Currently recognises the SFT data-governance refusal, whose real owner is
+    the ``train_data`` harness (fix the synthesizer or record an audited
+    action/waiver), not model build.
+    """
+
+    text = f"{stdout}\n{stderr}"
+    if _SFT_GATE_MARKER not in text:
+        return ()
+    match = _SFT_GATE_ACTION_PATH_RE.search(text)
+    return (
+        HarnessSignalV1(
+            family="train_data",
+            code=SFT_GATE_SIGNAL_CODE,
+            evidence_uri=match.group(1) if match else "synthesis_feedback_actions.json",
+            reproduced_on_frozen_input=True,
+            primary=True,
+        ),
+    )
 
 
 def _stage_progress_artifact_path(

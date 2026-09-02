@@ -69,6 +69,13 @@ __all__ = [
     "dump_climb_champion",
     "load_climb_champion",
     "attach_initialize_from",
+    "CLIMB_CHAMPION_ADVANCE_STATUSES",
+    "CLIMB_CHAMPION_STATUS_BASELINE_SEED",
+    "CLIMB_CHAMPION_STATUS_CONFIRMED",
+    "CLIMB_CHAMPION_STATUSES",
+    "champion_cumulative_epochs",
+    "is_baseline_seed_champion",
+    "train_manifest_record_count",
     "assert_warm_start_launch",
     "assert_champion_eval_disjoint",
     "champion_epoch_park_reason",
@@ -120,9 +127,23 @@ _SYNTHESIS_ACTION_NAMES = (
 )
 
 
-CLIMB_CHAMPION_SCHEMA = "climb_champion/v1"
+CLIMB_CHAMPION_SCHEMA = "climb_champion/v2"
+_CLIMB_CHAMPION_LEGACY_SCHEMAS = frozenset({"climb_champion/v1"})
 CHAMPION_EPOCHS_EXHAUSTED = "champion_epochs_exhausted"
 DEFAULT_MAX_CUMULATIVE_EPOCHS = 50
+# Sidecar ``status`` values. ``confirmed`` champions come from a confirmed /
+# climb_accepted / promoted queue row (or a confirmed advance). A
+# ``baseline_seed`` champion is the loop's first complete control checkpoint:
+# it only enables paired warm start (both arms fork the same weights) and is
+# never a promotion, ship, or climb-acceptance claim. Queue-row consumers must
+# keep excluding it from ``CLIMB_CHAMPION_ADVANCE_STATUSES``.
+CLIMB_CHAMPION_STATUS_CONFIRMED = "confirmed"
+CLIMB_CHAMPION_STATUS_BASELINE_SEED = "baseline_seed"
+CLIMB_CHAMPION_STATUSES = frozenset(
+    {CLIMB_CHAMPION_STATUS_CONFIRMED, CLIMB_CHAMPION_STATUS_BASELINE_SEED}
+)
+# Queue-row statuses that may seed or advance a confirmed champion.
+CLIMB_CHAMPION_ADVANCE_STATUSES = frozenset({"confirmed", "climb_accepted", "promoted"})
 
 
 class HillClimbError(ValueError):
@@ -140,11 +161,45 @@ class ClimbChampionSidecar:
     trainable_params: int | None = None
     knobs: dict[str, Any] = field(default_factory=dict)
     schema: str = CLIMB_CHAMPION_SCHEMA
+    status: str = CLIMB_CHAMPION_STATUS_CONFIRMED
+    # Train corpus the cumulative steps were spent on; ``record_count`` is the
+    # count seen at write time and is re-read from the corpus manifest at park
+    # time so the epoch cap follows the current corpus, never a fixed number.
+    train_dir: str | None = None
+    record_count: int | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["schema"] = self.schema
         return payload
+
+
+def is_baseline_seed_champion(sidecar: ClimbChampionSidecar | None) -> bool:
+    return (
+        sidecar is not None
+        and str(sidecar.status) == CLIMB_CHAMPION_STATUS_BASELINE_SEED
+    )
+
+
+def train_manifest_record_count(train_dir: Path | str | None) -> int | None:
+    """``record_count`` from ``<train_dir>/manifest.json`` (None when unknown)."""
+
+    if not train_dir:
+        return None
+    path = Path(str(train_dir)) / "manifest.json"
+    if not path.is_file():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    try:
+        count = int(raw.get("record_count") or 0)
+    except (TypeError, ValueError):
+        return None
+    return count if count > 0 else None
 
 
 def climb_champion_dir(loop_dir: Path) -> Path:
@@ -177,6 +232,19 @@ def load_climb_champion(loop_dir: Path) -> ClimbChampionSidecar | None:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise HillClimbError("champion_sidecar:invalid")
+    schema = str(raw.get("schema") or CLIMB_CHAMPION_SCHEMA)
+    if schema != CLIMB_CHAMPION_SCHEMA and schema not in _CLIMB_CHAMPION_LEGACY_SCHEMAS:
+        raise HillClimbError(f"champion_sidecar:unknown_schema:{schema}")
+    # Pre-v2 sidecars carried no status: they were only ever written from
+    # confirmed rows, so the legacy default is ``confirmed``.
+    status = str(raw.get("status") or CLIMB_CHAMPION_STATUS_CONFIRMED)
+    if status not in CLIMB_CHAMPION_STATUSES:
+        raise HillClimbError(f"champion_sidecar:unknown_status:{status}")
+    record_count_raw = raw.get("record_count")
+    try:
+        record_count = int(record_count_raw) if record_count_raw is not None else None
+    except (TypeError, ValueError):
+        record_count = None
     return ClimbChampionSidecar(
         source_campaign=str(raw.get("source_campaign") or ""),
         cumulative_steps=int(raw.get("cumulative_steps") or 0),
@@ -188,7 +256,10 @@ def load_climb_champion(loop_dir: Path) -> ClimbChampionSidecar | None:
             else None
         ),
         knobs=dict(raw.get("knobs") or {}),
-        schema=str(raw.get("schema") or CLIMB_CHAMPION_SCHEMA),
+        schema=schema,
+        status=status,
+        train_dir=str(raw["train_dir"]) if raw.get("train_dir") else None,
+        record_count=record_count,
     )
 
 
@@ -251,14 +322,43 @@ def assert_champion_eval_disjoint(
         raise HillClimbError("champion_leakage:train_eval_manifest_collision")
 
 
+def champion_cumulative_epochs(
+    sidecar: ClimbChampionSidecar,
+    *,
+    record_count: int | None = None,
+) -> float:
+    """Cumulative epochs against ``record_count`` (current corpus) when known.
+
+    Falls back to the accumulated sidecar value when the corpus size is not
+    resolvable, so a missing manifest never silently lifts the cap.
+    """
+
+    try:
+        n = int(record_count) if record_count is not None else 0
+    except (TypeError, ValueError):
+        n = 0
+    if n > 0 and int(sidecar.cumulative_steps) > 0:
+        return float(sidecar.cumulative_steps) / float(n)
+    return float(sidecar.cumulative_epochs)
+
+
 def champion_epoch_park_reason(
     sidecar: ClimbChampionSidecar | None,
     *,
     max_cumulative_epochs: float = DEFAULT_MAX_CUMULATIVE_EPOCHS,
+    record_count: int | None = None,
 ) -> str | None:
+    """Park once the champion has spent more than the epoch cap on the corpus.
+
+    ``record_count`` is the current train corpus size (train manifest); when
+    given, epochs are recomputed as ``cumulative_steps / record_count`` so the
+    cap follows the live corpus rather than the count at seed time.
+    """
+
     if sidecar is None:
         return None
-    if float(sidecar.cumulative_epochs) > float(max_cumulative_epochs):
+    epochs = champion_cumulative_epochs(sidecar, record_count=record_count)
+    if epochs > float(max_cumulative_epochs):
         return CHAMPION_EPOCHS_EXHAUSTED
     return None
 
@@ -276,8 +376,32 @@ def write_climb_champion(
         raise HillClimbError(f"champion_checkpoint_missing:{src}")
     if src.resolve() != dest.resolve():
         shutil.copy2(src, dest)
+        _copy_checkpoint_tokenizer_sidecars(src, dest)
     dump_climb_champion(sidecar, loop_dir)
     return sidecar
+
+
+#: Tokenizer sidecars ``TwoTowerModel.load`` reads beside a checkpoint when
+#: ``initialize_from`` is set. Suffixes mirror the loader exactly.
+_CHECKPOINT_SIDECAR_SUFFIXES = (".tokenizer.json", ".context.tokenizer.json")
+
+
+def _copy_checkpoint_tokenizer_sidecars(src: Path, dest: Path) -> None:
+    """Carry a checkpoint's tokenizer sidecars along with it.
+
+    A warm start reads ``<stem>.tokenizer.json`` and
+    ``<stem>.context.tokenizer.json`` beside the checkpoint. Copying only
+    ``last.pt`` left the context sidecar missing, so the loader fell back to
+    the *output* tokenizer and refused the warm start with
+    ``scratch-context warm starts require OpenUITokenizer sidecars`` — the
+    champion existed, the regime said climb, and every arm still died. Absent
+    sidecars stay absent; nothing is fabricated.
+    """
+
+    for suffix in _CHECKPOINT_SIDECAR_SUFFIXES:
+        source = src.with_name(src.stem + suffix)
+        if source.is_file():
+            shutil.copy2(source, dest.with_name(dest.stem + suffix))
 
 
 def maybe_advance_climb_champion(
@@ -291,10 +415,19 @@ def maybe_advance_climb_champion(
     record_count: int,
     knobs: Mapping[str, Any] | None = None,
     trainable_params: int | None = None,
+    train_dir: Path | str | None = None,
 ) -> ClimbChampionSidecar | None:
-    """Replace persistent champion only after a confirmed win."""
+    """Replace persistent champion only after a confirmed win.
+
+    A ``baseline_seed`` champion never advances on a screening win: only a
+    confirmed (confirm / promote tier) result replaces it, and the replacement
+    is always written with ``status == "confirmed"``.
+    """
 
     current = load_climb_champion(loop_dir)
+    if is_baseline_seed_champion(current) and not confirmed:
+        # Explicit no-advance: screening outcomes never move the baseline.
+        return current
     if not confirmed or checkpoint is None:
         return current
     n = max(int(record_count) or 1, 1)
@@ -307,6 +440,13 @@ def maybe_advance_climb_champion(
         cumulative_epochs=prior_epochs + (float(extra_steps) / n),
         trainable_params=trainable_params,
         knobs=dict(knobs or {}),
+        status=CLIMB_CHAMPION_STATUS_CONFIRMED,
+        train_dir=(
+            str(train_dir)
+            if train_dir
+            else (current.train_dir if current is not None else None)
+        ),
+        record_count=int(record_count) if int(record_count or 0) > 0 else None,
     )
     return write_climb_champion(loop_dir, checkpoint=checkpoint, sidecar=sidecar)
 
@@ -322,8 +462,14 @@ def seed_climb_champion(
     record_count: int = 1,
     knobs: Mapping[str, Any] | None = None,
     trainable_params: int | None = None,
+    train_dir: Path | str | None = None,
 ) -> ClimbChampionSidecar | None:
-    """Seed from best confirmed artifact, else one baseline train checkpoint."""
+    """Seed from best confirmed artifact, else one baseline train checkpoint.
+
+    A champion seeded from ``baseline_checkpoint`` (no confirmed artifact) is
+    written with ``status == "baseline_seed"``: it enables paired warm start
+    only and is never treated as confirmed anywhere.
+    """
 
     existing = load_climb_champion(loop_dir)
     if existing is not None:
@@ -331,12 +477,9 @@ def seed_climb_champion(
     chosen: Path | None = None
     campaign = source_campaign
     artifact_knobs = dict(knobs or {})
+    status = CLIMB_CHAMPION_STATUS_CONFIRMED
     for row in reversed(list(confirmed_artifacts or ())):
-        if str(row.get("status") or "") not in {
-            "confirmed",
-            "climb_accepted",
-            "promoted",
-        }:
+        if str(row.get("status") or "") not in CLIMB_CHAMPION_ADVANCE_STATUSES:
             continue
         raw = row.get("checkpoint") or row.get("checkpoint_path")
         if not raw:
@@ -351,6 +494,7 @@ def seed_climb_champion(
     if chosen is None and baseline_checkpoint is not None:
         if Path(baseline_checkpoint).is_file():
             chosen = Path(baseline_checkpoint)
+            status = CLIMB_CHAMPION_STATUS_BASELINE_SEED
     if chosen is None:
         return None
     sidecar = ClimbChampionSidecar(
@@ -360,6 +504,9 @@ def seed_climb_champion(
         cumulative_epochs=float(extra_steps) / max(int(record_count) or 1, 1),
         trainable_params=trainable_params,
         knobs=artifact_knobs,
+        status=status,
+        train_dir=str(train_dir) if train_dir else None,
+        record_count=int(record_count) if int(record_count or 0) > 0 else None,
     )
     return write_climb_champion(loop_dir, checkpoint=chosen, sidecar=sidecar)
 

@@ -220,3 +220,16 @@ def test_semantic_role_decode_is_prohibited() -> None:
 def test_prohibited_boolean_levers_are_rejected(field: str) -> None:
     errors = lever_configuration_errors(SimpleNamespace(**{field: True}))
     assert errors == (f"prohibited enabled levers: {field}",)
+
+
+def test_loss_weight_levers_are_training_not_decode() -> None:
+    from slm_training.levers import lever_catalog
+
+    catalog = lever_catalog()
+    for key in (
+        "compiler_decision_token_loss_weight",
+        "compiler_alignment_loss_weight",
+        "solver_energy_loss_weight",
+    ):
+        assert catalog[key]["category"] == "training", key
+    assert catalog["compiler_decode_mode"]["category"] == "decode"

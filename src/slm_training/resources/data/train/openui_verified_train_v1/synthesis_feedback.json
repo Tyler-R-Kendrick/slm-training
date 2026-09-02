@@ -1,0 +1,34 @@
+{
+  "schema": "synthesis_feedback/v1",
+  "recommendations": [
+    {
+      "code": "stale_output_contract",
+      "family": "corpus_certification",
+      "evidence": {
+        "rejected": 90,
+        "gate": "symbol_only/v2"
+      },
+      "action": "re-certify openui_verified_v1 under the current symbol-only output contract; records carrying free-form string literals were certified before symbol_only/v2 and are rejected here, never patched"
+    },
+    {
+      "code": "id_collision",
+      "family": "corpus_certification",
+      "evidence": {
+        "corpus_records": 1682,
+        "distinct_source_ids": 700,
+        "reidentified": 1106
+      },
+      "action": "certification merges several source snapshots that reuse record ids for distinct prompt/program variants; namespace ids by source snapshot so consumers stop re-identifying"
+    },
+    {
+      "code": "redundant_expansion",
+      "family": "corpus_certification",
+      "evidence": {
+        "duplicate_pair": 175
+      },
+      "action": "exact prompt/program duplicates survive certification; dedupe at admission"
+    }
+  ],
+  "experiment_candidates": [],
+  "note": "root-family split of a certified corpus; nothing was synthesized. Rejections are admission evidence for the certification harness."
+}

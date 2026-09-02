@@ -32,31 +32,41 @@ a cumulative n below ``required_n_for_effect``, the verdict is ``"warn"``
 cannot become decidable through any realistic amount of further
 accumulation, which is a genuine RC1-style structural block.
 
-Observed metric SD: pooled from the committed darkfactory phase 1
-evidence ledger (``resources/experiments/autotrain_climb/
-evidence_ledger.v1.json``) — per-arm Welford ``m2_delta`` / ``n_delta``
-of the loop primary metric's candidate-minus-control deltas, which is
-exactly the SD of paired differences the paired MDE needs.  The ledger
-does not record a metric name; it is the loop's screening primary
-(``smoke.structural_similarity`` per ``policy.v1.json``), so the pooled
-SD is used only when the candidate's ``endpoint_metric`` is that metric
-and the ledger carries enough degrees of freedom.  Otherwise a
-documented conservative default applies: ``sqrt(0.25 / 3) ~= 0.2887``,
-the worst-case SD of a mean over ``screening_smoke_n = 3`` documents
-whose per-document contribution is binary (RC1: the screening metrics
-move in quanta of ~1/3 per flipped document).  Conservative means large:
-a larger SD inflates the MDE, so unknown-variance designs block rather
-than slip through.
+Observed metric SD: resolved per endpoint metric through
+``screening_sample_size.lookup_paired_sd_for_metric`` — the
+``metric_expectations.screening.v1.json`` ``observed_paired_sd_by_metric``
+slot, then the committed evidence ledger (``resources/experiments/
+autotrain_climb/evidence_ledger.v1.json``: per-arm Welford ``m2_delta`` /
+``n_delta`` of candidate-minus-control deltas, exactly the SD of paired
+differences the paired MDE needs) when its stats are keyed to the metric
+(the legacy ledger is untagged and counts for the v1 screening primary
+``smoke.structural_similarity`` only) with enough degrees of freedom, then
+the module's tagged measured constant.  Another metric's SD is never
+borrowed.  When no same-metric SD exists the SD is *unmeasured*: the check
+still reports the MDE under the documented conservative default
+``sqrt(0.25 / 3) ~= 0.2887`` (worst-case SD of a mean over
+``screening_smoke_n = 3`` binary-quantized documents) as an advisory
+number, but an unmeasured SD can only ``warn`` (``sd_source="unmeasured"``)
+— a ``block`` is a measured determination.  RC2: the previous rule blocked
+every confirmatory ``smoke.eval_nll`` arm from the conservative default
+(``required_n=262 > 64``) although nothing about that metric was measured.
 """
 
 from __future__ import annotations
 
-import json
 import math
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Mapping
 
 from slm_training.autoresearch.power import is_decidable
+from slm_training.autoresearch.screening_sample_size import (
+    DEFAULT_EVIDENCE_LEDGER_PATH,
+    MIN_LEDGER_DOF,
+    lookup_paired_sd_for_metric,
+    metric_leaf,
+    pooled_ledger_paired_sd,
+)
 
 try:  # Contract owner: preflight/__init__.py (may not exist yet).
     from . import PreflightVerdict  # type: ignore[attr-defined]
@@ -84,10 +94,13 @@ PAIRED = True
 #: screening_primary.minimum_effect (policy.v1.json).
 DEFAULT_MINIMUM_EFFECT = 0.01
 #: Worst-case SD of a mean over screening_smoke_n=3 binary-quantized
-#: documents: sqrt(0.25 / 3).  Used when the ledger SD is not applicable.
+#: documents: sqrt(0.25 / 3).  Advisory only: reported when the endpoint
+#: metric's paired SD is unmeasured, never grounds for a block.
 CONSERVATIVE_DEFAULT_SD = math.sqrt(0.25 / 3.0)
-#: Minimum pooled degrees of freedom before the ledger SD counts as usable.
-MIN_LEDGER_DOF = 20
+#: ``sd_source`` when no same-metric paired SD exists.
+SD_SOURCE_UNMEASURED = "unmeasured"
+#: Re-exported: minimum pooled degrees of freedom for a usable ledger SD.
+MIN_LEDGER_DOF = MIN_LEDGER_DOF
 #: Ceiling on ``required_n_for_effect`` beyond which a design is treated as
 #: structurally undecidable (block) rather than merely still-accumulating
 #: (warn). Generous relative to ``ADEQUATE_POWER_MIN_SEEDS`` (8, see
@@ -95,54 +108,25 @@ MIN_LEDGER_DOF = 20
 #: so ordinary accumulation is never blocked, only designs whose minimum
 #: effect is unreachable at any realistic n.
 MAX_REASONABLE_N = 64
-#: The ledger's deltas are measurements of the loop screening primary.
+#: The legacy ledger's deltas are measurements of the v1 screening primary
+#: (kept for callers; the metric-keyed rule lives in screening_sample_size).
 LEDGER_METRIC_LEAF = "structural_similarity"
 #: Process / heal / wiring arms execute a local successor (new snapshot,
 #: rebuild_data resume). They are not confirmatory climb designs — a
 #: first-cycle n=1 is expected and must not be blocked by RC1 power.
 PROCESS_CLAIM_CLASSES = frozenset({"process", "heal", "wiring"})
 
-DEFAULT_LEDGER_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "resources"
-    / "experiments"
-    / "autotrain_climb"
-    / "evidence_ledger.v1.json"
-)
+DEFAULT_LEDGER_PATH = DEFAULT_EVIDENCE_LEDGER_PATH
 
 
 def _pooled_ledger_sd(ledger_path: Path) -> tuple[float, int] | None:
-    """Pooled SD of per-run deltas across arms: sqrt(sum m2 / sum (n-1)).
+    """Pooled SD of per-run deltas across all arms: sqrt(sum m2 / sum (n-1)).
 
     Returns ``(sd, dof)`` or None when the ledger is missing, unreadable,
-    or carries fewer than ``MIN_LEDGER_DOF`` degrees of freedom.
+    or carries fewer than ``MIN_LEDGER_DOF`` degrees of freedom. Metric-agnostic
+    (legacy pooled estimate); the verdict path uses the metric-keyed lookup.
     """
-    try:
-        payload = json.loads(ledger_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    arms = payload.get("arms")
-    if not isinstance(arms, Mapping):
-        return None
-    m2_total = 0.0
-    dof = 0
-    for arm in arms.values():
-        if not isinstance(arm, Mapping):
-            continue
-        m2 = arm.get("m2_delta")
-        n_delta = arm.get("n_delta")
-        if not isinstance(m2, (int, float)) or not isinstance(n_delta, int):
-            continue
-        if not math.isfinite(float(m2)) or float(m2) < 0 or n_delta < 2:
-            continue
-        m2_total += float(m2)
-        dof += n_delta - 1
-    if dof < MIN_LEDGER_DOF:
-        return None
-    sd = math.sqrt(m2_total / dof)
-    if not math.isfinite(sd) or sd <= 0:
-        return None
-    return sd, dof
+    return pooled_ledger_paired_sd(ledger_path)
 
 
 def _positive_int(value: Any) -> int | None:
@@ -188,19 +172,27 @@ class PowerDecidabilityCheck:
 
     check_id = CHECK_ID
 
-    def __init__(self, ledger_path: Path = DEFAULT_LEDGER_PATH) -> None:
+    def __init__(
+        self,
+        ledger_path: Path = DEFAULT_LEDGER_PATH,
+        expectations_path: Path | None = None,
+    ) -> None:
         self.ledger_path = ledger_path
+        # None -> the committed metric_expectations.screening.v1.json.
+        self.expectations_path = expectations_path
 
-    def _observed_sd(self, endpoint_metric: str) -> tuple[float, str]:
-        if LEDGER_METRIC_LEAF in endpoint_metric:
-            pooled = _pooled_ledger_sd(self.ledger_path)
-            if pooled is not None:
-                sd, dof = pooled
-                return sd, f"evidence_ledger.v1.json pooled delta sd (dof={dof})"
-        return (
-            CONSERVATIVE_DEFAULT_SD,
-            "conservative default sqrt(0.25/3) (no applicable ledger variance)",
+    def _observed_sd(self, endpoint_metric: str) -> tuple[float, str, bool]:
+        """``(sd, sd_source, measured)`` for the endpoint metric, never borrowed."""
+        lookup = lookup_paired_sd_for_metric(
+            endpoint_metric,
+            expectations_path=self.expectations_path,
+            ledger_path=self.ledger_path,
         )
+        if lookup.measured and lookup.observed_sd is not None:
+            sd = float(Fraction(lookup.observed_sd))
+            detail = ", ".join(f"{k}={v}" for k, v in sorted(lookup.detail.items()))
+            return sd, f"{lookup.source} ({detail})", True
+        return CONSERVATIVE_DEFAULT_SD, SD_SOURCE_UNMEASURED, False
 
     def run(self, candidate: dict) -> PreflightVerdict:  # type: ignore[valid-type]
         try:
@@ -248,8 +240,18 @@ class PowerDecidabilityCheck:
                 "candidate has no usable minimum_effect; assuming the climb "
                 f"policy screening default {DEFAULT_MINIMUM_EFFECT}"
             )
-        endpoint_metric = str(candidate.get("endpoint_metric") or "")
-        sd, sd_source = self._observed_sd(endpoint_metric)
+        endpoint_metric = str(candidate.get("endpoint_metric") or "").strip()
+        if not endpoint_metric:
+            return _make_verdict(
+                "block",
+                [
+                    "candidate has no usable endpoint_metric "
+                    f"(got {candidate.get('endpoint_metric')!r}); the paired "
+                    "SD is metric-keyed, failing closed"
+                ],
+                {"candidate_endpoint_metric": repr(candidate.get("endpoint_metric"))},
+            )
+        sd, sd_source, sd_measured = self._observed_sd(endpoint_metric)
 
         report = is_decidable(
             n=n_seeds,
@@ -259,7 +261,16 @@ class PowerDecidabilityCheck:
             paired=PAIRED,
         )
         reasons.extend(report.reasons)
-        reasons.append(f"sd={sd:.6g} from {sd_source}")
+        if sd_measured:
+            reasons.append(f"sd={sd:.6g} from {sd_source}")
+        else:
+            reasons.append(
+                f"paired SD for {endpoint_metric} is unmeasured; advisory "
+                f"conservative default sd={sd:.6g} (sqrt(0.25/3)) reported "
+                "only — record observed_paired_sd_by_metric["
+                f"{metric_leaf(endpoint_metric)}] in "
+                "metric_expectations.screening.v1.json to power this design"
+            )
         details = {
             "n_seeds": n_seeds,
             "steps": candidate.get("steps"),
@@ -270,6 +281,7 @@ class PowerDecidabilityCheck:
             "minimum_effect": minimum_effect,
             "sd": sd,
             "sd_source": sd_source,
+            "sd_measured": sd_measured,
             "min_attainable_p": report.min_attainable_p,
             "min_detectable_effect": report.min_detectable_effect,
             "required_n_for_effect": report.required_n_for_effect,
@@ -277,6 +289,14 @@ class PowerDecidabilityCheck:
         }
         if report.decidable:
             verdict = "pass"
+        elif not sd_measured:
+            # An unmeasured SD is not evidence of undecidability: warn only.
+            verdict = "warn"
+            reasons.append(
+                "power cannot block on an unmeasured SD; verdict is advisory "
+                f"(required_n_for_effect={report.required_n_for_effect} under "
+                "the conservative default is not a measured determination)"
+            )
         elif report.required_n_for_effect > MAX_REASONABLE_N:
             verdict = "block"
             reasons.append(

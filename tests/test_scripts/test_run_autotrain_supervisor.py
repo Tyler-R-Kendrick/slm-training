@@ -209,3 +209,45 @@ def test_handle_hard_pending_tolerates_hostile_blocker_shapes(
         any(e.get("event") == "hard_pending_heal_error" for e in events)
         or "outcomes" in outcome
     )
+
+
+def test_default_primary_metric_matches_climb_policy() -> None:
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+
+    policy_metric = str(load_climb_policy().screening_primary["metric"])
+    assert _mod._default_primary_metric() == policy_metric
+    assert _mod._build_parser().parse_args([]).primary_metric == policy_metric
+
+
+def test_watchdog_no_campaign_governs_backoff_and_keeps_counting(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "ar"
+    events: list[dict] = []
+    common = dict(root=root, loop_id="loop-1", campaign_id="c1", log_event=events.append)
+    assert (
+        _mod._watchdog_no_campaign(
+            passes_without_campaign=4, total_no_campaign_passes=4, **common
+        )
+        is None
+    )
+    assert not EscalationLedger.path_for(root, "loop-1").exists()
+    backoffs = [
+        _mod._watchdog_no_campaign(
+            passes_without_campaign=passes,
+            total_no_campaign_passes=passes,
+            **common,
+        )
+        for passes in (5, 6, 7)
+    ]
+    # Ledger governor (30s doubling): the counter is never reset, so the same
+    # fingerprint is re-observed and the backoff grows with the stall.
+    assert backoffs == [30.0, 60.0, 120.0]
+    ledger = EscalationLedger.load(root, "loop-1")
+    record = next(iter(ledger.records.values()))
+    assert record.kind == "loop_stalled_no_campaign"
+    assert record.seen_count == 3
+    assert record.status == "escalated"
+    assert "total_no_campaign_passes=7" in record.note
+    assert [e["passes"] for e in events] == [5, 6, 7]
+    assert [e["next_backoff_seconds"] for e in events] == backoffs

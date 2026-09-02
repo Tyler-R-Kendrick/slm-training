@@ -19,6 +19,7 @@ from slm_training.autoresearch.conclusions import (
     DEFAULT_CLOSED_APPROACHES_PATH,
     POLICY_V1_PATH,
     POLICY_V2_PATH,
+    POLICY_V3_PATH,
     FamilyLedger,
     canonicalize_lever_key,
     closed_approach_id,
@@ -63,35 +64,36 @@ def _three_failures(**extra: object) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def test_policy_v2_is_superset_of_v1_with_conclusion_block() -> None:
+def test_policy_v2_and_v3_carry_the_conclusion_block() -> None:
+    """v2/v3 recalibrated screening fields (#1716, P2) on top of v1; the
+    conclusion block and the schema family are what this module depends on."""
     v1 = json.loads(POLICY_V1_PATH.read_text(encoding="utf-8"))
     v2 = json.loads(POLICY_V2_PATH.read_text(encoding="utf-8"))
-    for key, value in v1.items():
-        if key == "version":
-            continue
-        assert v2[key] == value, f"policy.v2.json changed v1 field {key!r}"
-    # v2's internal `version` is a separate, monotonically-later label from
-    # v1's own (see autotrain-climb-policy.md's "Policy v2" section) — pin
-    # only the relationship, not either literal, so a future v1 bump alone
-    # doesn't fail this test for an unrelated reason.
-    assert v1["version"] != v2["version"]
-    assert v2["schema"] == v1["schema"] == "autotrain_climb_policy/v1"
-    block = v2["conclusion_policy"]
-    assert block["family_close_after_adequately_powered_failures"] == 3
-    assert block["adequate_power_requires"] == {"min_seeds": 8, "decidable": True}
-    assert block["closed_families_reopen_on"] == [
-        "new_lever_key",
-        "harness_version_change",
-    ]
+    v3 = json.loads(POLICY_V3_PATH.read_text(encoding="utf-8"))
+    assert v1["version"] != v2["version"] != v3["version"]
+    assert v3["schema"] == v2["schema"] == v1["schema"] == "autotrain_climb_policy/v1"
+    assert "conclusion_policy" not in v1
+    for payload in (v2, v3):
+        block = payload["conclusion_policy"]
+        assert block["family_close_after_adequately_powered_failures"] == 3
+        assert block["adequate_power_requires"] == {"min_seeds": 8, "decidable": True}
+        assert block["closed_families_reopen_on"] == [
+            "new_lever_key",
+            "harness_version_change",
+        ]
 
 
-def test_load_policy_prefers_v2() -> None:
+def test_load_policy_prefers_v3_then_v2(tmp_path: Path) -> None:
     policy = load_policy()
-    assert policy.path.name == "policy.v2.json"
-    v2 = json.loads(POLICY_V2_PATH.read_text(encoding="utf-8"))
-    assert policy.version == v2["version"]
+    assert policy.path.name == "policy.v3.json"
+    v3 = json.loads(POLICY_V3_PATH.read_text(encoding="utf-8"))
+    assert policy.version == v3["version"]
     block = conclusion_policy(policy)
     assert block["family_close_after_adequately_powered_failures"] == 3
+    # Without v3 on disk the loader takes v2 (no fallback notice).
+    for src in (POLICY_V1_PATH, POLICY_V2_PATH):
+        (tmp_path / src.name).write_text(src.read_text(encoding="utf-8"), "utf-8")
+    assert load_policy(tmp_path).path.name == "policy.v2.json"
 
 
 def test_load_policy_falls_back_to_v1_with_single_notice(
@@ -237,12 +239,18 @@ def test_conclude_is_append_only(tmp_path: Path) -> None:
 def test_conclude_skips_family_with_still_binding_closure(tmp_path: Path) -> None:
     path = tmp_path / "closed.json"
     records = _three_failures()
-    conclude(records, path=path, taxonomy=TAXONOMY, harness_versions={},
-             run_date="2026-08-09")
+    conclude(
+        records,
+        path=path,
+        taxonomy=TAXONOMY,
+        harness_versions={},
+        run_date="2026-08-09",
+    )
     # Different evidence ids, same family, closure still binding → skip.
     more = [_failure(f"ev-new-{i}") for i in range(3)]
-    again = conclude(more, path=path, taxonomy=TAXONOMY, harness_versions={},
-                     run_date="2026-08-10")
+    again = conclude(
+        more, path=path, taxonomy=TAXONOMY, harness_versions={}, run_date="2026-08-10"
+    )
     assert again == []
     _, stored = load_closed_approaches(path)
     assert len(stored) == 1
@@ -276,8 +284,13 @@ def test_goal_invariant_unknown_when_ambiguous_or_absent(tmp_path: Path) -> None
         _failure("ev-1", hypothesis_text="serves I6"),
         _failure("ev-2"),
     ]
-    appended = conclude(records, path=path, taxonomy=TAXONOMY,
-                        harness_versions={}, run_date="2026-08-09")
+    appended = conclude(
+        records,
+        path=path,
+        taxonomy=TAXONOMY,
+        harness_versions={},
+        run_date="2026-08-09",
+    )
     assert appended[0].goal_invariant_served == "unknown"
 
 
@@ -386,9 +399,7 @@ def test_plugin_contract_surface() -> None:
 def test_plugin_blocks_closed_family(
     closed_ledger: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        conclusions, "DEFAULT_CLOSED_APPROACHES_PATH", closed_ledger
-    )
+    monkeypatch.setattr(conclusions, "DEFAULT_CLOSED_APPROACHES_PATH", closed_ledger)
     monkeypatch.setattr(
         conclusions,
         "current_harness_versions",
@@ -420,9 +431,7 @@ def test_plugin_blocks_closed_family(
 def test_plugin_passes_when_reopen_condition_met(
     closed_ledger: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        conclusions, "DEFAULT_CLOSED_APPROACHES_PATH", closed_ledger
-    )
+    monkeypatch.setattr(conclusions, "DEFAULT_CLOSED_APPROACHES_PATH", closed_ledger)
     monkeypatch.setattr(
         conclusions,
         "current_harness_versions",

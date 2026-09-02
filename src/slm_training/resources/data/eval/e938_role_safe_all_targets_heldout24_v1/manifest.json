@@ -1,0 +1,76 @@
+{
+  "version": "e938_role_safe_all_targets_heldout24_v1",
+  "kind": "eval",
+  "source": "certified",
+  "suites": {
+    "held_out": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_heldout24_v1/suites/held_out/records.jsonl"
+  },
+  "stats": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_heldout24_v1/stats.json",
+  "ids": [
+    "rico_train_43_repair_4105c33d9023",
+    "train_cta_01__5db31ccd",
+    "lc_component_Input_as_document__f3ec307e",
+    "lc_component_Input_as_document_aug_cta__24f397e1",
+    "program_812a9a868c6c9958",
+    "program_812a9a868c6c9958_aug_dir__6e7951ca",
+    "program_812a9a868c6c9958_design_contrastive",
+    "program_812a9a868c6c9958_syn_1",
+    "rico_train_43",
+    "6f181453ca4673cf_scope__6e48abba",
+    "b6edf6c8d8d6a227_scope",
+    "web_fixture_launch_generation_c94bf15fd87e",
+    "web_fixture_launch_generation_c94bf15fd87e_aug_dir__c6e40459",
+    "web_fixture_launch_generation_c94bf15fd87e_design_contrastive",
+    "web_fixture_launch_generation_c94bf15fd87e_syn_0",
+    "lc_component_RadioItem_repair_8bd6d86fefab",
+    "train_cta_01__a26798cf",
+    "lc_component_Col_as_document__56967f4f",
+    "lc_component_RadioItem_as_document_aug_cta__88c1fc8f",
+    "program_812a9a868c6c9958_aug_cta__379ce565",
+    "program_812a9a868c6c9958_syn_2",
+    "rico_train_102__499f3e47",
+    "6f181453ca4673cf_scope__e32c47bf",
+    "ce763f7f6044bf66_scope"
+  ],
+  "suite_counts": {
+    "held_out": 24
+  },
+  "content_fingerprint": "a868857eb1ba1af308aaef6341960f24e6cdc4569d10f5d4e196f1fda8bcf7c5",
+  "train_manifest": "src/slm_training/resources/data/train/openui_verified_train_v1/manifest.json",
+  "built_at": "2026-09-02T04:50:08.417616+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8ccc9abca0ac2496a34d28fb4c6ef29e62eca1cf",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v9"
+    },
+    "stamped_at": "2026-09-02T04:50:08.453668+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e938_role_safe_all_targets_heldout24_v1",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "quality_report.json",
+      "sha256": "ade9ad3b0b0578f31fcaa87b82cf27cce4ada7551d69e5e8e4e5a5ec9cc4c0e1",
+      "size": 1875
+    },
+    {
+      "path": "screening_sample_size.json",
+      "sha256": "effdbdf63acf0b764e2bb1370e8fd6fb0c217b0ee3671d058afb141d9d9a418c",
+      "size": 1819
+    },
+    {
+      "path": "stats.json",
+      "sha256": "fc228fe4369513bdf1dd07580cab3d7df79e274bd5bfded4ef15afb51cf40149",
+      "size": 2562
+    },
+    {
+      "path": "suites/held_out/records.jsonl",
+      "sha256": "46063d2129c8f18eee0173de94903baf54d8b6cbf30e299ccde86b96528a9438",
+      "size": 118525
+    }
+  ]
+}

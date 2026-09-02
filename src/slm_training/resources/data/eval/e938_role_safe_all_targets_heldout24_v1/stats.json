@@ -1,0 +1,93 @@
+{
+  "version": "e938_role_safe_all_targets_heldout24_v1",
+  "source": "certified",
+  "seed_path": null,
+  "rico_path": null,
+  "rico_hf_split": null,
+  "rico_limit": null,
+  "rico_hf_cache_path": "src/slm_training/resources/rico/hf_test_cache.jsonl",
+  "target_records": null,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 24,
+    "changed": 0,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 0,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 0
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 839,
+      "misses": 867
+    }
+  },
+  "suite_counts": {
+    "held_out": 24
+  },
+  "total_records": 24,
+  "error_count": 0,
+  "errors": [],
+  "leakage_rejected": 0,
+  "train_manifest": "src/slm_training/resources/data/train/openui_verified_train_v1/manifest.json",
+  "built_at": "2026-09-02T04:50:08.417616+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8ccc9abca0ac2496a34d28fb4c6ef29e62eca1cf",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v9"
+    },
+    "stamped_at": "2026-09-02T04:50:08.453668+00:00"
+  },
+  "certified": {
+    "corpus": "src/slm_training/resources/data/train/openui_verified_v1/records.jsonl",
+    "seed": 0,
+    "rejection_histogram": {
+      "OutputContractError": 90,
+      "duplicate_pair": 175
+    },
+    "reidentified": 1106,
+    "samples": {
+      "held_out": {
+        "schema": "certified_eval_candidates/v1",
+        "suite": "held_out",
+        "splits": [
+          "test"
+        ],
+        "seed": 0,
+        "requested": 24,
+        "selected": 24,
+        "eligible": 136,
+        "excluded_existing_ids": 0,
+        "decontaminated": {},
+        "stratification": {
+          "corruption_repair": 2,
+          "fixture": 2,
+          "language_contract": 2,
+          "language_contract+aug": 2,
+          "programspec_generated": 1,
+          "programspec_generated+aug": 2,
+          "programspec_generated+design_md_contrastive": 1,
+          "programspec_generated+template": 2,
+          "rico": 2,
+          "scope_canonical_document": 2,
+          "scope_identity_document": 2,
+          "web_distilled": 1,
+          "web_distilled+aug": 1,
+          "web_distilled+design_md_contrastive": 1,
+          "web_distilled+template": 1
+        },
+        "distinct_source_ids": 22,
+        "distinct_structures": 13,
+        "families": 7
+      }
+    }
+  }
+}

@@ -136,9 +136,11 @@ class EscalationLedger:
                 next_backoff_seconds=next_backoff_seconds(1),
             )
         else:
-            campaigns = tuple(
-                dict.fromkeys((*existing.campaign_ids, str(campaign_id)))
-            ) if campaign_id else existing.campaign_ids
+            campaigns = (
+                tuple(dict.fromkeys((*existing.campaign_ids, str(campaign_id))))
+                if campaign_id
+                else existing.campaign_ids
+            )
             seen = existing.seen_count + 1
             record = existing.model_copy(
                 update={
@@ -146,9 +148,7 @@ class EscalationLedger:
                     "seen_count": seen,
                     "campaign_ids": campaigns[-16:],
                     "status": (
-                        "open"
-                        if existing.status == "resolved"
-                        else existing.status
+                        "open" if existing.status == "resolved" else existing.status
                     ),
                     "next_backoff_seconds": next_backoff_seconds(seen),
                 }
@@ -201,15 +201,11 @@ class EscalationLedger:
         )
 
     def open_records(self) -> tuple[EscalationRecordV1, ...]:
-        return tuple(
-            r for r in self.records.values() if r.status != "resolved"
-        )
+        return tuple(r for r in self.records.values() if r.status != "resolved")
 
     def sleep_seconds(self, *, default: float = 30.0) -> float:
         """Governed supervisor backoff: the max open-record backoff, else default."""
-        open_backoffs = [
-            r.next_backoff_seconds for r in self.open_records()
-        ]
+        open_backoffs = [r.next_backoff_seconds for r in self.open_records()]
         if not open_backoffs:
             return float(default)
         return float(max(open_backoffs))

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from slm_training.evals.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
@@ -35,6 +36,53 @@ from slm_training.levers import (
     DEFAULT_EVALUATION_POLICY,
     DEFAULT_TRAIN_DATA_DIR,
 )
+
+
+# Exit code for a resumable run that stopped with records still pending: the
+# scoreboard is partial, so neither ship gates nor fail-under thresholds were
+# judged.  Re-run with ``--resume-run <run_dir>`` to merge the next chunk.
+EXIT_RESUME_PENDING = 10
+_ENV_RESUME_RUN = "SLM_EVAL_RESUME_RUN"
+_ENV_MAX_RECORDS_THIS_RUN = "SLM_EVAL_MAX_RECORDS_THIS_RUN"
+_ENV_PARTIAL_SCOREBOARD = "SLM_EVAL_PARTIAL_SCOREBOARD"
+
+
+def _env_resume_defaults() -> dict[str, object]:
+    """CLI defaults from the environment (a driver may set them per subprocess)."""
+    resume_run = os.environ.get(_ENV_RESUME_RUN) or None
+    raw_max = os.environ.get(_ENV_MAX_RECORDS_THIS_RUN)
+    max_records: int | None = None
+    if raw_max not in (None, ""):
+        try:
+            max_records = int(raw_max)
+        except ValueError as exc:
+            raise SystemExit(
+                f"{_ENV_MAX_RECORDS_THIS_RUN} must be an integer, got {raw_max!r}"
+            ) from exc
+    partial = str(os.environ.get(_ENV_PARTIAL_SCOREBOARD) or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    return {
+        "resume_run": None if resume_run is None else Path(resume_run),
+        "max_records_this_run": max_records,
+        "partial_scoreboard": partial,
+    }
+
+
+def _thresholds_requested(args: argparse.Namespace) -> bool:
+    return bool(getattr(args, "ship_gates", False)) or any(
+        getattr(args, name, None) is not None
+        for name in (
+            "fail_under_parse_rate",
+            "fail_under_placeholder_fidelity",
+            "fail_under_placeholder_validity",
+            "fail_under_structural_similarity",
+            "fail_under_reward_score",
+            "fail_under_design_lint",
+        )
+    )
 
 
 def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
@@ -643,6 +691,38 @@ def main(argv: list[str] | None = None) -> int:
             "generate_batch_size."
         ),
     )
+    resume_defaults = _env_resume_defaults()
+    parser.add_argument(
+        "--partial-scoreboard",
+        action="store_true",
+        default=bool(resume_defaults["partial_scoreboard"]),
+        help=(
+            "Persist every decoded record to eval_<suite>.partial.json so a "
+            f"later --resume-run can merge it (env {_ENV_PARTIAL_SCOREBOARD})."
+        ),
+    )
+    parser.add_argument(
+        "--resume-run",
+        type=Path,
+        default=resume_defaults["resume_run"],
+        help=(
+            "Run directory holding eval_<suite>.partial.json files from an "
+            "earlier chunk of the same checkpoint/suite; stored records are "
+            "replayed, never re-decoded. Defaults to this run's directory when "
+            f"--partial-scoreboard is set (env {_ENV_RESUME_RUN})."
+        ),
+    )
+    parser.add_argument(
+        "--max-records-this-run",
+        type=int,
+        default=resume_defaults["max_records_this_run"],
+        help=(
+            "Decode at most this many new records this run (shared across "
+            "--suites), then stop with the rest pending; exit "
+            f"{EXIT_RESUME_PENDING} when thresholds were requested but records "
+            f"remain (env {_ENV_MAX_RECORDS_THIS_RUN})."
+        ),
+    )
     parser.add_argument(
         "--no-design-md-context",
         action="store_true",
@@ -970,6 +1050,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.grammar_leakage_audit and args.suites:
         raise SystemExit("--grammar-leakage-audit evaluates one --suite; omit --suites")
+    if args.max_records_this_run is not None and args.max_records_this_run < 0:
+        raise SystemExit("--max-records-this-run must be >= 0")
+    resume_kwargs = {
+        "partial_scoreboard": bool(args.partial_scoreboard),
+        "resume_from": args.resume_run,
+        "max_records_this_run": args.max_records_this_run,
+    }
+    resumable = any(value not in (None, False) for value in resume_kwargs.values())
+    if resumable and args.grammar_leakage_audit:
+        raise SystemExit("--grammar-leakage-audit cannot run as a resumable chunk")
 
     if args.suites:
         from slm_training.runtime.telemetry import run_trace
@@ -984,6 +1074,7 @@ def main(argv: list[str] | None = None) -> int:
                 write_gates=args.ship_gates,
                 cache=cache,
                 suite_reachability=suite_reachability,
+                **resume_kwargs,
             )
         if flag_assignments:
             scoreboard["research_flags"] = assignments_payload(flag_assignments)
@@ -992,6 +1083,9 @@ def main(argv: list[str] | None = None) -> int:
             scoreboard["learnability_diagnostics"] = _write_learnability_diagnostics(
                 config, suites
             )
+        if resumable and scoreboard.get("measurement_complete") is False:
+            # Partial scoreboard: no gate or threshold verdict exists yet.
+            return EXIT_RESUME_PENDING if _thresholds_requested(args) else 0
         if args.ship_gates:
             gates = scoreboard.get("gates")
             if not gates or "pass" not in gates:
@@ -1038,7 +1132,9 @@ def main(argv: list[str] | None = None) -> int:
             }
             print(json.dumps(summary, indent=2))
             return 0
-        metrics = evaluate(config, checkpoint=args.checkpoint, cache=cache)
+        metrics = evaluate(
+            config, checkpoint=args.checkpoint, cache=cache, **resume_kwargs
+        )
     summary = {k: v for k, v in metrics.items() if k != "details"}
     if flag_assignments:
         summary["research_flags"] = assignments_payload(flag_assignments)
@@ -1047,6 +1143,8 @@ def main(argv: list[str] | None = None) -> int:
             config, [config.suite]
         )
     print(json.dumps(summary, indent=2))
+    if resumable and metrics.get("measurement_complete") is False:
+        return EXIT_RESUME_PENDING if _thresholds_requested(args) else 0
     return _check_fail_unders(metrics, args)
 
 

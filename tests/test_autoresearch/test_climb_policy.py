@@ -952,3 +952,282 @@ def test_screening_smoke_n_live_policy_is_auto_with_fallback() -> None:
     assert n == int(policy.measurement["screening_smoke_n"])
     assert report is not None
     assert report["verdict"] == "insufficient_evidence"
+    assert report["chosen_n"] is None  # no arm wall: budget undecidable
+
+
+# ---------------------------------------------------------------------------
+# RC1 replay: smoke.eval_nll primary must never park on a borrowed SD
+# ---------------------------------------------------------------------------
+
+
+def test_default_policy_is_v3_with_nll_unit_minimum_effect() -> None:
+    policy = load_climb_policy()
+    assert policy.path.name == "policy.v3.json"
+    assert policy.version == "v15"
+    screening = policy.screening_primary
+    assert screening["metric"] == "smoke.eval_nll"
+    assert screening["minimum_effect"] == pytest.approx(0.02)
+    assert screening["minimum_effect_units"] == "nats/token"
+    assert screening["minimum_effect_rationale"]
+    block = policy.measurement["screening_sample_size"]
+    assert block["observed_sd_by_metric"] == {}
+    assert "observed_sd" not in block  # no untagged scalar to borrow
+    # v3 is v2 plus the RC1 fields, and the certified train bucket as the
+    # default / fixture train set (P7: real data growth from the certified
+    # corpus; the bucket carries the leakage fingerprints v2's sets lacked).
+    certified_train = "openui_verified_train_v1"
+    assert policy.defaults["train_version"] == certified_train
+    assert policy.payload["data_intervention"]["fixture_train_version"] == certified_train
+    v2 = json.loads((CLIMB_RESOURCE_DIR / "policy.v2.json").read_text(encoding="utf-8"))
+    v3 = dict(policy.payload)
+    retargeted = {"defaults": {"train_version"}, "data_intervention": {"fixture_train_version"}}
+    for key, value in v2.items():
+        if key in {"version", "description", "screening_primary", "measurement"}:
+            continue
+        if key in retargeted:
+            for sub, sub_value in value.items():
+                if sub not in retargeted[key]:
+                    assert v3[key][sub] == sub_value, f"policy.v3.json changed {key}.{sub}"
+            continue
+        assert v3[key] == value, f"policy.v3.json changed v2 field {key!r}"
+    for key, value in v2["measurement"].items():
+        if key == "screening_sample_size":
+            continue
+        assert v3["measurement"][key] == value
+
+
+@pytest.mark.parametrize("arm_wall_seconds,expected_n", [(180.0, 24), (70.0, 21)])
+def test_screening_smoke_n_rc1_replay_eval_nll_primary_is_runnable(
+    arm_wall_seconds: float, expected_n: int
+) -> None:
+    # RC1 inputs verbatim: policy primary smoke.eval_nll, suite 24 records.
+    # Before: MEASURED_PAIRED_SD (smoke.structural_similarity) was borrowed,
+    # power floor 96 > 24 -> infeasible_range_empty -> n=0 -> park every cycle.
+    policy = load_climb_policy()
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=arm_wall_seconds, suite_records=24
+    )
+    assert report is not None
+    assert n >= 6
+    assert n == expected_n  # min(suite 24, budget ceiling, max_candidate_n 64)
+    assert report["verdict"] in {"insufficient_evidence", "feasible"}
+    assert report["must_generate"] is False
+    assert report["chosen_n"] == n
+    assert report["decidability_floor_n"] == 6
+    assert report["binding_constraints"] == []
+    if report["verdict"] == "insufficient_evidence":
+        assert report["power_floor_status"] == "unmeasured"
+        assert report["power_floor_n"] is None
+        assert report["observed_sd_source"] == "unmeasured"
+        assert report["observed_sd_metric"] == "smoke.eval_nll"
+    else:  # a same-metric SD was recorded (P3): power floor is measured
+        assert report["power_floor_status"] == "measured"
+        assert report["observed_sd_source"] != "unmeasured"
+
+
+def test_screening_smoke_n_unmeasured_sd_generates_only_below_exact_floor() -> None:
+    policy = load_climb_policy()
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=5
+    )
+    assert n == 0
+    assert report is not None
+    assert report["verdict"] == "infeasible_range_empty"
+    assert report["must_generate"] is True
+    assert report["n_min"] == 6
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=6
+    )
+    assert n == 6
+    assert report is not None
+    assert report["must_generate"] is False
+
+
+def test_screening_smoke_n_measured_same_metric_sd_yields_power_floor() -> None:
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+                "observed_sd_by_metric": {"eval_nll": "1/50"},
+            },
+        },
+        payload={
+            "power_gate": {"enabled": True, "alpha": "1/20"},
+            "screening_primary": {
+                "metric": "smoke.eval_nll",
+                "direction": "decrease",
+                "minimum_effect": 0.02,
+            },
+        },
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_status"] == "measured"
+    assert report["observed_sd_source"] == "policy"
+    assert report["power_floor_n"] == 8  # ((1.96+0.84)*0.02/0.02)^2 -> 8
+    assert report["verdict"] == "feasible"
+    assert n == 8 == report["chosen_n"]
+
+
+def test_screening_smoke_n_never_borrows_another_metrics_sd() -> None:
+    # A scalar observed_sd tagged for structural_similarity must not power a
+    # smoke.eval_nll primary; the floor stays unmeasured.
+    policy = _StubPolicy(
+        {
+            "screening_smoke_n": 3,
+            "screening_smoke_n_mode": "auto",
+            "screening_sample_size": {
+                "max_candidate_n": 64,
+                "default_decode_floor_seconds": 2,
+                "observed_sd": "1741/10000",
+                "observed_sd_metric": "smoke.structural_similarity",
+                "observed_sd_by_metric": {"structural_similarity": "1741/10000"},
+            },
+        },
+        payload={
+            "power_gate": {"enabled": True, "alpha": "1/20"},
+            "screening_primary": {
+                "metric": "smoke.eval_nll",
+                "direction": "decrease",
+                "minimum_effect": 0.05,
+            },
+        },
+    )
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_status"] == "unmeasured"
+    assert report["power_floor_n"] is None
+    assert n == 24
+    # The same declaration powers its own metric.
+    policy.payload["screening_primary"]["metric"] = "smoke.structural_similarity"
+    n, report = screening_smoke_n_for_policy(
+        policy, arm_wall_seconds=180.0, suite_records=24
+    )
+    assert report is not None
+    assert report["power_floor_status"] == "measured"
+    assert report["power_floor_n"] == 96
+    assert n == 0 and report["verdict"] == "infeasible_range_empty"
+
+
+def _nll_pairs(n: int, *, shift: float) -> dict[str, dict[str, float]]:
+    control = {f"rec-{i:02d}": 2.5 + 0.02 * i for i in range(n)}
+    candidate = {
+        k: v - shift - 0.001 * i for i, (k, v) in enumerate(control.items())
+    }
+    return {"control": control, "candidate": candidate}
+
+
+def test_classify_positive_paired_nll_win_exempt_from_fixture_clamp() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    assert policy.screening_primary["metric"] == "smoke.eval_nll"
+    pairs = _nll_pairs(24, shift=0.2)
+    control_metrics = {
+        "smoke.eval_nll": sum(pairs["control"].values()) / 24,
+        "smoke.n": 24,
+        "smoke.completed_document_n": 24,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.05,
+    }
+    candidate_metrics = {
+        "smoke.eval_nll": sum(pairs["candidate"].values()) / 24,
+        "smoke.n": 24,
+        "smoke.completed_document_n": 24,
+        "parse_rate": 1.0,
+        "structural_similarity": 0.05,
+    }
+    win = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=control_metrics,
+        candidate_metrics=candidate_metrics,
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert win["positive"] is True
+    assert win["fixture_clamp_exempt"] is True
+    assert win["paired_test"]["win"] is True
+    assert win["paired_test"]["n_pairs"] == 24
+    assert win["paired_test"]["claim_class"] == "diagnostic"
+    assert "fixture_insufficient_n:quality_probe" in win["reasons"]
+    assert "fixture_insufficient_n_alone" not in win["reasons"]
+    win_reason = next(r for r in win["reasons"] if r.startswith("primary_metric_win:"))
+    assert "n_pairs=24" in win_reason and "paired_win:p=" in win_reason
+
+    # I6: a measured parse_rate < 1 still blocks the paired win.
+    illegal = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=control_metrics,
+        candidate_metrics={**candidate_metrics, "parse_rate": 0.5},
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert illegal["positive"] is False
+    assert illegal["fixture_clamp_exempt"] is False
+    assert any(r.startswith("invalid_grammar:") for r in illegal["reasons"])
+
+
+def test_classify_positive_paired_nll_three_pairs_not_positive() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    pairs = _nll_pairs(3, shift=0.4)
+
+    def metrics(arm: str) -> dict[str, float]:
+        return {
+            "smoke.eval_nll": sum(pairs[arm].values()) / 3,
+            "smoke.n": 3,
+            "smoke.completed_document_n": 3,
+            "parse_rate": 1.0,
+        }
+
+    tick = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=metrics("control"),
+        candidate_metrics=metrics("candidate"),
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert tick["positive"] is False
+    assert tick["fixture_clamp_exempt"] is False
+    null = next(
+        r for r in tick["reasons"] if r.startswith("primary_metric_null_or_worse:")
+    )
+    assert "n_pairs=3" in null and "p=1" in null
+    assert "fixture_insufficient_n_alone" in tick["reasons"]
+
+    # Without per-record files the aggregate path stays fixture-clamped.
+    agg = classify_positive_metrics(
+        policy,
+        role="screening",
+        control_metrics=metrics("control"),
+        candidate_metrics=metrics("candidate"),
+        fixture_insufficient_n=True,
+    )
+    assert agg["positive"] is False
+    assert agg["paired_test"] is None
+    assert "paired_records_unavailable:smoke.eval_nll" in agg["reasons"]
+    assert "fixture_insufficient_n_alone" in agg["reasons"]
+
+
+def test_classify_positive_promotion_never_exempt_from_fixture_clamp() -> None:
+    policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    pairs = _nll_pairs(24, shift=0.2)
+    promo = classify_positive_metrics(
+        policy,
+        role="promotion",
+        control_metrics={"held_out.structural_similarity": 0.4, "parse_rate": 1.0},
+        candidate_metrics={"held_out.structural_similarity": 0.6, "parse_rate": 1.0},
+        fixture_insufficient_n=True,
+        paired_records=pairs,
+    )
+    assert promo["positive"] is False
+    assert promo["fixture_clamp_exempt"] is False
+    assert promo["paired_test"] is None
+    assert "fixture_insufficient_n_alone" in promo["reasons"]

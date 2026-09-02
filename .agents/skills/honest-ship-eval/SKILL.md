@@ -50,6 +50,13 @@ Before asserting pass:
 | ood | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
 | rico_held | ≥ 0.10 | ≥ 0.20 | ≥ 0.15 | — | — |
 
+The `parse` column is `meaningful_program_rate` (`ship_gates.py` /
+`openui_ship_gates_v6.json`); `parse_rate < 1` on a completed suite is an I6
+failure (`docs/design/decode-invariants.md`), not a gate. Gate metrics are
+`meaningful_program_rate`, `structural_similarity`, `component_type_recall`,
+`ast_beq_rate`, `canonical_beq_rate`, `placeholder_fidelity`, `reward_score`;
+`contract_recall` is a promotion-lineage metric, not a ship gate.
+
 `component_type_recall` is the semantic-density floor (E2): the trivial/empty
 program scores ~0, so compression/decode changes cannot green gates with
 shorter-but-emptier output. Do not lower these to green a run. Document a fail

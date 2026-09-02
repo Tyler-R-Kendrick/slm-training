@@ -1,0 +1,413 @@
+{
+  "schema": "certified_eval_suites/v1",
+  "card": "P7 real data growth from the certified corpus",
+  "date": "2026-09-02",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8ccc9abca0ac2496a34d28fb4c6ef29e62eca1cf",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v9"
+    },
+    "stamped_at": "2026-09-02T04:52:01.975627+00:00"
+  },
+  "before": {
+    "smoke_growth_source": "_EXTRA_SMOKE_FIXTURES: 21 hand-written seeds, all already in use; every deficit request returned nothing",
+    "target_smoke_n_ceiling": 24,
+    "climb_train_version": "hillclimb_strict_v2 (defaults) / wf_smoke_v2 (fixture): 101 augmentations of 21 seeds, no leakage fingerprints against the certified eval families",
+    "certified_corpus_unused": {
+      "openui_verified_v1": 1682,
+      "hillclimb_strict_v2": 676
+    }
+  },
+  "corpus": {
+    "id": "openui_verified_v1",
+    "records": 1682,
+    "distinct_source_ids": 700,
+    "sources": {
+      "language_contract+aug": 551,
+      "corruption_repair": 308,
+      "language_contract": 270,
+      "rico": 134,
+      "programspec_generated+aug": 132,
+      "fixture": 105,
+      "other": 182
+    }
+  },
+  "split_policy": {
+    "schema_version": "root_family_split/v1",
+    "modulus": 100,
+    "validation_buckets": [
+      80,
+      89
+    ],
+    "test_buckets": [
+      90,
+      99
+    ],
+    "family_links": [
+      "root_parent_id",
+      "split_group_id",
+      "parent_id"
+    ],
+    "program_text_closure": true
+  },
+  "partition_history": [
+    {
+      "variant": "links_only",
+      "families": 190,
+      "admitted": {
+        "train": 1102,
+        "validation": 190,
+        "test": 125
+      },
+      "family_counts": {
+        "train": 135,
+        "validation": 25,
+        "test": 20
+      },
+      "eligible": {
+        "smoke": 172,
+        "held_out": 104
+      },
+      "decontaminated": {
+        "smoke": {
+          "openui+openui_structure": 17,
+          "prompt+openui+openui_structure": 1
+        },
+        "held_out": {
+          "openui+openui_structure": 21
+        }
+      },
+      "note": "first build: 39 eval-bucket candidates discarded because their normalized program also sat in the train bucket under another recorded family"
+    },
+    {
+      "variant": "links+raw_program_text",
+      "families": 167,
+      "admitted": {
+        "train": 1103,
+        "validation": 187,
+        "test": 127
+      },
+      "family_counts": {
+        "train": 116,
+        "validation": 22,
+        "test": 19
+      },
+      "eligible": {
+        "smoke": 172,
+        "held_out": 104
+      },
+      "decontaminated": {
+        "smoke": {
+          "openui+openui_structure": 14,
+          "prompt+openui+openui_structure": 1
+        },
+        "held_out": {
+          "openui+openui_structure": 23
+        }
+      },
+      "note": "raw-text closure recovered nothing (38 still discarded): the collisions appear only after style-literal stripping and sanitizing"
+    },
+    {
+      "variant": "links+raw+normalized_program_text (published)",
+      "families": 120,
+      "family_closure": {
+        "link_families": 190,
+        "families": 120,
+        "merged_by_program_text": 70
+      },
+      "admitted": {
+        "train": 1083,
+        "validation": 198,
+        "test": 136
+      },
+      "family_counts": {
+        "train": 84,
+        "validation": 16,
+        "test": 10
+      },
+      "eligible": {
+        "smoke": 197,
+        "held_out": 136
+      },
+      "decontaminated": {
+        "smoke": {
+          "prompt": 1
+        },
+        "held_out": {}
+      },
+      "note": "normalized closure: only one prompt-only collision remains (a correct rejection: prompt identity is not program identity)"
+    }
+  ],
+  "rejection_histogram": {
+    "OutputContractError": 90,
+    "duplicate_pair": 175
+  },
+  "rejection_by_split": {
+    "test": {
+      "duplicate_pair": 18
+    },
+    "train": {
+      "OutputContractError": 56,
+      "duplicate_pair": 137
+    },
+    "validation": {
+      "OutputContractError": 34,
+      "duplicate_pair": 20
+    }
+  },
+  "reidentified": 1106,
+  "train_bucket": {
+    "id": "openui_verified_train_v1",
+    "records": 1083,
+    "families": 84,
+    "by_source": {
+      "corruption_repair": 144,
+      "fixture": 61,
+      "language_contract": 185,
+      "language_contract+aug": 386,
+      "language_contract+design_md_contrastive": 1,
+      "language_contract+template": 3,
+      "programspec_generated": 32,
+      "programspec_generated+aug": 111,
+      "programspec_generated+design_md_contrastive": 11,
+      "programspec_generated+template": 33,
+      "rico": 72,
+      "scope_canonical_document": 23,
+      "scope_identity_document": 21
+    },
+    "with_design_md": 1083,
+    "eval_pool": {
+      "validation": {
+        "records": 198,
+        "families": 16,
+        "by_source": {
+          "corruption_repair": 30,
+          "fixture": 19,
+          "language_contract": 40,
+          "language_contract+aug": 75,
+          "programspec_generated": 5,
+          "programspec_generated+aug": 11,
+          "programspec_generated+design_md_contrastive": 1,
+          "programspec_generated+template": 3,
+          "rico": 10,
+          "scope_canonical_document": 2,
+          "scope_identity_document": 2
+        }
+      },
+      "test": {
+        "records": 136,
+        "families": 10,
+        "by_source": {
+          "corruption_repair": 23,
+          "fixture": 5,
+          "language_contract": 20,
+          "language_contract+aug": 40,
+          "programspec_generated": 1,
+          "programspec_generated+aug": 10,
+          "programspec_generated+design_md_contrastive": 1,
+          "programspec_generated+template": 3,
+          "rico": 19,
+          "scope_canonical_document": 2,
+          "scope_identity_document": 2,
+          "web_distilled": 1,
+          "web_distilled+aug": 5,
+          "web_distilled+design_md_contrastive": 1,
+          "web_distilled+template": 3
+        }
+      }
+    }
+  },
+  "suites": {
+    "e938_role_safe_all_targets_smoke96_v1": {
+      "suite_counts": {
+        "smoke": 96,
+        "held_out": 24
+      },
+      "leakage_rejected": 0,
+      "error_count": 0,
+      "smoke": {
+        "requested": 96,
+        "selected": 96,
+        "eligible": 197,
+        "excluded_existing_ids": 0,
+        "decontaminated": {
+          "prompt": 1
+        },
+        "stratification": {
+          "corruption_repair": 16,
+          "fixture": 16,
+          "language_contract": 16,
+          "language_contract+aug": 15,
+          "programspec_generated": 5,
+          "programspec_generated+aug": 11,
+          "programspec_generated+design_md_contrastive": 1,
+          "programspec_generated+template": 3,
+          "rico": 9,
+          "scope_canonical_document": 2,
+          "scope_identity_document": 2
+        },
+        "distinct_source_ids": 62,
+        "distinct_structures": 42,
+        "families": 16
+      },
+      "held_out": {
+        "requested": 24,
+        "selected": 24,
+        "eligible": 136,
+        "excluded_existing_ids": 0,
+        "decontaminated": {},
+        "stratification": {
+          "corruption_repair": 2,
+          "fixture": 2,
+          "language_contract": 2,
+          "language_contract+aug": 2,
+          "programspec_generated": 1,
+          "programspec_generated+aug": 2,
+          "programspec_generated+design_md_contrastive": 1,
+          "programspec_generated+template": 2,
+          "rico": 2,
+          "scope_canonical_document": 2,
+          "scope_identity_document": 2,
+          "web_distilled": 1,
+          "web_distilled+aug": 1,
+          "web_distilled+design_md_contrastive": 1,
+          "web_distilled+template": 1
+        },
+        "distinct_source_ids": 22,
+        "distinct_structures": 13,
+        "families": 7
+      },
+      "screening_sample_size": {
+        "suite": "smoke",
+        "suite_records": 96,
+        "alpha": "1/20",
+        "arm_wall_seconds": 70,
+        "decidability_floor_n": 6,
+        "budget_ceiling_n": 21,
+        "suite_ceiling_n": 96,
+        "power_floor_n": null,
+        "chosen_n": 6,
+        "verdict": "feasible",
+        "promotion_authority": false,
+        "power_floor": "not_declared: no measured paired SD for the screening primary; range is the exact decidability floor clamped by the ceilings"
+      }
+    },
+    "e938_role_safe_all_targets_heldout24_v1": {
+      "suite_counts": {
+        "held_out": 24
+      },
+      "leakage_rejected": 0,
+      "error_count": 0,
+      "held_out": {
+        "requested": 24,
+        "selected": 24,
+        "eligible": 136,
+        "excluded_existing_ids": 0,
+        "decontaminated": {},
+        "stratification": {
+          "corruption_repair": 2,
+          "fixture": 2,
+          "language_contract": 2,
+          "language_contract+aug": 2,
+          "programspec_generated": 1,
+          "programspec_generated+aug": 2,
+          "programspec_generated+design_md_contrastive": 1,
+          "programspec_generated+template": 2,
+          "rico": 2,
+          "scope_canonical_document": 2,
+          "scope_identity_document": 2,
+          "web_distilled": 1,
+          "web_distilled+aug": 1,
+          "web_distilled+design_md_contrastive": 1,
+          "web_distilled+template": 1
+        },
+        "distinct_source_ids": 22,
+        "distinct_structures": 13,
+        "families": 7
+      },
+      "screening_sample_size": {
+        "suite": "held_out",
+        "suite_records": 24,
+        "alpha": "1/20",
+        "arm_wall_seconds": 70,
+        "decidability_floor_n": 6,
+        "budget_ceiling_n": 21,
+        "suite_ceiling_n": 24,
+        "power_floor_n": null,
+        "chosen_n": 6,
+        "verdict": "feasible",
+        "promotion_authority": false,
+        "power_floor": "not_declared: no measured paired SD for the screening primary; range is the exact decidability floor clamped by the ceilings"
+      }
+    }
+  },
+  "builder_improvements": [
+    {
+      "code": "normalized_program_text_family_closure",
+      "evidence": "39 -> 1 decontamination discards; eligible smoke 172 -> 197, held_out 104 -> 136; link families 190 -> 120",
+      "where": "harnesses/test_data/certified.py::partition_certified_corpus"
+    },
+    {
+      "code": "single_partition_path",
+      "evidence": "the bucket-restricted fast path could label a record validation that the full path had merged into train; removed so sampler and build see one partition (cached per corpus path/size/mtime)",
+      "where": "harnesses/test_data/certified.py::_cached_partition"
+    },
+    {
+      "code": "held_out_sidecar_honesty",
+      "evidence": "a held-out-only build reported smoke_n=0 / infeasible_range_empty / must_generate; the sidecar now names the suite it measures",
+      "where": "harnesses/test_data/certified.py::write_certified_eval_sidecars"
+    },
+    {
+      "code": "deficit_decontaminates_against_policy_train_set",
+      "evidence": "extra_smoke_fixtures_for_deficit unions the climb policy defaults.train_version manifest into the decontamination set",
+      "where": "autoresearch/screening_sample_size.py::extra_smoke_fixtures_for_deficit"
+    }
+  ],
+  "synthesis_feedback_for_corpus_certification": [
+    {
+      "code": "stale_output_contract",
+      "family": "corpus_certification",
+      "evidence": {
+        "rejected": 90,
+        "gate": "symbol_only/v2"
+      },
+      "action": "re-certify openui_verified_v1 under the current symbol-only output contract; records carrying free-form string literals were certified before symbol_only/v2 and are rejected here, never patched"
+    },
+    {
+      "code": "id_collision",
+      "family": "corpus_certification",
+      "evidence": {
+        "corpus_records": 1682,
+        "distinct_source_ids": 700,
+        "reidentified": 1106
+      },
+      "action": "certification merges several source snapshots that reuse record ids for distinct prompt/program variants; namespace ids by source snapshot so consumers stop re-identifying"
+    },
+    {
+      "code": "redundant_expansion",
+      "family": "corpus_certification",
+      "evidence": {
+        "duplicate_pair": 175
+      },
+      "action": "exact prompt/program duplicates survive certification; dedupe at admission"
+    }
+  ],
+  "policy_v3": {
+    "defaults.train_version": "openui_verified_train_v1",
+    "data_intervention.fixture_train_version": "openui_verified_train_v1"
+  },
+  "leakage_test": "tests/test_harnesses/test_data/test_certified.py",
+  "commands": [
+    "python -m scripts.build_certified_train_bucket --publish",
+    "python -m scripts.build_test_data --source certified --version e938_role_safe_all_targets_smoke96_v1 --suites smoke,held_out --train-manifest src/slm_training/resources/data/train/openui_verified_train_v1/manifest.json --publish",
+    "python -m scripts.build_test_data --source certified --version e938_role_safe_all_targets_heldout24_v1 --suites held_out --certified-smoke-n 0 --train-manifest src/slm_training/resources/data/train/openui_verified_train_v1/manifest.json --publish"
+  ],
+  "run_wall_seconds": {
+    "train_bucket": 11,
+    "smoke96": 12,
+    "heldout24": 11
+  },
+  "claim_class": "fixture-demo data infrastructure; no model was trained or promoted"
+}

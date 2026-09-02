@@ -6537,3 +6537,134 @@ production change, or advanced-operator default-on authorization follows.
 Full evidence:
 [`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
 narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
+
+# S14 / N12 — LAVE stall termination (2026-09-02)
+
+Fixture-demo telemetry audit, **not a ship claim**: does the repository stall
+the way LAVE (arXiv:2602.00612) recovers from, i.e. is there a non-trivial
+`GenerationExhausted` rate behind τ consecutive proposal failures? Decode seam
+`PlaygroundService.generate(grammar_constrained=True, max_attempts=3)` under
+`collect_decode_stats()`, CPU-only, `torch.set_num_threads(2)`, every run inside
+`timeout 170`; no run timed out. The committed fixture checkpoint
+`src/slm_training/resources/checkpoints/playground_demo/last.pt` is refused by
+`require_current_output_contract` (output contract v0 vs symbol_only/v2), so the
+runs use an uncommitted scratch twin of the same architecture (787,586 params,
+60 AdamW steps on the 13 contract-eligible smoke96 records) — the twin is
+undertrained, which biases toward *more* stalls.
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| N12-A | MaskGIT lane + admit probes (`grammar_fastpath_mode=mask`), smoke n=10 / held_out n=10 / adversarial n=4, seed 0 | Measure admit rejections, consecutive-rejection runs, `GenerationExhausted` | measured: 2,132 probes, **0 rejections**, max run 0, 0 asap penalties, **0/24 exhausted**, 14/24 certified fallback; 4.16 / 5.04 / 6.38 s per record |
+| N12-B | Serving-default lane as `PlaygroundService._load_locked` pins it (compiler-tree LTR), same suites/seed | Control: the lane actually shipped | measured: 0 admit probes (lane fires none), **0/24 exhausted**, 14/24 certified fallback; 2.01 / 2.49 / 3.41 s per record |
+| N12-C | Replicates: smoke `grammar_fastpath_mode=hybrid` seed 0; smoke `mask` seed 1 | Seed/mode stability | measured: counters identical to N12-A smoke (663 probes, 0 rejections, 5 certified fallbacks, 0 exhausted); 4.52 / 5.51 s per record |
+| N12-D | Diagnostic control: `admit_fill` synthetically rejects 75 % / 100 % of probes, smoke n=10 seed 0 | Does a real stall terminate in exhaustion? | measured: 1,458 / 3,010 rejections, max consecutive run 3 / **306**, still **0/10 exhausted** — LTR repair absorbs the stall; 6.02 / 3.43 s per record |
+| N12-tau | LAVE τ-analogue `tau_admit_reject_restart` (restart the MaskGIT sweep from a cached certified prefix after τ consecutive admit-probe rejections) | Proposed lever | **preregistered, NOT implemented** — gated on finding a corpus with `admit_probe_reject_run_max >= 2` on ≥10 % of documents (n ≥ 96, two seeds); arms control/τ=4/τ=16, endpoint exhaustion rate + certified-fallback documents, family decode-recovery, I1–I6 unchanged |
+
+**Verdict:** N12's conclusion holds (the falsifier — a non-trivial exhaustion
+rate — did not fire, 0/48), but N12's rationale does not: `asap.penalize` fired
+0 times and `remask_ratio` stayed 0.0 because both are config-gated off by
+default, and the admit probe rejected 0 of 2,132 real probes (all 2,132 probe
+canvases carried a committed suffix, the HX1 over-approximation `admit_fill`
+cannot validate). Separately reported, not fixed: 28/48 documents were answered
+with a certified substitution that the serving harness recorded as success,
+because `_raise_on_substituted_generation` reads `consume_generation_evidence`,
+which the torch backend does not expose. Full evidence:
+[`iter-s14-exhaustion-rate-20260902.md`](iter-s14-exhaustion-rate-20260902.md)
+and [`.json`](iter-s14-exhaustion-rate-20260902.json).
+
+## N2 / N3 decode-authority audit (cards S6, S12; 2026-09-02)
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| S6-N2-off | `context_ablation=off` | Control arm; proves the lever is inert by default | run, byte-identical to the pre-lever decode |
+| S6-N2-zero | `context_ablation=zero` | Blank the projected context tower output at decode | run, **falsifies N2** (16.25% / 16.67% / 11.07% decision flips; ΔSS −0.0373 / −0.0458 / 0.0000) |
+| S6-N2-shuffle-batch | `context_ablation=shuffle_batch` | Each row reads another prompt's context | run, 2.13% / 2.70% / 4.44% flips but ΔSS +0.0223 / +0.0187 / 0.0000 |
+| S6-N2-shuffle-positions | `context_ablation=shuffle_positions` | Null control (cross-attention is permutation-invariant over context keys) | run, exactly 0 flips in 4,138 probed decisions — instrument sound |
+| S12-N3-topk | `parallel_unmask=topk` + `record_step_commits` | Per-step commit-authority histogram | run, step-1 forced share 27.4% / 38.2% |
+| S12-N3-confidence | `parallel_unmask=confidence` + `record_step_commits` | Per-step commit-authority histogram | run, step-1 forced share 21.3% / 31.7% |
+| S12-N3-adaptive | `parallel_unmask=adaptive` + `record_step_commits` | Per-step commit-authority histogram (production default) | run, **falsifies N3** (step-1 forced share 13.2% / 6.4%, confident 86.8% / 93.6%) |
+
+Both cards ran on the positionwise MaskGIT decode (`_generate_maskgit_one`,
+reached with `grammar_ltr_primary=False`) over smoke `n=8`, held_out `n=8` and
+adversarial `n=4`, seeds 0 and 1 for S6 and seed 0 for S12. 28 runs, **0
+timeouts**, slowest 141.0 s, every run inside `MAX_RUN_MINUTES = 3`.
+`parse_rate = 1.00` in all 28 runs (I6 holds on every diagnostic arm) and
+`meaningful_program_rate = 0.00` in all 28, so no quality claim of any kind is
+available: this is fixture-demo evidence, never a ship signal, and no
+checkpoint, gate, model-card entry, or production default changed.
+
+**N2 is falsified.** The context tower is not causally inert on legal-set
+decisions: removing it flips 11–17% of non-singleton constrained argmaxes and
+measurably moves `structural_similarity`. **N3 is falsified**, and the
+confidence-committed share dominates: forced (I2) commits are 6.4–38.2% of
+step 1 in every arm, and the "first step commits the most tokens" premise only
+holds for the `adaptive` schedule at all. Speculative (I3) commits were 0.0% of
+every step — the MaskGIT lane never consults the speculative ranker.
+
+The card's named measurement checkpoint
+`src/slm_training/resources/checkpoints/playground_demo/last.pt` **could not be
+loaded**: it carries `output_contract_version` 0 against the required
+`symbol_only/v2`, and `scripts/bootstrap_playground.py` can no longer
+regenerate it (its `DEMO_RECORDS` fail `assert_canonical_template_markers`).
+Both breakages predate these cards and make every default
+`PLAYGROUND_DEMO_CHECKPOINT` perf path unrunnable. A playground-scale
+substitute was rebuilt under the current contract for measurement only and was
+never committed; its full recipe is in the iter docs. Full evidence:
+[`iter-s6-context-ablation-20260902.md`](iter-s6-context-ablation-20260902.md),
+[`iter-s12-commit-authority-profile-20260902.md`](iter-s12-commit-authority-profile-20260902.md).
+
+## S5 / N4 — decode-only authority ladder (2026-09-02)
+
+Preregistered `ExperimentCampaignV1` campaign
+`decode_only_authority_ladder_v1` (`manifest_sha256`
+`8338a5b283f367a9eafbe2de8e25ba2ed378891cf7f7a42dbc5f6addef385425`,
+`selection_rule=best_by_primary_then_smallest`, `claim_class=fixture`), locked
+before any endpoint was read. **Fixture-demo, not a ship claim.** Two
+path-scoped ladders, scored only against their own control: M = positionwise
+MaskGIT, L = compiler LTR. 9 arms × 3 suites (smoke `n=8`, held_out `n=8` from
+`e938_role_safe_all_targets_smoke96_v2`; adversarial `n=4` from
+`e938_role_safe_all_targets_v2`) × seeds 0,1 = **54 runs, 0 timeouts**, slowest
+75.98 s, every run inside `MAX_RUN_MINUTES = 3`, CPU,
+`torch.set_num_threads(2)`. Seeds 0 and 1 gave identical numbers in all 27 arm ×
+suite pairs (greedy constrained decode is seed-invariant). The committed
+fixture checkpoint is unloadable (output contract v0 vs `symbol_only/v2`), so
+every number comes from an uncommitted scratch twin (818,210 params, 900 AdamW
+steps on the 524 records of `e937_role_safe_all_targets_v2`, final loss 4.8031).
+**No production code changed.**
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| S5-M0 | `grammar_fastpath_mode=force` (admit probes off) | Diagnostic **negative** control (`mechanism_off_arm_ids`, never a candidate — legality-weakening) | run, probe machinery proved live (0 probe canvases here vs 544/503/230 on M1); **0 flips of 196 legal-choice positions**, 20/20 byte-identical outputs, `forwards_saved_at_matched_output = 0` |
+| S5-M1 | `grammar_fastpath_mode=mask` (default left-prefix admit) | Ladder-M control | run, 2,554 admit probes, **0 rejections**, **0 `block_joint_rejections`** — `kill:m1_joint_rejection` never tripped |
+| S5-M2-b2 | `+ block_diffusion_decode`, block size 2 | Does parallel commit make the left-prefix admit reject? | run, **146 `block_joint_rejections`**, 186 admit rejections; flips 0.3924 / 0.2469 / 0.0000; ΔSS −0.0865 / +0.0427 / −0.1083 → gate-killed on smoke + adversarial |
+| S5-M2-b4 | `+ block_diffusion_decode`, block size 4 | ditto | run, **80 `block_joint_rejections`**, 184 admit rejections; flips 0.2911 / 0.2963 / 0.1111; ΔSS +0.0106 / +0.0713 / −0.1140 → gate-killed on adversarial |
+| S5-M2-b8 | `+ block_diffusion_decode`, block size 8 | ditto | run, **162 `block_joint_rejections`**, 240 admit rejections; flips 0.2911 / 0.2469 / 0.1667; ΔSS +0.0271 / +0.0437 / −0.1412 → gate-killed on adversarial; the one 0-rejection cell (adversarial) carried 14 `block_joint_unknowns` (node-budget fail-open, not a clean canvas) |
+| S5-L1 | `compiler_decode_mode=tree`, `speculative_rank=off` | Ladder-L control (singleton-only) | run, `speculative_rank_evaluations = 0`; forwards 64 / 64 / 32, forced_tokens 56 / 56 / 28 |
+| S5-L2-m0.5 | `speculative_rank=ngram`, margin 0.5 | Deterministic ranking over the forward-calculated symbol table | run, flips 0.2222 all suites; commit rate 136/168; **Δmeaningful +0.500 / +0.375 / +0.500**; ΔSS −0.0118 / +0.0848 / +0.0566 → gate-killed on smoke |
+| S5-L2-m1.0 | `speculative_rank=ngram`, margin 1.0 | ditto | run, flips 0.2500 / 0.2500 / 0.2778; commit rate 150/242; ΔSS **−0.1233** / −0.0539 / +0.0631 → gate-killed on smoke + held_out; costs 44 % more forwards than the control |
+| S5-L2-m2.0 | `speculative_rank=ngram`, margin 2.0 | ditto | run, flips 0.2222 all suites; commit rate 68/154; ΔSS −0.0053 / +0.0796 / +0.0390 → gate-killed on smoke |
+
+**N4 holds — the falsifier did not fire.** Under `block_diffusion_decode=True`
+the exact `multi_region_support` joint check rejected **388 steps** across block
+sizes {2,4,8} (146 / 80 / 162) and `admit_fill` rejected **610 probes**, where
+the same machinery rejected **0 of 2,554** probes on sequential positionwise
+commits. The mechanism is visible in the probe shape: the share of probe
+canvases carrying a committed suffix (the span `admit_fill` structurally cannot
+validate, S14's explanation for the sequential 0-rate) falls from **94.5 %**
+under M1 to **66.0 %** under block-8 on smoke — block scheduling manufactures
+the clean left prefixes that can actually reject.
+
+**No arm is promotable and none was eligible to be.** Every candidate is
+decision-bearing (flip rates 0.11–0.39 on M, 0.22–0.28 on L, all far above the
+locked 0.01 threshold), but `structural_similarity` regressed against the arm's
+own ladder control on 9 of 18 candidate cells, tripping `kill:gate_regression`.
+`placeholder_fidelity` is **0.00 on every arm of both ladders including both
+controls**, so its uniformly 0.0000 delta is **uninformative, not a pass**;
+`meaningful_program_rate` is likewise 0.00 across the whole of ladder M
+(uninformative there), but it *does* have headroom on the compiler-LTR lane —
+`l2_ngram_margin_0p5` moves it to 0.50 / 0.375 / 0.50 off a 0.00 control, so
+those positive deltas are real signal while a zero delta there still is not.
+Full evidence:
+[`iter-s5-decode-authority-ladder-20260902.md`](iter-s5-decode-authority-ladder-20260902.md)
+and [`.json`](iter-s5-decode-authority-ladder-20260902.json); manifest
+[`campaign.v1.json`](../../src/slm_training/resources/experiments/decode_only_authority_ladder/campaign.v1.json).

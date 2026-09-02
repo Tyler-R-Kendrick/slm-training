@@ -1,0 +1,99 @@
+{
+  "schema": "synthesis_feedback_actions/v1",
+  "version": "openui_verified_train_v1",
+  "recorded_at": "2026-09-02T12:00:00Z",
+  "note": "Root-family split of a certified corpus; nothing was synthesized. Each recommendation names an admission-time action, and the build already performs it for this dataset -- verified by re-measuring the admitted records, not by asserting it. Receipts are bound to the split-policy plan hash and the dataset manifest hash. No gate, threshold or output contract was weakened. These receipts clear SFT for openui_verified_train_v1 only; the upstream fixes to openui_verified_v1 remain open against that corpus's own feedback artifact.",
+  "actions": [
+    {
+      "code": "stale_output_contract",
+      "target_kind": "corpus",
+      "target": "openui_verified_v1",
+      "note": "Audited quality_report.json and rejected.jsonl: the split build rejects every record that fails the current symbol-only output contract at admission and never patches one, which is exactly the action the recommendation prescribes. The 90 OutputContractError rejections are visible in rejected.jsonl and the admitted bucket contains none. No gate or threshold moved. Re-certifying the parent corpus openui_verified_v1 under symbol_only/v2 stays open against that corpus's own feedback artifact; this receipt clears the recommendation for openui_verified_train_v1 only.",
+      "receipt": {
+        "schema_version": "synthesis_feedback_receipt/v1",
+        "prior_feedback_hash": "128f0e7217a12696dbb6dbd1b02af09d77a362c92ca9cbe9115ef8e994d22150",
+        "action_code": "stale_output_contract",
+        "synthesis_plan_hash": "6007d6cd54f5c289a5db31462d8d4e12e8d226af46510afaa8532f0332ecee0c",
+        "dataset_manifest_hash": "72f356f206ed33a86e1bdccee424c107cde7503604c1d06d68ad83985bc81e60",
+        "before": {
+          "corpus_records": 1682,
+          "gate": "symbol_only/v2",
+          "stale_contract_records": 90
+        },
+        "after": {
+          "admitted_train": 1083,
+          "stale_contract_admitted": 0,
+          "rejected_output_contract": 90
+        },
+        "disposition": "acted_at_admission",
+        "version_stamp": {
+          "schema": "version_stamp/v1",
+          "components": {
+            "data.test_build": "v9"
+          }
+        }
+      }
+    },
+    {
+      "code": "id_collision",
+      "target_kind": "corpus",
+      "target": "openui_verified_v1",
+      "note": "Measured on both corpora: the parent binds 303 ids to more than one distinct prompt/program pair (1,682 records, 700 distinct ids, maximum multiplicity 7). The split build namespaces every admitted id with a content digest (train_auth_01 becomes train_auth_01__a1f9302e), which is the namespacing the recommendation prescribes. The admitted bucket holds 1,083 records under 1,083 distinct ids, so no consumer can re-identify a record. Namespacing the parent corpus stays open against that corpus.",
+      "receipt": {
+        "schema_version": "synthesis_feedback_receipt/v1",
+        "prior_feedback_hash": "128f0e7217a12696dbb6dbd1b02af09d77a362c92ca9cbe9115ef8e994d22150",
+        "action_code": "id_collision",
+        "synthesis_plan_hash": "6007d6cd54f5c289a5db31462d8d4e12e8d226af46510afaa8532f0332ecee0c",
+        "dataset_manifest_hash": "72f356f206ed33a86e1bdccee424c107cde7503604c1d06d68ad83985bc81e60",
+        "before": {
+          "corpus_records": 1682,
+          "distinct_source_ids": 700,
+          "parent_ids_bound_to_multiple_programs": 303,
+          "reidentified": 1106
+        },
+        "after": {
+          "admitted_train": 1083,
+          "distinct_admitted_ids": 1083,
+          "colliding_admitted_ids": 0,
+          "id_scheme": "root_id__content_digest8"
+        },
+        "disposition": "acted_at_admission",
+        "version_stamp": {
+          "schema": "version_stamp/v1",
+          "components": {
+            "data.test_build": "v9"
+          }
+        }
+      }
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "corpus",
+      "target": "openui_verified_v1",
+      "note": "Audited quality_report.json and rejected.jsonl: 175 exact prompt/program duplicate pairs are rejected at admission, which is the dedupe-at-admission the recommendation prescribes. The admitted bucket contains 0 exact duplicate pairs, measured over all 1,083 records. No dedup threshold was loosened. Deduping inside the parent corpus stays open against that corpus.",
+      "receipt": {
+        "schema_version": "synthesis_feedback_receipt/v1",
+        "prior_feedback_hash": "128f0e7217a12696dbb6dbd1b02af09d77a362c92ca9cbe9115ef8e994d22150",
+        "action_code": "redundant_expansion",
+        "synthesis_plan_hash": "6007d6cd54f5c289a5db31462d8d4e12e8d226af46510afaa8532f0332ecee0c",
+        "dataset_manifest_hash": "72f356f206ed33a86e1bdccee424c107cde7503604c1d06d68ad83985bc81e60",
+        "before": {
+          "duplicate_pair_candidates": 175
+        },
+        "after": {
+          "admitted_train": 1083,
+          "exact_duplicate_pairs_admitted": 0,
+          "rejected_duplicate_pair": 175
+        },
+        "disposition": "acted_at_admission",
+        "version_stamp": {
+          "schema": "version_stamp/v1",
+          "components": {
+            "data.test_build": "v9"
+          }
+        }
+      }
+    }
+  ],
+  "waivers": []
+}

@@ -54,10 +54,15 @@ _LEGACY_DIGEST_DEFAULTS = {
     "replicate_seed_floor": None,
     "power_feasibility": None,
     "selection_rule": None,
+    "measurement_chunk_plan": None,
 }
 SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST = "best_by_primary_then_smallest"
 _SELECTION_RULES = frozenset({SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST})
 _POWER_FEASIBILITY_SCHEMA = "power_feasibility/v1"
+# Locked chunk plan for a promotion measurement that cannot fit one bounded
+# run: records per run and the number of resumable runs are fixed here
+# before any outcome is visible (docs/design/chunked-promotion-eval-20260902.md).
+PROMOTION_CHUNK_PLAN_SCHEMA = "promotion_chunk_plan/v1"
 
 
 def _unique(values: tuple[str, ...], label: str) -> None:
@@ -195,6 +200,11 @@ class ExperimentCampaignV1(StrictModel):
     power_feasibility: dict[str, Any] | None = None
     # Static screening selection (locked before outcomes). None = pairwise default.
     selection_rule: str | None = None
+    # Pre-run chunk plan for a promotion measurement wider than one bounded
+    # run: records decoded per run and the locked number of runs
+    # (``promotion_chunk_plan/v1``). Exhausting the run budget is measurement
+    # incomplete, never a model verdict.
+    measurement_chunk_plan: dict[str, Any] | None = None
 
     @field_validator("seeds", mode="before")
     @classmethod
@@ -228,6 +238,46 @@ class ExperimentCampaignV1(StrictModel):
                     raise ValueError(
                         f"power_feasibility.{key} must be a non-empty string"
                     )
+        if self.measurement_chunk_plan is not None:
+            plan = self.measurement_chunk_plan
+            if plan.get("schema") != PROMOTION_CHUNK_PLAN_SCHEMA:
+                raise ValueError(
+                    "measurement_chunk_plan.schema must be "
+                    f"{PROMOTION_CHUNK_PLAN_SCHEMA!r}"
+                )
+            suites = plan.get("suites")
+            if (
+                not isinstance(suites, (list, tuple))
+                or not suites
+                or any(not isinstance(item, str) or not item for item in suites)
+            ):
+                raise ValueError(
+                    "measurement_chunk_plan.suites must be a non-empty list of names"
+                )
+            for key in ("suite_n", "total_record_n", "records_per_run", "run_n"):
+                value = plan.get(key)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                    raise ValueError(
+                        f"measurement_chunk_plan.{key} must be a positive integer"
+                    )
+            for key in ("per_record_seconds", "chunk_wall_seconds"):
+                value = plan.get(key)
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(float(value))
+                    or float(value) <= 0
+                ):
+                    raise ValueError(
+                        f"measurement_chunk_plan.{key} must be a positive number"
+                    )
+            if int(plan["records_per_run"]) * int(plan["run_n"]) < int(
+                plan["total_record_n"]
+            ):
+                raise ValueError(
+                    "measurement_chunk_plan.run_n x records_per_run must cover "
+                    "total_record_n"
+                )
         if bool(self.replay_of_manifest_sha256) != bool(self.replay_reason):
             raise ValueError(
                 "replay_of_manifest_sha256 and replay_reason must be declared together"

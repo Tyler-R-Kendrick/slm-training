@@ -50,6 +50,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignControlV1,
     CampaignEndpointV1,
     CampaignGateV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
     campaign_manifest_sha256,
@@ -156,6 +157,7 @@ class Sie006CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.protocol_seed,),
             budget=CampaignBudget(
                 max_experiments=len(ARM_IDS),
@@ -165,8 +167,7 @@ class Sie006CampaignV1:
                 "An arm missing external or human evidence is reported "
                 "blocked, never scored as if the evidence were present "
                 "(inherited from VCE-010's own protocol).",
-                "Every record is generated in-process; no subprocess "
-                "timeout applies.",
+                "Every record is generated in-process; no subprocess timeout applies.",
                 "No GPU / model forward; mock-judge/synthetic-rater "
                 "fixture proxy only.",
             ),
@@ -263,7 +264,11 @@ def run_campaign(campaign: Sie006CampaignV1, *, root: Path) -> dict[str, Any]:
     )
 
     reason_family_confusion = next(
-        (arm.get("reason_family_confusion") for arm in vce010_result.get("arms", []) if arm.get("arm") == "full_triple_judge"),
+        (
+            arm.get("reason_family_confusion")
+            for arm in vce010_result.get("arms", [])
+            if arm.get("arm") == "full_triple_judge"
+        ),
         None,
     )
 
@@ -288,7 +293,9 @@ def run_campaign(campaign: Sie006CampaignV1, *, root: Path) -> dict[str, Any]:
         "killed_by_catalogue_gate": killed_by_catalogue_gate,
         "independence_ok": vce010_result.get("independence_ok"),
         "ambiguous_pair_ids": vce010_result.get("ambiguous_pair_ids"),
-        "external_human_calibration_error": vce010_result.get("external_human_calibration_error"),
+        "external_human_calibration_error": vce010_result.get(
+            "external_human_calibration_error"
+        ),
         "admission_divergence_rate": vce010_result.get("admission_divergence_rate"),
         "reason_family_confusion": reason_family_confusion,
         "authorized": authorized,

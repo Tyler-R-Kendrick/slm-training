@@ -1971,6 +1971,29 @@ def _build_openui_completion_forest_direct(
 
     terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals, use_cache=True) or set()
+    # The sorted terminal tuple and each admitted candidate's decision kind
+    # are pure functions of this build's inputs (tokenizer, prefix, accept
+    # set, schema, interned semantic state).  Compute each once per build
+    # instead of once per admitted path: identical labels, no authority
+    # change (docs/design/compiler-decode-cost-20260902.md).
+    sorted_terminals = tuple(sorted(str(term) for term in terminals))
+    decision_kind_memo: dict[int, str] = {}
+
+    def _path_decision_kind(candidate: int) -> str:
+        kind = decision_kind_memo.get(candidate)
+        if kind is None:
+            kind = _decision_kind(
+                tokenizer,
+                candidate,
+                prefix_ids,
+                sorted_terminals,
+                engine,
+                schema,
+                semantic_state=sstate,
+            )
+            decision_kind_memo[candidate] = kind
+        return kind
+
     kind_ids = getattr(tokenizer, "kind_ids", None)
     try:
         component_ids = (
@@ -2250,6 +2273,23 @@ def _build_openui_completion_forest_direct(
                 if schema_slot in TEMPLATIZABLE_PROPS:
                     if slot_contract:
                         candidates &= contract_ids | null_ids
+                    else:
+                        # Output contract v2 / placeholder policy: a content
+                        # prop is a placeholder symbol, never a closed enum
+                        # atom, a structural id, or a byte-framed string.
+                        # Without an inventory the symbol *choice* stays with
+                        # the model; the symbol *class* does not. Tokenizers
+                        # without a symbol class (no ``kind_ids``) keep the
+                        # broad STRING set so their placeholder spelling path
+                        # (``_placeholder_interior_allowed_ids``) still works.
+                        kind_ids = getattr(tokenizer, "kind_ids", None)
+                        if callable(kind_ids):
+                            from slm_training.models.dsl_tokenizer import TokenKind
+
+                            symbol_ids = {
+                                int(token_id) for token_id in kind_ids(TokenKind.SYM)
+                            }
+                            candidates &= symbol_ids | null_ids
                 elif schema_slot in STRUCTURAL_ID_PROPS:
                     candidates &= structural_ids | null_ids
                     active = _active_call_view()
@@ -2519,9 +2559,17 @@ def _build_openui_completion_forest_direct(
                 candidates -= bind_ids
             # The selected 0.2.x layout contract excludes state/effect actions.
             candidates -= state_ids | builtin_ids
-            if candidates & sym_ids and not (
-                slot_contract and schema_type == "string"
-            ):
+            # Placeholder symbols are the only admissible class for a
+            # string-typed content prop (output contract v2), with or without
+            # an inventory; the string-role stage above already narrowed them
+            # to the contract inventory when one exists. Elsewhere a symbol
+            # is admissible only under a contract on a string slot.
+            from slm_training.dsl.placeholders import TEMPLATIZABLE_PROPS
+
+            symbol_slot = schema_type == "string" and (
+                bool(slot_contract) or schema_slot in TEMPLATIZABLE_PROPS
+            )
+            if candidates & sym_ids and not symbol_slot:
                 candidates -= sym_ids
         except (TimeoutError, KeyboardInterrupt):
             raise
@@ -2608,18 +2656,7 @@ def _build_openui_completion_forest_direct(
                     )
                     continue
                 paths.append(
-                    CompletionPath(
-                        tuple(memo_drafted),
-                        _decision_kind(
-                            tokenizer,
-                            candidate,
-                            prefix_ids,
-                            tuple(sorted(str(term) for term in terminals)),
-                            engine,
-                            schema,
-                            semantic_state=sstate,
-                        ),
-                    )
+                    CompletionPath(tuple(memo_drafted), _path_decision_kind(candidate))
                 )
                 if evidence is not None:
                     evidence.append(
@@ -2717,20 +2754,7 @@ def _build_openui_completion_forest_direct(
             branch_synced = True
         if memo_key is not None:
             branch_memo[memo_key] = ("ok", tuple(drafted))
-        paths.append(
-            CompletionPath(
-                tuple(drafted),
-                _decision_kind(
-                    tokenizer,
-                    candidate,
-                    prefix_ids,
-                    tuple(sorted(str(term) for term in terminals)),
-                    engine,
-                    schema,
-                    semantic_state=sstate,
-                ),
-            )
-        )
+        paths.append(CompletionPath(tuple(drafted), _path_decision_kind(candidate)))
         if evidence is not None:
             evidence.append(
                 ConstraintEvidence(

@@ -1,0 +1,364 @@
+{
+  "schema": "decode_only_authority_ladder_campaign/v1",
+  "campaign_id": "decode_only_authority_ladder_v1",
+  "status": "locked",
+  "status_note": "Locked before any campaign endpoint was read. Wiring probes on n=2 smoke records preceded the lock and are disclosed in the results doc; they confirmed each lever routes and produced no endpoint number.",
+  "design_doc": "docs/design/iter-s5-decode-authority-ladder-20260902.md",
+  "manifest_sha256": "8338a5b283f367a9eafbe2de8e25ba2ed378891cf7f7a42dbc5f6addef385425",
+  "ladders": {
+    "M": {
+      "path": "positionwise MaskGIT (_generate_maskgit_one)",
+      "control": "m1_left_prefix_admit",
+      "mechanism_off": "m0_admit_probes_off",
+      "candidates": [
+        "m2_block_diffusion_b2",
+        "m2_block_diffusion_b4",
+        "m2_block_diffusion_b8"
+      ]
+    },
+    "L": {
+      "path": "compiler LTR (compiler_decode_mode='tree')",
+      "control": "l1_singleton_only",
+      "candidates": [
+        "l2_ngram_margin_0p5",
+        "l2_ngram_margin_1p0",
+        "l2_ngram_margin_2p0"
+      ]
+    }
+  },
+  "suites": {
+    "smoke": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke96_v2/suites/smoke/records.jsonl",
+    "held_out": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke96_v2/suites/held_out/records.jsonl",
+    "adversarial": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2/suites/adversarial/records.jsonl"
+  },
+  "arm_configs": {
+    "m0_admit_probes_off": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "compiler_decode_mode": "off",
+      "unmask_mode": "positions",
+      "gen_steps": 8,
+      "grammar_fastpath_mode": "force"
+    },
+    "m1_left_prefix_admit": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "compiler_decode_mode": "off",
+      "unmask_mode": "positions",
+      "gen_steps": 8,
+      "grammar_fastpath_mode": "mask"
+    },
+    "m2_block_diffusion_b2": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "compiler_decode_mode": "off",
+      "unmask_mode": "positions",
+      "gen_steps": 8,
+      "grammar_fastpath_mode": "mask",
+      "block_diffusion_decode": true,
+      "block_diffusion_block_size": 2
+    },
+    "m2_block_diffusion_b4": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "compiler_decode_mode": "off",
+      "unmask_mode": "positions",
+      "gen_steps": 8,
+      "grammar_fastpath_mode": "mask",
+      "block_diffusion_decode": true,
+      "block_diffusion_block_size": 4
+    },
+    "m2_block_diffusion_b8": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "compiler_decode_mode": "off",
+      "unmask_mode": "positions",
+      "gen_steps": 8,
+      "grammar_fastpath_mode": "mask",
+      "block_diffusion_decode": true,
+      "block_diffusion_block_size": 8
+    },
+    "l1_singleton_only": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": true,
+      "compiler_decode_mode": "tree",
+      "speculative_rank": "off"
+    },
+    "l2_ngram_margin_0p5": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": true,
+      "compiler_decode_mode": "tree",
+      "speculative_rank": "ngram",
+      "speculative_rank_margin": 0.5
+    },
+    "l2_ngram_margin_1p0": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": true,
+      "compiler_decode_mode": "tree",
+      "speculative_rank": "ngram",
+      "speculative_rank_margin": 1.0
+    },
+    "l2_ngram_margin_2p0": {
+      "grammar_constrained": true,
+      "grammar_ltr_primary": true,
+      "compiler_decode_mode": "tree",
+      "speculative_rank": "ngram",
+      "speculative_rank_margin": 2.0
+    }
+  },
+  "arm_config_sha256": {
+    "m0_admit_probes_off": "0e7ba25577bbf300bbb6b73365f43742833cd267434023da19617ad9f761ab42",
+    "m1_left_prefix_admit": "52040c426e4df9d36044194cfde15f88b90653b5340703c0c4d1da37c4314ae1",
+    "m2_block_diffusion_b2": "d177b06803697a087b9e2958c181a3ba0335f840ac2507ff21ff127b0766b1f0",
+    "m2_block_diffusion_b4": "b46489d823565eed7f3cb27fdb38bba5411af421778da928a4298710ca39df99",
+    "m2_block_diffusion_b8": "b639231c772e3e35a8b049970291487edb29b503dbbbf52a38233e2dcc48a087",
+    "l1_singleton_only": "6595f1ccf2267ea285d38938fab6425d46af151664b7773806da4533bfb422d9",
+    "l2_ngram_margin_0p5": "6cd6113fee688896b5ba7bc29abfed3caea948484830e72dc4eb9e0fa86d83de",
+    "l2_ngram_margin_1p0": "7078fa3784f6bbdee1a04bdd26f6fc98a3f97f12459b0803884ac19990b34114",
+    "l2_ngram_margin_2p0": "531b51ff8816b6cbce3ed5d98655967edf169dae77b37321f83bd37a381fd1f4"
+  },
+  "validate_command": "PYTHONPATH=$PWD/src python -c \"import json; from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1, CampaignLockV1, campaign_manifest_sha256; d=json.load(open('src/slm_training/resources/experiments/decode_only_authority_ladder/campaign.v1.json')); m=ExperimentCampaignV1.model_validate(d['manifest']); assert campaign_manifest_sha256(m)==d['manifest_sha256']; CampaignLockV1(manifest_sha256=d['manifest_sha256'], manifest=m); print('ok', d['manifest_sha256'])\"",
+  "manifest": {
+    "schema_version": "ExperimentCampaignV1",
+    "campaign_id": "decode_only_authority_ladder_v1",
+    "experiment_id": "decode_only_authority_ladder",
+    "hypothesis": "N4: under block_diffusion_decode=True the MaskGIT left-prefix admit_fill probe stops being a pure over-approximation -- parallel in-block commits put a committed token behind the probed hole often enough that the exact multi_region_support joint check rejects at least one step (block_joint_rejections > 0), unlike the 0/60 false-admit rate measured on sequential positionwise commits. Two path-scoped ladders test decode authority: ladder M (MaskGIT positionwise: admit off / left-prefix admit / block diffusion at block sizes 2,4,8) and ladder L (compiler LTR: singleton-only / deterministic n-gram speculative ranking at margins 0.5, 1.0, 2.0). Each candidate is measured against its own ladder's control; the ladders are disjoint decode paths and are never pooled.",
+    "decision": "N4_holds iff block_joint_rejections > 0 for at least one of m2_block_diffusion_b2/b4/b8 on at least one suite with no gate regression; N4_falsified iff block_joint_rejections == 0 across all three block sizes, all suites and both seeds. Separately, an authority-ladder arm is 'decision-bearing' iff its legal-choice flip rate against its own ladder control clears 0.01 with no gate regression, and 'forward-saving' iff it saves forwards at matched output. Fixture-scale diagnostic only: no promotion, no checkpoint, no ship-gate, no default change is implied or permitted by any outcome of this campaign.",
+    "endpoints": [
+      {
+        "endpoint_id": "legal_choice_flip_rate",
+        "metric": "per-position flips against the arm's OWN ladder control, restricted to legal-choice positions: index-aligned positions t of the emitted canvas where force_emit_token_id(tokenizer, control_ids[:t]) is None (the grammar does not already prove the token). flips / legal_choice_positions, pooled over the suite.",
+        "role": "primary",
+        "direction": "increase",
+        "minimum_effect": 0.01
+      },
+      {
+        "endpoint_id": "forwards_saved_at_matched_output",
+        "metric": "control forwards_count minus arm forwards_count, over the records whose emitted program is byte-identical to the control's (matched output); reported with the matched-record count.",
+        "role": "secondary",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      },
+      {
+        "endpoint_id": "block_joint_rejections",
+        "metric": "DecodeStats.block_joint_rejections summed over the suite: exact multi_region_support verdicts that proved a parallel-commit canvas impossible and reverted the step.",
+        "role": "secondary",
+        "direction": "increase",
+        "minimum_effect": 1.0
+      },
+      {
+        "endpoint_id": "meaningful_program_rate_delta",
+        "metric": "arm meaningful_program_rate minus its ladder control's",
+        "role": "secondary",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      },
+      {
+        "endpoint_id": "structural_similarity_delta",
+        "metric": "arm structural_similarity minus its ladder control's",
+        "role": "secondary",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      },
+      {
+        "endpoint_id": "placeholder_fidelity_delta",
+        "metric": "arm placeholder_fidelity minus its ladder control's",
+        "role": "secondary",
+        "direction": "increase",
+        "minimum_effect": 0.0
+      }
+    ],
+    "arms": [
+      {
+        "arm_id": "m0_admit_probes_off",
+        "role": "control",
+        "config_sha256": "0e7ba25577bbf300bbb6b73365f43742833cd267434023da19617ad9f761ab42"
+      },
+      {
+        "arm_id": "m1_left_prefix_admit",
+        "role": "control",
+        "config_sha256": "52040c426e4df9d36044194cfde15f88b90653b5340703c0c4d1da37c4314ae1"
+      },
+      {
+        "arm_id": "m2_block_diffusion_b2",
+        "role": "candidate",
+        "config_sha256": "d177b06803697a087b9e2958c181a3ba0335f840ac2507ff21ff127b0766b1f0"
+      },
+      {
+        "arm_id": "m2_block_diffusion_b4",
+        "role": "candidate",
+        "config_sha256": "b46489d823565eed7f3cb27fdb38bba5411af421778da928a4298710ca39df99"
+      },
+      {
+        "arm_id": "m2_block_diffusion_b8",
+        "role": "candidate",
+        "config_sha256": "b639231c772e3e35a8b049970291487edb29b503dbbbf52a38233e2dcc48a087"
+      },
+      {
+        "arm_id": "l1_singleton_only",
+        "role": "control",
+        "config_sha256": "6595f1ccf2267ea285d38938fab6425d46af151664b7773806da4533bfb422d9"
+      },
+      {
+        "arm_id": "l2_ngram_margin_0p5",
+        "role": "candidate",
+        "config_sha256": "6cd6113fee688896b5ba7bc29abfed3caea948484830e72dc4eb9e0fa86d83de"
+      },
+      {
+        "arm_id": "l2_ngram_margin_1p0",
+        "role": "candidate",
+        "config_sha256": "7078fa3784f6bbdee1a04bdd26f6fc98a3f97f12459b0803884ac19990b34114"
+      },
+      {
+        "arm_id": "l2_ngram_margin_2p0",
+        "role": "candidate",
+        "config_sha256": "531b51ff8816b6cbce3ed5d98655967edf169dae77b37321f83bd37a381fd1f4"
+      }
+    ],
+    "seeds": [
+      0,
+      1
+    ],
+    "budget": {
+      "max_experiments": 60,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 3.0
+    },
+    "stopping_rules": [
+      "Every arm x suite x seed decode runs under `timeout 170` on CPU with torch.set_num_threads(2); MAX_RUN_MINUTES=3 (src/slm_training/levers.py). A run that times out or is killed is recorded as an explicit timeout row and is never evidence.",
+      "Stop after all 9 arms x 3 suites x 2 seeds, or earlier when every kill criterion for an arm has tripped.",
+      "No endpoint is read before this manifest's CampaignLockV1 digest is recorded; any post-lock edit is a CampaignDeviationV1."
+    ],
+    "controls": [
+      {
+        "control_id": "m0_admit_probes_off",
+        "description": "Diagnostic NEGATIVE control for ladder M: grammar_fastpath_mode='force' turns the admit probe off entirely. This is a legality-weakening configuration, so it is listed in mechanism_off_arm_ids and is never a promotion candidate. It exists to prove the probe machinery is live: admit_probe_canvases must be 0 on this arm and > 0 on m1_left_prefix_admit, otherwise the whole ladder M measurement is void.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "m1_left_prefix_admit",
+        "description": "Positive matched control for ladder M: the default left-prefix admit_fill on the positionwise MaskGIT path. Every ladder-M candidate's flip rate, forwards delta and gate deltas are computed against this arm and never against a ladder-L arm.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "l1_singleton_only",
+        "description": "Positive matched control for ladder L: compiler LTR (compiler_decode_mode='tree') with speculative_rank='off', so only the deterministic singleton bypass commits without a forward. Every ladder-L candidate is compared against this arm only.",
+        "kind": "positive"
+      },
+      {
+        "control_id": "identical_weights_and_suite",
+        "description": "Quality control: every arm decodes the same records with the same scratch weights, the same tokenizers and the same seed; only the decode-time config differs. No arm trains, and no arm adds a parameter, so EG_params is not in play for any arm of this campaign.",
+        "kind": "quality"
+      }
+    ],
+    "negative_controls": [
+      "m0_admit_probes_off"
+    ],
+    "multiplicity_families": [
+      {
+        "family_id": "authority_ladder_confirmatory",
+        "hypothesis_ids": [
+          "legal_choice_flip_rate",
+          "block_joint_rejections"
+        ],
+        "alpha": 0.05,
+        "method": "holm"
+      }
+    ],
+    "promotion_gates": [
+      {
+        "gate_id": "g_meaningful_program_rate_nonregression",
+        "endpoint_id": "meaningful_program_rate_delta",
+        "operator": "ge",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "g_structural_similarity_nonregression",
+        "endpoint_id": "structural_similarity_delta",
+        "operator": "ge",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "g_placeholder_fidelity_nonregression",
+        "endpoint_id": "placeholder_fidelity_delta",
+        "operator": "ge",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "g_decision_bearing_flip_rate",
+        "endpoint_id": "legal_choice_flip_rate",
+        "operator": "ge",
+        "threshold": 0.01
+      }
+    ],
+    "rollback_gates": [
+      {
+        "gate_id": "r_meaningful_program_rate_regression",
+        "endpoint_id": "meaningful_program_rate_delta",
+        "operator": "lt",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "r_structural_similarity_regression",
+        "endpoint_id": "structural_similarity_delta",
+        "operator": "lt",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "r_placeholder_fidelity_regression",
+        "endpoint_id": "placeholder_fidelity_delta",
+        "operator": "lt",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "r_inert_lever",
+        "endpoint_id": "legal_choice_flip_rate",
+        "operator": "lt",
+        "threshold": 0.01
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "seed_result",
+        "minimum_count": 54
+      },
+      {
+        "kind": "endpoint_result",
+        "minimum_count": 6
+      }
+    ],
+    "formal_obligations": [],
+    "claim_class": "fixture",
+    "source_commit": "d64d65001daf169f93fef13848e46f92fc980126",
+    "source_dirty": false,
+    "author": "S5",
+    "created_at": "2026-09-02T00:00:00Z",
+    "requires_rl": false,
+    "rl_readiness_report_sha256": null,
+    "rl_evaluation_sha256": null,
+    "locked_eval_manifest_sha256": null,
+    "metric_expectations_sha256": null,
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "mechanism_off_arm_ids": [
+      "m0_admit_probes_off"
+    ],
+    "executable_kill_criteria": [
+      "kill:gate_regression -- any arm whose meaningful_program_rate_delta, structural_similarity_delta or placeholder_fidelity_delta against its own ladder control is < 0 on any suite is killed for that suite; a flip that lowers a gate closes the arm.",
+      "kill:m1_joint_rejection -- any block_joint_rejections > 0 recorded under m1_left_prefix_admit semantics (block_diffusion_decode=False, no hybrid span lane) kills the campaign: the joint check would be firing on sequential commits and the instrument, not the lever, is being measured.",
+      "kill:timeout -- any arm x suite x seed decode that exceeds `timeout 170` is recorded as a timeout row and yields no number for that cell; a timed-out run is never evidence.",
+      "kill:probe_not_live -- admit_probe_canvases must be 0 on m0_admit_probes_off and > 0 on m1_left_prefix_admit; otherwise ladder M is void.",
+      "kill:speculation_not_live -- speculative_rank_evaluations must be 0 on l1_singleton_only and > 0 on at least one l2_* arm; otherwise ladder L is void.",
+      "kill:cross_ladder_comparison -- comparing any ladder-M arm against a ladder-L arm voids the result; the two decode paths are disjoint."
+    ],
+    "power_feasibility": null,
+    "selection_rule": "best_by_primary_then_smallest",
+    "measurement_chunk_plan": null
+  }
+}

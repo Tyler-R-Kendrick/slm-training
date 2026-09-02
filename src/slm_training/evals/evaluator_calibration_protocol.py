@@ -51,6 +51,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignControlV1,
     CampaignEndpointV1,
     CampaignGateV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
 )
@@ -77,7 +78,13 @@ ARM_IDS: tuple[str, ...] = (
     "human_only_missing_external",
     "full_triple_judge",
 )
-REASON_FAMILIES: tuple[str, ...] = ("positive", "content", "topology", "binding", "contract")
+REASON_FAMILIES: tuple[str, ...] = (
+    "positive",
+    "content",
+    "topology",
+    "binding",
+    "contract",
+)
 
 __all__ = [
     "ARM_IDS",
@@ -165,6 +172,7 @@ class EvaluatorCalibrationProtocolV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.seed,),
             budget=CampaignBudget(
                 max_experiments=self.source_count * len(ARM_IDS),
@@ -354,9 +362,12 @@ def _external_arm_rows(
     start = time.perf_counter()
     config = _external_config()
     rng = random.Random(f"{protocol.protocol_id}:external:{protocol.seed}")
-    family_by_left = {row["positive_openui"]: row["stratum"] for row in deterministic_rows}
+    family_by_left = {
+        row["positive_openui"]: row["stratum"] for row in deterministic_rows
+    }
     adapter = ExternalJudgeAdapter(
-        config, _mock_transport(rng, correct_rate=0.8, family_by_left_openui=family_by_left)
+        config,
+        _mock_transport(rng, correct_rate=0.8, family_by_left_openui=family_by_left),
     )
     rows = []
     for det_row in deterministic_rows:
@@ -440,13 +451,19 @@ def _human_arm_rows(
     )
     blind_pairs = [
         json.loads(line)
-        for line in (output_dir / "blind_pairs.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in (output_dir / "blind_pairs.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
         if line.strip()
     ]
-    positive_sha_by_pair = {row["pair_id"]: row["positive_sha256"] for row in deterministic_rows}
+    positive_sha_by_pair = {
+        row["pair_id"]: row["positive_sha256"] for row in deterministic_rows
+    }
     correct_side_by_pair = {
         row["pair_id"]: (
-            "left" if row["left_openui_sha256"] == positive_sha_by_pair[row["pair_id"]] else "right"
+            "left"
+            if row["left_openui_sha256"] == positive_sha_by_pair[row["pair_id"]]
+            else "right"
         )
         for row in blind_pairs
     }
@@ -475,7 +492,9 @@ def _human_arm_rows(
                     "winner": winner,
                     "acceptable_left": winner == "left",
                     "acceptable_right": winner == "right",
-                    "reasons": [row["stratum"]] if winner == correct else [rng.choice(REASON_FAMILIES)],
+                    "reasons": [row["stratum"]]
+                    if winner == correct
+                    else [rng.choice(REASON_FAMILIES)],
                     "confidence": round(0.6 + 0.3 * rng.random(), 3),
                     "duration_ms": int(1000 + 5000 * rng.random()),
                     "submitted_at": "2026-01-01T00:00:00Z",
@@ -501,7 +520,9 @@ def _human_arm_rows(
 
     label_path = root / "labels" / "raters.jsonl"
     label_path.parent.mkdir(parents=True, exist_ok=True)
-    label_path.write_text("".join(json.dumps(row) + "\n" for row in label_rows), encoding="utf-8")
+    label_path.write_text(
+        "".join(json.dumps(row) + "\n" for row in label_rows), encoding="utf-8"
+    )
 
     aggregate = import_blinded_labels(
         [label_path],
@@ -531,15 +552,22 @@ def _human_rows_from_aggregate(
         agg = aggregate_by_pair[pair_id]
         consensus = agg["consensus_winner"]
         ambiguous = not agg["complete"] or consensus is None
-        human_verdict = "error" if ambiguous else ("left" if consensus == correct else "right")
+        human_verdict = (
+            "error" if ambiguous else ("left" if consensus == correct else "right")
+        )
         top_reasons = [
-            reason for reason, _ in sorted(agg["reason_counts"].items(), key=lambda kv: -kv[1])[:1]
+            reason
+            for reason, _ in sorted(
+                agg["reason_counts"].items(), key=lambda kv: -kv[1]
+            )[:1]
         ]
         rows.append(
             {
                 "pair_id": pair_id,
                 "human_verdict": human_verdict,
-                "human_score": agg["mean_confidence"] if agg["mean_confidence"] is not None else 0.0,
+                "human_score": agg["mean_confidence"]
+                if agg["mean_confidence"] is not None
+                else 0.0,
                 "human_pass": (not ambiguous) and human_verdict == "left",
                 "human_ambiguous": ambiguous,
                 "human_reason_codes": top_reasons,
@@ -581,14 +609,19 @@ def _merge_rows(
                 "human_pass": hum["human_pass"],
                 "human_ambiguous": hum["human_ambiguous"],
                 "human_reason_codes": hum["human_reason_codes"],
-                "reason_codes": [*ext["external_reason_codes"], *hum["human_reason_codes"]],
+                "reason_codes": [
+                    *ext["external_reason_codes"],
+                    *hum["human_reason_codes"],
+                ],
                 "_external_independent": ext["_external_independent"],
             }
         )
     return merged
 
 
-def reason_family_confusion_matrix(rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+def reason_family_confusion_matrix(
+    rows: list[dict[str, Any]],
+) -> dict[str, dict[str, int]]:
     """Crosstab of each pair's true stratum family against the reason-code
     family attributed by any judge that disagreed with the deterministic
     verdict. Genuinely new: no crosstab owner exists elsewhere in the repo
@@ -606,7 +639,9 @@ def reason_family_confusion_matrix(rows: list[dict[str, Any]]) -> dict[str, dict
     return matrix
 
 
-def run_protocol(protocol: EvaluatorCalibrationProtocolV1, *, root: Path) -> dict[str, Any]:
+def run_protocol(
+    protocol: EvaluatorCalibrationProtocolV1, *, root: Path
+) -> dict[str, Any]:
     """Run all four arms in-process and persist a governed evidence
     artifact. Never spawns a subprocess; never touches the compiler-legality
     gate stack (see module docstring)."""
@@ -650,7 +685,9 @@ def run_protocol(protocol: EvaluatorCalibrationProtocolV1, *, root: Path) -> dic
 
     deterministic_rows = _deterministic_rows(pairs)
     external_arm = _external_arm_rows(protocol, deterministic_rows)
-    _aggregate, human_arm = _human_arm_rows(protocol, deterministic_rows, root=root / "human")
+    _aggregate, human_arm = _human_arm_rows(
+        protocol, deterministic_rows, root=root / "human"
+    )
     full_rows = _merge_rows(deterministic_rows, external_arm["rows"], human_arm["rows"])
 
     analysis = analyze_triple_judges(full_rows)

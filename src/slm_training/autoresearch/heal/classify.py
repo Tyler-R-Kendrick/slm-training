@@ -23,9 +23,15 @@ import re
 from slm_training.autoresearch.heal.schemas import BlockerClass
 
 __all__ = [
+    "DATA_PREREQUISITE_MARKERS",
     "HARD_HARNESS_MARKERS",
+    "HARNESS_CRASH_REASON_RE",
+    "TIMEOUT_RESIDUAL_MARKERS",
     "classify_blocker",
+    "crash_arm_exits",
+    "is_harness_crash",
     "missing_js_module",
+    "timeout_arm_exits",
 ]
 
 #: True-crash markers that keep a ``repair_harness`` action hard at emission.
@@ -80,6 +86,50 @@ _AUTHORITY_MARKERS: tuple[str, ...] = (
     "billing budget",
 )
 
+#: The delivery reason an arm leaves when its harness process died instead of
+#: producing a scoreboard: ``harness_failure:<arm_id>:experiment_failed``.
+#: With a non-124 exit this is a *crash* (class ``code``), never a thrash
+#: wall/decode residual — the misroute that let cycles c536..c543 drop their
+#: ``repair_harness`` blocker and continue.
+HARNESS_CRASH_REASON_RE = re.compile(
+    r"harness_failure:[^:\s]*:experiment_failed", re.IGNORECASE
+)
+
+#: Explicit timeout evidence. Only these (or an arm exit of 124) make an
+#: incomplete measurement a soft thrash residual; ``missing_scoreboard`` /
+#: ``primary_metric_unavailable`` alone never do.
+TIMEOUT_RESIDUAL_MARKERS: tuple[str, ...] = (
+    "decode_timeout",
+    "decode timeout",
+    "wall_timeout",
+    "wall-timeout",
+    "timed out",
+    "timeout residual",
+    "internal decode timeout",
+    "exit=124",
+    "exit 124",
+)
+
+#: Reasons naming a ``rebuild_data`` prerequisite (the artifacts / counts the
+#: local rebuild seam produces) route to class ``data`` so the data playbook
+#: can retry the rebuild with a measured postcondition.
+DATA_PREREQUISITE_MARKERS: tuple[str, ...] = (
+    "rebuild_data",
+    "records_before",
+    "records_after",
+    "quality_report.json",
+    "synthesis_feedback.json",
+    "data_manifest.json",
+    "screening suite",
+    "smoke fixture",
+    "sample_adequacy",
+    "fixture volume",
+    "train records",
+)
+
+#: Wall/timeout exit from the bounded-process convention in the driver.
+TIMEOUT_EXIT_CODE = 124
+
 _MISSING_JS_MODULE_RE = re.compile(
     r"(?:cannot find (?:module|package)|err_module_not_found)"
     r"[^'\"]*['\"]([^'\"]+)['\"]",
@@ -95,12 +145,55 @@ def missing_js_module(reason: str) -> str | None:
     return None
 
 
-def classify_blocker(kind: str, reason: str) -> BlockerClass:
+def _exit_codes(arm_exits: object) -> list[int]:
+    if not isinstance(arm_exits, dict):
+        return []
+    codes: list[int] = []
+    for value in arm_exits.values():
+        try:
+            codes.append(int(value))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+    return codes
+
+
+def timeout_arm_exits(arm_exits: object) -> bool:
+    """True when at least one arm exit is the wall/timeout code (124)."""
+    return any(c == TIMEOUT_EXIT_CODE for c in _exit_codes(arm_exits))
+
+
+def crash_arm_exits(arm_exits: object) -> bool:
+    """True when at least one arm exited non-zero and not by timeout."""
+    return any(c not in (0, TIMEOUT_EXIT_CODE) for c in _exit_codes(arm_exits))
+
+
+def is_harness_crash(reason: str, arm_exits: object = None) -> bool:
+    """``harness_failure:*:experiment_failed`` without timeout evidence.
+
+    A crash is a crash whenever a non-124 arm exit accompanies the marker; when
+    no exits are known, the reason text must carry an explicit timeout marker
+    to be read as a residual instead.
+    """
+    text = str(reason).lower()
+    if not HARNESS_CRASH_REASON_RE.search(text):
+        return False
+    if crash_arm_exits(arm_exits):
+        return True
+    if timeout_arm_exits(arm_exits):
+        return False
+    return not any(m in text for m in TIMEOUT_RESIDUAL_MARKERS)
+
+
+def classify_blocker(
+    kind: str, reason: str, *, arm_exits: object = None
+) -> BlockerClass:
     """Map one hard-pending blocker to its heal class.
 
     Fail toward ``code`` (stays hard) whenever a marker is ambiguous: the
     cost of a wrong ``code`` verdict is a waiting agent, the cost of a wrong
     ``environment`` verdict is an install-verify-fail thrash loop.
+    ``arm_exits`` (the delivery's ``{arm_id: exit_code}`` map) sharpens the
+    crash-vs-residual split when the caller has it.
     """
     kind_s = str(kind).strip()
     text = str(reason).lower()
@@ -124,7 +217,17 @@ def classify_blocker(kind: str, reason: str) -> BlockerClass:
         return "data"
     if kind_s == "foreign_dirty_tree":
         return "dirty_tree"
-    if kind_s in {"loop_stalled_no_campaign", "heal_postcondition_failed", "vacuous_pass"}:
+    if kind_s in {"heal_postcondition_failed", "retry_measurement"} and any(
+        m in text for m in DATA_PREREQUISITE_MARKERS
+    ):
+        # A failed data-rebuild postcondition / a retry blocked on rebuild
+        # artifacts is data territory: the rebuild seam owns the next attempt.
+        return "data"
+    if kind_s in {
+        "loop_stalled_no_campaign",
+        "heal_postcondition_failed",
+        "vacuous_pass",
+    }:
         return "unknown"
     if kind_s == "repair_harness":
         if any(tok in text for tok in _REPO_INTERNAL_TOKENS):
@@ -133,6 +236,13 @@ def classify_blocker(kind: str, reason: str) -> BlockerClass:
             return "environment"
         if missing_js_module(text) is not None:
             return "environment"
+        if is_harness_crash(text, arm_exits):
+            # An arm process died (exit != 124) without a scoreboard: a
+            # harness crash the harness_crash playbook must triage, never a
+            # soft wall residual.
+            return "code"
+        if any(m in text for m in DATA_PREREQUISITE_MARKERS):
+            return "data"
         if "module not found" in text or "no module named" in text:
             # Unattributed module errors: python-style phrasing is repo code;
             # JS-style phrasing without a parsable module stays code too.

@@ -14,9 +14,59 @@ from pathlib import Path
 from typing import Any
 
 
+# Read-only ratios derived from the raw counters below. They are computed
+# on access (never stored, never accumulated) so ``merge``/``aggregate_stats``
+# keep summing raw counts and the ratio is always recomputed from the sums.
+# Each ratio is ``None`` when its denominator is 0 -- an undefined ratio is
+# reported as undefined, never as a fabricated 0.0.
+DERIVED_DECODE_RATIO_FIELDS: tuple[str, ...] = (
+    "committed_tokens",
+    "forced_token_fraction",
+    "speculative_commit_fraction",
+    "speculative_token_fraction",
+    "forwards_per_committed_token",
+)
+
+
+def _ratio(numerator: int | float, denominator: int | float) -> float | None:
+    """``numerator / denominator``; ``None`` (undefined) when the denominator is 0."""
+    if not denominator:
+        return None
+    return float(numerator) / float(denominator)
+
+
 @dataclass
 class DecodeStats:
-    """Accumulated wall-clock timings and counters for one generate call."""
+    """Accumulated wall-clock timings and counters for one generate call.
+
+    Derived read-only ratios (``DERIVED_DECODE_RATIO_FIELDS``) are exposed as
+    properties and included in :meth:`as_dict`; they are never dataclass
+    fields, so :meth:`from_dict` drops them and :meth:`merge` skips them.
+
+    * ``committed_tokens`` -- tokens committed to the canvas. This is an
+      alias of ``tokens_emitted``, which every decode path increments once per
+      committed token (forced spans, singleton bypasses, exact commits, and
+      model-chosen tokens alike; see ``twotower.py``). No separate counter is
+      kept because that would be a second source of truth for the same event.
+    * ``forced_token_fraction`` -- ``forced_tokens / committed_tokens``: the
+      share of the canvas that deterministic forcing (I2 singleton bypass and
+      forced spans) wrote without consulting the model.
+    * ``speculative_commit_fraction`` --
+      ``speculative_rank_commits / speculative_rank_evaluations``: the share
+      of I3 speculative-rank consultations confident enough to commit.
+    * ``speculative_token_fraction`` --
+      ``speculative_rank_tokens / committed_tokens``: the share of the canvas
+      written by verified speculative-rank commits.
+    * ``forwards_per_committed_token`` --
+      ``forwards_count / committed_tokens``: denoiser forwards spent per
+      committed token (0.0 is a genuine full bypass; ``None`` means nothing was
+      committed so the cost is undefined).
+
+    Each ratio is ``None`` when its denominator is 0. Limitation: tokens
+    chosen by the model versus by forcing are not separately counted, so the
+    "denoiser-chosen" share is only available as the complement
+    ``1 - forced_token_fraction - speculative_token_fraction``.
+    """
 
     denoiser_ms: float = 0.0
     dfa_sync_ms: float = 0.0
@@ -99,6 +149,21 @@ class DecodeStats:
     binder_arity_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
+    # S6/N2 context-tower causal ablation (diagnostic arms only; every counter
+    # stays 0 on a production decode because ``context_ablation`` defaults to
+    # "off"). ``_rows`` counts context rows actually corrupted and
+    # ``_degenerate_rows`` counts rows the requested mode could not corrupt
+    # (a 1-row batch under shuffle_batch, a <2-token prompt under
+    # shuffle_positions) so a degenerate arm can never be read as an ablation
+    # that happened. ``_applications`` / ``_choice_changes`` follow the same
+    # argmax-flip accounting as every other factor head above: applications
+    # are non-singleton legal-domain positions probed with both the ablated
+    # (driving) and intact (shadow) context, changes are the positions where
+    # the constrained argmax over the legal set differs.
+    context_ablation_rows: int = 0
+    context_ablation_degenerate_rows: int = 0
+    context_ablation_applications: int = 0
+    context_ablation_choice_changes: int = 0
     # I3 deterministic speculative ranking over the symbol table: how often the
     # corpus scorer was consulted, how often it was confident enough to commit
     # without a forward, and how many tokens that bought.
@@ -207,6 +272,14 @@ class DecodeStats:
     # cannot validate (left-prefix over-approximation; see residual_support).
     admit_probe_canvases: int = 0
     admit_probe_committed_suffix: int = 0
+    # N12 (LAVE stall audit, read-only): admit-probe proposal rejections in the
+    # positionwise MaskGIT unmask lane, and the longest run of consecutive
+    # rejections with no intervening commit. Purely observational -- no decode
+    # path reads either field, so a decode with no active collector is
+    # byte-identical to one with a collector attached
+    # (tests/test_models/test_admit_rejection_telemetry.py).
+    admit_probe_rejections: int = 0
+    admit_probe_reject_run_max: int = 0
     # L-D: parallel block-step commits reverted because the joint canvas was
     # PROVEN uncompletable by multi_region_support (never on unknown/budget).
     block_joint_rejections: int = 0
@@ -234,6 +307,13 @@ class DecodeStats:
     hybrid_span_commits: int = 0
     hybrid_frontier_commits: int = 0
     hybrid_span_reverts: int = 0
+    # I6: LTR-repair canvases that still carried a committed non-empty token
+    # AFTER a hole, and how many such interior holes were slid out before the
+    # repair ran. Compaction is decode-preserving (masks are empty pieces), so
+    # this counts how often the suffix-blind admit configuration was reached,
+    # not how often output changed.
+    residual_hole_compactions: int = 0
+    residual_holes_compacted: int = 0
     # E20: masked slot positions seeded from the slot-contract template.
     template_slot_positions: int = 0
     asap_positions: int = 0
@@ -295,12 +375,59 @@ class DecodeStats:
     # decision without emitting an unbounded trace for long canvases.
     constrained_selection_traces: list[dict[str, object]] = field(default_factory=list)
     newline_commit_traces: list[dict[str, object]] = field(default_factory=list)
+    # S12/N3 per-step commit-authority histogram. Opt-in: the MaskGIT
+    # recording site does nothing unless the caller sets
+    # ``record_step_commits`` on the active bucket, so default decodes pay
+    # nothing and stay byte-identical. One entry per denoising step that
+    # committed at least one position:
+    # ``{"step", "committed", "forced", "confident", "speculative",
+    #    "forwards", "authority"}`` where ``authority`` is the step-dominant
+    # source. ``merge``/``aggregate_stats`` sum scalars only, so this list is
+    # per-call evidence and is never silently concatenated across decodes.
+    record_step_commits: bool = False
+    step_commits: list[dict[str, object]] = field(default_factory=list)
 
     def add_ms(self, field_name: str, ms: float) -> None:
         setattr(self, field_name, float(getattr(self, field_name)) + float(ms))
 
+    # --- derived read-only ratios (see class docstring) ---------------------
+
+    @property
+    def committed_tokens(self) -> int:
+        """Tokens committed to the canvas (alias of ``tokens_emitted``)."""
+        return int(self.tokens_emitted)
+
+    @property
+    def forced_token_fraction(self) -> float | None:
+        """``forced_tokens / committed_tokens``; ``None`` when nothing was committed."""
+        return _ratio(self.forced_tokens, self.committed_tokens)
+
+    @property
+    def speculative_commit_fraction(self) -> float | None:
+        """``speculative_rank_commits / speculative_rank_evaluations``; ``None`` when never evaluated."""
+        return _ratio(self.speculative_rank_commits, self.speculative_rank_evaluations)
+
+    @property
+    def speculative_token_fraction(self) -> float | None:
+        """``speculative_rank_tokens / committed_tokens``; ``None`` when nothing was committed."""
+        return _ratio(self.speculative_rank_tokens, self.committed_tokens)
+
+    @property
+    def forwards_per_committed_token(self) -> float | None:
+        """``forwards_count / committed_tokens``; ``None`` when nothing was committed."""
+        return _ratio(self.forwards_count, self.committed_tokens)
+
+    def derived_ratios(self) -> dict[str, int | float | None]:
+        """The ``DERIVED_DECODE_RATIO_FIELDS`` values, recomputed from raw counters."""
+        return {name: getattr(self, name) for name in DERIVED_DECODE_RATIO_FIELDS}
+
+    # -----------------------------------------------------------------------
+
     def as_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        """Raw dataclass fields plus the derived read-only ratios."""
+        out = asdict(self)
+        out.update(self.derived_ratios())
+        return out
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> DecodeStats:
@@ -318,10 +445,23 @@ class DecodeStats:
 
     def merge(self, other: DecodeStats) -> None:
         for key, value in other.as_dict().items():
+            if key in DERIVED_DECODE_RATIO_FIELDS:
+                continue  # recomputed from the merged raw counters
             if key == "attempts":
                 self.attempts = max(self.attempts, int(value))
                 continue
+            if key == "admit_probe_reject_run_max":
+                # N12: a longest-run statistic, never a sum.
+                self.admit_probe_reject_run_max = max(
+                    self.admit_probe_reject_run_max, int(value)
+                )
+                continue
             cur = getattr(self, key)
+            if isinstance(cur, bool) or isinstance(value, bool):
+                # Telemetry switches (``record_step_commits``) are settings, not
+                # counters; ``bool`` is an ``int`` subclass, so summing them
+                # would quietly turn the flag into a count.
+                continue
             if isinstance(cur, (int, float)) and isinstance(value, (int, float)):
                 setattr(self, key, cur + value)
 
@@ -1099,6 +1239,10 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "binder_arity_choice_changes",
         "forced_spans",
         "forced_tokens",
+        "context_ablation_rows",
+        "context_ablation_degenerate_rows",
+        "context_ablation_applications",
+        "context_ablation_choice_changes",
         "speculative_rank_evaluations",
         "speculative_rank_commits",
         "speculative_rank_tokens",
@@ -1194,6 +1338,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "asap_penalties",
         "admit_probe_canvases",
         "admit_probe_committed_suffix",
+        "admit_probe_rejections",
         "block_joint_rejections",
         "witness_pruned_unsupported",
         "witness_pruned_unknown",
@@ -1204,6 +1349,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "hybrid_span_commits",
         "hybrid_frontier_commits",
         "hybrid_span_reverts",
+        "residual_hole_compactions",
+        "residual_holes_compacted",
         "template_slot_positions",
         "asap_positions",
         "constraint_graph_edges",
@@ -1287,6 +1434,7 @@ __all__ = [
     "ATTRIBUTED_PHASE_FIELDS",
     "COMPLETENESS_STATES",
     "DECODE_STATS_RECORD_SCHEMA",
+    "DERIVED_DECODE_RATIO_FIELDS",
     "GOAL_SUPPORT_CLASSIFICATION_COUNTER_MAP",
     "GOAL_SUPPORT_CLOSURE_COUNTER_MAP",
     "GOAL_SUPPORT_MECHANISM_ID",

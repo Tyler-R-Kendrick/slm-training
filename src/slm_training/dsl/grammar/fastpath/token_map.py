@@ -13,6 +13,37 @@ from typing import Any
 from slm_training.models.tokenizer import OpenUITokenizer
 
 _DSL_ALLOWED_CACHE: dict[tuple[int, int, frozenset[str]], frozenset[int]] = {}
+
+
+def _vocabulary_fingerprint(tokenizer: Any) -> int:
+    """Hash of the tokenizer's ``token_to_id`` table, memoized per tokenizer.
+
+    The table is immutable after construction (every grammar-side cache on
+    the tokenizer already relies on that), so the sort+hash is paid once per
+    tokenizer instead of once per completion-forest build.  The memo is
+    invalidated if the table object or its size changes.
+    """
+    table = tokenizer.token_to_id
+    cached = getattr(tokenizer, "_grammar_vocabulary_fingerprint", None)
+    if (
+        isinstance(cached, tuple)
+        and len(cached) == 3
+        and cached[0] is table
+        and cached[1] == len(table)
+    ):
+        return int(cached[2])
+    fingerprint = hash(tuple(sorted(table.items())))
+    try:
+        setattr(
+            tokenizer,
+            "_grammar_vocabulary_fingerprint",
+            (table, len(table), fingerprint),
+        )
+    except (AttributeError, TypeError):
+        pass
+    return fingerprint
+
+
 _NUMBER_COMPLETE = re.compile(
     r"^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$"
 )
@@ -131,8 +162,14 @@ def allowed_id_set(
         key: tuple[int, int, frozenset[str]] | None = None
         cached: frozenset[int] | None = None
         if use_cache:
-            fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
-            key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
+            # The vocabulary fingerprint is memoized per tokenizer, so a cached
+            # lookup no longer re-sorts the whole vocabulary on every
+            # completion-forest build; uncached lookups still never touch it.
+            key = (
+                _vocabulary_fingerprint(tokenizer),
+                int(getattr(tokenizer, "version", 0)),
+                terminals,
+            )
             cached = _DSL_ALLOWED_CACHE.get(key)
         if cached is None:
             result = _allowed_id_set_dsl(tokenizer, terminals)

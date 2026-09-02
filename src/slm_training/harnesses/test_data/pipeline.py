@@ -35,7 +35,7 @@ DEFAULT_SUITES = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 class TestDataConfig:
     seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     rico_path: Path | None = Path("src/slm_training/resources/rico/semantic_test.jsonl")
-    # fixture | rico | both
+    # fixture | rico | both | certified
     source: str = "both"
     output_root: Path = Path("outputs/data/eval")
     version: str = "v0"
@@ -57,6 +57,13 @@ class TestDataConfig:
     # default. off | audit | enforce. Committed snapshots stay immutable —
     # only newly built versions carry sanitized gold.
     sanitize_mode: str = "enforce"
+    # ``certified`` source: root-family eval buckets of the certified corpus
+    # (harnesses.test_data.certified). smoke draws from the validation bucket,
+    # held_out from the test bucket; a zero count skips that suite.
+    certified_corpus: Path | None = None
+    certified_smoke_n: int = 96
+    certified_held_out_n: int = 24
+    certified_seed: int = 0
 
     # Prevent pytest from collecting this dataclass as a test class.
     __test__ = False
@@ -184,6 +191,53 @@ def _rico_seeds(config: TestDataConfig) -> list[ExampleRecord]:
     return out
 
 
+def _certified_seeds(config: TestDataConfig) -> tuple[list[ExampleRecord], dict]:
+    """Decontaminated certified-corpus candidates for smoke / held_out."""
+    from slm_training.harnesses.test_data.certified import (
+        CERTIFIED_CORPUS_DIR,
+        partition_certified_corpus,
+        sample_certified_candidates,
+    )
+
+    corpus = config.certified_corpus or (CERTIFIED_CORPUS_DIR / "records.jsonl")
+    partition = partition_certified_corpus(corpus)
+    extra = (config.train_manifest,) if config.train_manifest else ()
+    records: list[ExampleRecord] = []
+    reserved: set[str] = set()
+    report: dict = {
+        "corpus": str(Path(corpus).as_posix()),
+        "seed": config.certified_seed,
+        "rejection_histogram": dict(sorted(partition.rejection_histogram.items())),
+        "reidentified": partition.reidentified,
+        "samples": {},
+    }
+    targets = (
+        ("held_out", config.certified_held_out_n),
+        ("smoke", config.certified_smoke_n),
+    )
+    for suite, need in targets:
+        if suite not in config.suites or need <= 0:
+            continue
+        sample = sample_certified_candidates(
+            existing_ids=reserved,
+            need=need,
+            suite=suite,
+            seed=config.certified_seed,
+            partition=partition,
+            extra_train_manifests=extra,
+        )
+        if len(sample.records) < need:
+            raise ValueError(
+                f"certified {suite} pool holds {len(sample.records)} decontaminated "
+                f"records but {need} were requested; grow the corpus, never the gate"
+            )
+        reserved.update(r.id for r in sample.records)
+        reserved.update(str(r.meta.get("certified_source_id")) for r in sample.records)
+        records.extend(sample.records)
+        report["samples"][suite] = sample.report()
+    return records, report
+
+
 def build_test_data(config: TestDataConfig) -> dict:
     if config.require_train_manifest and config.train_manifest is None:
         raise ValueError(
@@ -206,11 +260,15 @@ def build_test_data(config: TestDataConfig) -> dict:
     source = (config.source or "both").lower()
 
     seeds: list[ExampleRecord] = []
+    certified_report: dict | None = None
     if source in {"fixture", "fixtures", "both"}:
         seeds.extend(_fixture_seeds(config))
     if source in {"rico", "both"}:
         seeds.extend(_rico_seeds(config))
-    if source not in {"rico", "fixture", "fixtures", "both"}:
+    if source == "certified":
+        certified_seeds, certified_report = _certified_seeds(config)
+        seeds.extend(certified_seeds)
+    if source not in {"rico", "fixture", "fixtures", "both", "certified"}:
         raise ValueError(f"unknown test source {config.source!r}")
 
     by_suite: dict[str, list[ExampleRecord]] = {s: [] for s in config.suites}
@@ -350,6 +408,8 @@ def build_test_data(config: TestDataConfig) -> dict:
         "built_at": built_at,
         "version_stamp": version_stamp,
     }
+    if certified_report is not None:
+        stats["certified"] = certified_report
     stats_path = out_dir / "stats.json"
     stats_path.write_text(json.dumps(stats, indent=2) + "\n", encoding="utf-8")
 

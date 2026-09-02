@@ -54,6 +54,9 @@ __all__ = [
     "max_consecutive_frozen_replays",
     "decode_timeout_seconds_for_role",
     "screening_smoke_n_for_policy",
+    "FIXTURE_INSUFFICIENT_N_QUALITY_PROBE",
+    "PAIRED_PRIMARY_LEAVES",
+    "SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR",
     "eval_suites_for_role",
     "classify_positive_metrics",
     "promotion_primary_effect_met",
@@ -72,7 +75,8 @@ CLIMB_RESOURCE_DIR = _PACKAGE_ROOT / "resources" / "experiments" / "autotrain_cl
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
 CLIMB_POLICY_SCHEMA = "autotrain_climb_policy/v1"
 PROMOTE_AUTHORITY_SCHEMA = "autotrain_promote_authority/v1"
-_DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v2.json"
+_DEFAULT_POLICY_PATH = CLIMB_RESOURCE_DIR / "policy.v3.json"
+_POLICY_V2_PATH = CLIMB_RESOURCE_DIR / "policy.v2.json"
 _POLICY_V1_PATH = CLIMB_RESOURCE_DIR / "policy.v1.json"
 _PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
 
@@ -268,6 +272,8 @@ def load_climb_policy(path: str | None = None) -> ClimbPolicy:
         policy_path = Path(path)
     elif _DEFAULT_POLICY_PATH.is_file():
         policy_path = _DEFAULT_POLICY_PATH
+    elif _POLICY_V2_PATH.is_file():
+        policy_path = _POLICY_V2_PATH
     else:
         policy_path = _POLICY_V1_PATH
     payload = _read_json(policy_path)
@@ -429,6 +435,44 @@ def decode_timeout_seconds_for_role(policy: ClimbPolicy, role: str) -> float:
     return value
 
 
+def _screening_paired_sd(
+    block: Mapping[str, Any], metric: str
+) -> tuple[str | None, str, str | None]:
+    """Same-metric paired SD for the screening primary: ``(sd, source, key)``.
+
+    Order: policy ``screening_sample_size.observed_sd_by_metric`` (full name
+    or leaf) -> a policy scalar ``observed_sd`` only when it is tagged for the
+    metric (``observed_sd_metric``) or no primary metric is known -> the
+    shared lookup (``metric_expectations.screening.v1.json``
+    ``observed_paired_sd_by_metric`` -> metric-keyed ledger variance ->
+    tagged measured constant) -> ``unmeasured``. Another metric's SD is
+    never borrowed (RC1: ``MEASURED_PAIRED_SD`` was measured on
+    ``smoke.structural_similarity`` and demanded n=96 for ``smoke.eval_nll``).
+    """
+
+    from slm_training.autoresearch.screening_sample_size import (
+        lookup_paired_sd_for_metric,
+        metric_leaf,
+    )
+
+    by_metric = block.get("observed_sd_by_metric")
+    if isinstance(by_metric, Mapping) and metric:
+        for key in (metric, metric_leaf(metric)):
+            if by_metric.get(key) is not None:
+                return str(by_metric[key]), "policy", str(key)
+    scalar = block.get("observed_sd")
+    if scalar is not None:
+        tag = block.get("observed_sd_metric")
+        if not metric:
+            return str(scalar), "policy", (str(tag) if tag is not None else None)
+        if tag is not None and str(tag) in {metric, metric_leaf(metric)}:
+            return str(scalar), "policy", str(tag)
+    if not metric:
+        return None, "unmeasured", None
+    lookup = lookup_paired_sd_for_metric(metric)
+    return lookup.observed_sd, str(lookup.source), (metric if lookup.measured else None)
+
+
 def screening_smoke_n_for_policy(
     policy: ClimbPolicy,
     *,
@@ -447,7 +491,14 @@ def screening_smoke_n_for_policy(
     and suite-volume ceilings); ``infeasible_range_empty`` returns ``n=0``
     (not a runnable screen) with the typed report so the driver can generate
     missing suite records or park on a wall bind; ``insufficient_evidence``
-    keeps the configured fallback n only as an advisory default.
+    with a ``chosen_n`` (primary's paired SD unmeasured: exact floor
+    affordable, power floor unknown) screens at that advisory n; without one
+    it keeps the configured fallback n as an advisory default.
+
+    The power floor uses only a same-metric paired SD
+    (:func:`_screening_paired_sd`); an unmeasured SD never demands n from a
+    borrowed variance, so ``n=0`` arises only when the exact decidability
+    floor itself (6 at alpha=1/20) clears neither ceiling.
     """
 
     measurement = getattr(policy, "measurement", None) or {}
@@ -480,21 +531,22 @@ def screening_smoke_n_for_policy(
             decode_floor = None
         primary = getattr(policy, "screening_primary", None)
         if not isinstance(primary, Mapping):
-            primary = {}
+            payload_primary = (getattr(policy, "payload", None) or {}).get(
+                "screening_primary"
+            )
+            primary = payload_primary if isinstance(payload_primary, Mapping) else {}
+        metric = str(primary.get("metric") or "")
         minimum_effect = primary.get("minimum_effect")
         if minimum_effect is None:
             minimum_effect = block.get("minimum_effect")
-        observed_sd = block.get("observed_sd")
-        if observed_sd is None and minimum_effect is not None:
-            from slm_training.autoresearch.screening_sample_size import (
-                MEASURED_PAIRED_SD,
-            )
-
-            observed_sd = MEASURED_PAIRED_SD
         power_kwargs: dict[str, Any] = {}
-        if minimum_effect is not None and observed_sd is not None:
+        if minimum_effect is not None:
+            observed_sd, sd_source, sd_metric = _screening_paired_sd(block, metric)
             power_kwargs["minimum_effect"] = str(minimum_effect)
-            power_kwargs["observed_sd"] = str(observed_sd)
+            if observed_sd is not None:
+                power_kwargs["observed_sd"] = str(observed_sd)
+            power_kwargs["observed_sd_source"] = sd_source
+            power_kwargs["observed_sd_metric"] = sd_metric or (metric or None)
         report = compute_screening_sample_size(
             ScreeningSampleSizeObservation(
                 alpha=str(alpha),
@@ -517,6 +569,10 @@ def screening_smoke_n_for_policy(
         return configured, None
     payload = report.model_dump(mode="json")
     if report.verdict == "feasible" and report.chosen_n is not None:
+        return max(1, int(report.chosen_n)), payload
+    if report.verdict == "insufficient_evidence" and report.chosen_n is not None:
+        # Power unmeasured for the primary metric: the exact floor is
+        # affordable, so screen at the advisory affordable n (never park).
         return max(1, int(report.chosen_n)), payload
     if report.verdict == "infeasible_range_empty":
         # Not a legal screen size. suite_volume → generate; wall_budget → park.
@@ -910,15 +966,30 @@ def classify_positive_metrics(
     eg_params_by_seed: Sequence[float] | None = None,
     executable_unblock: bool = False,
     fixture_insufficient_n: bool = False,
+    paired_records: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Direction-signed primary win + optional EG_params for Phase A positive."""
+    """Direction-signed primary win + optional EG_params for Phase A positive.
+
+    ``paired_records`` (``{"control": {record_id: value}, "candidate": {...}}``)
+    switches a screening NLL primary to the policy paired test
+    (``measurement.paired_test``): the win requires ``p < alpha`` on the
+    per-record deltas **and** a median improvement above
+    ``screening_primary.minimum_effect``. A decided paired win with at least
+    ``SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR`` pairs is exempt from the
+    fixture ``insufficient_n`` clamp, which keeps governing decoded quality
+    metrics and every promotion verdict. Screening positives stay
+    ``claim_class: diagnostic``.
+    """
 
     primary = primary_for_role(policy, role)
     metric = str(primary["metric"])
     direction = str(primary["direction"])
     minimum_effect = float(primary.get("minimum_effect") or 0.0)
+    leaf = metric.rsplit(".", 1)[-1]
     reasons: list[str] = []
     positive = False
+    paired: dict[str, Any] | None = None
+    paired_win_decided = False
     reasons.extend(invalid_grammar_reasons(control_metrics, arm="control"))
     reasons.extend(invalid_grammar_reasons(candidate_metrics, arm="candidate"))
     grammar_illegal = any(r.startswith("invalid_grammar:") for r in reasons)
@@ -962,12 +1033,45 @@ def classify_positive_metrics(
             if nr_imp < nr_min:
                 non_reg_ok = False
                 reasons.append(f"non_regression_fail:{nr_metric}:{c_nr}->{t_nr}")
+        use_paired = role == "screening" and leaf in PAIRED_PRIMARY_LEAVES
+        if use_paired:
+            paired = _paired_primary_test(
+                policy,
+                paired_records,
+                direction=direction,
+                minimum_effect=minimum_effect,
+            )
+            if paired is None:
+                reasons.append(f"paired_records_unavailable:{metric}")
         if partial_suite:
             reasons.append(
                 f"primary_metric_incomparable_partial_suite:{metric}:"
                 f"control_completed={c_completed}/{c_n}:"
                 f"candidate_completed={t_completed}/{t_n}"
             )
+        elif paired is not None:
+            detail = (
+                f"paired_{paired['verdict']}:p={paired['p_value']:.6g}"
+                f":alpha={paired['alpha']}:n_pairs={paired['n_pairs']}"
+                f":n_nontied={paired['n_nontied']}"
+                f":median_delta={paired['median_delta']}"
+                f":minimum_effect={minimum_effect}"
+            )
+            if paired["win"] and non_reg_ok and not grammar_illegal:
+                positive = True
+                paired_win_decided = (
+                    int(paired["n_pairs"]) >= SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR
+                )
+                reasons.append(
+                    f"primary_metric_win:{metric}:{c_val}->{t_val}"
+                    f":improvement={improvement}:{detail}"
+                )
+            else:
+                reasons.append(
+                    f"primary_metric_null_or_worse:{metric}:"
+                    f"control={c_val} candidate={t_val} improvement={improvement}"
+                    f":{detail}"
+                )
         elif improvement > minimum_effect and non_reg_ok and not grammar_illegal:
             positive = True
             reasons.append(
@@ -999,15 +1103,24 @@ def classify_positive_metrics(
         positive = True
         reasons.append("executable_unblock:candidate_completed_after_control_error")
 
+    fixture_clamp_exempt = bool(
+        role == "screening" and paired_win_decided and not grammar_illegal
+    )
     if (
         fixture_insufficient_n
         and pos_cfg.get("fixture_insufficient_n_alone_not_positive", True)
         and not any(r.startswith("executable_unblock") for r in reasons)
     ):
-        # Fixture n cannot mint a climb candidate. A smoke SS tick on
-        # insufficient_n is still fixture noise (c159 queued, c160 tied).
-        positive = False
-        reasons.append("fixture_insufficient_n_alone")
+        if fixture_clamp_exempt:
+            # The decoded-quality probe ran below ship volume; that is
+            # information about the probe, not about the paired NLL verdict
+            # decided on >= SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR records.
+            reasons.append(FIXTURE_INSUFFICIENT_N_QUALITY_PROBE)
+        else:
+            # Fixture n cannot mint a climb candidate. A smoke SS tick on
+            # insufficient_n is still fixture noise (c159 queued, c160 tied).
+            positive = False
+            reasons.append("fixture_insufficient_n_alone")
 
     # Capacity charge
     if pos_cfg.get("require_size_match_or_eg_params", True):
@@ -1049,7 +1162,63 @@ def classify_positive_metrics(
         "candidate_metrics": dict(candidate_metrics),
         "policy_sha256": policy.sha256,
         "policy_version": policy.version,
+        "paired_test": paired,
+        "fixture_clamp_exempt": fixture_clamp_exempt,
     }
+
+
+# Screening primaries decided by the per-record paired test when per-record
+# values are available for both arms (``eval_nll_records.json``).
+PAIRED_PRIMARY_LEAVES: tuple[str, ...] = ("eval_nll",)
+# Exact sign-test decidability floor at alpha=1/20: below six pairs no
+# all-agree pattern can reach p < alpha, so a "win" there is fixture noise.
+SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR = 6
+FIXTURE_INSUFFICIENT_N_QUALITY_PROBE = "fixture_insufficient_n:quality_probe"
+
+
+def _paired_primary_test(
+    policy: ClimbPolicy,
+    paired_records: Mapping[str, Mapping[str, Any]] | None,
+    *,
+    direction: str,
+    minimum_effect: float,
+) -> dict[str, Any] | None:
+    """Policy paired test on per-record maps; ``None`` when either arm lacks them."""
+
+    if not isinstance(paired_records, Mapping):
+        return None
+    control = paired_records.get("control")
+    candidate = paired_records.get("candidate")
+    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
+        return None
+    if not control or not candidate:
+        return None
+    from slm_training.autoresearch.paired_stats import (
+        DEFAULT_ALPHA,
+        DEFAULT_MIN_NONTIED_PAIRS,
+        paired_record_screening,
+    )
+
+    cfg = policy.measurement.get("paired_test")
+    if not isinstance(cfg, Mapping):
+        cfg = {}
+    kind = str(cfg.get("kind") or "wilcoxon_signed_rank")
+    if kind not in {"wilcoxon_signed_rank", "sign_test"}:
+        raise ClimbPolicyError(f"measurement.paired_test.kind unsupported: {kind!r}")
+    result = paired_record_screening(
+        control,
+        candidate,
+        direction="decrease" if direction == "decrease" else "increase",
+        alpha=cfg.get("alpha") or DEFAULT_ALPHA,
+        min_nontied_pairs=int(
+            cfg.get("min_nontied_pairs") or DEFAULT_MIN_NONTIED_PAIRS
+        ),
+        kind=kind,  # type: ignore[arg-type]
+        minimum_effect=float(minimum_effect),
+    )
+    result["claim_class"] = "diagnostic"
+    result["decidability_floor"] = SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR
+    return result
 
 
 def synthesis_policy_allows_sft(

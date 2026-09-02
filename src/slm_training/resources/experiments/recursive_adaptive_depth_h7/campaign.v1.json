@@ -1,0 +1,295 @@
+{
+  "schema": "recursive_adaptive_depth_h7_campaign/v1",
+  "campaign_id": "recursive_adaptive_depth_h7_v1",
+  "status": "blocked_on_fixture_headroom",
+  "status_note": "Locked before any outcome; execution refused until the fixture-headroom precondition is satisfied and re-locked. Filing is not evidence.",
+  "design_doc": "docs/design/iter-s9-h7-contract-20260902.md",
+  "manifest_sha256": "8a5710dc2186aead126938bdd64edacef158f1ace61b7598ebb953d2c577492c",
+  "arm_configs_resource": "arm_configs.v1.json",
+  "fixture_headroom_precondition": {
+    "requirement": ">=1 eval example on which ar_only is invalid",
+    "satisfied": false,
+    "searched": [
+      "scripts/run_slm138_recursive_denoiser_fixture.py::_fixture_records (2 train-split records a/b; no ar_only arm; no eval split)",
+      "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.md (SLM-434: ar_only hard-valid on 40/40 paired outcomes of the SLM-155 eval decision corpus)",
+      "docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md (SLM-421: fixture examples a/b only)"
+    ],
+    "fixture_records_sha256": "480ed389f52b4e10b980f92962b9e7b7124c5ef3be8bfc2805c9a7ebd82347aa"
+  },
+  "protocol_precedents": {
+    "SLM-421": "docs/design/iter-slm282-recurrence-health-powered-rerun-20260725.md",
+    "SLM-282": "docs/design/iter-slm282-recurrence-health-20260723.md",
+    "SLM-434": "docs/design/iter-slm317-repair-hybrid-powered-rerun-20260727.md"
+  },
+  "preregistered_constants": {
+    "tau": 0.3,
+    "r_max": 4,
+    "ce_epsilon": 0.001,
+    "min_pass_rate": 0.5,
+    "seed_disjoint_from": "0..21",
+    "depth_supervision_c_r": "(R - r) / R for r < R; c(R) = 0"
+  },
+  "validate_command": "PYTHONPATH=$PWD/src python -c \"import json; from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1, CampaignLockV1, campaign_manifest_sha256; d=json.load(open('src/slm_training/resources/experiments/recursive_adaptive_depth_h7/campaign.v1.json')); m=ExperimentCampaignV1.model_validate(d['manifest']); assert campaign_manifest_sha256(m)==d['manifest_sha256']; CampaignLockV1(manifest_sha256=d['manifest_sha256'], manifest=m); print('ok', d['manifest_sha256'])\"",
+  "manifest": {
+    "schema_version": "ExperimentCampaignV1",
+    "campaign_id": "recursive_adaptive_depth_h7_v1",
+    "experiment_id": "recursive_adaptive_depth_h7",
+    "hypothesis": "H7: hiding the recursion index from the shared recursive denoiser and decaying per-depth supervision to zero at the final depth (an EqM-style c(R)->0 analogue) yields per-depth CE that never regresses at any depth, and decode-time halting on y_update_state_ratio < tau then reaches the fixed-R endpoint quality in fewer recursion steps and less wall clock.",
+    "decision": "recursive_adaptive_depth_positive iff, for a candidate arm, the Wilson 95% lower bound of the per-seed adjacent-depth CE non-regression pass rate clears 0.5 (SLM-421 protocol), no depth shows paired CE regression vs fixed_r_control beyond 1e-3, halting fires on >0% and halts at depth 1 on <=50% of inputs, and every kill criterion stays untripped; recursive_adaptive_depth_negative iff any kill criterion trips or the Wilson upper bound falls below 0.5; otherwise inconclusive_underpowered. Fixture-only diagnostic; never a ship, checkpoint, or default claim.",
+    "endpoints": [
+      {
+        "endpoint_id": "adjacent_depth_ce_nonregression_pass_rate",
+        "metric": "recurrence_health.per_seed_pass_rate[CE(r+1) <= CE(r) + 1e-3 for every r < R_eff and every fixture example]",
+        "role": "primary",
+        "direction": "increase",
+        "minimum_effect": 0.5
+      },
+      {
+        "endpoint_id": "per_depth_ce_paired_delta_max",
+        "metric": "max over r in 1..4 of mean paired (CE_candidate(r) - CE_fixed_r_control(r)) over seeds x examples",
+        "role": "secondary",
+        "direction": "decrease",
+        "minimum_effect": 0.0
+      },
+      {
+        "endpoint_id": "final_depth_ce_paired_delta_vs_control",
+        "metric": "mean paired (CE_candidate(R_eff) - CE_fixed_r_control(R=4)) over seeds x examples; R_eff is the halted depth for the halting arm",
+        "role": "secondary",
+        "direction": "decrease",
+        "minimum_effect": 0.0
+      },
+      {
+        "endpoint_id": "steps_to_halt_mean",
+        "metric": "mean halted depth R_eff over seeds x examples (fixed arms report R_max=4); full per-input distribution is a required artifact",
+        "role": "secondary",
+        "direction": "decrease",
+        "minimum_effect": 0.5
+      },
+      {
+        "endpoint_id": "halt_trigger_fraction",
+        "metric": "fraction of seeds x examples where halting fired at r < R_max",
+        "role": "secondary",
+        "direction": "increase",
+        "minimum_effect": 0.05
+      },
+      {
+        "endpoint_id": "halt_at_depth_1_fraction",
+        "metric": "fraction of seeds x examples where halting fired at r = 1",
+        "role": "secondary",
+        "direction": "decrease",
+        "minimum_effect": 0.0
+      },
+      {
+        "endpoint_id": "wall_clock_seconds_per_seed",
+        "metric": "measured wall-clock seconds per seed for all three arms (train + one diagnostics forward + halting decode)",
+        "role": "secondary",
+        "direction": "decrease",
+        "minimum_effect": 0.0
+      }
+    ],
+    "arms": [
+      {
+        "arm_id": "fixed_r_control",
+        "role": "control",
+        "config_sha256": "4fe902f3d4eaa545494686c158d18f84bb4588dc20f656e04ae5e2bc68ec55ef"
+      },
+      {
+        "arm_id": "index_hidden_decayed_supervision",
+        "role": "candidate",
+        "config_sha256": "ceaadd5e929740a19358c6fa4c22447b68e1c36f6a482373d7fcd722544cec53"
+      },
+      {
+        "arm_id": "index_hidden_halting_tau",
+        "role": "candidate",
+        "config_sha256": "f44b110e851ebb9a7397cb9983cc2c028ab5498ef393528a6004f2548d69178b"
+      }
+    ],
+    "seeds": [
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41
+    ],
+    "budget": {
+      "max_experiments": 60,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 3.0
+    },
+    "stopping_rules": [
+      "Stop after all 3 arms x 20 seeds (22..41) finish; a run that exceeds MAX_RUN_MINUTES=3 wall (src/slm_training/levers.py) is aborted and is never evidence.",
+      "PRECONDITION fixture_headroom: do not start any seed until the eval fixture manifest records >=1 eval example on which ar_only is invalid; as of 2026-09-02 no such example exists, so the campaign status is blocked_on_fixture_headroom and execution is refused.",
+      "No outcome is read before the CampaignLockV1 digest of this manifest is recorded; any post-lock edit is a CampaignDeviationV1 (exploratory)."
+    ],
+    "controls": [
+      {
+        "control_id": "size_matched_fixed_r",
+        "description": "Positive matched control: fixed_r_control shares d_model=32, layers, tokenizer, fixture records, optimizer and R=4 with both candidates; levers.require_size_matched_arms must pass for every candidate (halting and supervision schedules add zero parameters).",
+        "kind": "positive"
+      },
+      {
+        "control_id": "tau_inf_halt_at_depth_1",
+        "description": "Destructive negative control: the halting arm re-decoded with tau=+inf must halt at r=1 on 100% of inputs, reproduce the control's depth-1 CE bit-for-bit, and trip the halt_at_depth_1_majority kill; otherwise the halting rule or the kill criterion is not live and the campaign is void.",
+        "kind": "negative"
+      },
+      {
+        "control_id": "slm421_control_reproduction",
+        "description": "Quality control: fixed_r_control on seeds 22..41 must satisfy the SLM-421 recurrence-health condition at a pass rate whose Wilson 95% interval overlaps SLM-421's [0.699, 0.972]; otherwise the fixture is broken and no candidate comparison counts.",
+        "kind": "quality"
+      },
+      {
+        "control_id": "fixture_headroom_precondition",
+        "description": "PRECONDITION (blocks execution; status=blocked_on_fixture_headroom): the eval fixture must contain >=1 eval example on which ar_only is invalid. As of 2026-09-02 none exists: the SLM-138 fixture (_fixture_records) is two train-split records a/b with no ar_only arm, and the SLM-155 eval decision corpus is ar_only hard-valid on 40/40 (SLM-434). A successor fixture with recorded headroom must be registered and this control re-locked before any seed runs.",
+        "kind": "quality"
+      }
+    ],
+    "negative_controls": [
+      "tau_inf_halt_at_depth_1"
+    ],
+    "multiplicity_families": [
+      {
+        "family_id": "h7_confirmatory",
+        "hypothesis_ids": [
+          "adjacent_depth_ce_nonregression_pass_rate",
+          "per_depth_ce_paired_delta_max",
+          "final_depth_ce_paired_delta_vs_control"
+        ],
+        "alpha": 0.05,
+        "method": "holm"
+      }
+    ],
+    "promotion_gates": [
+      {
+        "gate_id": "g_nonregression_wilson_lcb_ge_0p5",
+        "endpoint_id": "adjacent_depth_ce_nonregression_pass_rate",
+        "operator": "ge",
+        "threshold": 0.5
+      },
+      {
+        "gate_id": "g_per_depth_ce_no_regression_vs_control",
+        "endpoint_id": "per_depth_ce_paired_delta_max",
+        "operator": "le",
+        "threshold": 0.001
+      },
+      {
+        "gate_id": "g_final_ce_noninferior",
+        "endpoint_id": "final_depth_ce_paired_delta_vs_control",
+        "operator": "le",
+        "threshold": 0.001
+      },
+      {
+        "gate_id": "g_halting_triggers",
+        "endpoint_id": "halt_trigger_fraction",
+        "operator": "gt",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "g_halt_depth1_minority",
+        "endpoint_id": "halt_at_depth_1_fraction",
+        "operator": "le",
+        "threshold": 0.5
+      },
+      {
+        "gate_id": "g_wall_clock_within_cap",
+        "endpoint_id": "wall_clock_seconds_per_seed",
+        "operator": "le",
+        "threshold": 9.0
+      }
+    ],
+    "rollback_gates": [
+      {
+        "gate_id": "r_any_depth_ce_regression_wilson_ucb_lt_0p5",
+        "endpoint_id": "adjacent_depth_ce_nonregression_pass_rate",
+        "operator": "lt",
+        "threshold": 0.5
+      },
+      {
+        "gate_id": "r_per_depth_ce_regression_vs_control",
+        "endpoint_id": "per_depth_ce_paired_delta_max",
+        "operator": "gt",
+        "threshold": 0.001
+      },
+      {
+        "gate_id": "r_halting_never_triggers",
+        "endpoint_id": "halt_trigger_fraction",
+        "operator": "le",
+        "threshold": 0.0
+      },
+      {
+        "gate_id": "r_halt_depth1_majority",
+        "endpoint_id": "halt_at_depth_1_fraction",
+        "operator": "gt",
+        "threshold": 0.5
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      },
+      {
+        "kind": "seed_result",
+        "minimum_count": 60
+      },
+      {
+        "kind": "paired_examples",
+        "minimum_count": 40
+      },
+      {
+        "kind": "endpoint_result",
+        "minimum_count": 7
+      },
+      {
+        "kind": "holm_family",
+        "minimum_count": 1
+      },
+      {
+        "kind": "agentv",
+        "minimum_count": 1
+      }
+    ],
+    "formal_obligations": [],
+    "claim_class": "fixture",
+    "source_commit": "afa5f81b4e545f4c9ad0f9a1b8ff1d87f29d0e0e",
+    "source_dirty": false,
+    "author": "S9",
+    "created_at": "2026-09-02T00:00:00Z",
+    "requires_rl": false,
+    "rl_readiness_report_sha256": null,
+    "rl_evaluation_sha256": null,
+    "locked_eval_manifest_sha256": "480ed389f52b4e10b980f92962b9e7b7124c5ef3be8bfc2805c9a7ebd82347aa",
+    "metric_expectations_sha256": null,
+    "replay_of_manifest_sha256": null,
+    "replay_reason": null,
+    "replicate_ledger_schema": null,
+    "replicate_seed_floor": null,
+    "mechanism_off_arm_ids": [
+      "fixed_r_control"
+    ],
+    "executable_kill_criteria": [
+      "kill:any_depth_ce_regression -- as SLM-282 (seed 1, R=4, example b, CE 17.487688 -> 17.855324): per arm, if the Wilson 95% upper bound of the per-seed adjacent-depth non-regression pass rate falls below 0.5 the arm is killed (recursive_adaptive_depth_negative).",
+      "kill:per_depth_ce_regression_vs_control -- any depth r in 1..4 with mean paired CE_candidate(r) - CE_fixed_r_control(r) > 1e-3 kills that candidate.",
+      "kill:halting_never_triggers -- index_hidden_halting_tau with halt_trigger_fraction == 0 over 20 seeds x 2 examples is killed (tau=0.30 unreachable).",
+      "kill:halt_at_depth_1_majority -- index_hidden_halting_tau with halt_at_depth_1_fraction > 0.5 is killed (tau=0.30 too permissive).",
+      "kill:size_mismatch -- levers.require_size_matched_arms fails for any candidate vs fixed_r_control; capacity is never bought with parameters.",
+      "kill:fixture_headroom_missing -- the run's fixture manifest records no eval example on which ar_only is invalid: refuse to start."
+    ],
+    "power_feasibility": null,
+    "selection_rule": "best_by_primary_then_smallest"
+  }
+}
