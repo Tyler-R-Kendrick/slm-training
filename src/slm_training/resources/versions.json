@@ -894,6 +894,11 @@
     "data.test_build": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "Certified eval source: build_test_data --source certified samples the RootFamilySplitPolicyV1 validation/test buckets of openui_verified_v1 (families closed under recorded links and identical program text), decontaminated against the materialized train bucket openui_verified_train_v1 (scripts/build_certified_train_bucket.py), stratified by source, seeded; publishes e938_role_safe_all_targets_smoke96_v1 / heldout24_v1 with quality_report and screening_sample_size sidecars at the exact decidability floor.",
+          "version": "v9"
+        },
+        {
           "date": "2026-08-21",
           "note": "Publish e938_role_safe_all_targets_smoke24_v1 for powered screening; frozen e938_* snapshots unchanged.",
           "version": "v8"
@@ -948,9 +953,10 @@
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/",
-        "src/slm_training/resources/test_seeds.jsonl"
+        "src/slm_training/resources/test_seeds.jsonl",
+        "scripts/build_certified_train_bucket.py"
       ],
-      "version": "v8"
+      "version": "v9"
     },
     "decode.invariants": {
       "history": [
@@ -5043,6 +5049,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Screening deficit heal draws from the certified corpus: extra_smoke_fixtures_for_deficit samples validation-bucket records via harnesses.test_data.certified (decontaminated against the certified train bucket and the policy train set) instead of the exhausted 21-tuple; policy.v3 defaults.train_version and data_intervention.fixture_train_version -> openui_verified_train_v1.",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "RC1 fix (v268 claimed it, did not land): screening power floor uses only a same-metric paired SD (policy observed_sd_by_metric -> metric_expectations.screening.v1.json observed_paired_sd_by_metric -> metric-keyed ledger -> MEASURED_PAIRED_SD tagged smoke.structural_similarity), never borrowed; unmeasured SD -> power_floor_status=unmeasured, advisory insufficient_evidence with chosen_n=min(suite, budget, max_candidate_n) so screening_smoke_n_for_policy never returns n=0 for smoke.eval_nll at suite 24. New default policy.v3.json (v15: minimum_effect 0.02 nats/token with rationale, observed_sd_by_metric slot); load_climb_policy falls back v3 -> v2 -> v1.",
           "version": "v271"
         },
@@ -6940,7 +6951,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v271"
+      "version": "v272"
     },
     "harness.autoresearch.formal": {
       "history": [

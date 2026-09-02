@@ -17,8 +17,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--source",
         default="both",
-        choices=["rico", "fixture", "both"],
-        help="Test data source (default: both RICO eval split + fixtures).",
+        choices=["rico", "fixture", "both", "certified"],
+        help=(
+            "Test data source (default: both RICO eval split + fixtures). "
+            "'certified' samples the validation/test root-family buckets of "
+            "the certified corpus (harnesses.test_data.certified)."
+        ),
+    )
+    parser.add_argument(
+        "--certified-corpus",
+        type=Path,
+        default=None,
+        help="records.jsonl of the certified corpus (default: openui_verified_v1).",
+    )
+    parser.add_argument("--certified-smoke-n", type=int, default=96)
+    parser.add_argument("--certified-held-out-n", type=int, default=24)
+    parser.add_argument("--certified-seed", type=int, default=0)
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="Publish the built version into the immutable Git data store.",
     )
     parser.add_argument(
         "--seed-path",
@@ -120,10 +138,33 @@ def main(argv: list[str] | None = None) -> int:
             target_records=args.target_records,
             max_children=args.max_children,
             sanitize_mode=args.sanitize_mode,
+            certified_corpus=args.certified_corpus,
+            certified_smoke_n=args.certified_smoke_n,
+            certified_held_out_n=args.certified_held_out_n,
+            certified_seed=args.certified_seed,
         )
     )
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
+    if args.source == "certified":
+        from slm_training.autoresearch.screening_sample_size import (
+            assert_eval_publish_target_writable,
+        )
+        from slm_training.harnesses.test_data.certified import (
+            write_certified_eval_sidecars,
+        )
+
+        assert_eval_publish_target_writable(args.version)
+        sidecars = write_certified_eval_sidecars(
+            result["output_dir"], eval_version=args.version, stats=result["stats"]
+        )
+        for name, path in sidecars.items():
+            print(f"{name}={path}")
+    if args.publish:
+        from slm_training.data.store import DataStore
+
+        ref = DataStore().publish("eval", args.version)
+        print(f"published {ref.path} fingerprint={ref.fingerprint}")
     if args.register_lineage:
         from slm_training.lineage.data_cycle import register_dataset_snapshot
         from slm_training.lineage.store import LineageStore

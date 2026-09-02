@@ -23,7 +23,7 @@
     "min_seeds": 2
   },
   "defaults": {
-    "train_version": "hillclimb_strict_v2",
+    "train_version": "openui_verified_train_v1",
     "eval_version_resolve": "published_smoke",
     "claim_class_screening": "diagnostic",
     "claim_class_promotion": "promotion_candidate",
@@ -185,7 +185,7 @@
     "block_model_on_pair_quality": true,
     "prefer_data_before_terminal_tie": true,
     "fixture_claim_class": "fixture",
-    "fixture_train_version": "wf_smoke_v2"
+    "fixture_train_version": "openui_verified_train_v1"
   },
   "rung_gates": {
     "enabled": true,

@@ -972,11 +972,22 @@ def test_default_policy_is_v3_with_nll_unit_minimum_effect() -> None:
     block = policy.measurement["screening_sample_size"]
     assert block["observed_sd_by_metric"] == {}
     assert "observed_sd" not in block  # no untagged scalar to borrow
-    # v3 is v2 plus the RC1 fields only.
+    # v3 is v2 plus the RC1 fields, and the certified train bucket as the
+    # default / fixture train set (P7: real data growth from the certified
+    # corpus; the bucket carries the leakage fingerprints v2's sets lacked).
+    certified_train = "openui_verified_train_v1"
+    assert policy.defaults["train_version"] == certified_train
+    assert policy.payload["data_intervention"]["fixture_train_version"] == certified_train
     v2 = json.loads((CLIMB_RESOURCE_DIR / "policy.v2.json").read_text(encoding="utf-8"))
     v3 = dict(policy.payload)
+    retargeted = {"defaults": {"train_version"}, "data_intervention": {"fixture_train_version"}}
     for key, value in v2.items():
         if key in {"version", "description", "screening_primary", "measurement"}:
+            continue
+        if key in retargeted:
+            for sub, sub_value in value.items():
+                if sub not in retargeted[key]:
+                    assert v3[key][sub] == sub_value, f"policy.v3.json changed {key}.{sub}"
             continue
         assert v3[key] == value, f"policy.v3.json changed v2 field {key!r}"
     for key, value in v2["measurement"].items():

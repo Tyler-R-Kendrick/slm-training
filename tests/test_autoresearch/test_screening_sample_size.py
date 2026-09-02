@@ -46,14 +46,21 @@ def _obs(**overrides: object) -> ScreeningSampleSizeObservation:
 
 
 def test_extra_smoke_fixtures_cover_deficit_without_duplicates() -> None:
+    # Deficit records come from the certified corpus' validation bucket, in
+    # the test_seeds.jsonl shape, never from a hand-written tuple.
     extras = extra_smoke_fixtures_for_deficit(existing_ids=set(), need=3)
     assert len(extras) == 3
-    assert {row["id"] for row in extras} == {
-        "smoke_tabs_01",
-        "smoke_form_01",
-        "smoke_switch_01",
-    }
+    for row in extras:
+        assert row["split"] == "smoke"
+        assert row["meta"]["suite"] == "smoke"
+        assert row["meta"]["certified_corpus"] == "openui_verified_v1"
+        assert row["meta"]["root_family_split"] == "validation"
+        assert row["openui"] and row["prompt"]
     used = {row["id"] for row in extras}
+    assert len(used) == 3
+    # Deterministic for the same corpus, seed and exclusion set.
+    again = extra_smoke_fixtures_for_deficit(existing_ids=set(), need=3)
+    assert {row["id"] for row in again} == used
     more = extra_smoke_fixtures_for_deficit(existing_ids=set(used), need=3)
     assert more
     assert used.isdisjoint({row["id"] for row in more})
@@ -63,20 +70,17 @@ def test_extra_smoke_fixtures_cover_deficit_without_duplicates() -> None:
     assert exhausted == []
 
 
-def test_extra_smoke_fixtures_can_fill_target_24() -> None:
-    seeded = {
-        "smoke_hero_01",
-        "smoke_button_01",
-        "smoke_callout_01",
-        "smoke_tabs_01",
-        "smoke_form_01",
-        "smoke_switch_01",
-    }
-    extras = extra_smoke_fixtures_for_deficit(
-        existing_ids=set(seeded), need=TARGET_SMOKE_N - len(seeded)
-    )
-    assert len(seeded) + len(extras) >= TARGET_SMOKE_N
-    assert seeded.isdisjoint({row["id"] for row in extras})
+def test_extra_smoke_fixtures_can_fill_target_from_certified_pool() -> None:
+    seeded = {"smoke_hero_01", "smoke_button_01", "smoke_callout_01"}
+    existing = set(seeded)
+    need = 3 * TARGET_SMOKE_N
+    extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
+    ids = [row["id"] for row in extras]
+    assert len(extras) == need  # the old 21-tuple could never reach this
+    assert len(set(ids)) == len(ids)
+    assert seeded.isdisjoint(ids)
+    assert existing == seeded | set(ids)  # updated in place for the next call
+    assert len({row["source"] for row in extras}) > 1  # stratified by source
 
 
 def test_latency_probe_knobs_are_allowed() -> None:

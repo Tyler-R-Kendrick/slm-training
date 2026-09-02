@@ -62,7 +62,7 @@ import json
 import math
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Literal, Mapping
+from typing import Any, Iterable, Literal, Mapping
 
 from pydantic import Field, field_validator, model_validator
 
@@ -690,425 +690,77 @@ def assert_eval_publish_target_writable(dataset_id: str) -> None:
         )
 
 
-# Extra smoke programs (I9 grammar + placeholders only). Appended when Lean n
-# exceeds the committed smoke count; never duplicates of the original 3.
-_EXTRA_SMOKE_FIXTURES: tuple[dict[str, Any], ...] = (
-    {
-        "id": "smoke_tabs_01",
-        "prompt": "Two-tab panel with overview and details placeholders.",
-        "openui": (
-            "root = Stack([panel], \"column\")\n"
-            "overview = TextContent(\":smoke.tabs.overview\")\n"
-            "details = TextContent(\":smoke.tabs.details\")\n"
-            "tab1 = TabItem(\"$0\", \":smoke.tabs.tab1\", [overview])\n"
-            "tab2 = TabItem(\"$1\", \":smoke.tabs.tab2\", [details])\n"
-            "panel = Tabs([tab1, tab2])"
-        ),
-        "placeholders": [
-            ":smoke.tabs.overview",
-            ":smoke.tabs.details",
-            ":smoke.tabs.tab1",
-            ":smoke.tabs.tab2",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_form_01",
-        "prompt": "Email field with label and submit button.",
-        "openui": (
-            "root = Stack([field, actions], \"column\")\n"
-            "email = Input(\"$0\", \":smoke.form.email\", \"email\")\n"
-            "field = FormControl(\":smoke.form.email.label\", email)\n"
-            "submit = Button(\":smoke.form.submit\")\n"
-            "actions = Buttons([submit])"
-        ),
-        "placeholders": [
-            ":smoke.form.email",
-            ":smoke.form.email.label",
-            ":smoke.form.submit",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_switch_01",
-        "prompt": "Settings switch with a supporting note.",
-        "openui": (
-            "root = Stack([notify, note], \"column\")\n"
-            "notify = SwitchItem(\":smoke.settings.notify\", "
-            "\":smoke.settings.notify.desc\", \"$0\")\n"
-            "note = Callout(\"info\", \":smoke.settings.hint.title\", "
-            "\":smoke.settings.hint.body\")"
-        ),
-        "placeholders": [
-            ":smoke.settings.notify",
-            ":smoke.settings.notify.desc",
-            ":smoke.settings.hint.title",
-            ":smoke.settings.hint.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_slider_01",
-        "prompt": "Volume slider with a caption.",
-        "openui": (
-            "root = Stack([caption, volume], \"column\")\n"
-            "caption = TextContent(\":smoke.slider.caption\")\n"
-            "volume = Slider(\"$0\", \"continuous\", 0, 100, 1, [40], "
-            "\":smoke.slider.volume\")"
-        ),
-        "placeholders": [":smoke.slider.caption", ":smoke.slider.volume"],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_image_01",
-        "prompt": "Image block with a supporting informational note.",
-        "openui": (
-            "root = Stack([shot, note], \"column\")\n"
-            "shot = ImageBlock(\":smoke.image.src\", \":smoke.image.alt\")\n"
-            "note = Callout(\"info\", \":smoke.image.hint.title\", "
-            "\":smoke.image.hint.body\")"
-        ),
-        "placeholders": [
-            ":smoke.image.src",
-            ":smoke.image.alt",
-            ":smoke.image.hint.title",
-            ":smoke.image.hint.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_modal_01",
-        "prompt": "Confirm-delete modal with a single action.",
-        "openui": (
-            "root = Stack([dialog], \"column\")\n"
-            "body = TextContent(\":smoke.modal.body\")\n"
-            "confirm = Button(\":smoke.modal.confirm\")\n"
-            "actions = Buttons([confirm])\n"
-            "dialog = Modal(\":smoke.modal.title\", true, [body, actions])"
-        ),
-        "placeholders": [
-            ":smoke.modal.body",
-            ":smoke.modal.confirm",
-            ":smoke.modal.title",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_login_01",
-        "prompt": "Login column with email input and continue button.",
-        "openui": (
-            "root = Stack([email, continueBtn], \"column\")\n"
-            "email = Input(\"$0\", \":smoke.login.email\", \"email\")\n"
-            "continueBtn = Button(\":smoke.login.continue\")"
-        ),
-        "placeholders": [":smoke.login.email", ":smoke.login.continue"],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_cards_01",
-        "prompt": "Two metric cards in a row under a heading.",
-        "openui": (
-            "root = Stack([header, rule, row], \"column\")\n"
-            "header = TextContent(\":smoke.cards.header\")\n"
-            "rule = Separator()\n"
-            "left_title = TextContent(\":smoke.cards.left.title\")\n"
-            "left_body = TextContent(\":smoke.cards.left.body\")\n"
-            "left = Card([left_title, left_body])\n"
-            "right_title = TextContent(\":smoke.cards.right.title\")\n"
-            "right_body = TextContent(\":smoke.cards.right.body\")\n"
-            "right = Card([right_title, right_body])\n"
-            "row = Stack([left, right], \"row\")"
-        ),
-        "placeholders": [
-            ":smoke.cards.header",
-            ":smoke.cards.left.title",
-            ":smoke.cards.left.body",
-            ":smoke.cards.right.title",
-            ":smoke.cards.right.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_signup_01",
-        "prompt": "Sign-up column with name, email, and create button.",
-        "openui": (
-            "root = Stack([name, email, create], \"column\")\n"
-            "name = Input(\"$0\", \":smoke.signup.name\", \"text\")\n"
-            "email = Input(\"$1\", \":smoke.signup.email\", \"email\")\n"
-            "create = Button(\":smoke.signup.create\")"
-        ),
-        "placeholders": [
-            ":smoke.signup.name",
-            ":smoke.signup.email",
-            ":smoke.signup.create",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_formcard_01",
-        "prompt": "Named form with email field, hint, and submit.",
-        "openui": (
-            "root = Stack([title, note, form], \"column\")\n"
-            "title = TextContent(\":smoke.formcard.title\")\n"
-            "email = Input(\"$0\", \":smoke.formcard.email\", \"email\")\n"
-            "field = FormControl(\":smoke.formcard.email.label\", email)\n"
-            "note = Callout(\"info\", \":smoke.formcard.hint.title\", "
-            "\":smoke.formcard.hint.body\")\n"
-            "submit = Button(\":smoke.formcard.submit\")\n"
-            "actions = Buttons([submit])\n"
-            "form = Form(\"$1\", actions, [field])"
-        ),
-        "placeholders": [
-            ":smoke.formcard.title",
-            ":smoke.formcard.email",
-            ":smoke.formcard.email.label",
-            ":smoke.formcard.hint.title",
-            ":smoke.formcard.hint.body",
-            ":smoke.formcard.submit",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_settings_01",
-        "prompt": "Settings list with a switch and a slider.",
-        "openui": (
-            "root = Stack([notify, volume], \"column\")\n"
-            "notify = SwitchItem(\":smoke.settings2.notify\", "
-            "\":smoke.settings2.notify.desc\", \"$0\")\n"
-            "volume = Slider(\"$1\", \"continuous\", 0, 100, 1, [25], "
-            "\":smoke.settings2.volume\")"
-        ),
-        "placeholders": [
-            ":smoke.settings2.notify",
-            ":smoke.settings2.notify.desc",
-            ":smoke.settings2.volume",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_hero2_01",
-        "prompt": "Hero card with kicker, title, and body.",
-        "openui": (
-            "root = Stack([title, rule, hero], \"column\")\n"
-            "title = TextContent(\":smoke.hero2.kicker\")\n"
-            "rule = Separator()\n"
-            "head = CardHeader(\":smoke.hero2.title\", \":smoke.hero2.subtitle\")\n"
-            "body = TextContent(\":smoke.hero2.body\")\n"
-            "hero = Card([head, body])"
-        ),
-        "placeholders": [
-            ":smoke.hero2.kicker",
-            ":smoke.hero2.title",
-            ":smoke.hero2.subtitle",
-            ":smoke.hero2.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_actions_01",
-        "prompt": "Row of three equally important action buttons.",
-        "openui": (
-            "root = Stack([a, b, c], \"row\")\n"
-            "a = Button(\":smoke.actions.a\")\n"
-            "b = Button(\":smoke.actions.b\")\n"
-            "c = Button(\":smoke.actions.c\")"
-        ),
-        "placeholders": [
-            ":smoke.actions.a",
-            ":smoke.actions.b",
-            ":smoke.actions.c",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_nested_01",
-        "prompt": "Card nested inside another card in a column.",
-        "openui": (
-            "root = Stack([outer], \"column\")\n"
-            "inner_title = TextContent(\":smoke.nest.inner.title\")\n"
-            "inner_body = TextContent(\":smoke.nest.inner.body\")\n"
-            "inner = Card([inner_title, inner_body])\n"
-            "inner_wrap = Stack([inner], \"column\")\n"
-            "outer_title = TextContent(\":smoke.nest.outer.title\")\n"
-            "outer = Card([outer_title, inner_wrap])"
-        ),
-        "placeholders": [
-            ":smoke.nest.inner.title",
-            ":smoke.nest.inner.body",
-            ":smoke.nest.outer.title",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_dualcard_01",
-        "prompt": "Two stacked cards with title and body each.",
-        "openui": (
-            "root = Stack([a, rule, b], \"column\")\n"
-            "rule = Separator()\n"
-            "a_title = TextContent(\":smoke.dual.a.title\")\n"
-            "a_body = TextContent(\":smoke.dual.a.body\")\n"
-            "a = Card([a_title, a_body])\n"
-            "b_title = TextContent(\":smoke.dual.b.title\")\n"
-            "b_body = TextContent(\":smoke.dual.b.body\")\n"
-            "b = Card([b_title, b_body])"
-        ),
-        "placeholders": [
-            ":smoke.dual.a.title",
-            ":smoke.dual.a.body",
-            ":smoke.dual.b.title",
-            ":smoke.dual.b.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_warning_01",
-        "prompt": "Warning callout with heading and body.",
-        "openui": (
-            "root = Stack([title, note], \"column\")\n"
-            "title = TextContent(\":smoke.warn.heading\")\n"
-            "note = Callout(\"info\", \":smoke.warn.title\", \":smoke.warn.body\")"
-        ),
-        "placeholders": [
-            ":smoke.warn.heading",
-            ":smoke.warn.title",
-            ":smoke.warn.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_cta_01",
-        "prompt": "Single primary CTA in a button row.",
-        "openui": (
-            "root = Stack([row], \"column\")\n"
-            "cta = Button(\":smoke.cta2.label\")\n"
-            "row = Buttons([cta])"
-        ),
-        "placeholders": [":smoke.cta2.label"],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_profile_01",
-        "prompt": "Profile card header with a supporting note.",
-        "openui": (
-            "root = Stack([head, note], \"column\")\n"
-            "head = CardHeader(\":smoke.profile.name\", \":smoke.profile.role\")\n"
-            "note = Callout(\"info\", \":smoke.profile.hint.title\", "
-            "\":smoke.profile.hint.body\")"
-        ),
-        "placeholders": [
-            ":smoke.profile.name",
-            ":smoke.profile.role",
-            ":smoke.profile.hint.title",
-            ":smoke.profile.hint.body",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_search_01",
-        "prompt": "Search field with submit button.",
-        "openui": (
-            "root = Stack([field, actions], \"column\")\n"
-            "query = Input(\"$0\", \":smoke.search.query\", \"text\")\n"
-            "field = FormControl(\":smoke.search.label\", query)\n"
-            "go = Button(\":smoke.search.submit\")\n"
-            "actions = Buttons([go])"
-        ),
-        "placeholders": [
-            ":smoke.search.query",
-            ":smoke.search.label",
-            ":smoke.search.submit",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_tabs2_01",
-        "prompt": "Activity and archive tabs with placeholder bodies.",
-        "openui": (
-            "root = Stack([panel], \"column\")\n"
-            "activity = TextContent(\":smoke.tabs2.activity\")\n"
-            "archive = TextContent(\":smoke.tabs2.archive\")\n"
-            "tab1 = TabItem(\"$0\", \":smoke.tabs2.tab1\", [activity])\n"
-            "tab2 = TabItem(\"$1\", \":smoke.tabs2.tab2\", [archive])\n"
-            "panel = Tabs([tab1, tab2])"
-        ),
-        "placeholders": [
-            ":smoke.tabs2.activity",
-            ":smoke.tabs2.archive",
-            ":smoke.tabs2.tab1",
-            ":smoke.tabs2.tab2",
-        ],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-    {
-        "id": "smoke_empty_01",
-        "prompt": "Minimal fallback text stack.",
-        "openui": (
-            "root = Stack([fallback])\n"
-            "fallback = TextContent(\":smoke.empty.text\")"
-        ),
-        "placeholders": [":smoke.empty.text"],
-        "split": "smoke",
-        "source": "fixture",
-        "meta": {"suite": "smoke"},
-    },
-)
+# Deficit smoke records are sampled from the certified corpus, never from a
+# hand-written tuple: harnesses.test_data.certified draws root-family
+# validation-bucket records (RootFamilySplitPolicyV1 buckets 80-89), n-gram /
+# structure decontaminated against the certified train bucket, stratified by
+# source and seeded, and never returns an id the target suite already holds.
+# The test bucket (90-99) is reserved for the locked held-out suite.
+CERTIFIED_SMOKE_SPLITS: tuple[str, ...] = ("validation",)
+
+
+def _policy_train_manifest() -> Path | None:
+    """Manifest of the climb policy's default train dataset, when resolvable.
+
+    The certified train bucket is always decontaminated against; the policy
+    train set is added so a deficit record can never be a leak of whatever the
+    climb currently trains on, even when that differs from the bucket.
+    """
+
+    try:
+        from slm_training.autoresearch.climb_policy import load_climb_policy
+        from slm_training.data.store import DataStore
+
+        train_version = str(load_climb_policy().defaults.get("train_version") or "")
+        if not train_version:
+            return None
+        manifest = DataStore().resolve("train", train_version).path / "manifest.json"
+    except Exception:  # noqa: BLE001 — unresolvable policy set adds nothing
+        return None
+    return manifest if manifest.is_file() else None
 
 
 def extra_smoke_fixtures_for_deficit(
-    *, existing_ids: set[str], need: int
+    existing_ids: set[str],
+    need: int,
+    *,
+    seed: int = 0,
+    extra_train_manifests: Iterable[Path | str] = (),
 ) -> list[dict[str, Any]]:
-    """Return unused extra smoke fixtures, up to ``need`` records."""
+    """Return up to ``need`` unused certified smoke records as seed dicts.
 
+    ``existing_ids`` is updated in place with the returned ids so repeated
+    calls keep growing the suite without duplicates. Records are plain dicts
+    in the ``test_seeds.jsonl`` shape (``split``/``meta.suite`` = smoke) so
+    the driver can append them and rebuild with ``--source fixture``.
+    Candidates are decontaminated against the certified train bucket, the
+    climb policy's default train dataset, and ``extra_train_manifests``.
+    """
+
+    if need <= 0:
+        return []
+    from slm_training.harnesses.test_data.certified import (
+        sample_certified_candidates,
+    )
+
+    manifests: list[Path | str] = list(extra_train_manifests)
+    policy_manifest = _policy_train_manifest()
+    if policy_manifest is not None:
+        manifests.append(policy_manifest)
+    sample = sample_certified_candidates(
+        existing_ids=set(existing_ids),
+        need=need,
+        suite="smoke",
+        splits=CERTIFIED_SMOKE_SPLITS,
+        seed=seed,
+        extra_train_manifests=manifests,
+    )
     out: list[dict[str, Any]] = []
-    for fixture in _EXTRA_SMOKE_FIXTURES:
-        if need <= 0:
-            break
-        fid = str(fixture["id"])
-        if fid in existing_ids:
+    for record in sample.records:
+        if record.id in existing_ids:
             continue
-        out.append(dict(fixture))
-        existing_ids.add(fid)
-        need -= 1
+        existing_ids.add(record.id)
+        out.append(record.to_dict())
     return out
 
 
@@ -1144,6 +796,7 @@ __all__ = [
     "pooled_ledger_paired_sd",
     "lookup_paired_sd_for_metric",
     "TARGET_SMOKE_N",
+    "CERTIFIED_SMOKE_SPLITS",
     "assert_eval_publish_target_writable",
     "extra_smoke_fixtures_for_deficit",
 ]
