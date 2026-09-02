@@ -6537,3 +6537,44 @@ production change, or advanced-operator default-on authorization follows.
 Full evidence:
 [`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
 narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
+
+## N2 / N3 decode-authority audit (cards S6, S12; 2026-09-02)
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| S6-N2-off | `context_ablation=off` | Control arm; proves the lever is inert by default | run, byte-identical to the pre-lever decode |
+| S6-N2-zero | `context_ablation=zero` | Blank the projected context tower output at decode | run, **falsifies N2** (16.25% / 16.67% / 11.07% decision flips; ΔSS −0.0373 / −0.0458 / 0.0000) |
+| S6-N2-shuffle-batch | `context_ablation=shuffle_batch` | Each row reads another prompt's context | run, 2.13% / 2.70% / 4.44% flips but ΔSS +0.0223 / +0.0187 / 0.0000 |
+| S6-N2-shuffle-positions | `context_ablation=shuffle_positions` | Null control (cross-attention is permutation-invariant over context keys) | run, exactly 0 flips in 4,138 probed decisions — instrument sound |
+| S12-N3-topk | `parallel_unmask=topk` + `record_step_commits` | Per-step commit-authority histogram | run, step-1 forced share 27.4% / 38.2% |
+| S12-N3-confidence | `parallel_unmask=confidence` + `record_step_commits` | Per-step commit-authority histogram | run, step-1 forced share 21.3% / 31.7% |
+| S12-N3-adaptive | `parallel_unmask=adaptive` + `record_step_commits` | Per-step commit-authority histogram (production default) | run, **falsifies N3** (step-1 forced share 13.2% / 6.4%, confident 86.8% / 93.6%) |
+
+Both cards ran on the positionwise MaskGIT decode (`_generate_maskgit_one`,
+reached with `grammar_ltr_primary=False`) over smoke `n=8`, held_out `n=8` and
+adversarial `n=4`, seeds 0 and 1 for S6 and seed 0 for S12. 28 runs, **0
+timeouts**, slowest 141.0 s, every run inside `MAX_RUN_MINUTES = 3`.
+`parse_rate = 1.00` in all 28 runs (I6 holds on every diagnostic arm) and
+`meaningful_program_rate = 0.00` in all 28, so no quality claim of any kind is
+available: this is fixture-demo evidence, never a ship signal, and no
+checkpoint, gate, model-card entry, or production default changed.
+
+**N2 is falsified.** The context tower is not causally inert on legal-set
+decisions: removing it flips 11–17% of non-singleton constrained argmaxes and
+measurably moves `structural_similarity`. **N3 is falsified**, and the
+confidence-committed share dominates: forced (I2) commits are 6.4–38.2% of
+step 1 in every arm, and the "first step commits the most tokens" premise only
+holds for the `adaptive` schedule at all. Speculative (I3) commits were 0.0% of
+every step — the MaskGIT lane never consults the speculative ranker.
+
+The card's named measurement checkpoint
+`src/slm_training/resources/checkpoints/playground_demo/last.pt` **could not be
+loaded**: it carries `output_contract_version` 0 against the required
+`symbol_only/v2`, and `scripts/bootstrap_playground.py` can no longer
+regenerate it (its `DEMO_RECORDS` fail `assert_canonical_template_markers`).
+Both breakages predate these cards and make every default
+`PLAYGROUND_DEMO_CHECKPOINT` perf path unrunnable. A playground-scale
+substitute was rebuilt under the current contract for measurement only and was
+never committed; its full recipe is in the iter docs. Full evidence:
+[`iter-s6-context-ablation-20260902.md`](iter-s6-context-ablation-20260902.md),
+[`iter-s12-commit-authority-profile-20260902.md`](iter-s12-commit-authority-profile-20260902.md).

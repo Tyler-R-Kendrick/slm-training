@@ -328,6 +328,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "S6: DIAGNOSTIC_ONLY_LEVERS registry (context_ablation, safe value \"off\") checked by require_constrained_production_config alongside CONSTRAINT_WEAKENING_LEVERS, plus _lever_value_is_safe so an enum-valued lever is compared by value instead of truthiness (bool(\"zero\") == bool(\"off\") previously waved every non-bool diagnostic lever through the production guard). Strictly fail-closed: no lever weakened, no default changed; the lever surfaces in lever_catalog with diagnostic_only: true.",
+          "version": "v33"
+        },
+        {
+          "date": "2026-09-02",
           "note": "lever_catalog category: *_loss_weight levers of the compiler/solver family classify as training (weights-moving), not decode; no lever added, removed or defaulted.",
           "version": "v32"
         },
@@ -507,7 +512,7 @@
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
-      "version": "v32"
+      "version": "v33"
     },
     "data.abstract_cot_warmup": {
       "history": [
@@ -5119,6 +5124,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: rebuild evidence_ledger.v1.json after the S6/S12 audit result JSON (iter-s6-context-ablation-20260902.json, iter-s12-commit-authority-profile-20260902.json) landed; deterministic regeneration, no harness behaviour change.",
+          "version": "v281"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the three P1 continuous-loop closeout results JSON landed (deterministic rebuild); P1 recovery doc section is documentation only.",
@@ -11100,6 +11110,11 @@
     "harness.experiments.slm197_direct_bridge_policy": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S6/S12 N2/N3 decode-authority audit (context_ablation arms and the per-step commit-authority histogram). Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
+        {
           "date": "2026-08-04",
           "note": "no-bump: correct a stale fixed-output-vocab figure (296 -> 569) in docs/design/quality-experiment-matrix.md; the registry pins vocab_size 569 and the wrong number had misled an external reviewer. Documentation only.",
           "version": "v1"
@@ -16485,6 +16500,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "S6/S12 decode telemetry (decode_stats.py, additive). S6: context_ablation_rows / _degenerate_rows / _applications / _choice_changes following the existing *_applications / *_choice_changes argmax-flip pattern, added to aggregate_stats. S12: record_step_commits switch and the step_commits per-step authority history, both default-off so a decode that does not arm them is byte-identical. merge() now skips bool fields so the telemetry switch cannot be summed into a count (bool is an int subclass); no existing counter, ratio, or gate semantics changed and S4's derived fraction properties are untouched.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of cards P3 (per-record NLL rows) and P11 (chunked resumable eval) which both prepended v102 independently; reconciles the component to v103.",
           "version": "v103"
         },
@@ -17109,7 +17129,7 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v103"
+      "version": "v104"
     },
     "harness.model_build.train": {
       "history": [
@@ -19343,6 +19363,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "S6/S12 audit cards. S6: new default-off TwoTowerConfig.context_ablation (off|zero|shuffle_batch|shuffle_positions) applied at the one decode-time seam in _generate_batch_once where the projected context tower output enters the denoiser; \"off\" returns the caller's tensor object so the production decode is byte-identical. Adds _apply_context_ablation and a ctx_shadow decision-level probe in _generate_maskgit_one that re-runs the constrained pick over the same legal set with the intact context and counts argmax flips (non-singleton positions only). S12: per-step commit-authority histogram recorded in the MaskGIT loop, gated on DecodeStats.record_step_commits and therefore inert by default. No production default changed; tests in tests/test_models/test_context_ablation.py and tests/test_models/test_step_commit_histogram.py.",
+          "version": "v322"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Reconcile S2 with P5 on the integration branch: both landed as v320 in parallel; the S2 n-gram table entry below keeps its content, the P5 compiler-decode entry follows.",
           "version": "v321"
         },
@@ -21340,7 +21365,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v321"
+      "version": "v322"
     },
     "ops.vocab": {
       "history": [

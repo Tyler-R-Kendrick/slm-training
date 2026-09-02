@@ -515,6 +515,13 @@ class TwoTowerConfig:
     use_amp: bool = False
     # MaskGIT parallel unmask: topk | confidence | adaptive (mean-field-lite)
     parallel_unmask: str = "adaptive"
+    # S6/N2 diagnostic control (never a production or ship-gated value):
+    # corrupt the projected context tensor at decode time to measure how much
+    # the frozen context tower actually contributes to legal-set decisions.
+    # off | zero | shuffle_batch | shuffle_positions. Registered in
+    # ``levers.DIAGNOSTIC_ONLY_LEVERS`` so
+    # ``require_constrained_production_config`` refuses any value but "off".
+    context_ablation: str = "off"
     # E22: remask lowest-confidence committed tokens each MaskGIT step (0=off).
     remask_ratio: float = 0.0
     # E33: combine grammar + gate + entropy into remask budget.
@@ -2672,6 +2679,66 @@ class TwoTowerModel(nn.Module):
                     pad_id=self.context_tokenizer.pad_id,
                     device=self.device_name,
                 )
+
+    CONTEXT_ABLATION_MODES: tuple[str, ...] = (
+        "off",
+        "zero",
+        "shuffle_batch",
+        "shuffle_positions",
+    )
+
+    def _apply_context_ablation(
+        self, ctx: torch.Tensor, ctx_pad: torch.Tensor | None
+    ) -> torch.Tensor:
+        """S6/N2: corrupt the projected context tensor for a diagnostic arm.
+
+        Decode-time only -- the single call site is ``_generate_batch_once``,
+        so ``training_loss``/``forward`` never see an ablated context. ``off``
+        returns the caller's tensor object unchanged (identity, not a copy),
+        so the default decode is byte-identical to the pre-S6 path.
+        """
+        mode = str(getattr(self.config, "context_ablation", "off") or "off")
+        if mode == "off":
+            return ctx
+        if mode not in self.CONTEXT_ABLATION_MODES:
+            raise ValueError(
+                f"unknown context_ablation {mode!r}; expected one of "
+                f"{list(self.CONTEXT_ABLATION_MODES)}"
+            )
+        stats = get_active_stats()
+        rows = int(ctx.size(0))
+        if mode == "zero":
+            if stats is not None:
+                stats.context_ablation_rows += rows
+            return torch.zeros_like(ctx)
+        if mode == "shuffle_batch":
+            # Deterministic derangement: every row reads another row's prompt.
+            # A single-row batch has no other row to read, so nothing is
+            # ablated and the row is counted as degenerate rather than
+            # silently reported as an ablation that happened.
+            if rows < 2:
+                if stats is not None:
+                    stats.context_ablation_degenerate_rows += rows
+                return ctx
+            if stats is not None:
+                stats.context_ablation_rows += rows
+            return torch.roll(ctx, shifts=1, dims=0)
+        # shuffle_positions: reverse each row's valid (non-pad) prefix. A
+        # deterministic permutation -- no RNG, so arms are reproducible.
+        out = ctx.clone()
+        for row in range(rows):
+            if ctx_pad is None:
+                valid = int(ctx.size(1))
+            else:
+                valid = int((~ctx_pad[row]).sum().item())
+            if valid < 2:
+                if stats is not None:
+                    stats.context_ablation_degenerate_rows += 1
+                continue
+            out[row, :valid] = torch.flip(ctx[row, :valid], dims=(0,))
+            if stats is not None:
+                stats.context_ablation_rows += 1
+        return out
 
     def abstract_plan_trace(
         self,
@@ -14755,6 +14822,13 @@ class TwoTowerModel(nn.Module):
             opaque_slot_projection=opaque_slot_projection,
         )
         ctx, ctx_pad = self._encode_context(ctx_prompts)
+        # S6/N2: the one decode-time seam where the projected context tower
+        # output enters the denoiser. ``context_ablation="off"`` (the default,
+        # and the only value a production/ship-gated config may hold) returns
+        # the same tensor object, so this line is a no-op on every real decode.
+        ctx_intact = ctx
+        ctx = self._apply_context_ablation(ctx, ctx_pad)
+        context_ablated = ctx is not ctx_intact
         feature_tables: list[object] = []
         try:
             from slm_training.models.dsl_tokenizer import SymbolTable
@@ -14930,6 +15004,11 @@ class TwoTowerModel(nn.Module):
                     row_lengths[i],
                     use_grammar=use_grammar,
                     slot_contract=contract,
+                    # S6/N2 decision-level probe: only non-None on a
+                    # context-ablation diagnostic arm, where the decode is
+                    # driven by the ablated tensor and the intact tensor is a
+                    # shadow used to count argmax flips over the legal set.
+                    ctx_shadow=ctx_intact[i : i + 1] if context_ablated else None,
                 )
             )
         return out
@@ -15123,8 +15202,17 @@ class TwoTowerModel(nn.Module):
         use_grammar: bool,
         slot_contract: list[str] | None = None,
         seed_ids: list[int] | None = None,
+        ctx_shadow: torch.Tensor | None = None,
     ) -> str:
-        """Single-sequence MaskGIT unmasking (+ optional grammar repair)."""
+        """Single-sequence MaskGIT unmasking (+ optional grammar repair).
+
+        ``ctx_shadow`` (S6/N2) is the intact projected context on a
+        context-ablation diagnostic arm. It never steers a commit: the decode
+        is driven entirely by ``ctx``. It is forwarded a second time only to
+        record whether the constrained argmax over the *same* legal candidate
+        set would have differed, i.e. the decision-level flip rate. ``None``
+        on every production decode, so the extra forward never runs there.
+        """
         device = self.device_name
         rec = getattr(self, "trace_recorder", None)
         if rec is not None:
@@ -15264,6 +15352,10 @@ class TwoTowerModel(nn.Module):
             if not unknown.any():
                 if remask_ratio <= 0.0 or step >= steps - 1:
                     break
+            # S12/N3: read the forward counter before this step spends one, so
+            # a singleton-bypass or successor-cache step is recorded as the
+            # zero-forward step it is.
+            step_forwards_before = int(stats.denoiser_forwards)
             need_hidden = use_survival
             need_attn = cluster_mode
             hidden: torch.Tensor | None = None
@@ -15359,6 +15451,21 @@ class TwoTowerModel(nn.Module):
                     stats.clusters_proposed += 1
                     if cluster_verify:
                         stats.clusters_accepted += 1
+                # S12/N3: the I2 singleton bypass is a whole step whose single
+                # commit cost zero forwards. Recorded under the same opt-in
+                # flag as the ordinary steps below.
+                if active_stats is not None and active_stats.record_step_commits:
+                    active_stats.step_commits.append(
+                        {
+                            "step": int(step),
+                            "committed": 1,
+                            "forced": 1,
+                            "confident": 0,
+                            "speculative": 0,
+                            "forwards": 0,
+                            "authority": "forced",
+                        }
+                    )
                 if rec is not None:
                     rec.step(
                         step,
@@ -15408,6 +15515,25 @@ class TwoTowerModel(nn.Module):
                 if rec is not None:
                     rec.forward()
             successor_cache = None
+            # S6/N2 shadow pass. Diagnostic arms only (``ctx_shadow`` is None
+            # on every production decode). Never assigned to ``logits``, so it
+            # cannot steer a commit -- it only answers "would the intact
+            # context have picked a different legal candidate here?".
+            shadow_logits = None
+            if ctx_shadow is not None:
+                shadow_logits = self.denoiser(
+                    ids,
+                    ctx_shadow,
+                    pad_id=self.tokenizer.pad_id,
+                    ctx_pad_mask=ctx_pad,
+                )
+                shadow_logits = self._mask_inactive_dynamic_logits(shadow_logits)
+                if use_grammar and self._effective_structural_bias():
+                    shadow_logits = apply_structural_bias(
+                        shadow_logits,
+                        self.tokenizer,
+                        bias=self._effective_structural_bias(),
+                    )
             logits = self._mask_inactive_dynamic_logits(logits)
             if use_grammar and self._effective_structural_bias():
                 logits = apply_structural_bias(
@@ -15593,6 +15719,15 @@ class TwoTowerModel(nn.Module):
             newly: list[int] = []
             step_commits: list[dict] = []
             step_remasks: list[dict] = []
+            # S12/N3: which authority proved each position this step.
+            # ``_propose`` already computes the DFA force-emit proof, so the
+            # classification is read off the real decision, never re-derived.
+            proposal_authority: dict[int, str] = {}
+            spec_commits_before = int(
+                getattr(get_active_stats(), "speculative_rank_commits", 0)
+                if get_active_stats() is not None
+                else 0
+            )
             use_fast = bool(getattr(self.config, "grammar_fastpath", True))
             mode = str(
                 getattr(self.config, "grammar_fastpath_mode", "hybrid") or "hybrid"
@@ -15620,17 +15755,14 @@ class TwoTowerModel(nn.Module):
                 forced = (
                     force_emit_token_id(self.tokenizer, prefix) if use_fast else None
                 )
+                proposal_authority[t] = "forced" if forced is not None else "confident"
                 if forced is not None or use_grammar:
                     pick_logits = logits[b, t]
                     if asap is not None and asap.has_penalties(t):
                         # A2: proposal sees the ledger — observed violating
                         # mass at this position is removed in log domain.
                         pick_logits = asap.adjust_logits_row(pick_logits, t)
-                    # Speculative / constrained pick — never commit illegal tokens.
-                    choice = pick_constrained_token(
-                        pick_logits,
-                        self.tokenizer,
-                        prefix,
+                    pick_kwargs = dict(
                         top_k=self.config.grammar_top_k,
                         forced_token_id=forced,
                         slot_contract=slot_contract
@@ -15644,6 +15776,32 @@ class TwoTowerModel(nn.Module):
                         runtime_symbols=self._runtime_symbols_for_row(b),
                         **self._pick_kwargs(),
                     )
+                    # Speculative / constrained pick — never commit illegal tokens.
+                    choice = pick_constrained_token(
+                        pick_logits,
+                        self.tokenizer,
+                        prefix,
+                        **pick_kwargs,
+                    )
+                    # S6/N2 decision-level probe. Only at a *non-singleton*
+                    # legal-domain position (``forced is None``): where the
+                    # grammar already proves the token, context cannot matter
+                    # by construction and counting it would dilute the rate.
+                    if shadow_logits is not None and forced is None:
+                        shadow_row = shadow_logits[b, t]
+                        if asap is not None and asap.has_penalties(t):
+                            shadow_row = asap.adjust_logits_row(shadow_row, t)
+                        shadow_choice = pick_constrained_token(
+                            shadow_row,
+                            self.tokenizer,
+                            prefix,
+                            **pick_kwargs,
+                        )
+                        probe_stats = get_active_stats()
+                        if probe_stats is not None:
+                            probe_stats.context_ablation_applications += 1
+                            if shadow_choice != choice:
+                                probe_stats.context_ablation_choice_changes += 1
                     return choice  # None → leave masked for LTR repair
                 return int(pred[b, t].item())
 
@@ -16129,6 +16287,37 @@ class TwoTowerModel(nn.Module):
                             "reason": f"policy_{remask_policy}",
                         }
                     )
+
+            # S12/N3 per-step commit-authority histogram. Opt-in telemetry:
+            # nothing is built, counted, or appended unless the caller armed
+            # ``record_step_commits`` on the active bucket, so a default decode
+            # is byte-identical and pays nothing.
+            hist_stats = get_active_stats()
+            if hist_stats is not None and hist_stats.record_step_commits and newly:
+                spec_delta = max(
+                    0,
+                    int(hist_stats.speculative_rank_commits) - spec_commits_before,
+                )
+                forced_n = sum(
+                    1 for t in newly if proposal_authority.get(t) == "forced"
+                )
+                spec_n = min(spec_delta, len(newly))
+                confident_n = max(0, len(newly) - forced_n - spec_n)
+                hist_stats.step_commits.append(
+                    {
+                        "step": int(step),
+                        "committed": int(len(newly)),
+                        "forced": int(forced_n),
+                        "confident": int(confident_n),
+                        "speculative": int(spec_n),
+                        "forwards": int(stats.denoiser_forwards) - step_forwards_before,
+                        "authority": "forced"
+                        if forced_n > max(confident_n, spec_n)
+                        else "speculative"
+                        if spec_n > max(forced_n, confident_n)
+                        else "confident",
+                    }
+                )
 
             if rec is not None:
                 rec.step(

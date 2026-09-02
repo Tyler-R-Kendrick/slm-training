@@ -161,14 +161,51 @@ CONSTRAINT_WEAKENING_LEVERS: Final = {
 }
 
 
+# S6/N2. Diagnostic-only control arms: levers that do not change what is
+# *legal* (the grammar still constrains every commit, so I6 holds) but do
+# corrupt an input the production decode depends on. Their output is a control
+# measurement, never a certified or shipped decode, so
+# ``require_constrained_production_config`` refuses any value but the safe one
+# exactly as it does for the weakening levers above. Kept in a separate
+# registry because ``scripts/verify_decode_invariants.py`` reads
+# ``CONSTRAINT_WEAKENING_LEVERS`` as the legality/bypass registry and a
+# diagnostic input control is neither.
+DIAGNOSTIC_ONLY_LEVERS: Final = {
+    "context_ablation": {
+        "safe_value": "off",
+        "invariant": "I6",
+        "effect": "diagnostic_control",
+        "note": (
+            "corrupts the projected context tower output at decode time "
+            "(zero / shuffle_batch / shuffle_positions) to measure the "
+            "tower's causal contribution to legal-set decisions"
+        ),
+    },
+}
+
+
+def _lever_value_is_safe(value: Any, safe_value: Any) -> bool:
+    """True when ``value`` holds the lever's fail-closed setting.
+
+    Boolean levers compare by truthiness (``0``/``None``/``False`` all mean
+    off). Everything else compares by equality -- ``bool("zero")`` and
+    ``bool("off")`` are both ``True``, so a truthiness test would wave every
+    enum-valued diagnostic lever straight through the production guard.
+    """
+    if isinstance(safe_value, bool):
+        return bool(value) == bool(safe_value)
+    return value == safe_value
+
+
 def constraint_weakening_violations(config: Any) -> dict[str, dict[str, Any]]:
-    """Return registered weakening levers this config sets to an unsafe value."""
+    """Return registered weakening / diagnostic-only levers set unsafely."""
     violations: dict[str, dict[str, Any]] = {}
-    for name, spec in CONSTRAINT_WEAKENING_LEVERS.items():
+    registry = {**CONSTRAINT_WEAKENING_LEVERS, **DIAGNOSTIC_ONLY_LEVERS}
+    for name, spec in registry.items():
         if not hasattr(config, name):
             continue
         value = getattr(config, name)
-        if value is None or bool(value) == bool(spec["safe_value"]):
+        if value is None or _lever_value_is_safe(value, spec["safe_value"]):
             continue
         violations[name] = {**spec, "value": value}
     return violations
@@ -663,6 +700,24 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             "source": "slm_training.levers.MAX_RUN_MINUTES",
         }
     )
+    for name, spec in DIAGNOSTIC_ONLY_LEVERS.items():
+        entry = catalog.setdefault(
+            name,
+            {
+                "category": "decode",
+                "default": _json_value(spec["safe_value"]),
+                "type": "str",
+                "source": "slm_training.models.twotower.TwoTowerConfig",
+            },
+        )
+        entry.update(
+            {
+                "diagnostic_only": True,
+                "constraint_safe_value": _json_value(spec["safe_value"]),
+                "constraint_invariant": spec["invariant"],
+                "constraint_effect": spec["effect"],
+            }
+        )
     catalog["changed_test_workers"] = {
         "category": "run",
         "default": CHANGED_TEST_WORKERS,
