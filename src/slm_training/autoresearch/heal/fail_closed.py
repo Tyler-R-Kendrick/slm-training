@@ -31,7 +31,9 @@ HEAL_POSTCONDITION_FAILED = "heal_postcondition_failed"
 class BlockerRule:
     __slots__ = ("owner", "postcondition", "max_attempts", "terminal")
 
-    def __init__(self, owner: str, postcondition: str, max_attempts: int, terminal: str):
+    def __init__(
+        self, owner: str, postcondition: str, max_attempts: int, terminal: str
+    ):
         self.owner = owner
         self.postcondition = postcondition
         self.max_attempts = max_attempts
@@ -39,13 +41,21 @@ class BlockerRule:
 
 
 BLOCKER_RULES = {
-    "loop_stalled_no_campaign": BlockerRule("autotrain", "campaign_initialized", 3, "escalate"),
-    "heal_postcondition_failed": BlockerRule("autotrain", "declared_artifact_changed", 3, "escalate"),
-    "vacuous_pass": BlockerRule("autotrain", "campaign_initialized_or_typed_action", 3, "escalate"),
+    "loop_stalled_no_campaign": BlockerRule(
+        "autotrain", "campaign_initialized", 3, "escalate"
+    ),
+    "heal_postcondition_failed": BlockerRule(
+        "autotrain", "declared_artifact_changed", 3, "escalate"
+    ),
+    "vacuous_pass": BlockerRule(
+        "autotrain", "campaign_initialized_or_typed_action", 3, "escalate"
+    ),
 }
 
 
-def allocate_screening_suite_id(root: Path, n: int, *, prefix: str = "e938_role_safe_all_targets_smoke") -> str:
+def allocate_screening_suite_id(
+    root: Path, n: int, *, prefix: str = "e938_role_safe_all_targets_smoke"
+) -> str:
     """Return the next unused ``<prefix><n>_v<k>`` id; frozen snapshots are never reused.
 
     Every published version of the ``n`` family counts (``_v1`` .. ``_vK``),
@@ -70,7 +80,9 @@ def count_records(path: Path) -> int:
     path = Path(path)
     if not path.is_file():
         return 0
-    return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+    return sum(
+        1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    )
 
 
 _COUNT_PROBE_SOURCE = (
@@ -82,14 +94,22 @@ _COUNT_PROBE_SOURCE = (
 )
 
 
-def record_count_probe(path: Path, *, must_exceed: int, timeout_seconds: int = 60) -> HealVerifyV1:
+def record_count_probe(
+    path: Path, *, must_exceed: int, timeout_seconds: int = 60
+) -> HealVerifyV1:
     """A ``HealVerifyV1`` that re-reads ``path`` and exits zero iff its record count grew.
 
     The probe is a separate process reading the artifact from disk, so the
     verdict is never the heal body's own claim about what it wrote.
     """
     return HealVerifyV1(
-        argv=(sys.executable, "-c", _COUNT_PROBE_SOURCE, str(path), str(int(must_exceed))),
+        argv=(
+            sys.executable,
+            "-c",
+            _COUNT_PROBE_SOURCE,
+            str(path),
+            str(int(must_exceed)),
+        ),
         timeout_seconds=int(timeout_seconds),
     )
 
@@ -117,7 +137,10 @@ def verify_driver_heal(
     a heal that changed nothing is counted and visible instead of vacuous.
     """
     from slm_training.autoresearch.heal import _run_step, write_heal_receipt
-    from slm_training.autoresearch.heal.escalation import EscalationLedger, blocker_fingerprint
+    from slm_training.autoresearch.heal.escalation import (
+        EscalationLedger,
+        blocker_fingerprint,
+    )
     from slm_training.autoresearch.schemas import utc_now
     from slm_training.levers import MAX_RUN_SECONDS
 
@@ -177,7 +200,14 @@ def verify_driver_heal(
     return receipt
 
 
-def append_power_deltas(path: Path, *, cycle: str, metric: str, deltas: list[float], costs: list[float] | None = None) -> int:
+def append_power_deltas(
+    path: Path,
+    *,
+    cycle: str,
+    metric: str,
+    deltas: list[float],
+    costs: list[float] | None = None,
+) -> int:
     """Append paired observations and return the new observation count."""
     path.parent.mkdir(parents=True, exist_ok=True)
     costs = costs or [0.0] * len(deltas)
@@ -185,7 +215,18 @@ def append_power_deltas(path: Path, *, cycle: str, metric: str, deltas: list[flo
         raise ValueError("costs and deltas must have equal length")
     with path.open("a", encoding="utf-8") as fh:
         for delta, cost in zip(deltas, costs):
-            fh.write(json.dumps({"cycle": cycle, "metric": metric, "delta": float(delta), "wall_seconds": float(cost)}, sort_keys=True) + "\n")
+            fh.write(
+                json.dumps(
+                    {
+                        "cycle": cycle,
+                        "metric": metric,
+                        "delta": float(delta),
+                        "wall_seconds": float(cost),
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
     return sum(1 for _ in path.open(encoding="utf-8"))
 
 
@@ -203,7 +244,9 @@ def read_power_evidence(path: Path) -> list[dict]:
     return rows
 
 
-def power_evidence_summary(path: Path, *, min_pairs: int = 100, min_cycles: int = 10) -> dict:
+def power_evidence_summary(
+    path: Path, *, min_pairs: int = 100, min_cycles: int = 10
+) -> dict:
     rows = read_power_evidence(path)
     cycles = {str(row.get("cycle")) for row in rows}
     ready = len(rows) >= min_pairs and len(cycles) >= min_cycles
@@ -214,7 +257,11 @@ def power_evidence_summary(path: Path, *, min_pairs: int = 100, min_cycles: int 
         "ready": ready,
         "sd": stdev(values) if len(values) > 1 else None,
         "mean": fmean(values) if values else None,
-        "mean_abs_cost_seconds": fmean(float(row.get("wall_seconds", 0.0)) for row in rows) if rows else None,
+        "mean_abs_cost_seconds": fmean(
+            float(row.get("wall_seconds", 0.0)) for row in rows
+        )
+        if rows
+        else None,
     }
 
 
@@ -228,4 +275,8 @@ def lease_covers(path: Path, dirty_path: str, *, now: float | None = None) -> bo
     if float(lease.get("expires_at", 0)) <= now:
         return False
     prefixes = lease.get("path_prefixes") or lease.get("paths") or []
-    return any(str(dirty_path).replace("\\", "/").startswith(str(prefix).rstrip("/") + "/") or str(dirty_path) == str(prefix).rstrip("/") for prefix in prefixes)
+    return any(
+        str(dirty_path).replace("\\", "/").startswith(str(prefix).rstrip("/") + "/")
+        or str(dirty_path) == str(prefix).rstrip("/")
+        for prefix in prefixes
+    )

@@ -204,9 +204,7 @@ def _repo_relative(path_text: str) -> str:
 
 def failing_module_from_traceback(traceback: str) -> str:
     """Repo-relative path of the last repo frame, else the missing module."""
-    frames = [
-        _repo_relative(m.group(1)) for m in _FRAME_RE.finditer(traceback)
-    ]
+    frames = [_repo_relative(m.group(1)) for m in _FRAME_RE.finditer(traceback)]
     repo_frames = [f for f in frames if f]
     if repo_frames:
         return repo_frames[-1]
@@ -371,7 +369,9 @@ def capture_crash_evidence(
         if not path.is_file():
             continue
         text = _read_tail(path)
-        if text and (not evidence.arm_id or evidence.arm_id in text or _TRACEBACK_HEAD in text):
+        if text and (
+            not evidence.arm_id or evidence.arm_id in text or _TRACEBACK_HEAD in text
+        ):
             stderr_chunks.append(text)
             sources.append(str(path))
 
@@ -425,7 +425,9 @@ def build_repair_action(
 
 
 def evidence_path(root: Path, loop_id: str, fingerprint: str) -> Path:
-    return Path(root) / "loops" / loop_id / EVIDENCE_DIRNAME / f"{fingerprint[:16]}.json"
+    return (
+        Path(root) / "loops" / loop_id / EVIDENCE_DIRNAME / f"{fingerprint[:16]}.json"
+    )
 
 
 def _writes_allowed_for(
@@ -532,7 +534,9 @@ def execute(
     }
     out_path = evidence_path(root, loop_id, fingerprint)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     test_summary = (
         "module_tests=skipped"
         if steps[-1].outcome == "skipped"
@@ -588,9 +592,15 @@ class _HarnessCrashPlaybook:
         root: Path,
         loop_id: str,
         campaign_id: str,
+        write_receipt: bool = True,
     ) -> HealAttemptReceiptV1:
         return execute(
-            blocker, cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
+            blocker,
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            write_receipt=write_receipt,
         )
 
     def plan(self, blocker: dict, *, cwd: Path) -> HealPlanV1 | None:

@@ -95,7 +95,9 @@ def count_data_records(cwd: Path, root: Path, campaign_id: str) -> int:
 
 
 def _load_driver_module():
-    script = Path(__file__).resolve().parents[5] / "scripts" / "run_autotrain_continuous.py"
+    script = (
+        Path(__file__).resolve().parents[5] / "scripts" / "run_autotrain_continuous.py"
+    )
     if not script.is_file():
         # Installed layouts: fall back to the working directory's copy.
         script = Path.cwd() / "scripts" / "run_autotrain_continuous.py"
@@ -188,7 +190,9 @@ def execute(
             f"seam_result={seam_result!r}"
         )[:400]
     elif outcome == "healed":
-        note = f"records_before={before} records_after={after} seam_result={seam_result!r}"[:400]
+        note = f"records_before={before} records_after={after} seam_result={seam_result!r}"[
+            :400
+        ]
     payload = {
         "schema_version": "heal_data_rebuild_state/v1",
         "loop_id": loop_id,
@@ -202,7 +206,9 @@ def execute(
     }
     out = state_path(root, loop_id, fingerprint)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     receipt = HealAttemptReceiptV1(
         loop_id=loop_id,
         campaign_id=blocker_campaign,
@@ -245,9 +251,15 @@ class _DataRebuildPlaybook:
         root: Path,
         loop_id: str,
         campaign_id: str,
+        write_receipt: bool = True,
     ) -> HealAttemptReceiptV1:
         return execute(
-            blocker, cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
+            blocker,
+            cwd=cwd,
+            root=root,
+            loop_id=loop_id,
+            campaign_id=campaign_id,
+            write_receipt=write_receipt,
         )
 
     def plan(self, blocker: dict, *, cwd: Path) -> HealPlanV1 | None:

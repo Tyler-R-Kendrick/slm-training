@@ -223,7 +223,11 @@ def classify_blocker(
         # A failed data-rebuild postcondition / a retry blocked on rebuild
         # artifacts is data territory: the rebuild seam owns the next attempt.
         return "data"
-    if kind_s in {"loop_stalled_no_campaign", "heal_postcondition_failed", "vacuous_pass"}:
+    if kind_s in {
+        "loop_stalled_no_campaign",
+        "heal_postcondition_failed",
+        "vacuous_pass",
+    }:
         return "unknown"
     if kind_s == "repair_harness":
         if any(tok in text for tok in _REPO_INTERNAL_TOKENS):

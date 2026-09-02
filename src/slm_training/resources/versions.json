@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "run_playbooks prefers a playbook in-process execute (harness_crash -> attempted, data_rebuild -> count-postcondition healed) over the subprocess plan/verify path; same attempt budget, single persisted receipt; execute crash records step_failed.",
+          "version": "v5"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Merge of cards P10 (heal executors) and P6 (fail-closed heal verification) which both prepended v3 independently; reconciles the component to v4.",
           "version": "v4"
         },
@@ -157,7 +162,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "autoresearch.power_preflight": {
       "history": [

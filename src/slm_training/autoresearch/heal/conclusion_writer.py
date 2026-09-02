@@ -53,12 +53,8 @@ def conclusion_record_from_evidence(
     raw: Mapping[str, Any],
 ) -> ConclusionEvidenceRecord | None:
     """Map one ``EvidenceRecordV1`` row into conclusion-criteria form."""
-    record_id = str(
-        raw.get("experiment_id") or raw.get("config_fingerprint") or ""
-    )
-    lever_keys = tuple(
-        str(k) for k in (raw.get("lever_keys") or ()) if str(k).strip()
-    )
+    record_id = str(raw.get("experiment_id") or raw.get("config_fingerprint") or "")
+    lever_keys = tuple(str(k) for k in (raw.get("lever_keys") or ()) if str(k).strip())
     if not record_id or not lever_keys:
         return None
     version_stamp = raw.get("version_stamp")
@@ -99,9 +95,7 @@ def write_family_closures(
         records = [r.model_dump(mode="json") for r in load_local_index()]
     mapped = [
         record
-        for record in (
-            conclusion_record_from_evidence(raw) for raw in records
-        )
+        for record in (conclusion_record_from_evidence(raw) for raw in records)
         if record is not None
     ]
     if not mapped:
