@@ -1,7 +1,8 @@
 """Writer/reader metric-key contract: consumers may only require emitted keys.
 
-The request_coverage promotion gate rotted silently because no evaluator ever
-wrote that key. This test runs the real evaluator and asserts every metric a
+The promotion gate now named ``contract_recall`` rotted silently under its
+original key because no evaluator ever wrote it. This test runs the real
+evaluator and asserts every metric a
 gate or promotion path requires is actually present in its output.
 """
 
@@ -17,7 +18,7 @@ from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.lineage.promotion import HARD_METRICS
 from slm_training.web.observability import gate_metric_keys
 
-_GOLD = 'root = Stack([cta])\ncta = Button(":cta")'
+_GOLD = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 class _EchoGoldModel:
@@ -28,7 +29,7 @@ class _EchoGoldModel:
 def _consumed_keys() -> set[str]:
     keys = set(HARD_METRICS)
     for thresholds in DEFAULT_SHIP_GATES.values():
-        keys.update(thresholds)
+        keys.update(k for k in thresholds if k != "min_n")  # min_n is a policy knob, not a metric
     keys.update(gate_metric_keys())  # dashboard metric surfaces
     keys.add("fallback_count")  # certified_fallback gate input
     return keys
@@ -40,7 +41,7 @@ def test_every_consumed_metric_key_is_emitted(tmp_path: Path) -> None:
             "id": "r1",
             "prompt": "CTA",
             "openui": _GOLD,
-            "placeholders": [":cta"],
+            "placeholders": [":slot_0"],
             "split": "smoke",
             "meta": {"suite": "smoke"},
         }

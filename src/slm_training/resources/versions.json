@@ -3281,6 +3281,11 @@
     "features.openfeature": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: gate_metric_keys skips the min_n evidence-volume knob (a policy key, not a metric); fixes the red-on-main lineage metric-contract test.",
+          "version": "v13"
+        },
+        {
           "date": "2026-08-09",
           "note": "Dashboard PostHog init gains exception autocapture and an env-gated enable_replay bootstrap flag (SLM_POSTHOG_ENABLE_REPLAY); provider wiring unchanged.",
           "version": "v13"

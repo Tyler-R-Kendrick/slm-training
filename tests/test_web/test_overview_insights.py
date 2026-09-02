@@ -166,6 +166,8 @@ def test_metric_surfaces_track_ship_gate_policy(tmp_path) -> None:
     lever_keys: list[str] = []
     for mins in DEFAULT_SHIP_GATES.values():
         for key in mins:
+            if key == "min_n":  # evidence-volume knob, not a dashboard metric
+                continue
             if key not in lever_keys:
                 lever_keys.append(key)
     assert lever_keys == gate_metric_keys()

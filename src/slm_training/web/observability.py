@@ -254,6 +254,8 @@ def gate_metric_keys() -> list[str]:
     keys: list[str] = []
     for mins in DEFAULT_SHIP_GATES.values():
         for key in mins:
+            if key == "min_n":  # evidence-volume policy knob, not a metric
+                continue
             if key not in keys:
                 keys.append(key)
     return keys
