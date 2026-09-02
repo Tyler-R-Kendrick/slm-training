@@ -5049,6 +5049,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the certified-eval-suites results JSON landed (deterministic rebuild, no schema or selector change).",
+          "version": "v272"
+        },
+        {
+          "date": "2026-09-02",
           "note": "Screening deficit heal draws from the certified corpus: extra_smoke_fixtures_for_deficit samples validation-bucket records via harnesses.test_data.certified (decontaminated against the certified train bucket and the policy train set) instead of the exhausted 21-tuple; policy.v3 defaults.train_version and data_intervention.fixture_train_version -> openui_verified_train_v1.",
           "version": "v272"
         },
