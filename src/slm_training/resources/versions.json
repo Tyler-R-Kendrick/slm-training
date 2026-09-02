@@ -978,6 +978,11 @@
     "decode.invariants": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "S2: I3 committed n-gram table provenance -- built from the certified train bucket openui_verified_train_v1 (1,054 encoded sequences, 54,434 tokens, order 3, 493 contexts); doc branch-point numbers are measured and pinned by test; --check asserts the artifact's recorded source (manifest content_fingerprint, records sha256) against the live manifest. No invariant weakened; lever stays off.",
+          "version": "v10"
+        },
+        {
           "date": "2026-08-20",
           "note": "I6: completed-document parse_rate is perfect (1.0) or the decode is invalid; autotrain PARSE_RATE_PERFECT is not a lever.",
           "version": "v9"
@@ -1034,7 +1039,7 @@
         "scripts/verify_decode_invariants.py",
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
-      "version": "v9"
+      "version": "v10"
     },
     "dsl.abstract_plan": {
       "history": [
@@ -5074,6 +5079,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the S2 n-gram provenance results JSON landed (deterministic rebuild).",
+          "version": "v280"
+        },
         {
           "date": "2026-09-02",
           "note": "P8xP9 reconciliation: under a baseline_seed champion warm start the driver skips corpus-swap (train_version) arms and asserts assert_warm_start_launch for every candidate; data arms remain selectable on cold-start cycles.",
@@ -19258,6 +19268,16 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "Reconcile S2 with P5 on the integration branch: both landed as v320 in parallel; the S2 n-gram table entry below keeps its content, the P5 compiler-decode entry follows.",
+          "version": "v321"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "S2: speculative n-gram builder defaults to the certified train bucket (no split re-derivation, no wf_smoke_v2 fallback); artifact regenerated at order 3 and carries a source provenance block; --check verifies provenance against the live manifest. Ranker scoring unchanged.",
+          "version": "v320"
+        },
+        {
+          "date": "2026-09-02",
           "note": "P5: cut per-record strict compiler-tree decode cost with byte-identical output. compiler_draft: sorted-terminal tuple and per-candidate decision kind computed once per completion-forest build instead of once per admitted path; token_map: the cached allowed-id lookup's vocabulary fingerprint is memoized per tokenizer instead of re-sorting the vocabulary on every build (uncached lookups still never touch it). No candidate added, no verification skipped, forwards_count unchanged; parity proven by output hashes and per-build forest equality against the previous builder (docs/design/compiler-decode-cost-20260902.md).",
           "version": "v320"
         },
@@ -21245,7 +21265,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v320"
+      "version": "v321"
     },
     "ops.vocab": {
       "history": [
