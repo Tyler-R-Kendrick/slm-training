@@ -407,7 +407,7 @@
       "n_complete": 3,
       "n_delta": 3,
       "n_null": 3,
-      "n_obs": 13,
+      "n_obs": 15,
       "n_positive": 0
     },
     "slot-augmentation": {
@@ -487,8 +487,8 @@
     "gates.ship"
   ],
   "file_counts": {
-    "observations": 396,
-    "scanned": 2313,
+    "observations": 398,
+    "scanned": 2316,
     "unreadable": 0
   },
   "generated_from": "docs/design",

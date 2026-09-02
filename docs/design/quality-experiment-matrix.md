@@ -6537,3 +6537,37 @@ production change, or advanced-operator default-on authorization follows.
 Full evidence:
 [`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
 narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
+
+# S14 / N12 — LAVE stall termination (2026-09-02)
+
+Fixture-demo telemetry audit, **not a ship claim**: does the repository stall
+the way LAVE (arXiv:2602.00612) recovers from, i.e. is there a non-trivial
+`GenerationExhausted` rate behind τ consecutive proposal failures? Decode seam
+`PlaygroundService.generate(grammar_constrained=True, max_attempts=3)` under
+`collect_decode_stats()`, CPU-only, `torch.set_num_threads(2)`, every run inside
+`timeout 170`; no run timed out. The committed fixture checkpoint
+`src/slm_training/resources/checkpoints/playground_demo/last.pt` is refused by
+`require_current_output_contract` (output contract v0 vs symbol_only/v2), so the
+runs use an uncommitted scratch twin of the same architecture (787,586 params,
+60 AdamW steps on the 13 contract-eligible smoke96 records) — the twin is
+undertrained, which biases toward *more* stalls.
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| N12-A | MaskGIT lane + admit probes (`grammar_fastpath_mode=mask`), smoke n=10 / held_out n=10 / adversarial n=4, seed 0 | Measure admit rejections, consecutive-rejection runs, `GenerationExhausted` | measured: 2,132 probes, **0 rejections**, max run 0, 0 asap penalties, **0/24 exhausted**, 14/24 certified fallback; 4.16 / 5.04 / 6.38 s per record |
+| N12-B | Serving-default lane as `PlaygroundService._load_locked` pins it (compiler-tree LTR), same suites/seed | Control: the lane actually shipped | measured: 0 admit probes (lane fires none), **0/24 exhausted**, 14/24 certified fallback; 2.01 / 2.49 / 3.41 s per record |
+| N12-C | Replicates: smoke `grammar_fastpath_mode=hybrid` seed 0; smoke `mask` seed 1 | Seed/mode stability | measured: counters identical to N12-A smoke (663 probes, 0 rejections, 5 certified fallbacks, 0 exhausted); 4.52 / 5.51 s per record |
+| N12-D | Diagnostic control: `admit_fill` synthetically rejects 75 % / 100 % of probes, smoke n=10 seed 0 | Does a real stall terminate in exhaustion? | measured: 1,458 / 3,010 rejections, max consecutive run 3 / **306**, still **0/10 exhausted** — LTR repair absorbs the stall; 6.02 / 3.43 s per record |
+| N12-tau | LAVE τ-analogue `tau_admit_reject_restart` (restart the MaskGIT sweep from a cached certified prefix after τ consecutive admit-probe rejections) | Proposed lever | **preregistered, NOT implemented** — gated on finding a corpus with `admit_probe_reject_run_max >= 2` on ≥10 % of documents (n ≥ 96, two seeds); arms control/τ=4/τ=16, endpoint exhaustion rate + certified-fallback documents, family decode-recovery, I1–I6 unchanged |
+
+**Verdict:** N12's conclusion holds (the falsifier — a non-trivial exhaustion
+rate — did not fire, 0/48), but N12's rationale does not: `asap.penalize` fired
+0 times and `remask_ratio` stayed 0.0 because both are config-gated off by
+default, and the admit probe rejected 0 of 2,132 real probes (all 2,132 probe
+canvases carried a committed suffix, the HX1 over-approximation `admit_fill`
+cannot validate). Separately reported, not fixed: 28/48 documents were answered
+with a certified substitution that the serving harness recorded as success,
+because `_raise_on_substituted_generation` reads `consume_generation_evidence`,
+which the torch backend does not expose. Full evidence:
+[`iter-s14-exhaustion-rate-20260902.md`](iter-s14-exhaustion-rate-20260902.md)
+and [`.json`](iter-s14-exhaustion-rate-20260902.json).
