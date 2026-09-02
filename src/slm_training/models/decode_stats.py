@@ -14,9 +14,59 @@ from pathlib import Path
 from typing import Any
 
 
+# Read-only ratios derived from the raw counters below. They are computed
+# on access (never stored, never accumulated) so ``merge``/``aggregate_stats``
+# keep summing raw counts and the ratio is always recomputed from the sums.
+# Each ratio is ``None`` when its denominator is 0 -- an undefined ratio is
+# reported as undefined, never as a fabricated 0.0.
+DERIVED_DECODE_RATIO_FIELDS: tuple[str, ...] = (
+    "committed_tokens",
+    "forced_token_fraction",
+    "speculative_commit_fraction",
+    "speculative_token_fraction",
+    "forwards_per_committed_token",
+)
+
+
+def _ratio(numerator: int | float, denominator: int | float) -> float | None:
+    """``numerator / denominator``; ``None`` (undefined) when the denominator is 0."""
+    if not denominator:
+        return None
+    return float(numerator) / float(denominator)
+
+
 @dataclass
 class DecodeStats:
-    """Accumulated wall-clock timings and counters for one generate call."""
+    """Accumulated wall-clock timings and counters for one generate call.
+
+    Derived read-only ratios (``DERIVED_DECODE_RATIO_FIELDS``) are exposed as
+    properties and included in :meth:`as_dict`; they are never dataclass
+    fields, so :meth:`from_dict` drops them and :meth:`merge` skips them.
+
+    * ``committed_tokens`` -- tokens committed to the canvas. This is an
+      alias of ``tokens_emitted``, which every decode path increments once per
+      committed token (forced spans, singleton bypasses, exact commits, and
+      model-chosen tokens alike; see ``twotower.py``). No separate counter is
+      kept because that would be a second source of truth for the same event.
+    * ``forced_token_fraction`` -- ``forced_tokens / committed_tokens``: the
+      share of the canvas that deterministic forcing (I2 singleton bypass and
+      forced spans) wrote without consulting the model.
+    * ``speculative_commit_fraction`` --
+      ``speculative_rank_commits / speculative_rank_evaluations``: the share
+      of I3 speculative-rank consultations confident enough to commit.
+    * ``speculative_token_fraction`` --
+      ``speculative_rank_tokens / committed_tokens``: the share of the canvas
+      written by verified speculative-rank commits.
+    * ``forwards_per_committed_token`` --
+      ``forwards_count / committed_tokens``: denoiser forwards spent per
+      committed token (0.0 is a genuine full bypass; ``None`` means nothing was
+      committed so the cost is undefined).
+
+    Each ratio is ``None`` when its denominator is 0. Limitation: tokens
+    chosen by the model versus by forcing are not separately counted, so the
+    "denoiser-chosen" share is only available as the complement
+    ``1 - forced_token_fraction - speculative_token_fraction``.
+    """
 
     denoiser_ms: float = 0.0
     dfa_sync_ms: float = 0.0
@@ -299,8 +349,44 @@ class DecodeStats:
     def add_ms(self, field_name: str, ms: float) -> None:
         setattr(self, field_name, float(getattr(self, field_name)) + float(ms))
 
+    # --- derived read-only ratios (see class docstring) ---------------------
+
+    @property
+    def committed_tokens(self) -> int:
+        """Tokens committed to the canvas (alias of ``tokens_emitted``)."""
+        return int(self.tokens_emitted)
+
+    @property
+    def forced_token_fraction(self) -> float | None:
+        """``forced_tokens / committed_tokens``; ``None`` when nothing was committed."""
+        return _ratio(self.forced_tokens, self.committed_tokens)
+
+    @property
+    def speculative_commit_fraction(self) -> float | None:
+        """``speculative_rank_commits / speculative_rank_evaluations``; ``None`` when never evaluated."""
+        return _ratio(self.speculative_rank_commits, self.speculative_rank_evaluations)
+
+    @property
+    def speculative_token_fraction(self) -> float | None:
+        """``speculative_rank_tokens / committed_tokens``; ``None`` when nothing was committed."""
+        return _ratio(self.speculative_rank_tokens, self.committed_tokens)
+
+    @property
+    def forwards_per_committed_token(self) -> float | None:
+        """``forwards_count / committed_tokens``; ``None`` when nothing was committed."""
+        return _ratio(self.forwards_count, self.committed_tokens)
+
+    def derived_ratios(self) -> dict[str, int | float | None]:
+        """The ``DERIVED_DECODE_RATIO_FIELDS`` values, recomputed from raw counters."""
+        return {name: getattr(self, name) for name in DERIVED_DECODE_RATIO_FIELDS}
+
+    # -----------------------------------------------------------------------
+
     def as_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        """Raw dataclass fields plus the derived read-only ratios."""
+        out = asdict(self)
+        out.update(self.derived_ratios())
+        return out
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> DecodeStats:
@@ -318,6 +404,8 @@ class DecodeStats:
 
     def merge(self, other: DecodeStats) -> None:
         for key, value in other.as_dict().items():
+            if key in DERIVED_DECODE_RATIO_FIELDS:
+                continue  # recomputed from the merged raw counters
             if key == "attempts":
                 self.attempts = max(self.attempts, int(value))
                 continue
@@ -1287,6 +1375,7 @@ __all__ = [
     "ATTRIBUTED_PHASE_FIELDS",
     "COMPLETENESS_STATES",
     "DECODE_STATS_RECORD_SCHEMA",
+    "DERIVED_DECODE_RATIO_FIELDS",
     "GOAL_SUPPORT_CLASSIFICATION_COUNTER_MAP",
     "GOAL_SUPPORT_CLOSURE_COUNTER_MAP",
     "GOAL_SUPPORT_MECHANISM_ID",

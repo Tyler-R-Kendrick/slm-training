@@ -16251,6 +16251,11 @@
     "harness.model_build.eval": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "no-bump: S4 additive read-only DecodeStats ratios (committed_tokens alias of tokens_emitted, forced_token_fraction, speculative_commit_fraction, speculative_token_fraction, forwards_per_committed_token) as properties, each None on a zero denominator, appended to as_dict() and skipped by merge()/dropped by from_dict(); no counter, gate, or decode behaviour changes; tests in tests/test_models/test_decode_stats_fractions.py.",
+          "version": "v101"
+        },
+        {
           "date": "2026-08-13",
           "note": "--learnability-diagnostics writes on default single-suite evals using suite prompts; ship gates unchanged",
           "version": "v101"
@@ -16853,7 +16858,8 @@
         "tests/test_harnesses/model_build/test_eval_seed.py",
         "tests/test_harnesses/model_build/test_decode_deadline.py",
         "tests/test_harnesses/model_build/test_eval_metric_semantics.py",
-        "tests/test_harnesses/model_build/test_eval_gates.py"
+        "tests/test_harnesses/model_build/test_eval_gates.py",
+        "tests/test_models/test_decode_stats_fractions.py"
       ],
       "version": "v101"
     },
