@@ -3561,6 +3561,20 @@ def _arm_is_self_control(extras: Mapping[str, Any] | None) -> bool:
     return str(public["train_version"] or "") == _default_screening_train_version()
 
 
+def _arm_swaps_train_corpus(
+    extras: Mapping[str, Any] | None, *, control_train_version: str
+) -> bool:
+    """True when the arm's ``train_version`` differs from the control corpus.
+
+    Warm-start cycles fork the champion for both arms on identical data, so a
+    corpus-swap arm cannot be paired there (``warm_start:unequal_train_data``).
+    """
+    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
+    if "train_version" not in public:
+        return False
+    return str(public["train_version"] or "") != str(control_train_version or "")
+
+
 def _bank_lever_categories() -> dict[str, str]:
     """``lever_catalog()`` categories plus the ExperimentKnobs-only knob keys."""
     from slm_training.levers import lever_catalog
@@ -16029,6 +16043,7 @@ def _matrix(
             )
 
         seen_lever_sigs: set[str] = set()
+        warm_skipped_data_arms: list[str] = []
         control_knobs = candidates[0]["experiment"]["knobs"]
         seen_lever_sigs.add(_materialized_sig(control_knobs))
         for i, (slug, hyp, extras) in enumerate(_all_screening_arm_bank(), start=1):
@@ -16042,6 +16057,15 @@ def _matrix(
                 # knob-signature requirement without adding information.
                 continue
             arm_extra = _apply_arm_extras(steps, extras)
+            if initialize_from and _arm_swaps_train_corpus(
+                extras, control_train_version=train_version
+            ):
+                # Warm start forks the champion for both arms with identical
+                # data (``assert_warm_start_launch``); a data arm changes the
+                # corpus, so it is only a legal candidate on a cold-start
+                # cycle. Skipped here, never silently rewritten.
+                warm_skipped_data_arms.append(slug)
+                continue
             if climb_active:
                 arm_extra = compose_treatment_levers(
                     control_levers=control_levers,
@@ -16079,11 +16103,19 @@ def _matrix(
                 }
             )
         rec = f"{prefix}-{rec_slug}"
-        if initialize_from and len(candidates) >= 2:
-            assert_warm_start_launch(
-                candidates[0]["experiment"]["knobs"],
-                candidates[1]["experiment"]["knobs"],
-            )
+        if initialize_from:
+            if warm_skipped_data_arms:
+                print(
+                    "WARM_START_SKIP_DATA_ARMS "
+                    f"arms={','.join(warm_skipped_data_arms)} "
+                    "reason=warm_start_requires_equal_train_data",
+                    flush=True,
+                )
+            for row in candidates[1:]:
+                assert_warm_start_launch(
+                    candidates[0]["experiment"]["knobs"],
+                    row["experiment"]["knobs"],
+                )
         candidate_ids = {
             str((row.get("experiment") or {}).get("experiment_id") or "")
             for row in candidates

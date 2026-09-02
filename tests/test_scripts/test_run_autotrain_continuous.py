@@ -13189,3 +13189,100 @@ def test_champion_epoch_park_uses_train_manifest_record_count(tmp_path: Path) ->
         _mod._park_champion_epochs_if_needed(policy, loop_dir)
         == _mod._REGIME_PARKED_STATUS
     )
+
+
+def test_warm_start_cycle_skips_corpus_swap_arms_and_pairs_every_candidate(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """P8 x P9: data arms are cold-start-only; every warm-start pair is asserted."""
+    from slm_training.autoresearch.schemas import HypothesisMatrix
+    from slm_training.autoresearch.thrash_regime import REGIME_CLIMB
+
+    root = tmp_path / "autoresearch"
+    loop_id = "p8p9-warm-loop"
+    loop_dir = _mod._loop_champion_dir(root, loop_id)
+    policy = _p8_policy()
+    train_dir = tmp_path / "train" / "wf_smoke_v2"
+    train_dir.mkdir(parents=True)
+    (train_dir / "manifest.json").write_text(
+        json.dumps({"record_count": 101}), encoding="utf-8"
+    )
+    c1 = _mod._campaign_id(loop_id, 1, date="20260902")
+    _p8_control_run(root, c1, steps=22, train_dir=train_dir)
+    _mod._ensure_climb_champion(
+        root=root,
+        loop_id=loop_id,
+        queue_entries=[],
+        eval_data_manifest_sha=None,
+        policy=policy,
+    )
+    ckpt = _mod.climb_champion_checkpoint_path(loop_dir)
+    assert ckpt.is_file()
+    regime = _mod._screening_regime_decision(
+        queue_entries=[], compiler_ms_timeout=False, root=root, loop_id=loop_id
+    )
+    assert regime.regime == REGIME_CLIMB
+    c2 = _mod._campaign_id(loop_id, 2, date="20260902")
+    matrix = _mod._matrix(
+        campaign_id=c2,
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=2,
+        role="screening",
+        recommended_slug="data-strict",
+        thrash_regime=regime,
+        initialize_from=str(ckpt),
+    )
+    HypothesisMatrix.model_validate(matrix)
+    rows = matrix["hypotheses"]
+    control = rows[0]["experiment"]["knobs"]
+    assert control["initialize_from"] == str(ckpt)
+    train_versions = {row["experiment"]["knobs"]["train_version"] for row in rows}
+    assert train_versions == {"wf_smoke_v2"}
+    ids = {row["experiment"]["experiment_id"] for row in rows}
+    assert not any(eid.endswith("-data-strict") for eid in ids)
+    assert not any(eid.endswith("-data-certified") for eid in ids)
+    for row in rows[1:]:
+        _mod.assert_warm_start_launch(control, row["experiment"]["knobs"])
+    # The recommended data arm was retargeted to a legal warm-start arm.
+    assert matrix["recommended_experiment_id"] in ids
+    assert not matrix["recommended_experiment_id"].endswith("-control")
+    out = capsys.readouterr().out
+    assert "WARM_START_SKIP_DATA_ARMS" in out
+    assert "data-strict" in out
+
+    # Cold-start cycle (no champion checkpoint): data arms stay selectable.
+    cold = _mod._matrix(
+        campaign_id=_mod._campaign_id(loop_id, 3, date="20260902"),
+        evidence_snapshot_id="snap",
+        cites=["docs/a.md", "docs/b.md", "docs/c.md"],
+        role_citations={"research": "docs/a.md", "prior_result": "docs/b.md"},
+        train_version="wf_smoke_v2",
+        eval_version="e_test",
+        steps=40,
+        cycle=3,
+        role="screening",
+        recommended_slug="data-strict",
+        thrash_regime=regime,
+        initialize_from=None,
+    )
+    cold_ids = {row["experiment"]["experiment_id"] for row in cold["hypotheses"]}
+    assert any(eid.endswith("-data-strict") for eid in cold_ids)
+
+
+def test_arm_swaps_train_corpus_helper() -> None:
+    assert _mod._arm_swaps_train_corpus(
+        {"train_version": "hillclimb_strict_v2"}, control_train_version="wf_smoke_v2"
+    )
+    assert not _mod._arm_swaps_train_corpus(
+        {"train_version": "wf_smoke_v2"}, control_train_version="wf_smoke_v2"
+    )
+    assert not _mod._arm_swaps_train_corpus({"lr": 6e-4}, control_train_version="x")
+    assert not _mod._arm_swaps_train_corpus(
+        {"_thrash_slug": "y", "train_version": "z"}, control_train_version="z"
+    )
+    assert not _mod._arm_swaps_train_corpus(None, control_train_version="z")
