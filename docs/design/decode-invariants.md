@@ -121,18 +121,31 @@ nothing in that module can add a candidate. And speculation verifies against
 the grammar oracle before it commits.
 
 **The committed table.** `src/slm_training/resources/decode/speculative_ngram_v1.json`
-is built train-split-only from the immutable certified corpus
-(`openui_verified_v1`, 1682 records, 89,415 native tokens, order 3, 523
-contexts). Targets are templatized first, so the table is keyed on symbols and
-placeholders and never on free-form string content. Setting
-`speculative_rank="ngram"` without naming a table resolves to it, so the lever
-is reachable with no build step. `scripts/build_speculative_ngram_table.py
---check` fails when the artifact and its builder disagree.
+is built train-split-only from the certified TRAIN bucket of the immutable
+corpus, `openui_verified_train_v1` (root-family buckets 0–79 of
+`openui_verified_v1`; 1,083 records, of which 1,054 encode — the symbol codec
+refuses 29 whose placeholder lands in a non-content property — 54,434 native
+tokens, order 3, 493 contexts; manifest `content_fingerprint`
+`8fe079f5…f22b59c`, table `corpus_fingerprint` `96ef8ffd…3ac3f08e5`). The split
+is the bucket's own manifest, never re-derived by the builder. Targets are
+templatized first, so the table is keyed on symbols and placeholders and never
+on free-form string content. Setting `speculative_rank="ngram"` without naming
+a table resolves to it, so the lever is reachable with no build step. The
+artifact records its `source` (dataset id, manifest content fingerprint,
+records sha256); `scripts/build_speculative_ngram_table.py --check` fails when
+that block disagrees with the live manifest, when the recorded
+`corpus_fingerprint` is not the rebuilt train-sequence fingerprint, or when any
+other field drifts from the rebuild.
 
-It ranks real branch points confidently: after `root = ` (27 legal candidates)
-it picks `Stack(` at margin 1.0, and after `root = Stack([` (25 candidates) it
-picks `<BIND_1>` at margin 1.59 — both decided from the symbol table with no
-forward.
+It ranks real branch points confidently (measured, margin threshold 0.5): after
+`root = ` (27 legal candidates) it picks `Stack(` at margin 15.000 — every one
+of the 1,054 train programs opens with `Stack(`, so the runner-up `Button(`
+carries only floor mass — and after `root = Stack([` (26 candidates) it picks
+`b1` (the first bound-symbol reference) over `TextContent(` at margin 1.738 —
+both decided from the symbol table with no forward. The numbers are pinned by
+`tests/test_dsl/test_speculative_rank.py::test_committed_table_pins_the_documented_branch_points`;
+the measurement behind them, and the old smoke-built table's, is
+[`iter-s2-ngram-table-provenance-20260902.md`](iter-s2-ngram-table-provenance-20260902.md).
 
 **Status: machinery shipped and reachable, default `off`.** Turning it on for
 serving needs a preregistered `ExperimentCampaignV1` binding the table's

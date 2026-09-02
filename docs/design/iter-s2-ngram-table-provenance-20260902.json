@@ -1,0 +1,1050 @@
+{
+  "schema": "s2_ngram_table_provenance/v1",
+  "card": "S2",
+  "date": "2026-09-02",
+  "invariant": "I3",
+  "claim_class": "fixture",
+  "lever": {
+    "speculative_rank": "off",
+    "speculative_rank_margin_default": 0.0
+  },
+  "hypothesis": {
+    "id": "N1",
+    "statement": "the wf_smoke_v2-built table is fixture-overfit: more confident on smoke branch points than held-out ones, and a certified-corpus table generalizes better",
+    "disposition": "not_supported",
+    "reason": "wf_smoke_v2 confident precision on smoke (0.677) is below held_out (0.744) and adversarial (0.688) and the corpus shares no canonical program with any suite; the certified table commits more (0.837 vs 0.669 pooled) with lower confident precision (0.490 vs 0.691) at the 0.5 threshold"
+  },
+  "doc_claim_before": {
+    "corpus": "openui_verified_v1",
+    "records": 1682,
+    "tokens": 89415,
+    "order": 3,
+    "contexts": 523,
+    "branch_points": {
+      "root = ": {
+        "candidates": 27,
+        "pick": "Stack(",
+        "margin": 1.0
+      },
+      "root = Stack([": {
+        "candidates": 25,
+        "pick": "<BIND_1>",
+        "margin": 1.59
+      }
+    }
+  },
+  "artifact_before": {
+    "corpus": "wf_smoke_v2",
+    "corpus_fingerprint": "8c5a7d6cd170cafc01957fc23eaa4715450f32242dc92776abc45ec024126df6",
+    "sequences": 101,
+    "tokens": 4633,
+    "order": 4,
+    "contexts": 538,
+    "branch_points": {
+      "root = ": {
+        "candidates": 27,
+        "pick": "Stack(",
+        "runner_up": "SwitchGroup(",
+        "margin": 1.941
+      },
+      "root = Stack([": {
+        "candidates": 26,
+        "pick": "b1",
+        "runner_up": "Button(",
+        "margin": 15.916
+      }
+    }
+  },
+  "artifact_after": {
+    "corpus_fingerprint": "96ef8ffd409637f53fa9e79abe2f96b4df79ba260e428862c35732c3ac3f08e5",
+    "impl_version": "speculative_rank/v1",
+    "order": 3,
+    "schema": "speculative_ngram_table/v1",
+    "sequences": 1054,
+    "source": {
+      "dataset_id": "openui_verified_train_v1",
+      "manifest_content_fingerprint": "8fe079f51d269ab213d5083d3b693ec6272839f6934a449d8b7d0eb34f22b59c",
+      "manifest_kind": "train",
+      "records": "src/slm_training/resources/data/train/openui_verified_train_v1/records.jsonl",
+      "records_sha256": "7cf64cdda534a1121a228128732cf3a5920981d647af7b90275f793c443ad6ee",
+      "records_total": 1083
+    },
+    "tokens": 54434,
+    "contexts": 493,
+    "records_total": 1083,
+    "declared_train": 1083,
+    "skipped": {
+      "encode_error": 29,
+      "unk_token": 0
+    },
+    "skipped_reason": "placeholder in a non-content property (RadialChart 16, SingleStackedBarChart 12, FormControl 1)",
+    "branch_points": {
+      "root = ": {
+        "candidates": 27,
+        "pick": "Stack(",
+        "runner_up": "Button(",
+        "margin": 15.0,
+        "context_row": {
+          "Stack": 1054
+        }
+      },
+      "root = Stack([": {
+        "candidates": 26,
+        "pick": "b1",
+        "runner_up": "TextContent(",
+        "margin": 1.738,
+        "context_row_top": {
+          "b1": 1017,
+          "]": 272,
+          "b4": 223,
+          "b5": 149,
+          "b2": 109,
+          "b3": 68
+        }
+      }
+    }
+  },
+  "order_control_arm": {
+    "certified_train_order4": {
+      "contexts": 1239,
+      "sequences": 1054,
+      "tokens": 54434,
+      "committed": false,
+      "decision": "keep order 3: +6/213 hits on held_out+adversarial, 2.5x contexts, 71% more floor-saturated margins"
+    }
+  },
+  "check": {
+    "asserts": [
+      "records sha256 matches manifest artifacts entry",
+      "artifact source block equals live manifest (dataset_id, manifest_content_fingerprint, records_sha256, records path, records_total, manifest_kind)",
+      "corpus_fingerprint equals rebuilt train-sequence fingerprint",
+      "full artifact equals rebuild"
+    ],
+    "tamper_probe": "manifest_content_fingerprint altered in a copy -> exit 1"
+  },
+  "measurement": {
+    "eval_set": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke24_v1",
+    "suites": [
+      "smoke",
+      "held_out",
+      "adversarial"
+    ],
+    "margin_threshold": 0.5,
+    "remaining_tokens": 32,
+    "branch_point_definition": "forest coverage complete and >= 2 non-empty paths",
+    "hit_definition": "pick is a prefix of the gold continuation",
+    "tables": {
+      "wf_smoke_v2_order4": "8c5a7d6cd170cafc01957fc23eaa4715450f32242dc92776abc45ec024126df6",
+      "certified_train_order3": "96ef8ffd409637f53fa9e79abe2f96b4df79ba260e428862c35732c3ac3f08e5",
+      "certified_train_order4": "same sequences at order 4 (uncommitted control)"
+    },
+    "contamination": {
+      "canonical_program_overlap": {
+        "wf_smoke_v2": {
+          "smoke": 0,
+          "held_out": 0,
+          "adversarial": 0
+        },
+        "openui_verified_train_v1": {
+          "smoke": 2,
+          "held_out": 1,
+          "adversarial": 0
+        }
+      },
+      "overlapping_record_ids": [
+        "held_out_tabs_01",
+        "smoke_tabs2_01",
+        "smoke_tabs_01"
+      ]
+    },
+    "all_records": {
+      "suites": {
+        "smoke": {
+          "records": 24,
+          "encode_errors": 0,
+          "positions": 1072,
+          "branch_points": 497,
+          "forced_or_partial_positions": 575,
+          "tables": {
+            "wf_smoke_v2_order4": {
+              "n": 497,
+              "margin_min": 0.0,
+              "margin_p10": 0.063,
+              "margin_p25": 0.405,
+              "margin_median": 1.386,
+              "margin_p75": 15.916,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 8.627,
+              "histogram": {
+                "[0,0.5)": 160,
+                "[0.5,1)": 71,
+                "[1,2)": 97,
+                "[2,5)": 10,
+                "[5,15)": 0,
+                "[15,inf)": 159
+              },
+              "confident_commit_rate": 0.6781,
+              "pick_hit_rate": 0.5131,
+              "first_token_hit_rate": 0.5131,
+              "confident_pick_precision": 0.6766,
+              "confident_first_token_precision": 0.6766,
+              "confident_commits": 337,
+              "confident_wrong_commits": 109
+            },
+            "certified_train_order3": {
+              "n": 497,
+              "margin_min": 0.0,
+              "margin_p10": 0.188,
+              "margin_p25": 0.599,
+              "margin_median": 1.382,
+              "margin_p75": 2.983,
+              "margin_p90": 15.458,
+              "margin_max": 30.0,
+              "margin_mean": 5.289,
+              "histogram": {
+                "[0,0.5)": 82,
+                "[0.5,1)": 86,
+                "[1,2)": 181,
+                "[2,5)": 50,
+                "[5,15)": 4,
+                "[15,inf)": 94
+              },
+              "confident_commit_rate": 0.835,
+              "pick_hit_rate": 0.4789,
+              "first_token_hit_rate": 0.4789,
+              "confident_pick_precision": 0.4819,
+              "confident_first_token_precision": 0.4819,
+              "confident_commits": 415,
+              "confident_wrong_commits": 215
+            },
+            "certified_train_order4": {
+              "n": 497,
+              "margin_min": 0.0,
+              "margin_p10": 0.188,
+              "margin_p25": 0.742,
+              "margin_median": 1.439,
+              "margin_p75": 15.458,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 8.818,
+              "histogram": {
+                "[0,0.5)": 82,
+                "[0.5,1)": 71,
+                "[1,2)": 124,
+                "[2,5)": 61,
+                "[5,15)": 0,
+                "[15,inf)": 159
+              },
+              "confident_commit_rate": 0.835,
+              "pick_hit_rate": 0.495,
+              "first_token_hit_rate": 0.495,
+              "confident_pick_precision": 0.506,
+              "confident_first_token_precision": 0.506,
+              "confident_commits": 415,
+              "confident_wrong_commits": 205
+            }
+          }
+        },
+        "held_out": {
+          "records": 5,
+          "encode_errors": 0,
+          "positions": 307,
+          "branch_points": 137,
+          "forced_or_partial_positions": 170,
+          "tables": {
+            "wf_smoke_v2_order4": {
+              "n": 137,
+              "margin_min": 0.0,
+              "margin_p10": 0.063,
+              "margin_p25": 0.294,
+              "margin_median": 1.386,
+              "margin_p75": 30.0,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 10.238,
+              "histogram": {
+                "[0,0.5)": 47,
+                "[0.5,1)": 18,
+                "[1,2)": 20,
+                "[2,5)": 1,
+                "[5,15)": 0,
+                "[15,inf)": 51
+              },
+              "confident_commit_rate": 0.6569,
+              "pick_hit_rate": 0.5547,
+              "first_token_hit_rate": 0.5547,
+              "confident_pick_precision": 0.7444,
+              "confident_first_token_precision": 0.7444,
+              "confident_commits": 90,
+              "confident_wrong_commits": 23
+            },
+            "certified_train_order3": {
+              "n": 137,
+              "margin_min": 0.0,
+              "margin_p10": 0.131,
+              "margin_p25": 0.599,
+              "margin_median": 1.386,
+              "margin_p75": 3.997,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 6.704,
+              "histogram": {
+                "[0,0.5)": 23,
+                "[0.5,1)": 27,
+                "[1,2)": 42,
+                "[2,5)": 12,
+                "[5,15)": 1,
+                "[15,inf)": 32
+              },
+              "confident_commit_rate": 0.8321,
+              "pick_hit_rate": 0.4672,
+              "first_token_hit_rate": 0.4672,
+              "confident_pick_precision": 0.4825,
+              "confident_first_token_precision": 0.4825,
+              "confident_commits": 114,
+              "confident_wrong_commits": 59
+            },
+            "certified_train_order4": {
+              "n": 137,
+              "margin_min": 0.0,
+              "margin_p10": 0.117,
+              "margin_p25": 0.599,
+              "margin_median": 1.567,
+              "margin_p75": 30.0,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 10.566,
+              "histogram": {
+                "[0,0.5)": 24,
+                "[0.5,1)": 20,
+                "[1,2)": 28,
+                "[2,5)": 13,
+                "[5,15)": 0,
+                "[15,inf)": 52
+              },
+              "confident_commit_rate": 0.8248,
+              "pick_hit_rate": 0.5182,
+              "first_token_hit_rate": 0.5182,
+              "confident_pick_precision": 0.5398,
+              "confident_first_token_precision": 0.5398,
+              "confident_commits": 113,
+              "confident_wrong_commits": 52
+            }
+          }
+        },
+        "adversarial": {
+          "records": 4,
+          "encode_errors": 0,
+          "positions": 178,
+          "branch_points": 76,
+          "forced_or_partial_positions": 102,
+          "tables": {
+            "wf_smoke_v2_order4": {
+              "n": 76,
+              "margin_min": 0.0,
+              "margin_p10": 0.063,
+              "margin_p25": 0.21,
+              "margin_median": 0.875,
+              "margin_p75": 15.802,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 6.979,
+              "histogram": {
+                "[0,0.5)": 28,
+                "[0.5,1)": 12,
+                "[1,2)": 13,
+                "[2,5)": 3,
+                "[5,15)": 0,
+                "[15,inf)": 20
+              },
+              "confident_commit_rate": 0.6316,
+              "pick_hit_rate": 0.5132,
+              "first_token_hit_rate": 0.5132,
+              "confident_pick_precision": 0.6875,
+              "confident_first_token_precision": 0.6875,
+              "confident_commits": 48,
+              "confident_wrong_commits": 15
+            },
+            "certified_train_order3": {
+              "n": 76,
+              "margin_min": 0.043,
+              "margin_p10": 0.188,
+              "margin_p25": 0.599,
+              "margin_median": 1.439,
+              "margin_p75": 2.653,
+              "margin_p90": 15.0,
+              "margin_max": 30.0,
+              "margin_mean": 3.235,
+              "histogram": {
+                "[0,0.5)": 11,
+                "[0.5,1)": 11,
+                "[1,2)": 33,
+                "[2,5)": 11,
+                "[5,15)": 1,
+                "[15,inf)": 9
+              },
+              "confident_commit_rate": 0.8553,
+              "pick_hit_rate": 0.5526,
+              "first_token_hit_rate": 0.5526,
+              "confident_pick_precision": 0.5538,
+              "confident_first_token_precision": 0.5538,
+              "confident_commits": 65,
+              "confident_wrong_commits": 29
+            },
+            "certified_train_order4": {
+              "n": 76,
+              "margin_min": 0.043,
+              "margin_p10": 0.125,
+              "margin_p25": 0.587,
+              "margin_median": 1.439,
+              "margin_p75": 15.458,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 6.867,
+              "histogram": {
+                "[0,0.5)": 14,
+                "[0.5,1)": 12,
+                "[1,2)": 19,
+                "[2,5)": 11,
+                "[5,15)": 0,
+                "[15,inf)": 20
+              },
+              "confident_commit_rate": 0.8158,
+              "pick_hit_rate": 0.5395,
+              "first_token_hit_rate": 0.5395,
+              "confident_pick_precision": 0.5484,
+              "confident_first_token_precision": 0.5484,
+              "confident_commits": 62,
+              "confident_wrong_commits": 28
+            }
+          }
+        }
+      },
+      "pooled": {
+        "records": 33,
+        "encode_errors": 0,
+        "positions": 1557,
+        "branch_points": 710,
+        "forced_or_partial_positions": 847,
+        "tables": {
+          "wf_smoke_v2_order4": {
+            "n": 710,
+            "margin_min": 0.0,
+            "margin_p10": 0.063,
+            "margin_p25": 0.347,
+            "margin_median": 1.386,
+            "margin_p75": 15.916,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 8.762,
+            "histogram": {
+              "[0,0.5)": 235,
+              "[0.5,1)": 101,
+              "[1,2)": 130,
+              "[2,5)": 14,
+              "[5,15)": 0,
+              "[15,inf)": 230
+            },
+            "confident_commit_rate": 0.669,
+            "pick_hit_rate": 0.5211,
+            "first_token_hit_rate": 0.5211,
+            "confident_pick_precision": 0.6905,
+            "confident_first_token_precision": 0.6905,
+            "confident_commits": 475,
+            "confident_wrong_commits": 147
+          },
+          "certified_train_order3": {
+            "n": 710,
+            "margin_min": 0.0,
+            "margin_p10": 0.188,
+            "margin_p25": 0.599,
+            "margin_median": 1.386,
+            "margin_p75": 2.983,
+            "margin_p90": 15.458,
+            "margin_max": 30.0,
+            "margin_mean": 5.342,
+            "histogram": {
+              "[0,0.5)": 116,
+              "[0.5,1)": 124,
+              "[1,2)": 256,
+              "[2,5)": 73,
+              "[5,15)": 6,
+              "[15,inf)": 135
+            },
+            "confident_commit_rate": 0.8366,
+            "pick_hit_rate": 0.4845,
+            "first_token_hit_rate": 0.4845,
+            "confident_pick_precision": 0.4899,
+            "confident_first_token_precision": 0.4899,
+            "confident_commits": 594,
+            "confident_wrong_commits": 303
+          },
+          "certified_train_order4": {
+            "n": 710,
+            "margin_min": 0.0,
+            "margin_p10": 0.125,
+            "margin_p25": 0.599,
+            "margin_median": 1.439,
+            "margin_p75": 15.458,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 8.946,
+            "histogram": {
+              "[0,0.5)": 120,
+              "[0.5,1)": 103,
+              "[1,2)": 171,
+              "[2,5)": 85,
+              "[5,15)": 0,
+              "[15,inf)": 231
+            },
+            "confident_commit_rate": 0.831,
+            "pick_hit_rate": 0.5042,
+            "first_token_hit_rate": 0.5042,
+            "confident_pick_precision": 0.5169,
+            "confident_first_token_precision": 0.5169,
+            "confident_commits": 590,
+            "confident_wrong_commits": 285
+          }
+        }
+      },
+      "pooled_held_out_plus_adversarial": {
+        "records": 9,
+        "encode_errors": 0,
+        "positions": 485,
+        "branch_points": 213,
+        "forced_or_partial_positions": 272,
+        "tables": {
+          "wf_smoke_v2_order4": {
+            "n": 213,
+            "margin_min": 0.0,
+            "margin_p10": 0.063,
+            "margin_p25": 0.294,
+            "margin_median": 1.099,
+            "margin_p75": 15.916,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 9.075,
+            "histogram": {
+              "[0,0.5)": 75,
+              "[0.5,1)": 30,
+              "[1,2)": 33,
+              "[2,5)": 4,
+              "[5,15)": 0,
+              "[15,inf)": 71
+            },
+            "confident_commit_rate": 0.6479,
+            "pick_hit_rate": 0.5399,
+            "first_token_hit_rate": 0.5399,
+            "confident_pick_precision": 0.7246,
+            "confident_first_token_precision": 0.7246,
+            "confident_commits": 138,
+            "confident_wrong_commits": 38
+          },
+          "certified_train_order3": {
+            "n": 213,
+            "margin_min": 0.0,
+            "margin_p10": 0.154,
+            "margin_p25": 0.599,
+            "margin_median": 1.439,
+            "margin_p75": 2.983,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 5.466,
+            "histogram": {
+              "[0,0.5)": 34,
+              "[0.5,1)": 38,
+              "[1,2)": 75,
+              "[2,5)": 23,
+              "[5,15)": 2,
+              "[15,inf)": 41
+            },
+            "confident_commit_rate": 0.8404,
+            "pick_hit_rate": 0.4977,
+            "first_token_hit_rate": 0.4977,
+            "confident_pick_precision": 0.5084,
+            "confident_first_token_precision": 0.5084,
+            "confident_commits": 179,
+            "confident_wrong_commits": 88
+          },
+          "certified_train_order4": {
+            "n": 213,
+            "margin_min": 0.0,
+            "margin_p10": 0.117,
+            "margin_p25": 0.599,
+            "margin_median": 1.442,
+            "margin_p75": 15.458,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 9.246,
+            "histogram": {
+              "[0,0.5)": 38,
+              "[0.5,1)": 32,
+              "[1,2)": 47,
+              "[2,5)": 24,
+              "[5,15)": 0,
+              "[15,inf)": 72
+            },
+            "confident_commit_rate": 0.8216,
+            "pick_hit_rate": 0.5258,
+            "first_token_hit_rate": 0.5258,
+            "confident_pick_precision": 0.5429,
+            "confident_first_token_precision": 0.5429,
+            "confident_commits": 175,
+            "confident_wrong_commits": 80
+          }
+        }
+      }
+    },
+    "excluding_overlap": {
+      "suites": {
+        "smoke": {
+          "records": 22,
+          "encode_errors": 0,
+          "positions": 954,
+          "branch_points": 457,
+          "forced_or_partial_positions": 497,
+          "tables": {
+            "wf_smoke_v2_order4": {
+              "n": 457,
+              "margin_min": 0.0,
+              "margin_p10": 0.063,
+              "margin_p25": 0.405,
+              "margin_median": 1.386,
+              "margin_p75": 15.916,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 8.746,
+              "histogram": {
+                "[0,0.5)": 142,
+                "[0.5,1)": 65,
+                "[1,2)": 93,
+                "[2,5)": 8,
+                "[5,15)": 0,
+                "[15,inf)": 149
+              },
+              "confident_commit_rate": 0.6893,
+              "pick_hit_rate": 0.5186,
+              "first_token_hit_rate": 0.5186,
+              "confident_pick_precision": 0.673,
+              "confident_first_token_precision": 0.673,
+              "confident_commits": 315,
+              "confident_wrong_commits": 103
+            },
+            "certified_train_order3": {
+              "n": 457,
+              "margin_min": 0.0,
+              "margin_p10": 0.188,
+              "margin_p25": 0.654,
+              "margin_median": 1.382,
+              "margin_p75": 2.983,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 5.46,
+              "histogram": {
+                "[0,0.5)": 76,
+                "[0.5,1)": 76,
+                "[1,2)": 165,
+                "[2,5)": 46,
+                "[5,15)": 4,
+                "[15,inf)": 90
+              },
+              "confident_commit_rate": 0.8337,
+              "pick_hit_rate": 0.4902,
+              "first_token_hit_rate": 0.4902,
+              "confident_pick_precision": 0.4934,
+              "confident_first_token_precision": 0.4934,
+              "confident_commits": 381,
+              "confident_wrong_commits": 193
+            },
+            "certified_train_order4": {
+              "n": 457,
+              "margin_min": 0.0,
+              "margin_p10": 0.188,
+              "margin_p25": 0.742,
+              "margin_median": 1.442,
+              "margin_p75": 15.458,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 8.691,
+              "histogram": {
+                "[0,0.5)": 74,
+                "[0.5,1)": 65,
+                "[1,2)": 116,
+                "[2,5)": 59,
+                "[5,15)": 0,
+                "[15,inf)": 143
+              },
+              "confident_commit_rate": 0.8381,
+              "pick_hit_rate": 0.4858,
+              "first_token_hit_rate": 0.4858,
+              "confident_pick_precision": 0.4961,
+              "confident_first_token_precision": 0.4961,
+              "confident_commits": 383,
+              "confident_wrong_commits": 193
+            }
+          }
+        },
+        "held_out": {
+          "records": 4,
+          "encode_errors": 0,
+          "positions": 248,
+          "branch_points": 117,
+          "forced_or_partial_positions": 131,
+          "tables": {
+            "wf_smoke_v2_order4": {
+              "n": 117,
+              "margin_min": 0.0,
+              "margin_p10": 0.063,
+              "margin_p25": 0.347,
+              "margin_median": 1.401,
+              "margin_p75": 30.0,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 10.745,
+              "histogram": {
+                "[0,0.5)": 38,
+                "[0.5,1)": 15,
+                "[1,2)": 18,
+                "[2,5)": 0,
+                "[5,15)": 0,
+                "[15,inf)": 46
+              },
+              "confident_commit_rate": 0.6752,
+              "pick_hit_rate": 0.5726,
+              "first_token_hit_rate": 0.5726,
+              "confident_pick_precision": 0.7468,
+              "confident_first_token_precision": 0.7468,
+              "confident_commits": 79,
+              "confident_wrong_commits": 20
+            },
+            "certified_train_order3": {
+              "n": 117,
+              "margin_min": 0.0,
+              "margin_p10": 0.131,
+              "margin_p25": 0.627,
+              "margin_median": 1.386,
+              "margin_p75": 15.0,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 7.279,
+              "histogram": {
+                "[0,0.5)": 20,
+                "[0.5,1)": 22,
+                "[1,2)": 34,
+                "[2,5)": 10,
+                "[5,15)": 1,
+                "[15,inf)": 30
+              },
+              "confident_commit_rate": 0.8291,
+              "pick_hit_rate": 0.4872,
+              "first_token_hit_rate": 0.4872,
+              "confident_pick_precision": 0.5052,
+              "confident_first_token_precision": 0.5052,
+              "confident_commits": 97,
+              "confident_wrong_commits": 48
+            },
+            "certified_train_order4": {
+              "n": 117,
+              "margin_min": 0.0,
+              "margin_p10": 0.117,
+              "margin_p25": 0.669,
+              "margin_median": 1.904,
+              "margin_p75": 30.0,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 10.616,
+              "histogram": {
+                "[0,0.5)": 20,
+                "[0.5,1)": 17,
+                "[1,2)": 24,
+                "[2,5)": 12,
+                "[5,15)": 0,
+                "[15,inf)": 44
+              },
+              "confident_commit_rate": 0.8291,
+              "pick_hit_rate": 0.5043,
+              "first_token_hit_rate": 0.5043,
+              "confident_pick_precision": 0.5258,
+              "confident_first_token_precision": 0.5258,
+              "confident_commits": 97,
+              "confident_wrong_commits": 46
+            }
+          }
+        },
+        "adversarial": {
+          "records": 4,
+          "encode_errors": 0,
+          "positions": 178,
+          "branch_points": 76,
+          "forced_or_partial_positions": 102,
+          "tables": {
+            "wf_smoke_v2_order4": {
+              "n": 76,
+              "margin_min": 0.0,
+              "margin_p10": 0.063,
+              "margin_p25": 0.21,
+              "margin_median": 0.875,
+              "margin_p75": 15.802,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 6.979,
+              "histogram": {
+                "[0,0.5)": 28,
+                "[0.5,1)": 12,
+                "[1,2)": 13,
+                "[2,5)": 3,
+                "[5,15)": 0,
+                "[15,inf)": 20
+              },
+              "confident_commit_rate": 0.6316,
+              "pick_hit_rate": 0.5132,
+              "first_token_hit_rate": 0.5132,
+              "confident_pick_precision": 0.6875,
+              "confident_first_token_precision": 0.6875,
+              "confident_commits": 48,
+              "confident_wrong_commits": 15
+            },
+            "certified_train_order3": {
+              "n": 76,
+              "margin_min": 0.043,
+              "margin_p10": 0.188,
+              "margin_p25": 0.599,
+              "margin_median": 1.439,
+              "margin_p75": 2.653,
+              "margin_p90": 15.0,
+              "margin_max": 30.0,
+              "margin_mean": 3.235,
+              "histogram": {
+                "[0,0.5)": 11,
+                "[0.5,1)": 11,
+                "[1,2)": 33,
+                "[2,5)": 11,
+                "[5,15)": 1,
+                "[15,inf)": 9
+              },
+              "confident_commit_rate": 0.8553,
+              "pick_hit_rate": 0.5526,
+              "first_token_hit_rate": 0.5526,
+              "confident_pick_precision": 0.5538,
+              "confident_first_token_precision": 0.5538,
+              "confident_commits": 65,
+              "confident_wrong_commits": 29
+            },
+            "certified_train_order4": {
+              "n": 76,
+              "margin_min": 0.043,
+              "margin_p10": 0.125,
+              "margin_p25": 0.587,
+              "margin_median": 1.439,
+              "margin_p75": 15.458,
+              "margin_p90": 30.0,
+              "margin_max": 30.0,
+              "margin_mean": 6.867,
+              "histogram": {
+                "[0,0.5)": 14,
+                "[0.5,1)": 12,
+                "[1,2)": 19,
+                "[2,5)": 11,
+                "[5,15)": 0,
+                "[15,inf)": 20
+              },
+              "confident_commit_rate": 0.8158,
+              "pick_hit_rate": 0.5395,
+              "first_token_hit_rate": 0.5395,
+              "confident_pick_precision": 0.5484,
+              "confident_first_token_precision": 0.5484,
+              "confident_commits": 62,
+              "confident_wrong_commits": 28
+            }
+          }
+        }
+      },
+      "pooled": {
+        "records": 30,
+        "encode_errors": 0,
+        "positions": 1380,
+        "branch_points": 650,
+        "forced_or_partial_positions": 730,
+        "tables": {
+          "wf_smoke_v2_order4": {
+            "n": 650,
+            "margin_min": 0.0,
+            "margin_p10": 0.063,
+            "margin_p25": 0.405,
+            "margin_median": 1.386,
+            "margin_p75": 15.916,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 8.899,
+            "histogram": {
+              "[0,0.5)": 208,
+              "[0.5,1)": 92,
+              "[1,2)": 124,
+              "[2,5)": 11,
+              "[5,15)": 0,
+              "[15,inf)": 215
+            },
+            "confident_commit_rate": 0.68,
+            "pick_hit_rate": 0.5277,
+            "first_token_hit_rate": 0.5277,
+            "confident_pick_precision": 0.6878,
+            "confident_first_token_precision": 0.6878,
+            "confident_commits": 442,
+            "confident_wrong_commits": 138
+          },
+          "certified_train_order3": {
+            "n": 650,
+            "margin_min": 0.0,
+            "margin_p10": 0.188,
+            "margin_p25": 0.64,
+            "margin_median": 1.386,
+            "margin_p75": 2.983,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 5.527,
+            "histogram": {
+              "[0,0.5)": 107,
+              "[0.5,1)": 109,
+              "[1,2)": 232,
+              "[2,5)": 67,
+              "[5,15)": 6,
+              "[15,inf)": 129
+            },
+            "confident_commit_rate": 0.8354,
+            "pick_hit_rate": 0.4969,
+            "first_token_hit_rate": 0.4969,
+            "confident_pick_precision": 0.5028,
+            "confident_first_token_precision": 0.5028,
+            "confident_commits": 543,
+            "confident_wrong_commits": 270
+          },
+          "certified_train_order4": {
+            "n": 650,
+            "margin_min": 0.0,
+            "margin_p10": 0.125,
+            "margin_p25": 0.738,
+            "margin_median": 1.442,
+            "margin_p75": 15.458,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 8.824,
+            "histogram": {
+              "[0,0.5)": 108,
+              "[0.5,1)": 94,
+              "[1,2)": 159,
+              "[2,5)": 82,
+              "[5,15)": 0,
+              "[15,inf)": 207
+            },
+            "confident_commit_rate": 0.8338,
+            "pick_hit_rate": 0.4954,
+            "first_token_hit_rate": 0.4954,
+            "confident_pick_precision": 0.5074,
+            "confident_first_token_precision": 0.5074,
+            "confident_commits": 542,
+            "confident_wrong_commits": 267
+          }
+        }
+      },
+      "pooled_held_out_plus_adversarial": {
+        "records": 8,
+        "encode_errors": 0,
+        "positions": 426,
+        "branch_points": 193,
+        "forced_or_partial_positions": 233,
+        "tables": {
+          "wf_smoke_v2_order4": {
+            "n": 193,
+            "margin_min": 0.0,
+            "margin_p10": 0.063,
+            "margin_p25": 0.32,
+            "margin_median": 1.386,
+            "margin_p75": 15.916,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 9.262,
+            "histogram": {
+              "[0,0.5)": 66,
+              "[0.5,1)": 27,
+              "[1,2)": 31,
+              "[2,5)": 3,
+              "[5,15)": 0,
+              "[15,inf)": 66
+            },
+            "confident_commit_rate": 0.658,
+            "pick_hit_rate": 0.5492,
+            "first_token_hit_rate": 0.5492,
+            "confident_pick_precision": 0.7244,
+            "confident_first_token_precision": 0.7244,
+            "confident_commits": 127,
+            "confident_wrong_commits": 35
+          },
+          "certified_train_order3": {
+            "n": 193,
+            "margin_min": 0.0,
+            "margin_p10": 0.154,
+            "margin_p25": 0.599,
+            "margin_median": 1.439,
+            "margin_p75": 2.983,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 5.687,
+            "histogram": {
+              "[0,0.5)": 31,
+              "[0.5,1)": 33,
+              "[1,2)": 67,
+              "[2,5)": 21,
+              "[5,15)": 2,
+              "[15,inf)": 39
+            },
+            "confident_commit_rate": 0.8394,
+            "pick_hit_rate": 0.513,
+            "first_token_hit_rate": 0.513,
+            "confident_pick_precision": 0.5247,
+            "confident_first_token_precision": 0.5247,
+            "confident_commits": 162,
+            "confident_wrong_commits": 77
+          },
+          "certified_train_order4": {
+            "n": 193,
+            "margin_min": 0.0,
+            "margin_p10": 0.117,
+            "margin_p25": 0.599,
+            "margin_median": 1.442,
+            "margin_p75": 15.458,
+            "margin_p90": 30.0,
+            "margin_max": 30.0,
+            "margin_mean": 9.14,
+            "histogram": {
+              "[0,0.5)": 34,
+              "[0.5,1)": 29,
+              "[1,2)": 43,
+              "[2,5)": 23,
+              "[5,15)": 0,
+              "[15,inf)": 64
+            },
+            "confident_commit_rate": 0.8238,
+            "pick_hit_rate": 0.5181,
+            "first_token_hit_rate": 0.5181,
+            "confident_pick_precision": 0.5346,
+            "confident_first_token_precision": 0.5346,
+            "confident_commits": 159,
+            "confident_wrong_commits": 74
+          }
+        }
+      }
+    },
+    "runtime": "CPU; sharded into <= 3 minute runs (MAX_RUN_MINUTES); every record covered exactly once"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f16040167033b86077d0448ef3c7a88df4658cc5",
+    "code_dirty": true,
+    "components": {
+      "decode.invariants": "v10",
+      "model.twotower": "v320"
+    },
+    "stamped_at": "2026-09-02T05:34:31.200051+00:00"
+  }
+}

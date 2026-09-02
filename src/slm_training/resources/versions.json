@@ -968,6 +968,11 @@
     "decode.invariants": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "S2: I3 committed n-gram table provenance -- built from the certified train bucket openui_verified_train_v1 (1,054 encoded sequences, 54,434 tokens, order 3, 493 contexts); doc branch-point numbers are measured and pinned by test; --check asserts the artifact's recorded source (manifest content_fingerprint, records sha256) against the live manifest. No invariant weakened; lever stays off.",
+          "version": "v10"
+        },
+        {
           "date": "2026-08-20",
           "note": "I6: completed-document parse_rate is perfect (1.0) or the decode is invalid; autotrain PARSE_RATE_PERFECT is not a lever.",
           "version": "v9"
@@ -1024,7 +1029,7 @@
         "scripts/verify_decode_invariants.py",
         "tests/test_scripts/test_verify_decode_invariants.py"
       ],
-      "version": "v9"
+      "version": "v10"
     },
     "dsl.abstract_plan": {
       "history": [
@@ -19157,6 +19162,11 @@
     "model.twotower": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "S2: speculative n-gram builder defaults to the certified train bucket (no split re-derivation, no wf_smoke_v2 fallback); artifact regenerated at order 3 and carries a source provenance block; --check verifies provenance against the live manifest. Ranker scoring unchanged.",
+          "version": "v320"
+        },
+        {
           "date": "2026-08-21",
           "note": "Domain-restricted speculative rank backoff and regenerated train-only n-gram table; I2 singleton bypass unchanged.",
           "version": "v319"
@@ -21140,7 +21150,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v319"
+      "version": "v320"
     },
     "ops.vocab": {
       "history": [
