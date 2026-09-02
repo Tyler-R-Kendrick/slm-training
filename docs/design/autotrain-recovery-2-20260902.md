@@ -335,3 +335,59 @@ The upstream fixes to `openui_verified_v1` — re-certify under
 `symbol_only/v2`, namespace ids, dedupe, and keep placeholders out of
 non-content properties — remain open against that corpus's own feedback
 artifact.
+
+## INT-6 — three supervised cycles: the loop trains, measures and accumulates
+
+Claim class: **fixture-scale recovery / fixture-demo**. No checkpoint was
+promoted, synced or shipped, and no ship gate was evaluated. `--supervised`
+runs exactly one bounded cycle, so this is three sequential supervised cycles
+on one loop id from a fresh scratch root, each inside `MAX_RUN_MINUTES = 3`
+per stage. No run timed out at the harness wall; the arm-level exits are
+recorded below.
+
+### What each cycle did
+
+| Cycle | Regime | Control `smoke.eval_nll` | Records | Champion |
+| --- | --- | --- | --- | --- |
+| 1 | `isolate` (`no_climb_baseline_causal_ofat`) | 7.196 | 96 | none (cold start) |
+| 2 | `climb` (`climb_champion_checkpoint_available`) | 4.569 | 96 | `baseline_seed`, 53 steps, 893 records |
+| 3 | `climb`, `intent=retry_measurement` | 4.569 | 96 | unchanged (frozen replay) |
+
+The primary is `smoke.eval_nll`, measured teacher-forced over all 96 records
+of `e938_role_safe_all_targets_smoke96_v2` and persisted per record in
+`eval_nll_records.json`, with `claim_class: diagnostic` on the scoreboard.
+
+Cycle 2 is the first time this loop has ever carried state forward: the
+control forked the seeded champion instead of starting from random init, and
+its NLL fell from 7.196 to 4.569. Cycle 3 is a frozen replay of cycle 2's
+measurement, which is why its number is identical — that is the retry path
+working, not a second independent measurement.
+
+For contrast, the committed history of the `continuous-openui-local` loop is
+543 cycles with zero positives under the current eval key, 0 of 75 champion
+promotions, and every arm in c536–c543 exiting 2.
+
+### What is still incomplete, stated plainly
+
+Every cycle above ends `measurement_complete: false` and `positive=False`.
+Two things are missing, and neither is a quality verdict:
+
+1. **No decoded-quality probe result.** The scoreboard carries `eval_nll` and
+   nothing else: `document_n`, `completed_document_n` and
+   `decode_timeout_count` are all `None`, which the completeness check reads
+   as `invalid_counts`. Before INT-5 the probe decoded the whole 96-record
+   suite and was killed at the wall after 80 records; with the probe bounded
+   to 6 records the arm no longer dies, but the decoded evaluation now writes
+   no progress file and no document counts at all. The knob is confirmed to
+   reach the arm (`eval_limit: 6` in the executed experiment spec), so the
+   remaining defect is downstream of the knob, in how a bounded certified
+   suite is evaluated. That is the next card.
+2. **No paired screening verdict.** Because the candidate arm's measurement is
+   incomplete, no Wilcoxon over paired per-record NLL deltas is computed, so
+   the loop reports neither a positive nor a decisive null. The NLL improvement
+   in the table is a control-versus-itself accumulation across cycles, not an
+   arm comparison, and must not be read as an experimental result.
+
+The honest summary is that the loop now runs, trains, measures a primary on
+96 records and carries a champion forward, and that the decoded-quality half
+of the measurement is not yet complete.

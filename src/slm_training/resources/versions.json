@@ -5151,6 +5151,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: recovery doc gains the INT-6 three-cycle run record and the evidence ledger is regenerated (documentation + deterministic rebuild).",
+          "version": "v286"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after the S6/S12 results JSON landed (deterministic rebuild).",
           "version": "v286"
         },
