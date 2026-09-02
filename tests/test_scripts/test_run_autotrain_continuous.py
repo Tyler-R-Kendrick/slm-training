@@ -7696,6 +7696,10 @@ def test_supervisor_noops_when_regime_parked(
             "wf_smoke_v2",
             "--steps",
             "20",
+            # Park is a wait state (supervisor v243): the default 300 s
+            # backoff would sleep 15 minutes across three parked cycles.
+            "--park-backoff-seconds",
+            "1",
         ]
     )
     assert rc == 0
@@ -9423,6 +9427,15 @@ def test_fit_screening_decode_carries_certified_sample_size_report() -> None:
     if report["verdict"] == "feasible":
         assert int(meta["smoke_n"]) >= 6
         assert report["must_generate"] is False
+    elif report["verdict"] == "insufficient_evidence":
+        # Same-metric paired SD unmeasured (experiment_campaign v271): the
+        # exact floor is affordable, so the advisory screen spends the
+        # affordable n instead of parking on a borrowed power floor.
+        assert report["power_floor_status"] == "unmeasured"
+        assert report["binding_constraints"] == []
+        assert report["must_generate"] is False
+        assert int(meta["smoke_n"]) >= 6
+        assert report["chosen_n"] == int(meta["smoke_n"])
     else:
         assert report["verdict"] == "infeasible_range_empty"
         assert "suite_volume" in report["binding_constraints"]
@@ -11475,3 +11488,84 @@ def test_size_match_skip_reason_typed() -> None:
     assert reason is not None
     assert reason.startswith("capacity_unmatched:")
     assert _mod._size_match_skip_reason(control, control) is None
+
+
+def test_delivery_is_thrash_timeout_residual_requires_timeout_evidence() -> None:
+    # Cycles c536..c543: control arm exit 2 + harness_failure:*:experiment_failed
+    # with missing_scoreboard is a crash, never a wall residual.
+    crash = {
+        "arm_exits": {"c-control": 2, "c-cand": 1},
+        "reasons": [
+            "measurement_incomplete:c-control:missing_scoreboard",
+            "measurement_incomplete:c-cand:missing_scoreboard",
+            "harness_failure:c-control:experiment_failed",
+        ],
+    }
+    assert not _mod._delivery_is_thrash_timeout_residual(crash)
+    # missing_scoreboard / primary_metric_unavailable alone carry no timeout evidence.
+    assert not _mod._delivery_is_thrash_timeout_residual(
+        {
+            "arm_exits": {"c-control": 2},
+            "reasons": ["measurement_incomplete:c-control:missing_scoreboard"],
+        }
+    )
+    assert not _mod._delivery_is_thrash_timeout_residual(
+        {"reasons": ["primary_metric_unavailable:smoke.eval_nll"]}
+    )
+    assert not _mod._delivery_is_thrash_timeout_residual(
+        {"reasons": ["measurement_incomplete:c-control:missing_scoreboard"]}
+    )
+    # An arm exit of 124 (wall) makes the same incomplete delivery a residual.
+    assert _mod._delivery_is_thrash_timeout_residual(
+        {
+            "arm_exits": {"c-control": 124, "c-cand": 0},
+            "reasons": [
+                "measurement_incomplete:c-control:missing_scoreboard",
+                "harness_failure:c-control:experiment_failed",
+            ],
+        }
+    )
+    # So does an explicit wall_timeout / decode_timeout marker without exits.
+    assert _mod._delivery_is_thrash_timeout_residual(
+        {
+            "reasons": [
+                "measurement_incomplete:c-control:missing_scoreboard",
+                "wall_timeout:180s",
+            ]
+        }
+    )
+    assert _mod._delivery_is_thrash_timeout_residual(
+        {
+            "reasons": [
+                "harness_failure:c-control:experiment_failed",
+                "decode_timeout_count=2",
+            ]
+        }
+    )
+    # A crash exit beside the harness-failure marker outranks a wall exit elsewhere.
+    assert not _mod._delivery_is_thrash_timeout_residual(
+        {
+            "arm_exits": {"c-control": 2, "c-cand": 124},
+            "reasons": ["harness_failure:c-control:experiment_failed"],
+        }
+    )
+
+
+def test_delivery_is_thrash_timeout_residual_keeps_repair_harness_blocker() -> None:
+    from slm_training.autoresearch.heal.classify import classify_blocker
+
+    results = (
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "design"
+        / "continuous-loop-20260821-continuous-openui-local-8c0b60dd-c543-results.json"
+    )
+    delivery = json.loads(results.read_text(encoding="utf-8"))["delivery"]
+    assert not _mod._delivery_is_thrash_timeout_residual(delivery)
+    crash_reason = next(r for r in delivery["reasons"] if "experiment_failed" in r)
+    assert (
+        classify_blocker(
+            "repair_harness", crash_reason, arm_exits=delivery["arm_exits"]
+        )
+        == "code"
+    )
