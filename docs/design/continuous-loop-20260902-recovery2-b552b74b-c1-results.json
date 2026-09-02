@@ -34,12 +34,12 @@
     "arm_skipped": {
       "c20260902-recovery2-b552b74b-c1-semantic-contrast-compiler-margin": {
         "arm_id": "c20260902-recovery2-b552b74b-c1-semantic-contrast-compiler-margin",
-        "deadline": 6333.148108744,
+        "deadline": 6742.190814555,
         "order_index": 1,
         "pending_arm_count": 1,
         "reason": "deadline_reserve",
-        "remaining_seconds": 55.04825587899995,
-        "required_seconds": 58.70901266849978,
+        "remaining_seconds": 73.55213228899993,
+        "required_seconds": 76.03503686549993,
         "skipped_index": 0
       }
     },
@@ -70,7 +70,7 @@
     "cycle_intent": "screening",
     "cycle_role": "screening",
     "direction": "decrease",
-    "finished_at": "2026-09-02T12:43:38Z",
+    "finished_at": "2026-09-02T12:50:09Z",
     "fixture_clamp_exempt": false,
     "fixture_volume_gate_hits": 0,
     "has_tracked_delta": false,
@@ -219,7 +219,7 @@
   "schema": "continuous_cycle_results/v1",
   "stack_layer": false,
   "version_stamp": {
-    "code_commit": "199c99fdd77f845c756d856f7fd1dd877db37e70",
+    "code_commit": "f67ed853162531119c3ca5520f15cb0f847316c3",
     "code_dirty": false,
     "components": {
       "evals.meaningful_program": "2.13.0",
@@ -228,6 +228,6 @@
       "harness.model_build.eval": "v105"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-09-02T12:43:38.572810+00:00"
+    "stamped_at": "2026-09-02T12:50:09.115922+00:00"
   }
 }
