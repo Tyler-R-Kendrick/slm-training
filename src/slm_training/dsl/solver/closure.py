@@ -190,6 +190,12 @@ class ClosureResult:
     witnesses: tuple[WitnessRef, ...]
     counters: ClosureCounters
     reached_fixed_point: bool
+    """True when the monotone closure removed nothing on the last pass.
+
+    That is a genuine fixed point of `exact_closure` (or the state was already
+    bottom / all-singleton). False only when the pass loop stopped early, in
+    which case `stop_reason` names the budget that cut it short.
+    """
     stop_reason: str | None = None
 
 

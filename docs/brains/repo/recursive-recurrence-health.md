@@ -33,11 +33,17 @@ non-finite, or if matched initialization/data/optimizer controls diverge.
 
 ## Status & next step
 
-**SLM-282 (n=2, 2026-07-23): negative.** Only seed 0 passed. For seed 1 / R=4 /
-example `b`, CE regressed from `17.487688` at depth 3 to `17.855324` at depth
-4, so the fixed two-of-two-seed prerequisite failed even though the
-token-weighted aggregate improved. All required telemetry was finite, but
-several local directional gains also exceed one. This n=2 record is immutable
+**SLM-282 (n=2, 2026-07-23): negative.** Only seed 0 passed: its `as_is` /
+R=4 run kept masked CE non-increasing on both examples, and the headline
+y update ratio contraction `0.84 → 0.26` is that seed-0 / R=4 / example `a`
+series (`0.843641` at depth 1 → `0.262128` at depth 4). The failure is a
+different seed and example: for seed 1 / R=4 / example `b`, CE regressed from
+`17.487688` at depth 3 to `17.855324` at depth 4, so the fixed two-of-two-seed
+prerequisite failed even though the token-weighted aggregate improved. Seed 1's
+own y ratios contracted comparably (`0.743146` / `0.801126` at depth 1 →
+`0.265594` / `0.265183` at depth 4 for examples `a` / `b`), so the seed-1
+failure was CE monotonicity alone, not update contraction. All required
+telemetry was finite, but several local directional gains also exceed one. This n=2 record is immutable
 and remains the historical evidence — PR #853/#854/#855/#856 correctly cited
 it (alongside SLM-317's inconclusive value gate) to gate-close LAR3-01..04 as
 `not_authorized`.
