@@ -1,0 +1,357 @@
+{
+  "schema": "decode_cost_finding/v1",
+  "title": "P5: per-record strict compiler-tree decode cost, byte-identical output",
+  "date": "2026-09-02",
+  "honesty": "fixture_or_scratch",
+  "not_ship_claim": true,
+  "scope": "Fixture-scale performance only: scratch twin of the playground demo architecture trained 60 steps on the 24 smoke records; one shared 4-CPU no-GPU box; no quality or promotion claim.",
+  "policy": "strict_compiler_tree (grammar_ltr_primary, compiler_decode_mode=tree, output_tokenizer=lexer) via apply_strict_compiler_tree_policy",
+  "decode_seam": "TwoTowerModel.generate_batch_requests([request], max_len=grammar_ltr_max_tokens) with the eval harness GenerationRequest shape (runtime symbols from the slot contract)",
+  "prompts": "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke24_v1/suites/smoke/records.jsonl",
+  "checkpoint": {
+    "path": "session scratch checkpoint (not committed): playground-demo architecture retrained on the smoke records, contract v2",
+    "why_not_committed_demo": "playground_demo/last.pt is output-contract v0; TwoTowerModel.from_checkpoint raises OutputContractError"
+  },
+  "timing_protocol": "records 0-7, three sequential single-process runs per configuration, per-record minimum reported; torch.set_num_threads(2)",
+  "version_stamps": {
+    "model.twotower": "v320",
+    "dsl.completion_kernel": "v26"
+  },
+  "fixes": [
+    {
+      "id": "F1",
+      "file": "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
+      "what": "terminal_witness: skip advancing non-EOS children once the node allowance is spent and a sibling already returned UNKNOWN (frame verdict fixed at UNKNOWN, never persisted); EOS paths still certify",
+      "counter": "witness_children_skipped"
+    },
+    {
+      "id": "F2",
+      "file": "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+      "what": "_build_openui_completion_forest_direct: sorted terminal tuple and per-candidate decision kind computed once per build instead of per admitted path"
+    },
+    {
+      "id": "F3",
+      "file": "src/slm_training/dsl/grammar/fastpath/token_map.py",
+      "what": "allowed_id_set(use_cache=True): vocabulary fingerprint memoized per tokenizer; uncached lookups untouched"
+    }
+  ],
+  "summary": {
+    "records": 8,
+    "median_wall_ms_before": 5557.1,
+    "median_wall_ms_after": 1881.25,
+    "mean_wall_ms_before": 5339.8,
+    "mean_wall_ms_after": 1914.4,
+    "median_speedup": 2.95,
+    "all_byte_identical": true,
+    "forwards_unchanged": true
+  },
+  "per_record": [
+    {
+      "id": "smoke_hero_01",
+      "tokens": 33,
+      "forwards_before": 17,
+      "forwards_after": 17,
+      "wall_ms_before": 5873.6,
+      "wall_ms_after": 2574.5,
+      "compiler_ms_before": 5783.951188999254,
+      "compiler_ms_after": 2452.1308650005267,
+      "speedup": 2.28,
+      "sha_before": "0af12ef433f3071492cda1283ada2ca22a2537dcfcb10684775bd0c1b00127df",
+      "sha_after": "0af12ef433f3071492cda1283ada2ca22a2537dcfcb10684775bd0c1b00127df",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1927,
+      "witness_states_expanded_after": 1927,
+      "edges_built_before": 1773,
+      "edges_built_after": 1773
+    },
+    {
+      "id": "smoke_button_01",
+      "tokens": 25,
+      "forwards_before": 11,
+      "forwards_after": 11,
+      "wall_ms_before": 3504.8,
+      "wall_ms_after": 1505.8,
+      "compiler_ms_before": 3442.6612399997794,
+      "compiler_ms_after": 1440.042221001022,
+      "speedup": 2.33,
+      "sha_before": "6e6d70f845d54ce4fc4ba0f035e19c01ae4b4f0e27d9e83a70363548601706ed",
+      "sha_after": "6e6d70f845d54ce4fc4ba0f035e19c01ae4b4f0e27d9e83a70363548601706ed",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1499,
+      "witness_states_expanded_after": 1499,
+      "edges_built_before": 1368,
+      "edges_built_after": 1368
+    },
+    {
+      "id": "smoke_callout_01",
+      "tokens": 29,
+      "forwards_before": 15,
+      "forwards_after": 15,
+      "wall_ms_before": 5145.3,
+      "wall_ms_after": 1751.2,
+      "compiler_ms_before": 5066.964251000172,
+      "compiler_ms_after": 1675.766637999459,
+      "speedup": 2.94,
+      "sha_before": "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+      "sha_after": "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1876,
+      "witness_states_expanded_after": 1876,
+      "edges_built_before": 1741,
+      "edges_built_after": 1741
+    },
+    {
+      "id": "smoke_tabs_01",
+      "tokens": 33,
+      "forwards_before": 17,
+      "forwards_after": 17,
+      "wall_ms_before": 5550.5,
+      "wall_ms_after": 1967.7,
+      "compiler_ms_before": 5464.851973999885,
+      "compiler_ms_after": 1878.637369999069,
+      "speedup": 2.82,
+      "sha_before": "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+      "sha_after": "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1927,
+      "witness_states_expanded_after": 1927,
+      "edges_built_before": 1773,
+      "edges_built_after": 1773
+    },
+    {
+      "id": "smoke_form_01",
+      "tokens": 33,
+      "forwards_before": 16,
+      "forwards_after": 16,
+      "wall_ms_before": 5563.7,
+      "wall_ms_after": 1863.0,
+      "compiler_ms_before": 5423.3070000000225,
+      "compiler_ms_after": 1769.3386469995858,
+      "speedup": 2.99,
+      "sha_before": "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+      "sha_after": "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1912,
+      "witness_states_expanded_after": 1912,
+      "edges_built_before": 1760,
+      "edges_built_after": 1760
+    },
+    {
+      "id": "smoke_switch_01",
+      "tokens": 33,
+      "forwards_before": 17,
+      "forwards_after": 17,
+      "wall_ms_before": 5823.5,
+      "wall_ms_after": 1890.7,
+      "compiler_ms_before": 5716.015432000404,
+      "compiler_ms_after": 1781.9926129982377,
+      "speedup": 3.08,
+      "sha_before": "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+      "sha_after": "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1927,
+      "witness_states_expanded_after": 1927,
+      "edges_built_before": 1773,
+      "edges_built_after": 1773
+    },
+    {
+      "id": "smoke_slider_01",
+      "tokens": 29,
+      "forwards_before": 14,
+      "forwards_after": 14,
+      "wall_ms_before": 5229.3,
+      "wall_ms_after": 1882.3,
+      "compiler_ms_before": 5130.101554000248,
+      "compiler_ms_after": 1776.6996250002194,
+      "speedup": 2.78,
+      "sha_before": "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+      "sha_after": "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1863,
+      "witness_states_expanded_after": 1863,
+      "edges_built_before": 1728,
+      "edges_built_after": 1728
+    },
+    {
+      "id": "smoke_image_01",
+      "tokens": 33,
+      "forwards_before": 16,
+      "forwards_after": 16,
+      "wall_ms_before": 6027.4,
+      "wall_ms_after": 1880.2,
+      "compiler_ms_before": 5949.107413999172,
+      "compiler_ms_after": 1780.9630849988025,
+      "speedup": 3.21,
+      "sha_before": "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+      "sha_after": "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+      "byte_identical": true,
+      "witness_states_expanded_before": 1912,
+      "witness_states_expanded_after": 1912,
+      "edges_built_before": 1760,
+      "edges_built_after": 1760
+    }
+  ],
+  "record0_counters": {
+    "completion_parser_forks": {
+      "before": 58731,
+      "after": 3942
+    },
+    "completion_transition_cache_misses": {
+      "before": 56957,
+      "after": 2168
+    },
+    "completion_unique_states": {
+      "before": 56677,
+      "after": 2161
+    },
+    "completion_witness_states_expanded": {
+      "before": 1927,
+      "after": 1927
+    },
+    "completion_edges_built": {
+      "before": 1773,
+      "after": 1773
+    },
+    "completion_session_starts": {
+      "before": 1,
+      "after": 1
+    },
+    "completion_witness_children_skipped": {
+      "before": null,
+      "after": null
+    },
+    "completion_forced_closure_tokens": {
+      "before": 11,
+      "after": 11
+    },
+    "completion_domain_cache_hits": {
+      "before": 211,
+      "after": 211
+    },
+    "forwards_count": {
+      "before": 17,
+      "after": 17
+    },
+    "tokens_emitted": {
+      "before": 33,
+      "after": 33
+    }
+  },
+  "parity": {
+    "per_record_outputs_records_0_23": {
+      "before_rows": [
+        "0af12ef433f3071492cda1283ada2ca22a2537dcfcb10684775bd0c1b00127df",
+        "6e6d70f845d54ce4fc4ba0f035e19c01ae4b4f0e27d9e83a70363548601706ed",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "0e29dfb4e2141e21e2e708d6053442c76d07c60e4261b65c2bb57d19053e7052",
+        "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+        "0e29dfb4e2141e21e2e708d6053442c76d07c60e4261b65c2bb57d19053e7052"
+      ],
+      "after_rows": [
+        "0af12ef433f3071492cda1283ada2ca22a2537dcfcb10684775bd0c1b00127df",
+        "6e6d70f845d54ce4fc4ba0f035e19c01ae4b4f0e27d9e83a70363548601706ed",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "1d7aeeda8c75d570134b81dea6d57e8d8e69f97d6f17e8484df9e84db0dcf072",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "0e29dfb4e2141e21e2e708d6053442c76d07c60e4261b65c2bb57d19053e7052",
+        "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+        "668c2b4cffdf4a9c0de0b4e30159b3ae2c50a546486ae4dc4dbfabf0aa7adc08",
+        "237b0c4dd2ca07e2b7f9b28ea35d8d11b5d20c44d34ec422a403023950d61f48",
+        "0e29dfb4e2141e21e2e708d6053442c76d07c60e4261b65c2bb57d19053e7052"
+      ],
+      "all_identical": true
+    },
+    "batched_records_0_7": {
+      "before": {
+        "records": [
+          "smoke_hero_01",
+          "smoke_button_01",
+          "smoke_callout_01",
+          "smoke_tabs_01",
+          "smoke_form_01",
+          "smoke_switch_01",
+          "smoke_slider_01",
+          "smoke_image_01"
+        ],
+        "sha256_rows": [
+          "a087b404f92b913113518a596aaaeb6bec5651e82c4aa5ecdb3df79a5f690f9a"
+        ],
+        "wall_ms": [
+          26243.3
+        ],
+        "forwards": [
+          19
+        ]
+      },
+      "after": {
+        "records": [
+          "smoke_hero_01",
+          "smoke_button_01",
+          "smoke_callout_01",
+          "smoke_tabs_01",
+          "smoke_form_01",
+          "smoke_switch_01",
+          "smoke_slider_01",
+          "smoke_image_01"
+        ],
+        "sha256_rows": [
+          "a087b404f92b913113518a596aaaeb6bec5651e82c4aa5ecdb3df79a5f690f9a"
+        ],
+        "wall_ms": [
+          9964.9
+        ],
+        "forwards": [
+          19
+        ]
+      },
+      "identical": true
+    },
+    "forest_differential": {
+      "harness": "session scratch parity_forest.py (per-build forest differential; not committed)",
+      "records": "0-3",
+      "builds": 7429,
+      "mismatches": 0
+    },
+    "witness_differential": {
+      "harness": "session scratch parity_witness.py (lockstep witness differential; not committed)",
+      "records": "0-2",
+      "queries": 543,
+      "mismatches": 0
+    },
+    "baseline_outputs": "session scratch baseline_outputs.json (24 pre-change decoded texts; per-row hashes above)"
+  },
+  "guard_test": "tests/test_models/test_compiler_decode_perf.py (PER_RECORD_BUDGET_S=5.0, calibrated skip)",
+  "remaining_dominant_cost": "_build_openui_completion_forest_direct inside the terminal-witness DFS (~1,773 distinct kernel states per record, >=90% of wall); next per-build lever is the full re-lex sync of direct-fed kernel states (1,894 per record, ~16% of the builder), which inherits the P3 equivalence and is left for a separate change"
+}
