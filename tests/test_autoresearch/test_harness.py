@@ -16,12 +16,14 @@ from tests.casefiles import case_values
 from pydantic import ValidationError
 
 from slm_training.autoresearch.engine import (
+    SFT_GATE_SIGNAL_CODE,
     _suite_headline_metrics,
     compile_commands,
     create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
     normalized_knobs_sha256,
+    stage_failure_signals,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -3540,6 +3542,76 @@ def test_frozen_harness_signal_routes_one_canonical_owner() -> None:
         )
     )
     assert unconfirmed.target == "infrastructure"
+
+
+#: Verbatim control-arm stderr from continuous-openui-local cycles c536..c543
+#: (reproduced by loop p1-merged, campaign
+#: continuous-loop-20260902-p1-merged-f6bb706d-c1): the SFT data-governance
+#: gate refuses the train stage through ``argparse.error``, so the arm exits 2
+#: with an argparse usage dump wrapped around the gate's own message.
+_SFT_GATE_STDERR = (
+    "usage: train_model.py [-h] [--train-dir TRAIN_DIR]\n"
+    "                      [--allow-open-synthesis-feedback]\n"
+    "train_model.py: error: SFT blocked: open synthesis_feedback "
+    "recommendations without action/waiver record: ['id_collision', "
+    "'redundant_expansion', 'stale_output_contract']. Write "
+    "src/slm_training/resources/data/train/openui_verified_train_v1/"
+    "synthesis_feedback_actions.json after fixing the synthesizer "
+    "(or an explicit waiver).\n"
+)
+
+
+def test_sft_gate_refusal_routes_to_train_data_not_model_build() -> None:
+    """A refused train stage is typed ``train_data``, not an untyped crash.
+
+    Before the fix the failed-stage outcome carried no ``harness_signals`` at
+    all, so ``diagnose_outcome`` fell through to ``target="infrastructure"``
+    with the whole argparse usage dump as its evidence string, and the
+    continuous driver's ``_primary_harness_family`` found no signal to read
+    and defaulted the repair owner to ``model_build``.
+    """
+
+    # The original defect, reproduced: an untyped failed stage diagnoses as
+    # generic infrastructure and hands the driver the argparse dump verbatim.
+    untyped = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="c-control",
+            campaign_id="test-campaign",
+            status="failed",
+            exit_code=2,
+            error=_SFT_GATE_STDERR,
+        )
+    )
+    assert untyped.target == "infrastructure"
+    assert untyped.harness_family is None
+    assert untyped.evidence == (_SFT_GATE_STDERR,)
+
+    signals = stage_failure_signals("", _SFT_GATE_STDERR)
+    assert [signal.family for signal in signals] == ["train_data"]
+    assert signals[0].code == SFT_GATE_SIGNAL_CODE
+    assert signals[0].evidence_uri.endswith(
+        "openui_verified_train_v1/synthesis_feedback_actions.json"
+    )
+    assert signals[0].reproduced_on_frozen_input and signals[0].primary
+
+    diagnosis = diagnose_outcome(
+        ExperimentOutcome(
+            experiment_id="c-control",
+            campaign_id="test-campaign",
+            status="failed",
+            exit_code=2,
+            error=_SFT_GATE_STDERR,
+            harness_signals=signals,
+        )
+    )
+    assert diagnosis.target == "harness"
+    assert diagnosis.harness_family == "train_data"
+    assert any("train_data" in action for action in diagnosis.recommended_actions)
+    # The evidence is the actionable path, not the argparse usage dump.
+    assert diagnosis.evidence == (f"{SFT_GATE_SIGNAL_CODE}: {signals[0].evidence_uri}",)
+
+    # An ordinary stage crash stays untyped: the classifier never guesses.
+    assert stage_failure_signals("", "Traceback ...\nRuntimeError: boom") == ()
 
 
 def test_loop_result_matrix_is_derived_from_verified_campaign_chain(

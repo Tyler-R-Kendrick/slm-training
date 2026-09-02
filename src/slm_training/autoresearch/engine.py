@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -19,6 +20,7 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    HarnessSignalV1,
     HypothesisFeedback,
     HypothesisMatrix,
     OptimumFeedbackV1,
@@ -1414,6 +1416,9 @@ def execute_commands(
                 data_metrics=data_metrics,
                 wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
+                harness_signals=stage_failure_signals(
+                    completed.stdout, completed.stderr
+                ),
                 started_at=started,
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
@@ -1455,6 +1460,53 @@ def _stage_artifact_path(command: list[str], *, cwd: Path | str) -> Path | None:
     if not root.is_absolute():
         root = Path(cwd) / root
     return root / run_id / artifact_name
+
+
+#: Harness-signal code for a train stage refused by the SFT data-governance
+#: gate (``assert_synthesis_feedback_cleared_for_sft``: open
+#: ``synthesis_feedback`` recommendations with no action/waiver record).
+SFT_GATE_SIGNAL_CODE = "sft_blocked_open_synthesis_feedback"
+
+#: Verbatim prefix of the gate's ``HillClimbError``. ``scripts.train_model``
+#: re-raises it through ``parser.error`` so it reaches us on stderr as an
+#: argparse usage dump with exit code 2.
+_SFT_GATE_MARKER = (
+    "SFT blocked: open synthesis_feedback recommendations without "
+    "action/waiver record"
+)
+
+_SFT_GATE_ACTION_PATH_RE = re.compile(r"(\S*synthesis_feedback_actions\.json)")
+
+
+def stage_failure_signals(stdout: str, stderr: str) -> tuple[HarnessSignalV1, ...]:
+    """Type a failed stage's captured output as canonical-harness evidence.
+
+    Purely observational: it reads what the stage actually printed and never
+    re-evaluates (nor relaxes) any gate — the stage-side gate stays the only
+    authority on whether the stage may run. Without this, every non-zero stage
+    exit reaches ``diagnose_outcome`` untyped, which falls through to
+    ``target="infrastructure"`` with the raw argparse usage dump as evidence,
+    and leaves ``_primary_harness_family`` in the continuous driver with no
+    signal to read so it defaults the repair owner to ``model_build``.
+
+    Currently recognises the SFT data-governance refusal, whose real owner is
+    the ``train_data`` harness (fix the synthesizer or record an audited
+    action/waiver), not model build.
+    """
+
+    text = f"{stdout}\n{stderr}"
+    if _SFT_GATE_MARKER not in text:
+        return ()
+    match = _SFT_GATE_ACTION_PATH_RE.search(text)
+    return (
+        HarnessSignalV1(
+            family="train_data",
+            code=SFT_GATE_SIGNAL_CODE,
+            evidence_uri=match.group(1) if match else "synthesis_feedback_actions.json",
+            reproduced_on_frozen_input=True,
+            primary=True,
+        ),
+    )
 
 
 def _stage_progress_artifact_path(

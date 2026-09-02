@@ -22,6 +22,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignControlV1,
     CampaignEndpointV1,
     CampaignGateV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
     campaign_manifest_sha256,
@@ -142,13 +143,16 @@ def analyze_factor_localization(
     none_ok = all(_is_noop(r["arms"]["none"]) for r in active) if active else False
     all_records = [rec for r in active for rec in r["arms"].values()]
     fidelity_rate = (
-        sum(1 for rec in all_records if rec.touches_only_declared_factors()) / len(all_records)
+        sum(1 for rec in all_records if rec.touches_only_declared_factors())
+        / len(all_records)
         if all_records
         else 0.0
     )
 
     precision = (
-        sum(localization_scores) / len(localization_scores) if localization_scores else 0.0
+        sum(localization_scores) / len(localization_scores)
+        if localization_scores
+        else 0.0
     )
     return {
         "n_active_baselines": n,
@@ -162,7 +166,9 @@ def analyze_factor_localization(
             factor: {
                 **stats,
                 "change_rate": round(stats["change_rate"], 6),
-                "mechanical_one_factor_fidelity": round(stats["mechanical_one_factor_fidelity"], 6),
+                "mechanical_one_factor_fidelity": round(
+                    stats["mechanical_one_factor_fidelity"], 6
+                ),
                 "ceiling_recovery_rate": round(stats["ceiling_recovery_rate"], 6),
             }
             for factor, stats in per_factor.items()
@@ -305,7 +311,9 @@ class Sie002CampaignV1:
         arms = tuple(
             CampaignArmV1(
                 arm_id=arm,
-                role="control" if arm in {"none", "destructive", "random", "shuffled"} else "candidate",
+                role="control"
+                if arm in {"none", "destructive", "random", "shuffled"}
+                else "candidate",
                 config_sha256=content_sha({"campaign": fingerprint, "arm": arm}),
             )
             for arm in ARM_IDS
@@ -330,6 +338,7 @@ class Sie002CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=self.seeds,
             budget=CampaignBudget(
                 max_experiments=self.n_baseline_plans * len(ARM_IDS) * len(self.seeds),
@@ -408,7 +417,9 @@ def run_campaign(campaign: Sie002CampaignV1, *, root: Path) -> dict[str, Any]:
             objective="SIE-002 / EXP-SR-1 fixture-scale oracle localization",
             primary_metric=PRIMARY_METRIC,
             budget=CampaignBudget(
-                max_experiments=campaign.n_baseline_plans * len(ARM_IDS) * len(campaign.seeds),
+                max_experiments=campaign.n_baseline_plans
+                * len(ARM_IDS)
+                * len(campaign.seeds),
                 max_wall_minutes=campaign.max_wall_minutes,
             ),
             created_at="1970-01-01T00:00:00Z",
@@ -425,11 +436,11 @@ def run_campaign(campaign: Sie002CampaignV1, *, root: Path) -> dict[str, Any]:
     all_reports: list[dict[str, Any]] = []
     for seed in campaign.seeds:
         baseline_reports: list[dict[str, Any]] = []
-        for index, (record_id, baseline) in enumerate(pool[: campaign.n_baseline_plans]):
+        for index, (record_id, baseline) in enumerate(
+            pool[: campaign.n_baseline_plans]
+        ):
             other = [plan for i, plan in enumerate(candidates) if i != index]
-            report = generate_baseline_arms(
-                record_id, baseline, other, rng_seed=seed
-            )
+            report = generate_baseline_arms(record_id, baseline, other, rng_seed=seed)
             baseline_reports.append(report)
             all_reports.append({**report, "seed": seed})
         seed_analysis = analyze_factor_localization(baseline_reports)
@@ -462,10 +473,7 @@ def run_campaign(campaign: Sie002CampaignV1, *, root: Path) -> dict[str, Any]:
 
     # Aggregate across seeds for the durable authorization decision.
     aggregate = analyze_factor_localization(
-        [
-            {k: v for k, v in report.items() if k != "seed"}
-            for report in all_reports
-        ]
+        [{k: v for k, v in report.items() if k != "seed"} for report in all_reports]
     )
     auth = authorize_factors(
         aggregate,

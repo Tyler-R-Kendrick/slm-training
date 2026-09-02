@@ -2793,6 +2793,11 @@
     "evals.evaluator_calibration_protocol": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-09",
           "note": "initial registration; VCE-010/SLM-469 evaluator calibration, blinded adjudication, and risk-coverage protocol -- composes the existing SemanticContrastBuilder frozen sample, judge_independence agreement/calibration statistics, judge_audit blinded pair-study freeze/import, and trust_train.gate_calibration_report risk/coverage curve into a four-arm ExperimentCampaignV1 (deterministic_only control, external_only_missing_human / human_only_missing_external negative-control arms proving missing evidence is reported blocked rather than assumed valid, full_triple_judge). Preregisters the calibration_error_max rollback-gate threshold before any external-judge or human-label evidence is gathered; adds reason_family_confusion_matrix as the one genuinely new statistic (no crosstab owner existed elsewhere).",
           "version": "v1"
@@ -2806,7 +2811,7 @@
         "docs/design/vce010-evaluator-calibration-protocol.md",
         "docs/design/vce010-evaluator-calibration-results.json"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "evals.judge_resolution": {
       "history": [
@@ -5116,6 +5121,16 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: regenerate evidence_ledger.v1.json after the three P1 continuous-loop closeout results JSON landed (deterministic rebuild); P1 recovery doc section is documentation only.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "P1: type a failed stage's captured output as a harness signal (engine.stage_failure_signals). The SFT data-governance refusal now diagnoses as harness/train_data instead of falling through to untyped infrastructure with an argparse usage dump, so the continuous driver stops defaulting the repair owner to model_build.",
+          "version": "v281"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: regenerate evidence_ledger.v1.json after docs/design/eqm-oracle-field-20260902.json landed (S7 exact perfect-training EqM field study, claim class analysis, not a campaign result; only the scanned-file count moves). Deterministic rebuild; campaign behavior unchanged.",
           "version": "v280"
         },
@@ -7118,7 +7133,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v280"
+      "version": "v281"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -7682,6 +7697,11 @@
     },
     "harness.experiments": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
+          "version": "v166"
+        },
         {
           "date": "2026-09-02",
           "note": "SR9 Rsp005CampaignV1.manifest() declares selection_rule=best_by_primary_then_smallest (required for multi-candidate campaigns since the vacuous-pass fail-closed change); arms, seeds, endpoints unchanged.",
@@ -8742,7 +8762,7 @@
         "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
       ],
-      "version": "v165"
+      "version": "v166"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [
@@ -15398,6 +15418,11 @@
     "harness.experiments.slm476_sie002_oracle_localization": {
       "history": [
         {
+          "date": "2026-09-02",
+          "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-10",
           "note": "no-bump: remove an extraneous f-string prefix (ruff F541, no placeholders) -- pure lint fix, no behavior change.",
           "version": "v1"
@@ -15417,7 +15442,7 @@
         "docs/design/iter-slm476-sie-002-oracle-localization-20260810.json",
         "docs/design/iter-slm476-sie-002-oracle-localization-20260810.md"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "harness.experiments.slm478_sie005_blinded_packet": {
       "history": [
