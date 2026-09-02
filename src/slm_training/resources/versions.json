@@ -16500,6 +16500,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: S12 execution coverage for the I2 one-hole singleton-bypass recording site (tests/test_models/test_step_commit_histogram.py seeds a certified canvas with one masked '=' so the exact_commit branch runs and the recorded row is asserted exactly). Tests only; decode_stats.py and the recording sites are unchanged.",
+          "version": "v104"
+        },
+        {
+          "date": "2026-09-02",
           "note": "S6/S12 decode telemetry (decode_stats.py, additive). S6: context_ablation_rows / _degenerate_rows / _applications / _choice_changes following the existing *_applications / *_choice_changes argmax-flip pattern, added to aggregate_stats. S12: record_step_commits switch and the step_commits per-step authority history, both default-off so a decode that does not arm them is byte-identical. merge() now skips bool fields so the telemetry switch cannot be summed into a count (bool is an int subclass); no existing counter, ratio, or gate semantics changed and S4's derived fraction properties are untouched.",
           "version": "v104"
         },

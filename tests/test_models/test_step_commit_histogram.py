@@ -108,17 +108,74 @@ def test_every_step_row_partitions_its_commits_by_authority(mode: str) -> None:
         assert row[str(row["authority"])] == max(row[name] for name in AUTHORITIES)
 
 
+EXACT_SOURCE = 'root = Card([title])\ntitle = TextContent(":slot_0")\n'
+
+
 def test_singleton_bypass_steps_are_recorded_as_zero_forward_forced_steps() -> None:
-    """An I2 bypass step commits one token and must show ``forwards == 0``."""
+    """The I2 one-hole bypass is a forced step that spent no forward.
+
+    Seeds the canvas from a certified program with a single ``=`` masked, so
+    the DFA proves the hole and ``_generate_maskgit_one`` takes the
+    ``exact_commit`` branch. The recorded row must say so: one commit, forced
+    authority, ``forwards == 0``.
+    """
+    model = _tiny_model(
+        gen_steps=1,
+        grammar_fastpath_mode="ltr",
+        structural_bias=1_000.0,
+        allow_unconstrained_fallback=False,
+    )
+    tokenizer = model.tokenizer
+    seed = [
+        tokenizer.bos_id,
+        *tokenizer.encode(EXACT_SOURCE, add_special=False),
+        tokenizer.eos_id,
+    ]
+    equals = [
+        index
+        for index, token_id in enumerate(seed)
+        if token_id == tokenizer.token_to_id["="]
+    ]
+    seed[equals[0]] = tokenizer.mask_id
+    ctx, ctx_pad = model._encode_context(["Hero card"])
+
+    stats = DecodeStats()
+    stats.record_step_commits = True
+    with collect_decode_stats(stats):
+        model._generate_maskgit_one(
+            ctx,
+            ctx_pad,
+            len(seed),
+            use_grammar=True,
+            slot_contract=[":slot_0"],
+            seed_ids=seed,
+        )
+
+    assert stats.forced_tokens == 1
+    assert stats.step_commits == [
+        {
+            "step": 0,
+            "committed": 1,
+            "forced": 1,
+            "confident": 0,
+            "speculative": 0,
+            "forwards": 0,
+            "authority": "forced",
+        }
+    ]
+
+
+def test_zero_forward_steps_are_always_forced_steps() -> None:
+    """A step that committed without a forward can only have been proven."""
     model = _tiny_model()
     stats = DecodeStats()
     stats.record_step_commits = True
     with collect_decode_stats(stats):
         model.generate_batch(["Hero card", "Call to action"])
-    zero_forward = [row for row in stats.step_commits if row["forwards"] == 0]
-    for row in zero_forward:
-        assert row["forced"] == row["committed"]
-        assert row["authority"] == "forced"
+    for row in stats.step_commits:
+        if row["forwards"] == 0:
+            assert row["forced"] == row["committed"]
+            assert row["authority"] == "forced"
 
 
 def test_merge_keeps_the_switch_a_switch_and_the_history_per_call() -> None:
