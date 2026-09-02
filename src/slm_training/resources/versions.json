@@ -5151,6 +5151,11 @@
       "history": [
         {
           "date": "2026-09-02",
+          "note": "no-bump: S5 lands the decode_only_authority_ladder_v1 ExperimentCampaignV1 manifest (new resource directory, read by nothing yet) and regenerates evidence_ledger.v1.json deterministically; no harness code, contract, gate, or threshold changed.",
+          "version": "v286"
+        },
+        {
+          "date": "2026-09-02",
           "note": "no-bump: recovery doc gains the INT-6 three-cycle run record and the evidence ledger is regenerated (documentation + deterministic rebuild).",
           "version": "v286"
         },
@@ -11179,6 +11184,11 @@
     },
     "harness.experiments.slm197_direct_bridge_policy": {
       "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S5/N4 decode-only authority ladder, plus removal of three committed merge-conflict marker lines (from merge 7bdc348) that fenced two additive sibling sections; both sections are kept in full. Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: append-only quality-experiment-matrix.md section for the S6/S12 N2/N3 decode-authority audit (context_ablation arms and the per-step commit-authority histogram). Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",

@@ -6538,7 +6538,6 @@ Full evidence:
 [`dsh5-12-advanced-operator-disposition-20260727-local/summary.md`](dsh5-12-advanced-operator-disposition-20260727-local/summary.md),
 narrative: [`dsh5-12-advanced-operator-disposition.md`](dsh5-12-advanced-operator-disposition.md).
 
-<<<<<<< HEAD
 # S14 / N12 — LAVE stall termination (2026-09-02)
 
 Fixture-demo telemetry audit, **not a ship claim**: does the repository stall
@@ -6572,7 +6571,7 @@ because `_raise_on_substituted_generation` reads `consume_generation_evidence`,
 which the torch backend does not expose. Full evidence:
 [`iter-s14-exhaustion-rate-20260902.md`](iter-s14-exhaustion-rate-20260902.md)
 and [`.json`](iter-s14-exhaustion-rate-20260902.json).
-=======
+
 ## N2 / N3 decode-authority audit (cards S6, S12; 2026-09-02)
 
 | ID | Isolated lever | Purpose | Status |
@@ -6613,4 +6612,59 @@ substitute was rebuilt under the current contract for measurement only and was
 never committed; its full recipe is in the iter docs. Full evidence:
 [`iter-s6-context-ablation-20260902.md`](iter-s6-context-ablation-20260902.md),
 [`iter-s12-commit-authority-profile-20260902.md`](iter-s12-commit-authority-profile-20260902.md).
->>>>>>> worktree-agent-a75a3c186b0c92e54
+
+## S5 / N4 — decode-only authority ladder (2026-09-02)
+
+Preregistered `ExperimentCampaignV1` campaign
+`decode_only_authority_ladder_v1` (`manifest_sha256`
+`8338a5b283f367a9eafbe2de8e25ba2ed378891cf7f7a42dbc5f6addef385425`,
+`selection_rule=best_by_primary_then_smallest`, `claim_class=fixture`), locked
+before any endpoint was read. **Fixture-demo, not a ship claim.** Two
+path-scoped ladders, scored only against their own control: M = positionwise
+MaskGIT, L = compiler LTR. 9 arms × 3 suites (smoke `n=8`, held_out `n=8` from
+`e938_role_safe_all_targets_smoke96_v2`; adversarial `n=4` from
+`e938_role_safe_all_targets_v2`) × seeds 0,1 = **54 runs, 0 timeouts**, slowest
+75.98 s, every run inside `MAX_RUN_MINUTES = 3`, CPU,
+`torch.set_num_threads(2)`. Seeds 0 and 1 gave identical numbers in all 27 arm ×
+suite pairs (greedy constrained decode is seed-invariant). The committed
+fixture checkpoint is unloadable (output contract v0 vs `symbol_only/v2`), so
+every number comes from an uncommitted scratch twin (818,210 params, 900 AdamW
+steps on the 524 records of `e937_role_safe_all_targets_v2`, final loss 4.8031).
+**No production code changed.**
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| S5-M0 | `grammar_fastpath_mode=force` (admit probes off) | Diagnostic **negative** control (`mechanism_off_arm_ids`, never a candidate — legality-weakening) | run, probe machinery proved live (0 probe canvases here vs 544/503/230 on M1); **0 flips of 196 legal-choice positions**, 20/20 byte-identical outputs, `forwards_saved_at_matched_output = 0` |
+| S5-M1 | `grammar_fastpath_mode=mask` (default left-prefix admit) | Ladder-M control | run, 2,554 admit probes, **0 rejections**, **0 `block_joint_rejections`** — `kill:m1_joint_rejection` never tripped |
+| S5-M2-b2 | `+ block_diffusion_decode`, block size 2 | Does parallel commit make the left-prefix admit reject? | run, **146 `block_joint_rejections`**, 186 admit rejections; flips 0.3924 / 0.2469 / 0.0000; ΔSS −0.0865 / +0.0427 / −0.1083 → gate-killed on smoke + adversarial |
+| S5-M2-b4 | `+ block_diffusion_decode`, block size 4 | ditto | run, **80 `block_joint_rejections`**, 184 admit rejections; flips 0.2911 / 0.2963 / 0.1111; ΔSS +0.0106 / +0.0713 / −0.1140 → gate-killed on adversarial |
+| S5-M2-b8 | `+ block_diffusion_decode`, block size 8 | ditto | run, **162 `block_joint_rejections`**, 240 admit rejections; flips 0.2911 / 0.2469 / 0.1667; ΔSS +0.0271 / +0.0437 / −0.1412 → gate-killed on adversarial; the one 0-rejection cell (adversarial) carried 14 `block_joint_unknowns` (node-budget fail-open, not a clean canvas) |
+| S5-L1 | `compiler_decode_mode=tree`, `speculative_rank=off` | Ladder-L control (singleton-only) | run, `speculative_rank_evaluations = 0`; forwards 64 / 64 / 32, forced_tokens 56 / 56 / 28 |
+| S5-L2-m0.5 | `speculative_rank=ngram`, margin 0.5 | Deterministic ranking over the forward-calculated symbol table | run, flips 0.2222 all suites; commit rate 136/168; **Δmeaningful +0.500 / +0.375 / +0.500**; ΔSS −0.0118 / +0.0848 / +0.0566 → gate-killed on smoke |
+| S5-L2-m1.0 | `speculative_rank=ngram`, margin 1.0 | ditto | run, flips 0.2500 / 0.2500 / 0.2778; commit rate 150/242; ΔSS **−0.1233** / −0.0539 / +0.0631 → gate-killed on smoke + held_out; costs 44 % more forwards than the control |
+| S5-L2-m2.0 | `speculative_rank=ngram`, margin 2.0 | ditto | run, flips 0.2222 all suites; commit rate 68/154; ΔSS −0.0053 / +0.0796 / +0.0390 → gate-killed on smoke |
+
+**N4 holds — the falsifier did not fire.** Under `block_diffusion_decode=True`
+the exact `multi_region_support` joint check rejected **388 steps** across block
+sizes {2,4,8} (146 / 80 / 162) and `admit_fill` rejected **610 probes**, where
+the same machinery rejected **0 of 2,554** probes on sequential positionwise
+commits. The mechanism is visible in the probe shape: the share of probe
+canvases carrying a committed suffix (the span `admit_fill` structurally cannot
+validate, S14's explanation for the sequential 0-rate) falls from **94.5 %**
+under M1 to **66.0 %** under block-8 on smoke — block scheduling manufactures
+the clean left prefixes that can actually reject.
+
+**No arm is promotable and none was eligible to be.** Every candidate is
+decision-bearing (flip rates 0.11–0.39 on M, 0.22–0.28 on L, all far above the
+locked 0.01 threshold), but `structural_similarity` regressed against the arm's
+own ladder control on 9 of 18 candidate cells, tripping `kill:gate_regression`.
+`placeholder_fidelity` is **0.00 on every arm of both ladders including both
+controls**, so its uniformly 0.0000 delta is **uninformative, not a pass**;
+`meaningful_program_rate` is likewise 0.00 across the whole of ladder M
+(uninformative there), but it *does* have headroom on the compiler-LTR lane —
+`l2_ngram_margin_0p5` moves it to 0.50 / 0.375 / 0.50 off a 0.00 control, so
+those positive deltas are real signal while a zero delta there still is not.
+Full evidence:
+[`iter-s5-decode-authority-ladder-20260902.md`](iter-s5-decode-authority-ladder-20260902.md)
+and [`.json`](iter-s5-decode-authority-ladder-20260902.json); manifest
+[`campaign.v1.json`](../../src/slm_training/resources/experiments/decode_only_authority_ladder/campaign.v1.json).
