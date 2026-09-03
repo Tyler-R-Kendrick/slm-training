@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.casefiles import case_values
+
 from slm_training.quality import martin
 from slm_training.quality.imports import parse_modules, resolve_edges
 from slm_training.quality.martin import ComponentMetrics
@@ -195,11 +197,7 @@ def test_relative_imports_resolve_to_the_sibling_component(tmp_path) -> None:
 
 @pytest.mark.parametrize(
     "body",
-    [
-        "from abc import ABC\nclass A(ABC):\n    pass\n",
-        "from typing import Protocol\nclass A(Protocol):\n    pass\n",
-        "import abc\nclass A:\n    @abc.abstractmethod\n    def f(self): ...\n",
-    ],
+    case_values(__file__, "test_abstract_classes_are_counted"),
 )
 def test_abstract_classes_are_counted(tmp_path, body: str) -> None:
     _write(tmp_path, "slm_training/__init__.py", "")

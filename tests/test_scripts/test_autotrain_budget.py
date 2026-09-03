@@ -15,6 +15,8 @@ import time
 
 import pytest
 
+from tests.casefiles import case_values
+
 from scripts import autotrain_budget as budget
 
 
@@ -141,12 +143,7 @@ def test_steps_per_sec_prefers_elapsed_wall_then_total_ms() -> None:
 
 @pytest.mark.parametrize(
     "payload",
-    [
-        {"steps": 0, "elapsed_wall_seconds": 10.0},
-        {"steps": 100, "elapsed_wall_seconds": 0.0},
-        {"steps": "nope", "elapsed_wall_seconds": 10.0},
-        {"steps": 100},
-    ],
+    case_values(__file__, "test_unusable_telemetry_yields_no_rate"),
 )
 def test_unusable_telemetry_yields_no_rate(payload: dict) -> None:
     assert budget.steps_per_sec_from_train_payload(payload) is None

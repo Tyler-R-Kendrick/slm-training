@@ -4248,6 +4248,11 @@
       "history": [
         {
           "date": "2026-09-03",
+          "note": "no-bump: parametrize tables moved to external case files by scripts.extract_test_cases (repository external-test-case law). Same cases, same assertions.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-03",
           "note": "no-bump: baseline re-frozen after extracting scripts/autotrain_budget.py (run_autotrain_continuous.py 18,665 -> 18,444 lines). Records a measured improvement; gate rules, thresholds and dimensions unchanged.",
           "version": "v1"
         },
