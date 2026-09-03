@@ -462,3 +462,65 @@ stays visible.
 
 Until it is decided, the operational rule is: **run the owning suites for what
 you changed before merging, not only the tests you edited.**
+
+## The committed demo checkpoint, and why it still cannot be regenerated (2026-09-03)
+
+`src/slm_training/resources/checkpoints/playground_demo/last.pt` predates
+`symbol_only/v2`, so `TwoTowerModel.from_checkpoint` refuses it:
+
+```
+OutputContractError: checkpoint output contract v0 is incompatible with
+required symbol_only/v2; retrain from symbol-only targets
+```
+
+The gate is right. Three tools default to that checkpoint and are blocked by
+it: `scripts/run_perf_matrix.py`, `scripts/run_discrete_plan_pareto.py`, and
+`scripts/export_playground_onnx.py` — plus the S5/S6/S12/S14 audit cards,
+which recorded the same blocker.
+
+### Fixed: the regeneration path
+
+`scripts/bootstrap_playground.py`, the documented way to rebuild it
+(`docs/MODEL_CARD.md`), could not run either. Its `DEMO_RECORDS` spelled
+semantic markers (`:hero.title`, `:cta.label`, `:pricing.cta`) that the
+opaque-marker contract forbids, and the records declared no `placeholders`
+list. Both are fixed: markers are opaque and contiguous from `:slot_0`, the
+inventory is derived from the serialized program so the two can never
+disagree, and `_assert_trainable` now applies the trainer's four contracts
+before spending any training time, naming the offending record.
+
+Verified end to end: `python -m scripts.bootstrap_playground --output <scratch>
+--steps 200` trains in seconds (loss 1.85 → 0.007) and the result loads
+through `TwoTowerModel.from_checkpoint` under `symbol_only/v2`.
+`tests/test_scripts/test_bootstrap_playground.py` keeps the corpus honest.
+
+### Not fixed: the ONNX serving path has drifted from the trainer
+
+Regenerating the committed artifacts was attempted and **reverted**. The
+checkpoint and its ONNX sidecars rebuild cleanly (`onnx` is a declared `web`
+extra, absent from this environment until installed), but the result breaks
+`tests/test_web/test_onnx_inference.py`, 5 tests:
+
+```
+ValueError: tokenizer version mismatch: file has v5, expected v2
+  — retrain or rebuild checkpoint
+```
+
+`models/onnx_inference.py` loads the tokenizer sidecar with
+`OpenUITokenizer.load`, whose `TOKENIZER_VERSION` is **2** (72 tokens in the
+committed artifact). The current `TwoTowerModel` writes a **v5** tokenizer
+(569 tokens). So the ONNX serving path cannot consume *any* checkpoint the
+current trainer produces: it works today only because the committed artifacts
+are frozen at the old tokenizer, alongside the old output contract.
+
+That makes the committed demo checkpoint self-consistent but jointly stale,
+and there is no in-between: replacing `last.pt` alone leaves the ONNX
+sidecars serving a different model, and replacing all of them breaks ONNX
+inference. Porting `onnx_inference.py` to the current tokenizer is a serving
+migration with its own validation, not a boy-scout repair, so it is recorded
+here rather than half-done.
+
+Until it lands, `run_perf_matrix`, `run_discrete_plan_pareto` and the decode
+audit cards need a checkpoint trained on this box (the
+`slm322_ap027_scratch_v1` precedent in `docs/MODEL_CARD.md`), not the
+committed fixture.
