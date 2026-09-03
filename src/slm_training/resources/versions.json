@@ -19497,6 +19497,11 @@
     "model.twotower": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "I6: a certified substitution is reported on every decode lane, not just the choice-constrained one. _ensure_valid_openui records whether it returned a certified fallback and consume_generation_evidence stamps fallback_used onto the row, synthesizing a row when the grammar/LTR lane produced no evidence of its own. That lane is what production serving runs, so _raise_on_substituted_generation never fired there and every substituted program was persisted as a genuine generation (28 of 48 documents in the S14 field measurement). Decode behavior and emitted bytes are unchanged; only the evidence channel is now truthful.",
+          "version": "v327"
+        },
+        {
           "date": "2026-09-02",
           "note": "Merge of S6 (context_ablation diagnostic lever and the legal-choice flip probe) and S12 (per-step commit-authority histogram) with the corpus-rebuild and X1/S14 entries; both parents' histories preserved. Ablation is decode-time only, default off, and byte-identical when off.",
           "version": "v326"
@@ -21535,7 +21540,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v326"
+      "version": "v327"
     },
     "ops.vocab": {
       "history": [

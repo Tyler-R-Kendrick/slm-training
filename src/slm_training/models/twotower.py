@@ -2153,6 +2153,15 @@ class TwoTowerModel(nn.Module):
         ) = None
         self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
+        # One entry per finalized row, in row order: did that row's finalize
+        # return a certified substitution instead of the model's own program?
+        # ``consume_generation_evidence`` drains this onto the evidence rows so
+        # the serving harness can refuse to record a substitution as a success
+        # (I6). Only the choice-constrained lane used to carry the flag, so on
+        # the grammar/LTR lane -- the one production serving runs -- every
+        # substitution was recorded as a genuine generation.
+        self._certified_substitution_flags: list[bool] = []
+        self._last_ensure_substituted: bool = False
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
         self._current_runtime_table: object | None = None
@@ -5512,6 +5521,25 @@ class TwoTowerModel(nn.Module):
 
     def _ensure_valid_openui(
         self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> str:
+        """Finalize one row and record whether it ended in a substitution.
+
+        Both callers invoke this once per row, in row order, so the recorded
+        flags align positionally with the generated batch.
+        """
+
+        self._last_ensure_substituted = False
+        try:
+            return self._ensure_valid_openui_inner(*args, **kwargs)
+        finally:
+            self._certified_substitution_flags.append(
+                bool(self._last_ensure_substituted)
+            )
+
+    def _ensure_valid_openui_inner(
+        self,
         text: str,
         ctx: torch.Tensor,
         ctx_pad: torch.Tensor,
@@ -5589,6 +5617,9 @@ class TwoTowerModel(nn.Module):
                 active = get_active_stats()
                 if active is not None:
                     active.certified_fallbacks += 1
+                # The counter above only exists under ``collect_decode_stats``;
+                # the serving harness needs the fact on the evidence row too.
+                self._last_ensure_substituted = True
                 return fallback
             raise RuntimeError(
                 "grammar_finalize_validate: model could not produce a complete valid OpenUI program"
@@ -14472,9 +14503,26 @@ class TwoTowerModel(nn.Module):
         return results
 
     def consume_generation_evidence(self) -> list[dict[str, object]]:
-        """Return and clear evidence aligned with the last generated batch."""
+        """Return and clear evidence aligned with the last generated batch.
+
+        Certified substitutions recorded during finalize are stamped onto the
+        rows here. The grammar/LTR lane populates no evidence of its own, so a
+        row is synthesized when a substitution happened without one — otherwise
+        the caller sees an empty list and cannot tell a substituted program
+        from a generated one (decode invariant I6).
+        """
         evidence = self._last_generation_evidence
+        flags = self._certified_substitution_flags
         self._last_generation_evidence = []
+        self._certified_substitution_flags = []
+        for index, substituted in enumerate(flags):
+            while len(evidence) <= index:
+                evidence.append({})
+            row = evidence[index]
+            if substituted:
+                row["fallback_used"] = True
+            else:
+                row.setdefault("fallback_used", False)
         return evidence
 
     def _choice_generation_evidence(
