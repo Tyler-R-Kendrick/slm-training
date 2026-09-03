@@ -15,14 +15,22 @@ Mirrored steps (source of truth: `.github/workflows/ci.yml` ``python-static``;
 2.  ``python -m scripts.verify_decode_invariants``
 3.  ``python -m scripts.verify_agent_surfaces``
 4.  ``python -m scripts.verify_ownership_map``
-5.  ``python -m scripts.extract_test_cases`` (read-only sweep; no ``--write``)
-6.  ``python -m scripts.refresh_test_cases --check --changed`` (local analogue
+5.  ``python -m scripts.verify_research_citation_catalog``
+6.  ``python -m scripts.verify_research_experiment_preregistry``
+7.  ``python -m scripts.extract_test_cases`` (read-only sweep; no ``--write``)
+8.  ``python -m scripts.refresh_test_cases --check --changed`` (local analogue
     of CI's ``--check --base-ref <pr-base>``)
-7.  ``ruff check .``
-8.  ``python -m compileall -q src scripts tests``
-9.  ``python -m scripts.verify_checkpoint_references --check``
-10. ``python -m scripts.verify_version_stamps --check``
-11. ``python -m scripts.check_changed --changed-tests-only`` (skipped by
+9.  ``ruff check .``
+10. ``python -m scripts.verify_code_quality``
+11. ``python -m compileall -q src scripts tests``
+12. ``python -m scripts.verify_checkpoint_references --check``
+13. ``python -m scripts.verify_version_stamps --check``
+14. ``python -m scripts.verify_formal_evidence_mutations --check``
+15. ``python -m scripts.build_evidence_ledger --check``
+16. ``python -m scripts.verify_integ06_adversarial_acceptance --check``
+17. ``python -m scripts.verify_integ07_activation_preflight --check``
+18. ``python -m scripts.verify_integ10_release_matrix --check``
+19. ``python -m scripts.check_changed --changed-tests-only`` (skipped by
     ``--fast``)
 
 Failure behavior (documented choice): every *static* step always runs even
@@ -103,6 +111,7 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
             (python, "-m", "scripts.refresh_test_cases", "--check", "--changed"),
         ),
         Step("ruff", _ruff_cmd(python)),
+        Step("code_quality", (python, "-m", "scripts.verify_code_quality")),
         Step(
             "compileall", (python, "-m", "compileall", "-q", "src", "scripts", "tests")
         ),

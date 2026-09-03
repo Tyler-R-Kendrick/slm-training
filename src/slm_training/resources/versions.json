@@ -259,6 +259,11 @@
     "ci.local_merge_gate": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "mirror the new python-static `verify_code_quality` step (between `ruff check .` and `compileall`) and refresh the docstring step list, which had drifted eight steps behind the real sequence.",
+          "version": "v10"
+        },
+        {
           "date": "2026-08-12",
           "note": "RESEARCH-02 (SLM-533): wire verify_research_experiment_preregistry into merge-ready / python-static gate order.",
           "version": "v9"
@@ -322,7 +327,7 @@
         ".githooks/check-changed",
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
-      "version": "v9"
+      "version": "v10"
     },
     "config.levers": {
       "history": [
@@ -3349,6 +3354,11 @@
     },
     "experiments.hf_screening": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: allowlist the generated code_quality_baseline.json in the hf_jobs_screen reference policy. It names the script as a measurement subject, not a call site -- the same rationale as the existing versions.json exemption. Screening spend policy unchanged.",
+          "version": "v3"
+        },
         {
           "date": "2026-08-10",
           "note": "CodeRabbit fixes: (1) ScreenConfig.max_minutes had no upper bound (only ge=1, default 30) while the repo's own MAX_RUN_MINUTES hard-run-cap law caps every run at 3 minutes and hf_jobs_train.py already enforces this exactly \u2014 hf_jobs_screen.py now caps max_minutes at MAX_RUN_MINUTES too, same as its sibling script. (2) collect_results' seed-file identity check omitted run_id and steps, so a stale seed_<n>.json from an earlier run at a different step count could pass identity and silently enter the aggregate; both are now part of the required identity match. (3) a seed file containing valid-but-non-object JSON (an array/scalar/null) crashed with AttributeError on payload.get(...) instead of degrading to incomplete like other malformed inputs \u2014 now guarded before the identity check.",

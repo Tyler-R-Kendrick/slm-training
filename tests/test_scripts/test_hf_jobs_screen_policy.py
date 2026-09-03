@@ -2,8 +2,9 @@
 
 Screening fan-out submits PAID HF Jobs. Spend is strictly opt-in and human:
 the only tracked files allowed to reference the screening entrypoint are the
-script itself, its tests, its design doc, and the version registry (which
-lists watched paths, not invocations).
+script itself, its tests, its design doc, and the two generated manifests that
+list measured or watched paths rather than invocations: the version registry
+and the code-quality baseline.
 """
 
 from __future__ import annotations
@@ -16,7 +17,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ALLOWED = {
     "scripts/hf_jobs_screen.py",
     "docs/design/hf-jobs-train.md",
+    # Generated manifests: each names the file as a measurement subject, which
+    # is not a call site. See docs/design/code-quality-contract.md.
     "src/slm_training/resources/versions.json",
+    "src/slm_training/resources/code_quality_baseline.json",
 }
 ALLOWED_PREFIXES = ("tests/test_scripts/test_hf_jobs_screen_",)
 
