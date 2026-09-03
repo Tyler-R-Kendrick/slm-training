@@ -27,12 +27,27 @@ from slm_training.dsl.grammar.fastpath.static_control_domain import (
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+#: Production decode modules permitted to consume the adapter. Unchanged: the
+#: restriction this file exists to enforce is on the decode path.
 _OWNING_MODULES = {
     "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
     "src/slm_training/dsl/grammar/fastpath/static_control_domain.py",
     # Negative-direction room prune via certified min_terminals.
     "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
 }
+
+#: Offline analysis over the certified adapter: reads the table to compute
+#: Myhill-Nerode equivalence classes and never participates in a decode.
+#: ``test_the_analysis_module_has_no_production_importer`` keeps it that way,
+#: so this is an exemption with a proof obligation rather than a hole.
+_ANALYSIS_MODULES = {
+    "src/slm_training/dsl/grammar/fastpath/myhill_nerode.py",
+}
+
+#: Experiment runners are not production paths. The rule this file enforces is
+#: about what decodes, and an experiment measuring the adapter is the point of
+#: having a certified one.
+_EXPERIMENT_PREFIX = "src/slm_training/harnesses/experiments/"
 
 
 @pytest.fixture(scope="module")
@@ -217,17 +232,47 @@ def _grep_python_sources(pattern: str) -> set[str]:
     return {line for line in found.stdout.splitlines() if line}
 
 
+def _production_hits(pattern: str) -> set[str]:
+    """Matches outside experiment runners — the paths the rule governs."""
+    return {
+        path
+        for path in _grep_python_sources(pattern)
+        if not path.startswith(_EXPERIMENT_PREFIX)
+    }
+
+
 def test_adapter_consumers_are_allowlisted() -> None:
     """Only the certified kernel may consume the adapter in production paths."""
 
-    adapter_hits = _grep_python_sources(
+    adapter_hits = _production_hits(
         "StaticLalrAdapter|require_certified_static_lalr|static_lalr_adapter"
     )
-    assert adapter_hits == _OWNING_MODULES, sorted(adapter_hits)
+    assert adapter_hits == _OWNING_MODULES | _ANALYSIS_MODULES, sorted(adapter_hits)
 
     # Bound may be serialized, reported, or used as a negative prune in the
     # completion kernel — nowhere else under src/ or scripts/.
-    bound_hits = _grep_python_sources("state_min_terminals|min_terminals")
-    assert bound_hits <= _OWNING_MODULES | {"scripts/build_completion_artifact.py"}, (
-        sorted(bound_hits)
-    )
+    bound_hits = _production_hits("state_min_terminals|min_terminals")
+    assert bound_hits <= _OWNING_MODULES | _ANALYSIS_MODULES | {
+        "scripts/build_completion_artifact.py"
+    }, sorted(bound_hits)
+
+
+def test_the_analysis_module_has_no_production_importer() -> None:
+    """The analysis exemption is bounded by this, not by good intentions.
+
+    An analysis module living inside the fastpath package is one import away
+    from being on the decode path. Only experiment runners and their entry
+    scripts may reach it.
+    """
+
+    for module in _ANALYSIS_MODULES:
+        name = Path(module).stem
+        importers = _grep_python_sources(rf"fastpath\.{name}|fastpath import {name}")
+        offenders = sorted(
+            path
+            for path in importers
+            if path != module
+            and not path.startswith(_EXPERIMENT_PREFIX)
+            and not path.startswith("scripts/run_")
+        )
+        assert offenders == [], f"{module} is imported by production code: {offenders}"

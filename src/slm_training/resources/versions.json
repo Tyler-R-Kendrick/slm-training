@@ -97,6 +97,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "PLAYBOOK_FAULTS makes the playbook boundary total: discovery import, matches, plan, execute and plan execution now degrade SystemExit to a receipt (step_failed / not-matched) instead of unwinding into the driver. A playbook driving an argparse-based module in process raises SystemExit(2) on a bad argv, so the documented 'a crashing playbook yields a step_failed receipt, never an exception' invariant was false at the seam it was written for. KeyboardInterrupt stays uncaught: the run cap interrupts with SIGINT and kill is not evidence.",
+          "version": "v6"
+        },
+        {
           "date": "2026-09-02",
           "note": "run_playbooks prefers a playbook in-process execute (harness_crash -> attempted, data_rebuild -> count-postcondition healed) over the subprocess plan/verify path; same attempt budget, single persisted receipt; execute crash records step_failed.",
           "version": "v5"
@@ -162,7 +167,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v5"
+      "version": "v6"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -204,6 +209,11 @@
     },
     "autoresearch.preflight": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: repair tests my own merge broke. The preflight-gate tests picked _SCREENING_ARM_BANK[0], which became a self-control when the policy control corpus became the certified bucket, so the gate correctly returned None; they now exercise the live selectable bank. Two corpus literals moved v1 -> v2, and the data-intervention assertion now tracks the policy value instead of a literal that had already drifted twice. Test-only; no production behavior changed.",
+          "version": "v7"
+        },
         {
           "date": "2026-08-15",
           "note": "Driver preflight keeps process/heal arms; confirmatory block cannot rotate an I10 first-train onto leftover rematches.",
@@ -535,6 +545,16 @@
     "data.corpus_certification": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "Narrows the G2 deferral below to the failure its argument covers. That change deferred on any _reference_graph failure -- duplicate binder, missing root binder, reference cycle -- while the argument was made only about an unresolved reference, so a program with a duplicate binder and a genuine one-sided schema disagreement would have passed G2 on reasoning never applied to it. The deferral now keys on UNRESOLVED_REFERENCE_DETAIL; every other reference-graph failure keeps failing G2.",
+          "version": "v7"
+        },
+        {
+          "date": "2026-09-03",
+          "note": "The E60 differential parser audit no longer attributes an unresolved reference to the schema gate. Both authorities accept a program with a dangling binder and then recover differently (lang-core drops the dangling child, Lark keeps an unresolved ref node), which is not evidence about schema agreement; G3 is the authority for an unresolved reference and fails the program, so G2 defers with the audit result recorded in its detail. Nothing is admitted by the deferral -- a reference-broken program stays Quarantine either way, only the attributed cause changes -- and the deferral is narrow: a one-sided accept (one authority parses, the other refuses) is still a G2 failure even on a reference-broken program.",
+          "version": "v6"
+        },
+        {
           "date": "2026-08-11",
           "note": "Proof-carrying goal support: preserve timeout and capability unavailability through required G1/G2/G8 gate evaluation instead of converting it to exact rejection.",
           "version": "v5"
@@ -577,7 +597,7 @@
         "src/slm_training/dsl/grammar/backends/openui_hybrid.py",
         "tests/test_dsl/test_grammar_backends.py"
       ],
-      "version": "v5"
+      "version": "v7"
     },
     "data.corrupt.trace": {
       "history": [
@@ -1161,6 +1181,11 @@
     },
     "dsl.completion_kernel": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: test-only. The StaticLalrAdapter consumer allowlist governs production decode paths but asserted set equality against a git grep over all of src/ and scripts/, so an offline Myhill-Nerode analysis module and two experiment runners failed it (one of which only builds the adapter's import line inside a generated code string). The production restriction is unchanged and unwidened; experiment runners are declared non-production and the analysis module is named explicitly under a new assertion that no production module imports it.",
+          "version": "v26"
+        },
         {
           "date": "2026-09-02",
           "note": "P5: terminal_witness exact early exit -- once a query's node allowance is spent and a sibling already returned UNKNOWN, remaining non-EOS children are not advanced (their verdict cannot change the frame's UNKNOWN result, which is never persisted); EOS paths still certify. New session counter witness_children_skipped. Witness results replayed against the previous kernel in lockstep are identical (docs/design/compiler-decode-cost-20260902.md).",
@@ -4237,6 +4262,16 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "no-bump: docstring only. Corrects an overstatement in the entry below, which said the monotone union 'measurably exceeds MAX_RUN_MINUTES for a typical diff'. Measured: tests/test_data runs 152s (664 passed) inside the 180s cap, so no single suite busts it. The real cost is breadth -- seven targets instead of four files on a representative diff. Selection behaviour is unchanged.",
+          "version": "v28"
+        },
+        {
+          "date": "2026-09-03",
+          "note": "select_changed_tests no longer lets a changed test file suppress a changed global test file: tests/conftest.py, tests/casefiles.py and pyproject.toml mean every suite is in scope, and the changed-file shortcut overrode that (editing casefiles.py, which every snapshot test reads its case resource through, alongside one test file ran only that one file). The broader inversion -- for ordinary sources a diff touching source plus a test still selects strictly less than the same diff without the test -- is recorded, measured and deliberately left to the owner in docs/design/autotrain-recovery-2-20260902.md: the monotone union exceeds MAX_RUN_MINUTES on a representative diff and CI runs the same selection under a disabled-for-cost budget.",
+          "version": "v28"
+        },
+        {
           "date": "2026-09-02",
           "note": "no-bump: S8 adds an exact-path check_changed entry mapping scripts/audit_regular_layer_gap.py to its own test (narrow script hook per the table's exact-match policy); ownership map, owners, and every other mapping unchanged.",
           "version": "v27"
@@ -4688,7 +4723,7 @@
         "tests/test_data/test_synthesis_contract_versions.py",
         "tests/test_scripts/test_verify_ownership_map.py"
       ],
-      "version": "v27"
+      "version": "v28"
     },
     "governance.research_citation_catalog": {
       "history": [
@@ -5149,6 +5184,21 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "Closes a hole in the n-deficit park below. Remedies are queued per recognized binding constraint, so a constraint that is neither suite_volume nor wall_budget queued no remedy at all and the park asked for nothing -- which the old unconditional rebuild_data did not do. Falls back to the data ask, naming the unrecognized constraint in the reason.",
+          "version": "v288"
+        },
+        {
+          "date": "2026-09-03",
+          "note": "Two honesty fixes on the loop's failure path. (1) The screening n-deficit park now derives its queued actions from the report's binding_constraints instead of hard-coding 'suite_volume binds' and a rebuild_data ask for every empty range: a wall_budget bind queues repair_harness (improve-openui-harnesses, model_build) naming the affordable n and the decidability floor, because no volume of generated records clears a wall and asking for them parks the loop again next cycle; both binds queue both remedies; an unclassified deficit keeps the historical data ask so it never parks silently. (2) _PASS_OUTCOME_BY_HEAL_OUTCOME replaces the inline map and is total over HealOutcome: postcondition_failed -- the data-rebuild playbook's no-op verdict -- previously fell through the .get default to the generic heal_attempted while only verify_failed was mapped, so the outcome that exists to expose a heal that changed nothing was itself flattened. budget_exhausted and cycle_detected now score as escalation_unhandled (no work was attempted). Totality is enforced by tests/test_autoresearch/test_pass_outcome_contract.py.",
+          "version": "v287"
+        },
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: repair tests my own merge broke. The preflight-gate tests picked _SCREENING_ARM_BANK[0], which became a self-control when the policy control corpus became the certified bucket, so the gate correctly returned None; they now exercise the live selectable bank. Two corpus literals moved v1 -> v2, and the data-intervention assertion now tracks the policy value instead of a literal that had already drifted twice. Test-only; no production behavior changed.",
+          "version": "v286"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: S5 lands the decode_only_authority_ladder_v1 ExperimentCampaignV1 manifest (new resource directory, read by nothing yet) and regenerates evidence_ledger.v1.json deterministically; no harness code, contract, gate, or threshold changed.",
@@ -7218,7 +7268,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v286"
+      "version": "v288"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -18227,6 +18277,11 @@
     "harness.train_data": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "DIAGNOSTIC_ONLY_FAMILIES and TRAINABLE_FAMILIES partition KNOWN_FAMILIES. semantic_counterfactual, semantic_prompt and cue_intervention are CAP-1 causal-probe interventions -- counterfactual pairs and cue-ablated prompts built to measure what a model attends to -- and carry no default SFT mixture weight on purpose: training on the manipulation a probe depends on destroys the probe. The mixture test now checks both directions, so a diagnostic corpus can never silently enter the training mixture.",
+          "version": "v34"
+        },
+        {
           "date": "2026-08-21",
           "note": "Train-data admission now applies the symbol-only Harness round-trip contract and records visible rejection reasons.",
           "version": "v33"
@@ -18426,7 +18481,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v33"
+      "version": "v34"
     },
     "harness_core.evidence_bundle": {
       "history": [
@@ -19496,6 +19551,21 @@
     },
     "model.twotower": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "Corrects the entry below, found by adversarial self-review before merge. That change added a third forced_tokens increment on the compiler-tree batch lane where commit() already counts a forced span post-truncation, so every span was counted twice and truncated spans over-counted; it is reverted here. Its headline (5 -> 8, fraction 1.000 on a single-record tree fixture) came entirely from that double-count and is withdrawn. The real, reproducible defect is on the other lanes: measured before/after on a 3-record fixture, compiler-off 0 -> 4 and grammar-LTR 0 -> 4 of 9 committed tokens, with compiler-tree unchanged at 6 of 9. A ceiling assertion passed throughout because one fixture reached one lane, so the ceiling is now checked per lane.",
+          "version": "v329"
+        },
+        {
+          "date": "2026-09-03",
+          "note": "forced_token_fraction now counts every I2 singleton bypass. Four of the six bypass sites (twotower.py 5850, 12644, 13528, 13795) called _record_exact_bypass and incremented forced_row_tokens_without_forward without touching forced_tokens, so the ratio -- documented as the share of the canvas deterministic forcing wrote without consulting the model -- attributed forced tokens to the model. S12 measured it reading 0 while semantic_singleton_bypasses was 18-27. On a grammar-determined canvas (root = Separator(), 8 committed tokens, all proven forced) the reading moves from 5/0.625 to 8/1.000. Telemetry only: no decode decision, ordering or output changes, and each added line counts an event the adjacent line already counted under another name.",
+          "version": "v328"
+        },
+        {
+          "date": "2026-09-03",
+          "note": "I6: a certified substitution is reported on every decode lane, not just the choice-constrained one. _ensure_valid_openui records whether it returned a certified fallback and consume_generation_evidence stamps fallback_used onto the row, synthesizing a row when the grammar/LTR lane produced no evidence of its own. That lane is what production serving runs, so _raise_on_substituted_generation never fired there and every substituted program was persisted as a genuine generation (28 of 48 documents in the S14 field measurement). Decode behavior and emitted bytes are unchanged; only the evidence channel is now truthful.",
+          "version": "v327"
+        },
         {
           "date": "2026-09-02",
           "note": "Merge of S6 (context_ablation diagnostic lever and the legal-choice flip probe) and S12 (per-step commit-authority histogram) with the corpus-rebuild and X1/S14 entries; both parents' histories preserved. Ablation is decode-time only, default off, and byte-identical when off.",
@@ -21535,7 +21605,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v326"
+      "version": "v329"
     },
     "ops.vocab": {
       "history": [

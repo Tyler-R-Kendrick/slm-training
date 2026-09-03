@@ -25,7 +25,11 @@ from slm_training.data.mixture import (
     write_mixture_manifest,
 )
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.harnesses.train_data.catalog import KNOWN_FAMILIES
+from slm_training.harnesses.train_data.catalog import (
+    DIAGNOSTIC_ONLY_FAMILIES,
+    KNOWN_FAMILIES,
+    TRAINABLE_FAMILIES,
+)
 
 
 def _rec(rid: str, family: str) -> ExampleRecord:
@@ -114,13 +118,33 @@ def test_default_mix_and_probes_cover_new_families() -> None:
     base = default_base_weights()
     assert "namespace_augment" not in base
     assert set(NEW_FAMILIES) <= set(base)
-    assert set(KNOWN_FAMILIES) <= set(base)
+    assert set(TRAINABLE_FAMILIES) <= set(base)
     probes = local_probe_candidates(base, task_weights=DEFAULT_TASK_WEIGHTS)
     probed = {
         probe.mixture_id.removeprefix("local_").rsplit("_", 1)[0] for probe in probes
     }
     assert set(NEW_FAMILIES) <= probed
     assert all(probe.mixture_id.rsplit("_", 1)[-1] != "1" for probe in probes)
+
+
+def test_no_diagnostic_family_carries_training_weight() -> None:
+    """A causal-probe corpus must never enter the SFT mixture.
+
+    ``semantic_counterfactual`` / ``semantic_prompt`` / ``cue_intervention``
+    are interventions: counterfactual pairs and cue-ablated prompts built to
+    ask what the model attends to. Training on them trains the model on the
+    manipulation the probe depends on, so the probe stops measuring anything.
+    """
+    base = default_base_weights()
+    weighted = sorted(DIAGNOSTIC_ONLY_FAMILIES & set(base))
+
+    assert weighted == [], f"diagnostic families in the training mixture: {weighted}"
+
+
+def test_the_two_family_sets_partition_the_catalog() -> None:
+    """Trainable + diagnostic covers every catalog family, with no overlap."""
+    assert set(TRAINABLE_FAMILIES) | DIAGNOSTIC_ONLY_FAMILIES == set(KNOWN_FAMILIES)
+    assert set(TRAINABLE_FAMILIES) & DIAGNOSTIC_ONLY_FAMILIES == set()
 
 
 def test_task_balanced_sampling_ignores_row_count_skew() -> None:

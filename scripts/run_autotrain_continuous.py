@@ -3919,7 +3919,19 @@ def _park_screening_n_deficit(
     cycle_index: int,
     report: dict[str, Any],
 ) -> str:
-    """Skip screening until smoke records exist; queue rebuild_data."""
+    """Skip screening; queue the action the binding constraint actually needs.
+
+    The report distinguishes two causes of an empty range and only one of them
+    is a data deficit. ``suite_volume`` means the published suite is smaller
+    than the decidability floor, and generating records clears it. But
+    ``wall_budget`` means the arm wall affords fewer records than the floor at
+    the declared decode cost, and no amount of generated data clears that: a
+    ``rebuild_data`` ask there is an action nobody can discharge -- the
+    synthesis owner publishes records, the range stays empty, and the next
+    cycle parks again having spent real work. The report's own suggestion
+    names that remedy (cheaper per-record decode or a larger stage share,
+    never a silent wall++), which is harness territory. Both can bind at once.
+    """
 
     handoff_path = root / campaign_id / "cycle_handoff.json"
     if not handoff_path.is_file():
@@ -3930,21 +3942,69 @@ def _park_screening_n_deficit(
         handoff_path.read_text(encoding="utf-8")
     )
     evidence_ids = (f"campaign:{campaign_id}",)
+    binding = tuple(report.get("binding_constraints") or ())
+    n_min = report.get("n_min") or 6
+    remedies: list[AutotrainActionV1] = []
+    if "suite_volume" in binding or report.get("must_generate") or not binding:
+        # No binding constraint recorded means the cause is unknown; the
+        # historical ask stays, so an unclassified deficit never parks silently.
+        remedies.append(
+            AutotrainActionV1(
+                kind="rebuild_data",
+                owner="synthesis-feedback",
+                reason=(
+                    "screening suite_volume binds "
+                    f"(suite_ceiling_n={report.get('suite_ceiling_n')}): generate "
+                    f"and persist smoke n>={n_min} instead of screening at an "
+                    "undecidable n"
+                ),
+                evidence_ids=evidence_ids,
+            )
+        )
+    wall_budget_binds = "wall_budget" in binding
+    if wall_budget_binds:
+        remedies.append(
+            AutotrainActionV1(
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                harness_family="model_build",
+                reason=(
+                    "screening wall_budget binds: the arm wall affords "
+                    f"{report.get('budget_ceiling_n')} records at the declared "
+                    f"decode floor and the decidability floor is {n_min}; "
+                    "cheaper per-record decode or a larger stage share, never "
+                    "a silent wall++ (generating records cannot clear this)"
+                ),
+                evidence_ids=evidence_ids,
+            )
+        )
+    if not remedies:
+        # A constraint neither branch recognizes (a third one added later).
+        # The old code always queued a data ask, so falling back to it keeps
+        # the park from silently requesting nothing at all; the reason names
+        # the constraint so the owner can see it was not understood here.
+        remedies.append(
+            AutotrainActionV1(
+                kind="rebuild_data",
+                owner="synthesis-feedback",
+                reason=(
+                    "screening range is empty under an unrecognized binding "
+                    f"constraint ({', '.join(binding)}); n_min={n_min}, "
+                    f"suite_ceiling_n={report.get('suite_ceiling_n')}, "
+                    f"budget_ceiling_n={report.get('budget_ceiling_n')}"
+                ),
+                evidence_ids=evidence_ids,
+            )
+        )
     actions = (
-        AutotrainActionV1(
-            kind="rebuild_data",
-            owner="synthesis-feedback",
-            reason=(
-                "screening suite_volume binds: generate and persist smoke "
-                f"n>={report.get('n_min') or 6} instead of screening at an "
-                "undecidable n"
-            ),
-            evidence_ids=evidence_ids,
-        ),
+        *remedies,
         AutotrainActionV1(
             kind="next_experiment",
             owner="autotrain",
-            reason="resume screening only after the published smoke suite meets n_min",
+            reason=(
+                "resume screening only once the binding constraint clears: "
+                f"{', '.join(binding) or 'cause unrecorded'}"
+            ),
             evidence_ids=evidence_ids,
         ),
     )
@@ -14596,6 +14656,35 @@ def _park_loop_stalled(
     return path
 
 
+#: How a heal receipt's outcome scores the driver pass that produced it.
+#: Total over ``slm_training.autoresearch.heal.schemas.HealOutcome`` -- a new
+#: outcome with no entry here would fall to the generic ``heal_attempted`` and
+#: hide itself, which is how ``postcondition_failed`` (the data-rebuild
+#: playbook's no-op verdict) went uncounted while only ``verify_failed`` was
+#: mapped. Totality is enforced by
+#: ``tests/test_autoresearch/test_pass_outcome_contract.py``.
+_PASS_OUTCOME_BY_HEAL_OUTCOME: dict[str, str] = {
+    "healed": "verified_heal",
+    # Both failure verdicts mean the same thing to a pass: the heal ran and
+    # its proof obligation did not hold. ``verify_failed`` comes from the
+    # subprocess verify probe, ``postcondition_failed`` from an in-process
+    # playbook's count postcondition.
+    "verify_failed": "heal_postcondition_failed",
+    "postcondition_failed": "heal_postcondition_failed",
+    "unhandled": "escalation_unhandled",
+    # An attempt that never reached a proof obligation. Visible in the
+    # receipt; counted as an attempt, never as progress.
+    "attempted": "heal_attempted",
+    "step_failed": "heal_attempted",
+    "step_timeout": "heal_attempted",
+    "refused_scope": "heal_attempted",
+    # The runner declined to retry: no work was done, and the blocker is
+    # already escalated on the ledger.
+    "budget_exhausted": "escalation_unhandled",
+    "cycle_detected": "escalation_unhandled",
+}
+
+
 def _record_pass_outcome(
     *, root: Path, loop_id: str, before_campaign: str | None,
     before_receipts: int, typed_action: bool = False, reason: str | None = None,
@@ -14615,11 +14704,9 @@ def _record_pass_outcome(
     if after_campaign and after_campaign != before_campaign:
         outcome = "campaign_initialized"
     elif after_receipts > before_receipts:
-        outcome = {
-            "healed": "verified_heal",
-            "verify_failed": "heal_postcondition_failed",
-            "unhandled": "escalation_unhandled",
-        }.get(_last_heal_receipt_outcome(receipts_path) or "", "heal_attempted")
+        outcome = _PASS_OUTCOME_BY_HEAL_OUTCOME.get(
+            _last_heal_receipt_outcome(receipts_path) or "", "heal_attempted"
+        )
     elif typed_action:
         outcome = "typed_park_or_escalation"
     else:
