@@ -43,9 +43,7 @@ def plugin_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Extend the package search path with a throwaway plugin directory."""
     extra = tmp_path / "plugins"
     extra.mkdir()
-    monkeypatch.setattr(
-        preflight, "__path__", [*list(preflight.__path__), str(extra)]
-    )
+    monkeypatch.setattr(preflight, "__path__", [*list(preflight.__path__), str(extra)])
     yield extra
     for name in list(sys.modules):
         if name.startswith("slm_training.autoresearch.preflight.zz_"):
@@ -164,9 +162,7 @@ def test_has_block_false_for_pass_and_warn_only() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _install_fake_store(
-    monkeypatch: pytest.MonkeyPatch, records: list[dict]
-) -> None:
+def _install_fake_store(monkeypatch: pytest.MonkeyPatch, records: list[dict]) -> None:
     pkg = ModuleType("slm_training.evidence_store")
     client = ModuleType("slm_training.evidence_store.client")
 
@@ -419,9 +415,7 @@ def test_fingerprint_fallback_matches_driver_algorithm(
     ).hexdigest()[:16]
     assert prior_attempts.config_fingerprint(levers) == expected
     # steps is cycle jitter, not identity.
-    assert prior_attempts.config_fingerprint(
-        {**levers, "steps": 999}
-    ) == expected
+    assert prior_attempts.config_fingerprint({**levers, "steps": 999}) == expected
 
 
 def test_fingerprint_prefers_evidence_store_helper(
@@ -438,12 +432,8 @@ def test_fingerprint_prefers_evidence_store_helper(
     )
     pkg.records = records  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "slm_training.evidence_store", pkg)
-    monkeypatch.setitem(
-        sys.modules, "slm_training.evidence_store.records", records
-    )
-    assert (
-        prior_attempts.config_fingerprint({"b": 1, "a": 2}) == "store-fp-a/b"
-    )
+    monkeypatch.setitem(sys.modules, "slm_training.evidence_store.records", records)
+    assert prior_attempts.config_fingerprint({"b": 1, "a": 2}) == "store-fp-a/b"
 
 
 def test_fingerprint_excludes_steps_before_evidence_store_helper(
@@ -473,9 +463,7 @@ def test_fingerprint_excludes_steps_before_evidence_store_helper(
 @pytest.fixture(scope="module")
 def driver():
     script = (
-        Path(__file__).resolve().parents[2]
-        / "scripts"
-        / "run_autotrain_continuous.py"
+        Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
     )
     spec = importlib.util.spec_from_file_location(
         "run_autotrain_continuous_preflight_test", script
@@ -493,9 +481,19 @@ def only_prior_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
     ``power_check`` / ``concluded_family`` are concurrent work with their own
     block semantics; the driver-gate tests assert this seam's mechanics only.
     """
-    monkeypatch.setattr(
-        preflight, "_discover_module_names", lambda: ["prior_attempts"]
-    )
+    monkeypatch.setattr(preflight, "_discover_module_names", lambda: ["prior_attempts"])
+
+
+def _selectable_bank(driver):
+    """Arms the gate can actually choose.
+
+    ``_SCREENING_ARM_BANK`` is the static preregistered roster; the live bank
+    drops entries that are not legal candidates right now -- notably a data arm
+    whose corpus equals the control corpus, which is a self-control with a
+    delta identically zero. The gate only ever sees the live bank, so these
+    tests must too.
+    """
+    return driver._all_screening_arm_bank()
 
 
 def _gate(driver, slug: str, *, reselect):
@@ -513,7 +511,7 @@ def test_driver_gate_passes_through_unblocked_slug(
     driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _install_fake_store(monkeypatch, [])
-    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+    bank_slug = _selectable_bank(driver)[0][0]
     chosen, payload = _gate(
         driver, bank_slug, reselect=lambda skip: pytest.fail("must not reselect")
     )
@@ -521,9 +519,7 @@ def test_driver_gate_passes_through_unblocked_slug(
     assert payload is not None
     assert payload["selected_slug"] == bank_slug
     assert payload["blocked_slugs"] == []
-    assert "prior_attempts" in {
-        v["check_id"] for v in payload["verdicts"][bank_slug]
-    }
+    assert "prior_attempts" in {v["check_id"] for v in payload["verdicts"][bank_slug]}
 
 
 def test_driver_gate_passes_cumulative_arm_seeds_not_literal_one(
@@ -535,7 +531,7 @@ def test_driver_gate_passes_cumulative_arm_seeds_not_literal_one(
     make ``power_decidability`` block every screening cycle forever.
     """
     _install_fake_store(monkeypatch, [])
-    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+    bank_slug = _selectable_bank(driver)[0][0]
 
     from slm_training.autoresearch import evidence_ledger as ev
 
@@ -562,7 +558,7 @@ def test_driver_gate_unseen_arm_uses_first_cycle_seeds(
 ) -> None:
     """An arm absent from the ledger (never screened) starts at n_seeds=1."""
     _install_fake_store(monkeypatch, [])
-    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+    bank_slug = _selectable_bank(driver)[0][0]
 
     from slm_training.autoresearch import evidence_ledger as ev
 
@@ -585,7 +581,7 @@ def test_driver_gate_ledger_load_failure_degrades_to_one(
 ) -> None:
     """A ledger-load error must never break the gate — degrade to n_seeds=1."""
     _install_fake_store(monkeypatch, [])
-    bank_slug = driver._SCREENING_ARM_BANK[0][0]
+    bank_slug = _selectable_bank(driver)[0][0]
 
     from slm_training.autoresearch import evidence_ledger as ev
 
@@ -616,7 +612,7 @@ def test_driver_gate_process_arm_continues_when_preflight_blocks(
     from slm_training.autoresearch import preflight as preflight_mod
 
     heal = driver._HEAL_RESUME_SLUG
-    other = driver._SCREENING_ARM_BANK[0][0]
+    other = _selectable_bank(driver)[0][0]
     driver._DYNAMIC_THRASH_ARMS.append(
         (heal, "I10 heal", {"train_version": "continuous_i10_x", "process_arm": True})
     )
@@ -653,12 +649,10 @@ def test_driver_gate_process_arm_continues_when_preflight_blocks(
 def test_driver_gate_skips_blocked_slug_and_reselects(
     driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    first_slug = driver._SCREENING_ARM_BANK[0][0]
-    second_slug = driver._SCREENING_ARM_BANK[1][0]
-    first_extras = dict(driver._SCREENING_ARM_BANK[0][2])
-    first_fp = driver._knobs_fingerprint(
-        driver._apply_arm_extras(40, first_extras)
-    )
+    first_slug = _selectable_bank(driver)[0][0]
+    second_slug = _selectable_bank(driver)[1][0]
+    first_extras = dict(_selectable_bank(driver)[0][2])
+    first_fp = driver._knobs_fingerprint(driver._apply_arm_extras(40, first_extras))
     _install_fake_store(
         monkeypatch,
         [
@@ -671,9 +665,7 @@ def test_driver_gate_skips_blocked_slug_and_reselects(
             }
         ],
     )
-    chosen, payload = _gate(
-        driver, first_slug, reselect=lambda skip: second_slug
-    )
+    chosen, payload = _gate(driver, first_slug, reselect=lambda skip: second_slug)
     assert chosen == second_slug
     assert payload["blocked_slugs"] == [first_slug]
     assert "override" not in payload
@@ -682,7 +674,7 @@ def test_driver_gate_skips_blocked_slug_and_reselects(
 def test_driver_gate_fails_soft_when_all_open_arms_block(
     driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    first_slug = driver._SCREENING_ARM_BANK[0][0]
+    first_slug = _selectable_bank(driver)[0][0]
 
     class _BlockEverything:
         check_id = "prior_attempts"
@@ -704,7 +696,7 @@ def test_driver_gate_fails_soft_when_all_open_arms_block(
 def test_driver_gate_fails_soft_when_reselect_raises(
     driver, only_prior_attempts, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    first_slug = driver._SCREENING_ARM_BANK[0][0]
+    first_slug = _selectable_bank(driver)[0][0]
 
     class _BlockEverything:
         check_id = "prior_attempts"

@@ -24,6 +24,14 @@ dependencies = [
 dev = [
   "pytest>=8.0,<9",
   "pytest-asyncio>=0.23,<2",
+  # Property / fuzz testing. Grammar legality and the decode contracts are
+  # stated as universals ("no input may ..."), so they are checked by
+  # generating inputs rather than by enumerating a handful by hand.
+  "hypothesis>=6.100,<7",
+  # Coverage measurement. Not a gate on the whole tree -- the floors live in
+  # tests/test_coverage_floor.py and cover the modules the honesty invariants
+  # depend on.
+  "pytest-cov>=5.0,<8",
   "ruff>=0.9,<0.16",
   "numpy>=1.26,<3",
   "httpx>=0.27,<1",
@@ -147,6 +155,21 @@ addopts = "-m 'not training and not slow'"
 markers = [
   "training: iterative model training or training smoke (explicit opt-in only)",
   "slow: single test exceeding the canonical per-job wall (MAX_RUN_MINUTES); no shard packing can fit it, so it is deselected by default and must be run explicitly with -m slow",
+  "property: generates its own inputs (hypothesis) instead of enumerating cases by hand",
+  "fuzz: feeds malformed or adversarial input to a parser/decoder and asserts it fails closed rather than crashing or admitting",
+  "chaos: injects a fault (crash, timeout, truncation, missing artifact) into a harness and asserts the recorded outcome is honest",
+  "behavior: end-to-end behavioral scenario stated as given/when/then over a repo invariant",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["slm_training"]
+
+[tool.coverage.report]
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "@overload",
 ]
 
 [tool.vercel]
