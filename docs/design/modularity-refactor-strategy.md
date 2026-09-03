@@ -2,7 +2,8 @@
 
 **Status:** proposal — evidence gathered, no refactor applied.
 **Instrument:** `python -m scripts.audit_modularity` (static, `ast`-only, no torch).
-**Measured at:** commit `0ac2999`, Python 3.12, `src/` + `scripts/` (1,242 files).
+**Measured at:** merge of `0478591` into this branch, Python 3.12,
+`src/` + `scripts/` (1,242 files).
 
 This document answers three questions with measurements rather than taste:
 
@@ -14,8 +15,8 @@ This document answers three questions with measurements rather than taste:
    [`decode-invariants.md`](decode-invariants.md)?
 3. What is the safe order of operations, and how do we know we are winning?
 
-The headline: **42,763 lines — roughly 8% of the Python surface — are
-mechanically-derivable scaffolding**, and one class of that scaffolding is
+The headline: **42,763 lines — 8.3% of the audited `src/` + `scripts/` surface
+(517,166 lines) — are mechanically-derivable scaffolding**, and one class of that scaffolding is
 currently producing **provably divergent fingerprints**, which is a
 reproducibility defect rather than a style complaint.
 
@@ -57,8 +58,9 @@ fields**.
 | **Total** | **2,466** | **42,763** | | |
 
 For scale: `src/slm_training/harnesses/experiments/` alone is **181 files /
-103,188 lines**, and the whole Python surface is 560,826 lines (`src` 402,975,
-`scripts` 113,484, `tests` 213,279).
+103,188 lines**. The full Python surface is 732,605 lines — `src` 403,096,
+`scripts` 114,070, `tests` 215,439 — of which the audit scans the 517,166
+non-test lines.
 
 ### 2.2 Serialization — 18,120 lines re-deriving field lists
 
@@ -171,17 +173,17 @@ written anyway. **The shared layer exists; nothing routes to it.**
 
 | Unit | Size | Shape |
 | --- | ---: | --- |
-| `models/twotower.py::TwoTowerModel` | **15,629 lines / 184 methods** | 10 methods >300 lines = 7,314 lines |
-| `scripts/run_autotrain_continuous.py` | 18,665 lines / 321 symbols | `run_cycle` alone is 1,800 lines |
+| `models/twotower.py::TwoTowerModel` | **15,685 lines / 185 methods** | 10 methods >300 lines = 7,331 lines |
+| `scripts/run_autotrain_continuous.py` | 18,752 lines / 321 symbols | `run_cycle` alone is 1,800 lines |
 | `harnesses/model_build/eval_runner.py` | 3,596 lines | |
 
 Inside `TwoTowerModel`, the method names describe a design that is already
 factored — as private methods rather than as objects:
 
-- **Decode strategies (~4,013 lines):** `_generate_maskgit_one` (1,200),
+- **Decode strategies (~4,021 lines):** `_generate_maskgit_one` (1,200),
   `_choice_ltr_decode_batch` (596), `_generate_batch_once` (551),
-  `_compiler_ltr_decode_one` (491), `_greedy_ltr_decode_batch` (443),
-  `_constrained_ltr_repair` (377), `_compiler_ltr_decode_batch` (355).
+  `_compiler_ltr_decode_one` (491), `_greedy_ltr_decode_batch` (445),
+  `_constrained_ltr_repair` (378), `_compiler_ltr_decode_batch` (360).
 - **Logit-bias operators (~1,423 lines):** `_semantic_plan_bias` (266),
   `_semantic_plan_typed_array_nonempty_bias` (244), `_semantic_plan_root_bias`
   (219), `_slot_coverage_close_bias` (208), `_semantic_plan_role_obligations`
@@ -190,7 +192,7 @@ factored — as private methods rather than as objects:
 
 ### 2.7 The invariant that is not structurally checked
 
-`_select_compiler_path` (830 lines, at line 10,802 of a 17,227-line file)
+`_select_compiler_path` (830 lines, at line 10,834 of a 17,283-line file)
 encodes the repo's most important invariant as control flow:
 
 1. singleton / deterministic bypass returns immediately (`_record_exact_bypass`);
@@ -312,11 +314,11 @@ land on top of a canonical fingerprint kernel — never underneath one.
 
 ### 3.5 Strategy + Composite — decompose `TwoTowerModel`
 
-*Target: `TwoTowerModel`, 15,629 lines.*
+*Target: `TwoTowerModel`, 15,685 lines.*
 
 Three extractions, in increasing order of risk:
 
-1. **Decode strategies (~4,013 lines) → a declared, ordered chain.** Each
+1. **Decode strategies (~4,021 lines) → a declared, ordered chain.** Each
    backend becomes a `DecodeStage` with an explicit rank:
 
    ```python
@@ -358,7 +360,7 @@ not parameters.
 | --- | --- | ---: | --- | --- |
 | 1 | Adapter: canonical kernel (§3.1) | ~1,385 | **Low** | trustworthy before/after comparison |
 | 2 | Ratchet: `--check-divergence` in CI | — | **Low** | prevents regression |
-| 3 | Strategy: decode chain (§3.5.1) | ~4,013 | Medium | **structural invariant checking** |
+| 3 | Strategy: decode chain (§3.5.1) | ~4,021 | Medium | **structural invariant checking** |
 | 4 | Template Method: campaign runner (§3.2) | ~9,264 | Medium | preregistration by construction |
 | 5 | Visitor: report IR (§3.3) | ~13,994 | Medium | JSON/HTML reports, dashboard parity |
 | 6 | Generative: codec (§3.4a) | ~8,645 | Medium | schema export |
@@ -409,7 +411,7 @@ Two honest caveats:
 
 ## 6. Tracking
 
-`scripts/audit_modularity.py` is the ratchet. Baseline at commit `0ac2999`:
+`scripts/audit_modularity.py` is the ratchet. Baseline at `0478591`:
 
 ```
 serialization   1644 defs   18120 lines   405 files
@@ -423,3 +425,10 @@ divergent reproducibility-critical helpers: 8
 Target after stage 2: **`divergent … helpers: 0`**, enforced by
 `--check-divergence` in CI. Subsequent stages report their own delta against
 this baseline.
+
+The census totals above were unchanged by the five commits between `0ac2999`
+and `0478591`, which is the expected behaviour: this debt accumulates slowly
+and is not perturbed by ordinary feature work. The `twotower.py` figures in
+§2.6–2.7 did shift over those commits and were re-measured, which is exactly
+why the line numbers in this document are provenance-stamped rather than
+treated as stable addresses.
