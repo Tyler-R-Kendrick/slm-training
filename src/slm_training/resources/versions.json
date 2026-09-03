@@ -5161,6 +5161,11 @@
       "history": [
         {
           "date": "2026-09-03",
+          "note": "Two honesty fixes on the loop's failure path. (1) The screening n-deficit park now derives its queued actions from the report's binding_constraints instead of hard-coding 'suite_volume binds' and a rebuild_data ask for every empty range: a wall_budget bind queues repair_harness (improve-openui-harnesses, model_build) naming the affordable n and the decidability floor, because no volume of generated records clears a wall and asking for them parks the loop again next cycle; both binds queue both remedies; an unclassified deficit keeps the historical data ask so it never parks silently. (2) _PASS_OUTCOME_BY_HEAL_OUTCOME replaces the inline map and is total over HealOutcome: postcondition_failed -- the data-rebuild playbook's no-op verdict -- previously fell through the .get default to the generic heal_attempted while only verify_failed was mapped, so the outcome that exists to expose a heal that changed nothing was itself flattened. budget_exhausted and cycle_detected now score as escalation_unhandled (no work was attempted). Totality is enforced by tests/test_autoresearch/test_pass_outcome_contract.py.",
+          "version": "v287"
+        },
+        {
+          "date": "2026-09-03",
           "note": "no-bump: repair tests my own merge broke. The preflight-gate tests picked _SCREENING_ARM_BANK[0], which became a self-control when the policy control corpus became the certified bucket, so the gate correctly returned None; they now exercise the live selectable bank. Two corpus literals moved v1 -> v2, and the data-intervention assertion now tracks the policy value instead of a literal that had already drifted twice. Test-only; no production behavior changed.",
           "version": "v286"
         },
@@ -7233,7 +7238,7 @@
         "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md"
       ],
-      "version": "v286"
+      "version": "v287"
     },
     "harness.autoresearch.formal": {
       "history": [

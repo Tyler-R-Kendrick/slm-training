@@ -1,0 +1,462 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_autoresearch/test_screening_decision_snapshot.py",
+  "case_sets": {
+    "screening_decisions": {
+      "cases": [
+        {
+          "id": "rc1_replay_arm_wall_180_suite_24",
+          "input": {
+            "arm_wall_seconds": 180,
+            "suite_records": 24
+          },
+          "invariant": {
+            "laws": {
+              "parks_at_zero": false,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          },
+          "expected": {
+            "chosen_n": 24,
+            "report": {
+              "schema_version": "screening_sample_size/v1",
+              "alpha": "1/20",
+              "max_candidate_n": 64,
+              "decidability_floor_n": 6,
+              "power_floor_n": null,
+              "n_min": 6,
+              "budget_ceiling_n": 76,
+              "suite_ceiling_n": 24,
+              "n_max": 24,
+              "chosen_n": 24,
+              "binding_constraints": [],
+              "verdict": "insufficient_evidence",
+              "bounds": [
+                {
+                  "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+                  "env": {
+                    "alpha_num": 1,
+                    "alpha_den": 20,
+                    "n_candidate": 6,
+                    "two_pow_n_candidate": 64
+                  },
+                  "value": "64",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+                },
+                {
+                  "bound_ast_id": "bound.screening_n.budget_upper.v1",
+                  "env": {
+                    "usable_wall_seconds": 152,
+                    "min_decode_seconds": 2
+                  },
+                  "value": "76",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "screening_power_sd_unmeasured",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "minimum_effect": "1/50",
+                    "metric": "smoke.eval_nll",
+                    "observed_sd_source": "unmeasured",
+                    "decidability_floor_n": 6
+                  },
+                  "suggestion": "measure the paired-delta SD of smoke.eval_nll and record it under metric_expectations.screening.v1.json observed_paired_sd_by_metric[<metric leaf>]; until then the exact decidability floor stands alone and the screen spends the affordable n (advisory, never a borrowed power floor)"
+                }
+              ],
+              "must_generate": false,
+              "power_floor_status": "unmeasured",
+              "observed_sd_source": "unmeasured",
+              "observed_sd_metric": "smoke.eval_nll",
+              "promotion_authority": false
+            },
+            "laws": {
+              "parks_at_zero": false,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          }
+        },
+        {
+          "id": "live_arm_wall_70_suite_96",
+          "input": {
+            "arm_wall_seconds": 70,
+            "suite_records": 96
+          },
+          "invariant": {
+            "laws": {
+              "parks_at_zero": false,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          },
+          "expected": {
+            "chosen_n": 21,
+            "report": {
+              "schema_version": "screening_sample_size/v1",
+              "alpha": "1/20",
+              "max_candidate_n": 64,
+              "decidability_floor_n": 6,
+              "power_floor_n": null,
+              "n_min": 6,
+              "budget_ceiling_n": 21,
+              "suite_ceiling_n": 96,
+              "n_max": 21,
+              "chosen_n": 21,
+              "binding_constraints": [],
+              "verdict": "insufficient_evidence",
+              "bounds": [
+                {
+                  "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+                  "env": {
+                    "alpha_num": 1,
+                    "alpha_den": 20,
+                    "n_candidate": 6,
+                    "two_pow_n_candidate": 64
+                  },
+                  "value": "64",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+                },
+                {
+                  "bound_ast_id": "bound.screening_n.budget_upper.v1",
+                  "env": {
+                    "usable_wall_seconds": 42,
+                    "min_decode_seconds": 2
+                  },
+                  "value": "21",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "screening_power_sd_unmeasured",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "minimum_effect": "1/50",
+                    "metric": "smoke.eval_nll",
+                    "observed_sd_source": "unmeasured",
+                    "decidability_floor_n": 6
+                  },
+                  "suggestion": "measure the paired-delta SD of smoke.eval_nll and record it under metric_expectations.screening.v1.json observed_paired_sd_by_metric[<metric leaf>]; until then the exact decidability floor stands alone and the screen spends the affordable n (advisory, never a borrowed power floor)"
+                }
+              ],
+              "must_generate": false,
+              "power_floor_status": "unmeasured",
+              "observed_sd_source": "unmeasured",
+              "observed_sd_metric": "smoke.eval_nll",
+              "promotion_authority": false
+            },
+            "laws": {
+              "parks_at_zero": false,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          }
+        },
+        {
+          "id": "suite_below_decidability_floor",
+          "input": {
+            "arm_wall_seconds": 70,
+            "suite_records": 3
+          },
+          "invariant": {
+            "report": {
+              "must_generate": true,
+              "binding_constraints": [
+                "suite_volume"
+              ]
+            },
+            "laws": {
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          },
+          "expected": {
+            "chosen_n": 0,
+            "report": {
+              "schema_version": "screening_sample_size/v1",
+              "alpha": "1/20",
+              "max_candidate_n": 64,
+              "decidability_floor_n": 6,
+              "power_floor_n": null,
+              "n_min": 6,
+              "budget_ceiling_n": 21,
+              "suite_ceiling_n": 3,
+              "n_max": 3,
+              "chosen_n": null,
+              "binding_constraints": [
+                "suite_volume"
+              ],
+              "verdict": "infeasible_range_empty",
+              "bounds": [
+                {
+                  "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+                  "env": {
+                    "alpha_num": 1,
+                    "alpha_den": 20,
+                    "n_candidate": 6,
+                    "two_pow_n_candidate": 64
+                  },
+                  "value": "64",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+                },
+                {
+                  "bound_ast_id": "bound.screening_n.budget_upper.v1",
+                  "env": {
+                    "usable_wall_seconds": 42,
+                    "min_decode_seconds": 2
+                  },
+                  "value": "21",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "screening_power_sd_unmeasured",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "minimum_effect": "1/50",
+                    "metric": "smoke.eval_nll",
+                    "observed_sd_source": "unmeasured",
+                    "decidability_floor_n": 6
+                  },
+                  "suggestion": "measure the paired-delta SD of smoke.eval_nll and record it under metric_expectations.screening.v1.json observed_paired_sd_by_metric[<metric leaf>]; until then the exact decidability floor stands alone and the screen spends the affordable n (advisory, never a borrowed power floor)"
+                },
+                {
+                  "code": "screening_n_range_empty",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "n_min": 6,
+                    "decidability_floor_n": 6,
+                    "power_floor_n": null,
+                    "budget_ceiling_n": 21,
+                    "suite_ceiling_n": 3,
+                    "binding_constraints": [
+                      "suite_volume"
+                    ]
+                  },
+                  "suggestion": "generate and persist 3 smoke records (floor is 6); do not screen at 3"
+                }
+              ],
+              "must_generate": true,
+              "power_floor_status": "unmeasured",
+              "observed_sd_source": "unmeasured",
+              "observed_sd_metric": "smoke.eval_nll",
+              "promotion_authority": false
+            },
+            "laws": {
+              "parks_at_zero": true,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          }
+        },
+        {
+          "id": "measured_decode_floor_24s_binds_the_wall",
+          "input": {
+            "arm_wall_seconds": 70,
+            "suite_records": 96,
+            "per_record_decode_floor_seconds": 24
+          },
+          "invariant": {
+            "report": {
+              "must_generate": false,
+              "binding_constraints": [
+                "wall_budget"
+              ]
+            },
+            "laws": {
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          },
+          "expected": {
+            "chosen_n": 0,
+            "report": {
+              "schema_version": "screening_sample_size/v1",
+              "alpha": "1/20",
+              "max_candidate_n": 64,
+              "decidability_floor_n": 6,
+              "power_floor_n": null,
+              "n_min": 6,
+              "budget_ceiling_n": 1,
+              "suite_ceiling_n": 96,
+              "n_max": 1,
+              "chosen_n": null,
+              "binding_constraints": [
+                "wall_budget"
+              ],
+              "verdict": "infeasible_range_empty",
+              "bounds": [
+                {
+                  "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+                  "env": {
+                    "alpha_num": 1,
+                    "alpha_den": 20,
+                    "n_candidate": 6,
+                    "two_pow_n_candidate": 64
+                  },
+                  "value": "64",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+                },
+                {
+                  "bound_ast_id": "bound.screening_n.budget_upper.v1",
+                  "env": {
+                    "usable_wall_seconds": 42,
+                    "min_decode_seconds": 24
+                  },
+                  "value": "1",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "screening_power_sd_unmeasured",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "minimum_effect": "1/50",
+                    "metric": "smoke.eval_nll",
+                    "observed_sd_source": "unmeasured",
+                    "decidability_floor_n": 6
+                  },
+                  "suggestion": "measure the paired-delta SD of smoke.eval_nll and record it under metric_expectations.screening.v1.json observed_paired_sd_by_metric[<metric leaf>]; until then the exact decidability floor stands alone and the screen spends the affordable n (advisory, never a borrowed power floor)"
+                },
+                {
+                  "code": "screening_n_range_empty",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "n_min": 6,
+                    "decidability_floor_n": 6,
+                    "power_floor_n": null,
+                    "budget_ceiling_n": 1,
+                    "suite_ceiling_n": 96,
+                    "binding_constraints": [
+                      "wall_budget"
+                    ]
+                  },
+                  "suggestion": "the arm wall affords 1 records at the declared decode floor — cheaper per-record decode or a larger stage share, never a silent wall++"
+                }
+              ],
+              "must_generate": false,
+              "power_floor_status": "unmeasured",
+              "observed_sd_source": "unmeasured",
+              "observed_sd_metric": "smoke.eval_nll",
+              "promotion_authority": false
+            },
+            "laws": {
+              "parks_at_zero": true,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          }
+        },
+        {
+          "id": "generous_wall_600_suite_96",
+          "input": {
+            "arm_wall_seconds": 600,
+            "suite_records": 96
+          },
+          "invariant": {
+            "laws": {
+              "parks_at_zero": false,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          },
+          "expected": {
+            "chosen_n": 64,
+            "report": {
+              "schema_version": "screening_sample_size/v1",
+              "alpha": "1/20",
+              "max_candidate_n": 64,
+              "decidability_floor_n": 6,
+              "power_floor_n": null,
+              "n_min": 6,
+              "budget_ceiling_n": 286,
+              "suite_ceiling_n": 96,
+              "n_max": 96,
+              "chosen_n": 64,
+              "binding_constraints": [],
+              "verdict": "insufficient_evidence",
+              "bounds": [
+                {
+                  "bound_ast_id": "bound.screening_n.decidability_lower.v1",
+                  "env": {
+                    "alpha_num": 1,
+                    "alpha_den": 20,
+                    "n_candidate": 6,
+                    "two_pow_n_candidate": 64
+                  },
+                  "value": "64",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "sign-test attainability combinatorics only; search soundness/minimality proved by LeverProofLean.ScreeningSampleSize.signTestFloorFrom_sound/_minimal; not an empirical power claim"
+                },
+                {
+                  "bound_ast_id": "bound.screening_n.budget_upper.v1",
+                  "env": {
+                    "usable_wall_seconds": 572,
+                    "min_decode_seconds": 2
+                  },
+                  "value": "286",
+                  "authority": "theorem_backed_exact",
+                  "assumption": "caller-declared integral second budgets; fitness of every n under the ceiling proved by LeverProofLean.ScreeningSampleSize.screeningBudgetUpperBound_fits"
+                }
+              ],
+              "findings": [
+                {
+                  "code": "screening_power_sd_unmeasured",
+                  "severity": "experiment_recommendation",
+                  "authority": "climb_signal_not_gate",
+                  "evidence": {
+                    "minimum_effect": "1/50",
+                    "metric": "smoke.eval_nll",
+                    "observed_sd_source": "unmeasured",
+                    "decidability_floor_n": 6
+                  },
+                  "suggestion": "measure the paired-delta SD of smoke.eval_nll and record it under metric_expectations.screening.v1.json observed_paired_sd_by_metric[<metric leaf>]; until then the exact decidability floor stands alone and the screen spends the affordable n (advisory, never a borrowed power floor)"
+                }
+              ],
+              "must_generate": false,
+              "power_floor_status": "unmeasured",
+              "observed_sd_source": "unmeasured",
+              "observed_sd_metric": "smoke.eval_nll",
+              "promotion_authority": false
+            },
+            "laws": {
+              "parks_at_zero": false,
+              "asks_for_data_only_when_data_is_short": true,
+              "never_screens_below_the_decidability_floor": true,
+              "promotion_authority": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

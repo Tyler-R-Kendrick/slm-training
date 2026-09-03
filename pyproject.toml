@@ -159,6 +159,9 @@ markers = [
   "fuzz: feeds malformed or adversarial input to a parser/decoder and asserts it fails closed rather than crashing or admitting",
   "chaos: injects a fault (crash, timeout, truncation, missing artifact) into a harness and asserts the recorded outcome is honest",
   "behavior: end-to-end behavioral scenario stated as given/when/then over a repo invariant",
+  "mutation: removes or corrupts one guard and asserts the gate's verdict changes, so a check that is dead or shadowed is reported rather than counted as coverage",
+  "snapshot: characterization pin of a full decision payload, refreshable via scripts/refresh_test_cases.py under an invariant a refresh cannot launder",
+  "contract: pins a producer/consumer agreement (schema, field names, enum values) that two modules must both honor",
 ]
 
 [tool.coverage.run]
