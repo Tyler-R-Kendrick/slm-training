@@ -4257,6 +4257,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "select_changed_tests no longer lets a changed test file suppress a changed global test file: tests/conftest.py, tests/casefiles.py and pyproject.toml mean every suite is in scope, and the changed-file shortcut overrode that (editing casefiles.py, which every snapshot test reads its case resource through, alongside one test file ran only that one file). The broader inversion -- for ordinary sources a diff touching source plus a test still selects strictly less than the same diff without the test -- is recorded, measured and deliberately left to the owner in docs/design/autotrain-recovery-2-20260902.md: the monotone union exceeds MAX_RUN_MINUTES on a representative diff and CI runs the same selection under a disabled-for-cost budget.",
+          "version": "v28"
+        },
+        {
           "date": "2026-09-02",
           "note": "no-bump: S8 adds an exact-path check_changed entry mapping scripts/audit_regular_layer_gap.py to its own test (narrow script hook per the table's exact-match policy); ownership map, owners, and every other mapping unchanged.",
           "version": "v27"
@@ -4708,7 +4713,7 @@
         "tests/test_data/test_synthesis_contract_versions.py",
         "tests/test_scripts/test_verify_ownership_map.py"
       ],
-      "version": "v27"
+      "version": "v28"
     },
     "governance.research_citation_catalog": {
       "history": [

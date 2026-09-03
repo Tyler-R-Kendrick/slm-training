@@ -84,12 +84,52 @@ def test_hook_prefers_explicit_changed_regressions() -> None:
     assert select_changed_tests(
         [
             "src/slm_training/models/grammar.py",
-            "tests/casefiles.py",
             "tests/test_dsl/test_grammar_fastpath.py",
         ]
     ) == ["tests/test_dsl/test_grammar_fastpath.py"]
     assert select_changed_tests(["src/slm_training/web/routes.py"]) == [
         "tests/test_web"
+    ]
+
+
+def test_a_changed_global_test_file_is_never_narrowed_to_one_regression() -> None:
+    """`tests/casefiles.py` is loaded by every snapshot test, so it means all.
+
+    The changed-file shortcut used to suppress that: editing the module every
+    external case resource is read through, alongside one test file, ran only
+    that one test file.
+    """
+    assert select_changed_tests(
+        [
+            "src/slm_training/models/grammar.py",
+            "tests/casefiles.py",
+            "tests/test_dsl/test_grammar_fastpath.py",
+        ]
+    ) == ["tests"]
+    assert select_changed_tests(
+        ["pyproject.toml", "tests/test_dsl/test_grammar_fastpath.py"]
+    ) == ["tests"]
+    assert select_changed_tests(
+        ["tests/conftest.py", "tests/test_dsl/test_grammar_fastpath.py"]
+    ) == ["tests"]
+
+
+def test_the_hook_selection_is_still_not_monotone_for_ordinary_sources() -> None:
+    """Recorded, not asserted-as-desirable: adding a test still shrinks scope.
+
+    A diff touching a source file and a test file selects strictly less than
+    the same diff without the test file. Making it monotone (a union with
+    `select_tests`) is the correct semantics but measurably exceeds
+    MAX_RUN_MINUTES for a typical diff, and CI runs this same selection under
+    a disabled-for-cost budget -- so the trade is the owner's. This pins the
+    current behaviour so the decision stays visible rather than forgotten.
+    """
+    source_only = ["src/slm_training/autoresearch/climb_policy.py"]
+    with_a_test = source_only + ["tests/test_autoresearch/test_heal_chaos.py"]
+
+    assert select_changed_tests(source_only) == ["tests/test_autoresearch"]
+    assert select_changed_tests(with_a_test) == [
+        "tests/test_autoresearch/test_heal_chaos.py"
     ]
 
 
