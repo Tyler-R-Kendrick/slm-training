@@ -67,12 +67,21 @@ from slm_training.levers import KILL_GRACE_SECONDS, MAX_RUN_SECONDS
 __all__ = [
     "HealPlaybook",
     "discovered_playbooks",
+    "PLAYBOOK_FAULTS",
     "run_playbooks",
     "write_heal_receipt",
     "load_heal_receipts",
 ]
 
 HEAL_RECEIPTS_FILENAME = "heal_receipts.jsonl"
+
+#: Faults a playbook may raise that must degrade to a receipt instead of
+#: escaping to the driver. ``SystemExit`` is in the set because a playbook
+#: that drives an argparse-based module in process raises it on a bad argv --
+#: a plain bug, not a decision to stop the loop. ``KeyboardInterrupt`` is
+#: deliberately absent: the run cap interrupts with SIGINT and kill is not
+#: evidence, so an interrupted attempt must never be recorded as a failed one.
+PLAYBOOK_FAULTS: tuple[type[BaseException], ...] = (Exception, SystemExit)
 
 
 @runtime_checkable
@@ -104,7 +113,7 @@ def discovered_playbooks() -> tuple[HealPlaybook, ...]:
     for info in sorted(pkgutil.iter_modules(_pkg.__path__), key=lambda m: m.name):
         try:
             module = importlib.import_module(f"{_pkg.__name__}.{info.name}")
-        except Exception:  # noqa: BLE001 — one broken playbook never blocks others
+        except PLAYBOOK_FAULTS:  # one broken playbook never blocks others
             continue
         candidate = getattr(module, "PLAYBOOK", None)
         if candidate is not None and isinstance(candidate, HealPlaybook):
@@ -322,7 +331,7 @@ def run_playbooks(
                     campaign_id=str(blocker.get("campaign_id") or campaign_id),
                     write_receipt=False,
                 )
-            except Exception as exc:  # noqa: BLE001 — execute crash is a failed attempt
+            except PLAYBOOK_FAULTS as exc:  # execute crash is a failed attempt
                 receipt = _receipt(
                     loop_id,
                     campaign_id,
@@ -342,7 +351,7 @@ def run_playbooks(
             continue
         try:
             plan = playbook.plan(dict(blocker), cwd=cwd)
-        except Exception as exc:  # noqa: BLE001 — plan crash is a failed attempt
+        except PLAYBOOK_FAULTS as exc:  # plan crash is a failed attempt
             ledger.record_attempt(fingerprint, playbook.playbook_id)
             receipts.append(
                 _receipt(
@@ -423,7 +432,7 @@ def run_playbooks(
                 attempts_prior=record.attempts,
                 cwd=cwd,
             )
-        except Exception as exc:  # noqa: BLE001 — execution crash is a failed attempt
+        except PLAYBOOK_FAULTS as exc:  # execution crash is a failed attempt
             receipt = _receipt(
                 loop_id,
                 campaign_id,
@@ -449,7 +458,7 @@ def run_playbooks(
 def _safe_matches(playbook: HealPlaybook, blocker: dict) -> bool:
     try:
         return bool(playbook.matches(dict(blocker)))
-    except Exception:  # noqa: BLE001
+    except PLAYBOOK_FAULTS:  # a playbook that cannot judge simply does not match
         return False
 
 
