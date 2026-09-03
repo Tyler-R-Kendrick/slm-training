@@ -188,7 +188,33 @@ The ratchet forbids growth; it does not by itself shrink anything. To pay debt
 down, pick a target from `--report`, split it, and run `--update`. The baseline
 diff in the pull request is then the receipt.
 
-Order of attack, most valuable first:
+### Worked example: the first payment
+
+`scripts/autotrain_budget.py` was carved out of
+`scripts/run_autotrain_continuous.py` in the same change that introduced this
+contract: eleven pure functions and five constants (including a 142-line
+recorded-evidence table) that turn a policy and a deadline into the seconds,
+steps and deadlines an arm may spend.
+
+- `run_autotrain_continuous.py`: 18,665 -> 18,444 lines, and its baseline
+  ceiling fell with it.
+- The extracted module is 313 lines — inside budget, so it adds no new debt.
+- The arithmetic gained 24 direct unit tests. It previously had none of its own:
+  it could only be reached through the 13,318-line runner suite.
+- All 357 existing runner tests pass unchanged; names are re-exported under
+  their original private aliases so call sites and monkeypatches still resolve.
+
+The extraction also demonstrates the package metrics catching a mistake before
+it landed. The obvious home for shared harness arithmetic is
+`slm_training.harness_core` — but `harness_core` importing `slm_training.levers`
+would have created a new `harness_core -> slm_training -> harnesses ->
+harness_core` cycle, because `levers` imports `harnesses.staged` and
+`harnesses.staged` imports `harness_core`. The runner-specific budget policy
+belongs to the runner, so it stayed in `scripts/`, and the ADP count did not move.
+
+### Order of attack
+
+Most valuable first:
 
 1. **Break the ADP cycles.** They are what make the other two hard: a module in a
    54-component knot cannot be split without dragging the knot along.

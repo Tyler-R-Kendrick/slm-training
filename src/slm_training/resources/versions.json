@@ -4238,6 +4238,11 @@
       "history": [
         {
           "date": "2026-09-03",
+          "note": "no-bump: baseline re-frozen after extracting scripts/autotrain_budget.py (run_autotrain_continuous.py 18,665 -> 18,444 lines). Records a measured improvement; gate rules, thresholds and dimensions unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-03",
           "note": "initial registration: module-size / cyclomatic-complexity / Martin package-principle (ADP, SDP, SAP) ratchet gate and its frozen debt baseline.",
           "version": "v1"
         }
@@ -5167,6 +5172,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: moved wall-clock/step budget arithmetic out of run_autotrain_continuous.py into scripts/autotrain_budget.py and re-exported it under the original private aliases. Pure extraction; the 357-test suite passes unchanged.",
+          "version": "v286"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: S5 lands the decode_only_authority_ladder_v1 ExperimentCampaignV1 manifest (new resource directory, read by nothing yet) and regenerates evidence_ledger.v1.json deterministically; no harness code, contract, gate, or threshold changed.",
