@@ -3961,7 +3961,8 @@ def _park_screening_n_deficit(
                 evidence_ids=evidence_ids,
             )
         )
-    if "wall_budget" in binding:
+    wall_budget_binds = "wall_budget" in binding
+    if wall_budget_binds:
         remedies.append(
             AutotrainActionV1(
                 kind="repair_harness",
@@ -3973,6 +3974,24 @@ def _park_screening_n_deficit(
                     f"decode floor and the decidability floor is {n_min}; "
                     "cheaper per-record decode or a larger stage share, never "
                     "a silent wall++ (generating records cannot clear this)"
+                ),
+                evidence_ids=evidence_ids,
+            )
+        )
+    if not remedies:
+        # A constraint neither branch recognizes (a third one added later).
+        # The old code always queued a data ask, so falling back to it keeps
+        # the park from silently requesting nothing at all; the reason names
+        # the constraint so the owner can see it was not understood here.
+        remedies.append(
+            AutotrainActionV1(
+                kind="rebuild_data",
+                owner="synthesis-feedback",
+                reason=(
+                    "screening range is empty under an unrecognized binding "
+                    f"constraint ({', '.join(binding)}); n_min={n_min}, "
+                    f"suite_ceiling_n={report.get('suite_ceiling_n')}, "
+                    f"budget_ceiling_n={report.get('budget_ceiling_n')}"
                 ),
                 evidence_ids=evidence_ids,
             )

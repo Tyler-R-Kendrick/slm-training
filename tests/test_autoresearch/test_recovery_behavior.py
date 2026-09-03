@@ -289,3 +289,30 @@ def test_a_certified_substitution_is_never_persisted_as_a_generation() -> None:
         )
 
     _raise_on_substituted_generation(_Backend([{"fallback_used": False}]))
+
+
+def test_an_unrecognized_binding_constraint_still_asks_for_something(
+    tmp_path: Path,
+) -> None:
+    """A third constraint must not make the park request nothing at all.
+
+    Remedies are queued per recognized constraint, so a constraint neither
+    branch knows would queue none -- a hole the old unconditional
+    `rebuild_data` did not have. The fallback names the constraint so the owner
+    can see it was not understood here.
+    """
+    actions = _park(
+        tmp_path,
+        {
+            "n_min": 6,
+            "suite_ceiling_n": 96,
+            "budget_ceiling_n": 21,
+            "binding_constraints": ["some_future_constraint"],
+            "must_generate": False,
+        },
+    )
+
+    kinds = [action["kind"] for action in actions]
+    assert kinds[-1] == "next_experiment"
+    assert len(kinds) > 1, "the park queued no remedy at all"
+    assert any("some_future_constraint" in action["reason"] for action in actions)

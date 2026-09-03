@@ -318,3 +318,44 @@ def test_a_one_sided_parser_accept_still_fails_the_schema_gate() -> None:
 
     assert result.status is GateStatus.FAIL
     assert "differential parser disagreement" in result.detail
+
+
+def test_the_deferral_is_narrow_to_unresolved_references() -> None:
+    """Only the failure the deferral argument covers may defer.
+
+    The argument is that two parsers rendering an *unresolved reference*
+    disagree about recovery, not about the language. A duplicate binder, a
+    missing root and a reference cycle also fail G3, but nothing says the
+    authorities' disagreement on those is mere recovery -- so they keep failing
+    G2. A first draft deferred on any reference-graph failure, which quietly
+    widened the exemption past its own justification.
+    """
+    from slm_training.data.verify import stack as verify_stack
+    from slm_training.dsl.grammar.backends.openui_hybrid import (
+        DifferentialValidationResult,
+    )
+
+    mismatch = DifferentialValidationResult(
+        available=True, langcore_ok=True, lark_ok=True, ast_agreement=False
+    )
+
+    class _Backend:
+        def differential_validate(self, _source: str) -> DifferentialValidationResult:
+            return mismatch
+
+    deferring = 'root = Stack([ghost, hero])\nhero = TextContent(":slot_0")'
+    duplicate = (
+        'root = Stack([a])\na = TextContent(":slot_0")\na = TextContent(":slot_0")'
+    )
+    rootless = 'a = TextContent(":slot_0")'
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            "slm_training.dsl.grammar.backends.openui_hybrid.OpenUIHybridBackend",
+            _Backend,
+        )
+        assert verify_stack._schema(deferring).status is GateStatus.PASS
+        for source in (duplicate, rootless):
+            result = verify_stack._schema(source)
+            assert result.status is GateStatus.FAIL, source
+            assert "differential parser disagreement" in result.detail

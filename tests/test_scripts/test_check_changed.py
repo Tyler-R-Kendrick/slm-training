@@ -119,9 +119,10 @@ def test_the_hook_selection_is_still_not_monotone_for_ordinary_sources() -> None
 
     A diff touching a source file and a test file selects strictly less than
     the same diff without the test file. Making it monotone (a union with
-    `select_tests`) is the correct semantics but measurably exceeds
-    MAX_RUN_MINUTES for a typical diff, and CI runs this same selection under
-    a disabled-for-cost budget -- so the trade is the owner's. This pins the
+    `select_tests`) is the correct semantics; the objection is cost. On a
+    representative diff the union selects seven targets instead of four files,
+    and CI runs this same selection under a disabled-for-cost budget -- so the
+    trade is the owner's. This pins the
     current behaviour so the decision stays visible rather than forgotten.
     """
     source_only = ["src/slm_training/autoresearch/climb_policy.py"]

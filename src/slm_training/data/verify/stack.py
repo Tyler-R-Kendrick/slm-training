@@ -230,6 +230,13 @@ def _lexical(source: str) -> GateResult:
     return _pass(gate)
 
 
+#: Detail prefix G3 uses for a binder that names something never bound. The
+#: schema gate reads it to tell that specific failure apart from the other
+#: reference-graph failures (duplicate binder, missing root, cycle), which are
+#: *not* covered by the deferral argument below.
+UNRESOLVED_REFERENCE_DETAIL = "unresolved reference"
+
+
 def _grammar(source: str) -> GateResult:
     try:
         _grammar_backend().validate(source)
@@ -266,7 +273,15 @@ def _schema(source: str) -> GateResult:
         # attributed cause changes. A one-sided accept is a real disagreement
         # about the language and still fails here.
         both_accepted = differential.langcore_ok and differential.lark_ok
-        if both_accepted and _reference_graph(source).status is GateStatus.FAIL:
+        # Narrow on purpose: only an *unresolved reference* is covered by the
+        # argument above. A duplicate binder, a missing root or a reference
+        # cycle also fail G3, but nothing says the authorities' disagreement on
+        # those is mere recovery, so they keep failing G2.
+        reference = _reference_graph(source)
+        unresolved = reference.status is GateStatus.FAIL and reference.detail.startswith(
+            UNRESOLVED_REFERENCE_DETAIL
+        )
+        if both_accepted and unresolved:
             return _pass(
                 Gate.SCHEMA,
                 f"differential deferred to G3 (unresolved reference): {summary}",
@@ -304,7 +319,7 @@ def _reference_graph(source: str) -> GateResult:
         if unresolved:
             return _fail(
                 Gate.REFERENCES,
-                f"unresolved reference: {sorted(unresolved)[0]}",
+                f"{UNRESOLVED_REFERENCE_DETAIL}: {sorted(unresolved)[0]}",
             )
         graph[name] = refs
 

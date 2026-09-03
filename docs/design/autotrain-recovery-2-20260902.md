@@ -450,10 +450,16 @@ One piece is fixed: a changed *global* test file (`tests/conftest.py`,
 every suite is in scope and the changed-file shortcut must not suppress it.
 
 The general fix — a union, making the selection monotone — is **not** applied.
-It is the correct semantics, but measured on a representative diff it selects
-`tests/test_data`, `tests/test_web`, `tests/test_harnesses/train_data` and
-more, each of which alone exceeds `MAX_RUN_MINUTES` on this box, and CI runs
-the same selection under a budget that is disabled for cost
+It is the correct semantics; what stops it is cost, stated precisely rather
+than hand-waved. On a representative diff (the red-test repair commit) the
+union selects **seven** targets — `tests/test_data`, `tests/test_web`,
+`tests/test_harnesses/test_data`, `tests/test_harnesses/train_data`,
+`tests/test_rico`, `tests/test_versioning` and one file — against the four
+files selected today. No single one busts the cap (`tests/test_data` measures
+**152 s**, 664 passed, inside the 180 s `MAX_RUN_MINUTES`), so the objection
+is not "a suite times out"; it is that a pre-commit hook would run several
+minutes of tests on an ordinary source edit, and CI runs the same selection
+under a budget disabled for cost
 (`docs/design/ci-minutes-and-speed-plan-20260806.md`). Trading local-commit
 latency and CI minutes for that coverage is the owner's decision, not a
 repair to make silently. `tests/test_scripts/test_check_changed.py` pins the
@@ -462,3 +468,113 @@ stays visible.
 
 Until it is decided, the operational rule is: **run the owning suites for what
 you changed before merging, not only the tests you edited.**
+
+## The committed demo checkpoint, and why it still cannot be regenerated (2026-09-03)
+
+`src/slm_training/resources/checkpoints/playground_demo/last.pt` predates
+`symbol_only/v2`, so `TwoTowerModel.from_checkpoint` refuses it:
+
+```
+OutputContractError: checkpoint output contract v0 is incompatible with
+required symbol_only/v2; retrain from symbol-only targets
+```
+
+The gate is right. Three tools default to that checkpoint and are blocked by
+it: `scripts/run_perf_matrix.py`, `scripts/run_discrete_plan_pareto.py`, and
+`scripts/export_playground_onnx.py` — plus the S5/S6/S12/S14 audit cards,
+which recorded the same blocker.
+
+### Fixed: the regeneration path
+
+`scripts/bootstrap_playground.py`, the documented way to rebuild it
+(`docs/MODEL_CARD.md`), could not run either. Its `DEMO_RECORDS` spelled
+semantic markers (`:hero.title`, `:cta.label`, `:pricing.cta`) that the
+opaque-marker contract forbids, and the records declared no `placeholders`
+list. Both are fixed: markers are opaque and contiguous from `:slot_0`, the
+inventory is derived from the serialized program so the two can never
+disagree, and `_assert_trainable` now applies the trainer's four contracts
+before spending any training time, naming the offending record.
+
+Verified end to end: `python -m scripts.bootstrap_playground --output <scratch>
+--steps 200` trains in seconds (loss 1.85 → 0.007) and the result loads
+through `TwoTowerModel.from_checkpoint` under `symbol_only/v2`.
+`tests/test_scripts/test_bootstrap_playground.py` keeps the corpus honest.
+
+### Not fixed: the ONNX serving path has drifted from the trainer
+
+Regenerating the committed artifacts was attempted and **reverted**. The
+checkpoint and its ONNX sidecars rebuild cleanly (`onnx` is a declared `web`
+extra, absent from this environment until installed), but the result breaks
+`tests/test_web/test_onnx_inference.py`, 5 tests:
+
+```
+ValueError: tokenizer version mismatch: file has v5, expected v2
+  — retrain or rebuild checkpoint
+```
+
+`models/onnx_inference.py` loads the tokenizer sidecar with
+`OpenUITokenizer.load`, whose `TOKENIZER_VERSION` is **2** (72 tokens in the
+committed artifact). The current `TwoTowerModel` writes a **v5** tokenizer
+(569 tokens). So the ONNX serving path cannot consume *any* checkpoint the
+current trainer produces: it works today only because the committed artifacts
+are frozen at the old tokenizer, alongside the old output contract.
+
+That makes the committed demo checkpoint self-consistent but jointly stale,
+and there is no in-between: replacing `last.pt` alone leaves the ONNX
+sidecars serving a different model, and replacing all of them breaks ONNX
+inference. Porting `onnx_inference.py` to the current tokenizer is a serving
+migration with its own validation, not a boy-scout repair, so it is recorded
+here rather than half-done.
+
+Until it lands, `run_perf_matrix`, `run_discrete_plan_pareto` and the decode
+audit cards need a checkpoint trained on this box (the
+`slm322_ap027_scratch_v1` precedent in `docs/MODEL_CARD.md`), not the
+committed fixture.
+
+## `forced_token_fraction` under-reported deterministic forcing (2026-09-03)
+
+The S12 commit-authority profile recorded that `forced_tokens` "stayed 0 in
+every run while `semantic_singleton_bypasses` was 18–27, because the bypasses
+landed in constrained LTR repair, which increments
+`forced_row_tokens_without_forward` only", and flagged it for S4's derived
+ratio. Confirmed and fixed.
+
+`DecodeStats.forced_token_fraction` is documented as *"the share of the canvas
+that deterministic forcing (I2 singleton bypass and forced spans) wrote
+without consulting the model"*. Two of the sites that commit a singleton bypass
+called `_record_exact_bypass` and incremented
+`forced_row_tokens_without_forward` without touching `forced_tokens`
+(`twotower.py` 5850 and 13529). The ratio therefore attributed forced tokens
+to the model on every lane that reaches them.
+
+Measured before and after on a 3-record fixture, per lane:
+
+| lane | `forced_tokens` before | after | committed |
+|---|---|---|---|
+| compiler off | **0** | 4 | 9 |
+| grammar LTR | **0** | 4 | 9 |
+| compiler tree | 6 | 6 | 9 |
+
+The compiler-tree lane is unchanged on purpose: `commit` already counts a
+forced span there and counts what it actually emitted (post-truncation,
+post-eos substitution).
+
+**A first draft of this fix was wrong and is recorded here rather than
+quietly dropped.** It added a third increment on the compiler-tree batch lane,
+which double-counted every forced span and used pre-truncation lengths. It
+produced a headline of "5 → 8, fraction 1.000" on a single-record tree
+fixture — a number that came entirely from the double-count. A ceiling
+assertion (`forced_tokens <= committed_tokens`) passed throughout, because that
+one fixture reached only that one lane. The lesson is in the test file: the
+ceiling is now checked per lane, and the lane that shows the defect is not the
+lane the first fixture happened to use.
+
+Telemetry only — no decode decision, ordering or output changes; each added
+line counts an event the adjacent line already counted under another name.
+`verify_decode_invariants` stays green and the 371 twotower/forcing tests pass.
+
+`tests/test_models/test_forced_token_fraction.py` asserts the exact value
+rather than `> 0`, because `> 0` passes on the broken code: five of eight is
+still positive. That is how a telemetry defect survives a test suite, and it
+is worth stating as a rule — **a ratio is pinned by its value, never by its
+sign.**
