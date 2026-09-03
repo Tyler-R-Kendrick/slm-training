@@ -450,10 +450,16 @@ One piece is fixed: a changed *global* test file (`tests/conftest.py`,
 every suite is in scope and the changed-file shortcut must not suppress it.
 
 The general fix — a union, making the selection monotone — is **not** applied.
-It is the correct semantics, but measured on a representative diff it selects
-`tests/test_data`, `tests/test_web`, `tests/test_harnesses/train_data` and
-more, each of which alone exceeds `MAX_RUN_MINUTES` on this box, and CI runs
-the same selection under a budget that is disabled for cost
+It is the correct semantics; what stops it is cost, stated precisely rather
+than hand-waved. On a representative diff (the red-test repair commit) the
+union selects **seven** targets — `tests/test_data`, `tests/test_web`,
+`tests/test_harnesses/test_data`, `tests/test_harnesses/train_data`,
+`tests/test_rico`, `tests/test_versioning` and one file — against the four
+files selected today. No single one busts the cap (`tests/test_data` measures
+**152 s**, 664 passed, inside the 180 s `MAX_RUN_MINUTES`), so the objection
+is not "a suite times out"; it is that a pre-commit hook would run several
+minutes of tests on an ordinary source edit, and CI runs the same selection
+under a budget disabled for cost
 (`docs/design/ci-minutes-and-speed-plan-20260806.md`). Trading local-commit
 latency and CI minutes for that coverage is the owner's decision, not a
 repair to make silently. `tests/test_scripts/test_check_changed.py` pins the
@@ -535,19 +541,33 @@ ratio. Confirmed and fixed.
 
 `DecodeStats.forced_token_fraction` is documented as *"the share of the canvas
 that deterministic forcing (I2 singleton bypass and forced spans) wrote
-without consulting the model"*. Four of the six sites that commit a singleton
-bypass called `_record_exact_bypass` and incremented
+without consulting the model"*. Two of the sites that commit a singleton bypass
+called `_record_exact_bypass` and incremented
 `forced_row_tokens_without_forward` without touching `forced_tokens`
-(`twotower.py` 5850, 12644, 13528, 13795). The ratio therefore attributed
-forced tokens to the model.
+(`twotower.py` 5850 and 13529). The ratio therefore attributed forced tokens
+to the model on every lane that reaches them.
 
-Measured on a minimal grammar-determined canvas (`root = Separator()`, 8
-committed tokens, all of them proven forced):
+Measured before and after on a 3-record fixture, per lane:
 
-| | `forced_tokens` | `forced_token_fraction` |
-|---|---|---|
-| before | 5 | 0.625 |
-| after | 8 | 1.000 |
+| lane | `forced_tokens` before | after | committed |
+|---|---|---|---|
+| compiler off | **0** | 4 | 9 |
+| grammar LTR | **0** | 4 | 9 |
+| compiler tree | 6 | 6 | 9 |
+
+The compiler-tree lane is unchanged on purpose: `commit` already counts a
+forced span there and counts what it actually emitted (post-truncation,
+post-eos substitution).
+
+**A first draft of this fix was wrong and is recorded here rather than
+quietly dropped.** It added a third increment on the compiler-tree batch lane,
+which double-counted every forced span and used pre-truncation lengths. It
+produced a headline of "5 → 8, fraction 1.000" on a single-record tree
+fixture — a number that came entirely from the double-count. A ceiling
+assertion (`forced_tokens <= committed_tokens`) passed throughout, because that
+one fixture reached only that one lane. The lesson is in the test file: the
+ceiling is now checked per lane, and the lane that shows the defect is not the
+lane the first fixture happened to use.
 
 Telemetry only — no decode decision, ordering or output changes; each added
 line counts an event the adjacent line already counted under another name.

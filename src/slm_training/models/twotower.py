@@ -12642,9 +12642,14 @@ class TwoTowerModel(nn.Module):
                 check_decode_deadline()
                 commit(row, forests[row], selected)
             if stats is not None and selected_now:
-                forced_now = sum(len(selected) for selected in selected_now.values())
-                stats.forced_tokens += forced_now
-                stats.forced_row_tokens_without_forward += forced_now
+                # ``forced_tokens`` is deliberately NOT incremented here:
+                # ``commit`` above already counts a forced span, and it counts
+                # the tokens it actually emitted (post-truncation, post-eos
+                # substitution). Counting ``selected_now`` again would double
+                # every span and over-count every truncated one.
+                stats.forced_row_tokens_without_forward += sum(
+                    len(selected) for selected in selected_now.values()
+                )
                 if not model_rows:
                     stats.all_forced_steps_without_forward += 1
             if not model_rows:
