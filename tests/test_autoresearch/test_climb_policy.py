@@ -602,10 +602,18 @@ def test_classify_positive_screening_nll_direction_decrease(
     )
     assert result["positive"] is expect_positive
     if expect_positive:
-        assert any(r.startswith("primary_metric_win:smoke.eval_nll") for r in result["reasons"])
+        assert any(
+            r.startswith("primary_metric_win:smoke.eval_nll") for r in result["reasons"]
+        )
     else:
-        assert any("primary_metric_null_or_worse:smoke.eval_nll" in r for r in result["reasons"])
-    assert any("screening_quality_secondary:smoke.structural_similarity" in r for r in result["reasons"])
+        assert any(
+            "primary_metric_null_or_worse:smoke.eval_nll" in r
+            for r in result["reasons"]
+        )
+    assert any(
+        "screening_quality_secondary:smoke.structural_similarity" in r
+        for r in result["reasons"]
+    )
     assert any("recorded_not_verdict" in r for r in result["reasons"])
 
 
@@ -975,19 +983,26 @@ def test_default_policy_is_v3_with_nll_unit_minimum_effect() -> None:
     # v3 is v2 plus the RC1 fields, and the certified train bucket as the
     # default / fixture train set (P7: real data growth from the certified
     # corpus; the bucket carries the leakage fingerprints v2's sets lacked).
-    certified_train = "openui_verified_train_v1"
+    certified_train = "openui_verified_train_v2"
     assert policy.defaults["train_version"] == certified_train
-    assert policy.payload["data_intervention"]["fixture_train_version"] == certified_train
+    assert (
+        policy.payload["data_intervention"]["fixture_train_version"] == certified_train
+    )
     v2 = json.loads((CLIMB_RESOURCE_DIR / "policy.v2.json").read_text(encoding="utf-8"))
     v3 = dict(policy.payload)
-    retargeted = {"defaults": {"train_version"}, "data_intervention": {"fixture_train_version"}}
+    retargeted = {
+        "defaults": {"train_version"},
+        "data_intervention": {"fixture_train_version"},
+    }
     for key, value in v2.items():
         if key in {"version", "description", "screening_primary", "measurement"}:
             continue
         if key in retargeted:
             for sub, sub_value in value.items():
                 if sub not in retargeted[key]:
-                    assert v3[key][sub] == sub_value, f"policy.v3.json changed {key}.{sub}"
+                    assert v3[key][sub] == sub_value, (
+                        f"policy.v3.json changed {key}.{sub}"
+                    )
             continue
         assert v3[key] == value, f"policy.v3.json changed v2 field {key!r}"
     for key, value in v2["measurement"].items():
@@ -1118,9 +1133,7 @@ def test_screening_smoke_n_never_borrows_another_metrics_sd() -> None:
 
 def _nll_pairs(n: int, *, shift: float) -> dict[str, dict[str, float]]:
     control = {f"rec-{i:02d}": 2.5 + 0.02 * i for i in range(n)}
-    candidate = {
-        k: v - shift - 0.001 * i for i, (k, v) in enumerate(control.items())
-    }
+    candidate = {k: v - shift - 0.001 * i for i, (k, v) in enumerate(control.items())}
     return {"control": control, "candidate": candidate}
 
 

@@ -205,6 +205,11 @@
     "autoresearch.preflight": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "no-bump: repair tests my own merge broke. The preflight-gate tests picked _SCREENING_ARM_BANK[0], which became a self-control when the policy control corpus became the certified bucket, so the gate correctly returned None; they now exercise the live selectable bank. Two corpus literals moved v1 -> v2, and the data-intervention assertion now tracks the policy value instead of a literal that had already drifted twice. Test-only; no production behavior changed.",
+          "version": "v7"
+        },
+        {
           "date": "2026-08-15",
           "note": "Driver preflight keeps process/heal arms; confirmatory block cannot rotate an I10 first-train onto leftover rematches.",
           "version": "v7"
@@ -5149,6 +5154,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: repair tests my own merge broke. The preflight-gate tests picked _SCREENING_ARM_BANK[0], which became a self-control when the policy control corpus became the certified bucket, so the gate correctly returned None; they now exercise the live selectable bank. Two corpus literals moved v1 -> v2, and the data-intervention assertion now tracks the policy value instead of a literal that had already drifted twice. Test-only; no production behavior changed.",
+          "version": "v286"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: S5 lands the decode_only_authority_ladder_v1 ExperimentCampaignV1 manifest (new resource directory, read by nothing yet) and regenerates evidence_ledger.v1.json deterministically; no harness code, contract, gate, or threshold changed.",
