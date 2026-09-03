@@ -208,6 +208,8 @@ jobs:
             python -m scripts.refresh_test_cases --check
           fi
       - run: ruff check .
+      - name: Certify code quality (module size, complexity, package principles)
+        run: python -m scripts.verify_code_quality
       - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced
         run: python -m scripts.verify_checkpoint_references --check
