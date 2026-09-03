@@ -64,6 +64,22 @@ TRUSTED_ANCHOR_FAMILIES = frozenset(
     {"human_curated", "human_feedback", "rico_real", "frontier_described"}
 )
 
+#: Families built to *measure* a model, not to fit one: counterfactual pairs
+#: and cue-ablated prompts from the CAP-1 causal probes. They are catalogued so
+#: their exposure is accounted for, and they deliberately carry no weight in
+#: ``slm_training.data.mixture.default_base_weights`` -- an intervention corpus
+#: in the SFT mixture would train the model on the very manipulation the probe
+#: uses to ask what it attends to. ``TRAINABLE_FAMILIES`` is what the mixture
+#: must cover; ``tests/test_data/test_mixture.py`` enforces both directions.
+DIAGNOSTIC_ONLY_FAMILIES = frozenset(
+    {"semantic_counterfactual", "semantic_prompt", "cue_intervention"}
+)
+
+#: Catalog families eligible for the training mixture.
+TRAINABLE_FAMILIES = tuple(
+    family for family in KNOWN_FAMILIES if family not in DIAGNOSTIC_ONLY_FAMILIES
+)
+
 _SYNTH_TO_FAMILY = {
     "template": "prompt_paraphrase",
     "layout_augment": "layout_augment",

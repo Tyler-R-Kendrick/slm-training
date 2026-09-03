@@ -44,9 +44,24 @@ def record(source: str = VALID, *, kind: str = "program-first") -> ExampleRecord
             record('root = TextContent(":ok)'),
             VerificationContext(),
         ),
-        (Gate.GRAMMAR, VerificationContext(), record("root = Stack([cta]"), VerificationContext()),
-        (Gate.REFERENCES, VerificationContext(), record("root = Stack([missing])"), VerificationContext()),
-        (Gate.DATAFLOW, VerificationContext(), record('$state = "x"\nroot = TextContent(":ok")'), VerificationContext()),
+        (
+            Gate.GRAMMAR,
+            VerificationContext(),
+            record("root = Stack([cta]"),
+            VerificationContext(),
+        ),
+        (
+            Gate.REFERENCES,
+            VerificationContext(),
+            record("root = Stack([missing])"),
+            VerificationContext(),
+        ),
+        (
+            Gate.DATAFLOW,
+            VerificationContext(),
+            record('$state = "x"\nroot = TextContent(":ok")'),
+            VerificationContext(),
+        ),
         (
             Gate.RUNTIME,
             VerificationContext(runtime=RuntimeEvidence(rendered=True)),
@@ -56,7 +71,9 @@ def record(source: str = VALID, *, kind: str = "program-first") -> ExampleRecord
         (
             Gate.BEHAVIOR,
             VerificationContext(
-                runtime=RuntimeEvidence(rendered=True, interaction_trace=("click:button",)),
+                runtime=RuntimeEvidence(
+                    rendered=True, interaction_trace=("click:button",)
+                ),
                 require_behavior=True,
             ),
             record(),
@@ -92,7 +109,12 @@ def record(source: str = VALID, *, kind: str = "program-first") -> ExampleRecord
                 patch_applier=lambda _before, patch: patch,
             ),
         ),
-        (Gate.PROVENANCE, VerificationContext(), record(), VerificationContext(provenance_complete=False)),
+        (
+            Gate.PROVENANCE,
+            VerificationContext(),
+            record(),
+            VerificationContext(provenance_complete=False),
+        ),
         (
             Gate.INDEPENDENT_JUDGE,
             VerificationContext(independent_judge_passed=True),
@@ -114,16 +136,24 @@ def test_gate_passes_valid_and_rejects_targeted_invalid(
     invalid_context: VerificationContext,
 ) -> None:
     assert evaluate_gate(gate, record(), valid_context).status is GateStatus.PASS
-    assert evaluate_gate(gate, invalid_record, invalid_context).status is GateStatus.FAIL
+    assert (
+        evaluate_gate(gate, invalid_record, invalid_context).status is GateStatus.FAIL
+    )
 
 
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge dependencies unavailable")
+@pytest.mark.skipif(
+    not bridge_available(), reason="OpenUI bridge dependencies unavailable"
+)
 def test_schema_gate_passes_known_and_rejects_unknown_component() -> None:
     assert evaluate_gate(Gate.SCHEMA, record()).status is GateStatus.PASS
-    assert evaluate_gate(Gate.SCHEMA, record("root = Broken()")).status is GateStatus.FAIL
+    assert (
+        evaluate_gate(Gate.SCHEMA, record("root = Broken()")).status is GateStatus.FAIL
+    )
 
 
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge dependencies unavailable")
+@pytest.mark.skipif(
+    not bridge_available(), reason="OpenUI bridge dependencies unavailable"
+)
 def test_canonical_gate_passes_and_detects_non_idempotence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -136,7 +166,9 @@ def test_canonical_gate_passes_and_detects_non_idempotence(
     assert evaluate_gate(Gate.CANONICAL, record()).status is GateStatus.FAIL
 
 
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge dependencies unavailable")
+@pytest.mark.skipif(
+    not bridge_available(), reason="OpenUI bridge dependencies unavailable"
+)
 def test_tiers_and_record_stamp_are_deterministic() -> None:
     silver = verify_record(record())
     assert silver.tier is Tier.SILVER
@@ -144,9 +176,10 @@ def test_tiers_and_record_stamp_are_deterministic() -> None:
     assert verify_record(record()).to_dict() == silver.to_dict()
 
     assert verify_record(record(kind="teacher")).tier is Tier.BRONZE
-    assert verify_record(
-        record(), VerificationContext(human_audit_passed=True)
-    ).tier is Tier.GOLD
+    assert (
+        verify_record(record(), VerificationContext(human_audit_passed=True)).tier
+        is Tier.GOLD
+    )
     quarantined = verify_record(
         record(), VerificationContext(provenance_complete=False)
     )
@@ -184,7 +217,9 @@ def _browser_ready() -> bool:
     return probe.returncode == 0
 
 
-@pytest.mark.skipif(not _browser_ready(), reason="Playwright/preview dependencies unavailable")
+@pytest.mark.skipif(
+    not _browser_ready(), reason="Playwright/preview dependencies unavailable"
+)
 def test_preview_runtime_and_behavior_seeded_failures() -> None:
     clean = run_preview_verifier(VALID)
     assert clean.rendered
@@ -202,15 +237,84 @@ def test_preview_runtime_and_behavior_seeded_failures() -> None:
         assert run_preview_verifier(pair.chosen).rendered, pair.component
 
     console = run_preview_verifier(VALID, seed_console_error=True)
-    assert evaluate_gate(
-        Gate.RUNTIME,
-        record(),
-        VerificationContext(runtime=console),
-    ).status is GateStatus.FAIL
+    assert (
+        evaluate_gate(
+            Gate.RUNTIME,
+            record(),
+            VerificationContext(runtime=console),
+        ).status
+        is GateStatus.FAIL
+    )
 
     behavior = run_preview_verifier(VALID, seed_behavior_error=True)
-    assert evaluate_gate(
-        Gate.BEHAVIOR,
-        record(),
-        VerificationContext(runtime=behavior),
-    ).status is GateStatus.FAIL
+    assert (
+        evaluate_gate(
+            Gate.BEHAVIOR,
+            record(),
+            VerificationContext(runtime=behavior),
+        ).status
+        is GateStatus.FAIL
+    )
+
+
+def test_schema_defers_to_g3_on_an_unresolved_reference() -> None:
+    """A recovery difference is not a schema disagreement.
+
+    Both parser authorities accept ``root = Stack([ghost, hero])`` with
+    ``ghost`` undefined, then differ on what to do with the dangling child:
+    lang-core drops it, Lark keeps an unresolved ref node. The E60 differential
+    audit read that as a schema mismatch and failed G2, attributing a reference
+    corruption to the wrong gate.
+    """
+    source = 'root = Stack([ghost, hero])\nhero = TextContent(":slot_0")'
+    record = ExampleRecord(
+        id="ref-undefined",
+        prompt="p",
+        openui=source,
+        placeholders=[":slot_0"],
+        meta={},
+        accepted_outputs=[],
+    )
+
+    report = verify_record(record)
+    assert report.failing_gate is Gate.REFERENCES
+    # Deferral is not admission: the record is still quarantined.
+    assert report.tier is Tier.QUARANTINE
+    schema = next(r for r in report.results if r.gate is Gate.SCHEMA)
+    assert schema.status is GateStatus.PASS
+    assert "deferred to G3" in schema.detail
+
+
+def test_a_one_sided_parser_accept_still_fails_the_schema_gate() -> None:
+    """The deferral is narrow: only an AST mismatch defers, never a lone accept.
+
+    A program one authority parses and the other refuses is a real
+    disagreement about the language, and stays a G2 failure even when its
+    references are also broken.
+    """
+    from slm_training.data.verify import stack as verify_stack
+    from slm_training.dsl.grammar.backends.openui_hybrid import (
+        DifferentialValidationResult,
+    )
+
+    source = 'root = Stack([ghost, hero])\nhero = TextContent(":slot_0")'
+    one_sided = DifferentialValidationResult(
+        available=True,
+        langcore_ok=True,
+        lark_ok=False,
+        ast_agreement=None,
+    )
+
+    class _Backend:
+        def differential_validate(self, _source: str) -> DifferentialValidationResult:
+            return one_sided
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            "slm_training.dsl.grammar.backends.openui_hybrid.OpenUIHybridBackend",
+            _Backend,
+        )
+        result = verify_stack._schema(source)
+
+    assert result.status is GateStatus.FAIL
+    assert "differential parser disagreement" in result.detail

@@ -545,6 +545,11 @@
     "data.corpus_certification": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "The E60 differential parser audit no longer attributes an unresolved reference to the schema gate. Both authorities accept a program with a dangling binder and then recover differently (lang-core drops the dangling child, Lark keeps an unresolved ref node), which is not evidence about schema agreement; G3 is the authority for an unresolved reference and fails the program, so G2 defers with the audit result recorded in its detail. Nothing is admitted by the deferral -- a reference-broken program stays Quarantine either way, only the attributed cause changes -- and the deferral is narrow: a one-sided accept (one authority parses, the other refuses) is still a G2 failure even on a reference-broken program.",
+          "version": "v6"
+        },
+        {
           "date": "2026-08-11",
           "note": "Proof-carrying goal support: preserve timeout and capability unavailability through required G1/G2/G8 gate evaluation instead of converting it to exact rejection.",
           "version": "v5"
@@ -587,7 +592,7 @@
         "src/slm_training/dsl/grammar/backends/openui_hybrid.py",
         "tests/test_dsl/test_grammar_backends.py"
       ],
-      "version": "v5"
+      "version": "v6"
     },
     "data.corrupt.trace": {
       "history": [
@@ -1171,6 +1176,11 @@
     },
     "dsl.completion_kernel": {
       "history": [
+        {
+          "date": "2026-09-03",
+          "note": "no-bump: test-only. The StaticLalrAdapter consumer allowlist governs production decode paths but asserted set equality against a git grep over all of src/ and scripts/, so an offline Myhill-Nerode analysis module and two experiment runners failed it (one of which only builds the adapter's import line inside a generated code string). The production restriction is unchanged and unwidened; experiment runners are declared non-production and the analysis module is named explicitly under a new assertion that no production module imports it.",
+          "version": "v26"
+        },
         {
           "date": "2026-09-02",
           "note": "P5: terminal_witness exact early exit -- once a query's node allowance is spent and a sibling already returned UNKNOWN, remaining non-EOS children are not advanced (their verdict cannot change the frame's UNKNOWN result, which is never persisted); EOS paths still certify. New session counter witness_children_skipped. Witness results replayed against the previous kernel in lockstep are identical (docs/design/compiler-decode-cost-20260902.md).",
@@ -4247,6 +4257,11 @@
     "governance.ownership_map": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "select_changed_tests no longer lets a changed test file suppress a changed global test file: tests/conftest.py, tests/casefiles.py and pyproject.toml mean every suite is in scope, and the changed-file shortcut overrode that (editing casefiles.py, which every snapshot test reads its case resource through, alongside one test file ran only that one file). The broader inversion -- for ordinary sources a diff touching source plus a test still selects strictly less than the same diff without the test -- is recorded, measured and deliberately left to the owner in docs/design/autotrain-recovery-2-20260902.md: the monotone union exceeds MAX_RUN_MINUTES on a representative diff and CI runs the same selection under a disabled-for-cost budget.",
+          "version": "v28"
+        },
+        {
           "date": "2026-09-02",
           "note": "no-bump: S8 adds an exact-path check_changed entry mapping scripts/audit_regular_layer_gap.py to its own test (narrow script hook per the table's exact-match policy); ownership map, owners, and every other mapping unchanged.",
           "version": "v27"
@@ -4698,7 +4713,7 @@
         "tests/test_data/test_synthesis_contract_versions.py",
         "tests/test_scripts/test_verify_ownership_map.py"
       ],
-      "version": "v27"
+      "version": "v28"
     },
     "governance.research_citation_catalog": {
       "history": [
@@ -18247,6 +18262,11 @@
     "harness.train_data": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "DIAGNOSTIC_ONLY_FAMILIES and TRAINABLE_FAMILIES partition KNOWN_FAMILIES. semantic_counterfactual, semantic_prompt and cue_intervention are CAP-1 causal-probe interventions -- counterfactual pairs and cue-ablated prompts built to measure what a model attends to -- and carry no default SFT mixture weight on purpose: training on the manipulation a probe depends on destroys the probe. The mixture test now checks both directions, so a diagnostic corpus can never silently enter the training mixture.",
+          "version": "v34"
+        },
+        {
           "date": "2026-08-21",
           "note": "Train-data admission now applies the symbol-only Harness round-trip contract and records visible rejection reasons.",
           "version": "v33"
@@ -18446,7 +18466,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v33"
+      "version": "v34"
     },
     "harness_core.evidence_bundle": {
       "history": [

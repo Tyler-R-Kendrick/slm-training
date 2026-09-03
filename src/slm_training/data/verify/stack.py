@@ -253,12 +253,25 @@ def _schema(source: str) -> GateResult:
 
     differential = OpenUIHybridBackend().differential_validate(source)
     if differential.disagreement:
-        return _fail(
-            Gate.SCHEMA,
-            "differential parser disagreement: "
+        summary = (
             f"langcore={differential.langcore_ok} lark={differential.lark_ok} "
-            f"ast_agreement={differential.ast_agreement}",
+            f"ast_agreement={differential.ast_agreement}"
         )
+        # An AST mismatch over a program whose binder graph does not resolve is
+        # a recovery difference, not a schema disagreement: both authorities
+        # accept the text and then choose differently what to do with a
+        # reference that cannot resolve (lang-core drops the dangling child,
+        # Lark keeps an unresolved ref node). G3 owns that verdict and fails
+        # the program, so nothing is admitted by deferring -- only the
+        # attributed cause changes. A one-sided accept is a real disagreement
+        # about the language and still fails here.
+        both_accepted = differential.langcore_ok and differential.lark_ok
+        if both_accepted and _reference_graph(source).status is GateStatus.FAIL:
+            return _pass(
+                Gate.SCHEMA,
+                f"differential deferred to G3 (unresolved reference): {summary}",
+            )
+        return _fail(Gate.SCHEMA, f"differential parser disagreement: {summary}")
     return _pass(Gate.SCHEMA)
 
 
