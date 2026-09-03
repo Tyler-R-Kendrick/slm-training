@@ -97,6 +97,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-03",
+          "note": "PLAYBOOK_FAULTS makes the playbook boundary total: discovery import, matches, plan, execute and plan execution now degrade SystemExit to a receipt (step_failed / not-matched) instead of unwinding into the driver. A playbook driving an argparse-based module in process raises SystemExit(2) on a bad argv, so the documented 'a crashing playbook yields a step_failed receipt, never an exception' invariant was false at the seam it was written for. KeyboardInterrupt stays uncaught: the run cap interrupts with SIGINT and kill is not evidence.",
+          "version": "v6"
+        },
+        {
           "date": "2026-09-02",
           "note": "run_playbooks prefers a playbook in-process execute (harness_crash -> attempted, data_rebuild -> count-postcondition healed) over the subprocess plan/verify path; same attempt budget, single persisted receipt; execute crash records step_failed.",
           "version": "v5"
@@ -162,7 +167,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v5"
+      "version": "v6"
     },
     "autoresearch.power_preflight": {
       "history": [
