@@ -524,3 +524,37 @@ Until it lands, `run_perf_matrix`, `run_discrete_plan_pareto` and the decode
 audit cards need a checkpoint trained on this box (the
 `slm322_ap027_scratch_v1` precedent in `docs/MODEL_CARD.md`), not the
 committed fixture.
+
+## `forced_token_fraction` under-reported deterministic forcing (2026-09-03)
+
+The S12 commit-authority profile recorded that `forced_tokens` "stayed 0 in
+every run while `semantic_singleton_bypasses` was 18–27, because the bypasses
+landed in constrained LTR repair, which increments
+`forced_row_tokens_without_forward` only", and flagged it for S4's derived
+ratio. Confirmed and fixed.
+
+`DecodeStats.forced_token_fraction` is documented as *"the share of the canvas
+that deterministic forcing (I2 singleton bypass and forced spans) wrote
+without consulting the model"*. Four of the six sites that commit a singleton
+bypass called `_record_exact_bypass` and incremented
+`forced_row_tokens_without_forward` without touching `forced_tokens`
+(`twotower.py` 5850, 12644, 13528, 13795). The ratio therefore attributed
+forced tokens to the model.
+
+Measured on a minimal grammar-determined canvas (`root = Separator()`, 8
+committed tokens, all of them proven forced):
+
+| | `forced_tokens` | `forced_token_fraction` |
+|---|---|---|
+| before | 5 | 0.625 |
+| after | 8 | 1.000 |
+
+Telemetry only — no decode decision, ordering or output changes; each added
+line counts an event the adjacent line already counted under another name.
+`verify_decode_invariants` stays green and the 371 twotower/forcing tests pass.
+
+`tests/test_models/test_forced_token_fraction.py` asserts the exact value
+rather than `> 0`, because `> 0` passes on the broken code: five of eight is
+still positive. That is how a telemetry defect survives a test suite, and it
+is worth stating as a rule — **a ratio is pinned by its value, never by its
+sign.**

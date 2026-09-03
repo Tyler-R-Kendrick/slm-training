@@ -5847,6 +5847,7 @@ class TwoTowerModel(nn.Module):
                 choice = exact
                 self._record_exact_bypass(exact)
                 if stats is not None:
+                    stats.forced_tokens += 1
                     stats.forced_row_tokens_without_forward += 1
                     stats.all_forced_steps_without_forward += 1
             else:
@@ -12641,9 +12642,9 @@ class TwoTowerModel(nn.Module):
                 check_decode_deadline()
                 commit(row, forests[row], selected)
             if stats is not None and selected_now:
-                stats.forced_row_tokens_without_forward += sum(
-                    len(selected) for selected in selected_now.values()
-                )
+                forced_now = sum(len(selected) for selected in selected_now.values())
+                stats.forced_tokens += forced_now
+                stats.forced_row_tokens_without_forward += forced_now
                 if not model_rows:
                     stats.all_forced_steps_without_forward += 1
             if not model_rows:
@@ -13525,6 +13526,7 @@ class TwoTowerModel(nn.Module):
                     if st is not None:
                         st.advance_token(tok, int(choice))
                 if stats is not None:
+                    stats.forced_tokens += len(exact_map)
                     stats.forced_row_tokens_without_forward += len(exact_map)
                     stats.ambiguous_rows_forwarded += len(need_model)
                     stats.tokens_emitted += len(exact_map)
@@ -13792,6 +13794,7 @@ class TwoTowerModel(nn.Module):
                                 choice = exact
                                 self._record_exact_bypass(exact)
                                 if stats is not None:
+                                    stats.forced_tokens += 1
                                     stats.forced_row_tokens_without_forward += 1
                                     stats.all_forced_steps_without_forward += 1
                             else:

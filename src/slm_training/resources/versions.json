@@ -19538,6 +19538,11 @@
       "history": [
         {
           "date": "2026-09-03",
+          "note": "forced_token_fraction now counts every I2 singleton bypass. Four of the six bypass sites (twotower.py 5850, 12644, 13528, 13795) called _record_exact_bypass and incremented forced_row_tokens_without_forward without touching forced_tokens, so the ratio -- documented as the share of the canvas deterministic forcing wrote without consulting the model -- attributed forced tokens to the model. S12 measured it reading 0 while semantic_singleton_bypasses was 18-27. On a grammar-determined canvas (root = Separator(), 8 committed tokens, all proven forced) the reading moves from 5/0.625 to 8/1.000. Telemetry only: no decode decision, ordering or output changes, and each added line counts an event the adjacent line already counted under another name.",
+          "version": "v328"
+        },
+        {
+          "date": "2026-09-03",
           "note": "I6: a certified substitution is reported on every decode lane, not just the choice-constrained one. _ensure_valid_openui records whether it returned a certified fallback and consume_generation_evidence stamps fallback_used onto the row, synthesizing a row when the grammar/LTR lane produced no evidence of its own. That lane is what production serving runs, so _raise_on_substituted_generation never fired there and every substituted program was persisted as a genuine generation (28 of 48 documents in the S14 field measurement). Decode behavior and emitted bytes are unchanged; only the evidence channel is now truthful.",
           "version": "v327"
         },
@@ -21580,7 +21585,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v327"
+      "version": "v328"
     },
     "ops.vocab": {
       "history": [
