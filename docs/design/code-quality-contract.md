@@ -104,6 +104,20 @@ finding and introducing another in the same file nets to zero and passes: the
 invariant enforced is "this file's total complexity findings never rise", which
 is the property the ratchet exists to guarantee.
 
+**Splitting a file re-attributes its complexity.** The complexity dimension is
+keyed per file, so moving a complex function to a new module reports a *new*
+violation there while the original's count falls. That is re-attribution, not
+new debt, and `--update` is the right response -- but it is also the one case
+where the ratchet cannot tell the two apart. Prove it before re-freezing:
+
+```
+ruff check --select C901,PLR0911,PLR0912,PLR0913,PLR0915 src scripts tests
+```
+
+on the branch and on its base must report the **same total**. The extraction in
+PR #1734 moved 2,750 lines out of the continuous runner and both sides reported
+1,772; had the branch reported more, the difference would have been real.
+
 **Coverage is Python-only.** Ruff does not lint TypeScript, so the 28 `.ts`/
 `.tsx` files under `src/apps/` are subject to the module-size budget (8 are
 currently over it) but *not* to any complexity rule. Closing that would mean
@@ -272,9 +286,24 @@ three before moving anything; each has bitten this repository.
 
 3. **Names reached through the original module.** Lint reports a re-exported
    alias as unused (`F401`) because nothing in the file calls it, but a test may
-   reach it as `runner._auto_no_bump_version_registry`. Grep for
-   `mod.<name>` access before deleting an "unused" import; keep the ones tests
-   use as explicit re-exports with `# noqa: F401` and a comment saying why.
+   reach it as `runner._auto_no_bump_version_registry`. Keep the ones tests use
+   as explicit re-exports with `# noqa: F401` and a comment saying why.
+
+4. **Every form of reaching in, not just the obvious one.** Enumerating patch
+   targets by grepping `monkeypatch.setattr` is not enough. A fixture may assign
+   the attribute directly (`_mod._SCREENING_PRIMARY_LEAF_OVERRIDE = ...`), and a
+   test may simply *read* a constant off the module. Both break a move that a
+   `setattr` scan calls safe. The complete rule is mechanical: the module must
+   still expose **every attribute the suite names on it**, however it is used.
+
+   ```python
+   touched = set(re.findall(r"\b_?mod\.([_A-Za-z][_A-Za-z0-9]*)", tests))
+   missing = [n for n in touched if not hasattr(runner, n)]
+   ```
+
+   Deriving that set found 34 reached-into attributes where a `setattr` scan
+   found 19, and the two it added last caught a move that lint and 355 passing
+   tests had already waved through.
 
 The mechanical part is then safe: move the definitions verbatim, give them
 public names in the new module, and re-import them into the original under

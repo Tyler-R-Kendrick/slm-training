@@ -4273,6 +4273,11 @@
       "history": [
         {
           "date": "2026-09-04",
+          "note": "no-bump: baseline ratcheted down after decomposing the continuous runner (18,259 -> 15,509 lines across 20 new modules). Complexity entries are re-attributed, not added: the same rule set reports 1,772 findings on this branch and on origin/main. Contract gains the complete reach-in rule and the re-attribution caveat. Gate rules, thresholds and dimensions unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-04",
           "note": "no-bump: baseline ratcheted down after extracting autotrain_ledgers and autotrain_provenance (run_autotrain_continuous.py 18,531 -> 18,259 lines); contract gains a 'Splitting a module safely' section recording the three hazards that break an extraction (monkeypatched attributes, global-rebound module state, names reached through the original module). Gate rules, thresholds and dimensions unchanged.",
           "version": "v1"
         },
@@ -5232,6 +5237,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-04",
+          "note": "no-bump: decomposed run_autotrain_continuous.py into 20 focused modules (paths, io, metrics, measurement, tradeoff, diagnosis, levers, arms, campaign, screening, decode_timing, timeout_state, records, candidate_state, confirmation, champion_queue/lifecycle/repair, park), each re-exported under its original private aliases. Extraction was driven by transitive dependency closure and screened against every form of test reach-in. Pure move; the 357-test suite passes unchanged.",
+          "version": "v288"
+        },
         {
           "date": "2026-09-04",
           "note": "no-bump: moved the append-only loop ledgers and the checkpoint/registry provenance writers out of run_autotrain_continuous.py into scripts/autotrain_ledgers.py and scripts/autotrain_provenance.py, re-exported under their original private aliases. The dynamic-thrash-arm bank stayed put: it is global-rebound process state that does not survive a module boundary. Pure extraction; the 381-test suite passes unchanged.",

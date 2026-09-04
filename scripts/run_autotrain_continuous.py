@@ -33,24 +33,22 @@ import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any, NamedTuple
 
 from slm_training.autoresearch.engine import default_eval_version
 from slm_training.autoresearch.hillclimb import (
-    CHAMPION_EPOCHS_EXHAUSTED,
-    CLIMB_CHAMPION_ADVANCE_STATUSES,
-    DEFAULT_MAX_CUMULATIVE_EPOCHS,
-    ClimbChampionSidecar,
-    assert_champion_eval_disjoint,
     assert_warm_start_launch,
-    champion_cumulative_epochs,
-    champion_epoch_park_reason,
     climb_champion_checkpoint_path,
     load_climb_champion,
     maybe_advance_climb_champion,
+)
+
+# Re-exported for the suite, which reads them as attributes of this module
+# (`run_autotrain_continuous.DEFAULT_MAX_CUMULATIVE_EPOCHS`). Their only
+# in-module callers moved to scripts/autotrain_champion_*.py.
+from slm_training.autoresearch.hillclimb import (  # noqa: F401
+    DEFAULT_MAX_CUMULATIVE_EPOCHS,
     seed_climb_champion,
-    train_manifest_record_count,
 )
 from slm_training.autoresearch.experiment_campaign import (
     ArtifactRequirementV1,
@@ -67,7 +65,6 @@ from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.thrash_regime import (
     DECODE_RESIDUAL_SLUGS,
     LATENCY_PRIMARY_LEAF,
-    is_latency_only_arm,
     REGIME_CLIMB,
     REGIME_ISOLATE,
     ThrashRegimeDecision,
@@ -75,8 +72,6 @@ from slm_training.autoresearch.thrash_regime import (
     compose_isolate_control_levers,
     compose_treatment_levers,
     decide_screening_regime,
-    is_compiler_ms_timeout_signal,
-    select_climb_baseline_entry,
     select_recommended_slug_for_regime,
 )
 from slm_training.autoresearch.thrash_residuals import (
@@ -117,14 +112,510 @@ from slm_training.harness_core.bounded_process import (
     run_bounded_process,
 )
 from slm_training.harness_core.versioning import build_version_stamp
+from scripts.autotrain_paths import (  # noqa: F401
+    DRIVER_LOCK_BASENAME as _DRIVER_LOCK_BASENAME,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    LOOP_OWNED_GENERATED_PATHS as _LOOP_OWNED_GENERATED_PATHS,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    LOOP_OWNED_GENERATED_SUFFIXES as _LOOP_OWNED_GENERATED_SUFFIXES,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    PROMOTE_EXPECTATIONS_REL as _PROMOTE_EXPECTATIONS_REL,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    SCREENING_EXPECTATIONS_REL as _SCREENING_EXPECTATIONS_REL,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    champion_queue_path as _champion_queue_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    continuous_docs_paths as _continuous_docs_paths,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    continuous_evidence_roots as _continuous_evidence_roots,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    driver_lock_path as _driver_lock_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    heal_retired_versions_path as _heal_retired_versions_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    hillclimb_review_path as _hillclimb_review_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    is_continuous_closeout_path as _is_continuous_closeout_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    is_foreign_dirty_path as _is_foreign_dirty_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    is_loop_owned_generated_path as _is_loop_owned_generated_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    loop_campaign_dirs as _loop_campaign_dirs,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    loop_champion_dir as _loop_champion_dir,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    loop_state_path as _loop_state_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    merge_head_path as _merge_head_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    normalize_repo_relpath as _normalize_repo_relpath,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    porcelain_paths as _porcelain_paths,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    promotion_replicate_ledger_path as _promotion_replicate_ledger_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    terminal_verdict_path as _terminal_verdict_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    promote_expectations_path as promote_expectations_path,
+)
+from scripts.autotrain_paths import (  # noqa: F401
+    screening_expectations_path as screening_expectations_path,
+)
+from scripts.autotrain_io import (  # noqa: F401
+    read_json as _read_json,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    EVAL_NLL_RECORDS_NAME as _EVAL_NLL_RECORDS_NAME,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    EVAL_NLL_RECORDS_SCHEMA as _EVAL_NLL_RECORDS_SCHEMA,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    METRIC_LEAVES as _METRIC_LEAVES,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    effective_primary_metric as _effective_primary_metric,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    find_nested_key as _find_nested_key,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    finite_metric as _finite_metric,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    metric_from_eval as _metric_from_eval,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    metric_leaf as _metric_leaf,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    primary_harness_family as _primary_harness_family,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    rate_to_pm as _rate_to_pm,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    raw_metric_observations as _raw_metric_observations,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    read_eval_nll_records as _read_eval_nll_records,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    run_has_usable_metrics as _run_has_usable_metrics,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    run_metrics as _run_metrics,
+)
+from scripts.autotrain_metrics import (  # noqa: F401
+    run_suite_metrics as _run_suite_metrics,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    EPS as _EPS,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    candidate_mpr_positive as _candidate_mpr_positive,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    candidate_ship_state as _candidate_ship_state,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    has_primary_metric_win as _has_primary_metric_win,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    measurement_is_complete as _measurement_is_complete,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    multi_arm_measurement as _multi_arm_measurement,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    quality_metrics_identical as _quality_metrics_identical,
+)
+from scripts.autotrain_measurement import (  # noqa: F401
+    yaml_mapping_equal as _yaml_mapping_equal,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    LATENCY_REGRESSION_ABS_MS as _LATENCY_REGRESSION_ABS_MS,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    LATENCY_REGRESSION_BUDGET as _LATENCY_REGRESSION_BUDGET,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    MIN_MPR_FOR_LATENCY_WIN as _MIN_MPR_FOR_LATENCY_WIN,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    TIMEOUT_BAND_HI_MS as _TIMEOUT_BAND_HI_MS,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    TIMEOUT_BAND_LO_MS as _TIMEOUT_BAND_LO_MS,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    classify_metric_tradeoff as _classify_metric_tradeoff,
+)
+from scripts.autotrain_tradeoff import (  # noqa: F401
+    in_timeout_band as _in_timeout_band,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    BANK_EXHAUST_MARKERS as _BANK_EXHAUST_MARKERS,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    BANK_EXHAUST_MSG as _BANK_EXHAUST_MSG,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    CodeUpdated as _CodeUpdated,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    HARNESS_INCOMPLETE_REASON_PREFIXES as _HARNESS_INCOMPLETE_REASON_PREFIXES,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    OPEN_NUMERIC_LITERAL_RE as _OPEN_NUMERIC_LITERAL_RE,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    QUALITY_ENQUEUE_PREFIXES as _QUALITY_ENQUEUE_PREFIXES,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    diagnosis_target as _diagnosis_target,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    exception_is_soft_continuous as _exception_is_soft_continuous,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    has_numeric_literal_close_starvation as _has_numeric_literal_close_starvation,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    is_decisive_causal_terminal as _is_decisive_causal_terminal,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    quality_held_reasons as _quality_held_reasons,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    reason_is_harness_incomplete as _reason_is_harness_incomplete,
+)
+from scripts.autotrain_diagnosis import (  # noqa: F401
+    reasons_are_harness_incomplete_only as _reasons_are_harness_incomplete_only,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    EXPERIMENT_ONLY_KNOB_CATEGORIES as _EXPERIMENT_ONLY_KNOB_CATEGORIES,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    FINGERPRINT_EXCLUDE_KEYS as _FINGERPRINT_EXCLUDE_KEYS,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    LEVER_KNOB_KEYS as _LEVER_KNOB_KEYS,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    bank_lever_categories as _bank_lever_categories,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    knobs_fingerprint as _knobs_fingerprint,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    lever_knobs as _lever_knobs,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    load_experiment_knobs as _load_experiment_knobs,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    matrix_experiment_knobs as _matrix_experiment_knobs,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    matrix_treatment_signature as _matrix_treatment_signature,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    short_lever_token as _short_lever_token,
+)
+from scripts.autotrain_levers import (  # noqa: F401
+    thrash_lever_signature as _thrash_lever_signature,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    PROCESS_ARM_FLAG_KEYS as _PROCESS_ARM_FLAG_KEYS,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    PROCESS_ROLES as _PROCESS_ROLES,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    apply_arm_extras as _apply_arm_extras,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    arm_completed_n as _arm_completed_n,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    arm_eval_version as _arm_eval_version,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    arm_swaps_train_corpus as _arm_swaps_train_corpus,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    arm_trainable_params as _arm_trainable_params,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    capacity_view as _capacity_view,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    compose_atom_extras as _compose_atom_extras,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    counterbalanced_arm_order as _counterbalanced_arm_order,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    current_rung_label as _current_rung_label,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    finalize_compose_extras as _finalize_compose_extras,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    is_process_arm as _is_process_arm,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    latency_only_arm as _latency_only_arm,
+)
+from scripts.autotrain_arms import (  # noqa: F401
+    size_match_skip_reason as _size_match_skip_reason,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    PROMOTE_AUTHORITY_HARNESS_COMPONENT as _PROMOTE_AUTHORITY_HARNESS_COMPONENT,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    campaign_at_cycle as _campaign_at_cycle,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    campaign_id as _campaign_id,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    campaign_power_feasibility as _campaign_power_feasibility,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    campaign_started_experiment as _campaign_started_experiment,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    experiment_artifact as _experiment_artifact,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    experiment_campaign_component_version as _experiment_campaign_component_version,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    lineage_campaign_ids as _lineage_campaign_ids,
+)
+from scripts.autotrain_campaign import (  # noqa: F401
+    warm_start_policy as _warm_start_policy,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    LOCAL_I10_ROOT_CAP as _LOCAL_I10_ROOT_CAP,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    exhaust_screening_losers as _exhaust_screening_losers,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    fit_screening_candidate_count as _fit_screening_candidate_count,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    latest_train_telemetry_payload as _latest_train_telemetry_payload,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    local_i10_train_version as _local_i10_train_version,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    local_rebuild_data_argv as _local_rebuild_data_argv,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    local_rebuild_screening_eval_argv as _local_rebuild_screening_eval_argv,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    policy_default_decode_floor_seconds as _policy_default_decode_floor_seconds,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    screening_enqueue_allowed as _screening_enqueue_allowed,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    screening_max_gpu_hours as _screening_max_gpu_hours,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    screening_multi_arm_ids as _screening_multi_arm_ids,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    screening_regime_decision as _screening_regime_decision,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    screening_thrash_steps as _screening_thrash_steps,
+)
+from scripts.autotrain_screening import (  # noqa: F401
+    screening_train_device as _screening_train_device,
+)
+from scripts.autotrain_decode_timing import (  # noqa: F401
+    predecessor_compiler_ms_timeout as _predecessor_compiler_ms_timeout,
+)
+from scripts.autotrain_decode_timing import (  # noqa: F401
+    predecessor_decode_p95_seconds as _predecessor_decode_p95_seconds,
+)
+from scripts.autotrain_decode_timing import (  # noqa: F401
+    predecessor_timeout_cause as _predecessor_timeout_cause,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    FORMAL_TIMEOUT_STATUSES as _FORMAL_TIMEOUT_STATUSES,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    arm_decode_timeout_count as _arm_decode_timeout_count,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    delivery_is_thrash_timeout_residual as _delivery_is_thrash_timeout_residual,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    formal_status_is_timeout as _formal_status_is_timeout,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    has_finalized_decode_timeout as _has_finalized_decode_timeout,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    is_reproduced_timeout_retirement as _is_reproduced_timeout_retirement,
+)
+from scripts.autotrain_timeout_state import (  # noqa: F401
+    require_predecessor_actions as _require_predecessor_actions,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    OBSERVED_PAIRED_SD_SCHEMA as _OBSERVED_PAIRED_SD_SCHEMA,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    OBSERVED_PAIRED_SD_SOURCE as _OBSERVED_PAIRED_SD_SOURCE,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    last_cycle_failure_message as _last_cycle_failure_message,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    last_heal_receipt_outcome as _last_heal_receipt_outcome,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    record_cycle_failure as _record_cycle_failure,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    record_cycle_recovery as _record_cycle_recovery,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    record_observed_paired_sd as _record_observed_paired_sd,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    write_loop_state as _write_loop_state,
+)
+from scripts.autotrain_records import (  # noqa: F401
+    write_loop_state_unlocked as _write_loop_state_unlocked,
+)
+from scripts.autotrain_candidate_state import (  # noqa: F401
+    confirm_candidate_blocked as _confirm_candidate_blocked,
+)
+from scripts.autotrain_candidate_state import (  # noqa: F401
+    confirmation_quality_reheld as _confirmation_quality_reheld,
+)
+from scripts.autotrain_candidate_state import (  # noqa: F401
+    delivery_parse_mpr_held as _delivery_parse_mpr_held,
+)
+from scripts.autotrain_candidate_state import (  # noqa: F401
+    is_confirm_candidate_win as _is_confirm_candidate_win,
+)
+from scripts.autotrain_candidate_state import (  # noqa: F401
+    queued_candidate_priorities as _queued_candidate_priorities,
+)
+from scripts.autotrain_candidate_state import (  # noqa: F401
+    role_with_confirmation_boundary as _role_with_confirmation_boundary,
+)
+from scripts.autotrain_confirmation import (  # noqa: F401
+    completed_confirmation_priorities as _completed_confirmation_priorities,
+)
+from scripts.autotrain_confirmation import (  # noqa: F401
+    confirmation_replay_entry as _confirmation_replay_entry,
+)
+from scripts.autotrain_confirmation import (  # noqa: F401
+    consecutive_frozen_replays as _consecutive_frozen_replays,
+)
+from scripts.autotrain_confirmation import (  # noqa: F401
+    reconcile_completed_confirmation_replays as _reconcile_completed_confirmation_replays,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    REGIME_PARKED_STATUS as _REGIME_PARKED_STATUS,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    RETRYABLE_PROMOTE_STATUSES as _RETRYABLE_PROMOTE_STATUSES,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    clear_loop_blocker as _clear_loop_blocker,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    park_champion_epochs_if_needed as _park_champion_epochs_if_needed,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    queue_head_confirmed as _queue_head_confirmed,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    queue_head_open as _queue_head_open,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    should_enqueue_champion as _should_enqueue_champion,
+)
+from scripts.autotrain_champion_queue import (  # noqa: F401
+    write_champion_queue as _write_champion_queue,
+)
+from scripts.autotrain_champion_lifecycle import (  # noqa: F401
+    CONTROL_RUN_SUFFIXES as _CONTROL_RUN_SUFFIXES,
+)
+from scripts.autotrain_champion_lifecycle import (  # noqa: F401
+    ensure_climb_champion as _ensure_climb_champion,
+)
+from scripts.autotrain_champion_lifecycle import (  # noqa: F401
+    first_complete_control_run as _first_complete_control_run,
+)
+from scripts.autotrain_champion_lifecycle import (  # noqa: F401
+    refresh_champion_source_recipes as _refresh_champion_source_recipes,
+)
+from scripts.autotrain_champion_lifecycle import (  # noqa: F401
+    seed_baseline_champion as _seed_baseline_champion,
+)
+from scripts.autotrain_champion_repair import (  # noqa: F401
+    recover_interrupted_champion_entries as _recover_interrupted_champion_entries,
+)
+from scripts.autotrain_champion_repair import (  # noqa: F401
+    reopen_harness_blocked_champions as _reopen_harness_blocked_champions,
+)
+from scripts.autotrain_champion_repair import (  # noqa: F401
+    revalidate_confirmed_champion_entries as _revalidate_confirmed_champion_entries,
+)
+from scripts.autotrain_park import (  # noqa: F401
+    STALL_FINGERPRINT as _STALL_FINGERPRINT,
+)
+from scripts.autotrain_park import (  # noqa: F401
+    park_loop_stalled as _park_loop_stalled,
+)
+from scripts.autotrain_park import (  # noqa: F401
+    park_screening_n_deficit as _park_screening_n_deficit,
+)
+from scripts.autotrain_park import (  # noqa: F401
+    terminal_park_on_exhaust as _terminal_park_on_exhaust,
+)
 from slm_training.levers import (
-    CAPACITY_SCALING_LEVERS,
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
     MAX_HARNESS_WALL_SECONDS,
     MAX_RUN_SECONDS,
-    require_size_matched_arms,
 )
 # Budget constants re-exported under their original private names: the
 # extracted functions consume them, and the test suite reads them off this
@@ -193,9 +684,6 @@ from scripts.autotrain_budget import (
     fit_symmetric_arm_budget as _fit_symmetric_arm_budget,
 )
 from scripts.autotrain_budget import (
-    nearest_rank_p95 as _nearest_rank_p95,
-)
-from scripts.autotrain_budget import (
     remaining_timeout as _remaining_timeout,
 )
 from scripts.autotrain_budget import (
@@ -212,14 +700,6 @@ from scripts.autotrain_budget import (
 )
 
 # Locked continuous promote metric programs (SHA bound on campaign lock).
-_PROMOTE_EXPECTATIONS_REL = Path(
-    "src/slm_training/resources/experiments/autotrain_climb/"
-    "metric_expectations.promote.v1.json"
-)
-_SCREENING_EXPECTATIONS_REL = Path(
-    "src/slm_training/resources/experiments/autotrain_climb/"
-    "metric_expectations.screening.v1.json"
-)
 _PROMOTE_FORMAL_TEMPLATE_ID = "metrics.structural_similarity_monotone"
 _FIVE_LANES = (
     "measurement_control",
@@ -232,12 +712,8 @@ _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
 # Promote Lean formal preflight wall (seconds). Timeouts are *inconclusive*
 # (incomplete measurement), never a proof rejection / promotion_failed.
 _PROMOTE_FORMAL_TIMEOUT_S = float(MAX_RUN_SECONDS)
-_FORMAL_TIMEOUT_STATUSES = frozenset({"timed_out"})
-_DRIVER_LOCK_BASENAME = "driver.lock"
 
 
-class _CodeUpdated(RuntimeError):
-    """The long-lived driver integrated code newer than its Python process."""
 
 
 
@@ -479,18 +955,6 @@ def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> _SeedAppendResult:
     )
 
 
-def _local_rebuild_screening_eval_argv(*, eval_version: str, train_manifest: Path) -> list[str]:
-    return [
-        sys.executable,
-        "-m",
-        "scripts.build_test_data",
-        "--source",
-        "fixture",
-        "--version",
-        eval_version,
-        "--train-manifest",
-        str(train_manifest),
-    ]
 
 
 _SCREENING_EVAL_HEAL_ID = "rebuild_screening_eval"
@@ -745,291 +1209,24 @@ def _self_heal_rebuild_screening_eval(
 
 
 
-def _screening_train_device() -> str:
-    """CUDA at train launch when present; CPU fallback. Never raises."""
-    try:
-        import torch
-
-        return "cuda" if bool(torch.cuda.is_available()) else "cpu"
-    except Exception:  # noqa: BLE001 — missing torch / driver is CPU
-        return "cpu"
-
-
-def _screening_max_gpu_hours(*, role: str, device: str | None = None) -> float:
-    """Engine routes ``--device auto`` iff max_gpu_hours > 0."""
-    if role != "screening":
-        return 0.0
-    chosen = device if device is not None else _screening_train_device()
-    if chosen != "cuda":
-        return 0.0
-    return float(MAX_RUN_SECONDS) / 3600.0
 
 
 
 
-def _latest_train_telemetry_payload(root: Path | None) -> dict[str, Any] | None:
-    if root is None or not root.is_dir():
-        return None
-    newest: Path | None = None
-    newest_mtime = -1.0
-    try:
-        summaries = root.glob("*/runs/*/train_summary.json")
-    except OSError:
-        return None
-    for path in summaries:
-        try:
-            mtime = path.stat().st_mtime
-        except OSError:
-            continue
-        if mtime > newest_mtime:
-            newest_mtime = mtime
-            newest = path
-    if newest is None:
-        return None
-    try:
-        payload = json.loads(newest.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    payload["_telemetry_path"] = str(newest)
-    tel_path = newest.parent / "train_telemetry.json"
-    if tel_path.is_file() and payload.get("elapsed_wall_seconds") is None:
-        try:
-            tel = json.loads(tel_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            tel = None
-        if isinstance(tel, dict) and tel.get("total_ms") is not None:
-            payload["total_ms"] = tel.get("total_ms")
-    return payload
 
 
 
 
-def _screening_thrash_steps(
-    policy: Any,
-    requested_steps: int,
-    *,
-    floor_seconds: float | None = None,
-    measured_steps_per_sec: float | None = None,
-    telemetry_root: Path | None = None,
-) -> int:
-    """Fit screening train steps to the (grown) train floor.
-
-    ``steps = clamp(floor * measured_sps * 0.9, 1, screening_thrash_steps_max)``.
-    Cold-start uses ``_COLD_START_STEPS_PER_SEC`` when no telemetry exists.
-    """
-    thrash = _thrash_timing_block(policy)
-    steps_max = _screening_thrash_steps_max(thrash)
-    floor = (
-        float(floor_seconds)
-        if floor_seconds is not None
-        else float(thrash.get("min_train_floor_seconds") or 20.0)
-    )
-    sps = measured_steps_per_sec
-    if sps is None:
-        payload = _latest_train_telemetry_payload(telemetry_root)
-        if payload is not None:
-            sps = _steps_per_sec_from_train_payload(payload)
-    fitted, _evidence = _fit_screening_steps(
-        floor_seconds=floor,
-        measured_steps_per_sec=sps,
-        steps_max=steps_max,
-    )
-    del requested_steps
-    return int(fitted)
-
-
-def _policy_default_decode_floor_seconds(policy: Any) -> float:
-    """``measurement.screening_sample_size.default_decode_floor_seconds`` (2 s)."""
-
-    measurement = getattr(policy, "measurement", None) or {}
-    block = (
-        measurement.get("screening_sample_size")
-        if isinstance(measurement, dict)
-        else None
-    )
-    raw = block.get("default_decode_floor_seconds") if isinstance(block, dict) else None
-    try:
-        return max(0.0, float(raw)) if raw is not None else 2.0
-    except (TypeError, ValueError):
-        return 2.0
 
 
 
 
-def _predecessor_decode_p95_seconds(
-    root: Path | None, predecessor_campaign_id: str | None = None
-) -> dict[str, Any]:
-    """Measured per-record decode cost of the predecessor screening cycle.
-
-    Reads the predecessor's ``runs/*/eval_smoke.json`` scoreboards and returns
-    the pooled per-record p95 in seconds (``details[].latency_ms`` includes
-    timed-out records because ``eval_runner`` measures the true wall around
-    ``generate``), falling back to the scoreboard headline
-    ``latency_ms_p95_including_incomplete`` / ``latency_ms_p95`` /
-    ``compiler_ms_mean``. Also reports the decoded-record count, the timeout
-    count, the resulting incomplete rate and the per-record timeout that was
-    applied (``evaluation_policy.decode_timeout_seconds`` -> matrix knobs ->
-    ``thrash_timing.json``). ``source`` is ``measured_p95`` when a cost was
-    read, else ``policy_default``. Never raises; without a predecessor the
-    caller falls back to the policy floor.
-    """
-
-    out: dict[str, Any] = {
-        "p95_seconds": None,
-        "source": "policy_default",
-        "field": None,
-        "campaign_id": None,
-        "scoreboards": 0,
-        "decoded_records": 0,
-        "timeout_records": 0,
-        "incomplete_rate": None,
-        "timeout_seconds": None,
-    }
-    if root is None or not root.is_dir():
-        return out
-    camp_dir: Path | None = None
-    if predecessor_campaign_id:
-        camp_dir = root / str(predecessor_campaign_id)
-    else:
-        newest_mtime = -1.0
-        try:
-            boards = list(root.glob("*/runs/*/eval_smoke.json"))
-        except OSError:
-            boards = []
-        for path in boards:
-            try:
-                mtime = path.stat().st_mtime
-            except OSError:
-                continue
-            if mtime > newest_mtime:
-                newest_mtime = mtime
-                camp_dir = path.parents[2]
-    if camp_dir is None or not camp_dir.is_dir():
-        return out
-    out["campaign_id"] = camp_dir.name
-    latencies_ms: list[float] = []
-    headline: dict[str, list[float]] = {
-        "latency_ms_p95_including_incomplete": [],
-        "latency_ms_p95": [],
-        "compiler_ms_mean": [],
-    }
-    decoded = 0
-    timeouts = 0
-    timeout_used: float | None = None
-    boards_n = 0
-    for path in sorted(camp_dir.glob("runs/*/eval_smoke.json")):
-        payload = _read_json(path)
-        if not payload:
-            continue
-        boards_n += 1
-        details = [d for d in (payload.get("details") or []) if isinstance(d, dict)]
-        latencies_ms.extend(
-            float(d["latency_ms"])
-            for d in details
-            if isinstance(d.get("latency_ms"), (int, float))
-        )
-        n_docs = len(details)
-        if n_docs <= 0:
-            try:
-                n_docs = int(payload.get("completed_latency_n") or 0) + int(
-                    payload.get("incomplete_latency_n") or 0
-                )
-            except (TypeError, ValueError):
-                n_docs = 0
-        if n_docs <= 0:
-            try:
-                n_docs = int(payload.get("document_n") or 0)
-            except (TypeError, ValueError):
-                n_docs = 0
-        decoded += max(0, n_docs)
-        raw_timeouts = payload.get("decode_timeout_document_count")
-        if raw_timeouts is None:
-            raw_timeouts = payload.get("decode_timeout_count")
-        try:
-            timeouts += max(0, int(raw_timeouts or 0))
-        except (TypeError, ValueError):
-            pass
-        metrics = (
-            payload.get("metrics") if isinstance(payload.get("metrics"), dict) else {}
-        )
-        for key, bucket in headline.items():
-            value = payload.get(key)
-            if value is None:
-                value = metrics.get(key)
-            if isinstance(value, (int, float)) and float(value) > 0:
-                bucket.append(float(value))
-        eval_policy = payload.get("evaluation_policy")
-        if isinstance(eval_policy, dict):
-            applied = eval_policy.get("decode_timeout_seconds")
-            if isinstance(applied, (int, float)) and float(applied) > 0:
-                timeout_used = max(float(applied), timeout_used or 0.0)
-    if timeout_used is None:
-        matrix = _read_json(camp_dir / "matrix-proposal.json")
-        for hyp in matrix.get("hypotheses") or []:
-            exp = hyp.get("experiment") if isinstance(hyp, dict) else None
-            knobs = exp.get("knobs") if isinstance(exp, dict) else None
-            applied = (
-                knobs.get("decode_timeout_seconds") if isinstance(knobs, dict) else None
-            )
-            if isinstance(applied, (int, float)) and float(applied) > 0:
-                timeout_used = max(float(applied), timeout_used or 0.0)
-    if timeout_used is None:
-        timing = _read_json(camp_dir / "thrash_timing.json")
-        fit = (
-            timing.get("decode_fit")
-            if isinstance(timing.get("decode_fit"), dict)
-            else {}
-        )
-        applied = fit.get("fitted_decode_timeout_seconds")
-        if isinstance(applied, (int, float)) and float(applied) > 0:
-            timeout_used = float(applied)
-    p95_ms: float | None = None
-    field: str | None = None
-    if latencies_ms:
-        p95_ms = _nearest_rank_p95(latencies_ms)
-        field = "details.latency_ms"
-    else:
-        for key, bucket in headline.items():
-            if bucket:
-                p95_ms = max(bucket)
-                field = key
-                break
-    if p95_ms is not None and p95_ms > 0:
-        out["p95_seconds"] = float(p95_ms) / 1000.0
-        out["source"] = "measured_p95"
-        out["field"] = field
-    out["scoreboards"] = int(boards_n)
-    out["decoded_records"] = int(decoded)
-    out["timeout_records"] = int(timeouts)
-    out["incomplete_rate"] = (
-        float(min(1.0, timeouts / decoded)) if decoded > 0 else None
-    )
-    out["timeout_seconds"] = timeout_used
-    return out
 
 
-def _predecessor_timeout_cause(
-    root: Path | None,
-    predecessor_campaign_id: str | None,
-    *,
-    evidence: Mapping[str, Any] | None = None,
-) -> str:
-    """``budget_timeout`` / ``slow_decode_timeout`` / ``none`` for the predecessor."""
 
-    from slm_training.autoresearch.thrash_regime import classify_timeout_cause
 
-    ev = (
-        dict(evidence)
-        if evidence is not None
-        else _predecessor_decode_p95_seconds(root, predecessor_campaign_id)
-    )
-    return classify_timeout_cause(
-        p95_seconds=ev.get("p95_seconds"),
-        timeout_seconds=ev.get("timeout_seconds"),
-        timeout_count=ev.get("timeout_records"),
-    )
+
+
 
 
 def _fit_screening_decode_timeout_seconds(
@@ -1854,93 +2051,14 @@ def _merged_promotion_power_feasibility(
     }
 
 
-def _counterbalanced_arm_order(
-    control_id: str,
-    candidate_id: str,
-    *,
-    cycle_index: int,
-    seed: int,
-    promotion_replicate_index: int | None = None,
-) -> list[str]:
-    """Serialize matched arms in deterministic AB/BA order without relabeling."""
-
-    if cycle_index < 1:
-        raise ValueError("cycle_index must be positive")
-    if type(seed) is not int:
-        raise TypeError("seed must be an integer")
-    order = [control_id, candidate_id]
-    reverse = (
-        promotion_replicate_index % 2 == 1
-        if promotion_replicate_index is not None
-        else cycle_index % 2 == 0
-    )
-    if reverse:
-        order.reverse()
-    return order
 
 
-def _multi_arm_measurement(policy: Any | None) -> dict[str, Any]:
-    """Read C2 ``measurement.multi_arm``; default when METRIC swarm is unmerged."""
-
-    block: dict[str, Any] = {}
-    measurement = getattr(policy, "measurement", None) if policy is not None else None
-    if isinstance(measurement, Mapping):
-        raw = measurement.get("multi_arm")
-        if isinstance(raw, Mapping):
-            block = dict(raw)
-    max_arms = max(1, int(block.get("max_arms_per_cycle") or 6))
-    return {
-        "max_arms_per_cycle": max_arms,
-        "shared_control": bool(block.get("shared_control", True)),
-        "selection_rule": str(
-            block.get("selection_rule") or SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST
-        ),
-    }
 
 
-def _fit_screening_candidate_count(
-    *,
-    max_candidates: int,
-    arm_wall_seconds: float,
-    stage_remaining_seconds: float,
-    finalization_reserve: float = HARNESS_FINALIZATION_RESERVE_SECONDS,
-) -> tuple[int, str | None]:
-    """Fit k candidates beside one control; never shrink a running arm wall."""
-
-    requested = max(1, int(max_candidates))
-    wall = float(arm_wall_seconds)
-    usable = float(stage_remaining_seconds) - float(finalization_reserve)
-    if wall <= 0:
-        return 1, "invalid_arm_wall"
-    fit = int(usable // wall) - 1
-    if fit < 1:
-        return 1, "stage_wall_fits_one_candidate"
-    if fit < requested:
-        return fit, "stage_wall_fitted_candidate_count"
-    return requested, None
 
 
-def _capacity_view(knobs: Mapping[str, Any]) -> SimpleNamespace:
-    return SimpleNamespace(
-        **{
-            name: knobs[name] if name in knobs else spec["baseline_value"]
-            for name, spec in CAPACITY_SCALING_LEVERS.items()
-        }
-    )
 
 
-def _size_match_skip_reason(
-    control_knobs: Mapping[str, Any], candidate_knobs: Mapping[str, Any]
-) -> str | None:
-    try:
-        require_size_matched_arms(
-            _capacity_view(control_knobs),
-            _capacity_view(candidate_knobs),
-            context="screening-multi-arm",
-        )
-    except ValueError as exc:
-        return f"capacity_unmatched:{exc}"
-    return None
 
 
 def _bind_expected_arms(
@@ -2002,40 +2120,6 @@ def _bind_expected_arms(
     )
 
 
-def _screening_multi_arm_ids(
-    *,
-    matrix: Mapping[str, Any],
-    control_id: str,
-    recommended_id: str,
-    fitted_candidates: int,
-    by_id: Mapping[str, Path],
-) -> tuple[list[str], list[dict[str, str]]]:
-    skipped: list[dict[str, str]] = []
-    control_knobs = _matrix_experiment_knobs(matrix, control_id)
-    ordered: list[str] = []
-    if recommended_id and recommended_id != control_id:
-        ordered.append(str(recommended_id))
-    for row in matrix.get("hypotheses") or []:
-        if not isinstance(row, dict):
-            continue
-        eid = str((row.get("experiment") or {}).get("experiment_id") or "")
-        if not eid or eid == control_id or eid in ordered or eid not in by_id:
-            continue
-        ordered.append(eid)
-    picked: list[str] = []
-    for eid in ordered:
-        if len(picked) >= fitted_candidates:
-            break
-        reason = _size_match_skip_reason(
-            control_knobs, _matrix_experiment_knobs(matrix, eid)
-        )
-        if reason:
-            skipped.append({"arm_id": eid, "reason": reason})
-            continue
-        picked.append(eid)
-    if not picked and recommended_id and recommended_id != control_id:
-        picked = [str(recommended_id)]
-    return picked, skipped
 
 
 def _lock_screening_multi_arm_campaign(
@@ -2103,240 +2187,22 @@ def _lock_screening_multi_arm_campaign(
     return locked
 
 
-def _arm_trainable_params(camp_dir: Path, run_id: str) -> int:
-    summary = _read_json(camp_dir / "runs" / run_id / "train_summary.json")
-    for key in ("trainable_params", "n_params", "parameter_count"):
-        raw = summary.get(key)
-        if isinstance(raw, (int, float)) and not isinstance(raw, bool):
-            return int(raw)
-    return 0
 
 
-def _exhaust_screening_losers(
-    *,
-    root: Path,
-    loop_id: str,
-    policy: Any,
-    matrix: Mapping[str, Any],
-    control_id: str,
-    loser_ids: Sequence[str],
-    claim_class: str,
-    primary_metric: str,
-    direction: str,
-    train_version: str,
-    eval_version: str,
-) -> None:
-    from slm_training.autoresearch.climb_policy import (
-        load_loop_exhausted_ledger,
-        loop_data_eval_identity,
-        save_loop_exhausted_ledger,
-    )
-
-    if not loser_ids:
-        return
-    ledger = load_loop_exhausted_ledger(root, loop_id, policy)
-    for eid in loser_ids:
-        knobs = _matrix_experiment_knobs(matrix, eid)
-        signature = _matrix_treatment_signature(matrix, eid, control_id)
-        if not signature:
-            continue
-        identity = loop_data_eval_identity(
-            policy,
-            claim_class=claim_class,
-            train_version=str(knobs.get("train_version") or train_version),
-            eval_version=str(knobs.get("eval_version") or eval_version),
-            primary_metric=primary_metric,
-            direction=direction,
-        )
-        ledger.record_null(
-            knob_signature_sha256=signature,
-            data_eval_identity=identity,
-            claim_class=claim_class,
-            reason="multi_arm_screening_loser",
-            note=f"arm={eid}",
-        )
-    save_loop_exhausted_ledger(ledger, root, loop_id, policy)
 
 
-def _read_json(path: Path) -> dict[str, Any]:
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return data if isinstance(data, dict) else {}
 
 
-def _metric_from_eval(path: Path, key: str) -> float | None:
-    data = _read_json(path)
-    if key in data and isinstance(data[key], (int, float)):
-        return float(data[key])
-    metrics = data.get("metrics")
-    if isinstance(metrics, dict) and isinstance(metrics.get(key), (int, float)):
-        return float(metrics[key])
-    for suite_name in ("smoke", "held_out"):
-        suite = data.get(suite_name)
-        if isinstance(suite, dict) and isinstance(suite.get(key), (int, float)):
-            return float(suite[key])
-    return None
 
 
-_METRIC_LEAVES = (
-    "latency_ms_p50",
-    "parse_rate",
-    "meaningful_program_rate",
-    "structural_similarity",
-    "binder_reference_f1",
-    "eval_nll",
-)
 
 
-def _run_metrics(
-    camp_dir: Path,
-    run_id: str,
-    *,
-    prefer_held_out: bool = False,
-) -> dict[str, float | None]:
-    """Load smoke (+ held_out when present) metrics for Phase A classification.
-
-    Screening primaries use smoke leaves. Promotion primaries use
-    ``held_out.*`` (policy ``held_out.structural_similarity``). When
-    ``prefer_held_out`` is true and held-out eval exists, leaf keys are filled
-    from held_out so climb_policy leaf lookup and tradeoff paths see the same
-    suite as the dotted primary.
-    """
-    run_dir = camp_dir / "runs" / run_id
-    smoke = run_dir / "eval_smoke.json"
-    if not smoke.exists():
-        smoke = run_dir / "eval.json"
-    held = run_dir / "eval_held_out.json"
-    out: dict[str, float | None] = {leaf: None for leaf in _METRIC_LEAVES}
-
-    if smoke.is_file():
-        for leaf in _METRIC_LEAVES:
-            val = _metric_from_eval(smoke, leaf)
-            if val is not None:
-                out[leaf] = val
-                out[f"smoke.{leaf}"] = val
-
-    if held.is_file():
-        for leaf in _METRIC_LEAVES:
-            val = _metric_from_eval(held, leaf)
-            if val is not None:
-                out[f"held_out.{leaf}"] = val
-                if prefer_held_out:
-                    out[leaf] = val
-    scoreboard = run_dir / "scoreboard.json"
-    if scoreboard.is_file():
-        suites = _read_json(scoreboard).get("suites")
-        smoke_sb = suites.get("smoke") if isinstance(suites, dict) else None
-        if isinstance(smoke_sb, dict) and isinstance(
-            smoke_sb.get("eval_nll"), (int, float)
-        ):
-            nll = float(smoke_sb["eval_nll"])
-            out["eval_nll"] = nll
-            out["smoke.eval_nll"] = nll
-    return out
 
 
-_EVAL_NLL_RECORDS_SCHEMA = "eval_nll_records/v1"
-_EVAL_NLL_RECORDS_NAME = "eval_nll_records.json"
-_OBSERVED_PAIRED_SD_SCHEMA = "observed_paired_sd/v1"
-_OBSERVED_PAIRED_SD_SOURCE = "continuous_driver"
 
 
-def _read_eval_nll_records(run_dir: Path) -> tuple[dict[str, float], str | None]:
-    """``({record_id: nll}, definition_hash)`` from ``eval_nll_records.json``."""
-
-    data = _read_json(Path(run_dir) / _EVAL_NLL_RECORDS_NAME)
-    if data.get("schema") != _EVAL_NLL_RECORDS_SCHEMA:
-        return {}, None
-    raw = data.get("records")
-    if not isinstance(raw, dict):
-        return {}, None
-    records: dict[str, float] = {}
-    for record_id, value in raw.items():
-        number = _finite_metric(value)
-        if number is not None:
-            records[str(record_id)] = number
-    digest = data.get("definition_hash")
-    return records, (str(digest) if digest else None)
 
 
-def _record_observed_paired_sd(
-    path: Path,
-    *,
-    metric_leaf: str,
-    sd: float,
-    n: int,
-    campaign_id: str,
-    control_id: str,
-    candidate_id: str,
-    date: str | None = None,
-) -> bool:
-    """Append one measured paired-delta SD to ``observed_paired_sd_by_metric``.
-
-    Shape written under ``observed_paired_sd_by_metric[<leaf>]`` (the
-    ``{sd, n_deltas, source}`` object form read by
-    ``screening_sample_size.lookup_paired_sd_for_metric``)::
-
-        {"schema": "observed_paired_sd/v1", "sd": <latest>,
-         "n_deltas": <pairs>, "source": "continuous_driver",
-         "date": "YYYY-MM-DD", "history": [{sd, n_deltas, date, campaign_id,
-         control_id, candidate_id}, ...]}
-
-    Backward compatible: a missing slot is created, a bare number or a
-    history-less mapping is folded into ``history`` as the prior snapshot.
-    Idempotent per (campaign, control, candidate). Returns ``True`` when the
-    file changed.
-    """
-    from datetime import datetime, timezone
-
-    path = Path(path)
-    data = _read_json(path)
-    if not data:
-        raise ValueError(f"screening expectations missing or invalid: {path}")
-    slot = data.get("observed_paired_sd_by_metric")
-    if not isinstance(slot, dict):
-        slot = {}
-        data["observed_paired_sd_by_metric"] = slot
-    entry = slot.get(metric_leaf)
-    history: list[dict[str, Any]] = []
-    if isinstance(entry, dict):
-        if isinstance(entry.get("history"), list):
-            history = [row for row in entry["history"] if isinstance(row, dict)]
-        elif entry.get("sd") is not None:
-            history = [{k: v for k, v in entry.items() if k != "schema"}]
-    elif isinstance(entry, (int, float, str)) and not isinstance(entry, bool):
-        history = [{"sd": entry, "n_deltas": None, "date": None, "source": "prior"}]
-    key = (str(campaign_id), str(control_id), str(candidate_id))
-    for row in history:
-        if (
-            str(row.get("campaign_id")),
-            str(row.get("control_id")),
-            str(row.get("candidate_id")),
-        ) == key:
-            return False
-    stamp = date or datetime.now(timezone.utc).date().isoformat()
-    history.append(
-        {
-            "sd": float(sd),
-            "n_deltas": int(n),
-            "date": stamp,
-            "campaign_id": str(campaign_id),
-            "control_id": str(control_id),
-            "candidate_id": str(candidate_id),
-        }
-    )
-    slot[metric_leaf] = {
-        "schema": _OBSERVED_PAIRED_SD_SCHEMA,
-        "sd": float(sd),
-        "n_deltas": int(n),
-        "source": _OBSERVED_PAIRED_SD_SOURCE,
-        "date": stamp,
-        "history": history,
-    }
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    return True
 
 
 def _run_arm_eval_nll(
@@ -2459,43 +2325,8 @@ def _run_arm_eval_nll(
     }
 
 
-def _find_nested_key(payload: Any, key: str, *, depth: int = 6) -> Any:
-    """First value of ``key`` in a nested JSON payload (depth-limited)."""
-
-    if depth < 0:
-        return None
-    if isinstance(payload, dict):
-        if key in payload and payload[key] not in (None, ""):
-            return payload[key]
-        for value in payload.values():
-            found = _find_nested_key(value, key, depth=depth - 1)
-            if found is not None:
-                return found
-    elif isinstance(payload, list):
-        for value in payload:
-            found = _find_nested_key(value, key, depth=depth - 1)
-            if found is not None:
-                return found
-    return None
 
 
-def _arm_eval_version(run_dir: Path) -> str | None:
-    """Eval snapshot the arm was assigned (train summary, manifest, experiment)."""
-
-    run_dir = Path(run_dir)
-    camp_dir = run_dir.parent.parent
-    candidates = (
-        run_dir / "train_summary.json",
-        camp_dir / "manifests" / f"{run_dir.name}.json",
-        camp_dir / "experiments" / f"{run_dir.name}.json",
-    )
-    for path in candidates:
-        if not path.is_file():
-            continue
-        found = _find_nested_key(_read_json(path), "eval_version")
-        if isinstance(found, str) and found.strip():
-            return found.strip()
-    return None
 
 
 def _attach_screening_eval_nll(
@@ -2560,16 +2391,10 @@ def _attach_screening_eval_nll(
 
 
 # Phase A positive classification: latency is never a free win over quality.
-_EPS = 1e-12
 # Smoke fixture n≈3 → one meaningful program is ~1/3. Below that a latency
 # blip is not a real win (parse-only / empty-meaning arms).
-_MIN_MPR_FOR_LATENCY_WIN = 1.0 / 3.0 - 1e-9
 # Quality improvements may pay up to this latency regression (relative or abs).
-_LATENCY_REGRESSION_BUDGET = 0.15
-_LATENCY_REGRESSION_ABS_MS = 750.0
 # ~12s wall-band noise must not mint positives.
-_TIMEOUT_BAND_LO_MS = 11900.0
-_TIMEOUT_BAND_HI_MS = 12150.0
 _WIN_REASON_PREFIXES = (
     "primary_metric_win:",
     "quality_metric_win:",
@@ -2578,27 +2403,6 @@ _WIN_REASON_PREFIXES = (
 )
 
 
-def _measurement_is_complete(decision: dict[str, Any]) -> bool:
-    incomplete_prefixes = (
-        "empty_metrics:",
-        "measurement_incomplete:",
-        "primary_metric_unavailable",
-        "wall_timeout:",
-    )
-    has_metrics = all(
-        any(_finite_metric(value) is not None for value in metrics.values())
-        for metrics in (
-            decision.get("control_metrics") or {},
-            decision.get("candidate_metrics") or {},
-        )
-    )
-    return bool(
-        has_metrics
-        and not any(
-            str(reason).startswith(incomplete_prefixes)
-            for reason in decision.get("reasons") or []
-        )
-    )
 
 
 # Champion queue: quality-held wins retest with same levers, new seeds, before
@@ -2623,81 +2427,9 @@ _CHAMPION_STATUSES = frozenset(
         "harness_failure",
     }
 )
-_RETRYABLE_PROMOTE_STATUSES = frozenset(
-    {"confirmed", "promotion_inconclusive", "harness_failure"}
-)
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
-_LEVER_KNOB_KEYS = (
-    "ltr_prefix_loss_weight",
-    "component_token_loss_weight",
-    "component_edge_token_loss_weight",
-    "compiler_decision_token_loss_weight",
-    "structure_token_loss_weight",
-    "typed_family_balance_loss_weight",
-    "ltr_tail_loss_weight",
-    "compiler_alignment_loss_weight",
-    "compiler_alignment_margin",
-    "compiler_alignment_stratified",
-    "compiler_alignment_semantic_exhaustive",
-    "compiler_alignment_kind_filter",
-    "grammar_completion_bounds",
-    "grammar_equivalence_cache",
-    "grammar_draft_window",
-    "compact_active_canvas",
-    "mixture_sampling_policy",
-    "mixture_exposure_target_profile",
-    "mixture_total_decision_budget",
-    "mixture_per_root_cap",
-    "mixture_per_template_cap",
-    "mixture_max_importance_weight",
-    "component_plan_loss_weight",
-    "component_plan_decode_weight",
-    "solver_energy_loss_weight",
-    "solver_energy_decode_weight",
-    "legal_edit_hazard_loss_weight",
-    "legal_edit_hazard_decode_weight",
-    "component_edge_loss_weight",
-    "component_edge_alignment_loss_weight",
-    "component_edge_decode_weight",
-    "component_inventory_loss_weight",
-    "component_inventory_decode_weight",
-    "binder_topology_loss_weight",
-    "binder_topology_decode_weight",
-    "binder_component_plan_loss_weight",
-    "binder_component_plan_decode_weight",
-    "binder_arity_loss_weight",
-    "binder_arity_decode_weight",
-    "slot_component_loss_weight",
-    "slot_component_decode_weight",
-    "slot_contract_in_context",
-    "constraint_graph_mode",
-    "symbol_boundary_loss_weight",
-    "design_md_dropout",
-    "fidelity_loss_weight",
-    "semantic_contrast_dir",
-    "semantic_contrast_loss_weight",
-    "semantic_contrast_margin",
-    "semantic_contrast_fraction",
-    "symbol_slot_augmentation",
-    "mask_pattern",
-    "structural_aux_head_profile",
-    "compiler_decode_mode",
-    "steps",
-    "batch_size",
-    "lr",
-    "train_version",
-    "context_backend",
-    "sync_checkpoints",
-    "local_files_only",
-    "output_tokenizer",
-)
-_QUALITY_ENQUEUE_PREFIXES = (
-    "quality_held:",
-    "quality_metric_win:",
-)
 # Dedup identity ignores cycle-local steps jitter (continuous does steps+(cycle%3)).
-_FINGERPRINT_EXCLUDE_KEYS = frozenset({"steps"})
 # Soft bound: confirm/promote attempts before the queue head is rejected.
 _MAX_CONFIRM_ATTEMPTS = 2
 _MAX_PROMOTE_ATTEMPTS = 2
@@ -2756,7 +2488,6 @@ _COLD_START_PROBE_RECORDS = 6
 # ``ExperimentKnobs`` field, so a noise-rate arm could never move weights.
 # ExperimentKnobs-only keys with no ``lever_catalog()`` row (category used
 # when classifying bank arms; ``train_version`` selects the data corpus).
-_EXPERIMENT_ONLY_KNOB_CATEGORIES: dict[str, str] = {"train_version": "data"}
 _SCREENING_ARM_BANK: tuple[tuple[str, str, dict[str, Any]], ...] = (
     (
         "data-certified",
@@ -3302,17 +3033,7 @@ _STATIC_DATA_ARM_SLUGS: frozenset[str] = frozenset(
 # non-positive measurement. A single fixture-noise null must not close the
 # approach forever (aligns with climb recipe_null_cap / promotion min_seeds).
 _DEFAULT_ARM_CLOSE_MIN_NULL_SEEDS = 2
-_BANK_EXHAUST_MSG = (
-    "registered screening arm bank exhausted; add a distinct preregistered "
-    "quality objective instead of recycling a rejected approach"
-)
 # Handoff reasons use "quality-arm bank"; runtime uses "screening arm bank".
-_BANK_EXHAUST_MARKERS = (
-    "quality-arm bank exhausted",
-    "screening arm bank exhausted",
-    "arm bank exhausted",
-    "registered quality-arm bank is exhausted",
-)
 # Loop-local thrash successors synthesized when the static bank is multi-seed
 # exhausted. Persistent under loops/<id>/dynamic_thrash_arms.jsonl so the
 # continuous driver self-heals without a human re-prompt.
@@ -3333,27 +3054,14 @@ _THRASH_COMPOSE_ATOMS: tuple[tuple[str, Any], ...] = (
 _SELF_HEAL_BANK_BATCH = 5
 
 
-def _finite_metric(value: object) -> float | None:
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    return None
-
-
-def _in_timeout_band(latency_ms: float | None) -> bool:
-    return (
-        latency_ms is not None
-        and _TIMEOUT_BAND_LO_MS <= latency_ms <= _TIMEOUT_BAND_HI_MS
-    )
-
-
-def _champion_queue_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "champion_queue.jsonl"
 
 
 
 
-def _driver_lock_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / _DRIVER_LOCK_BASENAME
+
+
+
+
 
 
 # Test / driver hook: when set, wins over the climb policy's screening primary.
@@ -3393,32 +3101,10 @@ def _arm_is_self_control(extras: Mapping[str, Any] | None) -> bool:
     return str(public["train_version"] or "") == _default_screening_train_version()
 
 
-def _arm_swaps_train_corpus(
-    extras: Mapping[str, Any] | None, *, control_train_version: str
-) -> bool:
-    """True when the arm's ``train_version`` differs from the control corpus.
-
-    Warm-start cycles fork the champion for both arms on identical data, so a
-    corpus-swap arm cannot be paired there (``warm_start:unequal_train_data``).
-    """
-    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
-    if "train_version" not in public:
-        return False
-    return str(public["train_version"] or "") != str(control_train_version or "")
 
 
-def _bank_lever_categories() -> dict[str, str]:
-    """``lever_catalog()`` categories plus the ExperimentKnobs-only knob keys."""
-    from slm_training.levers import lever_catalog
-
-    out = {name: str(spec.get("category") or "") for name, spec in lever_catalog().items()}
-    out.update(_EXPERIMENT_ONLY_KNOB_CATEGORIES)
-    return out
 
 
-def _latency_only_arm(extras: Mapping[str, Any] | None) -> bool:
-    """Bank-row classifier: every public knob is a decode/run cost lever."""
-    return is_latency_only_arm(extras, lever_categories=_bank_lever_categories())
 
 
 def _all_screening_arm_bank() -> tuple[tuple[str, str, dict[str, Any]], ...]:
@@ -3444,24 +3130,10 @@ def _recent_exhaustion_cycle_window() -> int:
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
 
 # Cycle status returned when a parked terminal verdict short-circuits run_cycle.
-_REGIME_PARKED_STATUS = "regime-parked"
 
 
-def _terminal_verdict_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "terminal_verdict.json"
 
 
-def _terminal_park_on_exhaust(policy: Any | None = None) -> bool:
-    """Policy-gated bank-exhaust parking (``terminal`` block; defaults off)."""
-    try:
-        from slm_training.autoresearch.climb_policy import load_climb_policy
-
-        pol = policy if policy is not None else load_climb_policy()
-        payload = getattr(pol, "payload", None) or {}
-        block = payload.get("terminal") if isinstance(payload, Mapping) else None
-        return bool(isinstance(block, Mapping) and block.get("park_on_exhaust"))
-    except Exception:  # noqa: BLE001 — parking never blocks the legacy path
-        return False
 
 
 def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
@@ -3504,18 +3176,9 @@ def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
-_PROCESS_ARM_FLAG_KEYS = ("heal_resume", "_heal_resume", "process_arm")
-_PROCESS_ROLES = frozenset({"heal_resume", "rebuild_data", "first_snapshot"})
 _PROCESS_ARM_KNOB_KEYS = frozenset({"heal_resume", "process_arm", "process_role"})
 
 
-def _is_process_arm(extras: Mapping[str, Any] | None) -> bool:
-    """True for heal/resume/first-snapshot arms — execution, not confirmatory climb."""
-    extras = extras or {}
-    if any(extras.get(key) for key in _PROCESS_ARM_FLAG_KEYS):
-        return True
-    role = extras.get("process_role")
-    return isinstance(role, str) and role in _PROCESS_ROLES
 
 
 def _train_version_has_complete_nonpositive(
@@ -3718,130 +3381,6 @@ def _park_screening_saturation(
     return _REGIME_PARKED_STATUS
 
 
-def _park_screening_n_deficit(
-    *,
-    root: Path,
-    loop_id: str,
-    campaign_id: str,
-    cycle_index: int,
-    report: dict[str, Any],
-) -> str:
-    """Skip screening; queue the action the binding constraint actually needs.
-
-    The report distinguishes two causes of an empty range and only one of them
-    is a data deficit. ``suite_volume`` means the published suite is smaller
-    than the decidability floor, and generating records clears it. But
-    ``wall_budget`` means the arm wall affords fewer records than the floor at
-    the declared decode cost, and no amount of generated data clears that: a
-    ``rebuild_data`` ask there is an action nobody can discharge -- the
-    synthesis owner publishes records, the range stays empty, and the next
-    cycle parks again having spent real work. The report's own suggestion
-    names that remedy (cheaper per-record decode or a larger stage share,
-    never a silent wall++), which is harness territory. Both can bind at once.
-    """
-
-    handoff_path = root / campaign_id / "cycle_handoff.json"
-    if not handoff_path.is_file():
-        raise RuntimeError(
-            "screening n deficit without a typed predecessor handoff"
-        )
-    handoff = AutotrainCycleHandoffV1.model_validate_json(
-        handoff_path.read_text(encoding="utf-8")
-    )
-    evidence_ids = (f"campaign:{campaign_id}",)
-    binding = tuple(report.get("binding_constraints") or ())
-    n_min = report.get("n_min") or 6
-    remedies: list[AutotrainActionV1] = []
-    if "suite_volume" in binding or report.get("must_generate") or not binding:
-        # No binding constraint recorded means the cause is unknown; the
-        # historical ask stays, so an unclassified deficit never parks silently.
-        remedies.append(
-            AutotrainActionV1(
-                kind="rebuild_data",
-                owner="synthesis-feedback",
-                reason=(
-                    "screening suite_volume binds "
-                    f"(suite_ceiling_n={report.get('suite_ceiling_n')}): generate "
-                    f"and persist smoke n>={n_min} instead of screening at an "
-                    "undecidable n"
-                ),
-                evidence_ids=evidence_ids,
-            )
-        )
-    wall_budget_binds = "wall_budget" in binding
-    if wall_budget_binds:
-        remedies.append(
-            AutotrainActionV1(
-                kind="repair_harness",
-                owner="improve-openui-harnesses",
-                harness_family="model_build",
-                reason=(
-                    "screening wall_budget binds: the arm wall affords "
-                    f"{report.get('budget_ceiling_n')} records at the declared "
-                    f"decode floor and the decidability floor is {n_min}; "
-                    "cheaper per-record decode or a larger stage share, never "
-                    "a silent wall++ (generating records cannot clear this)"
-                ),
-                evidence_ids=evidence_ids,
-            )
-        )
-    if not remedies:
-        # A constraint neither branch recognizes (a third one added later).
-        # The old code always queued a data ask, so falling back to it keeps
-        # the park from silently requesting nothing at all; the reason names
-        # the constraint so the owner can see it was not understood here.
-        remedies.append(
-            AutotrainActionV1(
-                kind="rebuild_data",
-                owner="synthesis-feedback",
-                reason=(
-                    "screening range is empty under an unrecognized binding "
-                    f"constraint ({', '.join(binding)}); n_min={n_min}, "
-                    f"suite_ceiling_n={report.get('suite_ceiling_n')}, "
-                    f"budget_ceiling_n={report.get('budget_ceiling_n')}"
-                ),
-                evidence_ids=evidence_ids,
-            )
-        )
-    actions = (
-        *remedies,
-        AutotrainActionV1(
-            kind="next_experiment",
-            owner="autotrain",
-            reason=(
-                "resume screening only once the binding constraint clears: "
-                f"{', '.join(binding) or 'cause unrecorded'}"
-            ),
-            evidence_ids=evidence_ids,
-        ),
-    )
-    handoff_path.write_text(
-        handoff.model_copy(update={"actions": actions}).model_dump_json(indent=2)
-        + "\n",
-        encoding="utf-8",
-    )
-    _write_loop_state(
-        root,
-        AutotrainLoopStateV1(
-            loop_id=loop_id,
-            state="BLOCKED",
-            phase="blocked",
-            active_campaign_id=None,
-            last_completed_campaign_id=campaign_id,
-            cycle_index=cycle_index,
-            next_action="rebuild_data",
-            blocker_fingerprint="screening_n_suite_volume",
-            blocker_count=1,
-            pid=os.getpid(),
-        ),
-    )
-    print(
-        f"SCREENING_N_PARK loop={loop_id} campaign={campaign_id} "
-        f"must_generate={report.get('must_generate')} "
-        f"binding={report.get('binding_constraints')}",
-        flush=True,
-    )
-    return "screening-n-deficit"
 
 
 def _latest_hypothesis_feedback(
@@ -3882,16 +3421,6 @@ def _latest_hypothesis_feedback(
     )
 
 
-def _current_rung_label() -> str:
-    """Current uncertified rung from climb policy (I10 — never skip ahead)."""
-    try:
-        from slm_training.autoresearch.climb_policy import load_climb_policy
-
-        return str(
-            load_climb_policy().rung_gates.get("current_rung") or "grammar_2_ast"
-        )
-    except Exception:  # noqa: BLE001 — park prose must stay computable
-        return "grammar_2_ast"
 
 
 def _capability_objective_refresh_actions(
@@ -3936,25 +3465,8 @@ def _capability_objective_refresh_actions(
     )
 
 
-def _short_lever_token(key: str) -> str:
-    token = key.replace("_loss_weight", "").replace("_weight", "").replace("_", "-")
-    return token[:24]
 
 
-def _compose_atom_extras(key: str, value: Any) -> dict[str, Any]:
-    extras: dict[str, Any] = {key: value}
-    if key == "semantic_contrast_loss_weight":
-        extras.update(
-            {
-                "semantic_contrast_dir": (
-                    "src/slm_training/resources/data/eval/openui_hard_valid_v1"
-                ),
-                "semantic_contrast_margin": 1.0,
-                "semantic_contrast_fraction": 0.5,
-                "batch_size": 3,
-            }
-        )
-    return extras
 
 
 def _load_dynamic_thrash_arms(root: Path, loop_id: str) -> None:
@@ -4012,26 +3524,6 @@ def _append_dynamic_thrash_arms(
             _DYNAMIC_THRASH_ARMS.append((slug, hyp, live))
 
 
-def _thrash_lever_signature(extras: dict[str, Any] | None) -> str:
-    """Stable identity for thrash recipes (excludes measurement / private keys)."""
-    raw = {
-        k: v
-        for k, v in (extras or {}).items()
-        if not str(k).startswith("_")
-        and k
-        not in {
-            "seed",
-            "steps",
-            "decode_timeout_seconds",
-            "generate_batch_size",
-            "latency_probe_records",
-            "latency_probe_planned_n",
-        }
-    }
-    # Prefer registered lever subset when present so static/dynamic arms align.
-    levers = _lever_knobs(raw)
-    payload = levers if levers else raw
-    return _knobs_fingerprint(payload)
 
 
 def _known_thrash_lever_signatures() -> set[str]:
@@ -4040,12 +3532,6 @@ def _known_thrash_lever_signatures() -> set[str]:
     }
 
 
-def _finalize_compose_extras(extras: dict[str, Any], *, slug: str) -> dict[str, Any]:
-    out = dict(extras)
-    out["_thrash_slug"] = slug
-    if out.get("semantic_contrast_loss_weight") and int(out.get("batch_size") or 0) < 3:
-        out["batch_size"] = 3
-    return out
 
 
 def _synthesize_thrash_arms(
@@ -4195,93 +3681,10 @@ def _self_heal_thrash_bank_exhaust(
     return _ThrashBankHeal(bool(open_after), True)
 
 
-def _last_cycle_failure_message(root: Path, loop_id: str) -> str | None:
-    """Return the most recent blocking cycle failure message for this loop."""
-    path = root / "loops" / loop_id / "cycle_failures.jsonl"
-    if not path.is_file():
-        return None
-    last: str | None = None
-    for line in path.read_text(encoding="utf-8").splitlines():
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(row, dict) or row.get("loop_id") != loop_id:
-            continue
-        if row.get("blocking") is False:
-            continue
-        msg = str(row.get("message") or "").strip()
-        if msg:
-            last = msg
-    return last
 
 
-def _delivery_is_thrash_timeout_residual(
-    delivery: Mapping[str, Any] | None,
-    handoff: AutotrainCycleHandoffV1 | None = None,
-) -> bool:
-    """True when incomplete measurement is thrash wall/decode residual, not a hard harness bug.
-
-    Residual requires **explicit timeout evidence**: some arm exit of 124 or a
-    ``wall_timeout`` / ``decode_timeout`` style marker in the reasons. Bare
-    ``measurement_incomplete`` / ``missing_scoreboard`` /
-    ``primary_metric_unavailable`` never suffice — those also appear when an
-    arm process crashed (``harness_failure:<arm>:experiment_failed`` with exit
-    2), and reading that crash as a soft residual dropped the
-    ``repair_harness`` blocker for cycles c536..c543. A crash exit (non-zero,
-    non-124) next to the harness-failure marker is always a harness failure.
-    """
-    # Single source of truth shared with the heal-playbook classifier so the
-    # emission-time markers and the crash/residual split can never drift.
-    from slm_training.autoresearch.heal.classify import (
-        HARD_HARNESS_MARKERS,
-        HARNESS_CRASH_REASON_RE,
-        TIMEOUT_RESIDUAL_MARKERS,
-        crash_arm_exits,
-        timeout_arm_exits,
-    )
-
-    reasons: list[str] = []
-    exits: Mapping[str, Any] = {}
-    if delivery:
-        reasons.extend(str(r) for r in (delivery.get("reasons") or []))
-        raw_exits = delivery.get("arm_exits") or {}
-        if isinstance(raw_exits, Mapping):
-            exits = raw_exits
-    if handoff is not None:
-        reasons.extend(str(r) for r in (handoff.reasons or ()))
-        for action in handoff.actions:
-            reasons.append(str(action.reason or ""))
-    joined = " ".join(reasons).lower()
-    if any(m in joined for m in HARD_HARNESS_MARKERS):
-        return False
-    timeout_exit = timeout_arm_exits(exits)
-    crash_exit = crash_arm_exits(exits)
-    explicit_timeout = any(m in joined for m in TIMEOUT_RESIDUAL_MARKERS)
-    if crash_exit and HARNESS_CRASH_REASON_RE.search(joined):
-        # An arm process died (exit != 124) without a scoreboard: a harness
-        # failure regardless of any wall exit elsewhere in the delivery.
-        return False
-    return timeout_exit or explicit_timeout
 
 
-def _merge_head_path(cwd: Path) -> Path | None:
-    """Return MERGE_HEAD path when a merge is in progress, else None."""
-    try:
-        rel = subprocess.check_output(
-            ["git", "rev-parse", "--git-path", "MERGE_HEAD"],
-            cwd=cwd,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-    except (subprocess.CalledProcessError, OSError):
-        return None
-    if not rel:
-        return None
-    path = Path(rel)
-    if not path.is_absolute():
-        path = cwd / path
-    return path if path.is_file() else None
 
 
 def _abort_in_progress_merge(*, cwd: Path, root: Path, loop_id: str) -> bool:
@@ -4584,42 +3987,6 @@ def _self_heal_git_ancestry(
     return _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id)
 
 
-def _exception_is_soft_continuous(exc: BaseException) -> bool:
-    """True when the failure class is thrash-soft and must not create BLOCKED."""
-    if isinstance(exc, (subprocess.TimeoutExpired, TimeoutError, ConnectionError)):
-        return True
-    if isinstance(exc, subprocess.CalledProcessError):
-        cmd = [str(x) for x in (exc.cmd or ())]
-        if cmd[:2] == ["git", "fetch"]:
-            return True
-        if "merge-base" in cmd or "is-ancestor" in cmd:
-            return True
-    message = str(exc)
-    # Document / dirty / thrash residual / soft identity are soft.
-    if "unacknowledged actions" in message and ":document" in message:
-        return True
-    if "loop worktree is dirty" in message:
-        return True
-    if "unacknowledged actions" in message and "repair_harness" in message:
-        # Soft until proven hard: thrash residual / bank-exhaust heal will clear;
-        # true AgentV hard cases re-raise after unblock reports hard_pending.
-        return True
-    if any(m in message.lower() for m in _BANK_EXHAUST_MARKERS):
-        return True
-    if any(
-        m in message
-        for m in (
-            "campaign already exists with different spec",
-            "conflicts with supplied feedback",
-            "screening arm bank exhausted",
-            _BANK_EXHAUST_MSG,
-            "FROZEN_REPLAY_SKIP",
-            "frozen replay control manifest is missing",
-            "missing_control_manifest",
-        )
-    ):
-        return True
-    return False
 
 
 def _is_bank_exhaust_repair_action(action: AutotrainActionV1) -> bool:
@@ -5198,33 +4565,6 @@ def _self_heal_dedupe_dynamic_thrash_arms(root: Path, loop_id: str) -> bool:
     return bool(kept)
 
 
-def _clear_loop_blocker(root: Path, loop_id: str, *, reason: str) -> None:
-    """Return loop state to runnable after a successful self-heal."""
-    path = _loop_state_path(root, loop_id)
-    cycle_index = 0
-    if path.is_file():
-        try:
-            prev = AutotrainLoopStateV1.model_validate_json(
-                path.read_text(encoding="utf-8")
-            )
-            cycle_index = int(prev.cycle_index or 0)
-        except (OSError, ValueError):
-            pass
-    _write_loop_state(
-        root,
-        AutotrainLoopStateV1(
-            loop_id=loop_id,
-            state="IDLE",
-            phase="between_cycles",
-            cycle_index=cycle_index,
-            next_action=f"continue_after_self_heal:{reason}",
-            blocker_fingerprint=None,
-            blocker_count=0,
-            pid=os.getpid(),
-            heartbeat_at=utc_now(),
-        ),
-    )
-    print(f"SELF_HEAL_CLEAR_BLOCKER reason={reason}", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -5242,92 +4582,21 @@ _HARD_PREREQUISITE_ACTION_KINDS = frozenset(
 )
 
 
-def _normalize_repo_relpath(rel: str) -> str:
-    """POSIX repo-relative path: strip a ``./`` prefix, keep leading-dot files."""
-    # ponytail: str.lstrip("./" ) is a charset strip and would turn ".serena" into "serena".
-    return rel.replace("\\", "/").lstrip().removeprefix("./")
 
 
-def _is_continuous_closeout_path(rel: str) -> bool:
-    """True when a dirty path is continuous-driver closeout material only."""
-    path = _normalize_repo_relpath(rel)
-    if path in {"docs/MODEL_CARD.md", "README.md"}:
-        return True
-    # Family closures are append-only machine-written science (WP-4): the
-    # supervisor's conclusion writer appends them and the driver commits them
-    # exactly like continuous results docs.
-    if path == (
-        "src/slm_training/resources/experiments/autotrain_climb/"
-        "closed_approaches.v1.json"
-    ):
-        return True
-    if path == "src/slm_training/resources/test_seeds.jsonl":
-        return True
-    if path.startswith(
-        "src/slm_training/resources/data/eval/e938_role_safe_all_targets_smoke6_v1/"
-    ):
-        return True
-    if not path.startswith("docs/design/"):
-        return False
-    name = path[len("docs/design/") :]
-    if "/" in name:
-        return False
-    return name.startswith("continuous-") and name.endswith((".md", ".json"))
 
 
 # Tracked mirrors the driver itself mutates (evidence-store sync, similar).
 # Restore to HEAD — never treat as human WIP, never commit every cycle.
-_LOOP_OWNED_GENERATED_PATHS = frozenset(
-    {
-        "src/slm_training/resources/evidence_store/local_index.jsonl",
-    }
-)
-_LOOP_OWNED_GENERATED_SUFFIXES = (
-    "/evidence_store/local_index.jsonl",
-    "/screening_sample_size.json",
-)
 
 
-def _is_loop_owned_generated_path(rel: str) -> bool:
-    """True when the continuous driver is allowed to dirty this tracked path."""
-    path = _normalize_repo_relpath(rel)
-    if path in _LOOP_OWNED_GENERATED_PATHS:
-        return True
-    return any(path.endswith(suffix) for suffix in _LOOP_OWNED_GENERATED_SUFFIXES)
 
 
-def _is_foreign_dirty_path(rel: str) -> bool:
-    """True when porcelain path should hard-block continuous thrash."""
-    path = _normalize_repo_relpath(rel)
-    if _is_continuous_closeout_path(path):
-        return False
-    if _is_loop_owned_generated_path(path):
-        return False
-    # Runtime artifacts are never continuous blockers (usually gitignored).
-    if path == "outputs" or path.startswith("outputs/"):
-        return False
-    if path.startswith(".pytest_cache/") or path == ".pytest_cache":
-        return False
-    # Serena cache/memories are local agent state; tracked config still blocks
-    # unless the project.yml rewrite is a comment/whitespace-only strip.
-    if path == ".serena" or path.startswith(".serena/"):
-        return path in {".serena/project.yml", ".serena/.gitignore"}
-    return True
 
 
 _SERENA_PROJECT_YML = ".serena/project.yml"
 
 
-def _yaml_mapping_equal(left: str, right: str) -> bool:
-    """True when both texts parse to the same YAML value (comments ignored)."""
-    try:
-        import yaml
-    except ImportError:  # pragma: no cover — PyYAML is a repo dep
-        return False
-    try:
-        return yaml.safe_load(left) == yaml.safe_load(right)
-    except yaml.YAMLError:
-        return False
 
 
 def _maybe_restore_serena_project_yml(
@@ -5364,31 +4633,8 @@ def _maybe_restore_serena_project_yml(
     return "serena_project_yml_comment_strip"
 
 
-def _porcelain_paths(porcelain: str) -> list[str]:
-    """Parse ``git status --porcelain`` paths robustly (XY + space + path)."""
-    paths: list[str] = []
-    for line in porcelain.splitlines():
-        if not line.strip():
-            continue
-        # Standard format: two-char XY, space, path (optional rename "a -> b").
-        if len(line) >= 4 and line[2] == " ":
-            body = line[3:]
-        else:
-            # Fallback: first space-separated field after status token.
-            parts = line.split(" ", 1)
-            body = parts[1] if len(parts) > 1 else line
-        if " -> " in body:
-            body = body.split(" -> ", 1)[1]
-        path = body.strip().strip('"')
-        if path:
-            paths.append(path)
-    return paths
 
 
-def _continuous_docs_paths(cwd: Path, campaign_id: str) -> tuple[Path, Path]:
-    design = cwd / "docs" / "design"
-    stem = f"{campaign_id}-results"
-    return design / f"{stem}.md", design / f"{stem}.json"
 
 
 def _render_continuous_cycle_docs(
@@ -5480,8 +4726,6 @@ def _render_continuous_cycle_docs(
 
 
 
-def _hillclimb_review_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "hillclimb_stagnation_review.json"
 
 
 
@@ -5677,15 +4921,11 @@ def _ack_document_action(
 
 
 # Wall-capped local CPU I10 heal. Policy min_unique_roots=32 is promotion-scale.
-_LOCAL_I10_ROOT_CAP = 8
 # Rung-honest: the heal rebuild compiles the climb-policy plan for the
 # *current* rung (I10 — never a skipped rung's corpus, see _current_rung_label).
 _HEAL_RESUME_SLUG = "current-rung-data-heal"
 
 
-def _local_i10_train_version(loop_id: str, cycle_index: int) -> str:
-    safe = re.sub(r"[^a-z0-9]+", "_", str(loop_id).lower()).strip("_")
-    return f"continuous_i10_{safe}_c{int(cycle_index)}"
 
 
 def _sample_adequacy_report(cwd: Path) -> dict | None:
@@ -5740,55 +4980,6 @@ def _sample_adequacy_report(cwd: Path) -> dict | None:
     return compute_sample_adequacy(observation).model_dump(mode="json")
 
 
-def _local_rebuild_data_argv(
-    *, train_version: str, adequacy: dict | None = None
-) -> list[str]:
-    """Compile a local, data-only build_train_data command from climb policy.
-
-    When the cycle's sample-adequacy verdict is ``generate_more``, the
-    rebuild is shaped by ``sample_adequacy_intervention`` (until_coverage
-    targeting). The local wall-capped heal keeps the plan's own coverage
-    minima — the raised component minimum applies at promotion scale, where
-    the fail-closed build has the attempt budget to satisfy it.
-    """
-    from slm_training.autoresearch.climb_policy import (
-        data_intervention_action,
-        load_climb_policy,
-        sample_adequacy_intervention,
-    )
-    from slm_training.autoresearch.engine import _data_generation_flags
-    from slm_training.autoresearch.schemas import DataGenerationKnobs
-
-    policy = load_climb_policy()
-    spec = data_intervention_action(policy)
-    if adequacy is not None:
-        shaped = sample_adequacy_intervention(policy, adequacy)
-        if shaped is not None and shaped.get("kind") == "rebuild_data":
-            spec = shaped
-    raw = dict(spec.get("data_generation") or {})
-    # Use the policy plan's legal surface. cap0_tiny is CAP0_GRAMMAR and
-    # rejects simplified_nl; I10 NL waits on a CAP1 plan, not a forced flag.
-    raw["data_only"] = True
-    target = int(raw.get("unique_root_target") or spec.get("min_unique_roots") or 8)
-    raw["unique_root_target"] = max(1, min(target, _LOCAL_I10_ROOT_CAP))
-    # Local CPU heal stays reliable: the plan's own minima apply here; the
-    # raised component_coverage_minimum is a promotion-scale instruction.
-    raw.pop("component_coverage_minimum", None)
-    generation = DataGenerationKnobs.model_validate(raw)
-    return [
-        sys.executable,
-        "-m",
-        "scripts.build_train_data",
-        "--source",
-        "programspec",
-        "--version",
-        train_version,
-        "--immutable",
-        # The heal snapshot lives under outputs/; publishing into tracked
-        # resources/ mid-cycle parks the loop as foreign_dirty_tree.
-        "--no-publish",
-        *_data_generation_flags(generation),
-    ]
 
 
 def _rebuild_data_artifact_sources(train_dir: Path) -> dict[str, Path] | None:
@@ -5901,8 +5092,6 @@ def _register_i10_heal_arm(
     _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
 
 
-def _heal_retired_versions_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "heal_retired_versions.jsonl"
 
 
 def _retired_heal_versions(root: Path, loop_id: str) -> set[str]:
@@ -6895,46 +6084,12 @@ def self_heal_unblock_loop(
     return report
 
 
-def _record_cycle_recovery(
-    *,
-    root: Path,
-    loop_id: str,
-    soft_healed: Sequence[str],
-    predecessor_campaign_id: str | None,
-) -> None:
-    """Append a non-blocking recovery event so soft failures do not accumulate."""
-    path = root / "loops" / loop_id / "cycle_failures.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    record = {
-        "schema": "autotrain_cycle_recovery/v1",
-        "loop_id": loop_id,
-        "predecessor_campaign_id": predecessor_campaign_id,
-        "soft_healed": list(soft_healed),
-        "blocking": False,
-        "recovered": True,
-        "consecutive_count": 0,
-        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(record, sort_keys=True) + "\n")
 
 
-def _loop_state_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "state.json"
 
 
-def _write_loop_state_unlocked(root: Path, state: AutotrainLoopStateV1) -> Path:
-    path = _loop_state_path(root, state.loop_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(state.model_dump_json(indent=2) + "\n", encoding="utf-8")
-    tmp.replace(path)
-    return path
 
 
-def _write_loop_state(root: Path, state: AutotrainLoopStateV1) -> Path:
-    with autotrain_loop_state_lock(root, state.loop_id):
-        return _write_loop_state_unlocked(root, state)
 
 
 def _set_active_stage(root: Path, loop_id: str, stage: str) -> None:
@@ -7011,76 +6166,6 @@ def _clear_active_stage(root: Path, loop_id: str) -> None:
         )
 
 
-def _record_cycle_failure(
-    *, root: Path, loop_id: str, exc: Exception, cycle_index: int
-) -> int:
-    """Persist a stable blocker fingerprint and return its consecutive count.
-
-    Soft continuous failures (document, thrash timeout residual, dirty closeout,
-    bank exhaust, soft identity) never accumulate to ``state=BLOCKED``.
-    """
-    message = str(exc).strip() or exc.__class__.__name__
-    fingerprint = hashlib.sha256(
-        f"{exc.__class__.__name__}:{message}".encode("utf-8")
-    ).hexdigest()
-    path = root / "loops" / loop_id / "cycle_failures.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    previous: list[dict[str, Any]] = []
-    if path.is_file():
-        for line in path.read_text(encoding="utf-8").splitlines()[-2:]:
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(row, dict):
-                previous.append(row)
-    soft = _exception_is_soft_continuous(exc)
-    count = 0 if soft else 1
-    if not soft:
-        for row in reversed(previous):
-            if (
-                not row.get("blocking", True)
-                or row.get("recovered")
-                or row.get("fingerprint") != fingerprint
-            ):
-                break
-            count += 1
-    record = {
-        "schema": "autotrain_cycle_failure/v1",
-        "loop_id": loop_id,
-        "cycle_index": cycle_index,
-        "error_type": exc.__class__.__name__,
-        "message": message,
-        "fingerprint": fingerprint,
-        "consecutive_count": count,
-        "blocking": not soft,
-        "soft": soft,
-        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(record, sort_keys=True) + "\n")
-    blocked = not soft and count >= 3
-    _write_loop_state(
-        root,
-        AutotrainLoopStateV1(
-            loop_id=loop_id,
-            state="BLOCKED" if blocked else "IDLE",
-            phase="blocked" if blocked else "between_cycles",
-            cycle_index=max(0, cycle_index),
-            next_action=(
-                "repair repeated blocker"
-                if blocked
-                else "retry incomplete cycle"
-                if soft
-                else "retry cycle"
-            ),
-            blocker_fingerprint=fingerprint if not soft else None,
-            blocker_count=count if not soft else 0,
-            pid=os.getpid(),
-            heartbeat_at=utc_now(),
-        ),
-    )
-    return count
 
 
 def acquire_driver_lock(
@@ -7125,24 +6210,8 @@ def acquire_driver_lock(
     return fh
 
 
-def _lever_knobs(knobs: dict[str, Any] | None) -> dict[str, Any]:
-    """Stable lever subset for confirm retests (excludes seed / measurement)."""
-    if not isinstance(knobs, dict):
-        return {}
-    out: dict[str, Any] = {}
-    for key in _LEVER_KNOB_KEYS:
-        if key in knobs and knobs[key] is not None:
-            out[key] = knobs[key]
-    return out
 
 
-def _knobs_fingerprint(levers: dict[str, Any]) -> str:
-    """Identity hash for champion dedup (excludes steps cycle jitter)."""
-    stable = {
-        k: v for k, v in (levers or {}).items() if k not in _FINGERPRINT_EXCLUDE_KEYS
-    }
-    payload = json.dumps(stable, sort_keys=True, separators=(",", ":"), default=str)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
 def _load_champion_queue(path: Path) -> list[dict[str, Any]]:
@@ -7162,125 +6231,10 @@ def _load_champion_queue(path: Path) -> list[dict[str, Any]]:
     return entries
 
 
-def _campaign_started_experiment(root: Path, campaign_id: object) -> bool:
-    """Return whether a reserved champion attempt reached actual execution."""
-    if not isinstance(campaign_id, str) or not campaign_id:
-        return False
-    path = root / campaign_id / "events.jsonl"
-    if not path.is_file():
-        return False
-    for line in path.read_text(encoding="utf-8").splitlines():
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(event, dict) and event.get("event_type") == "experiment_started":
-            return True
-    return False
 
 
-def _reopen_harness_blocked_champions(
-    root: Path,
-    entries: list[dict[str, Any]],
-    *,
-    integration_commit: str | None,
-) -> bool:
-    """Rearm harness-blocked champions after a harness/code fix.
-
-    General pattern: harness/infra incompletes never permanently invalidate an
-    experiment. When the integrated tip changes, retry the same champion
-    recipe under the fixed harness. Model rejects stay terminal.
-    """
-    if not integration_commit:
-        return False
-    changed = False
-    for row in entries:
-        status = str(row.get("status") or "")
-        reasons = row.get("resolve_reasons") or []
-        harness_blocked = status == "harness_failure" or (
-            status == "promotion_failed"
-            and (
-                row.get("last_harness_failure")
-                or _reasons_are_harness_incomplete_only(reasons)
-            )
-        )
-        if not harness_blocked:
-            continue
-        failed_on = str(row.get("harness_failure_integration_commit") or "")
-        # First time we see a harness park without a stamp: treat as blocked on
-        # current tip until a later tip arrives.
-        if not failed_on:
-            row["harness_failure_integration_commit"] = integration_commit
-            changed = True
-            continue
-        if failed_on == integration_commit:
-            continue
-        prior = status
-        row["status"] = "confirmed"
-        row["promote_attempts"] = 0
-        row["last_harness_failure"] = False
-        row.pop("last_harness_failure_at", None)
-        row.pop("resolved_at", None)
-        row["resolve_reasons"] = [
-            "harness_retry_after_integration_change",
-            f"prior_status:{prior}",
-            f"failed_on:{failed_on}",
-            f"retry_on:{integration_commit}",
-            *[str(r) for r in reasons if str(r).startswith("harness_failure:")],
-        ]
-        row["harness_failure_integration_commit"] = integration_commit
-        changed = True
-        print(
-            "CHAMPION_HARNESS_RETRY "
-            f"entry_id={row.get('entry_id')} prior={prior} "
-            f"failed_on={failed_on[:12]} retry_on={integration_commit[:12]}",
-            flush=True,
-        )
-    return changed
 
 
-def _recover_interrupted_champion_entries(
-    root: Path, entries: list[dict[str, Any]]
-) -> bool:
-    """Release interrupted attempts and reopen incomplete confirmations."""
-    changed = False
-    for row in entries:
-        status = row.get("status")
-        if status == "rejected":
-            campaign_id = str(row.get("confirm_campaign_id") or "")
-            delivery_path = root / campaign_id / "sdlc_delivery.json"
-            if not campaign_id or not delivery_path.is_file():
-                continue
-            delivery = _read_json(delivery_path)
-            if delivery.get("measurement_complete") is not False:
-                continue
-            row["status"] = "confirmation_inconclusive"
-            row["last_harness_failure_at"] = time.strftime(
-                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
-            )
-            row["resolve_reasons"] = list(delivery.get("reasons") or [])
-            row.pop("resolved_at", None)
-            changed = True
-            continue
-        if status not in {"confirming", "promoting"}:
-            continue
-        # _update_champion_status records the currently reserved campaign in
-        # confirm_campaign_id for both phases; promotion_campaign_id may still
-        # name an older completed/inconclusive replicate.
-        campaign_id = row.get("confirm_campaign_id") or row.get("promotion_campaign_id")
-        started = _campaign_started_experiment(root, campaign_id)
-        attempt_field = (
-            "promote_attempts" if status == "promoting" else "confirm_attempts"
-        )
-        if not started:
-            row[attempt_field] = max(0, int(row.get(attempt_field) or 0) - 1)
-            row["last_preflight_failure_campaign_id"] = campaign_id
-        if status == "promoting":
-            row["status"] = "confirmed"
-        elif not started:
-            row["status"] = "queued"
-        changed = True
-    return changed
 
 
 def _revalidate_open_champion_entries(
@@ -7344,61 +6298,11 @@ def _revalidate_open_champion_entries(
     return changed
 
 
-def _revalidate_confirmed_champion_entries(
-    root: Path, entries: list[dict[str, Any]]
-) -> bool:
-    """Close historical false confirmations under the current strict gate."""
-
-    changed = False
-    for row in entries:
-        if row.get("status") != "confirmed":
-            continue
-        campaign_id = str(row.get("confirm_campaign_id") or "")
-        delivery_path = root / campaign_id / "sdlc_delivery.json"
-        if not campaign_id or not delivery_path.is_file():
-            continue
-        delivery = _read_json(delivery_path)
-        if delivery.get("measurement_complete") is not True:
-            continue
-        if _confirmation_quality_reheld(delivery):
-            continue
-        row["status"] = "rejected"
-        row["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        row["resolve_reasons"] = [
-            "confirmation_reclassified_nonpositive_under_current_policy",
-            *[str(reason) for reason in delivery.get("reasons") or []],
-            "confirmation_rejected:primary_quality_not_reheld",
-        ]
-        changed = True
-        print(
-            "CHAMPION_CONFIRM_REVALIDATE_REJECT "
-            f"entry_id={row.get('entry_id')} campaign={campaign_id}",
-            flush=True,
-        )
-    return changed
 
 
 _PROMOTE_AUTHORITY_STATUSES = frozenset({"promoted", "climb_accepted"})
-_PROMOTE_AUTHORITY_HARNESS_COMPONENT = "harness.autoresearch.experiment_campaign"
 
 
-def _experiment_campaign_component_version() -> str:
-    """Current continuous/promote harness component version from versions.json."""
-    path = (
-        Path(__file__).resolve().parents[1]
-        / "src"
-        / "slm_training"
-        / "resources"
-        / "versions.json"
-    )
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        components = payload.get("components") or {}
-        row = components.get(_PROMOTE_AUTHORITY_HARNESS_COMPONENT) or {}
-        version = str(row.get("version") or "").strip()
-        return version or "unknown"
-    except (OSError, TypeError, ValueError, json.JSONDecodeError):
-        return "unknown"
 
 
 def current_promote_authority() -> dict[str, str]:
@@ -7761,106 +6665,12 @@ def _recertify_promoted_champion_entries(
     return changed
 
 
-def _refresh_champion_source_recipes(root: Path, entries: list[dict[str, Any]]) -> bool:
-    """Restore lever-complete queue recipes from immutable source experiments.
-
-    Older queue writers projected only a subset of registered levers. Any such
-    confirmation or promotion changed the treatment and is not evidence for the
-    source winner, so reopen it at confirmation with the exact source recipes.
-    """
-
-    changed = False
-    open_statuses = {
-        "queued",
-        "confirming",
-        "confirmation_inconclusive",
-        "confirmed",
-        "promoting",
-        "promotion_inconclusive",
-        "harness_failure",
-    }
-    for row in entries:
-        if row.get("status") not in open_statuses:
-            continue
-        source_dir = root / str(row.get("source_campaign_id") or "")
-        candidate = _lever_knobs(
-            _load_experiment_knobs(
-                source_dir, str(row.get("source_candidate_id") or "")
-            )
-        )
-        control = _lever_knobs(
-            _load_experiment_knobs(source_dir, str(row.get("source_control_id") or ""))
-        )
-        if not candidate:
-            continue
-        if candidate == _lever_knobs(
-            row.get("knobs") or {}
-        ) and control == _lever_knobs(row.get("control_knobs") or {}):
-            continue
-        prior_status = str(row.get("status") or "")
-        row.update(
-            knobs=candidate,
-            control_knobs=control,
-            knobs_fingerprint=_knobs_fingerprint(candidate),
-            status="queued",
-            confirm_attempts=0,
-            promote_attempts=0,
-            confirm_campaign_id=None,
-            confirm_cycle_index=None,
-            promotion_campaign_id=None,
-            promotion_cycle_index=None,
-            resolved_at=None,
-            resolve_reasons=[
-                "champion_recipe_repaired_from_source",
-                f"invalidated_phase_status:{prior_status}",
-            ],
-        )
-        row.pop("cert_policy", None)
-        row.pop("formal_preflight_status", None)
-        row.pop("last_harness_failure", None)
-        row.pop("last_harness_failure_at", None)
-        changed = True
-        print(
-            "CHAMPION_RECIPE_REPAIRED "
-            f"entry_id={row.get('entry_id')} prior_status={prior_status} "
-            f"source={row.get('source_campaign_id')}",
-            flush=True,
-        )
-    return changed
 
 
-def _write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        for row in entries:
-            fh.write(json.dumps(row, sort_keys=True) + "\n")
-    tmp.replace(path)
 
 
-def _queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """First entry still awaiting confirmatory retest (queued or in-flight)."""
-    for row in entries:
-        if row.get("status") in {
-            "queued",
-            "confirming",
-            "confirmation_inconclusive",
-        }:
-            return row
-    return None
 
 
-def _queue_head_confirmed(entries: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """First confirmed / inconclusive / harness-blocked champion for promote.
-
-    ``promotion_inconclusive`` (formal wall) and ``harness_failure`` (execute /
-    matrix / missing run) are retryable — not model rejects — so they re-enter
-    the promote slot on the next promotion cadence.
-    """
-    for row in entries:
-        if row.get("status") in _RETRYABLE_PROMOTE_STATUSES:
-            return row
-    return None
 
 
 def _arm_slug_from_knobs(
@@ -8164,41 +6974,6 @@ def _open_slugs_are_snapshot_leftovers(open_slugs: set[str]) -> bool:
     )
 
 
-def _is_decisive_causal_terminal(row: dict[str, Any]) -> bool:
-    """Whether a terminal champion burns the thrash family for this integration.
-
-    Fixture-noise confirms (fixture_insufficient_n_alone without a quality
-    non-regression or null primary) and harness incompletes do not burn CAP.
-    """
-    status = str(row.get("status") or "")
-    if status not in {
-        "rejected",
-        "promotion_failed",
-        "climb_accepted",
-        "promoted",
-    }:
-        return False
-    reasons = [str(r) for r in (row.get("resolve_reasons") or [])]
-    if _reasons_are_harness_incomplete_only(reasons):
-        return False
-    decisive_markers = (
-        "non_regression_fail:",
-        "primary_metric_null_or_worse:",
-        "primary_quality_win_rejected",
-        "confirmation_rejected:primary_quality",
-        "promotion_primary",
-        "eg_params_block",
-        "primary_metric_win_rejected",
-        "mechanism_no_effect:",
-    )
-    if any(any(marker in r for marker in decisive_markers) for r in reasons):
-        return True
-    # Pure fixture-volume rejects without quality signal — do not CAP-burn.
-    if any("fixture_insufficient_n_alone" in r for r in reasons) and not any(
-        "primary_metric_null" in r or "non_regression" in r for r in reasons
-    ):
-        return False
-    return status in {"rejected", "promotion_failed", "climb_accepted", "promoted"}
 
 
 def _skip_arm_slugs(
@@ -8367,34 +7142,6 @@ def _evidence_ranked_slug(
         return None
 
 
-def _lineage_campaign_ids(
-    root: Path,
-    predecessor_campaign_id: str | None,
-    *,
-    max_cycles: int | None = None,
-) -> list[str]:
-    """Return one loop's content-linked campaign chain, oldest first."""
-
-    cursor = predecessor_campaign_id
-    seen: set[str] = set()
-    loop_id: str | None = None
-    chain: list[str] = []
-    lineage = itertools.count() if max_cycles is None else range(max(0, max_cycles))
-    for _ in lineage:
-        if not cursor or cursor in seen:
-            break
-        seen.add(cursor)
-        camp_dir = root / cursor
-        campaign = _read_json(camp_dir / "campaign.json")
-        handoff = _read_json(camp_dir / "cycle_handoff.json")
-        campaign_loop = str(campaign.get("loop_id") or handoff.get("loop_id") or "")
-        if loop_id is None:
-            loop_id = campaign_loop or None
-        elif campaign_loop and campaign_loop != loop_id:
-            break
-        chain.append(cursor)
-        cursor = str(campaign.get("predecessor_campaign_id") or "")
-    return list(reversed(chain))
 
 
 def _recent_completed_nonpositive_slugs(
@@ -8609,66 +7356,10 @@ def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
 
 
 
-def _matrix_experiment_knobs(
-    matrix: Mapping[str, Any], experiment_id: str
-) -> dict[str, Any]:
-    by_id = {
-        str((row.get("experiment") or {}).get("experiment_id") or ""): dict(
-            (row.get("experiment") or {}).get("knobs") or {}
-        )
-        for row in matrix.get("hypotheses") or []
-        if isinstance(row, dict)
-    }
-    return by_id.get(experiment_id, {})
 
 
-def _matrix_treatment_signature(
-    matrix: Mapping[str, Any], candidate_id: str, control_id: str
-) -> str | None:
-    """Hash only the candidate-vs-control lever delta for timeout retirement."""
-
-    candidate = _lever_knobs(_matrix_experiment_knobs(matrix, candidate_id))
-    control = _lever_knobs(_matrix_experiment_knobs(matrix, control_id))
-    if not candidate:
-        return None
-    treatment = {
-        key: candidate.get(key)
-        for key in sorted(set(candidate) | set(control))
-        if candidate.get(key) != control.get(key)
-    }
-    if not treatment:
-        return None
-    body = json.dumps(treatment, sort_keys=True, separators=(",", ":"), default=str)
-    return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
-def _is_reproduced_timeout_retirement(
-    handoff: Mapping[str, Any], delivery: Mapping[str, Any]
-) -> bool:
-    reasons = [str(item) for item in handoff.get("reasons") or ()]
-    if any(
-        item.startswith(
-            (
-                "candidate_runtime_rejected_after_frozen_replay:",
-                "candidate_runtime_unblock_reproduced:",
-            )
-        )
-        for item in reasons
-    ):
-        return True
-    action_reasons = " ".join(
-        str(item.get("reason") or "")
-        for item in handoff.get("actions") or ()
-        if isinstance(item, dict)
-    ).lower()
-    return bool(
-        handoff.get("cycle_intent") == "retry_measurement"
-        and _delivery_is_thrash_timeout_residual(delivery)
-        and (
-            "retire thrash decode/wall-timeout residual" in action_reasons
-            or "incomplete thrash replay budget exhausted" in action_reasons
-        )
-    )
 
 
 def _sync_reproduced_timeout_retirements(
@@ -9076,337 +7767,24 @@ def _repeat_confirm_while_waiting_for_promotion(
     return False
 
 
-def _predecessor_compiler_ms_timeout(
-    root: Path, predecessor_campaign_id: str | None
-) -> bool:
-    """True when the predecessor cycle timed out under compiler_ms dominance."""
-
-    if not predecessor_campaign_id:
-        return False
-    camp_dir = root / predecessor_campaign_id
-    reasons: list[str] = []
-    delivery_path = camp_dir / "sdlc_delivery.json"
-    if delivery_path.is_file():
-        delivery = _read_json(delivery_path)
-        reasons.extend(str(r) for r in delivery.get("reasons") or [])
-        if delivery.get("measurement_complete") is False:
-            incomplete = True
-        else:
-            incomplete = any(
-                str(r).startswith("measurement_incomplete:") for r in reasons
-            )
-    else:
-        incomplete = False
-    # Per-doc timeout detail from eval smoke scoreboards when present.
-    detail = ""
-    timeout_n = 0
-    for path in camp_dir.glob("runs/*/eval_smoke.json"):
-        try:
-            payload = _read_json(path)
-        except Exception:  # noqa: BLE001 — best-effort signal only
-            continue
-        try:
-            timeout_n = max(
-                timeout_n,
-                int(payload.get("decode_timeout_count") or 0),
-                int(payload.get("decode_timeout_document_count") or 0),
-            )
-        except (TypeError, ValueError):
-            pass
-        for doc in payload.get("details") or []:
-            if not isinstance(doc, dict):
-                continue
-            d = str(doc.get("decode_outcome_detail") or "")
-            if "compiler_ms" in d:
-                detail = d
-                break
-        if detail:
-            break
-    if not incomplete and timeout_n <= 0 and not detail:
-        return False
-    signal = is_compiler_ms_timeout_signal(
-        reasons=reasons,
-        decode_outcome_detail=detail or None,
-        incomplete=incomplete or timeout_n > 0,
-        decode_timeout_count=timeout_n,
-    )
-    if not signal:
-        return False
-    # Budget feedback loop: a timeout whose measured per-record p95 exceeds
-    # the timeout the recipe could afford is a budget fact, not a decode-cost
-    # residual. It is recalibrated by _fit_screening_decode_timeout_seconds
-    # (n_probe / timeout from p95), never routed into DECODE_RESIDUAL_SLUGS.
-    from slm_training.autoresearch.thrash_regime import TIMEOUT_CAUSE_BUDGET
-
-    evidence = _predecessor_decode_p95_seconds(root, predecessor_campaign_id)
-    cause = _predecessor_timeout_cause(
-        root, predecessor_campaign_id, evidence=evidence
-    )
-    if cause == TIMEOUT_CAUSE_BUDGET:
-        print(
-            "THRASH_TIMEOUT_CAUSE budget_timeout "
-            f"pred={predecessor_campaign_id} "
-            f"p95_s={evidence.get('p95_seconds')} "
-            f"timeout_s={evidence.get('timeout_seconds')} "
-            "route=recalibrate_budget_not_residual",
-            flush=True,
-        )
-        return False
-    return True
 
 
-def _screening_regime_decision(
-    *,
-    queue_entries: Sequence[Mapping[str, Any]] | None,
-    compiler_ms_timeout: bool,
-    root: Path | None = None,
-    loop_id: str | None = None,
-) -> ThrashRegimeDecision:
-    """Decide isolate / climb / timeout residual for the next screening thrash."""
-
-    baseline_entry = select_climb_baseline_entry(queue_entries)
-    climb_knobs = None
-    if baseline_entry is not None:
-        raw = baseline_entry.get("knobs")
-        if isinstance(raw, dict) and raw:
-            climb_knobs = _lever_knobs(raw)
-    champion_ok = False
-    if root is not None and loop_id:
-        loop_dir = root / "loops" / loop_id
-        sidecar = load_climb_champion(loop_dir)
-        champion_ok = climb_champion_checkpoint_path(loop_dir).is_file()
-        if climb_knobs is None and sidecar is not None and sidecar.knobs:
-            climb_knobs = _lever_knobs(sidecar.knobs)
-    return decide_screening_regime(
-        climb_baseline_knobs=climb_knobs,
-        compiler_ms_timeout=compiler_ms_timeout,
-        climb_champion_available=champion_ok,
-    )
 
 
-def _loop_champion_dir(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id
 
 
-def _warm_start_policy(policy: Any) -> dict[str, Any]:
-    measurement = getattr(policy, "measurement", None)
-    if not isinstance(measurement, Mapping):
-        measurement = {}
-    raw = measurement.get("warm_start") if isinstance(measurement, Mapping) else None
-    block = dict(raw) if isinstance(raw, Mapping) else {}
-    block.setdefault("enabled", True)
-    block.setdefault("max_cumulative_epochs", DEFAULT_MAX_CUMULATIVE_EPOCHS)
-    # With no confirmed champion, the loop's first complete control checkpoint
-    # seeds a ``baseline_seed`` champion so both arms warm start from the same
-    # weights (directive §2.6). It never counts as confirmed / promoted.
-    block.setdefault("seed_from_baseline_control", True)
-    return block
 
 
-_CONTROL_RUN_SUFFIXES = ("-control", "_control")
 
 
-def _loop_campaign_dirs(root: Path, loop_id: str) -> list[Path]:
-    """This loop's campaign dirs, newest cycle first (``_campaign_id`` layout)."""
-
-    digest = hashlib.sha256(loop_id.encode("utf-8")).hexdigest()[:8]
-    found: list[tuple[int, str, Path]] = []
-    try:
-        candidates = list(root.glob(f"continuous-loop-*-{digest}-c*"))
-    except OSError:
-        return []
-    for path in candidates:
-        if not path.is_dir():
-            continue
-        match = re.search(r"-c(\d+)$", path.name)
-        if match is None:
-            continue
-        found.append((int(match.group(1)), path.name, path))
-    found.sort(reverse=True)
-    return [item[2] for item in found]
 
 
-def _first_complete_control_run(
-    root: Path, loop_id: str
-) -> tuple[Path, Path, dict[str, Any]] | None:
-    """First complete control run found scanning the newest cycle backwards.
-
-    In a fresh loop this is the loop's first complete control; in a long
-    history it is the latest one, so the seed matches the current recipe and
-    corpus. Returns ``(campaign_dir, run_dir, train_summary)`` or None. A run
-    counts as complete only when ``train_summary.json`` reports
-    ``stopped_on == "steps"`` with ``steps > 0`` and ``checkpoints/last.pt``
-    exists; wall or token-budget truncations are never a warm-start seed.
-    """
-
-    for camp_dir in _loop_campaign_dirs(root, loop_id):
-        runs_dir = camp_dir / "runs"
-        if not runs_dir.is_dir():
-            continue
-        try:
-            run_dirs = sorted(p for p in runs_dir.iterdir() if p.is_dir())
-        except OSError:
-            continue
-        for run_dir in run_dirs:
-            if not run_dir.name.endswith(_CONTROL_RUN_SUFFIXES):
-                continue
-            summary_path = run_dir / "train_summary.json"
-            ckpt = run_dir / "checkpoints" / "last.pt"
-            if not summary_path.is_file() or not ckpt.is_file():
-                continue
-            try:
-                summary = json.loads(summary_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            if not isinstance(summary, dict):
-                continue
-            try:
-                steps = int(summary.get("steps") or 0)
-            except (TypeError, ValueError):
-                steps = 0
-            if steps <= 0 or str(summary.get("stopped_on") or "") != "steps":
-                continue
-            return camp_dir, run_dir, summary
-    return None
 
 
-def _seed_baseline_champion(root: Path, loop_id: str) -> ClimbChampionSidecar | None:
-    """Seed a ``baseline_seed`` champion from the first complete control run."""
-
-    loop_dir = _loop_champion_dir(root, loop_id)
-    found = _first_complete_control_run(root, loop_id)
-    if found is None:
-        return None
-    camp_dir, run_dir, summary = found
-    try:
-        steps = int(summary.get("steps") or 0)
-    except (TypeError, ValueError):
-        steps = 0
-    train_dir = str(summary.get("train_dir") or "")
-    record_count = train_manifest_record_count(train_dir) if train_dir else None
-    if record_count is None:
-        try:
-            record_count = int(summary.get("record_count") or 0) or None
-        except (TypeError, ValueError):
-            record_count = None
-    params = summary.get("trainable_params")
-    if params is None:
-        params = (summary.get("track") or {}).get("trainable_params")
-    try:
-        trainable = int(params) if params is not None else None
-    except (TypeError, ValueError):
-        trainable = None
-    sidecar = seed_climb_champion(
-        loop_dir,
-        baseline_checkpoint=run_dir / "checkpoints" / "last.pt",
-        source_campaign=camp_dir.name,
-        extra_steps=steps,
-        train_data_manifest_sha=str(
-            summary.get("train_data_manifest_sha")
-            or summary.get("data_manifest_sha")
-            or ""
-        ),
-        record_count=int(record_count or 1),
-        # Baseline knobs stay empty: the control keeps the baseline recipe and
-        # every treatment is baseline + one residual (directive §2.6).
-        knobs={},
-        trainable_params=trainable,
-        train_dir=train_dir or None,
-    )
-    if sidecar is not None:
-        print(
-            "CLIMB_CHAMPION_SEEDED "
-            f"status={sidecar.status} campaign={camp_dir.name} run={run_dir.name} "
-            f"steps={steps} record_count={record_count} "
-            f"checkpoint={climb_champion_checkpoint_path(loop_dir)}",
-            flush=True,
-        )
-    return sidecar
 
 
-def _ensure_climb_champion(
-    *,
-    root: Path,
-    loop_id: str,
-    queue_entries: Sequence[Mapping[str, Any]] | None,
-    eval_data_manifest_sha: str | None,
-    policy: Any | None = None,
-) -> str | None:
-    """Seed champion from a confirmed artifact, else the first complete control.
-
-    Confirmed / climb_accepted / promoted queue rows seed a ``confirmed``
-    champion. When none exists, the loop's first complete control run seeds a
-    ``baseline_seed`` champion (warm start only; never confirmed or promoted).
-    Returns a park reason or None to continue.
-    """
-    loop_dir = _loop_champion_dir(root, loop_id)
-    artifacts: list[dict[str, Any]] = []
-    for row in queue_entries or ():
-        if str(row.get("status") or "") not in CLIMB_CHAMPION_ADVANCE_STATUSES:
-            continue
-        item = dict(row)
-        camp = str(row.get("confirm_campaign_id") or row.get("campaign_id") or "")
-        cand = str(row.get("candidate_id") or "")
-        ckpt = _checkpoint_path_for_candidate(root, camp, cand) if camp else None
-        if ckpt is not None:
-            item["checkpoint"] = str(ckpt)
-        artifacts.append(item)
-    seed_climb_champion(loop_dir, confirmed_artifacts=artifacts)
-    sidecar = load_climb_champion(loop_dir)
-    if sidecar is None:
-        warm = _warm_start_policy(policy) if policy is not None else {}
-        if bool(warm.get("enabled", True)) and bool(
-            warm.get("seed_from_baseline_control", True)
-        ):
-            sidecar = _seed_baseline_champion(root, loop_id)
-    if (
-        sidecar is not None
-        and sidecar.train_data_manifest_sha
-        and eval_data_manifest_sha
-    ):
-        assert_champion_eval_disjoint(
-            train_data_manifest_sha=sidecar.train_data_manifest_sha,
-            eval_data_manifest_sha=eval_data_manifest_sha,
-        )
-    return None
 
 
-def _park_champion_epochs_if_needed(policy: Any, loop_dir: Path) -> str | None:
-    """Park when the champion exceeds ``max_cumulative_epochs`` on the corpus.
-
-    Epochs are recomputed against the current train corpus record count from
-    the train manifest (``<train_dir>/manifest.json``) recorded on the sidecar;
-    the sidecar's accumulated value is the fallback when unresolvable.
-    """
-
-    warm = _warm_start_policy(policy)
-    sidecar = load_climb_champion(loop_dir)
-    record_count: int | None = None
-    if sidecar is not None:
-        record_count = train_manifest_record_count(sidecar.train_dir)
-        if record_count is None:
-            record_count = sidecar.record_count
-    reason = champion_epoch_park_reason(
-        sidecar,
-        max_cumulative_epochs=float(
-            warm.get("max_cumulative_epochs") or DEFAULT_MAX_CUMULATIVE_EPOCHS
-        ),
-        record_count=record_count,
-    )
-    if reason:
-        epochs = (
-            champion_cumulative_epochs(sidecar, record_count=record_count)
-            if sidecar is not None
-            else None
-        )
-        print(
-            f"REGIME_PARKED reason={CHAMPION_EPOCHS_EXHAUSTED} "
-            f"epochs={epochs} record_count={record_count} "
-            f"cumulative_steps={sidecar.cumulative_steps if sidecar else None}",
-            flush=True,
-        )
-        return _REGIME_PARKED_STATUS
-    return None
 
 
 def _select_cycle_slug(
@@ -9467,19 +7845,6 @@ def _select_cycle_slug(
     )
 
 
-def _apply_arm_extras(base_steps: int, extras: dict[str, Any]) -> dict[str, Any]:
-    """Materialize arm knob extras (handles _steps_factor).
-
-    Depth arms (factor >= 2) keep the ``base + 10`` depth-confound minimum; a
-    floor-fill factor (< 2, ``steps-fill``) gets ``base + 1`` so the arm never
-    spends past the fitted train floor it is charged against.
-    """
-    out = {k: v for k, v in extras.items() if not str(k).startswith("_")}
-    factor = extras.get("_steps_factor")
-    if factor is not None:
-        bump = 10 if float(factor) >= 2 else 1
-        out["steps"] = max(int(round(base_steps * float(factor))), base_steps + bump)
-    return out
 
 
 def _preflight_screening_slug(
@@ -9606,40 +7971,10 @@ def _preflight_screening_slug(
     }
 
 
-def _quality_held_reasons(reasons: list[str] | None) -> bool:
-    """True when Phase A reasons include a quality hold/win (not pure latency)."""
-    if not reasons:
-        return False
-    return any(
-        any(r.startswith(prefix) for prefix in _QUALITY_ENQUEUE_PREFIXES)
-        for r in reasons
-    )
 
 
-def _metric_leaf(row: Mapping[str, Any], name: str) -> float | None:
-    raw = row.get(name)
-    if raw is None:
-        raw = row.get(f"smoke.{name}")
-    return _finite_metric(raw)
 
 
-def _arm_completed_n(metrics: Mapping[str, Any] | None) -> int | None:
-    if not isinstance(metrics, Mapping):
-        return None
-    for key in (
-        "completed_document_n",
-        "smoke.completed_document_n",
-        "n",
-        "smoke.n",
-    ):
-        raw = metrics.get(key)
-        if raw is None:
-            continue
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            continue
-    return None
 
 
 def _lean_floor_n() -> int | None:
@@ -9672,271 +8007,26 @@ def _lean_floor_measurement(delivery: Mapping[str, Any]) -> bool:
     )
 
 
-def _quality_metrics_identical(delivery: Mapping[str, Any]) -> bool:
-    """True when SS, MPR, and binder match (mechanism-no-effect on this snapshot)."""
-    control = delivery.get("control_metrics") or {}
-    candidate = delivery.get("candidate_metrics") or {}
-    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
-        return False
-    for name in (
-        "structural_similarity",
-        "meaningful_program_rate",
-        "binder_reference_f1",
-    ):
-        c_val, t_val = _metric_leaf(control, name), _metric_leaf(candidate, name)
-        if c_val is None or t_val is None:
-            return False
-        if abs(float(c_val) - float(t_val)) > _EPS:
-            return False
-    return True
 
 
-def _candidate_mpr_positive(delivery: Mapping[str, Any]) -> bool:
-    candidate = delivery.get("candidate_metrics") or {}
-    if not isinstance(candidate, Mapping):
-        return False
-    mpr = _metric_leaf(candidate, "meaningful_program_rate")
-    return mpr is not None and float(mpr) > _EPS
 
 
-def _delivery_parse_mpr_held(delivery: dict[str, Any]) -> bool:
-    """Parse/MPR non-regression from delivery metrics (fixture SS wins omit quality_held)."""
-    control = delivery.get("control_metrics") or {}
-    candidate = delivery.get("candidate_metrics") or {}
-    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
-        return False
-
-    c_pr, t_pr = (
-        _metric_leaf(control, "parse_rate"),
-        _metric_leaf(candidate, "parse_rate"),
-    )
-    c_mpr, t_mpr = (
-        _metric_leaf(control, "meaningful_program_rate"),
-        _metric_leaf(candidate, "meaningful_program_rate"),
-    )
-    # Missing metrics must not invent a quality hold.
-    if None in (c_pr, t_pr, c_mpr, t_mpr):
-        return False
-    return bool(t_pr + _EPS >= c_pr and t_mpr + _EPS >= c_mpr)
 
 
-def _confirm_candidate_blocked(reasons: list[str]) -> bool:
-    blocked_prefixes = (
-        "primary_metric_null_or_worse:",
-        "non_regression_fail:",
-        "eg_params_block:",
-        "measurement_incomplete:",
-        "wall_timeout:",
-        "empty_metrics:",
-        "harness_failure:",
-        "primary_quality_win_rejected",
-        "invalid_grammar:",
-    )
-    return any(reason.startswith(blocked_prefixes) for reason in reasons)
 
 
-def _has_primary_metric_win(delivery: dict[str, Any], reasons: list[str]) -> bool:
-    primary_metric = str(delivery.get("primary_metric") or "")
-    if not primary_metric:
-        return False
-    return any(
-        reason.startswith(f"primary_metric_win:{primary_metric}:") for reason in reasons
-    )
 
 
-def _is_confirm_candidate_win(delivery: dict[str, Any]) -> bool:
-    """Screening primary quality win worth confirming (fixture-n may keep positive=False).
-
-    Smoke below the Lean floor cannot mint climb ``positive`` / stack layers.
-    A held-quality primary win at certified n may enter the champion queue.
-    n=3 fixture SS spikes must not enqueue.
-    """
-    if delivery.get("measurement_complete") is False:
-        return False
-    reasons = [str(reason) for reason in delivery.get("reasons") or []]
-    if any(r.startswith("fixture_insufficient_n_alone") for r in reasons):
-        return False
-    if any(r.startswith("mechanism_no_effect:") for r in reasons):
-        return False
-    if _confirm_candidate_blocked(reasons):
-        return False
-    if any(r.startswith("invalid_grammar:") for r in reasons):
-        return False
-    from slm_training.autoresearch.hillclimb import invalid_grammar_reasons
-
-    if invalid_grammar_reasons(
-        delivery.get("candidate_metrics")
-        if isinstance(delivery.get("candidate_metrics"), dict)
-        else {},
-        arm="candidate",
-    ) or invalid_grammar_reasons(
-        delivery.get("control_metrics")
-        if isinstance(delivery.get("control_metrics"), dict)
-        else {},
-        arm="control",
-    ):
-        return False
-    if not _has_primary_metric_win(delivery, reasons):
-        return False
-    primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
-    if primary_leaf == "latency_ms_p50":
-        return _quality_held_reasons(reasons)
-    if not _candidate_mpr_positive(delivery):
-        return False
-    return _quality_held_reasons(reasons) or _delivery_parse_mpr_held(delivery)
 
 
-def _confirmation_quality_reheld(delivery: dict[str, Any]) -> bool:
-    """Require the policy-owned primary quality win on a confirmation run.
-
-    Screening may surface an efficiency tradeoff as a hypothesis, but a fresh
-    confirmation is the gate into promotion.  Faster decode cannot confirm a
-    champion when the declared primary or a required non-regression metric got
-    worse.
-    """
-
-    if not delivery.get("positive") or delivery.get("measurement_complete") is False:
-        return False
-    reasons = [str(reason) for reason in delivery.get("reasons") or []]
-    if _confirm_candidate_blocked(reasons):
-        return False
-    primary_metric = str(delivery.get("primary_metric") or "")
-    if not primary_metric:
-        return False
-    return any(
-        reason.startswith(f"primary_metric_win:{primary_metric}:") for reason in reasons
-    )
 
 
-def _should_enqueue_champion(delivery: dict[str, Any]) -> bool:
-    """Enqueue confirm candidates on quality primary wins (never latency-only blips).
-
-    Fixture insufficient_n forces ``positive=False`` so screening cannot stack
-    or ship; it must not block champion enqueue — confirm/promote raise n.
-    """
-    reasons = [str(reason) for reason in delivery.get("reasons") or []]
-    if _is_confirm_candidate_win(delivery):
-        return True
-    if not delivery.get("positive"):
-        return False
-    if any(reason.startswith("fixture_insufficient_n") for reason in reasons):
-        # Positive+fixture_n should not happen under current classify; fail closed.
-        return False
-    primary_leaf = str(delivery.get("primary_metric") or "").rsplit(".", 1)[-1]
-    if primary_leaf != "latency_ms_p50" and _confirmation_quality_reheld(delivery):
-        return True
-    if _quality_held_reasons(reasons):
-        return True
-    if any(
-        reason.startswith("efficiency_win:") or reason.startswith("primary_metric_win:")
-        for reason in reasons
-    ):
-        return _quality_held_reasons(reasons)
-    return False
 
 
-def _screening_enqueue_allowed(
-    *, cycle_intent: str, replay: dict[str, Any] | None
-) -> bool:
-    """Preserve screening queue semantics across an exact frozen retry."""
-
-    if cycle_intent in {"screening", "promotion"}:
-        return True
-    return bool(
-        cycle_intent == "retry_measurement"
-        and replay is not None
-        and replay["handoff"].cycle_role == "screening"
-        and getattr(replay["handoff"], "cycle_intent", None) != "confirm"
-    )
 
 
-def _confirmation_replay_entry(
-    entries: list[dict[str, Any]], replay: dict[str, Any] | None
-) -> dict[str, Any] | None:
-    """Return the original champion resolved by a frozen confirmation replay."""
-
-    if replay is None or replay["handoff"].cycle_intent != "confirm":
-        return None
-    frozen = replay["candidate"]["experiment"]
-    if not str(frozen.get("experiment_id") or "").endswith("-confirm"):
-        return None
-    fingerprint = _knobs_fingerprint(_lever_knobs(frozen.get("knobs") or {}))
-    source_campaign = str(replay["handoff"].campaign_id)
-    return next(
-        (
-            row
-            for row in entries
-            if row.get("knobs_fingerprint") == fingerprint
-            and row.get("confirm_campaign_id") == source_campaign
-            and row.get("status")
-            in {"queued", "confirming", "confirmation_inconclusive"}
-        ),
-        None,
-    )
 
 
-def _reconcile_completed_confirmation_replays(
-    root: Path, entries: list[dict[str, Any]]
-) -> bool:
-    """Repair historical duplicate queue rows emitted by completed retries."""
-
-    changed = False
-    for duplicate in entries:
-        if duplicate.get("status") != "queued" or not str(
-            duplicate.get("source_candidate_id") or ""
-        ).endswith("-confirm"):
-            continue
-        campaign_id = str(duplicate.get("source_campaign_id") or "")
-        handoff_path = root / campaign_id / "cycle_handoff.json"
-        delivery_path = root / campaign_id / "sdlc_delivery.json"
-        if not handoff_path.is_file() or not delivery_path.is_file():
-            continue
-        handoff = _read_json(handoff_path)
-        delivery = _read_json(delivery_path)
-        if (
-            handoff.get("cycle_intent") != "retry_measurement"
-            or delivery.get("measurement_complete") is not True
-        ):
-            continue
-        original = next(
-            (
-                row
-                for row in entries
-                if row is not duplicate
-                and row.get("knobs_fingerprint") == duplicate.get("knobs_fingerprint")
-                and row.get("status") == "confirmation_inconclusive"
-            ),
-            None,
-        )
-        if original is None:
-            continue
-        reasons = list(delivery.get("reasons") or [])
-        confirmed = _confirmation_quality_reheld(delivery)
-        if not confirmed:
-            reasons.append("confirmation_rejected:primary_quality_not_reheld")
-        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        original.update(
-            status="confirmed" if confirmed else "rejected",
-            confirm_campaign_id=campaign_id,
-            confirm_cycle_index=handoff.get("cycle_index"),
-            resolved_at=stamp,
-            resolve_reasons=reasons,
-        )
-        duplicate.update(
-            status="skipped_duplicate",
-            resolved_at=stamp,
-            resolve_reasons=[
-                f"confirmation_replay_resolved:{original.get('entry_id')}"
-            ],
-        )
-        changed = True
-        print(
-            "CHAMPION_REPLAY_RECONCILE "
-            f"entry_id={original.get('entry_id')} status={original.get('status')} "
-            f"duplicate={duplicate.get('entry_id')} campaign={campaign_id}",
-            flush=True,
-        )
-    return changed
 
 
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
@@ -9951,20 +8041,6 @@ def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool
     return False
 
 
-def _load_experiment_knobs(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
-    exp_path = camp_dir / "artifacts" / "experiments" / f"{experiment_id}.json"
-    if not exp_path.is_file():
-        # Some writers store experiment_id as stem without full path.
-        matches = list((camp_dir / "artifacts" / "experiments").glob("*.json"))
-        for path in matches:
-            data = _read_json(path)
-            if data.get("experiment_id") == experiment_id:
-                knobs = data.get("knobs")
-                return knobs if isinstance(knobs, dict) else {}
-        return {}
-    data = _read_json(exp_path)
-    knobs = data.get("knobs")
-    return knobs if isinstance(knobs, dict) else {}
 
 
 def _enqueue_champion(
@@ -10212,22 +8288,6 @@ def _resolve_confirm_result(
     return updated
 
 
-def promote_expectations_path() -> Path:
-    """Repo-relative locked promote expectations (absolute when repo root known)."""
-    # Prefer package resource next to climb policy.
-    pkg = (
-        Path(__file__).resolve().parents[1]
-        / "src"
-        / "slm_training"
-        / "resources"
-        / "experiments"
-        / "autotrain_climb"
-        / "metric_expectations.promote.v1.json"
-    )
-    if pkg.is_file():
-        return pkg
-    cwd_pkg = Path.cwd() / _PROMOTE_EXPECTATIONS_REL
-    return cwd_pkg
 
 
 def locked_promote_expectations_sha256() -> str:
@@ -10236,9 +8296,6 @@ def locked_promote_expectations_sha256() -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def screening_expectations_path() -> Path:
-    """Repo-relative exact-zero expectations for decision-bearing screening."""
-    return promote_expectations_path().with_name(_SCREENING_EXPECTATIONS_REL.name)
 
 
 def locked_screening_expectations_sha256() -> str:
@@ -10246,10 +8303,6 @@ def locked_screening_expectations_sha256() -> str:
     return hashlib.sha256(screening_expectations_path().read_bytes()).hexdigest()
 
 
-def _formal_status_is_timeout(status: str | None) -> bool:
-    return str(status or "") in _FORMAL_TIMEOUT_STATUSES or str(
-        status or ""
-    ).startswith("timed_out")
 
 
 def dispose_champion_promote(
@@ -10494,16 +8547,6 @@ def _write_five_lane_successor(
     return path
 
 
-def _campaign_power_feasibility(
-    camp_dir: Path, candidate_id: str
-) -> dict[str, Any] | None:
-    """Locked pre-run power report from the candidate's campaign manifest."""
-    if not candidate_id:
-        return None
-    report = _read_json(camp_dir / "manifests" / f"{candidate_id}.json").get(
-        "power_feasibility"
-    )
-    return report if isinstance(report, dict) else None
 
 
 def _load_promote_certificate(camp_dir: Path) -> dict[str, Any] | None:
@@ -10522,77 +8565,10 @@ def _load_promote_certificate(camp_dir: Path) -> dict[str, Any] | None:
     return None
 
 
-def _rate_to_pm(value: object) -> int | None:
-    if not isinstance(value, (int, float)) or isinstance(value, bool):
-        return None
-    return int(max(0, min(1000, round(float(value) * 1000.0))))
 
 
-def _run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
-    """Load parse / structure / latency from smoke or held_out eval JSON."""
-    run_dir = camp_dir / "runs" / run_id
-    out: dict[str, float | None] = {
-        "latency_ms_p50": None,
-        "parse_rate": None,
-        "structural_similarity": None,
-        "meaningful_program_rate": None,
-    }
-    for name in ("eval_held_out.json", "eval_smoke.json", "eval.json"):
-        path = run_dir / name
-        if not path.is_file():
-            continue
-        data = _read_json(path)
-        metrics = data.get("metrics") if isinstance(data.get("metrics"), dict) else data
-        if not isinstance(metrics, dict):
-            continue
-        for key in out:
-            if out[key] is None and isinstance(metrics.get(key), (int, float)):
-                out[key] = float(metrics[key])
-        # Nested suite blocks
-        for suite_key in ("held_out", "smoke"):
-            suite = data.get(suite_key)
-            if isinstance(suite, dict):
-                for key in out:
-                    if out[key] is None and isinstance(suite.get(key), (int, float)):
-                        out[key] = float(suite[key])
-    # Fallback to smoke helpers used by Phase A
-    base = _run_metrics(camp_dir, run_id)
-    for key, val in base.items():
-        if out.get(key) is None and val is not None:
-            out[key] = val
-    return out
 
 
-def _raw_metric_observations(
-    camp_dir: Path, run_id: str
-) -> tuple[dict[str, list[int]] | None, Path | None]:
-    """Read per-example promotion observations; aggregates are not samples."""
-
-    run_dir = camp_dir / "runs" / run_id
-    for name in ("eval_held_out.json", "eval_smoke.json", "eval.json"):
-        path = run_dir / name
-        if not path.is_file():
-            continue
-        details = _read_json(path).get("details")
-        if not isinstance(details, list):
-            continue
-        structural: list[int] = []
-        parse: list[int] = []
-        for row in details:
-            if not isinstance(row, dict) or row.get("incomplete") is True:
-                continue
-            score = _rate_to_pm(row.get("structural_similarity"))
-            if score is not None:
-                structural.append(score)
-            parse_ok = row.get("parse_ok")
-            if isinstance(parse_ok, bool):
-                parse.append(1000 if parse_ok else 0)
-        if structural and parse:
-            return {
-                "held_out_structural_similarity_pm": structural,
-                "parse_rate_pm": parse,
-            }, path
-    return None, None
 
 
 def export_promote_metric_certificate(
@@ -10993,55 +8969,14 @@ def ensure_promote_formal_preflight(
         return status, None
 
 
-def _run_has_usable_metrics(camp_dir: Path, run_id: str) -> bool:
-    """True when suite metrics include parse or structure for cert export."""
-    if not run_id:
-        return False
-    metrics = _run_suite_metrics(camp_dir, run_id)
-    return (
-        metrics.get("parse_rate") is not None
-        or metrics.get("structural_similarity") is not None
-        or metrics.get("meaningful_program_rate") is not None
-    )
 
 
 # Reasons that mean "process/infra incomplete" — never a model reject and never
 # permanent approach death. After a harness fix (new integration commit), retry.
-_HARNESS_INCOMPLETE_REASON_PREFIXES: tuple[str, ...] = (
-    "harness_failure:",
-    "measurement_incomplete:",
-    "promote_cert_incomplete_metrics:",
-    "promote_cert_missing_run_ids",
-    "formal_preflight_timed_out:",
-    "measurement_incomplete:formal_timeout",
-    "promote_harness_parked:",
-    "promote_attempts_paused:",
-    "harness_retry_after_integration_change",
-    "promote_attempts_exceeded:",  # only counted as non-model when paired w/ harness
-)
 
 
-def _reason_is_harness_incomplete(reason: object) -> bool:
-    text = str(reason or "")
-    if not text:
-        return False
-    return any(
-        text.startswith(prefix) for prefix in _HARNESS_INCOMPLETE_REASON_PREFIXES
-    )
 
 
-def _reasons_are_harness_incomplete_only(reasons: object) -> bool:
-    """True when every reason is harness/infra incomplete (no model reject signal)."""
-    if not isinstance(reasons, (list, tuple)) or not reasons:
-        return False
-    texts = [str(item) for item in reasons if str(item or "").strip()]
-    if not texts:
-        return False
-    # Attempt-cap alone is only non-model when the rest are harness incomplete.
-    non_cap = [t for t in texts if not t.startswith("promote_attempts_exceeded:")]
-    if not non_cap:
-        return True
-    return all(_reason_is_harness_incomplete(t) for t in non_cap)
 
 
 def detect_promote_harness_failure(
@@ -11102,8 +9037,6 @@ def detect_promote_harness_failure(
 _PROMOTION_REPLICATE_SCHEMA = "autotrain_promotion_replicate/v1"
 
 
-def _promotion_replicate_ledger_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "promotion_replicates.jsonl"
 
 
 def _promotion_replicate_sha(payload: dict[str, Any]) -> str:
@@ -11683,154 +9616,6 @@ def _resolve_promotion_result(
     return updated
 
 
-def _classify_metric_tradeoff(
-    *,
-    control: dict[str, float | None],
-    candidate: dict[str, float | None],
-    primary_metric: str,
-    minimum_efficiency_gain_fraction: float,
-) -> tuple[bool, list[str]]:
-    """Score control vs candidate with quality/latency tradeoffs.
-
-    A pure latency improvement with empty meaning is **not** positive. A quality
-    improvement that spends a bounded latency budget **is** positive even when
-    the declared primary is latency. Efficiency (mpr / latency) is also a win
-    path when meaning stays above the smoke floor.
-    """
-    reasons: list[str] = []
-    positive = False
-    metric_leaf = primary_metric.split(".")[-1]
-
-    c_lat = _finite_metric(control.get("latency_ms_p50"))
-    t_lat = _finite_metric(candidate.get("latency_ms_p50"))
-    c_pr = _finite_metric(control.get("parse_rate"))
-    t_pr = _finite_metric(candidate.get("parse_rate"))
-    c_mpr = _finite_metric(control.get("meaningful_program_rate"))
-    t_mpr = _finite_metric(candidate.get("meaningful_program_rate"))
-
-    from slm_training.autoresearch.hillclimb import invalid_grammar_reasons
-
-    grammar_fail = invalid_grammar_reasons(control, arm="control") + invalid_grammar_reasons(
-        candidate, arm="candidate"
-    )
-    reasons.extend(grammar_fail)
-    parse_perfect = not grammar_fail
-    parse_held = parse_perfect and (
-        t_pr is None or c_pr is None or t_pr + _EPS >= c_pr
-    )
-    mpr_held = t_mpr is None or c_mpr is None or t_mpr + _EPS >= c_mpr
-    mpr_improved = t_mpr is not None and c_mpr is not None and t_mpr > c_mpr + _EPS
-    lat_improved = t_lat is not None and c_lat is not None and t_lat + _EPS < c_lat
-    if t_lat is not None and c_lat is not None and c_lat > 0:
-        lat_within_tradeoff = (
-            t_lat <= c_lat * (1.0 + _LATENCY_REGRESSION_BUDGET)
-            or t_lat <= c_lat + _LATENCY_REGRESSION_ABS_MS
-        )
-    else:
-        # Missing latency must not veto a quality win.
-        lat_within_tradeoff = True
-
-    both_timeout_band = _in_timeout_band(c_lat) and _in_timeout_band(t_lat)
-
-    # Path 1: latency primary win — only with held quality and non-empty meaning.
-    if metric_leaf == "latency_ms_p50":
-        no_metrics = (
-            c_lat is None
-            and t_lat is None
-            and c_pr is None
-            and t_pr is None
-            and c_mpr is None
-            and t_mpr is None
-        )
-        if no_metrics:
-            # Incomplete stage/decode walls are not model quality failures.
-            reasons.append("measurement_incomplete:no_smoke_metrics")
-        elif c_lat is None or t_lat is None:
-            reasons.append("primary_metric_unavailable")
-        elif lat_improved and parse_held and mpr_held:
-            if both_timeout_band:
-                reasons.append(
-                    "latency_win_rejected_timeout_band:"
-                    f"control={c_lat} candidate={t_lat}"
-                )
-            elif t_mpr is None:
-                reasons.append("latency_win_rejected_unmeasured_mpr")
-            elif t_mpr + _EPS < _MIN_MPR_FOR_LATENCY_WIN:
-                reasons.append(
-                    "latency_win_rejected_low_mpr:"
-                    f"mpr={t_mpr}<{_MIN_MPR_FOR_LATENCY_WIN + 1e-9:g}"
-                )
-            else:
-                positive = True
-                reasons.append(f"primary_metric_win:{primary_metric}:{c_lat}->{t_lat}")
-                reasons.append(f"quality_held:parse={t_pr} mpr={t_mpr}")
-        else:
-            reasons.append(
-                f"primary_metric_null_or_worse:{primary_metric}:"
-                f"control={c_lat} candidate={t_lat} "
-                f"parse={c_pr}->{t_pr} mpr={c_mpr}->{t_mpr}"
-            )
-
-    # Path 2: quality win may spend a bounded latency budget (even under a
-    # latency primary). Prevents "naive latency primary" from failing better
-    # meaning at a small latency cost.
-    if mpr_improved and parse_held and lat_within_tradeoff:
-        positive = True
-        reasons.append(
-            "quality_metric_win:meaningful_program_rate:"
-            f"{c_mpr}->{t_mpr}:lat={c_lat}->{t_lat}"
-        )
-    elif mpr_improved and parse_held and not lat_within_tradeoff:
-        reasons.append(
-            "quality_win_rejected_latency_budget:"
-            f"mpr={c_mpr}->{t_mpr} lat={c_lat}->{t_lat}"
-        )
-
-    # Path 3: efficiency (meaningful programs per ms) with a meaning floor.
-    # Still respects the latency tradeoff budget so a 2× slowdown cannot mint a
-    # free win from mpr 0→ε alone.
-    if (
-        t_mpr is not None
-        and c_mpr is not None
-        and t_lat is not None
-        and c_lat is not None
-        and t_lat > 0
-        and c_lat > 0
-        and parse_held
-        and lat_within_tradeoff
-        and t_mpr + _EPS >= _MIN_MPR_FOR_LATENCY_WIN
-        and not both_timeout_band
-    ):
-        c_eff = c_mpr / c_lat
-        t_eff = t_mpr / t_lat
-        efficiency_gain_fraction = (t_eff / c_eff - 1.0) if c_eff > 0 else None
-        if not mpr_held and t_eff > c_eff + _EPS:
-            reasons.append(
-                "efficiency_win_rejected_mpr_regression:"
-                f"mpr={c_mpr}->{t_mpr}:mpr_per_ms={c_eff:.8g}->{t_eff:.8g}"
-            )
-        elif (
-            efficiency_gain_fraction is not None
-            and efficiency_gain_fraction + _EPS >= minimum_efficiency_gain_fraction
-        ):
-            positive = True
-            reasons.append(
-                f"efficiency_win:mpr_per_ms:{c_eff:.8g}->{t_eff:.8g}:"
-                f"gain_fraction={efficiency_gain_fraction:.8g}:"
-                f"minimum={minimum_efficiency_gain_fraction:.8g}"
-            )
-            reasons.append(f"quality_held:parse={t_pr} mpr={t_mpr}")
-        elif efficiency_gain_fraction is not None and efficiency_gain_fraction > _EPS:
-            reasons.append(
-                f"efficiency_win_rejected_min_effect:mpr_per_ms:"
-                f"{c_eff:.8g}->{t_eff:.8g}:"
-                f"gain_fraction={efficiency_gain_fraction:.8g}<"
-                f"{minimum_efficiency_gain_fraction:.8g}"
-            )
-
-    if grammar_fail:
-        positive = False
-    return positive, reasons
 
 
 def _classify_positive(
@@ -12563,113 +10348,16 @@ def _phase_a_delivery(
     return record
 
 
-def _candidate_ship_state(camp_dir: Path, candidate_id: str) -> str:
-    gates = _read_json(camp_dir / "runs" / candidate_id / "gates.json")
-    authoritative = gates.get("authority") == "AgentEvals assertions"
-    return "ship_promoted" if authoritative and gates.get("pass") is True else "blocked"
 
 
-def _has_finalized_decode_timeout(camp_dir: Path, candidate_id: str) -> bool:
-    """True when AgentV finalized every record and typed at least one timeout."""
-
-    scoreboard = _read_json(camp_dir / "runs" / candidate_id / "scoreboard.json")
-    evals = scoreboard.get("evals")
-    runner = evals.get("runner") if isinstance(evals, dict) else None
-    gates = scoreboard.get("gates")
-    suites = scoreboard.get("suites")
-    if not (
-        isinstance(runner, dict)
-        and runner.get("name") == "AgentV"
-        and runner.get("execution_errors") == 0
-        and isinstance(gates, dict)
-        and gates.get("authority") == "AgentEvals assertions"
-        and gates.get("pass") is False
-        and isinstance(suites, dict)
-    ):
-        return False
-    for suite in suites.values():
-        if not isinstance(suite, dict):
-            continue
-        sample_n = suite.get("n")
-        completed_n = suite.get("completed_document_n")
-        incomplete_n = suite.get("incomplete_document_n")
-        timeout_n = suite.get("decode_timeout_document_count")
-        if not all(
-            isinstance(value, int)
-            for value in (sample_n, completed_n, incomplete_n, timeout_n)
-        ):
-            continue
-        if (
-            sample_n > 0
-            and timeout_n > 0
-            and completed_n + incomplete_n == sample_n
-            and timeout_n <= incomplete_n
-        ):
-            return True
-    return False
 
 
-_OPEN_NUMERIC_LITERAL_RE = re.compile(r"(?:^|[,(])\s*-?\d{6,}$")
 
 
-def _has_numeric_literal_close_starvation(camp_dir: Path, candidate_id: str) -> bool:
-    """Detect repeated legal numeric bytes where the model never selects close.
-
-    This is a diagnostic steering signal only. It cannot alter the legal domain
-    or certify output; the next arm remains grammar constrained and size matched.
-    """
-
-    run_dir = camp_dir / "runs" / candidate_id
-    stalled_records: set[str] = set()
-    timeout_records = 0
-    for eval_path in sorted(run_dir.glob("eval_*.json")):
-        payload = _read_json(eval_path)
-        timeout_records += int(payload.get("decode_timeout_document_count") or 0)
-        traces = (payload.get("decode_stats") or {}).get("constrained_selection_traces")
-        if not isinstance(traces, list):
-            continue
-        streaks: dict[str, int] = {}
-        for trace in traces:
-            if not isinstance(trace, dict):
-                continue
-            record_id = str(trace.get("record_id") or "")
-            prefix = str(trace.get("prefix_text") or "")
-            chosen = str(trace.get("chosen_token") or "")
-            legal_candidates = trace.get("legal_candidates")
-            repeated_numeric = (
-                record_id
-                and chosen.startswith("B:")
-                and isinstance(legal_candidates, int)
-                and legal_candidates >= 12
-                and _OPEN_NUMERIC_LITERAL_RE.search(prefix) is not None
-            )
-            streaks[record_id] = (
-                streaks.get(record_id, 0) + 1 if repeated_numeric else 0
-            )
-            if streaks[record_id] >= 4:
-                stalled_records.add(record_id)
-    return timeout_records > 0 and bool(stalled_records)
 
 
-def _primary_harness_family(camp_dir: Path) -> str:
-    for path in sorted((camp_dir / "artifacts" / "outcomes").glob("*.json")):
-        payload = _read_json(path)
-        for signal in payload.get("harness_signals") or []:
-            if signal.get("reproduced_on_frozen_input"):
-                return str(signal.get("family") or "model_build")
-    return "model_build"
 
 
-def _diagnosis_target(camp_dir: Path) -> str | None:
-    targets: list[str] = []
-    for path in sorted((camp_dir / "artifacts" / "diagnoses").glob("*.json")):
-        target = str(_read_json(path).get("target") or "")
-        if target:
-            targets.append(target)
-    for preferred in ("harness", "data", "infrastructure", "model", "researcher"):
-        if preferred in targets:
-            return preferred
-    return targets[-1] if targets else None
 
 
 def _created_checkpoint_paths(camp_dir: Path) -> tuple[str, ...]:
@@ -12684,40 +10372,6 @@ def _created_checkpoint_paths(camp_dir: Path) -> tuple[str, ...]:
     )
 
 
-def _consecutive_frozen_replays(
-    root: Path, loop_id: str, campaign_id: str, cycle_intent: str
-) -> int:
-    """Count the current and immediately preceding frozen replay cycles."""
-
-    if cycle_intent != "retry_measurement":
-        return 0
-    count = 1
-    cursor = str(
-        _read_json(root / campaign_id / "campaign.json").get("predecessor_campaign_id")
-        or ""
-    )
-    seen = {campaign_id}
-    while cursor and cursor not in seen:
-        seen.add(cursor)
-        handoff = _read_json(root / cursor / "cycle_handoff.json")
-        if (
-            handoff.get("loop_id") != loop_id
-            or handoff.get("campaign_id") != cursor
-            or handoff.get("cycle_intent") != "retry_measurement"
-        ):
-            break
-        if any(
-            action.get("kind") == "repair_harness"
-            for action in handoff.get("actions") or []
-            if isinstance(action, dict)
-        ):
-            break
-        count += 1
-        cursor = str(
-            _read_json(root / cursor / "campaign.json").get("predecessor_campaign_id")
-            or ""
-        )
-    return count
 
 
 def _completed_candidate_priorities(
@@ -12957,46 +10611,6 @@ def _completed_candidate_priorities(
     return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
 
 
-def _queued_candidate_priorities(
-    candidate_id: str, evidence_id: str
-) -> tuple[NextRunPriorityV1, ...]:
-    """Project the real successor after a screening candidate enters the queue."""
-
-    return (
-        NextRunPriorityV1(
-            rank=1,
-            area="evaluation",
-            hypothesis=(
-                "Confirm the fixture candidate on a fresh seed with the exact "
-                "size-matched treatment and control recipes before promotion."
-            ),
-            evidence_ids=(evidence_id,),
-            confidence=0.95,
-            expected_information_gain=(
-                "Tests whether the held-out quality gain reproduces while exposing "
-                "the observed binder and latency tradeoffs."
-            ),
-            authority="observed_result",
-            disposition="experiment_next",
-            proposed_experiment_id=f"{candidate_id}-fresh-confirmation",
-        ),
-        NextRunPriorityV1(
-            rank=2,
-            area="lean_model",
-            hypothesis=(
-                "Keep promotion formal preflight locked until fresh confirmation "
-                "establishes a champion."
-            ),
-            evidence_ids=(evidence_id,),
-            confidence=1.0,
-            expected_information_gain=(
-                "Prevents screening evidence from bypassing theorem-backed "
-                "promotion obligations."
-            ),
-            authority="lean_assumption",
-            disposition="monitor",
-        ),
-    )
 
 
 def _completed_retry_priorities(
@@ -13009,145 +10623,6 @@ def _completed_retry_priorities(
     )
 
 
-def _completed_confirmation_priorities(
-    matrix: dict[str, Any],
-    candidate_id: str,
-    delivery: dict[str, Any],
-    resolution: dict[str, Any] | None,
-) -> tuple[NextRunPriorityV1, ...]:
-    """Replace confirm-time hypotheses with observed successor steering."""
-
-    rows = [dict(item) for item in matrix.get("next_run_priorities") or []]
-    if not rows:
-        return ()
-    for row in rows:
-        if row.get("disposition") == "experiment_next":
-            row["disposition"] = "monitor"
-            row["proposed_experiment_id"] = None
-
-    status = str((resolution or {}).get("status") or "")
-    confirmed = status == "confirmed"
-    if confirmed:
-        rows[0].update(
-            {
-                "area": "promotion",
-                "hypothesis": (
-                    "The champion re-held on confirmation; test the exact matched "
-                    "recipes under the next promotion suite and Lean preflight."
-                ),
-                "confidence": 0.9,
-                "expected_information_gain": (
-                    "Separates a repeatable fixture signal from held-out and formal "
-                    "promotion evidence."
-                ),
-                "authority": "observed_result",
-                "disposition": "experiment_next",
-                "proposed_experiment_id": candidate_id,
-            }
-        )
-        return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
-
-    control = dict(delivery.get("control_metrics") or {})
-    candidate = dict(delivery.get("candidate_metrics") or {})
-    primary = str(delivery.get("primary_metric") or "primary metric")
-    control_primary = control.get(primary)
-    candidate_primary = candidate.get(primary)
-    if control_primary is None and "." in primary:
-        control_primary = control.get(primary.split(".", 1)[1])
-        candidate_primary = candidate.get(primary.split(".", 1)[1])
-    meaning_before = control.get("meaningful_program_rate")
-    meaning_after = candidate.get("meaningful_program_rate")
-    observed = (
-        f"{primary} {control_primary!r}->{candidate_primary!r}; "
-        f"meaningful_program_rate {meaning_before!r}->{meaning_after!r}"
-    )
-    future_batch_id = (
-        candidate_id[: -len("-confirm")] + "-batch1"
-        if candidate_id.endswith("-confirm")
-        else f"{candidate_id}-batch1"
-    )
-    replacements = (
-        {
-            "area": "model",
-            "hypothesis": (
-                "Fresh-seed confirmation rejected the champion fingerprint "
-                f"({observed}). Exhaust it and test a distinct size-matched "
-                "quality-targeted objective instead of spending more scalar steps."
-            ),
-            "confidence": 0.95,
-            "expected_information_gain": (
-                "Tests objective alignment against certified structural quality "
-                "rather than treating lower token loss as model progress."
-            ),
-            "authority": "observed_result",
-            "disposition": "monitor",
-            "proposed_experiment_id": None,
-        },
-        {
-            "area": "evaluation",
-            "hypothesis": (
-                "Training loss and certified program quality diverged on the "
-                "confirmation; retain loss as a diagnostic, not a promotion proxy."
-            ),
-            "confidence": 0.9,
-            "expected_information_gain": (
-                "Prevents optimization progress from masking regressions in meaning, "
-                "structure, recall, or latency."
-            ),
-            "authority": "observed_result",
-            "disposition": "monitor",
-            "proposed_experiment_id": None,
-        },
-        {
-            "area": "experiments",
-            "hypothesis": (
-                "Run the next non-exhausted batch-size arm only as a runtime "
-                "diagnostic while a new quality-targeted objective is preregistered."
-            ),
-            "confidence": 0.65,
-            "expected_information_gain": (
-                "Keeps the bounded loop executable without mislabeling a throughput "
-                "lever as a model-quality hypothesis."
-            ),
-            "authority": "speculative",
-            "disposition": "experiment_next",
-            "proposed_experiment_id": future_batch_id,
-        },
-        {
-            "area": "infrastructure",
-            "hypothesis": (
-                "Exact source-control reconstruction and pre-execution attempt "
-                "recovery succeeded; preserve both as campaign provenance."
-            ),
-            "confidence": 0.95,
-            "expected_information_gain": (
-                "Maintains attributable control-versus-candidate recipes across "
-                "confirmation and promotion."
-            ),
-            "authority": "reproduced_harness_signal",
-            "disposition": "monitor",
-            "proposed_experiment_id": None,
-        },
-        {
-            "area": "model_build",
-            "hypothesis": (
-                "Recent registered quality families are exhausted; prioritize a "
-                "new preregistered structural or meaningful-quality objective before "
-                "recycling them."
-            ),
-            "confidence": 0.75,
-            "expected_information_gain": (
-                "Tests a new causal training mechanism instead of repeating a closed "
-                "approach or weakening a gate."
-            ),
-            "authority": "speculative",
-            "disposition": "monitor",
-            "proposed_experiment_id": None,
-        },
-    )
-    for row, replacement in zip(rows, replacements, strict=False):
-        row.update(replacement)
-    return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
 
 
 def _predecessor_priority_slug(
@@ -14080,87 +11555,13 @@ def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
     return best_idx, completed_id or best_id
 
 
-_STALL_FINGERPRINT = "loop_stalled_no_campaign"
 _VACUOUS_PASS_LIMIT = 3
 #: Driver exit code for the typed loop-stalled park (2 = hard pending).
 _STALL_EXIT_CODE = 3
 
 
-def _last_heal_receipt_outcome(path: Path) -> str | None:
-    if not path.is_file():
-        return None
-    for raw in reversed(path.read_text(encoding="utf-8").splitlines()):
-        if not raw.strip():
-            continue
-        try:
-            row = json.loads(raw)
-        except json.JSONDecodeError:
-            return None
-        return str(row.get("outcome") or "") if isinstance(row, dict) else None
-    return None
 
 
-def _park_loop_stalled(
-    *,
-    root: Path,
-    loop_id: str,
-    cycle_index: int,
-    campaign_id: str | None,
-    consecutive: int,
-    last_non_vacuous: dict[str, Any] | None,
-    reason: str | None,
-) -> Path:
-    """Write the typed ``loop_stalled_no_campaign`` park (state=BLOCKED)."""
-    if last_non_vacuous:
-        last = (
-            f"last non-vacuous pass: {last_non_vacuous.get('outcome')} "
-            f"campaign={last_non_vacuous.get('campaign_after')} "
-            f"at {last_non_vacuous.get('recorded_at')}"
-        )
-    else:
-        last = "no non-vacuous pass recorded for this loop"
-    if reason:
-        last = f"{last}; last cycle error: {reason}"
-    next_action = (
-        f"{_STALL_FINGERPRINT}: {consecutive} consecutive vacuous passes "
-        f"(no campaign, no verified heal, no typed action); {last}"
-    )[:1000]
-    path = _write_loop_state(
-        root,
-        AutotrainLoopStateV1(
-            loop_id=loop_id,
-            state="BLOCKED",
-            phase="blocked",
-            last_completed_campaign_id=campaign_id,
-            cycle_index=max(0, int(cycle_index)),
-            next_action=next_action,
-            blocker_fingerprint=_STALL_FINGERPRINT,
-            blocker_count=int(consecutive),
-            pid=os.getpid(),
-            heartbeat_at=utc_now(),
-        ),
-    )
-    try:
-        from slm_training.autoresearch.heal.escalation import EscalationLedger
-
-        ledger = EscalationLedger.load(root, loop_id)
-        record = ledger.observe(
-            kind=_STALL_FINGERPRINT,
-            reason="consecutive vacuous driver passes without a new campaign",
-            blocker_class="unknown",
-            campaign_id=campaign_id or "unknown",
-            owner_skill="autotrain",
-        )
-        ledger.escalate(record.fingerprint, note=next_action[:400])
-        ledger.save()
-    except Exception as exc:  # noqa: BLE001 — ledger bugs never mask the park
-        print(f"LOOP_PARKED_LEDGER_WARN {exc!r}", flush=True)
-    print(
-        f"LOOP_PARKED fingerprint={_STALL_FINGERPRINT} consecutive={consecutive} "
-        f"state={path}",
-        flush=True,
-    )
-    return path
 
 
 #: How a heal receipt's outcome scores the driver pass that produced it.
@@ -14256,21 +11657,6 @@ def _record_pass_outcome(
     return outcome
 
 
-def _campaign_at_cycle(root: Path, loop_id: str, cycle_index: int) -> str | None:
-    matches: list[str] = []
-    for path in root.glob("*/campaign.json"):
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        if (
-            data.get("loop_id") == loop_id
-            and int(data.get("cycle_index") or 0) == cycle_index
-        ):
-            matches.append(str(data.get("campaign_id")))
-    if len(matches) > 1:
-        raise RuntimeError(f"multiple campaigns claim loop cycle {cycle_index}")
-    return matches[0] if matches else None
 
 
 def _finalize_terminal_interrupted_replay(
@@ -14393,12 +11779,6 @@ def _finalize_terminal_interrupted_replay(
     return campaign_id
 
 
-def _experiment_artifact(camp_dir: Path, experiment_id: str) -> dict[str, Any]:
-    for path in (camp_dir / "artifacts" / "experiments").glob("*.json"):
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        if payload.get("experiment_id") == experiment_id:
-            return payload
-    raise RuntimeError(f"frozen replay experiment is missing: {experiment_id}")
 
 
 def _manifest_with_sha(
@@ -14573,68 +11953,6 @@ def _load_frozen_replay(
     return replay
 
 
-def _arm_decode_timeout_count(camp_dir: Path, experiment_id: str) -> int:
-    """Max decode_timeout_count for a finalized arm run (0 if unknown/clean)."""
-
-    timeout_n = 0
-    run_dir = camp_dir / "runs" / experiment_id
-    for name in ("eval_smoke.json", "eval.json", "scoreboard.json"):
-        path = run_dir / name
-        if not path.is_file():
-            continue
-        try:
-            payload = _read_json(path)
-        except Exception:  # noqa: BLE001 — best-effort signal only
-            continue
-        try:
-            timeout_n = max(
-                timeout_n,
-                int(payload.get("decode_timeout_count") or 0),
-                int(payload.get("decode_timeout_document_count") or 0),
-            )
-        except (TypeError, ValueError):
-            pass
-        suites = payload.get("suites")
-        if isinstance(suites, dict):
-            suite_rows: list[Any] = list(suites.values())
-        elif isinstance(suites, list):
-            suite_rows = list(suites)
-        else:
-            suite_rows = []
-        for suite in suite_rows:
-            if not isinstance(suite, dict):
-                continue
-            try:
-                suite_timeout = suite.get("decode_timeout_document_count")
-                if type(suite_timeout) is not int:
-                    suite_timeout = suite.get("decode_timeout_count")
-                timeout_n = max(timeout_n, int(suite_timeout or 0))
-            except (TypeError, ValueError):
-                pass
-    if timeout_n > 0:
-        return timeout_n
-    delivery_path = camp_dir / "sdlc_delivery.json"
-    if not delivery_path.is_file():
-        return 0
-    try:
-        delivery = _read_json(delivery_path)
-    except Exception:  # noqa: BLE001 — best-effort signal only
-        return 0
-    marker = f"measurement_incomplete:{experiment_id}:"
-    for reason in delivery.get("reasons") or []:
-        text = str(reason)
-        if marker not in text or "decode_timeout_count=" not in text:
-            continue
-        try:
-            raw = text.rsplit("decode_timeout_count=", 1)[1]
-            digits = "".join(itertools.takewhile(str.isdigit, raw))
-            if digits:
-                timeout_n = max(timeout_n, int(digits))
-            else:
-                timeout_n = max(timeout_n, 1)
-        except (TypeError, ValueError, IndexError):
-            timeout_n = max(timeout_n, 1)
-    return timeout_n
 
 
 def _completed_frozen_train_source(
@@ -14893,53 +12211,10 @@ def _bind_fresh_replay_formal_preflight(
     return ExperimentCampaignV1.model_validate(rebound.model_dump(mode="json"))
 
 
-def _campaign_id(loop_id: str, cycle: int, *, date: str | None = None) -> str:
-    """Loop-scoped identity; historical campaign ids remain readable."""
-
-    slug = re.sub(r"[^A-Za-z0-9]+", "-", loop_id).strip("-").lower()[:24]
-    digest = hashlib.sha256(loop_id.encode("utf-8")).hexdigest()[:8]
-    day = date or time.strftime("%Y%m%d")
-    return f"continuous-loop-{day}-{slug or 'loop'}-{digest}-c{cycle}"
 
 
-def _continuous_evidence_roots(
-    root: Path, loop_id: str, predecessor_campaign_id: str | None
-) -> tuple[Path, ...]:
-    roots = [root / "loops" / loop_id, root / "sdlc_delivery_ledger.jsonl"]
-    if predecessor_campaign_id:
-        roots.insert(0, root / predecessor_campaign_id)
-    return tuple(roots)
 
 
-def _require_predecessor_actions(
-    root: Path, loop_id: str, predecessor_campaign_id: str | None
-) -> None:
-    if not predecessor_campaign_id:
-        return
-    handoff_path = root / predecessor_campaign_id / "cycle_handoff.json"
-    if not handoff_path.is_file():
-        return  # Historical campaigns predate supervised handoffs.
-    handoff = AutotrainCycleHandoffV1.model_validate_json(
-        handoff_path.read_text(encoding="utf-8")
-    )
-    if handoff.loop_id != loop_id or handoff.campaign_id != predecessor_campaign_id:
-        raise RuntimeError("predecessor handoff identity does not match loop lineage")
-    pending = pending_autotrain_actions(root, handoff)
-    delivery = _read_json(root / predecessor_campaign_id / "sdlc_delivery.json")
-    if delivery.get("stack_layer") is False:
-        # Historical positive fixture handoffs emitted deliver_stack even when
-        # Phase A had no tracked delta. That action is not executable and must
-        # not block the next experiment; the handoff writer now omits it.
-        pending = tuple(
-            (index, action)
-            for index, action in pending
-            if action.kind != "deliver_stack"
-        )
-    if pending:
-        detail = ", ".join(f"{index}:{action.kind}" for index, action in pending)
-        raise RuntimeError(
-            f"predecessor {predecessor_campaign_id} has unacknowledged actions: {detail}"
-        )
 
 
 def _matrix(
@@ -16160,27 +13435,6 @@ def _manifest(
     )
 
 
-def _effective_primary_metric(
-    *,
-    role: str,
-    policy_metric: str,
-    requested_metric: str,
-    replay_metric: str | None = None,
-) -> str:
-    effective = replay_metric or policy_metric
-    requested_parts = requested_metric.rsplit(".", maxsplit=1)
-    effective_parts = effective.rsplit(".", maxsplit=1)
-    requested_scope = requested_parts[0] if len(requested_parts) == 2 else ""
-    effective_scope = effective_parts[0] if len(effective_parts) == 2 else ""
-    if (
-        replay_metric is None
-        and role == "screening"
-        and requested_metric
-        and requested_parts[-1] == effective_parts[-1]
-        and requested_scope in {"", effective_scope}
-    ):
-        return requested_metric
-    return effective
 
 
 def _empty_promotion_slot_falls_back(
@@ -16200,10 +13454,6 @@ def _empty_promotion_slot_falls_back(
     )
 
 
-def _role_with_confirmation_boundary(cadence_role: str, *, confirming: bool) -> str:
-    """Keep unconfirmed champions on screening endpoints and suites."""
-
-    return "screening" if confirming else cadence_role
 
 
 def run_cycle(
