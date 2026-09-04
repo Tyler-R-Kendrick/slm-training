@@ -99,7 +99,24 @@ ruff check --select C901,PLR0911,PLR0912,PLR0913,PLR0915 src scripts tests
 ```
 
 Findings are ratcheted **per file**, not per function, so renaming a function
-does not silently discharge its debt.
+does not silently discharge its debt. The consequence is that removing one
+finding and introducing another in the same file nets to zero and passes: the
+invariant enforced is "this file's total complexity findings never rise", which
+is the property the ratchet exists to guarantee.
+
+**Coverage is Python-only.** Ruff does not lint TypeScript, so the 28 `.ts`/
+`.tsx` files under `src/apps/` are subject to the module-size budget (8 are
+currently over it) but *not* to any complexity rule. Closing that would mean
+adopting an ESLint complexity rule and a second ratchet dimension; until then,
+do not read a green gate as a statement about the dashboard's complexity.
+
+**Counts are ruff-version-scoped.** `pyproject.toml` allows
+`ruff>=0.9,<0.16`, and a minor bump that adds or refines a rule moves many
+counts at once. The baseline records the ruff build its counts came from under
+`tooling.ruff`, and the gate says so explicitly when a complexity failure
+coincides with a version change, so an upgrade reads as an upgrade rather than
+as hundreds of unexplained regressions. Re-freeze a ruff bump in its own
+commit.
 
 ### 3. Package principles — Robert C. Martin
 
@@ -176,11 +193,29 @@ python -m scripts.verify_code_quality --update   # re-freeze the baseline
 ```
 
 `--skip-complexity` drops the ruff pass for environments without ruff on PATH;
-`--update` then preserves the recorded complexity ceilings rather than erasing
-them.
+`--update` then preserves the recorded complexity ceilings and the recorded
+ruff version rather than erasing them.
+
+Discovery uses `git ls-files --cached --others --exclude-standard`, so a new
+oversized module fails while it is still being written. When git is
+unavailable the gate falls back to a filesystem walk, which is why
+`NON_SOURCE_PREFIXES` exists: without it that fallback would sweep `.venv/`,
+`outputs/` and caches into the baseline and record tens of thousands of
+third-party modules as this repository's debt.
 
 Exit codes: `0` clean, `1` regression or unrecorded improvement, `2` the gate
 could not run (no baseline, or ruff missing).
+
+## Merging a moved base
+
+Merging `main` into a branch can surface ceilings that moved on `main` rather
+than in the branch. Re-freeze with `--update` and say so in the commit: the
+baseline records debt as measured on the merged tree, and a change that
+predates the gate could not have been measured against it. That is a
+re-baseline, not a waiver — it is only honest when the numbers moved because
+the *base* moved, and the commit message has to name which. Once the gate is on
+`main`, `main` cannot raise a ceiling without recording it, so this is a
+one-time landing artifact.
 
 ## Retiring the debt
 

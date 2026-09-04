@@ -604,7 +604,18 @@ class PlaygroundService:
                 design_md = load_default_design_md()
             except Exception:  # noqa: BLE001
                 design_md = None
-        marker_inventory = inventory_from_prompt(prompt, design_md, heuristic=True)
+        try:
+            marker_inventory = inventory_from_prompt(prompt, design_md, heuristic=True)
+        except ValueError as exc:
+            # The persisted-record wording ("persisted template markers must
+            # ...") is opaque at a serving boundary, where the caller needs to
+            # know it is *their* inventory that was rejected and what to send
+            # instead. Still a ValueError, so the route still answers 400.
+            raise ValueError(
+                "prompt slot inventory must use opaque :slot_<ordinal> markers "
+                "contiguous from :slot_0; canonicalize named markers before "
+                f"requesting a generation ({exc})"
+            ) from exc
         decode_meta = {
             "marker_inventory": marker_inventory,
             "decode_contract": {

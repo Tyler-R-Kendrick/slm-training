@@ -16,7 +16,7 @@ import pytest
 
 from tests.casefiles import case_values
 
-from slm_training.quality import baseline
+from slm_training.quality import baseline, gate
 from slm_training.quality.sources import (
     MAX_MODULE_LINES,
     SourceFile,
@@ -125,3 +125,54 @@ def test_baseline_round_trips(tmp_path) -> None:
 
 def test_missing_baseline_loads_empty(tmp_path) -> None:
     assert baseline.load(root=tmp_path) == {}
+
+def test_non_source_trees_are_excluded_from_the_filesystem_fallback() -> None:
+    """Without this the git-less fallback would record `.venv` as our debt."""
+
+    for path in (
+        ".venv/lib/python3.12/site-packages/numpy/core.py",
+        "outputs/run-2026/scratch.py",
+        "build/lib/thing.py",
+        ".ruff_cache/x.py",
+    ):
+        assert is_excluded(path), path
+
+
+def test_nested_caches_and_vendor_dirs_are_excluded_at_any_depth() -> None:
+    assert is_excluded("src/slm_training/__pycache__/gate.cpython-312.py")
+    assert is_excluded("src/apps/dashboard/node_modules/react/index.ts")
+
+
+def test_tooling_versions_round_trip(tmp_path) -> None:
+    baseline.save({}, root=tmp_path, tools={"ruff": "ruff 0.15.22"})
+    assert baseline.tooling(baseline.load(root=tmp_path)) == {"ruff": "ruff 0.15.22"}
+
+
+def test_missing_tooling_block_reads_empty(tmp_path) -> None:
+    baseline.save({}, root=tmp_path)
+    assert baseline.tooling(baseline.load(root=tmp_path)) == {}
+
+
+def test_tooling_drift_is_reported_only_when_the_version_actually_moved() -> None:
+    """A ruff bump moves many counts at once; say so instead of calling it
+    hundreds of code regressions."""
+
+    report = _report(ruff_version="ruff 0.16.0")
+    assert gate.tooling_drift(report, {"tooling": {"ruff": "ruff 0.15.22"}})
+    assert gate.tooling_drift(report, {"tooling": {"ruff": "ruff 0.16.0"}}) is None
+    assert gate.tooling_drift(report, {}) is None
+    assert gate.tooling_drift(_report(ruff_version=None), {"tooling": {"ruff": "x"}}) is None
+
+
+def _report(*, ruff_version: str | None) -> gate.QualityReport:
+    return gate.QualityReport(
+        files=[],
+        oversized=[],
+        complexity=[],
+        components=[],
+        edges={},
+        cycles=[],
+        sdp=[],
+        sap=[],
+        ruff_version=ruff_version,
+    )

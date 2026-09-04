@@ -121,17 +121,25 @@ def dimension(document: Mapping[str, dict], name: str) -> dict[str, int]:
     return dict(document.get(name, {}))
 
 
+def tooling(document: Mapping[str, dict]) -> dict[str, str]:
+    """Recorded tool versions the counts are only comparable within."""
+
+    return dict(document.get("tooling", {}))
+
+
 def save(
     dimensions: Mapping[str, Mapping[str, int]],
     *,
     root: Path,
     path: str = BASELINE_PATH,
+    tools: Mapping[str, str] | None = None,
 ) -> Path:
     """Write the baseline document with deterministic key ordering."""
 
     document = {
         "_readme": README,
         "schema": SCHEMA,
+        "tooling": dict(sorted((tools or {}).items())),
         **{
             name: dict(sorted(values.items()))
             for name, values in sorted(dimensions.items())

@@ -48,6 +48,7 @@ class QualityReport:
     cycles: list[list[str]]
     sdp: list[str]
     sap: list[str]
+    ruff_version: str | None = None
 
     @property
     def oversized_components(self) -> list[martin.ComponentMetrics]:
@@ -86,8 +87,10 @@ def analyse(*, root: Path, skip_complexity: bool = False) -> QualityReport:
     files = sources.discover(root=root)
     components, edges = martin.build(root=root)
     findings: list[complexity_module.Violation] | None = None
+    version: str | None = None
     if not skip_complexity:
         findings = complexity_module.run_ruff(root=root)
+        version = complexity_module.ruff_version()
     return QualityReport(
         files=files,
         oversized=sources.over_budget(files),
@@ -97,6 +100,7 @@ def analyse(*, root: Path, skip_complexity: bool = False) -> QualityReport:
         cycles=martin.cycles(edges),
         sdp=martin.stable_dependency_violations(components, edges),
         sap=martin.stable_abstraction_violations(components),
+        ruff_version=version,
     )
 
 
@@ -116,6 +120,25 @@ def evaluate(
             )
         )
     return outcomes
+
+
+def tooling_drift(report: QualityReport, recorded: dict[str, dict]) -> str | None:
+    """A note when complexity counts were taken under a different ruff.
+
+    Returned only when it is actually relevant, so an ordinary regression is
+    not muddied by an irrelevant version line.
+    """
+
+    was = baseline_module.tooling(recorded).get("ruff")
+    now = report.ruff_version
+    if not was or not now or was == now:
+        return None
+    return (
+        f"complexity counts were recorded under {was!r} but this run used "
+        f"{now!r}; a ruff upgrade moves many counts at once. Re-freeze with "
+        "--update in a dedicated commit rather than treating these as code "
+        "regressions."
+    )
 
 
 def merged_dimensions(

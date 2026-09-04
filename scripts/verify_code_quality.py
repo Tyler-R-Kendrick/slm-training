@@ -75,6 +75,17 @@ def _analyse(args: argparse.Namespace) -> gate.QualityReport:
         raise SystemExit(2) from error
 
 
+def _tools(
+    analysis: gate.QualityReport, recorded: dict[str, dict]
+) -> dict[str, str]:
+    """Tool versions to record, preserving any this run did not measure."""
+
+    tools = baseline.tooling(recorded)
+    if analysis.ruff_version:
+        tools["ruff"] = analysis.ruff_version
+    return tools
+
+
 def _emit(outcome: baseline.RatchetOutcome) -> None:
     for entry in outcome.failures:
         print(f"  FAIL  {entry}")
@@ -94,7 +105,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.update:
         written = baseline.save(
-            gate.merged_dimensions(analysis, recorded), root=args.root
+            gate.merged_dimensions(analysis, recorded),
+            root=args.root,
+            tools=_tools(analysis, recorded),
         )
         print(report.render(analysis))
         print(f"\nbaseline written: {written.relative_to(args.root)}")
@@ -117,6 +130,12 @@ def main(argv: list[str] | None = None) -> int:
             continue
         print(f"\n{outcome.dimension}:")
         _emit(outcome)
+
+    drift_note = gate.tooling_drift(analysis, recorded)
+    if drift_note and any(
+        item.dimension == "complexity" and not item.clean for item in outcomes
+    ):
+        print(f"\nnote: {drift_note}", file=sys.stderr)
 
     if failures:
         print(

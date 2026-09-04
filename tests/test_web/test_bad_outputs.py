@@ -186,19 +186,19 @@ def test_prompt_inventory_is_visible_to_decode_and_persisted(tmp_path: Path) -> 
     model = MagicMock()
     model.config = MagicMock()
     model.generate.return_value = (
-        'root = Card([title])\ntitle = TextContent(":promo.title")'
+        'root = Card([title])\ntitle = TextContent(":slot_0")'
     )
 
     with patch.object(service, "load", return_value=model):
         result = service.generate(
-            "Promotion card\nPlaceholders: :promo.title",
+            "Promotion card\nPlaceholders: :slot_0",
             design_md="",
             max_attempts=1,
         )
 
     assert result.valid is True
-    assert "Placeholders: :promo.title" in model.generate.call_args.args[0]
-    assert result.attempts[0]["meta"]["marker_inventory"] == [":promo.title"]
+    assert "Placeholders: :slot_0" in model.generate.call_args.args[0]
+    assert result.attempts[0]["meta"]["marker_inventory"] == [":slot_0"]
     assert result.attempts[0]["meta"]["decode_contract"] == {
         "mode": "compiler_tree",
         "slot_contract": "prompt_or_design_inventory",
@@ -210,6 +210,45 @@ def test_prompt_inventory_is_visible_to_decode_and_persisted(tmp_path: Path) -> 
         "diagnostic_control": False,
         "certifiable": True,
     }
+
+
+def test_a_named_prompt_marker_is_refused_at_the_serving_boundary(
+    tmp_path: Path,
+) -> None:
+    """Markers are opaque, and serving is not an exception to that.
+
+    This case used to assert that ``:promo.title`` survived into the persisted
+    inventory. The output contract removed named markers deliberately -- a
+    marker that spells its own role hands the model the semantics the contract
+    exists to withhold -- so the request is refused instead. The refusal is a
+    ``ValueError``, which the route answers as a 400 rather than a 500, and it
+    names the caller's inventory so the remedy is obvious.
+
+    Canonicalizing a live request end to end (prompt, design context and
+    targets, then mapping back after decode, as
+    ``canonicalize_example_template_markers`` does for persisted records) would
+    accept this prompt again. That is a serving feature, not a repair, and is
+    deliberately not done here.
+    """
+    service = PlaygroundService(
+        checkpoint=Path("/nonexistent.pt"),
+        generation_attempts_path=tmp_path / "attempts.jsonl",
+    )
+    model = MagicMock()
+    model.config = MagicMock()
+
+    with patch.object(service, "load", return_value=model):
+        with pytest.raises(ValueError) as excinfo:
+            service.generate(
+                "Promotion card\nPlaceholders: :promo.title",
+                design_md="",
+                max_attempts=1,
+            )
+
+    message = str(excinfo.value)
+    assert ":slot_<ordinal>" in message
+    assert "canonicalize" in message
+    model.generate.assert_not_called()
 
 
 def test_server_attempt_retains_raw_preflight_failure(tmp_path: Path) -> None:
@@ -236,7 +275,7 @@ def test_server_attempt_retains_raw_preflight_failure(tmp_path: Path) -> None:
         ),
     ):
         result = service.server_attempt(
-            prompt="Promotion card\nPlaceholders: :promo.title",
+            prompt="Promotion card\nPlaceholders: :slot_0",
             design_md="",
         )
 
@@ -244,7 +283,7 @@ def test_server_attempt_retains_raw_preflight_failure(tmp_path: Path) -> None:
     assert result["openui"] == raw
     assert result["attempt"]["openui"] == raw
     assert "incomplete, placeholder_required" in result["attempt"]["error"]
-    assert result["attempt"]["meta"]["marker_inventory"] == [":promo.title"]
+    assert result["attempt"]["meta"]["marker_inventory"] == [":slot_0"]
 
 
 def test_validation_never_returns_langcore_serialized_json_ast() -> None:

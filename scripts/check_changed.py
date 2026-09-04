@@ -467,7 +467,27 @@ def select_tests(paths: list[str]) -> list[str]:
 
 
 def select_changed_tests(paths: list[str]) -> list[str]:
-    """Prefer explicit regression files for latency-bounded local hooks."""
+    """Prefer explicit regression files for latency-bounded local hooks.
+
+    One exception: a changed *global* test file (``tests/conftest.py``,
+    ``tests/casefiles.py``, ``pyproject.toml``) means every suite is in scope,
+    and the changed-file shortcut must not suppress that. It did -- editing
+    ``tests/casefiles.py``, which every snapshot test loads through, alongside
+    one test file ran only that one file.
+
+    The broader inversion is deliberately *not* fixed here: for ordinary source
+    files this still returns the changed test files alone, so a diff touching
+    a source file and a test file selects strictly less than the same diff
+    without the test file. Making it monotone (a union with ``select_tests``)
+    is correct; the objection is cost, not correctness. On a representative
+    diff the union selects seven targets instead of four files -- several
+    minutes of pre-commit wall time on an ordinary source edit -- and CI runs
+    the same selection under a disabled-for-cost budget. No single suite busts
+    the cap, so the trade belongs to the owner. Measured in
+    ``docs/design/autotrain-recovery-2-20260902.md``.
+    """
+    if any(path in GLOBAL_TEST_FILES for path in paths):
+        return select_tests(paths)
     changed = {
         path
         for path in paths

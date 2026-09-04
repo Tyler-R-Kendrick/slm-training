@@ -151,7 +151,17 @@ def test_data_intervention_from_blocking_finding() -> None:
     action = data_intervention_action(policy)
     assert action["kind"] == "rebuild_data"
     assert action["promotion_authorized"] is False
-    assert action["train_version"] == "wf_smoke_v2"
+    # Tracks the policy rather than a literal: this pinned "wf_smoke_v2" and
+    # went red when the climb default moved to the certified train bucket. The
+    # claim under test is that the action carries the *configured* fixture
+    # corpus, not which corpus that happens to be this quarter.
+    expected_fixture_corpus = (
+        load_climb_policy()
+        .payload.get("data_intervention", {})
+        .get("fixture_train_version")
+    )
+    assert expected_fixture_corpus
+    assert action["train_version"] == expected_fixture_corpus
     assert action["claim_class"] == "fixture"
     generation = action["data_generation"]
     assert generation["data_only"] is True

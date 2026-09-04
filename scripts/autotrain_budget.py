@@ -3,8 +3,11 @@
 Extracted from ``scripts/run_autotrain_continuous.py``, which had grown to
 18,665 lines and 321 top-level definitions. This module owns one thing: turning
 a policy and a deadline into the seconds, steps, and deadlines an arm may spend.
-Every function here is pure -- no subprocesses, no filesystem, no globals -- so
-the budget rules can be read and tested without standing up a training cycle.
+
+Nothing here runs a subprocess or touches the filesystem, so the budget rules
+can be read and tested without standing up a training cycle. They are not all
+*pure*: the deadline helpers read the monotonic clock, and every function reads
+the wall-clock levers imported below. Those are the only two impurities.
 
 The names are re-exported into ``run_autotrain_continuous`` under their original
 private aliases, so existing call sites and test monkeypatches are unaffected.

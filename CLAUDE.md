@@ -48,6 +48,14 @@ Parity across harnesses is enforced by
   note) in `src/slm_training/resources/versions.json` —
   `python -m scripts.verify_version_stamps --check` enforces it. See AGENTS.md
   “Normalized component versioning” and `docs/design/version-stamp-contract.md`.
+- **Code quality is ratcheted.** Module size (400 lines), cyclomatic
+  complexity (ruff `C901`/`PLR09xx`), and Robert C. Martin's package principles
+  (ADP/SDP/SAP) are frozen in
+  `src/slm_training/resources/code_quality_baseline.json` —
+  `python -m scripts.verify_code_quality` enforces it. Debt may shrink, never
+  grow. Never hand-raise a baseline number to land a change: split the module,
+  simplify the function, or break the cycle, then re-freeze with `--update`.
+  See `docs/design/code-quality-contract.md`.
 - **External test cases.** Agents edit mirrored JSON cases under
   `src/slm_training/resources/test_cases/` and refresh snapshots with
   `python -m scripts.refresh_test_cases <test-or-resource>`. Ordinary tests and

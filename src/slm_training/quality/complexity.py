@@ -60,6 +60,21 @@ def _ruff_executable() -> str:
     return found
 
 
+def ruff_version() -> str:
+    """The ruff build these counts came from.
+
+    Recorded in the baseline because the counts are only comparable within one
+    ruff version: pyproject allows ``ruff>=0.9,<0.16``, and a minor bump that
+    adds or refines a rule shifts every number at once. Without this, that
+    shows up as hundreds of unexplained regressions.
+    """
+
+    result = subprocess.run(
+        [_ruff_executable(), "--version"], capture_output=True, text=True, check=False
+    )
+    return result.stdout.strip() or "unknown"
+
+
 def run_ruff(*, root: Path, roots: tuple[str, ...] = LINT_ROOTS) -> list[Violation]:
     """Collect complexity findings for every rule in :data:`RULES`."""
 

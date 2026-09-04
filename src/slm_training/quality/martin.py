@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from slm_training.quality.imports import ModuleInfo, parse_modules, resolve_edges
+from slm_training.quality.sources import is_excluded, is_generated
 
 #: Distance from the main sequence past which a component is reported.
 #: Martin treats D as a normalised 0..1 distance; 0.7 admits the ordinary
@@ -106,12 +107,23 @@ def build(*, root: Path) -> tuple[list[ComponentMetrics], dict[str, set[str]]]:
 
 
 def _line_total(members: list[ModuleInfo], *, root: Path) -> int:
+    """Component size, counted the same way the module budget counts.
+
+    Skips generated and excluded files so a component is not charged for bytes
+    ``sources.discover`` refuses to charge a module for.
+    """
+
     total = 0
     for member in members:
-        try:
-            total += len((root / member.path).read_text(encoding="utf-8").splitlines())
-        except OSError:
+        if is_excluded(member.path):
             continue
+        try:
+            text = (root / member.path).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if is_generated(text):
+            continue
+        total += len(text.splitlines())
     return total
 
 
