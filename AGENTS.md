@@ -502,6 +502,40 @@ review on policy changes); perf → `perf-experiment-matrix.md` /
 `runtime-performance.md`; checkpoints → `MODEL_CARD.md` + README summary +
 `checkpoint-bucket.md`; lever-specific → that design doc.
 
+## Code-quality law: debt shrinks, never grows
+
+This repository has 2,227 repo-owned source files and 737,447 lines, 531 of
+them (23.8%) over the 400-line module budget. At that size a budget held by
+convention is a budget nobody holds, so it is machine-enforced as a **ratchet**:
+`python -m scripts.verify_code_quality` (CI `python-static`, and the local
+merge gate) measures four dimensions and compares each against
+`src/slm_training/resources/code_quality_baseline.json`.
+
+| Dimension | Budget |
+| --- | --- |
+| Module size | 400 physical lines |
+| Complexity / SRP | ruff `C901` (mccabe 10), `PLR0911/0912/0913/0915` |
+| Package principles | Martin's ADP (no cycles), SDP, SAP over the import graph |
+| Component size | 20,000 lines (Common Closure Principle) |
+
+Rules:
+
+1. **Any increase fails.** A module that grows past its recorded ceiling, a new
+   oversized file, another dependency cycle — all red.
+2. **Any decrease must be recorded.** Run
+   `python -m scripts.verify_code_quality --update` so the ceiling drops
+   permanently. A win cannot be spent twice.
+3. **Never hand-raise a baseline number to land a change.** Split the module,
+   simplify the function, or break the cycle. The baseline is a record of debt
+   already incurred, not a budget to spend. Re-freezing is legitimate only when
+   the *base* moved (a merge bringing in pre-gate commits) and the commit says
+   which numbers shifted and why.
+4. **Complexity counts are ruff-version-scoped.** The baseline records the ruff
+   build they came from; a bump moves many counts at once and is re-frozen in
+   its own commit, not treated as code regressions.
+
+Canonical expansion: `docs/design/code-quality-contract.md`.
+
 ## Data-quality law: every synthesis closes its own loop
 
 ```text

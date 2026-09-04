@@ -220,3 +220,28 @@ extend-exclude = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["E402"]
+
+# --- Complexity / single-responsibility thresholds -------------------------
+# These rules are NOT in `select`, so bare `ruff check .` stays a fast syntax
+# and correctness pass. They are opted into by the code-quality gate
+# (`python -m scripts.verify_code_quality`), which ratchets them against
+# src/slm_training/resources/code_quality_baseline.json rather than failing on
+# the pre-existing backlog. Reproduce the gate's view locally with:
+#
+#   ruff check --select C901,PLR0911,PLR0912,PLR0913,PLR0915 src scripts tests
+#
+# Thresholds are ruff's defaults, which are also the long-standing pylint and
+# mccabe defaults -- deliberately not tuned to whatever the codebase happens to
+# do today. The single exception is max-args, raised from 5 to 8: this codebase
+# uses keyword-only parameters pervasively (`def f(*, root, policy, ...)`) and
+# ruff counts those toward the limit, so 5 penalises the safer calling
+# convention. 8 still flags genuine "pass a parameter object" smells.
+# Contract: docs/design/code-quality-contract.md.
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-returns = 6
+max-branches = 12
+max-args = 8
+max-statements = 50

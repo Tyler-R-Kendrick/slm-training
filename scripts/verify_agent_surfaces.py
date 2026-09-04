@@ -140,6 +140,15 @@ OBLIGATIONS: tuple[Obligation, ...] = (
         ),
     ),
     Obligation(
+        id="governance.code-quality",
+        why=(
+            "module size, cyclomatic complexity and package-principle debt is "
+            "ratcheted; an agent that does not know the gate exists will try to "
+            "raise the baseline instead of splitting the module"
+        ),
+        requires=_on(PRIMARY_SURFACES, "verify_code_quality"),
+    ),
+    Obligation(
         id="run.cap",
         why="a timed out, interrupted, or killed run is never evidence",
         requires=_on(
