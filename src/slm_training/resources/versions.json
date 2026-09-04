@@ -4273,6 +4273,11 @@
       "history": [
         {
           "date": "2026-09-04",
+          "note": "no-bump: baseline ratcheted down after a further 9 modules came out of the continuous runner (15,509 -> 14,327). Complexity re-attributed, not added: 1,772 findings on this branch and on origin/main. Gate rules, thresholds and dimensions unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-04",
           "note": "no-bump: baseline ratcheted down after decomposing the continuous runner (18,259 -> 15,509 lines across 20 new modules). Complexity entries are re-attributed, not added: the same rule set reports 1,772 findings on this branch and on origin/main. Contract gains the complete reach-in rule and the re-attribution caveat. Gate rules, thresholds and dimensions unchanged.",
           "version": "v1"
         },
@@ -5029,6 +5034,11 @@
     "governance.revmath_owners": {
       "history": [
         {
+          "date": "2026-09-04",
+          "note": "no-bump: the continuous_formal_promote surface's owner_module follows its symbols out of run_autotrain_continuous.py into scripts/autotrain_formal_preflight.py. Both owner symbols were kept together so the surface still has a single owner. Ownership is relocated, not changed.",
+          "version": "v22"
+        },
+        {
           "date": "2026-08-12",
           "note": "no-bump: RESEARCH-03/SLM-549 docs-only pointer to iter-revmath-research-03-preregistered.md in reverse-mathematics-computability.md; owner map unchanged.",
           "version": "v22"
@@ -5237,6 +5247,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-04",
+          "note": "no-bump: extracted promote_replicates, promotion, formal_claims, formal_preflight, stage, docs and heal_actions from run_autotrain_continuous.py, re-exported under their original private aliases. FormalClaimV1/FormalPreflightV1 kept as explicit re-exports for the suite. Pure move; 357 tests pass unchanged.",
+          "version": "v288"
+        },
         {
           "date": "2026-09-04",
           "note": "no-bump: decomposed run_autotrain_continuous.py into 20 focused modules (paths, io, metrics, measurement, tradeoff, diagnosis, levers, arms, campaign, screening, decode_timing, timeout_state, records, candidate_state, confirmation, champion_queue/lifecycle/repair, park), each re-exported under its original private aliases. Extraction was driven by transitive dependency closure and screened against every form of test reach-in. Pure move; the 357-test suite passes unchanged.",

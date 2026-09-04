@@ -352,14 +352,14 @@
     {
       "id": "continuous_formal_promote",
       "kind": "command",
-      "owner_module": "scripts/run_autotrain_continuous.py",
+      "owner_module": "scripts/autotrain_formal_preflight.py",
       "owner_symbols": [
         "ensure_promote_formal_preflight",
         "record_formal_preflight_status"
       ],
       "design_doc": "docs/design/formal-autoresearch.md",
       "ownership_map_subsystem": "experiment_campaign",
-      "notes": "Promotion gate reuses validate_formal_preflight_artifact; timeout/incomplete never becomes refutation."
+      "notes": "Promotion gate reuses validate_formal_preflight_artifact; timeout/incomplete never becomes refutation. Extracted from run_autotrain_continuous.py; both owner symbols moved together so the surface keeps one owner."
     },
     {
       "id": "revmath_runner",

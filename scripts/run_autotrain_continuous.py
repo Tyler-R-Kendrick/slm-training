@@ -88,20 +88,23 @@ from slm_training.autoresearch.schemas import (
     AutotrainLoopStateV1,
     CampaignBudget,
     CampaignSpec,
-    FormalClaimV1,
     FormalObligationV1,
-    FormalPreflightV1,
-    HarnessSignalV1,
-    HypothesisFeedback,
     HypothesisMatrix,
     NextRunPriorityV1,
     utc_now,
+)
+
+# Re-exported for the suite, which constructs them as
+# `run_autotrain_continuous.FormalClaimV1(...)`. Their in-module callers moved
+# to scripts/autotrain_formal_claims.py.
+from slm_training.autoresearch.schemas import (  # noqa: F401
+    FormalClaimV1,
+    FormalPreflightV1,
 )
 from slm_training.autoresearch.storage import (
     CampaignStore,
     append_autotrain_action_receipt,
     autotrain_action_sha256,
-    autotrain_loop_state_lock,
     bind_autotrain_action_evidence,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
@@ -111,7 +114,6 @@ from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
 )
-from slm_training.harness_core.versioning import build_version_stamp
 from scripts.autotrain_paths import (  # noqa: F401
     DRIVER_LOCK_BASENAME as _DRIVER_LOCK_BASENAME,
 )
@@ -610,6 +612,147 @@ from scripts.autotrain_park import (  # noqa: F401
 from scripts.autotrain_park import (  # noqa: F401
     terminal_park_on_exhaust as _terminal_park_on_exhaust,
 )
+from scripts.autotrain_promote_replicates import (  # noqa: F401
+    PROMOTION_REPLICATE_SCHEMA as _PROMOTION_REPLICATE_SCHEMA,
+)
+from scripts.autotrain_promote_replicates import (  # noqa: F401
+    gate_promotion_on_replicates as _gate_promotion_on_replicates,
+)
+from scripts.autotrain_promote_replicates import (  # noqa: F401
+    promotion_replicate_evidence_is_current as _promotion_replicate_evidence_is_current,
+)
+from scripts.autotrain_promote_replicates import (  # noqa: F401
+    promotion_replicate_sha as _promotion_replicate_sha,
+)
+from scripts.autotrain_promote_replicates import (  # noqa: F401
+    record_promotion_replicate as _record_promotion_replicate,
+)
+from scripts.autotrain_promote_replicates import (  # noqa: F401
+    verified_promotion_replicates as _verified_promotion_replicates,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    attach_promotion_chunks as _attach_promotion_chunks,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    command_flag_value as _command_flag_value,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    empty_promotion_slot_falls_back as _empty_promotion_slot_falls_back,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    load_promote_certificate as _load_promote_certificate,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    measured_promotion_decode_p95_seconds as _measured_promotion_decode_p95_seconds,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    merged_promotion_power_feasibility as _merged_promotion_power_feasibility,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    promotion_chunk_eval_command as _promotion_chunk_eval_command,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    promotion_measurement_incomplete_reasons as _promotion_measurement_incomplete_reasons,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    promotion_scoreboard_state as _promotion_scoreboard_state,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    set_command_flag as _set_command_flag,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    stamp_promote_authority as _stamp_promote_authority,
+)
+from scripts.autotrain_promotion import (  # noqa: F401
+    locked_screening_expectations_sha256 as locked_screening_expectations_sha256,
+)
+from scripts.autotrain_stage import (  # noqa: F401
+    clear_active_stage as _clear_active_stage,
+)
+from scripts.autotrain_stage import (  # noqa: F401
+    raise_for_bounded_result as _raise_for_bounded_result,
+)
+from scripts.autotrain_stage import (  # noqa: F401
+    set_active_stage as _set_active_stage,
+)
+from scripts.autotrain_stage import (  # noqa: F401
+    set_stage_process as _set_stage_process,
+)
+from scripts.autotrain_stage import (  # noqa: F401
+    stage_process_callbacks as _stage_process_callbacks,
+)
+from scripts.autotrain_formal_claims import (  # noqa: F401
+    PROMOTE_FORMAL_TEMPLATE_ID as _PROMOTE_FORMAL_TEMPLATE_ID,
+)
+from scripts.autotrain_formal_claims import (  # noqa: F401
+    bind_fresh_replay_formal_preflight as _bind_fresh_replay_formal_preflight,
+)
+from scripts.autotrain_formal_claims import (  # noqa: F401
+    formal_preflight_status as _formal_preflight_status,
+)
+from scripts.autotrain_formal_claims import (  # noqa: F401
+    restore_frozen_formal_claims as _restore_frozen_formal_claims,
+)
+from scripts.autotrain_formal_claims import (  # noqa: F401
+    promote_formal_claim_dict as promote_formal_claim_dict,
+)
+from scripts.autotrain_formal_preflight import (  # noqa: F401
+    record_formal_preflight_status as record_formal_preflight_status,
+)
+from scripts.autotrain_formal_preflight import (  # noqa: F401
+    PROMOTE_FORMAL_TIMEOUT_S as _PROMOTE_FORMAL_TIMEOUT_S,
+)
+from scripts.autotrain_formal_preflight import (  # noqa: F401
+    formal_lane_required as _formal_lane_required,
+)
+from scripts.autotrain_formal_preflight import (  # noqa: F401
+    post_formal_arm_budget_request as _post_formal_arm_budget_request,
+)
+from scripts.autotrain_formal_preflight import (  # noqa: F401
+    promotion_formal_budget_seconds as _promotion_formal_budget_seconds,
+)
+from scripts.autotrain_formal_preflight import (  # noqa: F401
+    ensure_promote_formal_preflight as ensure_promote_formal_preflight,
+)
+from scripts.autotrain_docs import (  # noqa: F401
+    FIVE_LANES as _FIVE_LANES,
+)
+from scripts.autotrain_docs import (  # noqa: F401
+    render_continuous_cycle_docs as _render_continuous_cycle_docs,
+)
+from scripts.autotrain_docs import (  # noqa: F401
+    replay_successor_manifest as _replay_successor_manifest,
+)
+from scripts.autotrain_docs import (  # noqa: F401
+    write_five_lane_successor as _write_five_lane_successor,
+)
+from scripts.autotrain_docs import (  # noqa: F401
+    build_five_lane_successor_matrix as build_five_lane_successor_matrix,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    ack_document_action as _ack_document_action,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    ack_rebuild_data_action as _ack_rebuild_data_action,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    capability_objective_refresh_actions as _capability_objective_refresh_actions,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    is_bank_exhaust_repair_action as _is_bank_exhaust_repair_action,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    latest_hypothesis_feedback as _latest_hypothesis_feedback,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    persist_selector_harness_signal as _persist_selector_harness_signal,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    rebuild_data_artifact_sources as _rebuild_data_artifact_sources,
+)
+from scripts.autotrain_heal_actions import (  # noqa: F401
+    retired_heal_versions as _retired_heal_versions,
+)
 from slm_training.levers import (
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
@@ -700,37 +843,15 @@ from scripts.autotrain_budget import (
 )
 
 # Locked continuous promote metric programs (SHA bound on campaign lock).
-_PROMOTE_FORMAL_TEMPLATE_ID = "metrics.structural_similarity_monotone"
-_FIVE_LANES = (
-    "measurement_control",
-    "training_method",
-    "architecture",
-    "lean_model",
-    "assumptions",
-)
 _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
 # Promote Lean formal preflight wall (seconds). Timeouts are *inconclusive*
 # (incomplete measurement), never a proof rejection / promotion_failed.
-_PROMOTE_FORMAL_TIMEOUT_S = float(MAX_RUN_SECONDS)
 
 
 
 
 
 
-def _stage_process_callbacks(
-    *, root: Path | None, loop_id: str | None, stage: str | None
-) -> tuple[Callable[[int], None] | None, Callable[[int], None] | None]:
-    if root is None and loop_id is None:
-        return None, None
-    if root is None or loop_id is None or stage is None:
-        raise ValueError("root, loop_id, and stage must be supplied together")
-    _set_active_stage(root, loop_id, stage)
-
-    def update(pid: int) -> None:
-        _set_stage_process(root, loop_id, stage, pid)
-
-    return update, update
 
 
 def _stage_command(
@@ -827,23 +948,6 @@ def _bounded_command(
     )
 
 
-def _raise_for_bounded_result(result: BoundedProcessResult) -> None:
-    if result.timed_out:
-        raise subprocess.TimeoutExpired(
-            result.command,
-            result.duration_seconds,
-            output=result.stdout,
-            stderr=result.stderr,
-        )
-    if result.outcome is ProcessOutcome.LAUNCH_FAILED:
-        raise OSError(result.launch_error or "subprocess launch failed")
-    if result.returncode:
-        raise subprocess.CalledProcessError(
-            result.returncode,
-            result.command,
-            output=result.stdout,
-            stderr=result.stderr,
-        )
 
 
 
@@ -1524,17 +1628,6 @@ def _write_thrash_timing(
     return path
 
 
-def _formal_lane_required(*, cycle_intent: str, replay: dict[str, Any] | None) -> bool:
-    """Reserve formal time only for work whose locked plan requires it."""
-
-    if cycle_intent == "promote":
-        return True
-    if replay is None:
-        return False
-    return any(
-        bool(replay[arm]["manifest"].formal_obligations)
-        for arm in ("control", "candidate")
-    )
 
 
 
@@ -1547,31 +1640,10 @@ def _formal_lane_required(*, cycle_intent: str, replay: dict[str, Any] | None) -
 
 
 
-def _post_formal_arm_budget_request(
-    *,
-    policy_minutes: float,
-    initial_arm_wall_minutes: float,
-    formal_completed: bool,
-) -> float:
-    """Return unused formal-lane time to the matched decision arms."""
-
-    if formal_completed:
-        return float(policy_minutes)
-    return float(initial_arm_wall_minutes)
 
 
 
 
-def _promotion_formal_budget_seconds(
-    *, deadline: float, arm_count: int, arm_wall_minutes: float
-) -> float:
-    """Return only wall time left after reserving complete arms + finalization."""
-
-    reserved = arm_count * arm_wall_minutes * 60 + HARNESS_FINALIZATION_RESERVE_SECONDS
-    available = _remaining_timeout(deadline) - reserved
-    if available <= 0:
-        raise subprocess.TimeoutExpired("promotion formal preflight budget", reserved)
-    return min(float(_PROMOTE_FORMAL_TIMEOUT_S), available)
 
 
 # Chunked promotion measurement (docs/design/chunked-promotion-eval-20260902.md):
@@ -1614,30 +1686,6 @@ def _promotion_suite_records(suite: str) -> int | None:
     return None
 
 
-def _measured_promotion_decode_p95_seconds(
-    root: Path | None,
-) -> tuple[float | None, str | None]:
-    """Newest measured eval ``latency_ms_p95`` (seconds) under the campaigns root.
-
-    Promotion suites are preferred (``eval_held_out.json``) and the smoke suite
-    is the fallback; a run whose p95 is null (all timeouts) is skipped.
-    """
-
-    if root is None or not Path(root).is_dir():
-        return None, None
-    candidates: list[tuple[float, Path]] = []
-    for name in ("eval_held_out.json", "eval_smoke.json"):
-        for path in Path(root).glob(f"*/runs/*/{name}"):
-            try:
-                candidates.append((path.stat().st_mtime, path))
-            except OSError:
-                continue
-    for _mtime, path in sorted(candidates, key=lambda row: row[0], reverse=True):
-        payload = _read_json(path)
-        value = payload.get("latency_ms_p95") if isinstance(payload, dict) else None
-        if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
-            return float(value) / 1000.0, str(path)
-    return None, None
 
 
 def _promotion_chunk_plan(
@@ -1705,98 +1753,12 @@ def _promotion_chunk_plan(
     }
 
 
-def _set_command_flag(cmd: list[str], flag: str, value: str) -> list[str]:
-    """Return ``cmd`` with ``flag value`` set exactly once."""
-
-    out = list(cmd)
-    if flag in out:
-        index = out.index(flag)
-        if index + 1 < len(out):
-            out[index + 1] = value
-            return out
-        out.append(value)
-        return out
-    out.extend([flag, value])
-    return out
 
 
-def _command_flag_value(cmd: Sequence[str], flag: str) -> str | None:
-    if flag in cmd:
-        index = list(cmd).index(flag)
-        if index + 1 < len(cmd):
-            return str(cmd[index + 1])
-    return None
 
 
-def _promotion_chunk_eval_command(
-    *,
-    root: Path,
-    campaign_id: str,
-    experiment_path: Path,
-    run_dir: Path,
-    plan: Mapping[str, Any],
-) -> list[str]:
-    """The locked arm's evaluate command, re-armed as one resumable chunk.
-
-    The command is compiled from the same typed knobs the arm ran with (same
-    checkpoint, suites, timeout, eval limit); only the resume flags and the
-    chunk wall are (re)set, so no chunk can drift from the locked measurement.
-    """
-
-    from slm_training.autoresearch.engine import (
-        compile_commands,
-        is_latency_probe_command,
-    )
-    from slm_training.autoresearch.schemas import ExperimentSpec
-
-    store = CampaignStore(campaign_id, root)
-    campaign = store.load_campaign()
-    experiment = ExperimentSpec.model_validate_json(
-        Path(experiment_path).read_text(encoding="utf-8")
-    )
-    evaluates = [
-        list(command)
-        for command in compile_commands(campaign, experiment, output_root=root)
-        if "scripts.evaluate_model" in command
-        and not is_latency_probe_command(command)
-    ]
-    if not evaluates:
-        raise ValueError(f"no evaluate_model command compiled for {experiment_path}")
-    cmd = evaluates[-1]
-    if "--partial-scoreboard" not in cmd:
-        cmd.append("--partial-scoreboard")
-    cmd = _set_command_flag(cmd, "--resume-run", str(run_dir))
-    cmd = _set_command_flag(
-        cmd, "--max-records-this-run", str(int(plan["records_per_run"]))
-    )
-    return _set_command_flag(
-        cmd, "--evaluation-wall-seconds", f"{float(plan['chunk_wall_seconds']):.6f}"
-    )
 
 
-def _promotion_scoreboard_state(run_dir: Path) -> dict[str, Any]:
-    """Completion state of an arm's (possibly partial) ``scoreboard.json``."""
-
-    path = Path(run_dir) / "scoreboard.json"
-    if not path.is_file():
-        return {"exists": False, "complete": False, "pending": None, "decoded": None}
-    board = _read_json(path)
-    resume = board.get("resume") if isinstance(board, dict) else None
-    resume = resume if isinstance(resume, dict) else {}
-
-    def _total(key: str) -> int | None:
-        rows = resume.get(key)
-        if not isinstance(rows, dict):
-            return None
-        return sum(int(value) for value in rows.values() if isinstance(value, int))
-
-    return {
-        "exists": True,
-        # A scoreboard without the key predates resumable evals: complete.
-        "complete": board.get("measurement_complete") is not False,
-        "pending": _total("pending_record_n"),
-        "decoded": _total("decoded_this_run_n"),
-    }
 
 
 def _run_promotion_eval_chunks(
@@ -1926,129 +1888,10 @@ def _run_promotion_eval_chunks(
     return ledger
 
 
-def _attach_promotion_chunks(
-    delivery: dict[str, Any], ledger: Mapping[str, Any]
-) -> dict[str, Any]:
-    """Fold chunk-stage outcomes into the delivery as typed reasons.
-
-    An exhausted chunk budget or a chunk harness failure marks the measurement
-    incomplete (retryable, refunded); it is never a model reject.
-    """
-
-    reasons = list(delivery.get("reasons") or [])
-    incomplete = False
-    for eid, arm in (ledger.get("arms") or {}).items():
-        status = str(arm.get("status") or "")
-        if status == "chunk_budget_exhausted":
-            reasons.append(
-                f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
-                f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
-            )
-            incomplete = True
-        elif status == "harness_failure":
-            reasons.append(
-                f"harness_failure:{eid}:promotion_chunk:{arm.get('error') or 'exit'}"
-            )
-            incomplete = True
-        elif status == "no_checkpoint":
-            reasons.append(f"measurement_incomplete:{eid}:no_checkpoint_for_chunks")
-            incomplete = True
-    out = {**delivery, "promotion_chunks": dict(ledger), "reasons": reasons}
-    if incomplete:
-        out["measurement_complete"] = False
-    return out
 
 
-def _promotion_measurement_incomplete_reasons(
-    camp_dir: Path,
-    *,
-    control_id: str,
-    candidate_id: str,
-    delivery: Mapping[str, Any],
-) -> list[str]:
-    """Typed reasons a promotion measurement is still partial evidence.
-
-    A partial scoreboard (``measurement_complete: false``) or a spent chunk
-    budget can never be disposed as a model verdict: the disposition is
-    ``promotion_inconclusive`` (retryable) until a later run merges the suite
-    to completion or the locked chunk budget is exhausted for good.
-    """
-
-    reasons: list[str] = []
-    ledger = delivery.get("promotion_chunks")
-    if isinstance(ledger, Mapping):
-        for eid, arm in (ledger.get("arms") or {}).items():
-            status = str(arm.get("status") or "")
-            if status == "chunk_budget_exhausted":
-                reasons.append(
-                    f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
-                    f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
-                )
-    for run_id in (control_id, candidate_id):
-        if not run_id:
-            continue
-        state = _promotion_scoreboard_state(camp_dir / "runs" / run_id)
-        if state["exists"] and not state["complete"]:
-            reasons.append(
-                f"measurement_incomplete:{run_id}:partial_scoreboard:"
-                f"pending={state['pending']}"
-            )
-    return list(dict.fromkeys(reasons))
 
 
-def _merged_promotion_power_feasibility(
-    camp_dir: Path,
-    *,
-    control_id: str,
-    candidate_id: str,
-    locked: dict[str, Any] | None,
-    primary_metric: str,
-) -> dict[str, Any] | None:
-    """Power feasibility at the final merged n, not the planned n.
-
-    The locked report admits the planned geometry; the disposition must judge
-    the records actually completed in *both* arms of the primary suite (the
-    paired sign test cannot use more pairs than the smaller arm completed).
-    When either scoreboard is missing or still partial the locked report is
-    returned unchanged (the incomplete path decides, never this gate).
-    """
-
-    if not isinstance(locked, dict):
-        return None
-    suite = primary_metric.rsplit(".", 1)[0] if "." in primary_metric else "held_out"
-    merged_n: int | None = None
-    for run_id in (control_id, candidate_id):
-        if not run_id:
-            return dict(locked)
-        path = camp_dir / "runs" / run_id / "scoreboard.json"
-        if not path.is_file():
-            return dict(locked)
-        board = _read_json(path)
-        if not isinstance(board, dict) or board.get("measurement_complete") is False:
-            return dict(locked)
-        suites = board.get("suites")
-        row = suites.get(suite) if isinstance(suites, dict) else None
-        completed = row.get("completed_document_n") if isinstance(row, dict) else None
-        if type(completed) is not int or completed < 0:
-            return dict(locked)
-        merged_n = completed if merged_n is None else min(merged_n, completed)
-    if merged_n is None:
-        return dict(locked)
-    from slm_training.autoresearch import evidence_ledger as _ev
-
-    report = _ev.power_feasibility_report(
-        max(1, int(merged_n)), _ev.parse_alpha(locked.get("alpha"))
-    )
-    if merged_n < 1:
-        report["decisive"] = False
-    return {
-        **report,
-        "locked_n": locked.get("n"),
-        "locked_decisive": locked.get("decisive"),
-        "merged_n": int(merged_n),
-        "merged_suite": suite,
-        "source": "merged_scoreboard",
-    }
 
 
 
@@ -3383,86 +3226,10 @@ def _park_screening_saturation(
 
 
 
-def _latest_hypothesis_feedback(
-    root: Path, campaign_id: str
-) -> HypothesisFeedback:
-    """Load the terminal typed feedback that grounds an objective change.
-
-    Incomplete retries may have no hypothesizer event; walk predecessor
-    campaigns until a recorded feedback exists.
-    """
-
-    seen: set[str] = set()
-    current: str | None = campaign_id
-    while current and current not in seen:
-        seen.add(current)
-        store = CampaignStore(current, root)
-        try:
-            events = store.verify_event_chain()
-        except Exception:  # noqa: BLE001 — missing/broken chain, try predecessor
-            events = []
-        for event in reversed(events):
-            if event.get("event_type") != "hypothesizer_feedback_recorded":
-                continue
-            digest = str(event.get("artifact_sha256") or "")
-            path = store.root / "artifacts" / "hypothesizer_feedback" / f"{digest}.json"
-            if not path.is_file():
-                continue
-            feedback = HypothesisFeedback.model_validate_json(
-                path.read_text(encoding="utf-8")
-            )
-            if feedback.campaign_id == current:
-                return feedback
-        spec = _read_json(root / current / "campaign.json")
-        nxt = str(spec.get("predecessor_campaign_id") or "") if spec else ""
-        current = nxt or None
-    raise RuntimeError(
-        "screening objective change requires terminal HypothesisFeedback"
-    )
 
 
 
 
-def _capability_objective_refresh_actions(
-    *,
-    root: Path,
-    campaign_id: str,
-    preserved_actions: Sequence[AutotrainActionV1] = (),
-) -> tuple[AutotrainActionV1, ...]:
-    """Route exhausted smoke search into the existing rung/data/research loop.
-
-    Every action targets the policy's *current* rung. Naming a later rung
-    (e.g. simplified-NL while grammar_2_ast is uncertified) turns the pending
-    action into an I10 skip that no legal heal can execute.
-    """
-
-    feedback = _latest_hypothesis_feedback(root, campaign_id)
-    evidence_ids = (feedback.feedback_id, f"campaign:{campaign_id}")
-    rung = _current_rung_label()
-    return (
-        AutotrainActionV1(
-            kind="rebuild_data",
-            owner="synthesis-feedback",
-            reason=(
-                f"rebuild the current-rung ({rung}) training corpus from the "
-                "climb-policy plan; preserve I10 rung gates and inspect the "
-                "quality report before any new training"
-            ),
-            evidence_ids=evidence_ids,
-        ),
-        *preserved_actions,
-        AutotrainActionV1(
-            kind="next_experiment",
-            owner="autotrain",
-            reason=(
-                "after the data receipt and objective change, invoke the configured "
-                "Researcher once with the terminal HypothesisFeedback and "
-                f"preregister a size-matched capability objective for the current "
-                f"rung ({rung}); do not rotate the exhausted decoder-lever bank"
-            ),
-            evidence_ids=evidence_ids,
-        ),
-    )
 
 
 
@@ -3989,12 +3756,6 @@ def _self_heal_git_ancestry(
 
 
 
-def _is_bank_exhaust_repair_action(action: AutotrainActionV1) -> bool:
-    """True when repair_harness is thrash bank exhaust (soft if compose can reopen)."""
-    if action.kind != "repair_harness":
-        return False
-    reason = str(action.reason or "").lower()
-    return any(m in reason for m in _BANK_EXHAUST_MARKERS)
 
 
 def _self_heal_bank_exhaust_repair(
@@ -4637,91 +4398,6 @@ def _maybe_restore_serena_project_yml(
 
 
 
-def _render_continuous_cycle_docs(
-    *,
-    campaign_id: str,
-    loop_id: str,
-    handoff: AutotrainCycleHandoffV1,
-    delivery: Mapping[str, Any],
-) -> tuple[str, dict[str, Any]]:
-    """Honest fixture-screening closeout payload (not a ship claim)."""
-    reasons = list(delivery.get("reasons") or handoff.reasons or [])
-    # Stamp the eval-comparability components so this record lands in a real
-    # cross-version partition of the evidence ledger instead of "unstamped".
-    # Without this, `eval_key_from_stamp` returns None and the record's delta is
-    # pooled with every other unstamped cycle regardless of the scorer/gate
-    # version it actually ran under. Never let stamping fail the closeout.
-    try:
-        from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
-
-        version_stamp: dict[str, Any] | None = build_version_stamp(*EVAL_KEY_COMPONENTS)
-    except Exception:
-        version_stamp = None
-    payload: dict[str, Any] = {
-        "schema": "continuous_cycle_results/v1",
-        "campaign_id": campaign_id,
-        "loop_id": loop_id,
-        "cycle_index": handoff.cycle_index,
-        "cycle_role": handoff.cycle_role,
-        "cycle_intent": handoff.cycle_intent,
-        "positive": bool(delivery.get("positive")),
-        "stack_layer": bool(delivery.get("stack_layer")),
-        "measurement_complete": delivery.get("measurement_complete"),
-        "primary_metric": handoff.primary_metric,
-        "control_metrics": delivery.get("control_metrics"),
-        "candidate_metrics": delivery.get("candidate_metrics"),
-        "reasons": reasons,
-        "evidence_class": handoff.evidence_class,
-        "honesty": "fixture_screening_only_not_ship",
-        "auto": True,
-    }
-    if version_stamp is not None:
-        payload["version_stamp"] = version_stamp
-    # Embed the rich delivery record (candidate_id/arm_seed/policy_sha256) so
-    # future ledger mining never falls back to reasons-string recovery.
-    if delivery.get("schema") == "autotrain_sdlc_delivery/v1":
-        payload["delivery"] = dict(delivery)
-    md = (
-        f"# Continuous cycle `{campaign_id}`\n\n"
-        f"- loop_id: `{loop_id}`\n"
-        f"- cycle_index: `{handoff.cycle_index}`\n"
-        f"- role/intent: `{handoff.cycle_role}` / `{handoff.cycle_intent}`\n"
-        f"- primary_metric: `{handoff.primary_metric}`\n"
-        f"- positive: **{payload['positive']}**\n"
-        f"- stack_layer: **{payload['stack_layer']}**\n"
-        f"- measurement_complete: `{payload['measurement_complete']}`\n"
-        f"- evidence_class: `{handoff.evidence_class}`\n"
-        f"- reasons: {', '.join(str(r) for r in reasons) or '—'}\n"
-        f"- control_metrics: `{payload['control_metrics']}`\n"
-        f"- candidate_metrics: `{payload['candidate_metrics']}`\n\n"
-    )
-    from slm_training.autoresearch.hillclimb import hillclimb_iteration_report
-
-    hill = hillclimb_iteration_report(
-        campaign_id=campaign_id,
-        cycle_index=handoff.cycle_index,
-        positive=bool(payload["positive"]),
-        measurement_complete=payload.get("measurement_complete"),
-        reasons=reasons,
-        control_metrics=payload.get("control_metrics")
-        if isinstance(payload.get("control_metrics"), dict)
-        else None,
-        candidate_metrics=payload.get("candidate_metrics")
-        if isinstance(payload.get("candidate_metrics"), dict)
-        else None,
-        primary_metric=str(handoff.primary_metric or ""),
-    )
-    payload["hillclimb"] = hill
-    md += (
-        "## Hill-climb this cycle\n\n"
-        f"- went well: {', '.join(hill['went_well']) or '—'}\n"
-        f"- went wrong: {', '.join(hill['went_wrong']) or '—'}\n"
-        f"- speculate: {', '.join(hill['speculate']) or '—'}\n"
-        f"- deltas: `{hill.get('deltas')}`\n\n"
-        "Auto-documented by the continuous driver self-heal closeout. "
-        "Fixture screening only — not a ship claim.\n"
-    )
-    return md, payload
 
 
 
@@ -4893,31 +4569,6 @@ def _git_commit_paths(
     return True
 
 
-def _ack_document_action(
-    root: Path,
-    handoff: AutotrainCycleHandoffV1,
-    *,
-    action_index: int,
-    evidence_uris: Sequence[str],
-) -> None:
-    action = handoff.actions[action_index]
-    if action.kind != "document":
-        raise ValueError(f"refusing to auto-ack non-document action: {action.kind}")
-    uris = tuple(evidence_uris)
-    evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
-    append_autotrain_action_receipt(
-        root,
-        AutotrainActionReceiptV1(
-            loop_id=handoff.loop_id,
-            campaign_id=handoff.campaign_id,
-            action_index=action_index,
-            action_sha256=autotrain_action_sha256(action),
-            action_kind="document",
-            status="completed",
-            evidence_uris=uris,
-            evidence=evidence,
-        ),
-    )
 
 
 # Wall-capped local CPU I10 heal. Policy min_unique_roots=32 is promotion-scale.
@@ -4982,61 +4633,8 @@ def _sample_adequacy_report(cwd: Path) -> dict | None:
 
 
 
-def _rebuild_data_artifact_sources(train_dir: Path) -> dict[str, Path] | None:
-    """Map receipt names to files written by build_train_data."""
-    quality = train_dir / "quality_report.json"
-    feedback = train_dir / "synthesis_feedback.json"
-    manifest = train_dir / "data_manifest.json"
-    if not manifest.is_file():
-        manifest = train_dir / "manifest.json"
-    if not (quality.is_file() and feedback.is_file() and manifest.is_file()):
-        return None
-    return {
-        "quality_report.json": quality,
-        "synthesis_feedback.json": feedback,
-        "data_manifest.json": manifest,
-    }
 
 
-def _ack_rebuild_data_action(
-    root: Path,
-    handoff: AutotrainCycleHandoffV1,
-    *,
-    action_index: int,
-    evidence_uris: Sequence[str],
-    counts: tuple[int, int] | None = None,
-) -> None:
-    """Acknowledge one ``rebuild_data`` action with bound evidence.
-
-    ``counts`` is the heal's ``(records_before, records_after)`` postcondition:
-    when given, an ack is refused unless the count actually grew — a sidecar
-    path alone is never evidence that data changed.
-    """
-    action = handoff.actions[action_index]
-    if action.kind != "rebuild_data":
-        raise ValueError(f"refusing to ack non-rebuild_data action: {action.kind}")
-    if counts is not None:
-        before, after = int(counts[0]), int(counts[1])
-        if after <= before:
-            raise ValueError(
-                "refusing to ack rebuild_data without a count postcondition: "
-                f"records_before={before} records_after={after}"
-            )
-    uris = tuple(evidence_uris)
-    evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
-    append_autotrain_action_receipt(
-        root,
-        AutotrainActionReceiptV1(
-            loop_id=handoff.loop_id,
-            campaign_id=handoff.campaign_id,
-            action_index=action_index,
-            action_sha256=autotrain_action_sha256(action),
-            action_kind="rebuild_data",
-            status="completed",
-            evidence_uris=uris,
-            evidence=evidence,
-        ),
-    )
 
 
 def _register_i10_heal_arm(
@@ -5094,21 +4692,6 @@ def _register_i10_heal_arm(
 
 
 
-def _retired_heal_versions(root: Path, loop_id: str) -> set[str]:
-    """Train versions whose heal arm was measured and retired (tombstones)."""
-    path = _heal_retired_versions_path(root, loop_id)
-    if not path.is_file():
-        return set()
-    versions: set[str] = set()
-    for line in path.read_text(encoding="utf-8").splitlines():
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        version = str(row.get("train_version") or "")
-        if version:
-            versions.add(version)
-    return versions
 
 
 def _recover_heal_resume_arm(
@@ -6092,78 +5675,10 @@ def self_heal_unblock_loop(
 
 
 
-def _set_active_stage(root: Path, loop_id: str, stage: str) -> None:
-    path = _loop_state_path(root, loop_id)
-    with autotrain_loop_state_lock(root, loop_id):
-        if not path.is_file():
-            return
-        try:
-            state = AutotrainLoopStateV1.model_validate_json(
-                path.read_text(encoding="utf-8")
-            )
-        except (OSError, ValueError):
-            return
-        _write_loop_state_unlocked(
-            root,
-            state.model_copy(
-                update={
-                    "active_stage": stage,
-                    "child_pid": None,
-                    "stage_started_at": None,
-                    "heartbeat_at": utc_now(),
-                }
-            ),
-        )
 
 
-def _set_stage_process(root: Path, loop_id: str, stage: str, child_pid: int) -> None:
-    path = _loop_state_path(root, loop_id)
-    with autotrain_loop_state_lock(root, loop_id):
-        if not path.is_file():
-            return
-        try:
-            state = AutotrainLoopStateV1.model_validate_json(
-                path.read_text(encoding="utf-8")
-            )
-        except (OSError, ValueError):
-            return
-        now = utc_now()
-        started_at = state.stage_started_at if state.active_stage == stage else None
-        _write_loop_state_unlocked(
-            root,
-            state.model_copy(
-                update={
-                    "active_stage": stage,
-                    "child_pid": child_pid,
-                    "stage_started_at": started_at or now,
-                    "heartbeat_at": now,
-                }
-            ),
-        )
 
 
-def _clear_active_stage(root: Path, loop_id: str) -> None:
-    path = _loop_state_path(root, loop_id)
-    with autotrain_loop_state_lock(root, loop_id):
-        if not path.is_file():
-            return
-        try:
-            state = AutotrainLoopStateV1.model_validate_json(
-                path.read_text(encoding="utf-8")
-            )
-        except (OSError, ValueError):
-            return
-        _write_loop_state_unlocked(
-            root,
-            state.model_copy(
-                update={
-                    "active_stage": None,
-                    "child_pid": None,
-                    "stage_started_at": None,
-                    "heartbeat_at": utc_now(),
-                }
-            ),
-        )
 
 
 
@@ -6334,18 +5849,6 @@ def current_promote_authority() -> dict[str, str]:
     }
 
 
-def _stamp_promote_authority(row: dict[str, Any], authority: dict[str, str]) -> None:
-    row["promote_authority_sha256"] = authority["sha256"]
-    row["promote_authority"] = {
-        "schema": authority.get("schema"),
-        "climb_policy_sha256": authority.get("climb_policy_sha256"),
-        "locked_expectations_sha256": authority.get("locked_expectations_sha256"),
-        "harness_component": authority.get("harness_component"),
-        "harness_component_version": authority.get("harness_component_version"),
-    }
-    row["promote_authority_stamped_at"] = time.strftime(
-        "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
-    )
 
 
 
@@ -7477,31 +6980,6 @@ def _sync_reproduced_timeout_retirements(
     return retired_slugs, tuple(sorted(reintroduced))
 
 
-def _persist_selector_harness_signal(
-    root: Path,
-    campaign_id: str,
-    loop_id: str,
-    source_campaigns: Sequence[str],
-) -> None:
-    """Persist one content-addressed signal for a proven selector regression."""
-
-    if not source_campaigns:
-        return
-    signal = HarnessSignalV1(
-        family="autoresearch",
-        code="screening_selector_reintroduced_retired_arm",
-        evidence_uri=f"loops/{loop_id}/exhausted_knob_ledger.json",
-        reproduced_on_frozen_input=True,
-        primary=True,
-    )
-    store = CampaignStore(campaign_id, root=root)
-    path = store.write_artifact("harness_signals", signal)
-    store.append_event(
-        "harness_signal_recorded",
-        status="reproduced",
-        artifact_sha256=path.stem,
-        detail={"source_campaigns": list(source_campaigns)},
-    )
 
 
 def _screening_saturation_state(
@@ -8298,9 +7776,6 @@ def locked_promote_expectations_sha256() -> str:
 
 
 
-def locked_screening_expectations_sha256() -> str:
-    """SHA-256 of the locked continuous screening expectation manifest."""
-    return hashlib.sha256(screening_expectations_path().read_bytes()).hexdigest()
 
 
 
@@ -8486,83 +7961,12 @@ def dispose_champion_promote(
     )
 
 
-def build_five_lane_successor_matrix(
-    *,
-    campaign_id: str,
-    entry: dict[str, Any],
-    breaches: list[dict[str, Any]],
-    cert_policy: str | None,
-) -> dict[str, Any]:
-    """Preregistered five-lane diagnosis matrix after assumption-backed miss."""
-    lanes = list(_FIVE_LANES)
-    hypotheses = []
-    for i, lane in enumerate(lanes, start=1):
-        hypotheses.append(
-            {
-                "rank": i,
-                "lane": lane,
-                "hypothesis": (
-                    f"Lane '{lane}' explains the assumption-backed band miss "
-                    f"for champion {entry.get('knobs_fingerprint')} under "
-                    f"cert_policy={cert_policy}."
-                ),
-                "falsification": (
-                    "Controlled retest of this lane alone fails to move the "
-                    "missed metric into the locked band."
-                ),
-                "breaches": breaches,
-            }
-        )
-    return {
-        "schema": "autotrain_five_lane_successor/v1",
-        "campaign_id": campaign_id,
-        "champion_entry_id": entry.get("entry_id"),
-        "knobs_fingerprint": entry.get("knobs_fingerprint"),
-        "cert_policy": cert_policy,
-        "lanes": lanes,
-        "hypotheses": hypotheses,
-        "breaches": breaches,
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-
-
-def _write_five_lane_successor(
-    camp_dir: Path,
-    *,
-    campaign_id: str,
-    entry: dict[str, Any],
-    disposition: dict[str, Any],
-) -> Path | None:
-    if not disposition.get("emit_five_lane_matrix"):
-        return None
-    payload = build_five_lane_successor_matrix(
-        campaign_id=campaign_id,
-        entry=entry,
-        breaches=list(disposition.get("breaches") or []),
-        cert_policy=disposition.get("cert_policy"),
-    )
-    path = camp_dir / "five_lane_successor_matrix.json"
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    print(f"FIVE_LANE_SUCCESSOR path={path}", flush=True)
-    return path
 
 
 
 
-def _load_promote_certificate(camp_dir: Path) -> dict[str, Any] | None:
-    """Load campaign-local metric certificate if present (JSON object)."""
-    candidates = [
-        camp_dir / "metric-certificate.json",
-        camp_dir / "artifacts" / "metric-certificate.json",
-        camp_dir / "promote" / "metric-certificate.json",
-    ]
-    for path in candidates:
-        if not path.is_file():
-            continue
-        data = _read_json(path)
-        if data:
-            return data
-    return None
+
+
 
 
 
@@ -8741,232 +8145,12 @@ def export_promote_metric_certificate(
     return cert_path, None
 
 
-def _formal_preflight_status(camp_dir: Path) -> str | None:
-    """Read only a cache-validated formal preflight status for promote gate."""
-    path = camp_dir / "formal_preflight_status.json"
-    if path.is_file():
-        data = _read_json(path)
-        status = data.get("status")
-        if status != "proved":
-            return str(status) if status is not None else None
-        expected_sha = data.get("preflight_sha256")
-        validated_sha = data.get("binding_validated_sha256")
-        if expected_sha and validated_sha == expected_sha:
-            return "proved"
-    return None
 
 
-def record_formal_preflight_status(
-    camp_dir: Path,
-    *,
-    status: str,
-    template_id: str,
-    reason: str | None = None,
-    timeout_seconds: float | None = None,
-    duration_seconds: float | None = None,
-    timed_out: bool | None = None,
-) -> Path:
-    camp_dir.mkdir(parents=True, exist_ok=True)
-    path = camp_dir / "formal_preflight_status.json"
-    payload: dict[str, Any] = {
-        "schema": "autotrain_formal_preflight_status/v1",
-        "status": status,
-        "template_id": template_id,
-        "reason": reason,
-        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    if timeout_seconds is not None:
-        payload["timeout_seconds"] = float(timeout_seconds)
-    if duration_seconds is not None:
-        payload["duration_seconds"] = float(duration_seconds)
-    if timed_out is not None:
-        payload["timed_out"] = bool(timed_out)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    return path
 
 
-def promote_formal_claim_dict() -> dict[str, str]:
-    """Canonical required formal claim payload for promote experiment specs."""
-    return {
-        "template_id": _PROMOTE_FORMAL_TEMPLATE_ID,
-        "claim": (
-            "Structural similarity is monotone under declared component "
-            "inequalities for continuous promote."
-        ),
-        "policy": "required",
-    }
 
 
-def ensure_promote_formal_preflight(
-    *,
-    camp_dir: Path,
-    campaign_id: str,
-    experiment_id: str,
-    run_lean: bool = False,
-    timeout_seconds: float = _PROMOTE_FORMAL_TIMEOUT_S,
-    root: Path | None = None,
-    loop_id: str | None = None,
-) -> tuple[str, str | None]:
-    """Record formal preflight; return ``(status, content_sha256|None)``.
-
-    When proved, writes a content-addressed artifact under
-    ``artifacts/formal_preflights/<sha>.json`` matching
-    ``validate_formal_preflights`` binding. Fail closed on any error.
-    """
-    from slm_training.autoresearch.schemas import FormalClaimV1
-
-    claim = FormalClaimV1(**promote_formal_claim_dict())
-    status_path = camp_dir / "formal_preflight_status.json"
-    if status_path.is_file():
-        data = _read_json(status_path)
-        status = str(data.get("status") or "missing")
-        sha = data.get("preflight_sha256")
-        if status == "proved" and sha:
-            artifact = camp_dir / "artifacts" / "formal_preflights" / f"{sha}.json"
-            try:
-                from slm_training.autoresearch.formal import (
-                    validate_formal_preflight_artifact,
-                )
-
-                validated = validate_formal_preflight_artifact(
-                    artifact,
-                    campaign_id=campaign_id,
-                    experiment_id=experiment_id,
-                    claim=claim,
-                    expected_sha256=str(sha),
-                )
-                if validated.status != "proved":
-                    raise ValueError(
-                        f"required cached formal status is {validated.status!r}"
-                    )
-            except Exception as exc:  # noqa: BLE001 - stale cache fails closed
-                if not run_lean:
-                    record_formal_preflight_status(
-                        camp_dir,
-                        status="unknown",
-                        template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-                        reason=f"cached_formal_preflight_invalid:{exc}",
-                    )
-                    return "unknown", None
-            else:
-                data["binding_validated_sha256"] = str(sha)
-                status_path.write_text(
-                    json.dumps(data, indent=2) + "\n", encoding="utf-8"
-                )
-                return "proved", str(sha)
-        elif not run_lean:
-            return status, str(sha) if sha else None
-
-    if not run_lean:
-        record_formal_preflight_status(
-            camp_dir,
-            status="missing",
-            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-            reason="formal_preflight_not_run",
-        )
-        return "missing", None
-
-    try:
-        from slm_training.autoresearch.formal import (
-            formal_preflight_payload,
-            run_formal_preflight,
-            validate_formal_preflight_artifact,
-        )
-        from slm_training.autoresearch.schemas import (
-            ExperimentKnobs,
-            ExperimentSpec,
-        )
-        from slm_training.lineage.records import canonical_json
-
-        exp = ExperimentSpec(
-            experiment_id=experiment_id,
-            campaign_id=campaign_id,
-            hypothesis="Continuous promote requires proved structural-similarity mono.",
-            rationale="Proof driver: required formal preflight before promote train.",
-            expected_effect="Block promote when formal status is not proved.",
-            falsification_criteria=("Required formal preflight is not proved.",),
-            stop_conditions=("Stop before promote train when formal preflight fails.",),
-            citations=("docs/design/formal-autoresearch.md",),
-            knobs=ExperimentKnobs(steps=1),
-            formal_claims=(claim,),
-        )
-        # The caller can further tighten the repository-wide wall.
-        on_start, on_heartbeat = _stage_process_callbacks(
-            root=root, loop_id=loop_id, stage="promotion-formal-preflight"
-        )
-        preflight, _obligation = run_formal_preflight(
-            campaign_id,
-            exp,
-            claim,
-            timeout_seconds=timeout_seconds,
-            on_start=on_start,
-            on_heartbeat=on_heartbeat,
-        )
-        status = str(preflight.status)
-        duration = float(getattr(preflight, "duration_seconds", 0.0) or 0.0)
-        payload = formal_preflight_payload(preflight)
-        content_sha = hashlib.sha256(
-            canonical_json(payload).encode("utf-8")
-        ).hexdigest()
-        art = camp_dir / "artifacts" / "formal_preflights"
-        art.mkdir(parents=True, exist_ok=True)
-        # Content-addressed name required by validate_formal_preflights.
-        out = art / f"{content_sha}.json"
-        out.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        timed_out = _formal_status_is_timeout(status)
-        if timed_out:
-            reason = (
-                f"formal_preflight_timed_out:wall_s={timeout_seconds:g}:"
-                f"duration_s={duration:.3f}"
-            )
-        elif status == "proved":
-            reason = None
-        else:
-            reason = f"preflight_status={status}"
-        record_formal_preflight_status(
-            camp_dir,
-            status=status,
-            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-            reason=reason,
-            timeout_seconds=timeout_seconds,
-            duration_seconds=duration,
-            timed_out=timed_out,
-        )
-        # Persist sha for manifest binding.
-        status_path = camp_dir / "formal_preflight_status.json"
-        st = _read_json(status_path)
-        st["preflight_sha256"] = content_sha
-        if status == "proved":
-            validate_formal_preflight_artifact(
-                out,
-                campaign_id=campaign_id,
-                experiment_id=experiment_id,
-                claim=claim,
-                expected_sha256=content_sha,
-            )
-            st["binding_validated_sha256"] = content_sha
-        status_path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
-        return status, content_sha
-    except Exception as exc:  # noqa: BLE001 — fail closed for non-timeout errors
-        msg = str(exc)
-        timed_out = "timed out" in msg.lower() or "timeout" in msg.lower()
-        status = "timed_out" if timed_out else "unknown"
-        record_formal_preflight_status(
-            camp_dir,
-            status=status,
-            template_id=_PROMOTE_FORMAL_TEMPLATE_ID,
-            reason=(
-                f"formal_preflight_timed_out:wall_s={timeout_seconds:g}:{msg}"
-                if timed_out
-                else f"formal_preflight_error:{exc}"
-            ),
-            timeout_seconds=timeout_seconds,
-            timed_out=timed_out,
-        )
-        return status, None
 
 
 
@@ -9034,267 +8218,18 @@ def detect_promote_harness_failure(
     return reasons
 
 
-_PROMOTION_REPLICATE_SCHEMA = "autotrain_promotion_replicate/v1"
 
 
 
 
-def _promotion_replicate_sha(payload: dict[str, Any]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _promotion_replicate_evidence_is_current(root: Path, row: dict[str, Any]) -> bool:
-    campaign_id = row.get("campaign_id")
-    if not isinstance(campaign_id, str) or not campaign_id:
-        return False
-    camp_dir = (root / campaign_id).resolve()
-    if not camp_dir.is_relative_to(root.resolve()):
-        return False
-    delivery_path = camp_dir / "sdlc_delivery.json"
-    delivery = _read_json(delivery_path)
-    evidence = row.get("evidence")
-    if not delivery_path.is_file() or not isinstance(evidence, dict):
-        return False
-    if (
-        evidence.get("delivery_sha256")
-        != hashlib.sha256(delivery_path.read_bytes()).hexdigest()
-    ):
-        return False
-    control_id = str(row.get("control_id") or "")
-    candidate_id = str(row.get("candidate_id") or "")
-    seed = row.get("seed")
-    order = row.get("arm_order")
-    if (
-        type(seed) is not int
-        or not control_id
-        or not candidate_id
-        or not isinstance(order, list)
-        or len(order) != 2
-        or any(not isinstance(item, str) for item in order)
-        or set(order) != {control_id, candidate_id}
-        or delivery.get("measurement_complete") is not True
-        or delivery.get("control_id") != control_id
-        or delivery.get("candidate_id") != candidate_id
-        or delivery.get("arm_seed") != seed
-        or delivery.get("arm_order") != order
-    ):
-        return False
-    metrics_sha = _promotion_replicate_sha(
-        {
-            "control": delivery.get("control_metrics") or {},
-            "candidate": delivery.get("candidate_metrics") or {},
-        }
-    )
-    if evidence.get("metrics_sha256") != metrics_sha:
-        return False
-    manifest_digests = evidence.get("manifests")
-    if not isinstance(manifest_digests, dict) or set(manifest_digests) != {
-        control_id,
-        candidate_id,
-    }:
-        return False
-    for arm_id in (control_id, candidate_id):
-        manifest_path = camp_dir / "manifests" / f"{arm_id}.json"
-        manifest = _read_json(manifest_path)
-        if (
-            not manifest_path.is_file()
-            or seed not in (manifest.get("seeds") or [])
-            or manifest_digests.get(arm_id)
-            != hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-        ):
-            return False
-    certificate = camp_dir / "metric-certificate.json"
-    return (
-        certificate.is_file()
-        and evidence.get("certificate_sha256")
-        == hashlib.sha256(certificate.read_bytes()).hexdigest()
-    )
 
 
-def _verified_promotion_replicates(
-    root: Path, loop_id: str, entry: dict[str, Any]
-) -> list[dict[str, Any]]:
-    path = _promotion_replicate_ledger_path(root, loop_id)
-    if not path.is_file():
-        return []
-    rows: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if (
-            not isinstance(row, dict)
-            or row.get("schema") != _PROMOTION_REPLICATE_SCHEMA
-        ):
-            continue
-        if row.get("entry_id") != entry.get("entry_id") or row.get(
-            "knobs_fingerprint"
-        ) != entry.get("knobs_fingerprint"):
-            continue
-        claimed = row.get("content_sha256")
-        content = {key: value for key, value in row.items() if key != "content_sha256"}
-        if claimed != _promotion_replicate_sha(content):
-            continue
-        if not _promotion_replicate_evidence_is_current(root, row):
-            continue
-        rows.append(row)
-    return rows
 
 
-def _record_promotion_replicate(
-    *,
-    root: Path,
-    loop_id: str,
-    entry: dict[str, Any],
-    campaign_id: str,
-    cycle_index: int,
-    camp_dir: Path,
-    delivery: dict[str, Any],
-    arm_exits: dict[str, int] | None,
-) -> tuple[list[dict[str, Any]], str | None]:
-    """Append one complete, content-bound paired-seed promotion result."""
-
-    rows = _verified_promotion_replicates(root, loop_id, entry)
-    if any(row.get("campaign_id") == campaign_id for row in rows):
-        return rows, None
-    control_id = str(delivery.get("control_id") or "")
-    candidate_id = str(delivery.get("candidate_id") or "")
-    seed = delivery.get("arm_seed")
-    order = delivery.get("arm_order")
-    exits = arm_exits or {}
-    if delivery.get("measurement_complete") is not True:
-        return rows, "promotion_replicate_incomplete:measurement"
-    if type(seed) is not int:
-        return rows, "promotion_replicate_incomplete:seed"
-    if (
-        not isinstance(order, list)
-        or len(order) != 2
-        or set(order) != {control_id, candidate_id}
-    ):
-        return rows, "promotion_replicate_incomplete:arm_order"
-    if any(exits.get(arm_id) != 0 for arm_id in (control_id, candidate_id)):
-        return rows, "promotion_replicate_incomplete:arm_exit"
-
-    manifest_digests: dict[str, str] = {}
-    for arm_id in (control_id, candidate_id):
-        path = camp_dir / "manifests" / f"{arm_id}.json"
-        manifest = _read_json(path)
-        if not path.is_file() or seed not in (manifest.get("seeds") or []):
-            return rows, f"promotion_replicate_incomplete:manifest:{arm_id}"
-        manifest_digests[arm_id] = hashlib.sha256(path.read_bytes()).hexdigest()
-    certificate = camp_dir / "metric-certificate.json"
-    if not certificate.is_file():
-        return rows, "promotion_replicate_incomplete:certificate"
-    delivery_path = camp_dir / "sdlc_delivery.json"
-    durable_delivery = _read_json(delivery_path)
-    if not delivery_path.is_file() or any(
-        durable_delivery.get(key) != delivery.get(key)
-        for key in (
-            "measurement_complete",
-            "control_id",
-            "candidate_id",
-            "control_metrics",
-            "candidate_metrics",
-            "arm_seed",
-            "arm_order",
-        )
-    ):
-        return rows, "promotion_replicate_incomplete:durable_delivery"
-
-    evidence = {
-        "manifests": manifest_digests,
-        "certificate_sha256": hashlib.sha256(certificate.read_bytes()).hexdigest(),
-        "delivery_sha256": hashlib.sha256(delivery_path.read_bytes()).hexdigest(),
-        "metrics_sha256": _promotion_replicate_sha(
-            {
-                "control": delivery.get("control_metrics") or {},
-                "candidate": delivery.get("candidate_metrics") or {},
-            }
-        ),
-    }
-    record: dict[str, Any] = {
-        "schema": _PROMOTION_REPLICATE_SCHEMA,
-        "loop_id": loop_id,
-        "entry_id": entry.get("entry_id"),
-        "knobs_fingerprint": entry.get("knobs_fingerprint"),
-        "campaign_id": campaign_id,
-        "cycle_index": cycle_index,
-        "seed": seed,
-        "arm_order": order,
-        "control_id": control_id,
-        "candidate_id": candidate_id,
-        "evidence": evidence,
-        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    record["content_sha256"] = _promotion_replicate_sha(record)
-    if not any(row.get("content_sha256") == record["content_sha256"] for row in rows):
-        path = _promotion_replicate_ledger_path(root, loop_id)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(record, sort_keys=True) + "\n")
-        rows.append(record)
-    return rows, None
 
 
-def _gate_promotion_on_replicates(
-    *,
-    root: Path,
-    loop_id: str,
-    entry: dict[str, Any],
-    campaign_id: str,
-    cycle_index: int,
-    camp_dir: Path,
-    delivery: dict[str, Any],
-    arm_exits: dict[str, int] | None,
-    disposition: dict[str, Any],
-) -> dict[str, Any]:
-    """Prevent a favorable single pair from satisfying a multi-seed claim."""
-
-    if disposition.get("status") != "climb_accepted":
-        return disposition
-    from slm_training.autoresearch.climb_policy import (
-        load_climb_policy,
-        promotion_seed_floor,
-    )
-
-    min_seeds, require_multi_seed = promotion_seed_floor(load_climb_policy())
-    required = int(min_seeds) if require_multi_seed else 1
-    rows, error = _record_promotion_replicate(
-        root=root,
-        loop_id=loop_id,
-        entry=entry,
-        campaign_id=campaign_id,
-        cycle_index=cycle_index,
-        camp_dir=camp_dir,
-        delivery=delivery,
-        arm_exits=arm_exits,
-    )
-    distinct_seeds = {int(row["seed"]) for row in rows if type(row.get("seed")) is int}
-    order_roles = {
-        "AB" if row.get("arm_order", [None])[0] == row.get("control_id") else "BA"
-        for row in rows
-    }
-    orders_complete = required < 2 or order_roles == {"AB", "BA"}
-    if error is None and len(distinct_seeds) >= required and orders_complete:
-        return {
-            **disposition,
-            "promotion_replicate_count": len(distinct_seeds),
-            "promotion_replicate_required": required,
-        }
-    reason = error or (
-        f"promotion_replicates_incomplete:{len(distinct_seeds)}/{required}:"
-        f"orders={','.join(sorted(order_roles))}"
-    )
-    return {
-        **disposition,
-        "status": "promotion_inconclusive",
-        "inconclusive": True,
-        "promotion_replicate_count": len(distinct_seeds),
-        "promotion_replicate_required": required,
-        "reasons": [*(disposition.get("reasons") or []), reason],
-    }
 
 
 def _PHASE_A_TAGS(phase_a_positive: bool, phase_a_quality_held: bool) -> list[str]:
@@ -11793,51 +10728,6 @@ def _manifest_with_sha(
     raise RuntimeError(f"frozen replay manifest is missing: {digest}")
 
 
-def _restore_frozen_formal_claims(
-    camp_dir: Path,
-    experiment: dict[str, Any],
-    manifest: ExperimentCampaignV1,
-) -> None:
-    """Recover claims omitted by an older replay from its proved artifacts."""
-
-    if experiment.get("formal_claims") or not manifest.formal_obligations:
-        return
-    claims: list[dict[str, str]] = []
-    for obligation in manifest.formal_obligations:
-        path = (
-            camp_dir
-            / "artifacts"
-            / "formal_preflights"
-            / f"{obligation.preflight_sha256}.json"
-        )
-        if not path.is_file():
-            raise RuntimeError(
-                "frozen replay formal preflight is missing: "
-                f"{obligation.preflight_sha256}"
-            )
-        preflight = FormalPreflightV1.model_validate_json(
-            path.read_text(encoding="utf-8")
-        )
-        claim = FormalClaimV1(
-            template_id=preflight.template_id,
-            claim=preflight.claim,
-            policy=preflight.policy,
-        )
-        if (
-            preflight.campaign_id != manifest.campaign_id
-            or preflight.experiment_id != manifest.experiment_id
-            or preflight.template_id != obligation.template_id
-            or preflight.policy != obligation.policy
-            or (claim.policy == "required" and preflight.status != "proved")
-            or formal_obligation_id(manifest.campaign_id, manifest.experiment_id, claim)
-            != preflight.obligation_id
-        ):
-            raise RuntimeError(
-                "frozen replay formal claim recovery mismatch: "
-                f"{obligation.obligation_id}"
-            )
-        claims.append(claim.model_dump())
-    experiment["formal_claims"] = claims
 
 
 def _nonreplayable_configuration_failure(
@@ -12151,64 +11041,8 @@ def _apply_frozen_replay(
     return {new_ids[role]: replay[role] for role in ("control", "candidate")}
 
 
-def _replay_successor_manifest(
-    frozen: ExperimentCampaignV1,
-    *,
-    frozen_manifest_sha256: str,
-    campaign_id: str,
-    experiment_id: str,
-    integration_commit: str,
-) -> ExperimentCampaignV1:
-    successor = frozen.model_copy(
-        update={
-            "campaign_id": campaign_id,
-            "experiment_id": experiment_id,
-            "source_commit": integration_commit,
-            "source_dirty": False,
-            "author": "autotrain-frozen-replay-successor",
-            "created_at": utc_now(),
-            "replay_of_manifest_sha256": frozen_manifest_sha256,
-            "replay_reason": (
-                "Current-main successor after an infrastructure-incomplete measurement."
-            ),
-            # A proof is commit- and experiment-bound. Never carry the source
-            # campaign's proof digest into a current-main successor.
-            "formal_obligations": (),
-        }
-    )
-    return ExperimentCampaignV1.model_validate(successor.model_dump(mode="json"))
 
 
-def _bind_fresh_replay_formal_preflight(
-    successor: ExperimentCampaignV1,
-    frozen: ExperimentCampaignV1,
-    *,
-    preflight_sha256: str,
-    formal_claims: list[dict[str, str]],
-) -> ExperimentCampaignV1:
-    """Bind frozen claim policy to current identities and the fresh proof."""
-
-    claims = tuple(FormalClaimV1.model_validate(claim) for claim in formal_claims)
-    expected = sorted(
-        (obligation.template_id, obligation.policy)
-        for obligation in frozen.formal_obligations
-    )
-    actual = sorted((claim.template_id, claim.policy) for claim in claims)
-    if actual != expected:
-        raise RuntimeError("frozen replay formal claim policy mismatch")
-    obligations = tuple(
-        FormalObligationV1(
-            obligation_id=formal_obligation_id(
-                successor.campaign_id, successor.experiment_id, claim
-            ),
-            template_id=claim.template_id,
-            policy=claim.policy,
-            preflight_sha256=preflight_sha256,
-        )
-        for claim in claims
-    )
-    rebound = successor.model_copy(update={"formal_obligations": obligations})
-    return ExperimentCampaignV1.model_validate(rebound.model_dump(mode="json"))
 
 
 
@@ -13173,7 +12007,6 @@ def _manifest(
         promotion_seed_floor,
         stage_wall_minutes_for_role,
     )
-    from slm_training.autoresearch.formal import formal_obligation_id
 
     pol = policy or load_climb_policy()
     role_primary = primary_for_role(pol, role)
@@ -13437,21 +12270,6 @@ def _manifest(
 
 
 
-def _empty_promotion_slot_falls_back(
-    *,
-    cadence_role: str,
-    replay: object | None,
-    promotion_target_available: bool,
-    prior_screening_win_required: bool,
-) -> bool:
-    """Keep fresh hypotheses out of promotion suites and held-out selection."""
-
-    return (
-        replay is None
-        and cadence_role == "promotion"
-        and not promotion_target_available
-        and prior_screening_win_required
-    )
 
 
 
