@@ -247,6 +247,40 @@ harness_core` cycle, because `levers` imports `harnesses.staged` and
 `harnesses.staged` imports `harness_core`. The runner-specific budget policy
 belongs to the runner, so it stayed in `scripts/`, and the ADP count did not move.
 
+### Splitting a module safely
+
+Extracting from a large module is mechanical only in appearance. A moved
+function stops resolving names in the original module's namespace and starts
+resolving them in its new one, which silently breaks three things. Check all
+three before moving anything; each has bitten this repository.
+
+1. **Monkeypatched attributes.** If a test does
+   `monkeypatch.setattr(runner, "_git", fake)`, that patches the *runner's*
+   attribute. A moved caller reads its own module's binding instead and never
+   sees the fake. The runner suite has 91 such patch sites. Never move a
+   function whose transitive references include a patched name — and note that
+   the name may be *imported* rather than defined locally, so checking only
+   module-level definitions is not enough.
+
+2. **`global`-rebound module state.** `_load_dynamic_thrash_arms` does
+   `global _DYNAMIC_THRASH_ARMS` and rebinds the list. An alias import copies
+   the *reference at import time*, so after the rebind the two modules hold
+   different objects and the reader silently sees a stale one. This is
+   invisible to lint and to import smoke tests; it surfaces as three failing
+   behaviour tests. Find these with `ast` (`ast.Global`) and leave the state,
+   and everything that touches it, where it is.
+
+3. **Names reached through the original module.** Lint reports a re-exported
+   alias as unused (`F401`) because nothing in the file calls it, but a test may
+   reach it as `runner._auto_no_bump_version_registry`. Grep for
+   `mod.<name>` access before deleting an "unused" import; keep the ones tests
+   use as explicit re-exports with `# noqa: F401` and a comment saying why.
+
+The mechanical part is then safe: move the definitions verbatim, give them
+public names in the new module, and re-import them into the original under
+their original private aliases so every call site and patch target still
+resolves.
+
 ### Order of attack
 
 Most valuable first:
