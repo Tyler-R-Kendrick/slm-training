@@ -80,10 +80,7 @@ from slm_training.autoresearch.thrash_regime import (
     select_recommended_slug_for_regime,
 )
 from slm_training.autoresearch.thrash_residuals import (
-    ResidualObservation,
     SlugStats,
-    build_slug_stats_payload,
-    classify_delivery_residual,
     pick_soft_ranked_slug,
     rank_absolute_regimes,
     residual_boosts_from_observations,
@@ -132,6 +129,39 @@ from slm_training.levers import (
 # Budget constants re-exported under their original private names: the
 # extracted functions consume them, and the test suite reads them off this
 # module, so they are part of its surface even though nothing here calls them.
+from scripts.autotrain_ledgers import (
+    dynamic_thrash_arms_path as _dynamic_thrash_arms_path,
+)
+from scripts.autotrain_ledgers import (
+    slug_stats_path as _slug_stats_path,
+)
+from scripts.autotrain_ledgers import (
+    iter_loop_deliveries as _iter_loop_deliveries,
+)
+from scripts.autotrain_ledgers import (
+    load_residual_observations as _load_residual_observations,
+)
+from scripts.autotrain_ledgers import (
+    append_hillclimb_iteration as _append_hillclimb_iteration,
+)
+from scripts.autotrain_ledgers import (
+    append_historical_reclassification as _append_historical_reclassification,
+)
+from scripts.autotrain_ledgers import (
+    append_interesting_residual as _append_interesting_residual,
+)
+from scripts.autotrain_provenance import (
+    checkpoint_path_for_candidate as _checkpoint_path_for_candidate,
+)
+# Re-exported under its original private name: the cycle's provenance write
+# moved with it, so the runner no longer calls it, but the suite exercises it
+# as `run_autotrain_continuous._auto_no_bump_version_registry`.
+from scripts.autotrain_provenance import (  # noqa: F401
+    auto_no_bump_version_registry as _auto_no_bump_version_registry,
+)
+from scripts.autotrain_provenance import (
+    append_checkpoint_doc_notes as _append_checkpoint_doc_notes,
+)
 from scripts.autotrain_budget import (  # noqa: F401
     ARM_BUDGET_SCHEDULE_MARGIN_SECONDS as _ARM_BUDGET_SCHEDULE_MARGIN_SECONDS,
 )
@@ -3320,8 +3350,6 @@ def _champion_queue_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / "champion_queue.jsonl"
 
 
-def _dynamic_thrash_arms_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "dynamic_thrash_arms.jsonl"
 
 
 def _driver_lock_path(root: Path, loop_id: str) -> Path:
@@ -5450,36 +5478,12 @@ def _render_continuous_cycle_docs(
     return md, payload
 
 
-def _hillclimb_iteration_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "hillclimb_iterations.jsonl"
 
 
 def _hillclimb_review_path(root: Path, loop_id: str) -> Path:
     return root / "loops" / loop_id / "hillclimb_stagnation_review.json"
 
 
-def _append_hillclimb_iteration(
-    root: Path,
-    loop_id: str,
-    report: Mapping[str, Any],
-) -> list[dict[str, Any]]:
-    """Append one cycle report; return the loaded ledger (including this row)."""
-    path = _hillclimb_iteration_path(root, loop_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(dict(report), sort_keys=True) + "\n")
-    rows: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            item = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(item, dict):
-            rows.append(item)
-    return rows
 
 
 def _stagnation_skip_slugs(root: Path, loop_id: str) -> set[str]:
@@ -6273,109 +6277,10 @@ def _self_heal_rebuild_data(
     return "rebuild_data"
 
 
-_VERSION_REGISTRY_REL = "src/slm_training/resources/versions.json"
 
 
-def _auto_no_bump_version_registry(
-    cwd: Path,
-    *,
-    touched_rel_paths: Sequence[str],
-    loop_id: str,
-    campaign_id: str,
-) -> Path | None:
-    """Append a same-version no-bump history entry for components that claim
-    ``touched_rel_paths``, so the honesty-stub checkpoint note (which edits
-    only doc prose, never harness behavior) does not trip
-    ``scripts/verify_version_stamps.py`` every single continuous cycle.
-
-    Never bumps ``version`` and never touches an unrelated component — only
-    components whose registered ``paths`` intersect the files this cycle
-    actually wrote. Behavior-neutral by construction: doc prose only.
-    """
-    registry_path = cwd / _VERSION_REGISTRY_REL
-    if not registry_path.is_file() or not touched_rel_paths:
-        return None
-    try:
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    components = registry.get("components")
-    if not isinstance(components, dict):
-        return None
-    stamp = time.strftime("%Y-%m-%d", time.gmtime())
-    touched_set = set(touched_rel_paths)
-    changed = False
-    for component_id, entry in components.items():
-        paths = entry.get("paths") or []
-        if not touched_set.intersection(paths):
-            continue
-        history = entry.get("history")
-        if not isinstance(history, list):
-            continue
-        marker = f"loop {loop_id} {campaign_id}'s"
-        if history and marker in str(history[0].get("note") or ""):
-            continue  # already recorded for this exact campaign
-        history.insert(
-            0,
-            {
-                "version": entry.get("version"),
-                "date": stamp,
-                "note": (
-                    f"no-bump: record scheduled loop {loop_id} {campaign_id}'s "
-                    "checkpoint-note-only doc update (fixture/scratch continuous "
-                    "cycle honesty stub); behavior unchanged."
-                ),
-            },
-        )
-        changed = True
-    if not changed:
-        return None
-    registry_path.write_text(
-        json.dumps(registry, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
-    return registry_path
 
 
-def _append_checkpoint_doc_notes(
-    cwd: Path,
-    *,
-    campaign_id: str,
-    checkpoint_paths: Sequence[str],
-    loop_id: str | None = None,
-) -> list[Path]:
-    """Minimal honesty-labeled checkpoint notes when handoff requires them."""
-    touched: list[Path] = []
-    if not checkpoint_paths:
-        return touched
-    stamp = time.strftime("%Y-%m-%d", time.gmtime())
-    note = (
-        f"\n## Continuous autotrain note ({stamp}, {campaign_id})\n\n"
-        f"- campaign: `{campaign_id}`\n"
-        f"- checkpoints: {', '.join(f'`{p}`' for p in checkpoint_paths)}\n"
-        "- honesty: fixture/scratch continuous cycle — **not** a ship promotion.\n"
-    )
-    touched_rel: list[str] = []
-    for rel in ("docs/MODEL_CARD.md", "README.md"):
-        path = cwd / rel
-        if not path.is_file():
-            continue
-        text = path.read_text(encoding="utf-8")
-        marker = f"campaign: `{campaign_id}`"
-        if marker in text:
-            continue
-        path.write_text(text.rstrip() + "\n" + note, encoding="utf-8")
-        touched.append(path)
-        touched_rel.append(rel)
-    if touched_rel and loop_id:
-        registry_path = _auto_no_bump_version_registry(
-            cwd,
-            touched_rel_paths=touched_rel,
-            loop_id=loop_id,
-            campaign_id=campaign_id,
-        )
-        if registry_path is not None:
-            touched.append(registry_path)
-    return touched
 
 
 def _self_heal_document_actions(
@@ -7539,15 +7444,6 @@ def _stamp_promote_authority(row: dict[str, Any], authority: dict[str, str]) -> 
     )
 
 
-def _append_historical_reclassification(
-    root: Path,
-    loop_id: str,
-    event: dict[str, Any],
-) -> None:
-    path = root / "loops" / loop_id / "historical_reclassification.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(event, sort_keys=True) + "\n")
 
 
 def _paper_recert_promote_entry(
@@ -8673,62 +8569,10 @@ def _recent_completed_nonpositive_slugs(
     return closed
 
 
-def _interesting_residuals_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "interesting_residuals.jsonl"
 
 
-def _slug_stats_path(root: Path, loop_id: str) -> Path:
-    return root / "loops" / loop_id / "slug_stats.json"
 
 
-def _load_residual_observations(root: Path, loop_id: str) -> list[ResidualObservation]:
-    path = _interesting_residuals_path(root, loop_id)
-    if not path.is_file():
-        return []
-    out: list[ResidualObservation] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(row, dict):
-            continue
-        try:
-            out.append(
-                ResidualObservation(
-                    campaign_id=str(row.get("campaign_id") or ""),
-                    cycle_index=(
-                        int(row["cycle_index"])
-                        if row.get("cycle_index") is not None
-                        else None
-                    ),
-                    slug=row.get("slug") if isinstance(row.get("slug"), str) else None,
-                    residual_class=(
-                        str(row["residual_class"])
-                        if row.get("residual_class") is not None
-                        else None
-                    ),
-                    score=float(row.get("score") or 0.0),
-                    ss_control=row.get("ss_control"),
-                    ss_cand=row.get("ss_cand"),
-                    mpr_control=row.get("mpr_control"),
-                    mpr_cand=row.get("mpr_cand"),
-                    binder_control=row.get("binder_control"),
-                    binder_cand=row.get("binder_cand"),
-                    positive=row.get("positive")
-                    if isinstance(row.get("positive"), bool)
-                    else None,
-                    measurement_complete=row.get("measurement_complete")
-                    if isinstance(row.get("measurement_complete"), bool)
-                    else None,
-                    reasons=tuple(str(r) for r in (row.get("reasons") or ())),
-                )
-            )
-        except (TypeError, ValueError):
-            continue
-    return out
 
 
 def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
@@ -8763,27 +8607,6 @@ def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
     return out
 
 
-def _iter_loop_deliveries(
-    root: Path, loop_id: str, *, limit: int = 120
-) -> list[dict[str, Any]]:
-    """Load recent continuous deliveries for this loop (newest first, capped)."""
-    rows: list[tuple[int, dict[str, Any]]] = []
-    for path in root.glob("continuous-loop-*/sdlc_delivery.json"):
-        parent = path.parent.name
-        if loop_id not in parent:
-            continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not isinstance(data, dict):
-            continue
-        match = re.search(r"-c(\d+)$", parent)
-        cycle = int(match.group(1)) if match else 0
-        data = {**data, "campaign_id": data.get("campaign_id") or parent}
-        rows.append((cycle, data))
-    rows.sort(key=lambda item: item[0], reverse=True)
-    return [data for _, data in rows[: max(1, int(limit))]]
 
 
 def _matrix_experiment_knobs(
@@ -9046,107 +8869,12 @@ def _screening_saturation_state(
     }
 
 
-def _refresh_slug_stats_ledger(root: Path, loop_id: str) -> None:
-    """Regenerate loops/<id>/slug_stats.json from recent deliveries + residuals."""
-    deliveries = _iter_loop_deliveries(root, loop_id, limit=120)
-    observations = _load_residual_observations(root, loop_id)
-    boosts = residual_boosts_from_observations(observations)
-    payload = build_slug_stats_payload(
-        loop_id=loop_id,
-        deliveries=deliveries,
-        residuals=observations,
-        residual_boosts=boosts,
-    )
-    path = _slug_stats_path(root, loop_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
 
 
-def _checkpoint_path_for_candidate(
-    root: Path, campaign_id: str, candidate_id: str | None
-) -> Path | None:
-    """Return candidate last.pt if present (for residual eval-lite notes)."""
-    if not candidate_id:
-        return None
-    ckpt = root / campaign_id / "runs" / str(candidate_id) / "checkpoints" / "last.pt"
-    return ckpt if ckpt.is_file() else None
 
 
-def _append_residual_eval_queue(
-    root: Path,
-    loop_id: str,
-    obs: ResidualObservation,
-    *,
-    checkpoint: Path | None,
-) -> None:
-    """Queue optional eval-only follow-up for actionable residuals (no auto-train)."""
-    if obs.residual_class in {None, "control_spike_shared"}:
-        return
-    if obs.residual_class not in {
-        "primary_up_binder_down",
-        "efficiency_win_quality_held",
-        "high_band_absolute",
-    }:
-        return
-    path = root / "loops" / loop_id / "residual_eval_queue.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    row = {
-        "schema": "residual_eval_queue/v1",
-        "campaign_id": obs.campaign_id,
-        "cycle_index": obs.cycle_index,
-        "slug": obs.slug,
-        "residual_class": obs.residual_class,
-        "score": obs.score,
-        "checkpoint": str(checkpoint) if checkpoint else None,
-        "status": "queued" if checkpoint else "no_checkpoint",
-        "note": (
-            "eval-only confirm-lite candidate; run evaluate_model --checkpoint "
-            "when wall budget allows — does not auto-promote"
-        ),
-    }
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-def _append_interesting_residual(
-    root: Path,
-    loop_id: str,
-    delivery: Mapping[str, Any],
-    *,
-    campaign_id: str,
-    cycle_index: int | None,
-) -> ResidualObservation | None:
-    """Classify delivery and append interesting residual to loop ledger."""
-    obs = classify_delivery_residual(
-        delivery,
-        campaign_id=campaign_id,
-        cycle_index=cycle_index,
-    )
-    if obs is None or not obs.residual_class:
-        return None
-    path = _interesting_residuals_path(root, loop_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(obs.as_dict(), sort_keys=True) + "\n")
-    cand_id = str(delivery.get("candidate_id") or "") or None
-    ckpt = _checkpoint_path_for_candidate(root, campaign_id, cand_id)
-    try:
-        _append_residual_eval_queue(root, loop_id, obs, checkpoint=ckpt)
-    except Exception as exc:  # noqa: BLE001
-        print(f"THRASH_RESIDUAL_EVAL_QUEUE_WARN err={exc!r}", flush=True)
-    try:
-        _refresh_slug_stats_ledger(root, loop_id)
-    except Exception as exc:  # noqa: BLE001
-        print(f"THRASH_SLUG_STATS_WARN err={exc!r}", flush=True)
-    print(
-        f"THRASH_RESIDUAL class={obs.residual_class} slug={obs.slug} "
-        f"score={obs.score:.3f} campaign={campaign_id}"
-        + (f" ckpt={ckpt.name}" if ckpt else ""),
-        flush=True,
-    )
-    return obs
 
 
 def _select_recommended_slug(
