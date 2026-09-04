@@ -6,7 +6,6 @@ import hashlib
 import json
 import math
 import random
-import re
 import warnings
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
@@ -136,6 +135,37 @@ from slm_training.models.tokenizer import (
     load_tokenizer_sidecar,
     tokenize_text,
 )
+from slm_training.models.twotower_schema import (
+    schema_descendant_families,
+    schema_required_descendant_families,
+    schema_has_opaque_required_collection,
+    schema_can_reach_visible_slot,
+    schema_contains_enum,
+    schema_enum_values,
+)
+from slm_training.models.twotower_semantic_roles import (
+    semantic_role_joint_candidates,
+    semantic_role_namespace_groups,
+    semantic_role_enum_candidates,
+    semantic_role_family_has_capacity,
+    semantic_role_reachable_family_has_capacity,
+)
+from slm_training.models.twotower_semantic_plan import (
+    semantic_plan_role_obligations,
+    semantic_plan_seed_active,
+)
+from slm_training.models.twotower_slots import (
+    slot_component_owners,
+    required_slot_margin_position_accepts_slot,
+    choice_phase_evidence,
+)
+from slm_training.models.twotower_surface import (
+    note_admit_rejection,
+    fold_state_engine_stats,
+    pool_context,
+    repair_surface_syntax,
+    canonical_valid_openui,
+)
 
 _ABSTRACT_PLAN_MODES: tuple[str, ...] = tuple(mode.value for mode in AbstractPlanMode)
 STRUCTURAL_AUX_HEAD_PROFILES = (
@@ -157,9 +187,6 @@ _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
 )
 
 # _repair_surface_syntax runs per generated candidate; precompile its patterns.
-_QUOTED_SPAN_RE = re.compile(r'("(?:\\.|[^"\\])*")')
-_REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
-_DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
 
 #: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
 #: control arm this issue builds (A/B/C/D/E/F/G/H; see
@@ -2305,38 +2332,12 @@ class TwoTowerModel(nn.Module):
                 stats.admit_probe_committed_suffix += 1
                 return
 
-    @staticmethod
-    def _note_admit_rejection(run: int) -> int:
-        """N12 (read-only): record one admit-probe rejection.
+    _note_admit_rejection = staticmethod(note_admit_rejection)
+    _fold_state_engine_stats = staticmethod(fold_state_engine_stats)
+    _pool_context = staticmethod(pool_context)
+    _repair_surface_syntax = staticmethod(repair_surface_syntax)
+    _canonical_valid_openui = staticmethod(canonical_valid_openui)
 
-        ``run`` is the caller's count of consecutive rejections with no
-        intervening commit; the returned value is the extended run. Nothing in
-        the decode path reads the counters back, so the proposal sequence and
-        the emitted canvas are identical whether or not a collector is active.
-        """
-        run = int(run) + 1
-        stats = get_active_stats()
-        if stats is not None:
-            stats.admit_probe_rejections += 1
-            if run > stats.admit_probe_reject_run_max:
-                stats.admit_probe_reject_run_max = run
-        return run
-
-    @staticmethod
-    def _fold_state_engine_stats(states: list | None) -> None:
-        """Fold each state engine's lifetime counters into the active stats.
-
-        Called once when a decode path's request-local states go out of
-        scope; engines are per-state, so a single fold never double-counts.
-        """
-        if not states:
-            return
-        from slm_training.models.decode_stats import collect_engine_stats
-
-        for state in states:
-            engine = getattr(state, "engine", None)
-            if engine is not None:
-                collect_engine_stats(engine)
 
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
@@ -3138,14 +3139,6 @@ class TwoTowerModel(nn.Module):
         )
         return targets, noisy, predict, bucket_targets
 
-    @staticmethod
-    def _pool_context(
-        context: torch.Tensor, pad_mask: torch.Tensor | None
-    ) -> torch.Tensor:
-        if pad_mask is None:
-            return context.mean(dim=1)
-        visible = (~pad_mask).unsqueeze(-1).to(context.dtype)
-        return (context * visible).sum(dim=1) / visible.sum(dim=1).clamp(min=1.0)
 
     def _predict_target_lengths(
         self, context: torch.Tensor, pad_mask: torch.Tensor | None
@@ -5435,39 +5428,7 @@ class TwoTowerModel(nn.Module):
                     break
         return self._decode_openui(ids_1d, placeholders=placeholders)
 
-    @staticmethod
-    def _repair_surface_syntax(text: str) -> str:
-        """Repair local token-boundary artifacts without inventing layout content."""
-        parts = _QUOTED_SPAN_RE.split(text)
-        for index in range(0, len(parts), 2):
-            parts[index] = _REPEATED_EQUALS_RE.sub(" = ", parts[index])
-            parts[index] = _DANGLING_EQUALS_RE.sub("", parts[index])
-        return "".join(parts)
 
-    @staticmethod
-    def _canonical_valid_openui(text: str) -> str | None:
-        """Return serialized OpenUI if parseable and non-trivial; else None."""
-        try:
-            from slm_training.dsl.parser import validate
-        except TimeoutError:
-            raise
-        except Exception:  # noqa: BLE001
-            return None
-        try:
-            program = validate(text)
-        except TimeoutError:
-            raise
-        except Exception:  # noqa: BLE001
-            return None
-        ser = (program.serialized or text).strip()
-        compact = ser.replace(" ", "")
-        if "Stack([])" in compact or "Stack([]," in compact:
-            return None
-        if "Card([])" in compact:
-            return None
-        if "root=" not in compact and "root =" not in ser:
-            return None
-        return ser
 
     def _minimal_valid_openui(
         self, slot_contract: list[str] | tuple[str, ...] | None = None
@@ -6444,33 +6405,9 @@ class TwoTowerModel(nn.Module):
         self._component_token_ids_cache = ids
         return ids
 
-    @staticmethod
-    def _slot_component_owners(source: str) -> dict[str, str]:
-        from slm_training.dsl.lang_core import parse
-
-        owners: dict[str, str] = {}
-
-        def walk(value: object, component: str | None = None) -> None:
-            if isinstance(value, dict):
-                owner = (
-                    str(value["typeName"])
-                    if value.get("type") == "element" and value.get("typeName")
-                    else component
-                )
-                for child in value.values():
-                    walk(child, owner)
-            elif isinstance(value, list):
-                for child in value:
-                    walk(child, component)
-            elif (
-                isinstance(value, str)
-                and value.startswith(":")
-                and component is not None
-            ):
-                owners.setdefault(value, component)
-
-        walk(parse(source).root)
-        return owners
+    _slot_component_owners = staticmethod(slot_component_owners)
+    _required_slot_margin_position_accepts_slot = staticmethod(required_slot_margin_position_accepts_slot)
+    _choice_phase_evidence = staticmethod(choice_phase_evidence)
 
     def _component_name_index(self) -> dict[str, int]:
         result: dict[str, int] = {}
@@ -7019,466 +6956,27 @@ class TwoTowerModel(nn.Module):
             if str(expr_type).startswith("element:")
         )
 
-    @staticmethod
-    def _semantic_role_joint_candidates(
-        placeholders: list[str], component_names: list[str]
-    ) -> dict[tuple[str, ...], tuple[str, ...]]:
-        """Partition namespaces into jointly coverable direct-string role groups."""
-        from itertools import combinations
+    _semantic_role_joint_candidates = staticmethod(semantic_role_joint_candidates)
+    _semantic_role_namespace_groups = staticmethod(semantic_role_namespace_groups)
+    _semantic_role_enum_candidates = staticmethod(semantic_role_enum_candidates)
+    _semantic_role_family_has_capacity = staticmethod(semantic_role_family_has_capacity)
+    _semantic_role_reachable_family_has_capacity = staticmethod(semantic_role_reachable_family_has_capacity)
 
-        from slm_training.data.quality import semantic_role_properties
-        from slm_training.dsl.lang_core import library_schema
 
-        groups: dict[str, list[str]] = {}
-        for placeholder in sorted(set(placeholders)):
-            parts = placeholder.removeprefix(":").split(".")
-            if len(parts) > 1:
-                groups.setdefault(".".join(parts[:-1]), []).append(placeholder)
-        definitions = library_schema().get("$defs", {})
-        properties_by_slot = semantic_role_properties(placeholders)
-        direct_string_properties = {
-            name: {
-                property_name
-                for property_name, schema in (
-                    definition.get("properties") or {}
-                ).items()
-                if isinstance(schema, dict) and schema.get("type") == "string"
-            }
-            for name in sorted(set(component_names))
-            if isinstance((definition := definitions.get(name)), dict)
-        }
-        slot_candidate_counts = {
-            slot: sum(
-                bool(set(properties).intersection(component_properties))
-                for component_properties in direct_string_properties.values()
-            )
-            for slot, properties in properties_by_slot.items()
-        }
 
-        def covers(slots: tuple[str, ...], properties: dict[str, Any]) -> bool:
-            string_properties = {
-                name
-                for name, schema in properties.items()
-                if isinstance(schema, dict) and schema.get("type") == "string"
-            }
 
-            def match(index: int, used: frozenset[str]) -> bool:
-                if index == len(slots):
-                    return True
-                return any(
-                    match(index + 1, used | {name})
-                    for name in properties_by_slot[slots[index]]
-                    if name in string_properties and name not in used
-                )
 
-            return match(0, frozenset())
+    _semantic_plan_role_obligations = staticmethod(semantic_plan_role_obligations)
+    _semantic_plan_seed_active = staticmethod(semantic_plan_seed_active)
 
-        result: dict[tuple[str, ...], tuple[str, ...]] = {}
-        for slots_list in groups.values():
-            candidates: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
-            for size in range(len(slots_list), 1, -1):
-                for slots in combinations(slots_list, size):
-                    compatible = tuple(
-                        name
-                        for name in sorted(set(component_names))
-                        if isinstance((definition := definitions.get(name)), dict)
-                        and covers(slots, definition.get("properties") or {})
-                    )
-                    if compatible:
-                        candidates.append((slots, compatible))
-            used: set[str] = set()
-            for slots, compatible in sorted(
-                candidates,
-                key=lambda item: (
-                    -len(item[0]),
-                    sum(slot_candidate_counts[slot] for slot in item[0]),
-                    len(item[1]),
-                    item[0],
-                ),
-            ):
-                if used.intersection(slots):
-                    continue
-                result[slots] = compatible
-                used.update(slots)
-        return result
+    _schema_descendant_families = staticmethod(schema_descendant_families)
+    _schema_required_descendant_families = staticmethod(schema_required_descendant_families)
+    _schema_has_opaque_required_collection = staticmethod(schema_has_opaque_required_collection)
+    _schema_can_reach_visible_slot = staticmethod(schema_can_reach_visible_slot)
+    _schema_contains_enum = staticmethod(schema_contains_enum)
+    _schema_enum_values = staticmethod(schema_enum_values)
 
-    @staticmethod
-    def _semantic_role_namespace_groups(
-        slots: tuple[str, ...] | list[str],
-    ) -> tuple[tuple[str, ...], ...]:
-        """Group declared markers by their semantic owner namespace."""
-        groups: dict[str, list[str]] = {}
-        for slot in slots:
-            namespace, separator, _property = slot.removeprefix(":").rpartition(".")
-            groups.setdefault(namespace if separator else slot, []).append(slot)
-        return tuple(tuple(group) for group in groups.values())
 
-    @staticmethod
-    def _semantic_role_enum_candidates(
-        slot: str, candidates: tuple[str, ...]
-    ) -> tuple[str, ...]:
-        """Return candidate families whose public enum names the visible role."""
-        from slm_training.dsl.lang_core import library_schema
-
-        role = re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
-        definitions = library_schema().get("$defs", {})
-
-        def enum_values(value: object) -> set[str]:
-            if isinstance(value, dict):
-                return {
-                    str(item).lower() for item in value.get("enum", ())
-                } | set().union(*(enum_values(child) for child in value.values()))
-            if isinstance(value, list):
-                return set().union(*(enum_values(child) for child in value), set())
-            return set()
-
-        return tuple(
-            family
-            for family in candidates
-            if role.lower() in enum_values(definitions.get(family, {}))
-        )
-
-    @staticmethod
-    def _semantic_role_family_has_capacity(
-        family: str, slots: tuple[str, ...], instances: int
-    ) -> bool:
-        """Return whether instances have distinct compatible public strings."""
-        from slm_training.data.quality import semantic_role_properties
-        from slm_training.dsl.lang_core import library_schema
-
-        slots = tuple(dict.fromkeys(slots))
-        definition = library_schema().get("$defs", {}).get(family, {})
-        string_properties = {
-            name
-            for name, schema in (definition.get("properties") or {}).items()
-            if isinstance(schema, dict) and schema.get("type") == "string"
-        }
-        if not string_properties:
-            return len(TwoTowerModel._semantic_role_namespace_groups(slots)) <= max(
-                0, instances
-            )
-        properties_by_slot = semantic_role_properties(list(slots))
-        if any(
-            not string_properties.intersection(properties_by_slot.get(slot, ()))
-            for slot in slots
-        ):
-            return True
-        available = tuple(
-            property_name
-            for _instance in range(max(0, instances))
-            for property_name in sorted(string_properties)
-        )
-
-        def match(index: int, used: frozenset[int]) -> bool:
-            if index == len(slots):
-                return True
-            return any(
-                match(index + 1, used | {position})
-                for position, property_name in enumerate(available)
-                if position not in used
-                and property_name in properties_by_slot.get(slots[index], ())
-            )
-
-        return match(0, frozenset())
-
-    @staticmethod
-    def _semantic_role_reachable_family_has_capacity(
-        family: str, slots: tuple[str, ...], instances: int
-    ) -> bool:
-        """Bound nested role namespaces to one structural owner per instance."""
-        slots = tuple(dict.fromkeys(slots))
-        return TwoTowerModel._semantic_role_family_has_capacity(
-            family, slots, instances
-        ) and len(TwoTowerModel._semantic_role_namespace_groups(slots)) <= max(
-            0, instances
-        )
-
-    @staticmethod
-    def _semantic_plan_role_obligations(
-        family_counts: Counter[str],
-        role_candidates: dict[str, tuple[str, ...]] | None,
-        reachable_role_candidates: dict[str, tuple[str, ...]] | None = None,
-    ) -> tuple[Counter[str], dict[str, tuple[str, ...]]]:
-        """Pair uncovered visible roles with preferred compatible leaf families."""
-        if not role_candidates:
-            return family_counts, {}
-        from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
-
-        completed = family_counts.copy()
-        planned = set(family_counts)
-        schema_descendants = TwoTowerModel._schema_descendant_families(planned)
-        bindings: dict[str, list[str]] = defaultdict(list)
-        coverage: dict[str, list[str]] = defaultdict(list)
-        bound_slots: set[str] = set()
-        component_names = sorted(
-            {
-                component
-                for candidates in role_candidates.values()
-                for component in candidates
-            }
-        )
-
-        def covered_by_planned(slots: tuple[str, ...]) -> bool:
-            trial = {family: list(assigned) for family, assigned in coverage.items()}
-
-            def match(index: int) -> bool:
-                if index == len(slots):
-                    return True
-                slot = slots[index]
-                compatible = set(role_candidates[slot]) | set(
-                    (reachable_role_candidates or {}).get(slot, ())
-                )
-                for family in sorted(planned.intersection(compatible)):
-                    assigned = trial.setdefault(family, [])
-                    assigned_slots = (*assigned, *bindings.get(family, ()), slot)
-                    has_capacity = (
-                        TwoTowerModel._semantic_role_family_has_capacity(
-                            family, assigned_slots, completed[family]
-                        )
-                        if family in role_candidates[slot]
-                        else TwoTowerModel._semantic_role_reachable_family_has_capacity(
-                            family, assigned_slots, completed[family]
-                        )
-                    )
-                    if not has_capacity:
-                        continue
-                    assigned.append(slot)
-                    if match(index + 1):
-                        return True
-                    assigned.pop()
-                return False
-
-            if not match(0):
-                return False
-            coverage.update(trial)
-            return True
-
-        for slots, candidates in TwoTowerModel._semantic_role_joint_candidates(
-            list(role_candidates), component_names
-        ).items():
-            if covered_by_planned(slots):
-                continue
-            candidates = tuple(
-                family
-                for family in candidates
-                if all(family in role_candidates[slot] for slot in slots)
-            )
-            if not candidates:
-                continue
-            family = next(
-                (
-                    preferred
-                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
-                    if preferred in planned and preferred in candidates
-                ),
-                next(iter(sorted(planned.intersection(candidates))), None),
-            )
-            if family is None:
-                family = next(iter(candidates))
-                completed[family] += 1
-                planned.add(family)
-            bindings[family].extend(slots)
-            bound_slots.update(slots)
-        for slot, candidates in role_candidates.items():
-            if slot in bound_slots:
-                continue
-            planned_family = next(
-                (
-                    preferred
-                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
-                    if preferred in planned
-                    and preferred in candidates
-                    and TwoTowerModel._semantic_role_family_has_capacity(
-                        preferred,
-                        (
-                            *coverage.get(preferred, ()),
-                            *bindings.get(preferred, ()),
-                            slot,
-                        ),
-                        completed[preferred],
-                    )
-                ),
-                next(
-                    (
-                        family
-                        for family in sorted(planned.intersection(candidates))
-                        if TwoTowerModel._semantic_role_family_has_capacity(
-                            family,
-                            (
-                                *coverage.get(family, ()),
-                                *bindings.get(family, ()),
-                                slot,
-                            ),
-                            completed[family],
-                        )
-                    ),
-                    None,
-                ),
-            )
-            if planned_family is not None:
-                bindings[planned_family].append(slot)
-                continue
-            reachable_family = next(
-                (
-                    family
-                    for family in sorted(
-                        planned.intersection(
-                            (reachable_role_candidates or {}).get(slot, ())
-                        )
-                    )
-                    if TwoTowerModel._semantic_role_reachable_family_has_capacity(
-                        family,
-                        (
-                            *coverage.get(family, ()),
-                            *bindings.get(family, ()),
-                            slot,
-                        ),
-                        completed[family],
-                    )
-                ),
-                None,
-            )
-            if reachable_family is not None:
-                family = next(
-                    (
-                        preferred
-                        for preferred in DEFAULT_HOUSE_STYLE.preferred_components
-                        if preferred in candidates
-                    ),
-                    None,
-                )
-                if family is not None:
-                    added_direct = False
-                    exhausted_direct = any(
-                        direct in planned
-                        and not TwoTowerModel._semantic_role_family_has_capacity(
-                            direct,
-                            (
-                                *coverage.get(direct, ()),
-                                *bindings.get(direct, ()),
-                                slot,
-                            ),
-                            completed[direct],
-                        )
-                        for direct in candidates
-                    )
-                    if exhausted_direct and family not in schema_descendants:
-                        completed[family] += 1
-                        planned.add(family)
-                        added_direct = True
-                    coverage[reachable_family].append(slot)
-                    if added_direct:
-                        bindings[family].append(slot)
-                    continue
-            nested_candidates = tuple(
-                family for family in candidates if family in schema_descendants
-            )
-            if len(nested_candidates) == 1:
-                family = nested_candidates[0]
-                completed[family] += 1
-                bindings[family].append(slot)
-                continue
-            family = next(
-                (
-                    preferred
-                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
-                    if preferred in candidates
-                ),
-                None,
-            )
-            enum_candidates = TwoTowerModel._semantic_role_enum_candidates(
-                slot, candidates
-            )
-            if family is None and len(enum_candidates) == 1:
-                family = enum_candidates[0]
-            if family is None and len(candidates) == 1:
-                family = candidates[0]
-            if family is not None:
-                completed[family] += 1
-                bindings[family].append(slot)
-        return completed, {family: tuple(slots) for family, slots in bindings.items()}
-
-    @staticmethod
-    def _schema_descendant_families(families: set[str]) -> set[str]:
-        """Return cycle-safe component refs nested below planned families."""
-        from slm_training.dsl.lang_core import library_schema
-
-        definitions = library_schema().get("$defs", {})
-        descendants: set[str] = set()
-        visited = set(families)
-        pending = [definitions[family] for family in families if family in definitions]
-        while pending:
-            value = pending.pop()
-            if isinstance(value, list):
-                pending.extend(value)
-                continue
-            if not isinstance(value, dict):
-                continue
-            reference = str(value.get("$ref") or "")
-            if reference.startswith("#/$defs/"):
-                family = reference.rsplit("/", 1)[-1]
-                descendants.add(family)
-                if family not in visited and family in definitions:
-                    visited.add(family)
-                    pending.append(definitions[family])
-            pending.extend(value.values())
-        return descendants
-
-    @staticmethod
-    def _schema_required_descendant_families(family: str) -> set[str]:
-        """Return families reachable through required, non-alternative paths."""
-        from slm_training.dsl.lang_core import library_schema
-
-        definitions = library_schema().get("$defs", {})
-
-        def visit(schema: object, seen: frozenset[str]) -> set[str]:
-            if not isinstance(schema, dict):
-                return set()
-            reference = str(schema.get("$ref") or "")
-            if reference.startswith("#/$defs/"):
-                name = reference.rsplit("/", 1)[-1]
-                if name in seen:
-                    return {name}
-                return {name} | visit(definitions.get(name), seen | {name})
-            alternatives = [
-                option
-                for key in ("anyOf", "oneOf")
-                for option in schema.get(key, ())
-                if isinstance(option, dict)
-            ]
-            if alternatives:
-                common = visit(alternatives[0], seen)
-                for option in alternatives[1:]:
-                    common.intersection_update(visit(option, seen))
-                return common
-            if schema.get("type") == "array":
-                return visit(schema.get("items"), seen)
-            required = set(schema.get("required", ()))
-            return set().union(
-                *(
-                    visit(child, seen)
-                    for name, child in schema.get("properties", {}).items()
-                    if name in required
-                ),
-                set(),
-            )
-
-        return visit(definitions.get(family), frozenset({family}))
-
-    @staticmethod
-    def _schema_has_opaque_required_collection(family: str) -> bool:
-        """Whether a required collection intentionally accepts broad elements."""
-        from slm_training.dsl.lang_core import library_schema
-
-        definition = library_schema().get("$defs", {}).get(family, {})
-        required = set(definition.get("required", ()))
-        return any(
-            isinstance(schema, dict)
-            and schema.get("type") == "array"
-            and not schema.get("items")
-            for name, schema in definition.get("properties", {}).items()
-            if name in required
-        )
 
     def _semantic_plan_bias(
         self,
@@ -7747,19 +7245,6 @@ class TwoTowerModel(nn.Module):
                     applied = True
         return bias if applied else None
 
-    @staticmethod
-    def _semantic_plan_seed_active(
-        state: Any | None,
-        candidate_kinds: tuple[str, ...],
-    ) -> bool:
-        return bool(
-            state is not None
-            and not tuple(getattr(state, "section_types", ()))
-            and any(
-                kind in {"component_root", "component_root_or_bound"}
-                for kind in candidate_kinds
-            )
-        )
 
     def _record_semantic_plan_seed_trace(
         self,
@@ -9027,52 +8512,6 @@ class TwoTowerModel(nn.Module):
         )
         return bias
 
-    @staticmethod
-    def _required_slot_margin_position_accepts_slot(state: Any) -> bool:
-        """Whether the active argument position is schema-tagged for a slot.
-
-        E630: mirrors ``_schema_role_slot_bias``'s own ``accepts_slot`` gate
-        exactly -- a choice decoder ``component`` frame's current argument must carry
-        ``x-openui-placeholder`` (the content properties: ``label``, ``text``,
-        ``title``, ...), and an ``object`` frame's current property schema
-        must be able to reach a visible slot at all. Any other frame kind
-        (``variadic``, ``fixed``, ...) is left permissive (``True``) since
-        this bias's only observed failure mode is stuffing missing slots into
-        optional enum/opaque *component*/*object* properties, not array items.
-        The lexer compiler exposes its active call through a grammar engine
-        instead of schema frames, so its equivalent gate accepts only an
-        explicitly tagged placeholder or a non-enum string property.
-        """
-        frames = list(getattr(state, "frames", ()))
-        if not frames and getattr(state, "engine", None) is not None:
-            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
-            from slm_training.dsl.lang_core import library_schema
-
-            active = _active_call(state.engine)
-            if active is None:
-                return False
-            component, index, _ = active
-            definition = library_schema().get("$defs", {}).get(component) or {}
-            properties = tuple((definition.get("properties") or {}).values())
-            if not 0 <= index < len(properties):
-                return False
-            schema = properties[index]
-            return bool(schema.get("x-openui-placeholder")) or (
-                schema.get("type") == "string" and "enum" not in schema
-            )
-        if not frames:
-            return True
-        frame = frames[-1]
-        kind = getattr(frame, "kind", None)
-        if kind not in {"component", "object"}:
-            return True
-        schemas = tuple(getattr(frame, "schemas", ()))
-        index = int(getattr(frame, "arg_index", -1))
-        if not (0 <= index < len(schemas)):
-            return False
-        if kind == "component":
-            return bool(schemas[index].get("x-openui-placeholder"))
-        return TwoTowerModel._schema_can_reach_visible_slot(dict(schemas[index]))
 
     def _semantic_plan_repeated_owner_id(
         self,
@@ -9140,32 +8579,6 @@ class TwoTowerModel(nn.Module):
                 return candidate_id
         return None
 
-    @staticmethod
-    def _schema_can_reach_visible_slot(
-        schema: dict[str, Any], seen: frozenset[str] = frozenset()
-    ) -> bool:
-        reference = str(schema.get("$ref") or "")
-        if reference.startswith("#/$defs/"):
-            name = reference.rsplit("/", 1)[-1]
-            if name in seen:
-                return False
-            from slm_training.dsl.lang_core import library_schema
-
-            target = library_schema().get("$defs", {}).get(name)
-            return isinstance(
-                target, dict
-            ) and TwoTowerModel._schema_can_reach_visible_slot(target, seen | {name})
-        if schema.get("x-openui-placeholder") or schema.get("type") == "string":
-            return True
-        return any(
-            TwoTowerModel._schema_can_reach_visible_slot(dict(child), seen)
-            for child in (
-                *schema.get("anyOf", ()),
-                *schema.get("properties", {}).values(),
-                *((schema["items"],) if isinstance(schema.get("items"), dict) else ()),
-            )
-            if isinstance(child, dict)
-        )
 
     def _semantic_plan_typed_array_nonempty_bias(
         self,
@@ -9563,29 +8976,7 @@ class TwoTowerModel(nn.Module):
         )
         return bias
 
-    @staticmethod
-    def _schema_contains_enum(schema: dict[str, Any]) -> bool:
-        if schema.get("enum"):
-            return True
-        return any(
-            TwoTowerModel._schema_contains_enum(dict(option))
-            for key in ("anyOf", "oneOf")
-            for option in schema.get(key, ())
-            if isinstance(option, dict)
-        )
 
-    @staticmethod
-    def _schema_enum_values(schema: dict[str, Any]) -> tuple[Any, ...]:
-        values: list[Any] = list(schema.get("enum", ()))
-        for key in ("anyOf", "oneOf"):
-            for option in schema.get(key, ()):
-                if isinstance(option, dict):
-                    values.extend(TwoTowerModel._schema_enum_values(dict(option)))
-        unique: list[Any] = []
-        for value in values:
-            if value not in unique:
-                unique.append(value)
-        return tuple(unique)
 
     def _finalize_schema_enum_choices(
         self,
@@ -10471,38 +9862,6 @@ class TwoTowerModel(nn.Module):
                 bias[position] = logits.new_tensor(-20.0) * mix
         return bias
 
-    @staticmethod
-    def _choice_phase_evidence(state: Any) -> dict[str, object]:
-        """Describe the bounded generated-state phase around a choice."""
-        frames = list(getattr(state, "frames", ()))
-        structural_list = bool(
-            getattr(state, "mode", None) == "structural"
-            and frames
-            and frames[-1].kind == "variadic"
-            and frames[-1].expr_type == "array"
-        )
-        if getattr(state, "current_marker", None) == "r=":
-            aggregation_scope = "v05_root"
-        elif structural_list:
-            aggregation_scope = (
-                "structural_root_list" if len(frames) == 1 else "structural_nested_list"
-            )
-        else:
-            aggregation_scope = "other"
-        return {
-            "aggregation_scope": aggregation_scope,
-            "frame_depth": len(frames),
-            "frame_path_truncated": len(frames) > 8,
-            "frame_path": [
-                {
-                    "kind": str(frame.kind),
-                    "expr_type": str(frame.expr_type),
-                    "phase": str(frame.phase),
-                    "arg_index": int(frame.arg_index),
-                }
-                for frame in frames[-8:]
-            ],
-        }
 
     def _binder_component_plan_bias(
         self,
