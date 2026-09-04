@@ -439,8 +439,11 @@
     "src/slm_training/models/surface_autoregressor.py": 1,
     "src/slm_training/models/template_fill.py": 1,
     "src/slm_training/models/tree_edit_diffusion.py": 17,
-    "src/slm_training/models/twotower.py": 109,
+    "src/slm_training/models/twotower.py": 104,
     "src/slm_training/models/twotower_numeric_gates.py": 3,
+    "src/slm_training/models/twotower_semantic_plan.py": 3,
+    "src/slm_training/models/twotower_semantic_roles.py": 1,
+    "src/slm_training/models/twotower_slots.py": 1,
     "src/slm_training/optimizers/muon.py": 5,
     "src/slm_training/research_preregistry.py": 5,
     "src/slm_training/resources/revmath/fixtures/hermetic_ablation_checker.py": 2,
@@ -897,7 +900,7 @@
     "src/slm_training/models/surface_autoregressor.py": 531,
     "src/slm_training/models/template_fill.py": 413,
     "src/slm_training/models/tree_edit_diffusion.py": 1824,
-    "src/slm_training/models/twotower.py": 17283,
+    "src/slm_training/models/twotower.py": 16642,
     "src/slm_training/models/twotower_numeric_gates.py": 493,
     "src/slm_training/research_preregistry.py": 404,
     "src/slm_training/runtime/compression/__init__.py": 413,
@@ -1009,7 +1012,7 @@
   "package_lines": {
     "slm_training.formal": 21858,
     "slm_training.harnesses.experiments": 103189,
-    "slm_training.models": 49461
+    "slm_training.models": 49603
   },
   "package_principles": {
     "adp_components_in_cycles": 56,

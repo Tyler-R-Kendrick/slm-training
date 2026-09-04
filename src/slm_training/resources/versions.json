@@ -4273,6 +4273,11 @@
       "history": [
         {
           "date": "2026-09-04",
+          "note": "no-bump: baseline ratcheted down after the TwoTowerModel staticmethod extraction (twotower.py 17,283 -> 16,642). Complexity re-attributed, not added: twotower.py falls 109 -> 104 findings, the 5 reappear in the new modules, and the repo total holds at 1,772 on this branch and on origin/main. Gate rules, thresholds and dimensions unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-04",
           "note": "no-bump: baseline ratcheted down after a further 9 modules came out of the continuous runner (15,509 -> 14,327). Complexity re-attributed, not added: 1,772 findings on this branch and on origin/main. Gate rules, thresholds and dimensions unchanged.",
           "version": "v1"
         },
@@ -19644,6 +19649,11 @@
     },
     "model.twotower": {
       "history": [
+        {
+          "date": "2026-09-04",
+          "note": "no-bump: moved all 21 plain @staticmethod bodies out of TwoTowerModel into twotower_schema / _semantic_roles / _semantic_plan / _slots / _surface, leaving one-line `_name = staticmethod(name)` aliases so both TwoTowerModel._name(...) and self._name(...) resolve exactly as before. No method touching self was moved and no signature changed; tests/test_models is unchanged at 1,278 passing.",
+          "version": "v329"
+        },
         {
           "date": "2026-09-03",
           "note": "Corrects the entry below, found by adversarial self-review before merge. That change added a third forced_tokens increment on the compiler-tree batch lane where commit() already counts a forced span post-truncation, so every span was counted twice and truncated spans over-counted; it is reverted here. Its headline (5 -> 8, fraction 1.000 on a single-record tree fixture) came entirely from that double-count and is withdrawn. The real, reproducible defect is on the other lanes: measured before/after on a 3-record fixture, compiler-off 0 -> 4 and grammar-LTR 0 -> 4 of 9 committed tokens, with compiler-tree unchanged at 6 of 9. A ceiling assertion passed throughout because one fixture reached one lane, so the ceiling is now checked per lane.",
