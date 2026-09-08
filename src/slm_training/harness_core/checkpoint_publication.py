@@ -56,11 +56,11 @@ def champion_publication_scope(publisher, lease, *, loop_dir: Path):
             (loop_dir.parent.parent if loop_dir.parent.name == "loops" else loop_dir).resolve(),
             os.getpid(),
         )
-    token = _SCOPE.set(scope)
-    try:
-        yield
-    finally:
-        _SCOPE.reset(token)
+        token = _SCOPE.set(scope)
+        try:
+            yield
+        finally:
+            _SCOPE.reset(token)
 
 
 def has_champion_publication_scope() -> bool:
