@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any, Literal, Mapping
 
 from slm_training.harness_core.lineage.records import canonical_json, content_sha
+from slm_training.harness_core.lineage.records import FileArtifact as FileArtifact
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -107,26 +108,6 @@ def sha256_file(path: Path | str, *, chunk_size: int = 1024 * 1024) -> str:
         for chunk in iter(lambda: handle.read(chunk_size), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-@dataclass(frozen=True)
-class FileArtifact:
-    """One uploaded companion file with its verifiable size and digest."""
-
-    name: str
-    size_bytes: int
-    sha256: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "FileArtifact":
-        return cls(
-            name=str(data["name"]),
-            size_bytes=int(data["size_bytes"]),
-            sha256=str(data["sha256"]),
-        )
 
 
 def file_artifact(path: Path | str) -> FileArtifact:
