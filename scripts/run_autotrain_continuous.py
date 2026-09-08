@@ -59,7 +59,7 @@ from slm_training.autoresearch.experiment_campaign import (
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
     SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
-    select_best_by_primary_then_smallest,
+    select_best_by_primary_then_smallest as select_best_by_primary_then_smallest,
 )
 from slm_training.autoresearch.formal import formal_obligation_id
 from slm_training.autoresearch.thrash_regime import (
@@ -82,7 +82,7 @@ from slm_training.autoresearch.thrash_residuals import (
     screening_tie_saturation,
 )
 from slm_training.autoresearch.schemas import (
-    AutotrainActionReceiptV1,
+    AutotrainActionReceiptV1 as AutotrainActionReceiptV1,
     AutotrainActionV1,
     AutotrainCycleHandoffV1,
     AutotrainLoopStateV1,
@@ -93,6 +93,7 @@ from slm_training.autoresearch.schemas import (
     NextRunPriorityV1,
     utc_now,
 )
+from slm_training.harness_core.activity_contract import ResourceGrant
 
 # Re-exported for the suite, which constructs them as
 # `run_autotrain_continuous.FormalClaimV1(...)`. Their in-module callers moved
@@ -103,9 +104,9 @@ from slm_training.autoresearch.schemas import (  # noqa: F401
 )
 from slm_training.autoresearch.storage import (
     CampaignStore,
-    append_autotrain_action_receipt,
-    autotrain_action_sha256,
-    bind_autotrain_action_evidence,
+    append_autotrain_action_receipt as append_autotrain_action_receipt,
+    autotrain_action_sha256 as autotrain_action_sha256,
+    bind_autotrain_action_evidence as bind_autotrain_action_evidence,
     pending_autotrain_actions,
     pending_autotrain_execution_actions,
 )
@@ -490,9 +491,6 @@ from scripts.autotrain_timeout_state import (  # noqa: F401
     has_finalized_decode_timeout as _has_finalized_decode_timeout,
 )
 from scripts.autotrain_timeout_state import (  # noqa: F401
-    is_reproduced_timeout_retirement as _is_reproduced_timeout_retirement,
-)
-from scripts.autotrain_timeout_state import (  # noqa: F401
     require_predecessor_actions as _require_predecessor_actions,
 )
 from scripts.autotrain_records import (  # noqa: F401
@@ -515,6 +513,7 @@ from scripts.autotrain_records import (  # noqa: F401
 )
 from scripts.autotrain_records import (  # noqa: F401
     record_observed_paired_sd as _record_observed_paired_sd,
+    record_screening_paired_sd as _record_screening_paired_sd,
 )
 from scripts.autotrain_records import (  # noqa: F401
     write_loop_state as _write_loop_state,
@@ -559,6 +558,7 @@ from scripts.autotrain_champion_queue import (  # noqa: F401
     RETRYABLE_PROMOTE_STATUSES as _RETRYABLE_PROMOTE_STATUSES,
 )
 from scripts.autotrain_champion_queue import (  # noqa: F401
+    CHAMPION_STATUSES as _CHAMPION_STATUSES,
     clear_loop_blocker as _clear_loop_blocker,
 )
 from scripts.autotrain_champion_queue import (  # noqa: F401
@@ -733,9 +733,6 @@ from scripts.autotrain_heal_actions import (  # noqa: F401
     ack_document_action as _ack_document_action,
 )
 from scripts.autotrain_heal_actions import (  # noqa: F401
-    ack_rebuild_data_action as _ack_rebuild_data_action,
-)
-from scripts.autotrain_heal_actions import (  # noqa: F401
     capability_objective_refresh_actions as _capability_objective_refresh_actions,
 )
 from scripts.autotrain_heal_actions import (  # noqa: F401
@@ -760,6 +757,7 @@ from slm_training.levers import (
     MAX_HARNESS_WALL_SECONDS,
     MAX_RUN_SECONDS,
 )
+
 # Budget constants re-exported under their original private names: the
 # extracted functions consume them, and the test suite reads them off this
 # module, so they are part of its surface even though nothing here calls them.
@@ -787,6 +785,7 @@ from scripts.autotrain_ledgers import (
 from scripts.autotrain_provenance import (
     checkpoint_path_for_candidate as _checkpoint_path_for_candidate,
 )
+
 # Re-exported under its original private name: the cycle's provenance write
 # moved with it, so the runner no longer calls it, but the suite exercises it
 # as `run_autotrain_continuous._auto_no_bump_version_registry`.
@@ -811,9 +810,9 @@ from scripts.autotrain_budget import (  # noqa: F401
 from scripts.autotrain_budget import (
     STEPS_PER_SEC_SAFETY as _STEPS_PER_SEC_SAFETY,
 )
-from scripts.autotrain_budget import (
-    arm_execution_deadline as _arm_execution_deadline,
-)
+from scripts.autotrain_budget import arm_execution_deadline
+from scripts.autotrain_arms import parse_skip_slugs as _parse_skip_slugs
+
 from scripts.autotrain_budget import (
     arm_wall_minutes as _arm_wall_minutes,
 )
@@ -842,16 +841,12 @@ from scripts.autotrain_budget import (
     thrash_timing_block as _thrash_timing_block,
 )
 
+_arm_execution_deadline = arm_execution_deadline
+
 # Locked continuous promote metric programs (SHA bound on campaign lock).
 _CERTIFICATE_SCHEMA_V2 = "metric_certificate/v2"
 # Promote Lean formal preflight wall (seconds). Timeouts are *inconclusive*
 # (incomplete measurement), never a proof rejection / promotion_failed.
-
-
-
-
-
-
 
 
 def _stage_command(
@@ -935,6 +930,11 @@ def _bounded_command(
     on_start: Callable[[int], None] | None = None,
     on_heartbeat: Callable[[int], None] | None = None,
 ) -> BoundedProcessResult:
+    from slm_training.harness_core.execution_release import (
+        require_readonly_controller_git,
+    )
+
+    require_readonly_controller_git(cmd)
     total = _remaining_timeout(deadline)
     grace = min(float(KILL_GRACE_SECONDS), total * 0.1)
     interrupt_after = min(float(INTERRUPT_AFTER_SECONDS), max(0.001, total - grace))
@@ -948,37 +948,25 @@ def _bounded_command(
     )
 
 
-
-
-
-
-
-
-def _screening_suite_records() -> int | None:
+def _screening_suite_records(eval_version: str | None = None) -> int | None:
     """Record count of the resolved smoke screening suite (volume ceiling)."""
 
     try:
         from slm_training.autoresearch.engine import default_eval_version
         from slm_training.data.store import DataStore
+        from slm_training.harnesses.model_build.data import load_suite_records
 
-        records = (
-            DataStore().resolve_path("eval", default_eval_version())
-            / "suites"
-            / "smoke"
-            / "records.jsonl"
+        directory = DataStore().resolve_path(
+            "eval", eval_version or default_eval_version()
         )
-        if records.is_file():
-            return sum(
-                1
-                for line in records.read_text(encoding="utf-8").splitlines()
-                if line.strip()
-            )
+        return len(load_suite_records(directory, "smoke"))
     except Exception:  # noqa: BLE001 — telemetry input only, never fatal
         return None
-    return None
 
 
-def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] | None]:
+def _screening_n_report(
+    policy: Any | None = None, *, eval_version: str | None = None
+) -> tuple[int, dict[str, Any] | None]:
     from slm_training.autoresearch.climb_policy import (
         load_climb_policy,
         screening_smoke_n_for_policy,
@@ -991,77 +979,12 @@ def _screening_n_report(policy: Any | None = None) -> tuple[int, dict[str, Any] 
         formal_required=False,
     )
     return screening_smoke_n_for_policy(
-        pol, arm_wall_seconds=arm, suite_records=_screening_suite_records()
+        pol,
+        arm_wall_seconds=arm,
+        suite_records=_screening_suite_records(eval_version)
+        if eval_version
+        else _screening_suite_records(),
     )
-
-
-class _SeedAppendResult(NamedTuple):
-    """Honest accounting for one seed-file growth attempt."""
-
-    paths: list[Path]
-    seed_path: Path
-    lines_before: int
-    smoke_n_before: int
-    smoke_n_after: int
-    need: int
-    appended: int
-
-    @property
-    def deficit_unfilled(self) -> bool:
-        """A deficit existed and the sampler produced nothing: a failed heal."""
-        return self.need > 0 and self.appended == 0
-
-
-def _append_deficit_smoke_seeds(cwd: Path, *, n_min: int) -> _SeedAppendResult:
-    """Append unused extra smoke fixtures to the tracked seed file.
-
-    Wraps the sampler (``extra_smoke_fixtures_for_deficit``) with before/after
-    counts so the caller can verify growth instead of trusting the return
-    value; an empty sampler result against a real deficit is reported as
-    ``deficit_unfilled`` — never silently as success.
-    """
-    from slm_training.autoresearch.screening_sample_size import (
-        extra_smoke_fixtures_for_deficit,
-    )
-
-    seed_path = cwd / "src/slm_training/resources/test_seeds.jsonl"
-    lines = seed_path.read_text(encoding="utf-8").splitlines()
-    existing: set[str] = set()
-    smoke_n = 0
-    for line in lines:
-        if not line.strip():
-            continue
-        rec = json.loads(line)
-        existing.add(str(rec.get("id") or ""))
-        suite = str((rec.get("meta") or {}).get("suite") or rec.get("split") or "")
-        if suite == "smoke":
-            smoke_n += 1
-    lines_before = sum(1 for line in lines if line.strip())
-    need = max(0, int(n_min) - smoke_n)
-    extras = extra_smoke_fixtures_for_deficit(existing_ids=existing, need=need)
-    if not extras:
-        return _SeedAppendResult(
-            [], seed_path, lines_before, smoke_n, smoke_n, need, 0
-        )
-    with seed_path.open("a", encoding="utf-8") as fh:
-        if lines and lines[-1].strip():
-            fh.write("\n")
-        for rec in extras:
-            fh.write(json.dumps(rec, sort_keys=True) + "\n")
-    return _SeedAppendResult(
-        [seed_path],
-        seed_path,
-        lines_before,
-        smoke_n,
-        smoke_n + len(extras),
-        need,
-        len(extras),
-    )
-
-
-
-
-_SCREENING_EVAL_HEAL_ID = "rebuild_screening_eval"
 
 
 def _self_heal_rebuild_screening_eval(
@@ -1070,228 +993,22 @@ def _self_heal_rebuild_screening_eval(
     root: Path,
     loop_id: str,
     campaign_id: str | None,
+    train_version: str | None = None,
+    eval_version: str | None = None,
+    minimum: int | None = None,
 ) -> str | None:
-    """Grow smoke to the Lean floor, publish under resources/, commit.
+    """Dispatch the frozen data predicate, not a tracked-seed growth heuristic."""
+    from scripts.autotrain_controller_repair import dispatch_screening_rebuild
 
-    Fail-closed (``docs/design/autotrain-fail-closed-self-healing.md`` §3):
-    the heal counts only when the postcondition probe
-    (:func:`verify_driver_heal`) observes the resolved smoke suite grow
-    (``smoke_n_after > smoke_n_before``) and the policy resolver no longer
-    demands generation (``must_generate == False``). An empty sampler against
-    a real deficit, a publish conflict, or an unchanged suite each leave a
-    ``heal_postcondition_failed`` receipt and return ``None`` — no sidecar,
-    no commit of the fresh suite id, no action ack.
-    """
-    from slm_training.autoresearch.heal.fail_closed import (
-        allocate_screening_suite_id,
-        count_records,
-        record_count_probe,
-        verify_driver_heal,
-    )
-    from slm_training.data.store import DataStore
-    from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
-
-    n, report = _screening_n_report()
-    if not isinstance(report, dict) or not report.get("must_generate"):
-        return None
-    n_min = int(report.get("n_min") or 6)
-    smoke_n_before = int(_screening_suite_records() or 0)
-    seeds = _append_deficit_smoke_seeds(cwd, n_min=n_min)
-    counts_before = {
-        "smoke_n": smoke_n_before,
-        "seed_smoke_n": seeds.smoke_n_before,
-    }
-
-    def _failed(
-        stage: str,
-        *,
-        probe_path: Path,
-        must_exceed: int,
-        counts_after: dict[str, int],
-        conditions: dict[str, bool] | None = None,
-        note: str = "",
-    ) -> None:
-        receipt = verify_driver_heal(
-            root=root,
-            loop_id=loop_id,
-            campaign_id=campaign_id,
-            heal_id=_SCREENING_EVAL_HEAL_ID,
-            verify=record_count_probe(probe_path, must_exceed=must_exceed),
-            cwd=cwd,
-            counts_before=counts_before,
-            counts_after=counts_after,
-            extra_conditions=conditions,
-            note=f"stage={stage} {note}".strip(),
-        )
-        print(
-            f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL stage={stage} "
-            f"outcome={receipt.outcome} n_min={n_min} "
-            f"counts_before={json.dumps(counts_before, sort_keys=True)} "
-            f"counts_after={json.dumps(counts_after, sort_keys=True)}",
-            flush=True,
-        )
-        return None
-
-    if seeds.deficit_unfilled:
-        # The sampler had nothing to add: the seed file did not grow, so no
-        # bigger suite can be built from it. Probe the seed file itself.
-        return _failed(
-            "seed_sampler_empty",
-            probe_path=seeds.seed_path,
-            must_exceed=seeds.lines_before,
-            counts_after={
-                "smoke_n": smoke_n_before,
-                "seed_smoke_n": seeds.smoke_n_after,
-            },
-            conditions={"seed_deficit_filled": False},
-            note=f"need={seeds.need} appended=0",
-        )
-    eval_root = cwd / "src/slm_training/resources/data/eval"
-    eval_version = allocate_screening_suite_id(eval_root, n_min)
-    train_manifest = cwd / DEFAULT_TRAIN_DATA_DIR / "manifest.json"
-    out_dir = cwd / "outputs" / "data" / "eval" / eval_version
-    published = eval_root / eval_version
-    published_records = published / "suites" / "smoke" / "records.jsonl"
-    if not (out_dir / "manifest.json").is_file() and not published_records.is_file():
-        argv = _local_rebuild_screening_eval_argv(
-            eval_version=eval_version, train_manifest=train_manifest
-        )
-        print(
-            f"SELF_HEAL_REBUILD_SCREENING_EVAL start version={eval_version} "
-            f"n_min={n_min} argv={argv}",
-            flush=True,
-        )
-        result = run_bounded_process(
-            argv,
-            interrupt_after_seconds=float(INTERRUPT_AFTER_SECONDS),
-            kill_grace_seconds=float(KILL_GRACE_SECONDS),
-            cwd=str(cwd),
-        )
-        if result.outcome != ProcessOutcome.COMPLETED or result.returncode != 0:
-            print(
-                f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL outcome={result.outcome} "
-                f"code={result.returncode}",
-                flush=True,
-            )
-            return None
-    store = DataStore(root=cwd)
-    if not published_records.is_file():
-        try:
-            store.publish("eval", eval_version)
-        except FileExistsError as exc:
-            # A conflict on a freshly allocated id means the allocator and
-            # the store disagree: that is a failed heal, never a silent pass.
-            return _failed(
-                "publish_conflict",
-                probe_path=published_records,
-                must_exceed=count_records(published_records),
-                counts_after={
-                    "smoke_n": smoke_n_before,
-                    "seed_smoke_n": seeds.smoke_n_after,
-                },
-                conditions={"published_fresh_suite": False},
-                note=f"version={eval_version} {exc!r}"[:300],
-            )
-        except Exception as exc:  # noqa: BLE001
-            print(f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL publish={exc!r}", flush=True)
-            return None
-    n_after, report_after = _screening_n_report()
-    smoke_n_after = int(_screening_suite_records() or 0)
-    must_generate_after = bool(
-        isinstance(report_after, dict) and report_after.get("must_generate")
-    )
-    counts_after = {
-        "smoke_n": smoke_n_after,
-        "seed_smoke_n": seeds.smoke_n_after,
-        "published_records": count_records(published_records),
-    }
-    receipt = verify_driver_heal(
+    return dispatch_screening_rebuild(
+        cwd=cwd,
         root=root,
         loop_id=loop_id,
         campaign_id=campaign_id,
-        heal_id=_SCREENING_EVAL_HEAL_ID,
-        verify=record_count_probe(published_records, must_exceed=smoke_n_before),
-        cwd=cwd,
-        counts_before=counts_before,
-        counts_after=counts_after,
-        extra_conditions={
-            "must_generate_false": not must_generate_after,
-            "resolver_reports_growth": smoke_n_after > smoke_n_before,
-        },
-        note=f"stage=published version={eval_version}",
+        train_version=train_version,
+        eval_version=eval_version,
+        minimum=minimum,
     )
-    if receipt.outcome != "healed":
-        print(
-            f"SELF_HEAL_REBUILD_SCREENING_EVAL_FAIL stage=postcondition "
-            f"outcome={receipt.outcome} version={eval_version} "
-            f"counts_before={json.dumps(counts_before, sort_keys=True)} "
-            f"counts_after={json.dumps(counts_after, sort_keys=True)} "
-            f"must_generate_after={must_generate_after}",
-            flush=True,
-        )
-        return None
-    sidecar = published / "screening_sample_size.json"
-    sidecar.write_text(
-        json.dumps(
-            {
-                "schema_version": "screening_sample_size/v1",
-                "eval_version": eval_version,
-                "smoke_n": n_after,
-                "smoke_n_before": smoke_n_before,
-                "smoke_n_after": smoke_n_after,
-                "report": report_after,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    commit_paths = [
-        cwd / "src/slm_training/resources/test_seeds.jsonl",
-        sidecar,
-        *sorted(p for p in published.rglob("*") if p.is_file()),
-    ]
-    _git_commit_paths(
-        cwd,
-        commit_paths,
-        message=(
-            f"data(eval): persist screening smoke n>={n_min} ({eval_version})"
-        ),
-        root=root,
-        loop_id=loop_id,
-        stage="self-heal-screening-eval",
-    )
-    if campaign_id:
-        handoff_path = root / campaign_id / "cycle_handoff.json"
-        if handoff_path.is_file():
-            handoff = AutotrainCycleHandoffV1.model_validate_json(
-                handoff_path.read_text(encoding="utf-8")
-            )
-            pending = [
-                (index, action)
-                for index, action in pending_autotrain_actions(root, handoff)
-                if action.kind == "rebuild_data"
-                and "screening suite" in action.reason
-            ]
-            for index, _action in pending:
-                _ack_rebuild_data_action(
-                    root,
-                    handoff,
-                    action_index=index,
-                    evidence_uris=[
-                        f"src/slm_training/resources/data/eval/{eval_version}/"
-                        "screening_sample_size.json"
-                    ],
-                    counts=(smoke_n_before, smoke_n_after),
-                )
-    print(
-        f"SELF_HEAL_REBUILD_SCREENING_EVAL version={eval_version} "
-        f"smoke_n={n_after} smoke_n_before={smoke_n_before} "
-        f"smoke_n_after={smoke_n_after}",
-        flush=True,
-    )
-    return _SCREENING_EVAL_HEAL_ID
 
 
 # Cold-start steps/s prior until a train_summary exists. Measured 2026-09-02
@@ -1309,30 +1026,6 @@ def _self_heal_rebuild_screening_eval(
 # ``docs/design/p8-screening-cold-start-steps-prior-20260902.md`` (+ ``.json``).
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _fit_screening_decode_timeout_seconds(
     policy: Any,
     *,
@@ -1342,6 +1035,7 @@ def _fit_screening_decode_timeout_seconds(
     requested_steps: int = 20,
     predecessor_campaign_id: str | None = None,
     decode_floor_evidence: Mapping[str, Any] | None = None,
+    eval_version: str | None = None,
 ) -> tuple[float, dict[str, Any]]:
     """Fit the screening decode budget to measured per-record cost.
 
@@ -1386,9 +1080,7 @@ def _fit_screening_decode_timeout_seconds(
         else _predecessor_decode_p95_seconds(telemetry_root, predecessor_campaign_id)
     )
     raw_p95 = evidence.get("p95_seconds")
-    p95 = (
-        float(raw_p95) if isinstance(raw_p95, (int, float)) and raw_p95 > 0 else None
-    )
+    p95 = float(raw_p95) if isinstance(raw_p95, (int, float)) and raw_p95 > 0 else None
     measured = p95 is not None
     policy_floor = _policy_default_decode_floor_seconds(policy)
     decode_floor = p95 if p95 is not None else policy_floor
@@ -1397,7 +1089,9 @@ def _fit_screening_decode_timeout_seconds(
         policy,
         arm_wall_seconds=arm_wall_seconds,
         per_record_decode_floor_seconds=decode_floor if decode_floor > 0 else None,
-        suite_records=_screening_suite_records(),
+        suite_records=_screening_suite_records(eval_version)
+        if eval_version
+        else _screening_suite_records(),
     )
     try:
         margin = max(0.0, float(thrash.get("p95_margin", 0.15)))
@@ -1430,24 +1124,31 @@ def _fit_screening_decode_timeout_seconds(
             decision, reason = "hold", "incomplete_rate_unmeasured"
         elif rate > rate_high:
             effective_floor = p95 * (1.0 + margin)
-            decision, reason = "shrink", (
-                f"incomplete_rate={rate:.3f}>high={rate_high:.3f};"
-                "floor_inflated_by_margin"
+            decision, reason = (
+                "shrink",
+                (
+                    f"incomplete_rate={rate:.3f}>high={rate_high:.3f};"
+                    "floor_inflated_by_margin"
+                ),
             )
         elif rate < rate_low:
             effective_floor = p95 / (1.0 + margin)
-            decision, reason = "grow", (
-                f"incomplete_rate={rate:.3f}<low={rate_low:.3f};"
-                "floor_deflated_by_margin"
+            decision, reason = (
+                "grow",
+                (
+                    f"incomplete_rate={rate:.3f}<low={rate_low:.3f};"
+                    "floor_deflated_by_margin"
+                ),
             )
         else:
-            decision, reason = "hold", (
-                f"incomplete_rate={rate:.3f}_within_band"
-                f"[{rate_low:.3f},{rate_high:.3f}]"
+            decision, reason = (
+                "hold",
+                (
+                    f"incomplete_rate={rate:.3f}_within_band"
+                    f"[{rate_low:.3f},{rate_high:.3f}]"
+                ),
             )
-        n_probe = (
-            max(1, int(math.floor(usable / effective_floor))) if usable > 0 else 1
-        )
+        n_probe = max(1, int(math.floor(usable / effective_floor))) if usable > 0 else 1
         cap = margin_cap
         if decision == "shrink" and n_probe == 1 and cap > usable:
             # Train-bound: one probe record cannot fit p95+margin under the
@@ -1628,22 +1329,10 @@ def _write_thrash_timing(
     return path
 
 
-
-
-
-
 # Leave schedule margin after fit so the fit→execute deadline check cannot
 # fail from monotonic clock drift or float round-trip (observed: remaining
 # 159.788399 < required 159.788414 → both promote arms skipped as
 # deadline_reserve with zero runs).
-
-
-
-
-
-
-
-
 
 
 # Chunked promotion measurement (docs/design/chunked-promotion-eval-20260902.md):
@@ -1651,7 +1340,7 @@ def _write_thrash_timing(
 # resumable ``scripts.evaluate_model`` runs, each its own <= MAX_HARNESS_WALL
 # subprocess on the same checkpoint and suite.  Exhausting the locked run
 # budget is measurement incomplete, never a model verdict.
-_PROMOTION_CHUNK_LEDGER_SCHEMA = "autotrain_promotion_chunks/v1"
+_PROMOTION_CHUNK_LEDGER_SCHEMA = "autotrain_promotion_chunks/v2"
 # Fixed per-run cost outside record decode (model load, suite setup, scoreboard
 # finalization) charged against every chunk run when the policy has no
 # ``thrash_timing.eval_overhead_seconds``.
@@ -1684,8 +1373,6 @@ def _promotion_suite_records(suite: str) -> int | None:
     except Exception:  # noqa: BLE001 — plan input only, never fatal
         return None
     return None
-
-
 
 
 def _promotion_chunk_plan(
@@ -1753,155 +1440,36 @@ def _promotion_chunk_plan(
     }
 
 
-
-
-
-
-
-
-
-
 def _run_promotion_eval_chunks(
     *,
     cwd: Path,
     root: Path,
     loop_id: str,
     campaign_id: str,
-    camp_dir: Path,
     plan: Mapping[str, Any],
     experiment_paths: Mapping[str, Path],
     arm_order: Sequence[str],
+    deadline: float | None = None,
 ) -> dict[str, Any]:
-    """Finish every executed arm's promotion measurement under the locked plan.
+    """Continue locked evaluation within this invocation's unchanged deadline."""
+    from scripts.autotrain_promotion_chunks import run_chunks
 
-    Runs are launched in sequence, each its own bounded subprocess (fresh
-    ``MAX_RUN_SECONDS`` deadline; eval wall = ``plan.chunk_wall_seconds``) on
-    the arm's locked checkpoint and suites, replaying stored records and
-    decoding the next ``records_per_run``.  The loop stops at a complete merged
-    scoreboard or when ``run_n`` runs are spent (``chunk_budget_exhausted``).
-    The ledger is written to ``camp_dir/promotion_chunks.json``.
-    """
-
-    run_budget = max(1, int(plan["run_n"]))
-    ledger: dict[str, Any] = {
-        "schema": _PROMOTION_CHUNK_LEDGER_SCHEMA,
-        "campaign_id": campaign_id,
-        "plan": dict(plan),
-        "arms": {},
-        "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    for eid in arm_order:
-        run_dir = camp_dir / "runs" / eid
-        arm: dict[str, Any] = {
-            "run_dir": str(run_dir),
-            "run_budget": run_budget,
-            "runs_used": 0,
-            "runs": [],
-            "status": "pending",
-        }
-        ledger["arms"][eid] = arm
-        try:
-            cmd = _promotion_chunk_eval_command(
-                root=root,
-                campaign_id=campaign_id,
-                experiment_path=Path(experiment_paths[eid]),
-                run_dir=run_dir,
-                plan=plan,
-            )
-        except Exception as exc:  # noqa: BLE001 — typed harness failure, never a verdict
-            arm["status"] = "harness_failure"
-            arm["error"] = f"{type(exc).__name__}: {exc}"[:400]
-            continue
-        checkpoint = _command_flag_value(cmd, "--checkpoint")
-        checkpoint_path = (
-            Path(checkpoint) if checkpoint else run_dir / "checkpoints" / "last.pt"
-        )
-        if not checkpoint_path.is_file():
-            arm["status"] = "no_checkpoint"
-            arm["checkpoint"] = str(checkpoint_path)
-            continue
-        arm["command"] = list(cmd)
-        while True:
-            state = _promotion_scoreboard_state(run_dir)
-            if state["exists"] and state["complete"]:
-                arm["status"] = "complete"
-                break
-            if arm["runs_used"] >= run_budget:
-                arm["status"] = "chunk_budget_exhausted"
-                break
-            index = int(arm["runs_used"]) + 1
-            print(
-                f"PROMOTION_CHUNK arm={eid} run={index}/{run_budget} "
-                f"pending={state['pending']} "
-                f"records_per_run={int(plan['records_per_run'])} "
-                f"wall_s={float(plan['chunk_wall_seconds']):.0f}",
-                flush=True,
-            )
-            result = _stage_command(
-                cmd,
-                cwd=cwd,
-                # Each chunk is its own bounded run under the repository cap.
-                deadline=time.monotonic() + float(MAX_RUN_SECONDS),
-                root=root,
-                loop_id=loop_id,
-                stage=f"promotion-chunk:{eid}:{index}",
-            )
-            if result.stderr:
-                print(result.stderr[-4000:], file=sys.stderr, flush=True)
-            if result.timed_out:
-                code = 124
-            elif result.outcome is ProcessOutcome.LAUNCH_FAILED:
-                code = 127
-            else:
-                code = int(result.returncode or 0)
-            arm["runs_used"] = index
-            after = _promotion_scoreboard_state(run_dir)
-            arm["runs"].append(
-                {
-                    "index": index,
-                    "exit_code": code,
-                    "timed_out": bool(result.timed_out),
-                    "duration_seconds": float(
-                        getattr(result, "duration_seconds", 0.0) or 0.0
-                    ),
-                    "pending_before": state["pending"],
-                    "pending_after": after["pending"],
-                    "decoded_this_run_n": after["decoded"],
-                    "measurement_complete": bool(after["exists"] and after["complete"]),
-                }
-            )
-            print(
-                f"PROMOTION_CHUNK_DONE arm={eid} run={index}/{run_budget} "
-                f"exit={code} decoded={after['decoded']} pending={after['pending']} "
-                f"complete={bool(after['exists'] and after['complete'])}",
-                flush=True,
-            )
-            if code not in _PROMOTION_CHUNK_RESUMABLE_EXITS or not after["exists"]:
-                arm["status"] = "harness_failure"
-                arm["error"] = f"chunk {index} exit={code} scoreboard={after['exists']}"
-                break
-    ledger["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    camp_dir.mkdir(parents=True, exist_ok=True)
-    (camp_dir / _PROMOTION_CHUNK_LEDGER_NAME).write_text(
-        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    return run_chunks(
+        {
+            "cwd": cwd,
+            "root": root,
+            "loop_id": loop_id,
+            "campaign_id": campaign_id,
+            "camp_dir": root / campaign_id,
+            "plan": plan,
+            "experiment_paths": experiment_paths,
+            "arm_order": arm_order,
+        },
+        command_factory=_promotion_chunk_eval_command,
+        stage_runner=_stage_command,
+        scoreboard=_promotion_scoreboard_state,
+        deadline=deadline,
     )
-    return ledger
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def _bind_expected_arms(
@@ -1963,8 +1531,6 @@ def _bind_expected_arms(
     )
 
 
-
-
 def _lock_screening_multi_arm_campaign(
     *,
     root: Path,
@@ -1977,11 +1543,13 @@ def _lock_screening_multi_arm_campaign(
     commit: str,
     role: str,
     policy: Any,
+    continuation_grant: ResourceGrant | None = None,
 ) -> ExperimentCampaignV1:
     by_eid = {str(exp["experiment_id"]): dict(exp) for exp in experiments}
     rec = str(candidate_ids[0])
     base = _manifest(
-        campaign_id, by_eid[rec], commit, role=role, policy=policy
+        campaign_id, by_eid[rec], commit, role=role, policy=policy,
+        continuation_grant=continuation_grant,
     )
     arms = [
         CampaignArmV1(
@@ -2030,24 +1598,6 @@ def _lock_screening_multi_arm_campaign(
     return locked
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _run_arm_eval_nll(
     run_dir: Path,
     *,
@@ -2059,117 +1609,29 @@ def _run_arm_eval_nll(
     definition_hash: str | None = None,
     records: Mapping[str, float] | None = None,
     eval_version: str | None = None,
+    selection: Mapping[str, Any] | None = None,
+    row_evidence: list[dict[str, Any]] | None = None,
+    estimator_id: str | None = None,
 ) -> dict[str, Any]:
-    """Write canonical ``suites.smoke.eval_nll`` (arm loss weights ignored).
+    """Attach canonical diagnostic loss; completeness never implies promotion."""
+    from scripts.autotrain_nll import run_arm_eval_nll
 
-    Diagnostic only: does not touch ship gates. Uses
-    ``evaluate_loss_suites`` with a cycle-shared baseline ``nll_config`` over
-    the whole smoke suite under ``test_dir``. Per-record broad NLL rows are
-    persisted to ``eval_nll_records.json`` (``{record_id: nll}`` plus the
-    definition hash) so screening can pair arms record-by-record; the suite
-    mean lands in the scoreboard exactly as before.
-    """
-    from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
-
-    digest = definition_hash or screening_nll_definition_hash()
-    value = eval_nll
-    report: dict[str, Any] | None = None
-    per_record: dict[str, float] | None = (
-        {str(k): float(v) for k, v in records.items()} if records is not None else None
+    return run_arm_eval_nll(
+        run_dir,
+        {
+            "test_dir": test_dir,
+            "checkpoint": checkpoint,
+            "model": model,
+            "nll_config": nll_config,
+            "eval_nll": eval_nll,
+            "definition_hash": definition_hash,
+            "records": records,
+            "eval_version": eval_version,
+            "selection": selection,
+            "row_evidence": row_evidence,
+            "estimator_id": estimator_id,
+        },
     )
-    if value is None:
-        from slm_training.evals.denoising_nll import DenoisingNLLConfig
-        from slm_training.evals.loss_suites import (
-            LOSS_SUITE_VERSION,
-            evaluate_loss_suites,
-            load_suite_spec,
-        )
-
-        if model is None:
-            if checkpoint is None:
-                raise ValueError("eval_nll requires model, checkpoint, or eval_nll")
-            from slm_training.models.twotower import TwoTowerModel
-
-            model = TwoTowerModel.from_checkpoint(checkpoint, device="cpu")
-        if test_dir is None:
-            raise ValueError("eval_nll compute path requires test_dir")
-        spec = load_suite_spec(LOSS_SUITE_VERSION)
-        cfg = nll_config or DenoisingNLLConfig(
-            suite_version=LOSS_SUITE_VERSION,
-            mask_rates=tuple(
-                float(r)
-                for r in (spec.get("mask_rates") or [0.15, 0.30, 0.50, 0.70, 0.85])
-            ),
-            mask_seed=int(spec.get("mask_seed", 0) or 0),
-            compute_legal_support=False,
-        )
-        report = evaluate_loss_suites(
-            model,
-            Path(test_dir),
-            nll_config=cfg,
-            base_suite="smoke",
-            ood_suite="smoke",
-        )
-        broad = (report.get("categories") or {}).get("broad") or {}
-        mean = (broad.get("aggregate") or {}).get("mean_nll")
-        if mean is None:
-            mean = (report.get("aggregate") or {}).get("weighted_nll")
-        if not isinstance(mean, (int, float)):
-            raise ValueError("evaluate_loss_suites did not yield a finite smoke NLL")
-        value = float(mean)
-        from slm_training.evals.loss_suites import per_record_nll_map
-
-        per_record = per_record_nll_map(report)
-    scoreboard_path = Path(run_dir) / "scoreboard.json"
-    scoreboard = _read_json(scoreboard_path)
-    suites = scoreboard.get("suites")
-    if not isinstance(suites, dict):
-        suites = {}
-        scoreboard["suites"] = suites
-    smoke = suites.get("smoke")
-    if not isinstance(smoke, dict):
-        smoke = {}
-        suites["smoke"] = smoke
-    smoke["eval_nll"] = float(value)
-    smoke["eval_nll_definition_hash"] = digest
-    smoke["eval_nll_claim_class"] = "diagnostic"
-    Path(run_dir).mkdir(parents=True, exist_ok=True)
-    records_path: Path | None = None
-    if per_record is not None:
-        smoke["eval_nll_n_records"] = len(per_record)
-        records_path = Path(run_dir) / _EVAL_NLL_RECORDS_NAME
-        records_path.write_text(
-            json.dumps(
-                {
-                    "schema": _EVAL_NLL_RECORDS_SCHEMA,
-                    "definition_hash": digest,
-                    "claim_class": "diagnostic",
-                    "suite": "smoke",
-                    "eval_version": eval_version,
-                    "n_records": len(per_record),
-                    "mean_nll": float(value),
-                    "records": {k: per_record[k] for k in sorted(per_record)},
-                },
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-    scoreboard_path.write_text(
-        json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
-    )
-    return {
-        "eval_nll": float(value),
-        "definition_hash": digest,
-        "scoreboard": str(scoreboard_path),
-        "report": report,
-        "records": per_record,
-        "records_path": str(records_path) if records_path else None,
-    }
-
-
-
-
 
 
 def _attach_screening_eval_nll(
@@ -2196,7 +1658,10 @@ def _attach_screening_eval_nll(
     has_aggregate = isinstance(smoke, dict) and isinstance(
         smoke.get("eval_nll"), (int, float)
     )
-    if has_aggregate and (run_dir / _EVAL_NLL_RECORDS_NAME).is_file():
+    # Lineage slug-close reclassifies every complete campaign. Re-running the
+    # 96-record NLL probe just to backfill per-record rows blocks rebuild_data
+    # for hours. Live arms without an aggregate still compute below.
+    if has_aggregate:
         return None
     summary = _read_json(run_dir / "train_summary.json")
     checkpoint = Path(str(summary.get("checkpoint") or ""))
@@ -2210,8 +1675,8 @@ def _attach_screening_eval_nll(
     from slm_training.data.store import DataStore
 
     eval_id = eval_version or _arm_eval_version(run_dir) or default_eval_version()
-    test_dir = DataStore().resolve_path("eval", eval_id)
     try:
+        test_dir = DataStore().resolve_path("eval", eval_id)
         out = _run_arm_eval_nll(
             run_dir,
             test_dir=test_dir,
@@ -2246,33 +1711,12 @@ _WIN_REASON_PREFIXES = (
 )
 
 
-
-
 # Champion queue: quality-held wins retest with same levers, new seeds, before
 # thrashing the fixed lever bank again. Ledger is loop-local (not git).
 _CHAMPION_QUEUE_SCHEMA = "autotrain_champion_queue/v1"
-_CHAMPION_STATUSES = frozenset(
-    {
-        "queued",
-        "confirming",
-        "confirmation_inconclusive",
-        "confirmed",
-        "rejected",
-        "skipped_duplicate",
-        "promoting",
-        "climb_accepted",
-        # Read-only compatibility for pre-v30 queue ledgers.
-        "promoted",
-        "promotion_failed",
-        # Formal wall / incomplete measurement — retryable, not a rejection.
-        "promotion_inconclusive",
-        # Execute/matrix/process abort before complete measurement — not a model reject.
-        "harness_failure",
-    }
-)
 # Recipe levers that define "same knobs" for confirmatory retest. Measurement
 # knobs (seed, decode_timeout, eval_suites) are re-sampled from role policy.
-# Dedup identity ignores cycle-local steps jitter (continuous does steps+(cycle%3)).
+# Treatment identities exclude administrative cycle IDs; recipes are unchanged by retries.
 # Soft bound: confirm/promote attempts before the queue head is rejected.
 _MAX_CONFIRM_ATTEMPTS = 2
 _MAX_PROMOTE_ATTEMPTS = 2
@@ -2897,16 +2341,6 @@ _THRASH_COMPOSE_ATOMS: tuple[tuple[str, Any], ...] = (
 _SELF_HEAL_BANK_BATCH = 5
 
 
-
-
-
-
-
-
-
-
-
-
 # Test / driver hook: when set, wins over the climb policy's screening primary.
 _SCREENING_PRIMARY_LEAF_OVERRIDE: str | None = None
 
@@ -2921,7 +2355,9 @@ def _screening_primary_leaf() -> str:
             primary_for_role,
         )
 
-        metric = str(primary_for_role(load_climb_policy(), "screening").get("metric") or "")
+        metric = str(
+            primary_for_role(load_climb_policy(), "screening").get("metric") or ""
+        )
     except Exception:  # noqa: BLE001 — bank must stay computable without policy
         return ""
     return metric.rsplit(".", 1)[-1]
@@ -2933,21 +2369,9 @@ def _latency_arms_active() -> bool:
 
 
 def _arm_is_self_control(extras: Mapping[str, Any] | None) -> bool:
-    """True for a data arm whose only lever is the control's own train corpus.
+    from scripts.autotrain_arms import arm_is_self_control
 
-    Such an arm trains the control recipe twice (delta identically 0), so it
-    is never a legal screening candidate — the policy default corpus decides.
-    """
-    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
-    if set(public) != {"train_version"}:
-        return False
-    return str(public["train_version"] or "") == _default_screening_train_version()
-
-
-
-
-
-
+    return arm_is_self_control(extras, _default_screening_train_version())
 
 
 def _all_screening_arm_bank() -> tuple[tuple[str, str, dict[str, Any]], ...]:
@@ -2973,10 +2397,6 @@ def _recent_exhaustion_cycle_window() -> int:
 _RECENT_EXHAUSTION_CYCLE_WINDOW = len(_SCREENING_ARM_BANK)
 
 # Cycle status returned when a parked terminal verdict short-circuits run_cycle.
-
-
-
-
 
 
 def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
@@ -3020,8 +2440,6 @@ def _screening_bank_fingerprint(policy_sha256: str | None = None) -> str:
 
 
 _PROCESS_ARM_KNOB_KEYS = frozenset({"heal_resume", "process_arm", "process_role"})
-
-
 
 
 def _train_version_has_complete_nonpositive(
@@ -3097,19 +2515,16 @@ def _check_regime_parked(
     verdict = _read_json(path)
     predecessor = str(verdict.get("campaign_id") or "") or None
     _load_dynamic_thrash_arms(root, loop_id)
-    if not _selectable_process_arm(
-        root, loop_id, predecessor_campaign_id=predecessor
-    ):
+    if not _selectable_process_arm(root, loop_id, predecessor_campaign_id=predecessor):
         _recover_heal_resume_arm(
             root, loop_id, cwd=cwd, predecessor_campaign_id=predecessor
         )
-    if _selectable_process_arm(
-        root, loop_id, predecessor_campaign_id=predecessor
-    ):
+    if _selectable_process_arm(root, loop_id, predecessor_campaign_id=predecessor):
         resolved = path.with_name(
             f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
         )
-        path.replace(resolved)
+        if path.is_file():
+            path.replace(resolved)
         print("REGIME_RESUMED reason=heal_resume_arm_open", flush=True)
         _clear_loop_blocker(root, loop_id, reason="regime_resumed_heal_resume_arm")
         return None
@@ -3124,7 +2539,8 @@ def _check_regime_parked(
     resolved = path.with_name(
         f"terminal_verdict.resolved.c{int(verdict.get('cycle_index') or 0)}.json"
     )
-    path.replace(resolved)
+    if path.is_file():
+        path.replace(resolved)
     print("REGIME_RESUMED reason=bank_identity_changed", flush=True)
     _clear_loop_blocker(root, loop_id, reason="regime_resumed_bank_identity_changed")
     return None
@@ -3224,18 +2640,6 @@ def _park_screening_saturation(
     return _REGIME_PARKED_STATUS
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def _load_dynamic_thrash_arms(root: Path, loop_id: str) -> None:
     """Load loop-local thrash successors into the process bank cache."""
     global _DYNAMIC_THRASH_LOADED_FOR, _DYNAMIC_THRASH_ARMS
@@ -3291,14 +2695,10 @@ def _append_dynamic_thrash_arms(
             _DYNAMIC_THRASH_ARMS.append((slug, hyp, live))
 
 
-
-
 def _known_thrash_lever_signatures() -> set[str]:
     return {
         _thrash_lever_signature(extras) for _, _, extras in _all_screening_arm_bank()
     }
-
-
 
 
 def _synthesize_thrash_arms(
@@ -3399,12 +2799,9 @@ def _self_heal_thrash_bank_exhaust(
         # Isolate OFAT bank is done. Remaining snapshot slugs are I10
         # leftovers, not compose fodder — unless a process arm is still
         # selectable (closed slug spelling hides an unused train_version).
-        if _selectable_process_arm(
-            root, loop_id, predecessor_campaign_id=pred
-        ):
+        if _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred):
             print(
-                "SELF_HEAL_BANK_EXHAUST heal_open "
-                "reason=selectable_process_arm",
+                "SELF_HEAL_BANK_EXHAUST heal_open reason=selectable_process_arm",
                 flush=True,
             )
             return _ThrashBankHeal(True, False)
@@ -3448,29 +2845,15 @@ def _self_heal_thrash_bank_exhaust(
     return _ThrashBankHeal(bool(open_after), True)
 
 
-
-
-
-
-
-
 def _abort_in_progress_merge(*, cwd: Path, root: Path, loop_id: str) -> bool:
-    """Fail closed: drop MERGE_HEAD so thrash is not foreign_dirty forever."""
-    if _merge_head_path(cwd) is None:
-        return False
-    try:
-        _run(
-            ["git", "merge", "--abort"],
-            cwd=cwd,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-merge-abort",
+    """Never abort a merge owned by another author or a running release."""
+    from scripts.autotrain_controller_repair import preserve_workspace
+
+    if _merge_head_path(cwd) is not None:
+        preserve_workspace(
+            cwd=cwd, root=root, loop_id=loop_id, reason="unresolved_merge"
         )
-        print("SELF_HEAL_MERGE_ABORT reason=fail_closed_clean_tree", flush=True)
-        return True
-    except Exception as abort_exc:  # noqa: BLE001
-        print(f"SELF_HEAL_MERGE_ABORT_FAIL err={abort_exc!r}", flush=True)
-        return False
+    return False
 
 
 def _git_is_ancestor(
@@ -3529,111 +2912,30 @@ def _upstream_commit_for_init(
 
 
 def _integrate_origin_main(
-    *,
-    cwd: Path,
-    root: Path,
-    loop_id: str,
-    deadline: float | None = None,
+    *, cwd: Path, root: Path, loop_id: str, deadline: float | None = None
 ) -> str:
-    """Fetch origin/main and integrate when possible; never leave MERGE_HEAD.
+    """Inspect local refs; source activation belongs to the verified publisher."""
+    from scripts.autotrain_controller_repair import preserve_workspace
 
-    Already-integrated (origin/main ancestor of HEAD): skip. Fast-forward when
-    HEAD is behind main. Diverged: try merge; on conflict or stamp-hook
-    failure abort and continue on local HEAD. Unmergeable main is not
-    CYCLE_ERROR — I6 fail-closed is dirt, not a squash-diverged worktree.
-    """
-    _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
+    kw = dict(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
     try:
-        _run(
-            ["git", "fetch", "origin", "main"],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-fetch",
-        )
-        head = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-head",
-        )
-        upstream = _git(
-            "rev-parse",
-            "origin/main",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-upstream",
-        )
-    except Exception as fetch_exc:  # noqa: BLE001
-        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
-        print(
-            f"SELF_HEAL_GIT_ANCESTRY_SKIP reason=origin_main_unavailable "
-            f"err={fetch_exc!r}",
-            flush=True,
+        head = _git("rev-parse", "HEAD", stage="source-head", **kw)
+        upstream = _git("rev-parse", "origin/main", stage="source-upstream", **kw)
+    except Exception:  # noqa: BLE001 — absent remote ref is not a model failure
+        preserve_workspace(
+            cwd=cwd, root=root, loop_id=loop_id, reason="upstream_ref_unavailable"
         )
         return "git_ancestry_skip"
-    if head == upstream or _git_is_ancestor(
-        upstream,
-        head,
-        cwd=cwd,
-        root=root,
-        loop_id=loop_id,
-        deadline=deadline,
-    ):
-        print(
-            "SELF_HEAL_GIT_ANCESTRY_SKIP reason=already_integrated",
-            flush=True,
-        )
+    if head == upstream:
         return "git_ancestry_already_integrated"
-    if _git_is_ancestor(
-        head,
-        upstream,
+    preserve_workspace(
         cwd=cwd,
         root=root,
         loop_id=loop_id,
-        deadline=deadline,
-    ):
-        _run(
-            ["git", "merge", "--ff-only", "origin/main"],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-ff",
-        )
-        print("SELF_HEAL_GIT_ANCESTRY merged origin/main reason=fast_forward", flush=True)
-        return "git_ancestry_fast_forward"
-    try:
-        _run(
-            ["git", "merge", "--no-edit", "origin/main"],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="self-heal-ancestry-merge",
-        )
-        print("SELF_HEAL_GIT_ANCESTRY merged origin/main", flush=True)
-        return "git_ancestry_merge"
-    except Exception:  # noqa: BLE001 — conflict or hook; abort and continue
-        finished = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
-        if finished:
-            print(
-                "SELF_HEAL_GIT_ANCESTRY merged origin/main via conflict resolve",
-                flush=True,
-            )
-            return finished
-        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
-        print(
-            "SELF_HEAL_GIT_ANCESTRY_SKIP reason=diverged_unmergeable",
-            flush=True,
-        )
-        return "git_ancestry_skip"
+        reason="source_release_reconciliation",
+        paths=(head, upstream),
+    )
+    return "git_ancestry_skip"
 
 
 def _unmerged_paths(
@@ -3658,78 +2960,19 @@ def _unmerged_paths(
     return [p.strip() for p in out.splitlines() if p.strip()]
 
 
-def _self_heal_incomplete_merge(
-    *,
-    cwd: Path,
-    root: Path,
-    loop_id: str,
-) -> str | None:
-    """Finish interrupted origin/main merges that freeze thrash as foreign_dirty.
+def _self_heal_incomplete_merge(*, cwd: Path, root: Path, loop_id: str) -> str | None:
+    """Preserve conflict contents, index and MERGE_HEAD for governed delivery."""
+    from scripts.autotrain_controller_repair import preserve_workspace
 
-    Agents often ``git merge origin/main`` into the live continuous worktree to
-    land self-heal driver fixes; version-registry conflicts leave ``UU`` paths
-    and the supervisor hard-backs-off forever. That is soft thrash dirt, not a
-    human control plane.
-
-    Policy (merge in progress only — never invent a merge):
-    - continuous closeout docs keep *ours* (loop-local evidence)
-    - every other unmerged path takes *theirs* (incoming origin/main harness)
-    - then ``git commit`` to complete the merge
-    - if the commit (or resolve) fails, ``git merge --abort`` so MERGE_HEAD
-      cannot park the loop as foreign_dirty_tree
-    """
-    if _merge_head_path(cwd) is None:
-        return None
-    unmerged = _unmerged_paths(cwd, root=root, loop_id=loop_id)
-    try:
-        for rel in unmerged:
-            side = "--ours" if _is_continuous_closeout_path(rel) else "--theirs"
-            _run(
-                ["git", "checkout", side, "--", rel],
-                cwd=cwd,
-                root=root,
-                loop_id=loop_id,
-                stage="self-heal-merge-checkout",
-            )
-            _run(
-                ["git", "add", "--", rel],
-                cwd=cwd,
-                root=root,
-                loop_id=loop_id,
-                stage="self-heal-merge-add",
-            )
-        # Re-check; refuse to commit if anything still unmerged.
-        still = _unmerged_paths(cwd, root=root, loop_id=loop_id)
-        if still:
-            print(
-                f"SELF_HEAL_INCOMPLETE_MERGE_HARD still_unmerged={still[:8]}",
-                flush=True,
-            )
-            _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
-            return None
-        _run(
-            [
-                "git",
-                "commit",
-                "--no-edit",
-                "-m",
-                "self-heal: complete origin/main merge for continuous thrash",
-            ],
+    if _merge_head_path(cwd) is not None:
+        preserve_workspace(
             cwd=cwd,
             root=root,
             loop_id=loop_id,
-            stage="self-heal-merge-commit",
+            reason="unresolved_merge",
+            paths=_unmerged_paths(cwd, root=root, loop_id=loop_id),
         )
-        print(
-            f"SELF_HEAL_INCOMPLETE_MERGE resolved={unmerged or ['clean']} "
-            "reason=prefer_origin_main_for_non_closeout",
-            flush=True,
-        )
-        return "git_merge_complete"
-    except Exception as heal_exc:  # noqa: BLE001
-        print(f"SELF_HEAL_INCOMPLETE_MERGE_FAIL err={heal_exc!r}", flush=True)
-        _abort_in_progress_merge(cwd=cwd, root=root, loop_id=loop_id)
-        return None
+    return None
 
 
 def _self_heal_git_ancestry(
@@ -3739,11 +2982,7 @@ def _self_heal_git_ancestry(
     loop_id: str,
     exc: BaseException,
 ) -> str | None:
-    """Integrate origin/main after a merge-base ancestry CYCLE_ERROR.
-
-    Unmergeable divergence (squash-merged main vs exclusive worktree commits)
-    is skipped, never raised: merge --abort and continue on local HEAD.
-    """
+    """Request governed source reconciliation without claiming a repair."""
     message = str(exc)
     cmd_text = ""
     if isinstance(exc, subprocess.CalledProcessError):
@@ -3751,11 +2990,8 @@ def _self_heal_git_ancestry(
     blob = f"{message} {cmd_text}"
     if "merge-base" not in blob and "is-ancestor" not in blob:
         return None
-    return _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id)
-
-
-
-
+    _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id)
+    return None
 
 
 def _self_heal_bank_exhaust_repair(
@@ -3872,123 +3108,6 @@ def _self_heal_bank_exhaust_repair(
     if hard_after:
         return None
     return doc_kind or "bank_exhaust_compose"
-
-
-def _self_heal_thrash_timeout_repair(
-    *,
-    cwd: Path,
-    root: Path,
-    loop_id: str,
-    campaign_id: str | None,
-) -> str | None:
-    """Unblock thrash when stuck on decode/wall-timeout repair_harness.
-
-    Continuous thrash often finalizes AgentV with decode timeouts under the arm
-    wall. That is a thrash residual / budget signal, not a hard model_build
-    stop that should freeze the loop until a human is prompted. Rewrite the
-    predecessor handoff to next_experiment (+ document closeout) so thrash
-    continues. Real harness crashes (missing AgentV, import errors) stay hard.
-    """
-    if not campaign_id:
-        return None
-    handoff_path = root / campaign_id / "cycle_handoff.json"
-    if not handoff_path.is_file():
-        return None
-    handoff = AutotrainCycleHandoffV1.model_validate_json(
-        handoff_path.read_text(encoding="utf-8")
-    )
-    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
-        return None
-    pending = list(pending_autotrain_actions(root, handoff))
-    if not pending:
-        return None
-    repair_pending = [(i, a) for i, a in pending if a.kind == "repair_harness"]
-    if not repair_pending:
-        return None
-    # Any non-repair hard prereq still blocks (formal/stop/deliver/rebuild).
-    other_hard = [
-        (i, a)
-        for i, a in pending
-        if a.kind in _HARD_PREREQUISITE_ACTION_KINDS and a.kind != "repair_harness"
-    ]
-    if other_hard:
-        return None
-    delivery_path = root / campaign_id / "sdlc_delivery.json"
-    delivery: dict[str, Any] = {}
-    if delivery_path.is_file():
-        try:
-            loaded = _read_json(delivery_path)
-            if isinstance(loaded, dict):
-                delivery = loaded
-        except Exception:  # noqa: BLE001
-            delivery = {}
-    if not _delivery_is_thrash_timeout_residual(delivery, handoff):
-        return None
-    if handoff.cycle_role not in {"screening", "promotion"} and str(
-        handoff.cycle_intent or ""
-    ) not in {"screening", "retry_measurement", "confirm"}:
-        # Still allow thrash-like intents above; otherwise leave hard.
-        pass
-    # Rebuild actions: drop repair/retry, keep document, ensure next_experiment.
-    evidence_id = f"campaign:{campaign_id}"
-    kept: list[AutotrainActionV1] = []
-    for action in handoff.actions:
-        if action.kind in {"repair_harness", "retry_measurement"}:
-            continue
-        kept.append(action)
-    if not any(a.kind == "document" for a in kept):
-        kept.insert(
-            0,
-            AutotrainActionV1(
-                kind="document",
-                owner="documenting-experiment-results",
-                reason=("persist thrash timeout-residual closeout under docs/design"),
-                evidence_ids=(evidence_id,),
-            ),
-        )
-    if not any(a.kind == "next_experiment" for a in kept):
-        kept.append(
-            AutotrainActionV1(
-                kind="next_experiment",
-                owner="autotrain",
-                reason=(
-                    "retire thrash decode/wall-timeout residual and consume the "
-                    "next distinct ranked hypothesis (continuous self-heal; not "
-                    "a model attribution)"
-                ),
-                evidence_ids=(evidence_id,),
-            )
-        )
-    rebuilt = handoff.model_copy(
-        update={
-            "actions": tuple(kept),
-            "reasons": tuple(
-                list(handoff.reasons)
-                + [
-                    "self_heal:thrash_timeout_residual_bypass:"
-                    "repair_harness→next_experiment"
-                ]
-            ),
-        }
-    )
-    handoff_path.write_text(rebuilt.model_dump_json(indent=2) + "\n", encoding="utf-8")
-    print(
-        f"SELF_HEAL_THRASH_TIMEOUT_REPAIR campaign={campaign_id} "
-        f"actions={[a.kind for a in rebuilt.actions]}",
-        flush=True,
-    )
-    # Document closeout may still be pending on the rewritten handoff.
-    doc_kind = _self_heal_document_actions(
-        cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
-    )
-    # Verify no hard prereqs remain.
-    pending_after = pending_autotrain_actions(root, rebuilt)
-    hard_after = [
-        (i, a) for i, a in pending_after if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
-    ]
-    if hard_after:
-        return None
-    return doc_kind or "thrash_timeout_repair_bypass"
 
 
 def _self_heal_env_repair_rewrite(
@@ -4140,16 +3259,9 @@ def _self_heal_cycle_error(
     """
     message = str(exc)
     work_cwd = cwd or Path.cwd()
-    # Ordinary thrash closeout: unacked document / continuous-only dirty tree /
-    # thrash timeout residual repair_harness that must not freeze the loop.
+    # Closeout cannot acknowledge a runtime repair without restored evidence.
     if "unacknowledged actions" in message or "repair_harness" in message:
         pred = _latest_cycle(root, loop_id)[1]
-        # Prefer thrash-timeout repair bypass before ordinary document heal.
-        timeout_kind = _self_heal_thrash_timeout_repair(
-            cwd=work_cwd, root=root, loop_id=loop_id, campaign_id=pred
-        )
-        if timeout_kind:
-            return timeout_kind
         bank_kind = _self_heal_bank_exhaust_repair(
             cwd=work_cwd,
             root=root,
@@ -4176,15 +3288,6 @@ def _self_heal_cycle_error(
                         if a.kind in _HARD_PREREQUISITE_ACTION_KINDS
                     ]
                     if hard:
-                        # One more attempt: thrash timeout residual may still apply.
-                        timeout_kind = _self_heal_thrash_timeout_repair(
-                            cwd=work_cwd,
-                            root=root,
-                            loop_id=loop_id,
-                            campaign_id=pred,
-                        )
-                        if timeout_kind:
-                            return timeout_kind
                         return None
             return kind
     if "loop worktree is dirty" in message:
@@ -4326,8 +3429,6 @@ def _self_heal_dedupe_dynamic_thrash_arms(root: Path, loop_id: str) -> bool:
     return bool(kept)
 
 
-
-
 # ---------------------------------------------------------------------------
 # Document + dirty-tree self-heal (ordinary thrash closeout — never agent-prompt)
 # ---------------------------------------------------------------------------
@@ -4343,67 +3444,28 @@ _HARD_PREREQUISITE_ACTION_KINDS = frozenset(
 )
 
 
-
-
-
-
 # Tracked mirrors the driver itself mutates (evidence-store sync, similar).
 # Restore to HEAD — never treat as human WIP, never commit every cycle.
-
-
-
-
 
 
 _SERENA_PROJECT_YML = ".serena/project.yml"
 
 
-
-
 def _maybe_restore_serena_project_yml(
-    *,
-    cwd: Path,
-    paths: Sequence[str],
-    git_kw: Mapping[str, Any],
+    *, cwd: Path, paths: Sequence[str], git_kw: Mapping[str, Any]
 ) -> str | None:
-    """Restore comment-stripped Serena project.yml; semantic edits stay parked."""
-    foreign = [_normalize_repo_relpath(p) for p in paths if _is_foreign_dirty_path(p)]
-    if foreign != [_SERENA_PROJECT_YML]:
-        return None
-    work = cwd / _SERENA_PROJECT_YML
-    if not work.is_file():
-        return None
-    try:
-        head = _git("show", f"HEAD:{_SERENA_PROJECT_YML}", **git_kw)
-    except Exception:  # noqa: BLE001 — missing HEAD path is not this heal
-        return None
-    work_text = work.read_text(encoding="utf-8")
-    if not _yaml_mapping_equal(head, work_text):
-        return None
-    _git(
-        "restore",
-        "--source=HEAD",
-        "--worktree",
-        "--staged",
-        "--",
-        _SERENA_PROJECT_YML,
-        stage="self-heal-serena-yml" if git_kw.get("root") is not None else None,
-        **{k: v for k, v in git_kw.items() if k != "stage"},
-    )
-    print("SELF_HEAL_SERENA_PROJECT_YML reason=comment_whitespace_strip", flush=True)
-    return "serena_project_yml_comment_strip"
+    """Even comment-only author changes are not disposable controller output."""
+    from scripts.autotrain_controller_repair import preserve_workspace
 
-
-
-
-
-
-
-
-
-
-
-
+    if _SERENA_PROJECT_YML in paths:
+        preserve_workspace(
+            cwd=cwd,
+            root=git_kw.get("root"),
+            loop_id=git_kw.get("loop_id"),
+            reason="workspace_changes",
+            paths=paths,
+        )
+    return None
 
 
 def _stagnation_skip_slugs(root: Path, loop_id: str) -> set[str]:
@@ -4520,63 +3582,25 @@ def _git_commit_paths(
     message: str,
     root: Path | None = None,
     loop_id: str | None = None,
-    stage: str = "self-heal-git-commit",
+    stage: str | None = None,
 ) -> bool:
-    """Stage only the given paths and commit if there is a staged diff."""
-    rels: list[str] = []
-    for path in paths:
-        resolved = path if path.is_absolute() else cwd / path
-        if not resolved.is_file():
-            continue
-        try:
-            rels.append(str(resolved.resolve().relative_to(cwd.resolve())))
-        except ValueError:
-            rels.append(str(path))
-    if not rels:
-        return False
-    stage_kw: dict[str, Any] = {"cwd": cwd}
-    if root is not None and loop_id is not None:
-        stage_kw.update(root=root, loop_id=loop_id)
-    add_stage = f"{stage}-add" if root is not None else None
-    staged_stage = f"{stage}-staged" if root is not None else None
-    commit_stage = f"{stage}-commit" if root is not None else None
-    _run(
-        ["git", "add", "--", *rels],
-        stage=add_stage,
-        **stage_kw,
-    )
-    staged = _git(
-        "diff",
-        "--cached",
-        "--name-only",
-        stage=staged_stage,
-        **stage_kw,
-    )
-    if not staged.strip():
-        return False
-    _run(
-        [
-            "git",
-            "commit",
-            "-m",
-            message,
-            "--",
-            *rels,
-        ],
-        stage=commit_stage,
-        **stage_kw,
-    )
-    return True
+    """Compatibility seam: no local commit, staging, or receipt of success."""
+    from scripts.autotrain_controller_repair import preserve_workspace
 
-
+    preserve_workspace(
+        cwd=cwd,
+        root=root,
+        loop_id=loop_id,
+        reason="unpublished_closeout",
+        paths=tuple(str(path.relative_to(cwd)) for path in paths),
+    )
+    return False
 
 
 # Wall-capped local CPU I10 heal. Policy min_unique_roots=32 is promotion-scale.
 # Rung-honest: the heal rebuild compiles the climb-policy plan for the
 # *current* rung (I10 — never a skipped rung's corpus, see _current_rung_label).
 _HEAL_RESUME_SLUG = "current-rung-data-heal"
-
-
 
 
 def _sample_adequacy_report(cwd: Path) -> dict | None:
@@ -4631,15 +3655,7 @@ def _sample_adequacy_report(cwd: Path) -> dict | None:
     return compute_sample_adequacy(observation).model_dump(mode="json")
 
 
-
-
-
-
-
-
-def _register_i10_heal_arm(
-    root: Path, loop_id: str, *, train_version: str
-) -> None:
+def _register_i10_heal_arm(root: Path, loop_id: str, *, train_version: str) -> None:
     """Add or refresh a selectable I10 successor so the park fingerprint moves."""
     global _DYNAMIC_THRASH_ARMS, _DYNAMIC_THRASH_LOADED_FOR
     _load_dynamic_thrash_arms(root, loop_id)
@@ -4672,9 +3688,7 @@ def _register_i10_heal_arm(
                         "slug": slug,
                         "hypothesis": h,
                         "extras": {
-                            k: v
-                            for k, v in ex.items()
-                            if not str(k).startswith("_")
+                            k: v for k, v in ex.items() if not str(k).startswith("_")
                         },
                         "created_at": time.strftime(
                             "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
@@ -4690,10 +3704,6 @@ def _register_i10_heal_arm(
     _DYNAMIC_THRASH_LOADED_FOR = f"{root.resolve()}::{loop_id}"
 
 
-
-
-
-
 def _recover_heal_resume_arm(
     root: Path,
     loop_id: str,
@@ -4701,42 +3711,33 @@ def _recover_heal_resume_arm(
     cwd: Path | None = None,
     predecessor_campaign_id: str | None = None,
 ) -> bool:
-    """Re-register a lost heal-resume arm from a completed on-disk snapshot.
+    """Recover only a currently verified, explicitly scoped data successor."""
+    from scripts.autotrain_controller_repair import verified_training_successors
 
-    A crash (or historical bug) between the rebuild_data ack and arm
-    registration leaves a healed snapshot with no selectable successor — a
-    permanent park. Recovery is idempotent: versions already measured and
-    retired (tombstoned) or null-closed are never re-registered.
-    """
-    base = (cwd or Path.cwd()) / "outputs" / "data" / "train"
+    if not predecessor_campaign_id or cwd is None:
+        return False
     retired = _retired_heal_versions(root, loop_id)
-    candidates = sorted(
-        (
-            child
-            for child in base.glob("continuous_i10_*")
-            if child.is_dir() and not child.name.endswith("_harness")
-        ),
-        key=lambda child: child.stat().st_mtime,
-        reverse=True,
-    )
-    for train_dir in candidates:
-        if _rebuild_data_artifact_sources(train_dir) is None:
-            continue
-        prepared = train_dir.with_name(train_dir.name + "_harness")
-        version = prepared.name if prepared.is_dir() else train_dir.name
-        if version in retired or train_dir.name in retired:
-            continue
-        _register_i10_heal_arm(root, loop_id, train_version=version)
-        if predecessor_campaign_id and _HEAL_RESUME_SLUG in (
-            _recent_completed_nonpositive_slugs(root, predecessor_campaign_id)
-        ):
-            _retire_i10_heal_arm(root, loop_id, reason="recovered_spent_snapshot")
-            continue
-        print(
-            f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True
+    versions = {
+        candidate.dataset_id
+        for campaign_id in _lineage_campaign_ids(root, predecessor_campaign_id)
+        for candidate in verified_training_successors(
+            cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
         )
-        return True
-    return False
+        if candidate.dataset_id not in retired
+        and not _train_version_has_complete_nonpositive(
+            root, predecessor_campaign_id, candidate.dataset_id
+        )
+    }
+    if len(versions) > 1:
+        raise ValueError(
+            "ambiguous accepted training successors; locked selection required"
+        )
+    if not versions:
+        return False
+    version = versions.pop()
+    _register_i10_heal_arm(root, loop_id, train_version=version)
+    print(f"SELF_HEAL_PARK_RECOVER_HEAL_ARM version={version}", flush=True)
+    return True
 
 
 def _retire_i10_heal_arm(root: Path, loop_id: str, *, reason: str) -> bool:
@@ -4880,8 +3881,7 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
             man["derived_at"] = datetime.now(timezone.utc).isoformat()
             man_path.write_text(json.dumps(man, indent=2) + "\n", encoding="utf-8")
         print(
-            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} "
-            f"dropped={dropped}",
+            f"I10_SFT_FILTER version={out_dir.name} kept={len(kept)} dropped={dropped}",
             flush=True,
         )
     feedback_path = out_dir / "synthesis_feedback.json"
@@ -4934,347 +3934,141 @@ def _prepare_i10_train_dir_for_sft(train_dir: Path) -> Path:
 
 
 def _self_heal_rebuild_data(
-    *,
-    cwd: Path,
-    root: Path,
-    loop_id: str,
-    campaign_id: str | None,
+    *, cwd: Path, root: Path, loop_id: str, campaign_id: str | None
 ) -> str | None:
-    """Run a wall-capped local CPU data rebuild and ack rebuild_data.
+    """Dispatch the exact pending data predicate, not a guessed growth recipe."""
+    from scripts.autotrain_controller_repair import dispatch_data_actions
 
-    Does not fake a receipt: missing quality artifacts leave the action pending.
-    A successful heal registers an I10 resume arm so the parked fingerprint
-    moves and the next cycle can train instead of rematching smoke.
-    """
-    if not campaign_id:
-        return None
-    handoff_path = root / campaign_id / "cycle_handoff.json"
-    if not handoff_path.is_file():
-        return None
-    handoff = AutotrainCycleHandoffV1.model_validate_json(
-        handoff_path.read_text(encoding="utf-8")
+    return dispatch_data_actions(
+        cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
     )
-    if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
-        return None
-    pending = [
-        (index, action)
-        for index, action in pending_autotrain_actions(root, handoff)
-        if action.kind == "rebuild_data"
-    ]
-    if not pending:
-        print(
-            f"SELF_HEAL_REBUILD_DATA_SKIP campaign={campaign_id} "
-            "reason=no_pending_rebuild_data",
-            flush=True,
-        )
-        return None
-    if any("screening suite" in action.reason for _i, action in pending):
-        return _self_heal_rebuild_screening_eval(
-            cwd=cwd, root=root, loop_id=loop_id, campaign_id=campaign_id
-        )
-    cycle_index = int(handoff.cycle_index or 0)
-    train_version = _local_i10_train_version(loop_id, cycle_index)
-    train_dir = cwd / "outputs" / "data" / "train" / train_version
-    adequacy = _sample_adequacy_report(cwd)
-    if adequacy is not None and adequacy.get("verdict") == (
-        "saturated_change_trajectory"
-    ):
-        # Measured flat marginal gain: rebuilding is the wrong lever. Leave
-        # the action pending for a trajectory decision instead of faking
-        # progress with another same-distribution corpus.
-        print(
-            f"SAMPLE_ADEQUACY_SATURATED campaign={campaign_id} "
-            f"source={adequacy.get('marginal_gain_source')}",
-            flush=True,
-        )
-        return None
-    sources = _rebuild_data_artifact_sources(train_dir)
-    if sources is None:
-        argv = _local_rebuild_data_argv(
-            train_version=train_version, adequacy=adequacy
-        )
-        print(
-            f"SELF_HEAL_REBUILD_DATA start campaign={campaign_id} "
-            f"version={train_version} argv={argv}",
-            flush=True,
-        )
-        result = run_bounded_process(
-            argv,
-            interrupt_after_seconds=float(INTERRUPT_AFTER_SECONDS),
-            kill_grace_seconds=float(KILL_GRACE_SECONDS),
-            cwd=str(cwd),
-        )
-        if result.outcome != ProcessOutcome.COMPLETED or result.returncode != 0:
-            print(
-                f"SELF_HEAL_REBUILD_DATA_FAIL campaign={campaign_id} "
-                f"outcome={result.outcome} code={result.returncode}",
-                flush=True,
-            )
-            return None
-        sources = _rebuild_data_artifact_sources(train_dir)
-    if sources is None:
-        print(
-            f"SELF_HEAL_REBUILD_DATA_FAIL campaign={campaign_id} "
-            "missing=quality/feedback/manifest",
-            flush=True,
-        )
-        return None
-    camp_dir = root / campaign_id
-    camp_dir.mkdir(parents=True, exist_ok=True)
-    evidence_uris: list[str] = []
-    for name, src in sources.items():
-        dest = camp_dir / name
-        dest.write_bytes(src.read_bytes())
-        evidence_uris.append(name)
-    if adequacy is not None:
-        (camp_dir / "sample_adequacy.json").write_text(
-            json.dumps(adequacy, indent=2) + "\n", encoding="utf-8"
-        )
-        # sample_adequacy.json is not a rebuild_data receipt name
-    for index, _action in pending:
-        _ack_rebuild_data_action(
-            root, handoff, action_index=index, evidence_uris=evidence_uris
-        )
-    prepared = _prepare_i10_train_dir_for_sft(train_dir)
-    register_version = prepared.name if prepared != train_dir else train_version
-    closed = _recent_completed_nonpositive_slugs(root, campaign_id)
-    open_slugs = _thrash_bank_open_slugs(closed)
-    if not open_slugs or _open_slugs_are_snapshot_leftovers(open_slugs):
-        _register_i10_heal_arm(root, loop_id, train_version=register_version)
-    print(
-        f"SELF_HEAL_REBUILD_DATA campaign={campaign_id} "
-        f"version={register_version} files={evidence_uris}",
-        flush=True,
-    )
-    return "rebuild_data"
-
-
-
-
-
-
 
 
 def _self_heal_document_actions(
-    *,
-    cwd: Path,
-    root: Path,
-    loop_id: str,
-    campaign_id: str | None,
+    *, cwd: Path, root: Path, loop_id: str, campaign_id: str | None
 ) -> str | None:
-    """Write/commit docs/design closeout and ack pending document actions.
+    """Materialize closeout outside the running release; never commit from a loop.
 
-    Returns a heal kind when at least one document action was completed.
-    Never acks repair_harness / formal / deliver_stack / rebuild_data / stop.
+    Acknowledgment still requires matching committed repository documents.
+    Missing delivery authority is a durable, scoped publication wait.
     """
+    import shutil
+
     if not campaign_id:
         return None
-    handoff_path = root / campaign_id / "cycle_handoff.json"
+    store = CampaignStore(campaign_id, root)
+    handoff_path = store.root / "cycle_handoff.json"
     if not handoff_path.is_file():
         return None
-    handoff = AutotrainCycleHandoffV1.model_validate_json(
-        handoff_path.read_text(encoding="utf-8")
-    )
+    handoff = AutotrainCycleHandoffV1.model_validate_json(handoff_path.read_text())
     if handoff.loop_id != loop_id or handoff.campaign_id != campaign_id:
         return None
-    pending_docs = [
-        (index, action)
-        for index, action in pending_autotrain_actions(root, handoff)
-        if action.kind == "document"
+    pending = [
+        (i, a)
+        for i, a in pending_autotrain_actions(root, handoff)
+        if a.kind == "document"
     ]
-    if not pending_docs:
+    if not pending:
         return None
-
-    delivery_path = root / campaign_id / "sdlc_delivery.json"
-    delivery: dict[str, Any] = {}
-    if delivery_path.is_file():
-        try:
-            loaded = _read_json(delivery_path)
-            if isinstance(loaded, dict):
-                delivery = loaded
-        except Exception:  # noqa: BLE001 — still document what we have
-            delivery = {}
-
-    md_path, json_path = _continuous_docs_paths(cwd, campaign_id)
+    workspace = store.root / "delivery_workspace"
+    md_path, json_path = _continuous_docs_paths(workspace, campaign_id)
     md_path.parent.mkdir(parents=True, exist_ok=True)
     md_text, payload = _render_continuous_cycle_docs(
         campaign_id=campaign_id,
         loop_id=loop_id,
         handoff=handoff,
-        delivery=delivery,
+        delivery=_read_json(store.root / "sdlc_delivery.json"),
     )
-    md_path.write_text(md_text, encoding="utf-8")
-    json_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    touched: list[Path] = [md_path, json_path]
+    md_path.write_text(md_text)
+    json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    touched = [md_path, json_path]
     if handoff.checkpoint_documentation_required:
+        for name in ("README.md", "docs/MODEL_CARD.md"):
+            source, target = cwd / name, workspace / name
+            if source.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
         touched.extend(
             _append_checkpoint_doc_notes(
-                cwd,
+                workspace,
                 campaign_id=campaign_id,
                 checkpoint_paths=tuple(handoff.checkpoint_paths or ()),
                 loop_id=loop_id,
             )
         )
-        if handoff.checkpoint_paths and not any(
-            p.name in {"MODEL_CARD.md", "README.md"} for p in touched
-        ):
-            print(
-                "SELF_HEAL_DOCUMENT_WARN "
-                f"campaign={campaign_id} reason=checkpoint_docs_missing_templates",
-                flush=True,
-            )
-            # Still ack design docs; iron-law checkpoint note attempted.
-    committed = _git_commit_paths(
-        cwd,
-        touched,
-        message=f"docs(autotrain): continuous {loop_id} {campaign_id} closeout",
-        root=root,
-        loop_id=loop_id,
-        stage="self-heal-document",
+    files = {
+        path.relative_to(workspace).as_posix(): path.read_text() for path in touched
+    }
+    artifact = store.write_artifact(
+        "delivery_documents",
+        {
+            "schema": "autotrain_document_materialization/v1",
+            "campaign_id": campaign_id,
+            "handoff_sha256": hashlib.sha256(handoff_path.read_bytes()).hexdigest(),
+            "files": files,
+            "required_capability": "authorized_github_connector_delivery",
+            "unblock_predicate": "these documents are present in the authorized committed release",
+        },
     )
-    evidence_uris: list[str] = []
-    for path in touched:
-        try:
-            rel = str(path.resolve().relative_to(cwd.resolve()))
-        except ValueError:
-            rel = str(path)
-        # Evidence must be git-tracked (ls-files --error-unmatch fails if not).
-        try:
-            _git(
-                "ls-files",
-                "--error-unmatch",
-                rel,
-                cwd=cwd,
-                root=root,
-                loop_id=loop_id,
-                stage="self-heal-document-tracked",
-            )
-        except Exception:  # noqa: BLE001 — untracked path is not valid evidence
-            continue
-        evidence_uris.append(rel)
-    if not evidence_uris:
-        print(
-            f"SELF_HEAL_DOCUMENT_FAIL campaign={campaign_id} reason=no_tracked_evidence "
-            f"committed={committed}",
-            flush=True,
+    store.append_event(
+        "documentation_materialized",
+        artifact_sha256=artifact.stem,
+        idempotency_key=f"documentation:{artifact.stem}",
+    )
+    if not _committed_document_bundle(cwd, files):
+        store.append_event(
+            "documentation_waiting_delivery",
+            artifact_sha256=artifact.stem,
+            detail={"wake_source": "authorized_delivery_receipt"},
+            idempotency_key=f"documentation-wait:{artifact.stem}",
         )
         return None
-    for index, _action in pending_docs:
+    for index, _action in pending:
         _ack_document_action(
-            root,
-            handoff,
-            action_index=index,
-            evidence_uris=evidence_uris,
+            root, handoff, action_index=index, evidence_uris=list(files)
         )
-    print(
-        f"SELF_HEAL_DOCUMENT campaign={campaign_id} "
-        f"files={evidence_uris} acked={len(pending_docs)}",
-        flush=True,
-    )
     return "document_closeout"
 
 
+def _committed_document_bundle(cwd, files):
+    """Read-only verification; a staged/uncommitted document is not publication."""
+    if not files:
+        return False
+    for name, content in files.items():
+        try:
+            if (cwd / name).read_text() != content:
+                return False
+            result = _stage_command(["git", "show", f"HEAD:{name}"], cwd=cwd)
+            _raise_for_bounded_result(result)
+            if result.stdout != content:
+                return False
+        except (OSError, RuntimeError):
+            return False
+    return True
+
+
 def _self_heal_loop_owned_generated_dirt(
-    *,
-    cwd: Path,
-    root: Path | None = None,
-    loop_id: str | None = None,
+    *, cwd: Path, root: Path | None = None, loop_id: str | None = None
 ) -> str | None:
-    """Restore driver-written tracked mirrors so they never hard-block thrash."""
-    git_kw: dict[str, Any] = {"cwd": cwd}
-    if root is not None and loop_id is not None:
-        git_kw.update(root=root, loop_id=loop_id)
-    porcelain = _git(
-        "status",
-        "--porcelain",
-        stage="self-heal-owned-dirt-status" if root is not None else None,
-        **git_kw,
-    )
-    if not porcelain.strip():
-        return None
-    owned = [
-        path
-        for path in _porcelain_paths(porcelain)
-        if _is_loop_owned_generated_path(path)
-    ]
-    if not owned:
-        return None
-    _git(
-        "restore",
-        "--source=HEAD",
-        "--worktree",
-        "--staged",
-        "--",
-        *owned,
-        stage="self-heal-owned-dirt" if root is not None else None,
-        **git_kw,
-    )
-    print(f"SELF_HEAL_LOOP_OWNED_DIRT files={owned}", flush=True)
-    return "loop_owned_generated_dirt"
+    """Retain generated mirrors; their producer must write outside the release."""
+    return _self_heal_continuous_dirty_tree(cwd=cwd, root=root, loop_id=loop_id)
 
 
 def _self_heal_continuous_dirty_tree(
-    *,
-    cwd: Path,
-    root: Path | None = None,
-    loop_id: str | None = None,
+    *, cwd: Path, root: Path | None = None, loop_id: str | None = None
 ) -> str | None:
-    """Commit continuous closeout dirt only; leave foreign WIP hard-failing."""
-    # _git requires root/loop_id/stage as a triple — omit all when root missing.
-    git_kw: dict[str, Any] = {"cwd": cwd}
+    """Record workspace ownership work; never commit, restore or discard files."""
+    from scripts.autotrain_controller_repair import preserve_workspace
+
+    kw = dict(cwd=cwd)
     if root is not None and loop_id is not None:
-        git_kw.update(root=root, loop_id=loop_id)
-    porcelain = _git(
-        "status",
-        "--porcelain",
-        stage="self-heal-dirty-status" if root is not None else None,
-        **git_kw,
-    )
-    if not porcelain.strip():
-        return None
-    paths = _porcelain_paths(porcelain)
-    if not paths:
-        return None
-    serena_kind = _maybe_restore_serena_project_yml(
-        cwd=cwd, paths=paths, git_kw=git_kw
-    )
-    if serena_kind:
-        porcelain = _git(
-            "status",
-            "--porcelain",
-            stage="self-heal-dirty-status" if root is not None else None,
-            **git_kw,
+        kw.update(root=root, loop_id=loop_id, stage="workspace-status")
+    paths = _porcelain_paths(_git("status", "--porcelain", **kw))
+    if paths:
+        preserve_workspace(
+            cwd=cwd, root=root, loop_id=loop_id, reason="workspace_changes", paths=paths
         )
-        if not porcelain.strip():
-            return serena_kind
-        paths = _porcelain_paths(porcelain)
-        if not paths:
-            return serena_kind
-    closeout = [p for p in paths if _is_continuous_closeout_path(p)]
-    foreign = [p for p in paths if _is_foreign_dirty_path(p)]
-    if foreign and not closeout:
-        print(
-            f"SELF_HEAL_DIRTY_TREE_SKIP foreign={foreign[:8]}",
-            flush=True,
-        )
-        return None
-    if not closeout:
-        return None
-    abs_paths = [cwd / p for p in closeout]
-    committed = _git_commit_paths(
-        cwd,
-        abs_paths,
-        message=f"docs(autotrain): continuous {loop_id or 'loop'} self-heal closeout",
-        root=root,
-        loop_id=loop_id,
-        stage="self-heal-dirty",
-    )
-    if not committed:
-        return None
-    print(f"SELF_HEAL_DIRTY_TREE files={closeout}", flush=True)
-    return "dirty_tree_closeout"
+    return None
 
 
 def _self_heal_closeout_blockers(
@@ -5333,13 +4127,12 @@ def self_heal_unblock_loop(
           "predecessor_campaign_id": str | None,
         }
 
-    Soft: incomplete origin/main merge, document, continuous-only dirt,
-    loop-owned generated mirrors, thrash timeout residual repair_harness,
-    bank exhaust, local-CPU rebuild_data.
-    Hard: true harness crash, formal, deliver_stack, foreign dirt (non-merge WIP).
+    Code/data remedies require restored predicates. Source and delivery changes
+    require a verified successor; the running worktree is never rewritten.
     """
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
+    delivery_waits: list[dict[str, Any]] = []
     pred = campaign_id or _latest_cycle(root, loop_id)[1]
     parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
 
@@ -5351,7 +4144,7 @@ def self_heal_unblock_loop(
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK merge_warn={exc!r}", flush=True)
 
-    # 1) Hygiene — restore driver-written mirrors, then commit closeout docs.
+    # 1) Preserve workspace changes and request separately authorized delivery.
     try:
         owned_kind = _self_heal_loop_owned_generated_dirt(
             cwd=cwd, root=root, loop_id=loop_id
@@ -5404,9 +4197,28 @@ def self_heal_unblock_loop(
                 stage="self-heal-unblock-dirty-check",
             )
             paths = _porcelain_paths(porcelain) if porcelain.strip() else []
-        foreign = [p for p in paths if _is_foreign_dirty_path(p)]
+        foreign = [
+            p
+            for p in paths
+            if _is_foreign_dirty_path(p)
+            or _is_loop_owned_generated_path(p)
+            or _is_continuous_closeout_path(p)
+        ]
+        if foreign:
+            from scripts.autotrain_controller_repair import preserve_workspace
+
+            delivery_waits.append(
+                preserve_workspace(
+                    cwd=cwd,
+                    root=root,
+                    loop_id=loop_id,
+                    reason="workspace_changes",
+                    paths=foreign,
+                )
+            )
         try:
             from slm_training.autoresearch.heal.fail_closed import lease_covers
+
             lease = root / "loops" / loop_id / "wip_lease.json"
             leased = [p for p in foreign if lease_covers(lease, p)]
             if leased:
@@ -5423,16 +4235,6 @@ def self_heal_unblock_loop(
                     "reason": f"non-closeout dirty paths: {foreign[:8]}",
                 }
             )
-
-    # 2) Thrash timeout residual repair_harness → next_experiment.
-    try:
-        timeout_kind = _self_heal_thrash_timeout_repair(
-            cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
-        )
-        if timeout_kind:
-            soft_healed.append(timeout_kind)
-    except Exception as exc:  # noqa: BLE001
-        print(f"SELF_HEAL_UNBLOCK timeout_warn={exc!r}", flush=True)
 
     # 2a) Environment-incomplete repair_harness with a verified heal receipt →
     # next_experiment (SELF_HEAL_ENV_REPAIR). Code-class crashes stay hard.
@@ -5478,7 +4280,9 @@ def self_heal_unblock_loop(
         )
         if rebuild_kind:
             soft_healed.append(rebuild_kind)
-            parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
+            parked = (
+                _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
+            )
     except Exception as exc:  # noqa: BLE001
         print(f"SELF_HEAL_UNBLOCK rebuild_warn={exc!r}", flush=True)
 
@@ -5534,10 +4338,26 @@ def self_heal_unblock_loop(
                             delivery = loaded
                     except Exception:  # noqa: BLE001
                         delivery = {}
-                pending = list(pending_autotrain_actions(root, handoff))
+                from slm_training.autoresearch.action_dependencies import (
+                    campaign_prerequisites,
+                )
+
+                campaign_pending, document_waits = campaign_prerequisites(root, handoff)
+                delivery_waits.extend(document_waits)
+                pending = list(campaign_pending)
                 if delivery.get("stack_layer") is False:
                     pending = [(i, a) for i, a in pending if a.kind != "deliver_stack"]
                 for index, action in pending:
+                    action_context = {
+                        key: value
+                        for key, value in {
+                            "blocker_code": action.blocker_code,
+                            "unmet_predicate": action.unmet_predicate,
+                            "required_capability": action.required_capability,
+                            "frozen_manifest_sha256": action.frozen_manifest_sha256,
+                        }.items()
+                        if value is not None
+                    }
                     if action.kind == "document":
                         hard_pending.append(
                             {
@@ -5545,6 +4365,7 @@ def self_heal_unblock_loop(
                                 "index": index,
                                 "kind": "document",
                                 "reason": str(action.reason or "document unacked"),
+                                **action_context,
                             }
                         )
                         continue
@@ -5563,6 +4384,7 @@ def self_heal_unblock_loop(
                                         "bank_exhaust_no_successors: "
                                         + str(action.reason or "arm bank exhausted")
                                     ),
+                                    **action_context,
                                 }
                             )
                             continue
@@ -5572,6 +4394,7 @@ def self_heal_unblock_loop(
                                 "index": index,
                                 "kind": "repair_harness",
                                 "reason": str(action.reason or "harness repair"),
+                                **action_context,
                             }
                         )
                         continue
@@ -5582,6 +4405,7 @@ def self_heal_unblock_loop(
                                 "index": index,
                                 "kind": action.kind,
                                 "reason": str(action.reason or action.kind),
+                                **action_context,
                             }
                         )
             except Exception as exc:  # noqa: BLE001
@@ -5610,7 +4434,9 @@ def self_heal_unblock_loop(
 
             for entry in hard_pending:
                 entry["blocker_class"] = classify_blocker(
-                    str(entry.get("kind") or ""), str(entry.get("reason") or "")
+                    str(entry.get("kind") or ""),
+                    str(entry.get("reason") or ""),
+                    code=entry.get("blocker_code"),
                 )
         except Exception as exc:  # noqa: BLE001
             print(f"SELF_HEAL_UNBLOCK classify_warn={exc!r}", flush=True)
@@ -5656,6 +4482,7 @@ def self_heal_unblock_loop(
     report = {
         "soft_healed": soft_healed,
         "hard_pending": hard_pending,
+        "delivery_waits": delivery_waits,
         "blocker_cleared": blocker_cleared,
         "predecessor_campaign_id": pred,
     }
@@ -5665,22 +4492,6 @@ def self_heal_unblock_loop(
         flush=True,
     )
     return report
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def acquire_driver_lock(
@@ -5725,10 +4536,6 @@ def acquire_driver_lock(
     return fh
 
 
-
-
-
-
 def _load_champion_queue(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
@@ -5744,12 +4551,6 @@ def _load_champion_queue(path: Path) -> list[dict[str, Any]]:
         if isinstance(row, dict):
             entries.append(row)
     return entries
-
-
-
-
-
-
 
 
 def _revalidate_open_champion_entries(
@@ -5813,11 +4614,7 @@ def _revalidate_open_champion_entries(
     return changed
 
 
-
-
 _PROMOTE_AUTHORITY_STATUSES = frozenset({"promoted", "climb_accepted"})
-
-
 
 
 def current_promote_authority() -> dict[str, str]:
@@ -5847,10 +4644,6 @@ def current_promote_authority() -> dict[str, str]:
         "harness_component": _PROMOTE_AUTHORITY_HARNESS_COMPONENT,
         "harness_component_version": harness_version,
     }
-
-
-
-
 
 
 def _paper_recert_promote_entry(
@@ -6168,14 +4961,6 @@ def _recertify_promoted_champion_entries(
     return changed
 
 
-
-
-
-
-
-
-
-
 def _arm_slug_from_knobs(
     knobs: dict[str, Any], *, candidate_id: str = ""
 ) -> str | None:
@@ -6477,8 +5262,6 @@ def _open_slugs_are_snapshot_leftovers(open_slugs: set[str]) -> bool:
     )
 
 
-
-
 def _skip_arm_slugs(
     entries: list[dict[str, Any]],
     *,
@@ -6541,7 +5324,9 @@ def _thrash_bank_open_slugs(closed: set[str]) -> set[str]:
     technically open. A process/heal arm from a local rebuild_data heal is
     the I10 successor and stays selectable.
     """
-    open_slugs = {slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed}
+    open_slugs = {
+        slug for slug, _, _ in _all_screening_arm_bank() if slug not in closed
+    }
     if not _terminal_park_on_exhaust():
         return open_slugs
     extras_by_slug = {slug: extras for slug, _, extras in _all_screening_arm_bank()}
@@ -6605,6 +5390,8 @@ def _evidence_ranked_slug(
     *,
     stats: dict[str, Any],
     boosts: dict[str, float],
+    search_identity=None,
+    search_effects=(),
 ) -> str | None:
     """Posterior-UCB pick over the committed evidence ledger (policy-gated).
 
@@ -6639,12 +5426,12 @@ def _evidence_ranked_slug(
             live_stats=live_stats,
             rotation_order=candidates,
             eval_key=_ev.current_eval_key(),
+            search_identity=search_identity,
+            search_effects=search_effects,
         )
     except Exception as exc:  # noqa: BLE001 — selection upgrade must fail open
         print(f"EVIDENCE_RANK_WARN {exc}", flush=True)
         return None
-
-
 
 
 def _recent_completed_nonpositive_slugs(
@@ -6686,16 +5473,6 @@ def _recent_completed_nonpositive_slugs(
         delivery = _read_json(camp_dir / "sdlc_delivery.json")
         candidate_id = str(delivery.get("candidate_id") or "")
         handoff_reasons = {str(item) for item in handoff.get("reasons") or []}
-        runtime_terminal = bool(
-            handoff.get("climb_state") == "rejected"
-            and candidate_id
-            and (
-                f"candidate_runtime_rejected_after_frozen_replay:{candidate_id}"
-                in handoff_reasons
-                or f"candidate_runtime_unblock_reproduced:{candidate_id}"
-                in handoff_reasons
-            )
-        )
         intent = str(
             delivery.get("cycle_intent")
             or handoff.get("cycle_intent")
@@ -6729,13 +5506,8 @@ def _recent_completed_nonpositive_slugs(
                     if intent == "confirm"
                     else current_decision.get("positive")
                 )
-        complete_enough = (
-            delivery.get("measurement_complete") is True or runtime_terminal
-        )
-        intent_ok = (
-            intent in {"screening", "promotion", "confirm", "retry_measurement"}
-            or runtime_terminal
-        )
+        complete_enough = delivery.get("measurement_complete") is True
+        intent_ok = intent in {"screening", "promotion", "confirm", "retry_measurement"}
         if not (candidate_id and complete_enough and intent_ok):
             continue
         if stored_positive is not True and stored_positive is not False:
@@ -6759,29 +5531,23 @@ def _recent_completed_nonpositive_slugs(
         except (TypeError, ValueError):
             seed = None
         train_version = str(knobs.get("train_version") or "")
-        snapshot_tv = _slug_is_snapshot_arm(
-            slug, {"train_version": train_version}
-        )
+        snapshot_tv = _slug_is_snapshot_arm(slug, {"train_version": train_version})
         # Incomplete / harness outcomes never close a thrash approach — even if
         # a buggy delivery marked measurement_complete or positive=False.
-        if not runtime_terminal and (
-            any(_reason_is_harness_incomplete(item) for item in handoff_reasons)
-            or any(
-                _reason_is_harness_incomplete(item)
-                for item in (delivery.get("reasons") or [])
-            )
+        if any(_reason_is_harness_incomplete(item) for item in handoff_reasons) or any(
+            _reason_is_harness_incomplete(item)
+            for item in (delivery.get("reasons") or [])
         ):
             continue
-        if delivery.get("harness_failure") is True and not runtime_terminal:
+        if delivery.get("harness_failure") is True:
             continue
         # Fixture-n screening wins stay positive=False (no stack) but are still
         # confirm candidates — do not burn the thrash approach as a null seed.
         confirm_win = False
-        if (
-            not runtime_terminal
-            and delivery.get("measurement_complete") is True
-            and intent in {"screening", "retry_measurement"}
-        ):
+        if delivery.get("measurement_complete") is True and intent in {
+            "screening",
+            "retry_measurement",
+        }:
             confirm_win = _is_confirm_candidate_win(
                 {
                     **dict(delivery),
@@ -6819,12 +5585,6 @@ def _recent_completed_nonpositive_slugs(
     return closed
 
 
-
-
-
-
-
-
 def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
     path = _slug_stats_path(root, loop_id)
     if not path.is_file():
@@ -6855,131 +5615,6 @@ def _load_slug_stats(root: Path, loop_id: str) -> dict[str, SlugStats]:
         except (TypeError, ValueError):
             continue
     return out
-
-
-
-
-
-
-
-
-
-
-def _sync_reproduced_timeout_retirements(
-    root: Path,
-    loop_id: str,
-    predecessor_campaign_id: str | None,
-    *,
-    policy: Any,
-    train_version: str,
-    eval_version: str,
-    primary_metric: str,
-    direction: str,
-    claim_class: str,
-    data_generation: Mapping[str, Any] | None = None,
-) -> tuple[set[str], tuple[str, ...]]:
-    """Backfill and enforce exact reproduced-timeout retirements."""
-
-    from slm_training.autoresearch.climb_policy import (
-        load_loop_exhausted_ledger,
-        loop_data_eval_identity,
-        save_loop_exhausted_ledger,
-    )
-
-    def _identity_extra(raw: object) -> dict[str, Any]:
-        return {"data_generation": raw or None}
-
-    ledger = load_loop_exhausted_ledger(root, loop_id, policy)
-    before = len(ledger.entries)
-    retired: dict[tuple[str, str], tuple[str, int, str]] = {}
-    reintroduced: set[str] = set()
-    chain = _lineage_campaign_ids(root, predecessor_campaign_id)
-    for campaign_id in chain:
-        camp_dir = root / campaign_id
-        delivery = _read_json(camp_dir / "sdlc_delivery.json")
-        handoff = _read_json(camp_dir / "cycle_handoff.json")
-        matrix = _read_json(camp_dir / "matrix-proposal.json")
-        candidate_id = str(delivery.get("candidate_id") or "")
-        control_id = str(delivery.get("control_id") or "")
-        knobs = _load_experiment_knobs(
-            camp_dir, candidate_id
-        ) or _matrix_experiment_knobs(matrix, candidate_id)
-        slug = _arm_slug_from_knobs(knobs, candidate_id=candidate_id)
-        signature = _matrix_treatment_signature(matrix, candidate_id, control_id)
-        if not slug or not signature:
-            continue
-        identity = loop_data_eval_identity(
-            policy,
-            claim_class=claim_class,
-            train_version=str(knobs.get("train_version") or train_version),
-            eval_version=str(knobs.get("eval_version") or eval_version),
-            primary_metric=str(handoff.get("primary_metric") or primary_metric),
-            direction=direction,
-            extra=_identity_extra(knobs.get("data_generation")),
-        )
-        try:
-            cycle_index = int(
-                delivery.get("cycle_index") or handoff.get("cycle_index") or 0
-            )
-        except (TypeError, ValueError):
-            cycle_index = 0
-        key = (signature, identity)
-        prior = retired.get(key)
-        if prior is not None and cycle_index > prior[1]:
-            reintroduced.add(campaign_id)
-        if not _is_reproduced_timeout_retirement(handoff, delivery):
-            continue
-        manifest = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest.read_bytes()).hexdigest()
-            if manifest.is_file()
-            else "missing"
-        )
-        ledger.record_null(
-            knob_signature_sha256=signature,
-            data_eval_identity=identity,
-            claim_class=claim_class,
-            reason="reproduced_decode_timeout_retirement",
-            note=(f"slug={slug};campaign={campaign_id};manifest_sha256={manifest_sha}"),
-        )
-        retired[key] = (slug, cycle_index, campaign_id)
-    if len(ledger.entries) != before:
-        save_loop_exhausted_ledger(ledger, root, loop_id, policy)
-    current_identity = loop_data_eval_identity(
-        policy,
-        claim_class=claim_class,
-        train_version=train_version,
-        eval_version=eval_version,
-        primary_metric=primary_metric,
-        direction=direction,
-        extra=_identity_extra(data_generation),
-    )
-    retired_slugs = {
-        slug
-        for (signature, identity), (slug, _cycle, _campaign) in retired.items()
-        if identity == current_identity
-        and ledger.is_exhausted(
-            knob_signature_sha256=signature,
-            data_eval_identity=identity,
-            claim_class=claim_class,
-        )
-    }
-    if reintroduced:
-        for campaign_id in chain:
-            for path in (root / campaign_id / "artifacts" / "harness_signals").glob(
-                "*.json"
-            ):
-                if (
-                    _read_json(path).get("code")
-                    == "screening_selector_reintroduced_retired_arm"
-                ):
-                    reintroduced.clear()
-                    break
-            if not reintroduced:
-                break
-    return retired_slugs, tuple(sorted(reintroduced))
-
-
 
 
 def _screening_saturation_state(
@@ -7038,14 +5673,6 @@ def _screening_saturation_state(
     }
 
 
-
-
-
-
-
-
-
-
 def _select_recommended_slug(
     cycle: int,
     skip: set[str] | None = None,
@@ -7059,9 +5686,7 @@ def _select_recommended_slug(
     candidates (boost interesting residuals; still never reopen skipped arms).
     """
     skip = skip or set()
-    pred = (
-        _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
-    )
+    pred = _latest_cycle(root, loop_id)[1] if root is not None and loop_id else None
     for slug, _, extras in _all_screening_arm_bank():
         if not _is_process_arm(extras):
             continue
@@ -7071,9 +5696,7 @@ def _select_recommended_slug(
         if (
             root is not None
             and loop_id
-            and _selectable_process_arm(
-                root, loop_id, predecessor_campaign_id=pred
-            )
+            and _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred)
         ):
             print(
                 f"HEAL_RESUME_SELECT cycle={cycle} slug={slug} "
@@ -7245,26 +5868,6 @@ def _repeat_confirm_while_waiting_for_promotion(
     return False
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _select_cycle_slug(
     cycle: int,
     *,
@@ -7307,7 +5910,9 @@ def _select_cycle_slug(
     if predecessor_priority and predecessor_priority not in skip:
         # A leftover rematch (c78/c96 after a derailed heal) must not outrank
         # an open process/heal first-train.
-        if not process_open or _is_process_arm(extras_by_slug.get(predecessor_priority)):
+        if not process_open or _is_process_arm(
+            extras_by_slug.get(predecessor_priority)
+        ):
             return predecessor_priority
         print(
             f"PROCESS_ARM_OUTRANKS_PREDECESSOR process={process_open[0]} "
@@ -7321,8 +5926,6 @@ def _select_cycle_slug(
         bank_slugs=bank_slugs,
         isolate_selector=_isolate,
     )
-
-
 
 
 def _preflight_screening_slug(
@@ -7449,12 +6052,6 @@ def _preflight_screening_slug(
     }
 
 
-
-
-
-
-
-
 def _lean_floor_n() -> int | None:
     """Certified screening n when auto mode is feasible; else None."""
     try:
@@ -7485,28 +6082,6 @@ def _lean_floor_measurement(delivery: Mapping[str, Any]) -> bool:
     )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool:
     """True when knobs encode a thrash arm (not pure matched control)."""
     if _arm_slug_from_knobs(knobs, candidate_id=candidate_id) is not None:
@@ -7517,8 +6092,6 @@ def _is_champion_lever(knobs: dict[str, Any], *, candidate_id: str = "") -> bool
     if train_version and train_version != _default_screening_train_version():
         return True
     return False
-
-
 
 
 def _enqueue_champion(
@@ -7721,9 +6294,7 @@ def _resolve_confirm_result(
         ckpt = _checkpoint_path_for_candidate(root, campaign_id, cand_id)
         summary: dict[str, Any] = {}
         if cand_id:
-            summary_path = (
-                root / campaign_id / "runs" / cand_id / "train_summary.json"
-            )
+            summary_path = root / campaign_id / "runs" / cand_id / "train_summary.json"
             if summary_path.is_file():
                 try:
                     loaded = _read_json(summary_path)
@@ -7766,18 +6337,10 @@ def _resolve_confirm_result(
     return updated
 
 
-
-
 def locked_promote_expectations_sha256() -> str:
     """SHA-256 of the locked continuous promote expectation manifest."""
     path = promote_expectations_path()
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-
-
-
-
 
 
 def dispose_champion_promote(
@@ -7846,6 +6409,15 @@ def dispose_champion_promote(
         if timeout:
             out["timeout"] = True
         return out
+
+    if (
+        power_feasibility is not None
+        and power_feasibility.get("measurement_complete") is False
+    ):
+        reasons.append(
+            f"measurement_incomplete:paired_coverage:{power_feasibility.get('reason')}"
+        )
+        return _base(status="promotion_inconclusive", inconclusive=True)
 
     if power_feasibility is not None and not bool(power_feasibility.get("decisive")):
         # Power admission (adds a refusal, weakens nothing): a locked plan
@@ -7959,20 +6531,6 @@ def dispose_champion_promote(
         diagnosis_lanes=lanes,
         breaches=breaches,
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def export_promote_metric_certificate(
@@ -8145,22 +6703,8 @@ def export_promote_metric_certificate(
     return cert_path, None
 
 
-
-
-
-
-
-
-
-
-
-
 # Reasons that mean "process/infra incomplete" — never a model reject and never
 # permanent approach death. After a harness fix (new integration commit), retry.
-
-
-
-
 
 
 def detect_promote_harness_failure(
@@ -8218,20 +6762,6 @@ def detect_promote_harness_failure(
     return reasons
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _PHASE_A_TAGS(phase_a_positive: bool, phase_a_quality_held: bool) -> list[str]:
     tags: list[str] = []
     if phase_a_positive:
@@ -8239,6 +6769,54 @@ def _PHASE_A_TAGS(phase_a_positive: bool, phase_a_quality_held: bool) -> list[st
     if phase_a_quality_held:
         tags.append("phase_a_quality_held")
     return tags
+
+
+def _resolve_promote_delivery(context, delivery, deadline):
+    """Shared original/resumed promotion certificate and authoritative disposition."""
+    root, campaign_id = context["root"], context["campaign_id"]
+    camp = root / campaign_id
+    formal = context["formal_status"] or _formal_preflight_status(camp)
+    control_id, candidate_id = delivery.get("control_id"), delivery.get("candidate_id")
+    cert_err = None
+    if not control_id or not candidate_id or control_id == candidate_id:
+        raise ValueError(
+            "promotion finalization requires the declared distinct arm identities"
+        )
+    if formal == "proved":
+        if _run_has_usable_metrics(camp, candidate_id):
+            _cert_path, cert_err = export_promote_metric_certificate(
+                camp_dir=camp,
+                campaign_id=campaign_id,
+                control_id=control_id,
+                candidate_id=candidate_id,
+                delivery=delivery,
+                deadline=deadline,
+                root=root,
+                loop_id=context["loop_id"],
+            )
+        else:
+            cert_err = "promote_cert_incomplete_metrics:ss=None parse=None"
+            delivery = {
+                **delivery,
+                "harness_failure": True,
+                "measurement_complete": False,
+            }
+        if cert_err:
+            delivery = {**delivery, "reasons": [*delivery.get("reasons", []), cert_err]}
+    delivery = {**delivery, "arm_exits": context["arm_exits"]}
+    resolution = _resolve_promotion_result(
+        root=root,
+        loop_id=context["loop_id"],
+        entry=context["entry"],
+        delivery=delivery,
+        campaign_id=campaign_id,
+        cycle_index=context["cycle_index"],
+        camp_dir=camp,
+        formal_preflight_status=formal,
+        arm_exits=context["arm_exits"],
+        cert_err=cert_err,
+    )
+    return delivery, resolution
 
 
 def _resolve_promotion_result(
@@ -8376,7 +6954,10 @@ def _resolve_promotion_result(
             # incomplete evidence, never a model verdict (retryable, refunded).
             disposition = {
                 "status": "promotion_inconclusive",
-                "reasons": [*incomplete_reasons, *_PHASE_A_TAGS(phase_a_positive, phase_a_quality)],
+                "reasons": [
+                    *incomplete_reasons,
+                    *_PHASE_A_TAGS(phase_a_positive, phase_a_quality),
+                ],
                 "cert_policy": None,
                 "diagnosis_lanes": [],
                 "emit_five_lane_matrix": False,
@@ -8429,128 +7010,95 @@ def _resolve_promotion_result(
         disposition=disposition,
     )
 
-    # Append-only learning certificate ledger (loop-local).
-    cert_ledger = root / "loops" / loop_id / "learning_certificate_ledger.jsonl"
-    cert_ledger.parent.mkdir(parents=True, exist_ok=True)
-    with cert_ledger.open("a", encoding="utf-8") as fh:
-        fh.write(
-            json.dumps(
-                {
-                    "schema": "autotrain_learning_event/v1",
-                    "loop_id": loop_id,
-                    "campaign_id": campaign_id,
-                    "cycle_index": cycle_index,
-                    "entry_id": entry.get("entry_id"),
-                    "knobs_fingerprint": entry.get("knobs_fingerprint"),
-                    "outcome": status,
-                    "cert_policy": disposition.get("cert_policy"),
-                    "formal_preflight_status": formal_preflight_status,
-                    "locked_expectations_sha256": locked_expectations_sha256,
-                    "primary_improvement": disposition.get("primary_improvement"),
-                    "promotion_primary_met": disposition.get("promotion_primary_met"),
-                    "promotion_replicate_count": disposition.get(
-                        "promotion_replicate_count"
-                    ),
-                    "promotion_replicate_required": disposition.get(
-                        "promotion_replicate_required"
-                    ),
-                    "arm_order": delivery.get("arm_order"),
-                    "arm_seed": delivery.get("arm_seed"),
-                    "reasons": resolve_reasons,
-                    "harness_failure": bool(disposition.get("harness_failure")),
-                    "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                },
-                sort_keys=True,
+    from scripts.autotrain_champion_queue import publish_promotion_disposition
+
+    record = {
+        "schema": "autotrain_learning_event/v1",
+        "loop_id": loop_id,
+        "campaign_id": campaign_id,
+        "cycle_index": cycle_index,
+        "entry_id": entry["entry_id"],
+        "knobs_fingerprint": entry.get("knobs_fingerprint"),
+        "outcome": status,
+        "cert_policy": disposition.get("cert_policy"),
+        "formal_preflight_status": formal_preflight_status,
+        "locked_expectations_sha256": locked_expectations_sha256,
+        "primary_improvement": disposition.get("primary_improvement"),
+        "promotion_primary_met": disposition.get("promotion_primary_met"),
+        "promotion_replicate_count": disposition.get("promotion_replicate_count"),
+        "promotion_replicate_required": disposition.get("promotion_replicate_required"),
+        "arm_order": delivery.get("arm_order"),
+        "arm_seed": delivery.get("arm_seed"),
+        "reasons": resolve_reasons,
+        "harness_failure": bool(disposition.get("harness_failure")),
+    }
+    changes = {
+        "status": status,
+        "confirm_campaign_id": campaign_id,
+        "confirm_cycle_index": cycle_index,
+        "resolve_reasons": resolve_reasons,
+        "promotion_campaign_id": campaign_id,
+        "promotion_cycle_index": cycle_index,
+        **{
+            key: record[key]
+            for key in (
+                "cert_policy",
+                "formal_preflight_status",
+                "primary_improvement",
+                "promotion_primary_met",
+                "promotion_replicate_count",
+                "promotion_replicate_required",
             )
-            + "\n"
-        )
-
-    updated = _update_champion_status(
-        root=root,
-        loop_id=loop_id,
-        entry_id=str(entry["entry_id"]),
-        status=status,
-        confirm_campaign_id=campaign_id,
-        confirm_cycle_index=cycle_index,
-        resolve_reasons=resolve_reasons,
+        },
+        "last_arm_order": delivery.get("arm_order"),
+        "last_arm_seed": delivery.get("arm_seed"),
+    }
+    if status in _PROMOTE_AUTHORITY_STATUSES:
+        try:
+            _stamp_promote_authority(changes, current_promote_authority())
+        except Exception as exc:  # noqa: BLE001 — preserve fail-closed authority diagnostics
+            changes["promote_authority_stamp_error"] = str(exc)[:200]
+    refund = bool(
+        status in {"promotion_inconclusive", "harness_failure"}
+        or disposition.get("timeout")
+        or disposition.get("harness_failure")
     )
-    if updated is not None:
-        path = _champion_queue_path(root, loop_id)
-        entries = _load_champion_queue(path)
-        for row in entries:
-            if row.get("entry_id") == entry.get("entry_id"):
-                row["promotion_campaign_id"] = campaign_id
-                row["promotion_cycle_index"] = cycle_index
-                row["cert_policy"] = disposition.get("cert_policy")
-                row["formal_preflight_status"] = formal_preflight_status
-                row["primary_improvement"] = disposition.get("primary_improvement")
-                row["promotion_primary_met"] = disposition.get("promotion_primary_met")
-                row["promotion_replicate_count"] = disposition.get(
-                    "promotion_replicate_count"
-                )
-                row["promotion_replicate_required"] = disposition.get(
-                    "promotion_replicate_required"
-                )
-                row["last_arm_order"] = delivery.get("arm_order")
-                row["last_arm_seed"] = delivery.get("arm_seed")
-                # Stamp promote authority so future harness/policy updates force
-                # automatic re-certification under current dispose rules.
-                if status in _PROMOTE_AUTHORITY_STATUSES:
-                    try:
-                        _stamp_promote_authority(row, current_promote_authority())
-                    except Exception as exc:  # noqa: BLE001 — never skip promote write
-                        row["promote_authority_stamp_error"] = str(exc)[:200]
-                    row.pop("recert_required", None)
-                    row.pop("recert_required_at", None)
-                    row.pop("recert_from_status", None)
-                # Incomplete measurement is never a spent promote attempt.
-                # Formal timeouts and harness failures (deadline_reserve,
-                # missing_promote_run, cert incomplete because arms never ran)
-                # refund so the approach stays valid and can be retried after a
-                # harness fix — never permanently invalidated as a model reject.
-                if (
-                    status in {"promotion_inconclusive", "harness_failure"}
-                    or disposition.get("timeout")
-                    or disposition.get("harness_failure")
-                ):
-                    attempts = int(row.get("promote_attempts") or 0)
-                    row["promote_attempts"] = max(0, attempts - 1)
-                    if disposition.get("measurement_incomplete"):
-                        row["last_measurement_incomplete"] = True
-                        row["last_measurement_incomplete_reasons"] = [
-                            str(reason)
-                            for reason in (disposition.get("reasons") or [])
-                            if str(reason).startswith("measurement_incomplete:")
-                        ][:8]
-                    elif status == "promotion_inconclusive" or disposition.get("timeout"):
-                        row["last_formal_timeout"] = True
-                        row["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
-                    if status == "harness_failure" or disposition.get(
-                        "harness_failure"
-                    ):
-                        row["last_harness_failure"] = True
-                        # Stamp integration so a later code/harness fix reopens.
-                        camp_meta = _read_json(camp_dir / "campaign.json")
-                        tip = (
-                            camp_meta.get("integration_commit")
-                            or delivery.get("integration_commit")
-                            or row.get("source_integration_commit")
-                        )
-                        if tip:
-                            row["harness_failure_integration_commit"] = str(tip)
-                break
-        _write_champion_queue(path, entries)
-        print(
-            f"CHAMPION_PROMOTE_DISPOSE status={status} "
-            f"cert_policy={disposition.get('cert_policy')} "
-            f"formal={formal_preflight_status} "
-            f"primary_delta={disposition.get('primary_improvement')} "
-            f"primary_met={disposition.get('promotion_primary_met')}",
-            flush=True,
-        )
+    if refund:
+        if disposition.get("measurement_incomplete"):
+            changes["last_measurement_incomplete"] = True
+            changes["last_measurement_incomplete_reasons"] = [
+                str(reason)
+                for reason in disposition.get("reasons", [])
+                if str(reason).startswith("measurement_incomplete:")
+            ][:8]
+        elif status == "promotion_inconclusive" or disposition.get("timeout"):
+            changes["last_formal_timeout"] = True
+            changes["last_formal_timeout_wall_s"] = _PROMOTE_FORMAL_TIMEOUT_S
+        if status == "harness_failure" or disposition.get("harness_failure"):
+            changes["last_harness_failure"] = True
+            camp_meta = _read_json(camp / "campaign.json")
+            tip = (
+                camp_meta.get("integration_commit")
+                or delivery.get("integration_commit")
+                or entry.get("source_integration_commit")
+            )
+            if tip:
+                changes["harness_failure_integration_commit"] = str(tip)
+    updated = publish_promotion_disposition(
+        root,
+        loop_id,
+        record=record,
+        changes=changes,
+        refund=refund,
+    )
+    print(
+        f"CHAMPION_PROMOTE_DISPOSE status={status} "
+        f"cert_policy={disposition.get('cert_policy')} formal={formal_preflight_status} "
+        f"primary_delta={disposition.get('primary_improvement')} "
+        f"primary_met={disposition.get('promotion_primary_met')}",
+        flush=True,
+    )
     return updated
-
-
 
 
 def _classify_positive(
@@ -8604,6 +7152,13 @@ def _classify_positive(
         policy_metric=str(role_primary.get("metric") or primary_metric),
         requested_metric=primary_metric,
     )
+    from scripts.autotrain_measurement import locked_primary_failure
+
+    locked_failure = locked_primary_failure(camp_dir, control_id, candidate_id, effective_metric, role_primary)
+    if locked_failure:
+        return {"positive": False, "stack_layer": False, "measurement_complete": False,
+                "scientific_status": "incomplete", "reasons": [locked_failure],
+                "primary_metric": effective_metric, "control_id": control_id, "candidate_id": candidate_id}
 
     # Promotion primary is held_out.*; load held_out leaves so Phase A is not
     # permanently primary_metric_unavailable when eval_held_out.json exists.
@@ -8640,27 +7195,17 @@ def _classify_positive(
     reasons_pre: list[str] = []
     # Per-record NLL pairs (teacher-forced, whole smoke suite) for the paired
     # screening verdict. Arms scored under different NLL definitions never pair.
-    paired_records: dict[str, dict[str, float]] | None = None
+    paired_records: dict[str, Any] | None = None
     paired_records_info: dict[str, Any] = {}
     if (
         role == "screening"
         and effective_metric.rsplit(".", 1)[-1] in PAIRED_PRIMARY_LEAVES
     ):
-        c_records, c_digest = _read_eval_nll_records(camp_dir / "runs" / control_id)
-        t_records, t_digest = _read_eval_nll_records(camp_dir / "runs" / candidate_id)
-        paired_records_info = {
-            "control_n": len(c_records),
-            "candidate_n": len(t_records),
-            "control_definition_hash": c_digest,
-            "candidate_definition_hash": t_digest,
-        }
-        if c_records and t_records:
-            if c_digest and t_digest and c_digest != t_digest:
-                reasons_pre.append(
-                    f"paired_records_definition_mismatch:{control_id}:{candidate_id}"
-                )
-            else:
-                paired_records = {"control": c_records, "candidate": t_records}
+        from scripts.autotrain_metrics import read_paired_nll
+
+        paired_records, paired_records_info, reasons_pre = read_paired_nll(
+            camp_dir / "runs" / control_id, camp_dir / "runs" / candidate_id
+        )
     outcomes = list((camp_dir / "artifacts" / "outcomes").glob("*.json"))
     # Latency pre-check verdicts per arm (probe timeout / over-budget skip) so
     # a probe-skipped eval reads as its typed cause, not a bare missing file.
@@ -8740,6 +7285,12 @@ def _classify_positive(
     for path in outcomes:
         out = _read_json(path)
         experiment_id = str(out.get("experiment_id") or path.stem)
+        from scripts.autotrain_promotion_chunks import completed_chunk_evidence
+
+        if experiment_id in {control_id, candidate_id} and completed_chunk_evidence(
+            camp_dir, experiment_id, out
+        ):
+            continue  # Current, content-bound evaluation supersedes only the old eval interruption.
         if (
             experiment_id in {control_id, candidate_id}
             and out.get("status") == "failed"
@@ -8978,8 +7529,9 @@ def _classify_positive(
     ):
         # Measured paired-delta SD feeds the screening power calibration.
         try:
-            _record_observed_paired_sd(
-                observed_sd_path or screening_expectations_path(),
+            _record_screening_paired_sd(
+                observed_sd_path,
+                campaign_dir=camp_dir,
                 metric_leaf=leaf,
                 sd=float(paired["paired_sd"]),
                 n=int(paired["n_pairs"]),
@@ -9163,15 +7715,12 @@ def _phase_a_delivery(
                 record["preflight"] = preflight
     except Exception as exc:  # noqa: BLE001 — telemetry only, never fatal
         print(f"PREFLIGHT_WARN delivery err={exc!r}", flush=True)
-    out_path = camp_dir / "sdlc_delivery.json"
-    out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    ledger = root / "sdlc_delivery_ledger.jsonl"
-    # Dangling symlinks (e.g. prior /tmp continuous worktree) raise FileNotFoundError
-    # on open("a"); replace with a real ledger so Phase A closeout never hard-fails.
-    if ledger.is_symlink() and not ledger.exists():
-        ledger.unlink()
-    with ledger.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(record, sort_keys=True) + "\n")
+    from scripts.autotrain_ledgers import publish_cycle_delivery
+
+    matrix_regime = _read_json(camp_dir / "matrix-proposal.json").get("thrash_regime")
+    if matrix_regime is not None:
+        record["thrash_regime"] = matrix_regime
+    record = publish_cycle_delivery(root, record)
 
     # Cheap thrash residual ledger (no retrain): mine interesting residuals.
     try:
@@ -9208,16 +7757,6 @@ def _phase_a_delivery(
                 telemetry_root=root,
                 predecessor_campaign_id=campaign_id,
             )
-        matrix_regime = None
-        matrix_path = camp_dir / "matrix-proposal.json"
-        if matrix_path.is_file():
-            try:
-                matrix_regime = _read_json(matrix_path).get("thrash_regime")
-            except Exception:  # noqa: BLE001 — telemetry only
-                matrix_regime = None
-        if matrix_regime is not None:
-            record["thrash_regime"] = matrix_regime
-            out_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
         _write_thrash_timing(
             camp_dir,
             loop_id=loop_id,
@@ -9283,18 +7822,6 @@ def _phase_a_delivery(
     return record
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def _created_checkpoint_paths(camp_dir: Path) -> tuple[str, ...]:
     """Return every checkpoint created by the bounded cycle, relative to it."""
     runs = camp_dir / "runs"
@@ -9305,8 +7832,6 @@ def _created_checkpoint_paths(camp_dir: Path) -> tuple[str, ...]:
         for path in sorted(runs.rglob("*.pt"))
         if path.is_file()
     )
-
-
 
 
 def _completed_candidate_priorities(
@@ -9546,8 +8071,6 @@ def _completed_candidate_priorities(
     return tuple(NextRunPriorityV1.model_validate(item) for item in rows)
 
 
-
-
 def _completed_retry_priorities(
     matrix: dict[str, Any], candidate_id: str
 ) -> tuple[NextRunPriorityV1, ...]:
@@ -9556,8 +8079,6 @@ def _completed_retry_priorities(
     return _completed_candidate_priorities(
         matrix, candidate_id, resolved_infrastructure=True
     )
-
-
 
 
 def _predecessor_priority_slug(
@@ -9780,34 +8301,12 @@ def _write_cycle_handoff(
     control_id = str(delivery.get("control_id") or "")
     finalized_decode_timeout = _has_finalized_decode_timeout(camp_dir, candidate_id)
     control_decode_timeout = _has_finalized_decode_timeout(camp_dir, control_id)
-    candidate_only_model_timeout = bool(
-        finalized_decode_timeout and not control_decode_timeout
-    )
     control_only_model_timeout = bool(
         control_decode_timeout and not finalized_decode_timeout
     )
-    control_runtime_reproduced = bool(
-        control_only_model_timeout
-        and cycle_intent == "retry_measurement"
-        and _run_has_usable_metrics(camp_dir, candidate_id)
-    )
-    frozen_replay_count = 0
-    frozen_replay_limit = 0
-    if finalized_decode_timeout:
-        from slm_training.autoresearch.climb_policy import (
-            load_climb_policy,
-            max_consecutive_frozen_replays,
-        )
-
-        frozen_replay_count = _consecutive_frozen_replays(
-            root, loop_id, campaign_id, cycle_intent
-        )
-        frozen_replay_limit = max_consecutive_frozen_replays(load_climb_policy())
-    runtime_arm_rejected = bool(
-        candidate_only_model_timeout
-        and cycle_intent == "retry_measurement"
-        and frozen_replay_count >= frozen_replay_limit
-    )
+    # A completed timeout record is not a completed quality endpoint. Neither
+    # retries nor success of the other arm retroactively declare a deadline test.
+    measurement_incomplete |= finalized_decode_timeout or control_decode_timeout
     if status in {"promoted", "climb_accepted"}:
         climb_state = "climb_accepted"
     elif status == "confirmed":
@@ -9817,12 +8316,6 @@ def _write_cycle_handoff(
     elif status == "promotion_inconclusive":
         climb_state = "inconclusive"
     elif status in {"rejected", "promotion_failed"}:
-        climb_state = "rejected"
-    elif runtime_arm_rejected or control_runtime_reproduced:
-        # A candidate-only timeout reproduced by the exact frozen checkpoint
-        # while its matched control completes is a decisive runtime rejection
-        # of this model arm.  Quality remains unavailable, but the loop must not
-        # misroute the same trajectory into an unbounded harness-repair cycle.
         climb_state = "rejected"
     elif measurement_incomplete:
         climb_state = "inconclusive"
@@ -9854,40 +8347,21 @@ def _write_cycle_handoff(
             ),
         ]
     )
-    if runtime_arm_rejected:
-        reasons += (f"candidate_runtime_rejected_after_frozen_replay:{candidate_id}",)
-        priorities = _completed_candidate_priorities(
-            matrix,
-            candidate_id,
-            resolved_infrastructure=True,
-            skip_slugs=skip_slugs,
-        )
-    elif control_runtime_reproduced:
-        reasons += (
-            f"control_runtime_rejected_after_frozen_replay:{control_id}",
-            f"candidate_runtime_unblock_reproduced:{candidate_id}",
-        )
-        priorities = _completed_candidate_priorities(
-            matrix,
-            candidate_id,
-            resolved_infrastructure=True,
-            skip_slugs=skip_slugs,
-        )
-    elif measurement_incomplete and control_only_model_timeout:
+    if measurement_incomplete and control_only_model_timeout:
         priorities = (
             NextRunPriorityV1(
                 rank=1,
                 area="model_build",
                 hypothesis=(
                     "The tail-supervised candidate completed while the matched "
-                    "control entered a typed decode timeout; replay the exact "
-                    "frozen pair once to test whether the runtime unblock reproduces."
+                    "control entered a typed decode timeout; repair the runtime "
+                    "prerequisite and complete the exact frozen comparison."
                 ),
                 evidence_ids=(evidence_id,),
                 confidence=0.95,
                 expected_information_gain=(
-                    "Distinguishes a causal termination-supervision runtime effect "
-                    "from a one-run timing artifact without inventing control quality."
+                    "Restores missing control evidence without turning a timeout "
+                    "or the other arm's completion into a scientific result."
                 ),
                 authority="observed_result",
                 disposition="experiment_next",
@@ -9982,6 +8456,7 @@ def _write_cycle_handoff(
             owner="documenting-experiment-results",
             reason=document_reason,
             evidence_ids=(evidence_id,),
+            dependency_scope="delivery",
         )
     ]
     theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
@@ -10011,39 +8486,6 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         ]
-    elif control_only_model_timeout:
-        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-            if manifest_path.is_file()
-            else None
-        )
-        if control_runtime_reproduced:
-            actions.append(
-                AutotrainActionV1(
-                    kind="next_experiment",
-                    owner="autotrain",
-                    reason=(
-                        "retire the reproduced control-only model timeout "
-                        "comparison and consume the next distinct hypothesis"
-                    ),
-                    evidence_ids=(evidence_id,),
-                )
-            )
-        else:
-            actions.insert(
-                0,
-                AutotrainActionV1(
-                    kind="retry_measurement",
-                    owner="autotrain",
-                    reason=(
-                        "replay the exact frozen pair once to reproduce the "
-                        "control-only typed model timeout"
-                    ),
-                    evidence_ids=(evidence_id,),
-                    frozen_manifest_sha256=manifest_sha,
-                ),
-            )
     elif numeric_close_starvation:
         # The canonical model-build harness already owns the typed
         # ltr_tail_loss_weight lever and the size-matched literal-close arm.
@@ -10061,8 +8503,12 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         )
-    elif harness_failure:
-        family = _primary_harness_family(camp_dir)
+    elif harness_failure or finalized_decode_timeout or control_only_model_timeout:
+        family = (
+            "model_build"
+            if (finalized_decode_timeout or control_only_model_timeout)
+            else _primary_harness_family(camp_dir)
+        )
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
@@ -10089,65 +8535,6 @@ def _write_cycle_handoff(
                 frozen_manifest_sha256=manifest_sha,
             ),
         ]
-    elif finalized_decode_timeout:
-        manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-            if manifest_path.is_file()
-            else None
-        )
-        thrash_timeout_residual = _delivery_is_thrash_timeout_residual(delivery)
-        if runtime_arm_rejected or (
-            thrash_timeout_residual
-            and cycle_intent in {"screening", "retry_measurement"}
-        ):
-            # Continuous thrash must not hard-block on wall/decode residuals.
-            # Retire the residual arm and keep rotating; real harness crashes
-            # still take the repair_harness path below.
-            actions.append(
-                AutotrainActionV1(
-                    kind="next_experiment",
-                    owner="autotrain",
-                    reason=(
-                        "retire thrash decode/wall-timeout residual and consume "
-                        "the next distinct ranked hypothesis"
-                        if thrash_timeout_residual
-                        else (
-                            "retire the candidate-only runtime rejection and "
-                            "consume the next distinct ranked hypothesis"
-                        )
-                    ),
-                    evidence_ids=(evidence_id,),
-                )
-            )
-        else:
-            actions[0:0] = [
-                AutotrainActionV1(
-                    kind="repair_harness",
-                    owner="improve-openui-harnesses",
-                    reason=(
-                        "AgentV finalized every record disposition and reported an "
-                        "internal decode timeout; "
-                    )
-                    + (
-                        "repair canonical model-build runtime before replaying the "
-                        "frozen arm"
-                    ),
-                    evidence_ids=(evidence_id,),
-                    harness_family="model_build",
-                    frozen_manifest_sha256=manifest_sha,
-                ),
-                AutotrainActionV1(
-                    kind="retry_measurement",
-                    owner="autotrain",
-                    reason=(
-                        "replay the identical frozen arm after the required "
-                        "canonical runtime repair"
-                    ),
-                    evidence_ids=(evidence_id,),
-                    frozen_manifest_sha256=manifest_sha,
-                ),
-            ]
     elif measurement_incomplete:
         from slm_training.autoresearch.climb_policy import (
             load_climb_policy,
@@ -10342,9 +8729,9 @@ def _write_cycle_handoff(
         thrash_regime=thrash_regime_payload,
         terminal_verdict=terminal_verdict,
     )
-    (camp_dir / "cycle_handoff.json").write_text(
-        handoff.model_dump_json(indent=2) + "\n", encoding="utf-8"
-    )
+    from slm_training.autoresearch.campaign_events import publish_cycle_handoff
+
+    publish_cycle_handoff(CampaignStore(campaign_id, root), handoff)
     if terminal_verdict is not None and _terminal_park_on_exhaust():
         # Park under the typed conclusion: persist the verdict beside the loop
         # state so the successor cycle's deterministic resume predicate
@@ -10495,10 +8882,6 @@ _VACUOUS_PASS_LIMIT = 3
 _STALL_EXIT_CODE = 3
 
 
-
-
-
-
 #: How a heal receipt's outcome scores the driver pass that produced it.
 #: Total over ``slm_training.autoresearch.heal.schemas.HealOutcome`` -- a new
 #: outcome with no entry here would fall to the generic ``heal_attempted`` and
@@ -10529,22 +8912,35 @@ _PASS_OUTCOME_BY_HEAL_OUTCOME: dict[str, str] = {
 
 
 def _record_pass_outcome(
-    *, root: Path, loop_id: str, before_campaign: str | None,
-    before_receipts: int, typed_action: bool = False, reason: str | None = None,
+    *,
+    root: Path,
+    loop_id: str,
+    before_campaign: str | None,
+    before_receipts: int,
+    typed_action: bool = False,
+    reason: str | None = None,
+    completion_boundary: tuple[Path, frozenset[str]] | None = None,
 ) -> str:
     """Classify one driver pass; a clean no-op is a counted hard failure.
 
-    Returns the outcome. ``loop_stalled_no_campaign`` means
-    ``_VACUOUS_PASS_LIMIT`` consecutive vacuous passes were observed and the
-    typed park (``state=BLOCKED``) has been written: the caller exits non-zero
-    without raising. Heal receipts are read by outcome, so a driver heal whose
-    postcondition failed scores ``heal_postcondition_failed`` (visible,
-    counted) rather than ``vacuous_pass`` or ``verified_heal``.
+    A fresh controller completion proof records ``campaign_completed`` even
+    when its campaign ID is unchanged. ``loop_stalled_no_campaign`` records
+    repeated vacuous passes and dispatches scoped recovery, not a global stop.
+    Heal receipts are read by verified outcome, not mere receipt growth.
     """
     _idx, after_campaign = _latest_cycle(root, loop_id)
     receipts_path = root / "loops" / loop_id / "heal_receipts.jsonl"
-    after_receipts = len(receipts_path.read_text(encoding="utf-8").splitlines()) if receipts_path.is_file() else 0
-    if after_campaign and after_campaign != before_campaign:
+    after_receipts = (
+        len(receipts_path.read_text(encoding="utf-8").splitlines())
+        if receipts_path.is_file()
+        else 0
+    )
+    from scripts.autotrain_cycle_execution import pass_completion
+
+    completion = pass_completion(root, loop_id, after_campaign, completion_boundary)
+    if completion is not None:
+        outcome = "campaign_completed"
+    elif after_campaign and after_campaign != before_campaign:
         outcome = "campaign_initialized"
     elif after_receipts > before_receipts:
         outcome = _PASS_OUTCOME_BY_HEAL_OUTCOME.get(
@@ -10556,7 +8952,11 @@ def _record_pass_outcome(
         outcome = "vacuous_pass"
     path = root / "loops" / loop_id / "pass_outcomes.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    prior = [r for r in path.read_text(encoding="utf-8").splitlines() if r] if path.is_file() else []
+    prior = (
+        [r for r in path.read_text(encoding="utf-8").splitlines() if r]
+        if path.is_file()
+        else []
+    )
     previous_vacuous = 0
     last_non_vacuous: dict[str, Any] | None = None
     counting = True
@@ -10572,10 +8972,17 @@ def _record_pass_outcome(
         counting = False
         last_non_vacuous = previous
         break
-    row = {"schema": "pass_outcome/v1", "loop_id": loop_id, "outcome": outcome,
-           "campaign_before": before_campaign, "campaign_after": after_campaign,
-           "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
-           "reason": reason, "recorded_at": utc_now()}
+    row = {
+        "schema": "pass_outcome/v1",
+        "loop_id": loop_id,
+        "outcome": outcome,
+        "campaign_before": before_campaign,
+        "campaign_after": after_campaign,
+        "consecutive_vacuous": previous_vacuous + 1 if outcome == "vacuous_pass" else 0,
+        "reason": reason,
+        "completion": completion,
+        "recorded_at": utc_now(),
+    }
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, sort_keys=True) + "\n")
     if row["consecutive_vacuous"] >= _VACUOUS_PASS_LIMIT:
@@ -10590,8 +8997,6 @@ def _record_pass_outcome(
         )
         return _STALL_FINGERPRINT
     return outcome
-
-
 
 
 def _finalize_terminal_interrupted_replay(
@@ -10714,8 +9119,6 @@ def _finalize_terminal_interrupted_replay(
     return campaign_id
 
 
-
-
 def _manifest_with_sha(
     camp_dir: Path, digest: str
 ) -> tuple[Path, ExperimentCampaignV1]:
@@ -10726,8 +9129,6 @@ def _manifest_with_sha(
             )
             return path, manifest
     raise RuntimeError(f"frozen replay manifest is missing: {digest}")
-
-
 
 
 def _nonreplayable_configuration_failure(
@@ -10841,8 +9242,6 @@ def _load_frozen_replay(
             manifest_path=item["path"],
         )
     return replay
-
-
 
 
 def _completed_frozen_train_source(
@@ -11041,16 +9440,6 @@ def _apply_frozen_replay(
     return {new_ids[role]: replay[role] for role in ("control", "candidate")}
 
 
-
-
-
-
-
-
-
-
-
-
 def _matrix(
     *,
     campaign_id: str,
@@ -11100,6 +9489,7 @@ def _matrix(
             telemetry_root=telemetry_root,
             requested_steps=int(steps),
             predecessor_campaign_id=predecessor_campaign_id,
+            eval_version=eval_version,
         )
         steps = int(
             (decode_fit or {}).get("fitted_steps")
@@ -11126,7 +9516,7 @@ def _matrix(
                 1, int((decode_fit or {}).get("smoke_n") or 1)
             ),
         }
-    steps = int(steps) + (cycle % 3)  # slight variation avoids knob-signature collision
+    steps = int(steps)  # Replicate identity must never perturb the scientific recipe.
     eval_suites = ",".join(eval_suites_for_role(pol, role))
 
     def uses() -> list[dict]:
@@ -11352,40 +9742,6 @@ def _matrix(
                 "evidence_uses": uses(),
                 "novelty": novelty(1, "promote confirmed knobs"),
             },
-            {
-                "experiment": exp(
-                    f"{prefix}-bounds",
-                    "Monitor-only bounds pad deferred while a confirmed champion is evaluated.",
-                    knobs(grammar_completion_bounds=True, steps=promo_steps + 2000),
-                    "Schema pad — not executed while promote is recommended.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(2, "promote pad bounds"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-canvas",
-                    "Monitor-only canvas pad deferred while a confirmed champion is evaluated.",
-                    knobs(compact_active_canvas=True, steps=promo_steps + 2001),
-                    "Schema pad — not executed while promote is recommended.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(3, "promote pad canvas"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-both",
-                    "Monitor-only combined pad deferred while a confirmed champion is evaluated.",
-                    knobs(
-                        grammar_completion_bounds=True,
-                        compact_active_canvas=True,
-                        steps=promo_steps + 2002,
-                    ),
-                    "Schema pad — not executed while promote is recommended.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(4, "promote pad both"),
-            },
         ]
         rec = f"{prefix}-promote"
         priorities = [
@@ -11449,6 +9805,7 @@ def _matrix(
         ]
         payload = {
             "matrix_id": f"{campaign_id}-m1-promote",
+            "matrix_role": "promotion",
             "campaign_id": campaign_id,
             "evidence_snapshot_id": evidence_snapshot_id,
             "hypotheses": candidates,
@@ -11483,8 +9840,7 @@ def _matrix(
         control_knobs = knobs(steps=control_steps, **control_extra)
         # Drop lever defaults then re-apply champion levers on candidate.
         cand_knobs = knobs(steps=confirm_steps, **confirm_extra)
-        # HypothesisMatrix requires ≥5 arms; only control + recommended execute.
-        # Pad with monitor-only thrash placeholders so schema stays closed.
+        # A locked confirmation design has exactly its two executed arms.
         candidates = [
             {
                 "experiment": exp(
@@ -11505,47 +9861,6 @@ def _matrix(
                 ),
                 "evidence_uses": uses(),
                 "novelty": novelty(1, "confirm same knobs new seed"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-bounds",
-                    "Monitor-only pad: bounds thrash deferred while champion confirm is open.",
-                    knobs(
-                        grammar_completion_bounds=True,
-                        # Distinct knob signature vs confirm (schema uniqueness).
-                        steps=confirm_steps + 1000,
-                    ),
-                    "Schema pad — not executed while confirm is recommended.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(2, "confirm pad bounds"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-canvas",
-                    "Monitor-only pad: canvas thrash deferred while champion confirm is open.",
-                    knobs(
-                        compact_active_canvas=True,
-                        steps=confirm_steps + 1001,
-                    ),
-                    "Schema pad — not executed while confirm is recommended.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(3, "confirm pad canvas"),
-            },
-            {
-                "experiment": exp(
-                    f"{prefix}-both",
-                    "Monitor-only pad: combined thrash deferred while champion confirm is open.",
-                    knobs(
-                        grammar_completion_bounds=True,
-                        compact_active_canvas=True,
-                        steps=confirm_steps + 1002,
-                    ),
-                    "Schema pad — not executed while confirm is recommended.",
-                ),
-                "evidence_uses": uses(),
-                "novelty": novelty(4, "confirm pad both"),
             },
         ]
         rec = f"{prefix}-confirm"
@@ -11611,6 +9926,7 @@ def _matrix(
         ]
         payload = {
             "matrix_id": f"{campaign_id}-m1-confirm",
+            "matrix_role": "confirm",
             "campaign_id": campaign_id,
             "evidence_snapshot_id": evidence_snapshot_id,
             "hypotheses": candidates,
@@ -12000,6 +10316,7 @@ def _manifest(
     cycle_intent: str | None = None,
     formal_preflight_sha256: str | None = None,
     chunk_plan: Mapping[str, Any] | None = None,
+    continuation_grant: ResourceGrant | None = None,
 ) -> ExperimentCampaignV1:
     from slm_training.autoresearch.climb_policy import (
         load_climb_policy,
@@ -12220,6 +10537,7 @@ def _manifest(
             max_experiments=1,
             max_wall_minutes=stage_wall_minutes_for_role(pol, role),
             max_gpu_hours=_screening_max_gpu_hours(role=str(role)),
+            continuation_grant=continuation_grant,
         ),
         stopping_rules=(
             "Stop after the declared seeds finish or the wall cap is hit.",
@@ -12268,12 +10586,6 @@ def _manifest(
     )
 
 
-
-
-
-
-
-
 def run_cycle(
     *,
     cwd: Path,
@@ -12287,7 +10599,14 @@ def run_cycle(
     startup_commit: str | None = None,
     require_action_receipts: bool = True,
     extra_skip_slugs: frozenset[str] = frozenset(),
-) -> str:
+    continuation_grant: str | None = None,
+) -> str | dict[str, Any]:
+    from scripts.autotrain_cycle_execution import continuous_owner, resume_cycle
+
+    resumed = resume_cycle(cwd, root, loop_id, continuous_owner(globals()))
+    if resumed is not None:
+        return resumed
+
     from slm_training.autoresearch.climb_policy import (
         assert_cycle_cadence,
         cycle_role_for_index,
@@ -12303,9 +10622,7 @@ def run_cycle(
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
 
-    _integrate_origin_main(
-        cwd=cwd, root=root, loop_id=loop_id, deadline=deadline
-    )
+    _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
     if sync_git and startup_commit is not None:
         integrated = _git(
             "rev-parse",
@@ -12480,38 +10797,10 @@ def run_cycle(
     _load_dynamic_thrash_arms(root, loop_id)
     recent_exhausted = _recent_completed_nonpositive_slugs(root, pred)
     screening_primary = primary_for_role(policy, "screening")
-    screening_claim_class = str(
-        policy.defaults.get("claim_class_screening") or "diagnostic"
-    )
     current_eval_version = default_eval_version()
-    predecessor_generation = None
-    if pred:
-        pred_dir = root / pred
-        pred_delivery = _read_json(pred_dir / "sdlc_delivery.json")
-        pred_candidate = str(pred_delivery.get("candidate_id") or "")
-        pred_knobs = _load_experiment_knobs(pred_dir, pred_candidate)
-        if not pred_knobs:
-            pred_knobs = _matrix_experiment_knobs(
-                _read_json(pred_dir / "matrix-proposal.json"), pred_candidate
-            )
-        if pred_knobs:
-            predecessor_generation = pred_knobs.get("data_generation")
-    timeout_retired, selector_signal_sources = _sync_reproduced_timeout_retirements(
-        root,
-        loop_id,
-        pred,
-        policy=policy,
-        train_version=train_version,
-        eval_version=current_eval_version,
-        primary_metric=str(screening_primary["metric"]),
-        direction=str(screening_primary["direction"]),
-        claim_class=screening_claim_class,
-        data_generation=predecessor_generation,
-    )
     skip_slugs = (
         _skip_arm_slugs(queue_entries, integration_commit=integration)
         | recent_exhausted
-        | timeout_retired
         | extra_skip_slugs
         | _stagnation_skip_slugs(root, loop_id)
     )
@@ -12527,7 +10816,6 @@ def run_cycle(
                 include_causal_cap=False,
             )
             | recent_exhausted
-            | timeout_retired
             | extra_skip_slugs
             | _stagnation_skip_slugs(root, loop_id)
         )
@@ -12578,13 +10866,27 @@ def run_cycle(
             )
         else:
             cycle_intent = "screening"
+    from scripts.autotrain_controller_repair import resolve_repaired_data
+
+    resolved_data = resolve_repaired_data(
+        root=root,
+        loop_id=loop_id,
+        cwd=cwd,
+        train_version=train_version,
+        eval_version=current_eval_version,
+        intent=cycle_intent,
+    )
+    train_version, current_eval_version = (
+        resolved_data["train_version"],
+        resolved_data["eval_version"],
+    )
     saturation_state: dict[str, Any] | None = None
     if cycle_intent == "screening" and replay is None:
         saturation_state = _screening_saturation_state(
             root,
             loop_id,
             policy=policy,
-            excluded_slugs=timeout_retired | set(extra_skip_slugs),
+            excluded_slugs=set(extra_skip_slugs),
         )
         if saturation_state is not None:
             pending = list(saturation_state["pending_regimes"])
@@ -12605,15 +10907,11 @@ def run_cycle(
                     return parked
             elif pending:
                 selected = pending[0]
-                skip_slugs = (
-                    {
-                        slug
-                        for slug, _hypothesis, _extras in _all_screening_arm_bank()
-                        if slug != selected
-                    }
-                    | timeout_retired
-                    | set(extra_skip_slugs)
-                )
+                skip_slugs = {
+                    slug
+                    for slug, _hypothesis, _extras in _all_screening_arm_bank()
+                    if slug != selected
+                } | set(extra_skip_slugs)
                 print(
                     "SCREENING_SATURATION_RECOVERY "
                     f"streak={saturation_state['tie_streak']} "
@@ -12627,33 +10925,21 @@ def run_cycle(
                     f"streak={saturation_state['tie_streak']}",
                     flush=True,
                 )
+    screening_deficit = None
     if cycle_intent == "screening" and replay is None:
-        smoke_n, ss_report = _screening_n_report(policy)
-        if isinstance(ss_report, dict) and (
-            ss_report.get("must_generate") or int(smoke_n) <= 0
-        ):
+        from scripts.autotrain_pending import screening_deficit_report
+        smoke_n, ss_report = _screening_n_report(
+            policy, eval_version=current_eval_version
+        )
+        screening_deficit = screening_deficit_report(
+            smoke_n, ss_report, _screening_suite_records(current_eval_version),
+            automatic=policy.measurement.get("screening_smoke_n_mode") == "auto")
+        if screening_deficit is not None:
             print(
                 "SCREENING_N_DEFICIT "
-                f"smoke_n={smoke_n} n_min={ss_report.get('n_min')} "
-                f"binding={ss_report.get('binding_constraints')}",
+                f"smoke_n={smoke_n} n_min={screening_deficit.get('n_min')} "
+                f"binding={screening_deficit.get('binding_constraints')}",
                 flush=True,
-            )
-            _self_heal_rebuild_screening_eval(
-                cwd=cwd, root=root, loop_id=loop_id, campaign_id=pred
-            )
-            smoke_n, ss_report = _screening_n_report(policy)
-        if int(smoke_n) <= 0:
-            if not pred:
-                raise RuntimeError(
-                    "screening n infeasible (empty certified range); "
-                    "generate smoke records before the first cycle"
-                )
-            return _park_screening_n_deficit(
-                root=root,
-                loop_id=loop_id,
-                campaign_id=pred,
-                cycle_index=idx,
-                report=ss_report if isinstance(ss_report, dict) else {},
             )
     # When multi-seed thrash bank is empty but a retryable promote head still
     # exists (confirmed / promotion_inconclusive / harness_failure), do not hard
@@ -12662,9 +10948,7 @@ def run_cycle(
     # and every screening cycle raised bank-exhausted.
     if cycle_intent == "screening" and promoting_champion is None:
         leftover = _thrash_bank_open_slugs(recent_exhausted) - skip_slugs
-        heal_open = _selectable_process_arm(
-            root, loop_id, predecessor_campaign_id=pred
-        )
+        heal_open = _selectable_process_arm(root, loop_id, predecessor_campaign_id=pred)
         if (
             _terminal_park_on_exhaust()
             and pred
@@ -12994,6 +11278,13 @@ def run_cycle(
         "--notes",
         notes,
     ]
+    if continuation_grant is not None:
+        init.extend(["--continuation-grant", continuation_grant])
+    resolved_grant = (
+        ResourceGrant.model_validate_json(continuation_grant)
+        if continuation_grant is not None
+        else None
+    )
     if lineage_pred:
         init.extend(["--predecessor-campaign-id", lineage_pred])
     for evidence_root in _continuous_evidence_roots(root, loop_id, pred):
@@ -13060,10 +11351,6 @@ def run_cycle(
     if trace_paths:
         role_citations["prior_trace"] = trace_paths[0]
     eval_version = current_eval_version
-    if selector_signal_sources:
-        _persist_selector_harness_signal(
-            root, campaign_id, loop_id, selector_signal_sources
-        )
     # Load predecessor matrix feedback only for confirm/promote successors.
     # Thrash bank rotation is NOT a diagnosis successor of the last handoff
     # campaign: continuous pred is last *handoff* campaign, while hypothesize
@@ -13262,7 +11549,7 @@ def run_cycle(
             f"chunk_wall_s={promotion_chunk_plan['chunk_wall_seconds']:.0f}",
             flush=True,
         )
-    matrix = _matrix(
+    matrix_inputs = dict(
         campaign_id=campaign_id,
         evidence_snapshot_id=ev["snapshot_id"],
         cites=cites[:3],
@@ -13289,6 +11576,16 @@ def run_cycle(
         predecessor_campaign_id=pred,
         chunk_plan=promotion_chunk_plan,
     )
+    matrix = _matrix(**matrix_inputs)
+    if screening_deficit is not None:
+        from scripts.autotrain_pending import resolve_screening_matrix
+        matrix, pending = resolve_screening_matrix(matrix, matrix_inputs, screening_deficit,
+            context={"cwd": cwd, "root": root, "loop_id": loop_id, "policy": policy,
+                "resolved_data": resolved_data, "fitted_candidates": fitted_candidate_count
+                if confirm_levers is None and promote_levers is None else 1})
+        if pending is not None:
+            return pending
+        eval_version = current_eval_version = resolved_data["eval_version"]
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
         if isinstance(regime_payload, dict):
@@ -13333,6 +11630,13 @@ def run_cycle(
             f"campaign={campaign_id} stripped_ids={stripped_ids}",
             flush=True,
         )
+    if (cycle_intent == "screening" and replay is None and initialize_from
+        and fitted_candidate_count == 1 and saturation_state is None):
+        from scripts.autotrain_search import choose_matrix
+
+        matrix = choose_matrix(matrix, continuous_owner(globals()), root=root,
+            loop_id=loop_id, integration=integration, policy=policy)
+        rec_slug = _slug_from_candidate_id(matrix["recommended_experiment_id"]) or rec_slug
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
@@ -13494,6 +11798,7 @@ def run_cycle(
             commit=integration,
             role=role,
             policy=policy,
+            continuation_grant=resolved_grant,
         )
     arm_count = len({eid for eid in order if eid in by_id})
     # Promote path: formal preflight must be proved before train executes.
@@ -13589,499 +11894,62 @@ def run_cycle(
                 f"finalization_reserve_s={HARNESS_FINALIZATION_RESERVE_SECONDS}",
                 flush=True,
             )
-    seen: set[str] = set()
-    arm_exits: dict[str, int] = {}
-    arm_skipped: dict[str, dict[str, Any]] = {
-        row["arm_id"]: {"reason": row["reason"]} for row in multi_arm_skip
+    from slm_training.autoresearch.preflight.compiled_treatment import (
+        lock_driver_designs,
+    )
+
+    design_store = CampaignStore(campaign_id, root)
+    if cycle_intent == "screening" and resolved_data["successions"]:
+        design_store.append_event(
+            "data_successors_selected",
+            artifact_sha256=design_store.write_artifact(
+                "resolved_data_successors", resolved_data
+            ).stem,
+            idempotency_key="data-successors-selected",
+        )
+    primary = (
+        policy.promotion_primary if role == "promotion" else policy.screening_primary
+    )
+    endpoint = {
+        "kind": "denoising_loss"
+        if str(primary["metric"]).endswith("eval_nll")
+        else "decoded_quality",
+        "primary": dict(primary),
+        "policy": policy.identity_dict(),
+        "role": role,
     }
-    for eid in order:
-        if eid in seen or eid not in by_id:
-            continue
-        pending = []
-        pending_seen: set[str] = set()
-        for pending_id in order:
-            if (
-                pending_id in seen
-                or pending_id not in by_id
-                or pending_id in pending_seen
-            ):
-                continue
-            pending_seen.add(pending_id)
-            pending.append(pending_id)
-        remaining_seconds = max(0.0, deadline - time.monotonic())
-        pending_count = 1 if screening_multi else len(pending)
-        required_seconds = (
-            pending_count * arm_wall_minutes * 60.0
-            + HARNESS_FINALIZATION_RESERVE_SECONDS
-        )
-        # Epsilon after schedule-margin fit: never skip when remaining is
-        # within float/clock noise of the reserved budget.
-        if remaining_seconds + 1e-3 < required_seconds:
-            reason = "deadline_reserve"
-            store = CampaignStore(campaign_id, root)
-            for skipped_index, skipped_id in enumerate(pending):
-                detail = {
-                    "arm_id": skipped_id,
-                    "order_index": order.index(skipped_id),
-                    "reason": reason,
-                    "remaining_seconds": remaining_seconds,
-                    "required_seconds": required_seconds,
-                    "deadline": deadline,
-                    "pending_arm_count": len(pending),
-                    "skipped_index": skipped_index,
-                }
-                store.append_event(
-                    "arm_skipped",
-                    experiment_id=skipped_id,
-                    status="not_started",
-                    detail=detail,
-                )
-                arm_skipped[skipped_id] = detail
-            print(
-                "ARM_SKIPPED "
-                f"reason={reason} pending={len(pending)} "
-                f"remaining_s={remaining_seconds:.3f} required_s={required_seconds:.3f}",
-                flush=True,
-            )
-            break
-        seen.add(eid)
-        exp = json.loads(by_id[eid].read_text(encoding="utf-8"))
-        is_promote_arm = cycle_intent == "promote" and (
-            eid.endswith("-promote") or "-promote" in eid
-        )
-        prelocked = camp_dir / "manifests" / f"{eid}.json"
-        if eid in replay_manifest_paths:
-            man_path = replay_manifest_paths[eid]
-        elif screening_multi and eid == candidate_eid and prelocked.is_file():
-            man_path = prelocked
-        else:
-            man = _manifest(
-                campaign_id,
-                exp,
-                integration,
-                role=role,
-                policy=policy,
-                cycle_intent=cycle_intent,
-                formal_preflight_sha256=(
-                    promote_preflight_sha if is_promote_arm else None
-                ),
-                chunk_plan=promotion_chunk_plan,
-            )
-            man_path = camp_dir / "manifests" / f"{eid}.json"
-            man_path.parent.mkdir(parents=True, exist_ok=True)
-            man_path.write_text(man.model_dump_json(indent=2) + "\n", encoding="utf-8")
-        # soft-fail: ship gates may fail on fixture n
-        cmd = [
-            *ar,
-            "run",
-            "--campaign-id",
-            campaign_id,
-            "--experiment",
-            str(by_id[eid]),
-            "--campaign-manifest",
-            str(man_path),
-            "--execute",
-            "--experiment-wall-seconds",
-            f"{arm_wall_minutes * 60:.6f}",
-        ]
-        reuse = replay_manifests.get(eid, {}).get("train_reuse")
-        if reuse is not None:
-            cmd.extend(["--reuse-train-run", str(reuse["run_dir"])])
-            for lineage_path in reuse["manifest_paths"]:
-                cmd.extend(["--reuse-train-manifest", str(lineage_path)])
-            print(
-                "FROZEN_TRAIN_REUSE "
-                f"experiment={eid} source_run={reuse['run_dir']} "
-                f"lineage={len(reuse['manifest_paths'])}",
-                flush=True,
-            )
-        print("+", " ".join(cmd), flush=True)
-        stage = f"experiment:{eid}"
-        result = _stage_command(
-            cmd,
-            cwd=cwd,
-            deadline=_arm_execution_deadline(
-                cycle_deadline=deadline,
-                arm_wall_minutes=arm_wall_minutes,
-            ),
-            root=root,
-            loop_id=loop_id,
-            stage=stage,
-        )
-        if result.stdout:
-            print(
-                result.stdout,
-                end="" if result.stdout.endswith("\n") else "\n",
-                flush=True,
-            )
-        if result.stderr:
-            print(
-                result.stderr,
-                end="" if result.stderr.endswith("\n") else "\n",
-                file=sys.stderr,
-                flush=True,
-            )
-        if result.timed_out:
-            code = 124
-        elif result.outcome is ProcessOutcome.LAUNCH_FAILED:
-            code = 127
-        else:
-            code = int(result.returncode or 0)
-        arm_exits[eid] = int(code)
-        print(f"experiment {eid} exit={code}", flush=True)
-        # Teacher-forced NLL is cheap and independent of the decode-heavy
-        # quality eval: score it whenever a checkpoint exists, even when the
-        # quality eval crashed (2) or timed out (124).
-        _attach_screening_eval_nll(camp_dir / "runs" / eid, exit_code=int(code))
+    # Mandatory typed-design checks are distinct from advisory bank preflight.
+    # Failure is an operational/design blocker, never a measured model loss.
+    search_options = {}
+    if (cycle_intent == "screening" and replay is None and initialize_from
+        and not screening_multi and rec_slug and primary["metric"] == "smoke.eval_nll"
+        and (candidate_exp.get("intervention") or {}).get("kind", "mechanism") == "mechanism"):
+        from scripts.autotrain_search import manifest_options
 
-    promotion_chunks: dict[str, Any] | None = None
-    if promotion_chunk_plan is not None and seen:
-        _set_active_stage(root, loop_id, "promotion-chunks")
-        chunk_started = time.monotonic()
-        promotion_chunks = _run_promotion_eval_chunks(
-            cwd=cwd,
-            root=root,
-            loop_id=loop_id,
-            campaign_id=campaign_id,
-            camp_dir=camp_dir,
-            plan=promotion_chunk_plan,
-            experiment_paths={eid: by_id[eid] for eid in seen},
-            arm_order=list(dict.fromkeys(eid for eid in order if eid in seen)),
-        )
-        # Every chunk was its own bounded run (fresh MAX_RUN_SECONDS deadline,
-        # eval wall <= MAX_HARNESS_WALL_SECONDS); the cycle clock resumes where
-        # it paused so closeout stages keep the budget they had before.
-        deadline += time.monotonic() - chunk_started
-
-    _set_active_stage(root, loop_id, "diagnosis-and-handoff")
-    delivery = _phase_a_delivery(
-        cwd=cwd,
-        root=root,
-        loop_id=loop_id,
-        campaign_id=campaign_id,
-        primary_metric=effective_primary,
-        cycle_index=cycle,
-        role=role,
-        cycle_intent=cycle_intent,
-        arm_order=scheduled_order,
-        arm_seed=arm_seed,
-        deadline=deadline,
-        control_id=control_eid,
-        candidate_id=candidate_eid,
-        arm_exits=arm_exits,
-        arm_skipped=arm_skipped,
+        search_options = manifest_options(continuous_owner(globals()), store=design_store,
+            candidate=candidate_exp, integration=integration, policy=policy, slug=rec_slug)
+    locked_designs = lock_driver_designs(
+        design_store,
+        by_id,
+        control_eid,
+        [eid for eid in order if eid != control_eid],
+        endpoint=endpoint,
+        **search_options,
     )
-    # Keep execution completeness explicit in the handoff/result matrix.  A
-    # missing arm is a typed scheduling event, never an inferred model reject.
-    delivery = {
-        **delivery,
-        "arm_exits": arm_exits,
-        "arm_skipped": arm_skipped,
-    }
-    if promotion_chunks is not None:
-        delivery = _attach_promotion_chunks(delivery, promotion_chunks)
-    if screening_multi:
-        direction = str(role_primary.get("direction") or "increase")
-        scored: list[tuple[str, float, int]] = []
-        per_arm: dict[str, float | None] = {}
-        for eid in screening_candidate_ids:
-            metrics = _run_metrics(camp_dir, eid)
-            leaf = str(effective_primary).rsplit(".", 1)[-1]
-            val = metrics.get(effective_primary)
-            if val is None:
-                val = metrics.get(leaf)
-            per_arm[eid] = float(val) if isinstance(val, (int, float)) else None
-            if per_arm[eid] is None:
-                continue
-            scored.append(
-                (eid, float(per_arm[eid]), _arm_trainable_params(camp_dir, eid))
-            )
-        winner = None
-        if scored:
-            winner = select_best_by_primary_then_smallest(
-                scored, direction=direction  # type: ignore[arg-type]
-            )
-            ctrl_metrics = _run_metrics(camp_dir, control_eid)
-            ctrl_val = ctrl_metrics.get(effective_primary)
-            if ctrl_val is None:
-                ctrl_val = ctrl_metrics.get(str(effective_primary).rsplit(".", 1)[-1])
-            win_val = per_arm.get(winner)
-            min_eff = float(role_primary.get("minimum_effect") or 0.0)
-            beats = False
-            if isinstance(ctrl_val, (int, float)) and isinstance(win_val, (int, float)):
-                if direction == "decrease":
-                    beats = float(ctrl_val) - float(win_val) >= min_eff
-                else:
-                    beats = float(win_val) - float(ctrl_val) >= min_eff
-            if not beats:
-                winner = None
-        if winner:
-            candidate_eid = winner
-            delivery["candidate_id"] = winner
-        losers = [eid for eid in screening_candidate_ids if eid != winner]
-        _exhaust_screening_losers(
-            root=root,
-            loop_id=loop_id,
-            policy=policy,
-            matrix=matrix,
-            control_id=control_eid,
-            loser_ids=losers,
-            claim_class=claim_for_role,
-            primary_metric=effective_primary,
-            direction=direction,
-            train_version=train_version,
-            eval_version=eval_version,
-        )
-        delivery["multi_arm"] = {
-            "max_arms_per_cycle": int(multi_arm_cfg["max_arms_per_cycle"]),
-            "fitted_candidates": fitted_candidate_count,
-            "scheduled_candidates": list(screening_candidate_ids),
-            "constraint": multi_arm_constraint,
-            "selection_rule": selection_rule_locked,
-            "winner_id": winner,
-            "per_arm_primary": per_arm,
-            "size_skipped": multi_arm_skip,
-        }
-    if (
-        replay is not None
-        and set(arm_exits) == set(replay_manifests)
-        and all(code == 0 for code in arm_exits.values())
-        and delivery.get("measurement_complete") is True
-    ):
-        evidence = (
-            str(
-                (camp_dir / "campaign.json").relative_to(cwd)
-                if (camp_dir / "campaign.json").is_relative_to(cwd)
-                else camp_dir / "campaign.json"
-            ),
-            str(
-                (camp_dir / "sdlc_delivery.json").relative_to(cwd)
-                if (camp_dir / "sdlc_delivery.json").is_relative_to(cwd)
-                else camp_dir / "sdlc_delivery.json"
-            ),
-            *(
-                str(path.relative_to(cwd) if path.is_relative_to(cwd) else path)
-                for eid in sorted(arm_exits)
-                for path in (camp_dir / "manifests" / f"{eid}.json",)
-            ),
-        )
-        append_autotrain_action_receipt(
-            root,
-            AutotrainActionReceiptV1(
-                loop_id=loop_id,
-                campaign_id=replay["handoff"].campaign_id,
-                action_index=int(replay["action_index"]),
-                action_sha256=autotrain_action_sha256(replay["action"]),
-                action_kind="retry_measurement",
-                status="completed",
-                evidence_uris=evidence,
-                evidence=bind_autotrain_action_evidence(
-                    root,
-                    replay["handoff"],
-                    replay["action"],
-                    evidence,
-                ),
-            ),
-        )
-        print(
-            f"FROZEN_REPLAY_ACK source_campaign={replay['handoff'].campaign_id} "
-            f"successor_campaign={campaign_id}",
-            flush=True,
-        )
-    camp_dir = root / campaign_id
-    resolution: dict[str, Any] | None = None
-    if open_champion is not None:
-        resolution = _resolve_confirm_result(
-            root=root,
-            loop_id=loop_id,
-            entry=open_champion,
-            delivery=delivery,
-            campaign_id=campaign_id,
-            cycle_index=cycle,
-        )
-    elif promoting_champion is not None:
-        # Export LeverProof certificate from promote run metrics (fail closed).
-        cert_err: str | None = None
-        if (
-            promote_formal_status == "proved"
-            or _formal_preflight_status(camp_dir) == "proved"
-        ):
-            control_id = str(delivery.get("control_id") or "")
-            candidate_id = str(delivery.get("candidate_id") or "")
-            if not control_id or not candidate_id:
-                # Infer from runs if Phase A ids missing.
-                runs = camp_dir / "runs"
-                if runs.is_dir():
-                    names = sorted(p.name for p in runs.iterdir() if p.is_dir())
-                    for n in names:
-                        if n.endswith("-control"):
-                            control_id = control_id or n
-                        if "-promote" in n or n.endswith("-confirm"):
-                            candidate_id = n
-                    if not candidate_id and len(names) >= 2:
-                        candidate_id = names[-1]
-                    if not control_id and names:
-                        control_id = names[0]
-            # Prefer matrix arm ids when delivery omitted promote.
-            if not candidate_id:
-                for eid in order:
-                    if "-promote" in eid:
-                        candidate_id = eid
-                        break
-            if not control_id:
-                for eid in order:
-                    if eid.endswith("-control"):
-                        control_id = eid
-                        break
-            if (
-                control_id
-                and candidate_id
-                and _run_has_usable_metrics(camp_dir, candidate_id)
-            ):
-                _cert_path, cert_err = export_promote_metric_certificate(
-                    camp_dir=camp_dir,
-                    campaign_id=campaign_id,
-                    control_id=control_id,
-                    candidate_id=candidate_id,
-                    delivery=delivery,
-                    deadline=deadline,
-                    root=root,
-                    loop_id=loop_id,
-                )
-                if cert_err:
-                    print(f"PROMOTE_CERT_EXPORT_FAIL {cert_err}", flush=True)
-                    delivery = {
-                        **delivery,
-                        "reasons": list(delivery.get("reasons") or []) + [cert_err],
-                    }
-            elif control_id and candidate_id:
-                cert_err = "promote_cert_incomplete_metrics:ss=None parse=None"
-                print(f"PROMOTE_CERT_EXPORT_FAIL {cert_err}", flush=True)
-                delivery = {
-                    **delivery,
-                    "control_id": control_id,
-                    "candidate_id": candidate_id,
-                    "reasons": list(delivery.get("reasons") or []) + [cert_err],
-                    "harness_failure": True,
-                    "measurement_complete": False,
-                }
-            else:
-                cert_err = "promote_cert_missing_run_ids"
-                delivery = {
-                    **delivery,
-                    "reasons": list(delivery.get("reasons") or []) + [cert_err],
-                    "harness_failure": True,
-                    "measurement_complete": False,
-                }
-            # Attach arm exits for harness classification.
-            delivery = {
-                **delivery,
-                "control_id": control_id or delivery.get("control_id"),
-                "candidate_id": candidate_id or delivery.get("candidate_id"),
-                "arm_exits": arm_exits,
-            }
-        resolution = _resolve_promotion_result(
-            root=root,
-            loop_id=loop_id,
-            entry=promoting_champion,
-            delivery=delivery,
-            campaign_id=campaign_id,
-            cycle_index=cycle,
-            camp_dir=camp_dir,
-            formal_preflight_status=promote_formal_status
-            or _formal_preflight_status(camp_dir),
-            arm_exits=arm_exits,
-            cert_err=cert_err,
-        )
-    else:
-        if replayed_confirmation is not None:
-            resolution = _resolve_confirm_result(
-                root=root,
-                loop_id=loop_id,
-                entry=replayed_confirmation,
-                delivery=delivery,
-                campaign_id=campaign_id,
-                cycle_index=cycle,
-            )
-        # Only screening thrash quality-held wins enqueue (not promotion thrash noise).
-        elif _screening_enqueue_allowed(cycle_intent=cycle_intent, replay=replay):
-            resolution = _enqueue_champion(
-                root=root,
-                loop_id=loop_id,
-                delivery=delivery,
-                camp_dir=camp_dir,
-            )
-    _write_cycle_handoff(
-        root=root,
-        loop_id=loop_id,
-        campaign_id=campaign_id,
-        cycle_index=cycle,
-        upstream_commit=upstream,
-        integration_commit=integration,
-        role=role,
-        cycle_intent=cycle_intent,
-        primary_metric=effective_primary,
-        matrix=matrix,
-        delivery=delivery,
-        resolution=resolution,
-        formal_status=promote_formal_status,
-        skip_slugs=(
-            skip_slugs
-            | ({rec_slug} if saturation_state is not None and rec_slug else set())
-        ),
-        cwd=cwd,
-    )
-    try:
-        _run(
-            [
-                *ar,
-                "status",
-                "--loop-id",
-                loop_id,
-                "--matrix",
-                "--last",
-                "5",
-            ],
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="campaign-status",
-        )
-    finally:
-        _clear_active_stage(root, loop_id)
-    # Measured heal process arms must retire: they outrank OFAT selection and
-    # otherwise rematch the same fixture-n incomplete win forever.
-    try:
-        cand_id = str((delivery or {}).get("candidate_id") or "")
-        arm_exits = (delivery or {}).get("arm_exits") or {}
-        if (
-            _HEAL_RESUME_SLUG in cand_id
-            and isinstance(arm_exits, Mapping)
-            and arm_exits
-            and all(int(v) == 0 for v in arm_exits.values())
-        ):
-            _retire_i10_heal_arm(
-                root,
-                loop_id,
-                reason=f"complete_measurement:{campaign_id}",
-            )
-    except Exception as exc:  # noqa: BLE001 — retirement never blocks closeout
-        print(f"HEAL_RESUME_RETIRE_WARN err={exc!r}", flush=True)
-    print(
-        f"CYCLE_COMPLETE {campaign_id} role={role} intent={cycle_intent} "
-        f"positive={delivery['positive']}",
-        flush=True,
-    )
-    return campaign_id
+    from scripts.autotrain_cycle_prepare import capture_inputs, prepare_cycle
+    from scripts.autotrain_cycle_execution import resume_cycle
 
-
-def _parse_skip_slugs(raw: str) -> frozenset[str]:
-    """Parse a comma-separated ``--skip-slugs`` value into a slug set."""
-    return frozenset(slug.strip() for slug in raw.split(",") if slug.strip())
+    prepare_cycle(
+        cwd, root, continuous_owner(globals()), capture_inputs(locals()),
+        spent_seconds=MAX_RUN_SECONDS - max(0.0, deadline - time.monotonic()),
+    )
+    return resume_cycle(cwd, root, loop_id, continuous_owner(globals()), deadline)
 
 
 def main(argv: list[str] | None = None) -> int:
+    from scripts.autotrain_cycle_execution import continuous_owner, cycle_event_ids
+    from scripts.autotrain_cycle_finalize import closeout_driver
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--loop-id", default="continuous-openui-local")
     parser.add_argument(
@@ -14098,6 +11966,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--train-version", default="wf_smoke_v2")
     parser.add_argument("--steps", type=int, default=20)
+    parser.add_argument("--continuation-grant", help="Explicit logical ResourceGrant JSON; bounded invocations remain capped")
     parser.add_argument(
         "--objective",
         default=(
@@ -14159,6 +12028,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.max_cycles == 0 and not args.supervised
         else range(1, 2 if args.supervised else max(1, args.max_cycles) + 1)
     )
+    yielded = False
     try:
         for pass_no in passes:
             total = (
@@ -14169,9 +12039,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"=== continuous cycle pass {pass_no}/{total} ===", flush=True)
             try:
                 _before_cycle, before_campaign = _latest_cycle(root, args.loop_id)
+                completion_boundary = (cwd, cycle_event_ids(root, args.loop_id))
                 _receipts_path = root / "loops" / args.loop_id / "heal_receipts.jsonl"
-                before_receipts = len(_receipts_path.read_text(encoding="utf-8").splitlines()) if _receipts_path.is_file() else 0
-                run_cycle(
+                before_receipts = (
+                    len(_receipts_path.read_text(encoding="utf-8").splitlines())
+                    if _receipts_path.is_file()
+                    else 0
+                )
+                cycle_result = run_cycle(
+                    continuation_grant=args.continuation_grant,
                     cwd=cwd,
                     root=root,
                     loop_id=args.loop_id,
@@ -14184,15 +12060,31 @@ def main(argv: list[str] | None = None) -> int:
                     require_action_receipts=args.supervised,
                     extra_skip_slugs=extra_skip_slugs,
                 )
+                if isinstance(cycle_result, dict):
+                    from scripts.autotrain_pending import publish_pending
+                    publish_pending(root, args.loop_id, cycle_result)
+                    yielded = True
+                    return 10
                 pass_outcome = _record_pass_outcome(
-                    root=root, loop_id=args.loop_id, before_campaign=before_campaign,
+                    root=root,
+                    loop_id=args.loop_id,
+                    before_campaign=before_campaign,
                     before_receipts=before_receipts,
+                    completion_boundary=completion_boundary,
                 )
                 print(f"PASS_OUTCOME {pass_outcome}", flush=True)
                 if pass_outcome == _STALL_FINGERPRINT:
-                    # Typed park already written (state=BLOCKED); exit
-                    # non-zero so the supervisor's governed backoff applies.
-                    return _STALL_EXIT_CODE
+                    # Typed park already written (state=BLOCKED). That is a
+                    # status, never a process instruction: dispatch the same
+                    # durable repair path and keep the bounded driver alive.
+                    self_heal_unblock_loop(
+                        cwd=cwd,
+                        root=root,
+                        loop_id=args.loop_id,
+                        integration_commit=code_sha,
+                    )
+                    time.sleep(1)
+                    continue
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -14209,9 +12101,14 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 try:
                     pass_outcome = _record_pass_outcome(
-                        root=root, loop_id=args.loop_id,
-                        before_campaign=before_campaign if "before_campaign" in locals() else None,
-                        before_receipts=before_receipts if "before_receipts" in locals() else 0,
+                        root=root,
+                        loop_id=args.loop_id,
+                        before_campaign=before_campaign
+                        if "before_campaign" in locals()
+                        else None,
+                        before_receipts=before_receipts
+                        if "before_receipts" in locals()
+                        else 0,
                         typed_action=bool(report.get("hard_pending")),
                         reason=repr(exc)[:300],
                     )
@@ -14220,7 +12117,14 @@ def main(argv: list[str] | None = None) -> int:
                     pass_outcome = "unclassified"
                 print(f"PASS_OUTCOME {pass_outcome}", flush=True)
                 if pass_outcome == _STALL_FINGERPRINT:
-                    return _STALL_EXIT_CODE
+                    self_heal_unblock_loop(
+                        cwd=cwd,
+                        root=root,
+                        loop_id=args.loop_id,
+                        integration_commit=code_sha,
+                    )
+                    time.sleep(1)
+                    continue
                 # Legacy string heal for bank/soft identity / document / residual.
                 heal_kind = _self_heal_cycle_error(
                     root=root,
@@ -14245,7 +12149,6 @@ def main(argv: list[str] | None = None) -> int:
                             in {
                                 "document_closeout",
                                 "dirty_tree_closeout",
-                                "thrash_timeout_repair_bypass",
                                 "thrash_bank_compose",
                                 "bank_exhaust_compose",
                             }
@@ -14277,7 +12180,10 @@ def main(argv: list[str] | None = None) -> int:
                     cycle_index=cycle_index,
                 )
                 if report.get("hard_pending"):
-                    return 2
+                    # A hard blocker queues diagnosis/repair; it must not
+                    # terminate the controller that owns the recovery state.
+                    time.sleep(1)
+                    continue
                 # Soft-class exceptions that still could not be healed: exit 0 so
                 # the supervisor restarts after a fresh unblock, without BLOCKED.
                 if _exception_is_soft_continuous(exc):
@@ -14286,33 +12192,17 @@ def main(argv: list[str] | None = None) -> int:
                     time.sleep(1)
                     continue
                 if args.supervised or count >= 3:
-                    return 2
+                    # Repeated identity is an escalation/backoff signal, not
+                    # permission to kill the harness. The supervisor or the
+                    # next bounded pass can consume the durable repair state.
+                    time.sleep(1)
+                    continue
                 time.sleep(1)
                 continue
         return 0
     finally:
-        # WP-3 closeout: refresh the durable evidence store (guarded — the
-        # sync script is concurrent work and may not exist; failure only logs).
-        try:
-            sync_script = cwd / "scripts" / "sync_evidence_store.py"
-            if os.path.exists(sync_script):
-                proc = subprocess.run(  # noqa: S603 — repo-owned script
-                    [sys.executable, str(sync_script)],
-                    cwd=cwd,
-                    timeout=120,
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                )
-                print(f"EVIDENCE_STORE_SYNC rc={proc.returncode}", flush=True)
-        except Exception as sync_exc:  # noqa: BLE001 — closeout never raises
-            print(f"EVIDENCE_STORE_SYNC_WARN {sync_exc!r}", flush=True)
-        try:
-            owned_kind = _self_heal_loop_owned_generated_dirt(cwd=cwd)
-            if owned_kind:
-                print(f"SELF_HEAL_LOOP_OWNED_DIRT closeout={owned_kind}", flush=True)
-        except Exception as owned_exc:  # noqa: BLE001 — closeout never raises
-            print(f"SELF_HEAL_LOOP_OWNED_DIRT_WARN {owned_exc!r}", flush=True)
+        if not yielded:
+            closeout_driver(continuous_owner(globals()), cwd, root, args.loop_id)
         try:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
         except OSError:

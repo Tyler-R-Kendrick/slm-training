@@ -4,21 +4,25 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     Field,
     StrictInt,
     field_validator,
+    model_serializer,
     model_validator,
 )
 
-from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.formal.bound_ast import REGISTERED_BOUND_AST_IDS
+from .schema_base import HarnessFamily as HarnessFamily, StrictModel as StrictModel, utc_now as utc_now
+from .schema_base import CampaignBudget as CampaignBudget
+from .autotrain_actions import (
+    AutotrainActionV1 as AutotrainActionV1,
+    AutotrainActionEvidenceV1 as AutotrainActionEvidenceV1,
+    AutotrainActionReceiptV1 as AutotrainActionReceiptV1,
+)
 
 BOUND_AST_ID_PLACEHOLDERS: frozenset[str] = REGISTERED_BOUND_AST_IDS
 
@@ -31,23 +35,6 @@ RmInterpretationStatus = Literal[
     "uninterpreted",
     "not_applicable",
 ]
-
-HarnessFamily = Literal[
-    "autoresearch",
-    "annotations",
-    "distill",
-    "experiments",
-    "model_build",
-    "preference",
-    "quality",
-    "rl",
-    "test_data",
-    "train_data",
-]
-
-
-def utc_now() -> str:
-    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 _EVALUATION_COUNTERS = (
@@ -212,18 +199,6 @@ def evaluation_measurement_incomplete(metrics: dict[str, float]) -> bool:
     """Return whether current evaluation evidence is partial or underspecified."""
 
     return bool(evaluation_completeness_failures(metrics))
-
-
-class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-
-class CampaignBudget(StrictModel):
-    max_experiments: int = Field(default=12, ge=1, le=1000)
-    max_gpu_hours: float = Field(default=0.0, ge=0)
-    # Historical artifacts used longer declared walls. Readers accept those
-    # records; every execution surface clamps new work to MAX_RUN_MINUTES.
-    max_wall_minutes: float = Field(default=float(MAX_RUN_MINUTES), gt=0, le=60.0)
 
 
 DEFAULT_ALLOWED_KNOBS = frozenset(
@@ -1060,12 +1035,18 @@ class ExperimentSpec(StrictModel):
     knobs: ExperimentKnobs
     formal_claims: tuple[FormalClaimV1, ...] = ()
     parent_experiment_id: str | None = None
+    hypothesis_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    intervention: dict[str, Any] | None = None
+    planned_resource_totals: tuple[Any, Any] | None = None
     requires_rl: bool = False
     rl_readiness_report: str | None = None
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
     def validate_change(self) -> ExperimentSpec:
+        from .experiment_identity import validate_intervention_resources
+
+        validate_intervention_resources(self.intervention, self.planned_resource_totals)
         if not self.knobs.model_dump(exclude_none=True):
             raise ValueError("experiment must change at least one allowlisted knob")
         if self.requires_rl and not self.rl_readiness_report:
@@ -1074,6 +1055,13 @@ class ExperimentSpec(StrictModel):
         if len(template_ids) != len(set(template_ids)):
             raise ValueError("formal claim template identifiers must be unique")
         return self
+
+
+    @model_serializer(mode="wrap")
+    def serialize_declared_identity(self, handler):
+        from .experiment_identity import serialize_declared_fields
+
+        return serialize_declared_fields(self, handler, ("hypothesis_id", "intervention", "planned_resource_totals"))
 
 
 class EvidenceUse(StrictModel):
@@ -1251,49 +1239,6 @@ class NextRunPriorityV1(StrictModel):
         return self
 
 
-class AutotrainActionV1(StrictModel):
-    """One evidence-bound action for the agent supervisor between cycles."""
-
-    schema_version: Literal["AutotrainActionV1"] = "AutotrainActionV1"
-    kind: Literal[
-        "stop_campaign",
-        "repair_harness",
-        "repair_formal",
-        "rebuild_data",
-        "document",
-        "deliver_stack",
-        "retry_measurement",
-        "next_experiment",
-        "monitor",
-    ]
-    owner: Literal[
-        "autotrain",
-        "improve-openui-harnesses",
-        "improve-lean-optimums",
-        "synthesis-feedback",
-        "documenting-experiment-results",
-        "sdlc",
-    ]
-    reason: str = Field(min_length=1)
-    evidence_ids: tuple[str, ...] = Field(min_length=1)
-    harness_family: HarnessFamily | None = None
-    frozen_manifest_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
-
-    @model_validator(mode="after")
-    def validate_harness_action(self) -> AutotrainActionV1:
-        if self.kind == "repair_harness" and self.harness_family is None:
-            raise ValueError("repair_harness action requires harness_family")
-        if self.kind != "repair_harness" and self.harness_family is not None:
-            raise ValueError("harness_family is only valid for repair_harness")
-        if self.kind not in {"repair_harness", "retry_measurement"} and (
-            self.frozen_manifest_sha256 is not None
-        ):
-            raise ValueError(
-                "frozen_manifest_sha256 is only valid for repair/retry actions"
-            )
-        return self
-
-
 class RegimeExhaustedVerdictV1(StrictModel):
     """Typed terminal verdict: the legal screening-arm domain is empty.
 
@@ -1364,38 +1309,6 @@ class AutotrainCycleHandoffV1(StrictModel):
         return self
 
 
-class AutotrainActionEvidenceV1(StrictModel):
-    """Content identity for one durable action-receipt evidence item."""
-
-    uri: str = Field(min_length=1)
-    kind: Literal["git_commit", "repo_file", "campaign_artifact"]
-    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-
-
-class AutotrainActionReceiptV1(StrictModel):
-    """Append-only evidence that a supervisor executed one handoff action."""
-
-    schema_version: Literal["AutotrainActionReceiptV1"] = "AutotrainActionReceiptV1"
-    loop_id: str = Field(min_length=1)
-    campaign_id: str = Field(min_length=1)
-    action_index: int = Field(ge=0)
-    action_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    action_kind: str = Field(min_length=1)
-    status: Literal["completed", "blocked"]
-    evidence_uris: tuple[str, ...] = Field(min_length=1)
-    evidence: tuple[AutotrainActionEvidenceV1, ...] = ()
-    recorded_at: str = Field(default_factory=utc_now)
-
-    @model_validator(mode="after")
-    def validate_evidence_identity(self) -> AutotrainActionReceiptV1:
-        if (
-            self.evidence
-            and tuple(item.uri for item in self.evidence) != self.evidence_uris
-        ):
-            raise ValueError("receipt evidence identities must match evidence_uris")
-        return self
-
-
 class AutotrainLoopStateV1(StrictModel):
     """Small resumable state and heartbeat for one supervised loop."""
 
@@ -1431,7 +1344,8 @@ class HypothesisMatrix(StrictModel):
     matrix_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     campaign_id: str
     evidence_snapshot_id: str
-    hypotheses: tuple[HypothesisCandidate, ...] = Field(min_length=5)
+    matrix_role: Literal["search", "screen", "confirm", "promotion"] = "search"
+    hypotheses: tuple[HypothesisCandidate, ...] = Field(min_length=2)
     recommended_experiment_id: str
     selection_rationale: str = Field(min_length=12)
     predecessor_matrix_id: str | None = None
@@ -1445,6 +1359,9 @@ class HypothesisMatrix(StrictModel):
 
     @model_validator(mode="after")
     def validate_distinct_hypotheses(self) -> HypothesisMatrix:
+        from .experiment_identity import validate_matrix_role
+
+        validate_matrix_role(self.matrix_role, len(self.hypotheses))
         experiments = [item.experiment for item in self.hypotheses]
         ids = [item.experiment_id for item in experiments]
         if len(ids) != len(set(ids)):
@@ -1496,6 +1413,13 @@ class HypothesisMatrix(StrictModel):
                     "highest-ranked experiment priority must match the recommendation"
                 )
         return self
+
+
+    @model_serializer(mode="wrap")
+    def serialize_declared_role(self, handler):
+        from .experiment_identity import serialize_declared_fields
+
+        return serialize_declared_fields(self, handler, ("matrix_role",))
 
 
 class HypothesisFeedback(StrictModel):
