@@ -84,9 +84,15 @@ def _run_arm(journal, continuous, cwd, deadline):
     )
     return_attempts(store, eid, attempts, code)
     if code == 10:
-        outcome = yielded_outcome_since(store, before, eid, arm["manifest_digest"])
+        try:
+            outcome = yielded_outcome_since(store, before, eid, arm["manifest_digest"])
+        except ValueError:
+            # Logical-grant exhaustion is a terminal scoped disposition, not
+            # an invalid yield. Preserve it for the controller's repair/wait
+            # path instead of converting it into a generic driver crash.
+            outcome = _new_outcome(store, before, eid, arm["manifest_digest"])
         if not is_continuation_pending(outcome):
-            raise ValueError("driver exit 10 lacks a valid current pending outcome")
+            return accept_arm(journal, continuous, eid, outcome, code)
         previous = state.get("last_yield")
         if previous is not None:
             old = _pending_stage(ExperimentOutcome.model_validate(previous)) or {}
@@ -100,9 +106,6 @@ def _run_arm(journal, continuous, cwd, deadline):
 
 
 def _budget_pending(journal, deadline):
-    grant = journal.store.load_campaign().budget.continuation_grant
-    if grant and journal.state["attempt"] >= grant.max_attempts:
-        return journal.pending("driver_total_attempts_exhausted", capability=True)
     reserve = HARNESS_FINALIZATION_RESERVE_SECONDS * (
         3 if journal.state["phase"] == "arms" else 1
     )
