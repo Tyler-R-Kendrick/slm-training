@@ -9,11 +9,11 @@ import os
 import statistics
 import tempfile
 from collections import Counter
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from slm_training.harness_core.lineage.store import utc_now as _utc_now
 
 
 SCHEMA_VERSION = 2
@@ -57,10 +57,6 @@ class RunInsightSubmission(BaseModel):
     response_id: str | None = Field(default=None, max_length=200)
     model: str | None = Field(default=None, max_length=200)
     usage: dict[str, Any] = Field(default_factory=dict)
-
-
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:

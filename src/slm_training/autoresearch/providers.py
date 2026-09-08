@@ -95,10 +95,10 @@ class FixtureResearchProvider:
 
 
 class AgentHypothesisProvider:
-    """Load a coding-agent-authored hypothesis matrix without executing code."""
+    """Import an artifact, or invoke an explicitly granted isolated executor."""
 
-    def __init__(self, matrix_path: Path | str) -> None:
-        self.matrix_path = Path(matrix_path)
+    def __init__(self, matrix_path: Path | str, *, executor=None) -> None:
+        self.matrix_path, self.executor = Path(matrix_path), executor
 
     def propose(
         self,
@@ -107,9 +107,8 @@ class AgentHypothesisProvider:
         sources: list[ResearchSource],
         feedback: tuple[HypothesisFeedback, ...] = (),
     ) -> HypothesisProviderResult:
-        matrix = HypothesisMatrix.model_validate_json(
-            self.matrix_path.read_text(encoding="utf-8")
-        )
+        from .search.proposals import load_or_execute_matrix
+        matrix = HypothesisMatrix.model_validate(load_or_execute_matrix(self.matrix_path, self.executor, campaign, evidence, sources, feedback))
         if feedback:
             feedback_ids = tuple(item.feedback_id for item in feedback)
             predecessor_ids = {item.matrix_id for item in feedback}

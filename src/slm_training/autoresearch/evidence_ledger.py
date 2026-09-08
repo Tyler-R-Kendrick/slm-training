@@ -770,34 +770,15 @@ def rank_arms_by_evidence(
     staleness_decay: float = STALENESS_DECAY,
     staleness_floor: float = STALENESS_FLOOR,
     histories: Mapping[str, Sequence[str]] | None = None,
+    search_identity: Any = None,
+    search_effects: Sequence[Any] = (),
 ) -> list[str]:
-    """Deterministic evidence ranking of candidate slugs.
+    """UCB over compatible comparisons; legacy aggregates remain history only."""
+    from .search.evidence import rank_compatible
 
-    Sort key mirrors ``soft_rank_slugs``: residual boost lexicographically
-    dominates, then the posterior UCB, then rotation order, then slug.
-    """
-    boosts = residual_boosts or {}
-    live = live_stats or {}
-    rotation = {slug: idx for idx, slug in enumerate(rotation_order or candidates)}
-
-    def key(slug: str) -> tuple[float, float, int, str]:
-        n, mean, m2 = _arm_sufficient_stats(
-            ledger_arms.get(slug),
-            live.get(slug),
-            eval_key,
-            staleness_decay=staleness_decay,
-            staleness_floor=staleness_floor,
-            histories=histories,
-        )
-        posterior = arm_posterior(n=n, mean=mean, m2=m2, prior_scale=prior_scale)
-        return (
-            -float(boosts.get(slug, 0.0)),
-            -posterior.ucb(exploration_c),
-            rotation.get(slug, 10_000),
-            slug,
-        )
-
-    return sorted(dict.fromkeys(candidates), key=key)
+    return rank_compatible(candidates, posterior=arm_posterior, identity=search_identity,
+        effects=search_effects, exploration_c=exploration_c, prior_scale=prior_scale,
+        rotation_order=rotation_order)
 
 
 def pick_evidence_ranked_slug(

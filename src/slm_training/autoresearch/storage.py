@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import csv
 import fcntl
 import hashlib
 import json
 import os
 import subprocess
-import tempfile
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,6 +39,7 @@ from slm_training.autoresearch.experiment_campaign import (
 )
 from slm_training.lineage.records import canonical_json
 from slm_training.levers import MAX_RUN_SECONDS
+from slm_training.harness_core.checkpoint_publication import controller_artifact_publication
 
 _OUTCOME_BOUNDARY_EVENTS = frozenset(
     {
@@ -62,15 +61,17 @@ _PREREQUISITE_ACTION_KINDS = frozenset(
 )
 _EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
 _REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
-_DATA_EVIDENCE_NAMES = frozenset(
-    {"data_manifest.json", "quality_report.json", "synthesis_feedback.json"}
-)
 _MATRIX_CELL_MAX_CHARS = 240
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def autotrain_action_sha256(action: AutotrainActionV1) -> str:
-    return _sha(action.model_dump(mode="json"))
+    payload = action.model_dump(mode="json")
+    # Preserve pre-extension receipt identities; missing fields assert nothing.
+    for field in ("blocker_code", "unmet_predicate", "required_capability"):
+        if payload[field] is None:
+            payload.pop(field)
+    return _sha(payload)
 
 
 def autotrain_action_is_execution(action: AutotrainActionV1) -> bool:
@@ -97,16 +98,21 @@ def autotrain_loop_state_lock(root: Path | str, loop_id: str) -> Iterator[None]:
 def append_autotrain_action_receipt(
     root: Path | str, receipt: AutotrainActionReceiptV1
 ) -> Path:
+    if receipt.action_kind == "rebuild_data":
+        from slm_training.autoresearch.action_dependencies import require_data_receipt
+
+        require_data_receipt(root, receipt)
     path = Path(root) / "loops" / receipt.loop_id / "action_receipts.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     with autotrain_loop_state_lock(root, receipt.loop_id):
         lock_fd = os.open(path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR, 0o644)
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_EX)
-            with path.open("a", encoding="utf-8") as stream:
-                stream.write(receipt.model_dump_json() + "\n")
-                stream.flush()
-                os.fsync(stream.fileno())
+            with controller_artifact_publication(path):
+                with path.open("a", encoding="utf-8") as stream:
+                    stream.write(receipt.model_dump_json() + "\n")
+                    stream.flush()
+                    os.fsync(stream.fileno())
         finally:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             os.close(lock_fd)
@@ -173,8 +179,9 @@ def _refresh_loop_state_after_receipt(
     )
     tmp = state_path.with_suffix(".json.tmp")
     try:
-        tmp.write_text(updated.model_dump_json(indent=2) + "\n", encoding="utf-8")
-        tmp.replace(state_path)
+        with controller_artifact_publication(state_path):
+            tmp.write_text(updated.model_dump_json(indent=2) + "\n", encoding="utf-8")
+            tmp.replace(state_path)
     except OSError:
         try:
             tmp.unlink()
@@ -253,10 +260,11 @@ def _file_evidence(
         raise ValueError(f"{action.kind} evidence must be a Git commit")
     if action.kind == "stop_campaign" and kind != "campaign_artifact":
         raise ValueError("stop_campaign evidence must be a campaign artifact")
-    if action.kind == "rebuild_data" and path.name not in _DATA_EVIDENCE_NAMES:
-        raise ValueError(
-            "rebuild_data evidence must be a data manifest or quality/feedback report"
-        )
+    if action.kind == "rebuild_data":
+        from slm_training.data.readiness_receipt import validate_data_action_evidence
+
+        validate_data_action_evidence(CampaignStore(handoff.campaign_id, root), handoff,
+                                     autotrain_action_sha256(action), path)
     if action.kind == "document":
         if kind != "repo_file":
             raise ValueError("document evidence must be tracked in the repository")
@@ -293,21 +301,26 @@ def _receipt_satisfies_action(
     action: AutotrainActionV1,
     receipt: AutotrainActionReceiptV1,
 ) -> bool:
-    if not receipt.evidence or receipt.action_kind != action.kind:
+    if (not receipt.evidence or receipt.action_kind != action.kind
+            or receipt.campaign_id != handoff.campaign_id or receipt.loop_id != handoff.loop_id
+            or receipt.action_sha256 != autotrain_action_sha256(action)):
+        return False
+    if receipt.status == "superseded":
         return False
     try:
         current = bind_autotrain_action_evidence(
             root, handoff, action, receipt.evidence_uris
         )
-    except (OSError, subprocess.SubprocessError, ValueError):
+    except (OSError, subprocess.SubprocessError, KeyError, TypeError, ValueError):
         return False
     if current != receipt.evidence:
         return False
-    if action.kind not in _EXECUTION_ACTION_KINDS:
-        return True
-    if action.kind != "retry_measurement":
-        return False
-    return _retry_measurement_evidence_is_complete(root, handoff, receipt)
+    return action.kind not in _EXECUTION_ACTION_KINDS or (
+        action.kind == "retry_measurement"
+        and _retry_measurement_evidence_is_complete(root, handoff, receipt)
+    )
+
+
 
 
 def _retry_measurement_evidence_is_complete(
@@ -331,10 +344,16 @@ def _retry_measurement_evidence_is_complete(
     if any(path is None for path in paths):
         return False
     evidence_paths = tuple(path for path in paths if path is not None)
-    campaign_paths = tuple(path for path in evidence_paths if path.name == "campaign.json")
-    delivery_paths = tuple(path for path in evidence_paths if path.name == "sdlc_delivery.json")
+    campaign_paths = tuple(
+        path for path in evidence_paths if path.name == "campaign.json"
+    )
+    delivery_paths = tuple(
+        path for path in evidence_paths if path.name == "sdlc_delivery.json"
+    )
     manifest_paths = tuple(
-        path for path in evidence_paths if path.suffix == ".json" and path.parent.name == "manifests"
+        path
+        for path in evidence_paths
+        if path.suffix == ".json" and path.parent.name == "manifests"
     )
     if len(campaign_paths) != 1 or len(delivery_paths) != 1 or len(manifest_paths) != 2:
         return False
@@ -347,7 +366,9 @@ def _retry_measurement_evidence_is_complete(
     try:
         campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
         delivery = json.loads(delivery_path.read_text(encoding="utf-8"))
-        manifests = tuple(json.loads(path.read_text(encoding="utf-8")) for path in manifest_paths)
+        manifests = tuple(
+            json.loads(path.read_text(encoding="utf-8")) for path in manifest_paths
+        )
     except (OSError, json.JSONDecodeError):
         return False
     successor_id = delivery.get("campaign_id")
@@ -379,7 +400,7 @@ def _pending_autotrain_actions(
     handoff: AutotrainCycleHandoffV1,
     *,
     kinds: frozenset[str],
-    acknowledged_statuses: frozenset[str] = frozenset({"completed"}),
+    acknowledged_statuses: frozenset[str] = frozenset({"completed", "superseded"}),
 ) -> tuple[tuple[int, AutotrainActionV1], ...]:
     path = Path(root) / "loops" / handoff.loop_id / "action_receipts.jsonl"
     completed: set[tuple[int, str]] = set()
@@ -463,6 +484,14 @@ class CampaignStore:
         campaign_id: str,
         root: Path | str = Path("outputs/autoresearch"),
     ) -> None:
+        if (
+            not campaign_id
+            or campaign_id in {".", ".."}
+            or Path(campaign_id).name != campaign_id
+            or "/" in campaign_id
+            or "\\" in campaign_id
+        ):
+            raise ValueError("campaign_id must be one confined path component")
         self.campaign_id = campaign_id
         self.root = Path(root) / campaign_id
 
@@ -642,58 +671,19 @@ class CampaignStore:
         return tuple(dict.fromkeys(failures))
 
     def verify_event_chain(self) -> list[dict[str, Any]]:
-        """Fail closed on edited, reordered, deleted-link, or forked events."""
-        path = self.root / "events.jsonl"
-        if not path.exists():
-            return []
-        events = [
-            json.loads(line)
-            for line in path.read_text(encoding="utf-8").splitlines()
-            if line
-        ]
-        previous = ""
-        seen: set[str] = set()
-        for event in events:
-            event_id = str(event.get("event_id", ""))
-            payload = dict(event)
-            payload.pop("event_id", None)
-            if event_id != _sha(payload):
-                raise RuntimeError("event_id digest mismatch")
-            if event_id in seen:
-                raise RuntimeError("duplicate event_id in campaign chain")
-            if str(event.get("previous_event_sha256", "")) != previous:
-                raise RuntimeError("campaign event chain is broken or forked")
-            seen.add(event_id)
-            previous = event_id
-            event_type = str(event.get("event_type", ""))
-            if event_type in {
-                "experiment_campaign_locked",
-                "campaign_deviation_appended",
-            }:
-                kind = (
-                    "experiment_campaigns"
-                    if event_type == "experiment_campaign_locked"
-                    else "campaign_deviations"
-                )
-                artifact_sha = str(event.get("artifact_sha256", ""))
-                artifact_path = self.root / "artifacts" / kind / f"{artifact_sha}.json"
-                try:
-                    artifact_payload = json.loads(
-                        artifact_path.read_text(encoding="utf-8")
-                    )
-                except (OSError, json.JSONDecodeError) as exc:
-                    raise RuntimeError(
-                        f"missing or invalid governed artifact: {artifact_path}"
-                    ) from exc
-                if _sha(artifact_payload) != artifact_sha:
-                    raise RuntimeError("governed artifact content digest mismatch")
-                if event_type == "experiment_campaign_locked":
-                    CampaignLockV1.model_validate(artifact_payload)
-                else:
-                    CampaignDeviationV1.model_validate(artifact_payload)
-        return events
+        from .campaign_events import verify_event_chain
+
+        return verify_event_chain(self)
 
     def write_artifact(self, kind: str, value: BaseModel | dict[str, Any]) -> Path:
+        if (
+            not kind
+            or kind in {".", ".."}
+            or Path(kind).name != kind
+            or "/" in kind
+            or "\\" in kind
+        ):
+            raise ValueError("artifact kind must be one confined path component")
         payload = _payload(value)
         digest = _sha(payload)
         path = self.root / "artifacts" / kind / f"{digest}.json"
@@ -715,6 +705,16 @@ class CampaignStore:
         )
         return path
 
+    def revise_handoff_actions(self, handoff: AutotrainCycleHandoffV1) -> Path:
+        from .campaign_events import revise_handoff_actions
+
+        return revise_handoff_actions(self, handoff)
+
+    def _reconcile_handoff_revision(self) -> None:
+        from .campaign_events import _reconcile_handoff_revision
+
+        return _reconcile_handoff_revision(self)
+
     def append_event(
         self,
         event_type: str,
@@ -723,31 +723,37 @@ class CampaignStore:
         status: str = "",
         artifact_sha256: str = "",
         detail: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
+        expected_parent: str | None = None,
     ) -> dict[str, Any]:
-        events = self.root / "events.jsonl"
-        lock_path = self.root / ".events.lock"
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o644)
-        try:
-            fcntl.flock(lock_fd, fcntl.LOCK_EX)
-            previous = self._last_event_sha(events)
-            event = {
-                "timestamp": utc_now(),
-                "event_type": event_type,
-                "campaign_id": self.campaign_id,
-                "experiment_id": experiment_id,
-                "status": status,
-                "artifact_sha256": artifact_sha256,
-                "detail": detail or {},
-                "previous_event_sha256": previous,
-            }
-            event["event_id"] = _sha(event)
-            self._append_line(events, canonical_json(event) + "\n")
-        finally:
-            fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            os.close(lock_fd)
-        self._append_tsv(event)
-        return event
+        from .campaign_events import append_event
+
+        return append_event(
+            self,
+            event_type,
+            experiment_id=experiment_id,
+            status=status,
+            artifact_sha256=artifact_sha256,
+            detail=detail,
+            idempotency_key=idempotency_key,
+            expected_parent=expected_parent,
+        )
+
+    @staticmethod
+    def _replace_durable(path: Path, data: str) -> None:
+        from .campaign_events import _replace_durable
+
+        return _replace_durable(path, data)
+
+    def _reconcile_event_projection(self, history: list[dict[str, Any]]) -> None:
+        from .campaign_events import _reconcile_event_projection
+
+        return _reconcile_event_projection(self, history)
+
+    def reconcile_event_projection(self) -> None:
+        from .campaign_events import reconcile_event_projection
+
+        return reconcile_event_projection(self)
 
     def status(self) -> dict[str, Any]:
         events_path = self.root / "events.jsonl"
@@ -770,30 +776,15 @@ class CampaignStore:
 
     @staticmethod
     def _atomic_new(path: Path, data: str) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fd, raw = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-        tmp = Path(raw)
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                handle.write(data)
-                handle.flush()
-                os.fsync(handle.fileno())
-            try:
-                os.link(tmp, path)
-            except FileExistsError:
-                raise
-        finally:
-            tmp.unlink(missing_ok=True)
+        from .campaign_events import _atomic_new
+
+        return _atomic_new(path, data)
 
     @staticmethod
     def _append_line(path: Path, line: str) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
-        try:
-            os.write(fd, line.encode("utf-8"))
-            os.fsync(fd)
-        finally:
-            os.close(fd)
+        from .campaign_events import _append_line
+
+        return _append_line(path, line)
 
     @staticmethod
     def _last_event_sha(path: Path) -> str:
@@ -801,22 +792,6 @@ class CampaignStore:
             return ""
         lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line]
         return str(json.loads(lines[-1])["event_id"]) if lines else ""
-
-    def _append_tsv(self, event: dict[str, Any]) -> None:
-        path = self.root / "results.tsv"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        new = not path.exists()
-        with path.open("a", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(
-                handle, fieldnames=self.EVENT_COLUMNS, delimiter="\t"
-            )
-            if new:
-                writer.writeheader()
-            row = {key: event.get(key, "") for key in self.EVENT_COLUMNS}
-            row["detail"] = canonical_json(event.get("detail") or {})
-            writer.writerow(row)
-            handle.flush()
-            os.fsync(handle.fileno())
 
 
 def loop_result_rows(
@@ -855,9 +830,7 @@ def loop_result_rows(
         }
         runtime_unblock = runtime_disposition == "candidate_unblock"
         gate_rejection = _completed_gate_rejection(root, campaign, outcome)
-        exposure = _run_exposure_text(
-            root, campaign.campaign_id, outcome.experiment_id
-        )
+        exposure = _run_exposure_text(root, campaign.campaign_id, outcome.experiment_id)
         params = _metric_text(outcome.metrics, "trainable_params")
         if params == "—":
             summary_path = (
@@ -969,13 +942,16 @@ def loop_result_rows(
             text = str(reason)
             if text.startswith("arm_order:"):
                 expected = tuple(
-                    item.strip() for item in text.removeprefix("arm_order:").split(",")
+                    item.strip()
+                    for item in text.removeprefix("arm_order:").split(",")
                     if item.strip()
                 )
                 break
         if not expected:
             continue
-        actual = {str(row["experiment"]) for row in by_campaign.get(campaign.campaign_id, ())}
+        actual = {
+            str(row["experiment"]) for row in by_campaign.get(campaign.campaign_id, ())
+        }
         missing = tuple(item for item in expected if item not in actual)
         if not missing:
             continue
@@ -1016,17 +992,9 @@ def loop_result_rows(
     )
 
 
-def _run_exposure_text(
-    root: Path | str, campaign_id: str, experiment_id: str
-) -> str:
+def _run_exposure_text(root: Path | str, campaign_id: str, experiment_id: str) -> str:
     """Render compact effective-sampling evidence from the canonical insight."""
-    path = (
-        Path(root)
-        / campaign_id
-        / "runs"
-        / experiment_id
-        / "run_insights.json"
-    )
+    path = Path(root) / campaign_id / "runs" / experiment_id / "run_insights.json"
     try:
         exposure = json.loads(path.read_text(encoding="utf-8"))["data_exposure"]
         effective = float(exposure["effective_records"])
@@ -1115,10 +1083,7 @@ def _project_confirmation_queue_status(
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if (
-            isinstance(row, dict)
-            and row.get("confirm_campaign_id") == campaign_id
-        ):
+        if isinstance(row, dict) and row.get("confirm_campaign_id") == campaign_id:
             status = str(row.get("status") or "") or None
     if status is None:
         return handoff
