@@ -1,0 +1,485 @@
+{
+  "path_normalization": "Portable rendering relative to the candidate checkout: dot is the candidate, parent is its workspace collection, ../../.. is the shared authoring checkout. Commands and embedded path fields are normalized representations; original workload receipts and their hashes are unchanged.",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "candidate_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "event_chain": "outputs/autoresearch/ops-current2-pinned/autonomy-adversary-finite-100/events.jsonl",
+  "event_count": 783,
+  "event_tip": "af977cad85b0eb1bf4bbf5a3077324811f47b908024df8bd429c901d4e80cd41",
+  "finite_artifact": "outputs/autoresearch/ops-current2-pinned/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/d41f4ec6ac68fd33d4895ba195446279ad17969e7bdd956e4fcbe546e80e232d.json",
+  "finite_artifact_sha256": "97ef83cc117e6c2f12422008527579667d707a50b532ca8e0c35c47305d5286e",
+  "finite_evidence": {
+    "actual_workload_attempts": 100,
+    "charged_workload_seconds": 36.528826536000906,
+    "complete": true,
+    "complete_operational_artifacts": 70,
+    "controller_contexts": 110,
+    "evidence_class": "real_workload_and_controller_processes_with_locked_faults",
+    "live_agent_repairs": 0,
+    "observed_controller_seconds_including_workloads": 229.83269902100074,
+    "observed_workload_seconds": 17.235835059001147,
+    "plan_digest": "9454365c9d8483f1b7db259d60af67309eba4074910485d655fabdb1dee76f98",
+    "real_model_trials": 0,
+    "schema_version": "autonomy_adversary_evidence/v1",
+    "scientific_promotions": 0,
+    "version_stamp": {
+      "code_commit": "UNKNOWN",
+      "code_dirty": null,
+      "components": {
+        "autoresearch.heal": "v8"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-09-07T22:56:53.349676+00:00"
+    }
+  },
+  "locks": {
+    "pyproject.toml": "c49156c9524b5189b9fcf2d668bf370fb5aaf1b7a4952a71d5c29cc213a23190",
+    "package-lock.json": "f2e4b1fd1d1a0a47d53d2de7f40e65356944e12a5dccb6f46fb8fe2dbc6a85d0",
+    "src/slm_training/resources/versions.json": "8fb187b64bc3a1590769862ce7e26e8961214c3d1bd5d87257b93b921fc92104"
+  },
+  "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+  "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+  "schema_version": "autonomy_operations_evidence/v1",
+  "source_files": {
+    "scripts/autonomy_fixture_worker.py": "9f82af9d0ac2adf809a14e012106e6263a7b87581ec2577852c57a7e85731b76",
+    "scripts/autoresearch.py": "be25ecf2708354d692a471e6665075ab5d053f9328513b2491b2e81a2932d220",
+    "scripts/autoresearch_operations.py": "216442465e25e8b677094b580ef3ceec7c3fc0c0ea6bdc95dcb4bb4d15f1705e",
+    "scripts/verify_autonomy.py": "37d5cfd90e6b3de9531fcdbb524c028193ddb4e93becf19a123dc8356ac816f8",
+    "src/slm_training/autoresearch/operations_analysis.py": "ac5caa5f56effbd168ce86744dcb9e164baa8a72dd7dcd3217d096fb570ec492",
+    "src/slm_training/autoresearch/operations_control.py": "efdb0a76dee153730f205e575aed3c806db31953320d2dc867354e68f35034e5",
+    "src/slm_training/autoresearch/operations_doctor.py": "c5c70c37506e7c1a7cda9c7d1eaba4c63d048aa2c75a5f8e317e7f920dd65029",
+    "src/slm_training/autoresearch/operations_release.py": "6b2b6735aeb83516d70459c8e1f4e0f2b9e0d8a9bcce19d628176c4542758d7e",
+    "src/slm_training/autoresearch/operations_status.py": "985b4ea19bffc62ca373b75f9408af91d834da9240ba742a0028146096c3d06b",
+    "tests/test_autoresearch/test_autonomy_adversary.py": "0c74cc9afef1f044b6b49d9049741e32f3a43c66ee732df53b49ad4dae976d84",
+    "tests/test_autoresearch/test_autonomy_cross_owner_adversary.py": "d96c3fc9be0bf4dcc54d427b69fe56af023bb43332f5d3bc80b33989bc399292",
+    "tests/test_autoresearch/test_operations.py": "6b8bafe90e83a3e21962533cb4f3c9efe237022da1e47378261c3eea2016c2d9",
+    "tests/test_scripts/test_supervisor_adversary.py": "85b18e665408e2b987d42e37b8e581a57ecff9a07ed8f74ed688ccbd715693eb",
+    "tests/test_autoresearch/test_activity_runtime_demonstration.py": "6ac7de313c951d00ede3c4e493daeb7e217aa89cf3d7820d5af5c21d0f7d6e0c"
+  },
+  "state_counts": {
+    "waiting_repair": 25,
+    "cancelled": 5,
+    "succeeded": 70,
+    "waiting_capability": 1
+  },
+  "tests": [
+    {
+      "path": "outputs/runs/autonomy-ops-verification/ops-adversary-current-tests.xml",
+      "sha256": "aba104e326cbb95c8b2d03b55171bbe8f794791ea400362de18898568d4082df",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 28.234,
+      "effective_pytest_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/autoresearch/ops-current2-pinned/ops-adversary-pinned-tests.xml",
+      "sha256": "108e741d08ca258b42714d785084ee2d0468f850d90d2890f4e37c684d436e74",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 35.665,
+      "effective_pytest_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/runs/autonomy-ops-verification/runtime-demonstration-tests.xml",
+      "sha256": "4156d52a8fab49aed00c79af05bf62891f6e1e728252c67b0647885293296a56",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 21.949,
+      "effective_pytest_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/runs/autonomy-ops-verification/ops-provenance-tests.xml",
+      "sha256": "b0e2a40f2b8c094577a083765b2084b3a7c4d9d78733983dcd3fa244ac17750a",
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 18.656,
+      "effective_pytest_options": "-o addopts= -q"
+    },
+    {
+      "effective_pytest_options": "-o addopts= -q",
+      "errors": 0,
+      "failures": 0,
+      "path": "outputs/runs/autonomy-ops-verification/host-isolation-tests.xml",
+      "seconds": 3.245,
+      "sha256": "ece553f87b8d74fe2056dea90b4dce34518448cc65e23c6e158946c9581a7d4d",
+      "skipped": 0,
+      "tests": 33
+    }
+  ],
+  "version_stamp": {
+    "code_commit": "UNKNOWN",
+    "code_dirty": null,
+    "components": {
+      "autoresearch.heal": "v8"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-07T22:56:53.349676+00:00"
+  },
+  "capabilities": {
+    "doctor": {
+      "local_ready": true,
+      "node": "22.23.1",
+      "python_import": true,
+      "agentv_import": true,
+      "openui_stdio_ping": true,
+      "design_md_stdio_ping": true,
+      "storage_ready": true,
+      "tool_sandbox_isolation": false,
+      "host_bubblewrap_available": true
+    },
+    "live_repair": {
+      "evidence_class": "not_executed_capability_unavailable",
+      "reason": "agent_grant_missing",
+      "provider_contacted": false
+    },
+    "service": {
+      "implemented": true,
+      "installed": false,
+      "started": false,
+      "disposable_lifecycle_fixture_test": true,
+      "not_started_by_this_packet": true
+    },
+    "external_writes": false
+  },
+  "commands": {
+    "finite": {
+      "argv": "python -m scripts.autoresearch --root outputs verify-autonomy --batch-size 20",
+      "invocations": 5,
+      "exit_codes": [
+        10,
+        10,
+        10,
+        10,
+        0
+      ],
+      "wrapper": "timeout -s INT -k 10 170 env PYTHONPATH=src",
+      "working_directory": "../autonomy-ops-current2-execution",
+      "invocations_2_through_5_environment": {
+        "GIT_CEILING_DIRECTORIES": ".."
+      }
+    },
+    "tests": {
+      "argv": "python -m pytest -o addopts= -q tests/test_autoresearch/test_operations.py tests/test_autoresearch/test_autonomy_adversary.py tests/test_scripts/test_supervisor_adversary.py tests/test_autoresearch/test_autonomy_cross_owner_adversary.py --junitxml=outputs/runs/autonomy-ops-verification/ops-adversary-current-tests.xml",
+      "exit_code": 0
+    },
+    "isolation": {
+      "argv": "env PYTHONPATH=src SLM_REQUIRE_ISOLATION=1 python -m pytest -o addopts= -q tests/test_autoresearch/test_heal_isolation.py tests/test_autoresearch/test_repair_verifier.py --junitxml=outputs/runs/autonomy-ops-verification/host-isolation-tests.xml",
+      "execution_class": "approved_host_rootless_bubblewrap",
+      "exit_code": 0
+    },
+    "parser_checked": [
+      "doctor --help",
+      "status --help",
+      "start --help",
+      "resume --help",
+      "stop --help",
+      "verify-autonomy --help"
+    ]
+  },
+  "coverage": {
+    "OPS-DOCTOR": [
+      "test_doctor_executes_bridge_protocol_and_rechecks_transitive_import",
+      "test_provider_absence_and_bad_configuration_are_scoped"
+    ],
+    "OPS-STATUS": [
+      "test_status_current_lease_not_remembered_pid",
+      "test_no_controller_is_not_running_and_service_recipe_does_not_start"
+    ],
+    "OPS-DELIVERY": [
+      "test_completed_analysis_survives_delivery_failure_and_retries_idempotently"
+    ],
+    "OPS-SERVICE": [
+      "test_start_and_stop_use_real_process_with_disposable_controller_fixture",
+      "test_stop_real_owned_session_leaves_unrelated_session_alive"
+    ],
+    "OPS-STORAGE": [
+      "test_storage_pressure_requests_action_without_deletion",
+      "test_memory_pressure_backpressures_without_erasing_evidence"
+    ],
+    "ADV-STATEFUL": [
+      "ActivityFaultMachine"
+    ],
+    "ADV-MUTATION": [
+      "test_corrupt_output_digest_guard_is_load_bearing",
+      "test_finite_metric_guard_mutation_is_detected",
+      "test_pairing_missingness_guard_mutation_is_detected"
+    ],
+    "AC-LEASE": [
+      "test_concurrent_finite_batch_is_rejected_before_any_work",
+      "stale_fence real campaign fault"
+    ],
+    "AC-FAIR": [
+      "external-authority remains waiting_capability while 70 healthy artifacts complete"
+    ],
+    "AC-HANG": [
+      "five real interrupt-ignoring workload faults",
+      "test_real_hung_descendants_terminated"
+    ],
+    "AC-STOP": [
+      "test_stop_real_owned_session_leaves_unrelated_session_alive"
+    ],
+    "AC-ESCAPE": [
+      "test_real_host_socket_and_result_channel_are_inaccessible",
+      "test_real_denied_access_and_exact_writable_mount"
+    ],
+    "AC-SELECT": [
+      "test_required_coverage_monotone_over_actual_test_files"
+    ],
+    "AC-UNKNOWN": [
+      "test_unknown_config_alongside_known_test_requires_conservative_coverage"
+    ],
+    "AC-PAIRS": [
+      "test_equal_counts_disjoint_ids_never_form_pairs"
+    ],
+    "AC-PSEUDO": [
+      "test_related_roots_and_missing_hardest_case_preclude_win"
+    ],
+    "AC-ARTIFACT": [
+      "five missing-output and five malformed-output real faults"
+    ],
+    "AC-AGENTAUTH": [
+      "agent_grant_missing doctor observation; no provider call"
+    ],
+    "AC-DELIVERY": [
+      "test_completed_analysis_survives_delivery_failure_and_retries_idempotently"
+    ]
+  },
+  "limitations": [
+    "Operational fixtures are not real model, checkpoint continuation, data-repair or live agent-repair evidence.",
+    "Historical /tmp evidence payloads remain lost; recovered documents are historical only.",
+    "A moving-tree development campaign completed 60 attempts before correctly refusing source drift. It is not the final 100-attempt campaign.",
+    "A separate pinned older snapshot also completed 100 attempts under heal v7; its old stamps remain unchanged and are not substituted for this v8 campaign.",
+    "Source release preparation is accidental-drift protection, not the repair-worker OS boundary. Actual rootless isolation is tested separately.",
+    "Runtime status does not invent paired comparison or ship evidence when no independently validated producer event exists.",
+    "Immutable execution now refuses all source mutations. Parent integration must route mutable research evidence and docs into explicit output destinations.",
+    "No remote delivery, paid provider, Actions workflow, HF write or persistent service activation was performed.",
+    "Full integrated repository merge authorization and component-wide quality ratchet remain parent-owned; domain lint and tests alone are not a release receipt.",
+    "Fixed PID/boot semantics are Linux/WSL local-process guarantees, not multi-host or network-filesystem lease proof.",
+    "Parent is moving activity and operations owners into autoresearch/runtime after this handoff. This locked path-based evidence is pre-move; never rewrite its plan or call it post-move execution."
+  ],
+  "doctor_observation": {
+    "schema_version": "autonomy_doctor/v1",
+    "local_ready": true,
+    "repair_ready": false,
+    "probes": {
+      "python": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 2.178448193999884
+      },
+      "agentv": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 0.43732583300015904
+      },
+      "openui_bridge": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 2.8417753819999234
+      },
+      "design_md_bridge": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 0.16154794400017636
+      },
+      "node_version": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 0.04620528199984619
+      },
+      "isolation": {
+        "ready": false,
+        "backend": "bubblewrap",
+        "reason": "isolation_probe_failed",
+        "detail_digest": "31c2cb0dffdeb9049fa2269e24af62df15e4161d4f752a648faf9630259725fe"
+      },
+      "storage": {
+        "ready": true,
+        "writable": true,
+        "free_bytes": 124390813696,
+        "minimum_free_bytes": 268435456,
+        "available_memory_bytes": 23093891072,
+        "memory_pressure": false,
+        "action": null,
+        "deletion_performed": false
+      },
+      "agent": {
+        "ready": false,
+        "reason": "agent_grant_missing"
+      }
+    },
+    "policy_digest": "67ee67d6802372fa4a060c65dc06b92db5eb03131431c5879b0fb0acd0d2b4ea",
+    "interrupt_seconds": 170,
+    "kill_grace_seconds": 10,
+    "external_writes": false,
+    "service_activation": false
+  },
+  "validation": {
+    "domain_ruff": "passed",
+    "test_case_extraction": "passed",
+    "changed_case_refresh": {
+      "exit_code": 0,
+      "selected_resources": 0,
+      "scientific_gate_weakenings": []
+    },
+    "full_repository_policy": "other-domain absolute artifact paths remain parent integration work",
+    "full_code_quality": {
+      "exit_code": 1,
+      "regressions": 14,
+      "domain_complexity_regressions": 0,
+      "baseline_not_raised": true,
+      "remaining": "parent-owned integration surfaces and aggregate package ratchet"
+    },
+    "version_stamps": {
+      "exit_code": 0,
+      "changed_files": 175,
+      "touched_components": 16
+    },
+    "docs_json_parse": "passed_with_finite_artifact_hash_and_receipt_checks"
+  },
+  "prior_evidence": {
+    "v8_candidate": {
+      "finite_artifact": "outputs/autoresearch/ops-finite-v8/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/d4fd90a544ec59577b71a76a5aa50e8c22c96587c1f7fffb63a3d9b8664a4e77.json",
+      "finite_artifact_sha256": "9a3f3b2f9c4fa593098496280a253bcee9fa59549d1975e2363b00195e5f7a66",
+      "event_tip": "52e87fe5cf7fea12da8dbbdbf54ef8f37273ccee103e17bb6c9bb43a9e301b51",
+      "finite_evidence": {
+        "actual_workload_attempts": 100,
+        "charged_workload_seconds": 31.216257096000618,
+        "complete": true,
+        "complete_operational_artifacts": 70,
+        "controller_contexts": 110,
+        "evidence_class": "real_workload_and_controller_processes_with_locked_faults",
+        "live_agent_repairs": 0,
+        "observed_controller_seconds_including_workloads": 79.32999541199956,
+        "observed_workload_seconds": 10.7866882670005,
+        "plan_digest": "1bc03bc6e050d8182b4e8b1032f75ac4e50593ed250d1a723e645e5c048f4853",
+        "real_model_trials": 0,
+        "schema_version": "autonomy_adversary_evidence/v1",
+        "scientific_promotions": 0,
+        "version_stamp": {
+          "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+          "code_dirty": true,
+          "components": {
+            "autoresearch.heal": "v8"
+          },
+          "stamp_schema": "version_stamp/v1",
+          "stamped_at": "2026-09-07T22:30:27.199232+00:00"
+        }
+      }
+    },
+    "moving_candidate": {
+      "root": "outputs/autoresearch/ops-final-current",
+      "actual_workload_attempts": 64,
+      "disposition": "source_drift_refused",
+      "changed_owner": "src/slm_training/resources/versions.json",
+      "exit_codes": [
+        10,
+        10,
+        10,
+        1
+      ]
+    },
+    "release_preparation": {
+      "refused": "outputs/workspaces/autonomy-ops-current-release",
+      "reason": "source_changed_during_release_preparation",
+      "accepted": "outputs/workspaces/autonomy-ops-current2-release"
+    }
+  },
+  "status_observation": {
+    "schema_version": "autonomy_status/v1",
+    "loop_id": "autonomy-ops-not-started",
+    "active": false,
+    "controller": {
+      "alive": false,
+      "reason": "no_controller_identity"
+    },
+    "activity_counts": {},
+    "attempted_activities": 0,
+    "operational_artifact_advances": 0,
+    "recorded_experiment_results": 0,
+    "verified_paired_comparisons": null,
+    "last_verified_comparison": null,
+    "paired_evidence_status": "not_established_by_runtime_history",
+    "scientific_progress": false,
+    "resource_seconds_by_kind": {},
+    "waiting": [],
+    "source_identities": [],
+    "champion_state": "not_inferred_from_operational_activity",
+    "ship_state": "not_inferred_from_operational_activity"
+  },
+  "runtime_demonstration": {
+    "root": "outputs/autoresearch/ops-runtime-regression-successor-v2",
+    "actual_attempts": 100,
+    "complete_artifacts": 75,
+    "evidence_class": "real_process_workloads_with_some_synthetic_outcome_classification",
+    "grant_successor_reason": "v1_launch_preparation_exhausted_work_allowance_under_host_load",
+    "previous_failure_root": "outputs/autoresearch/ops-runtime-regression-current-2",
+    "scientific_claim": "none",
+    "resource_grant": {
+      "interrupt_seconds": 5,
+      "kill_grace_seconds": 0.1,
+      "finalization_reserve_seconds": 3,
+      "total_seconds": 20
+    }
+  },
+  "tested_runtime_sources": {
+    "scripts/autonomy_fixture_worker.py": "9f82af9d0ac2adf809a14e012106e6263a7b87581ec2577852c57a7e85731b76",
+    "scripts/verify_autonomy.py": "37d5cfd90e6b3de9531fcdbb524c028193ddb4e93becf19a123dc8356ac816f8",
+    "src/slm_training/autoresearch/activity_process.py": "36ee85254cc22185bbb4d8f0ceade532ef832e592d2d8fbf275e896ecab02b78",
+    "src/slm_training/autoresearch/activity_projection.py": "e0d93f0fadeeda9b57021f184dda264cc29f03282d5e1e30cbac836648819053",
+    "src/slm_training/autoresearch/activity_publication.py": "99d4d45d2fa45171ed7d3465c157cf83697eca810849b361d8561b3694877638",
+    "src/slm_training/autoresearch/activity_runtime.py": "b2bede5de136a3b07aae91b54a9375f9e12367ca72145575669a2c5dee497fc1",
+    "src/slm_training/autoresearch/activity_state.py": "29e4845e2a8e9cdafc6d3048a27cbcce5eeabafb76de594ee9ddf2fe99770114",
+    "src/slm_training/autoresearch/campaign_events.py": "75999517efdab325a7452cf93227ac485f3549835f4675a6b44a73389f3adba9",
+    "src/slm_training/autoresearch/campaign_formal_evidence.py": "d9fa89c6bcea01a143b1299a4552e234e4ca11d28e1f06b56d8133f947a900a3",
+    "src/slm_training/autoresearch/experiment_campaign.py": "5720fd3e2b6f91e45b0619dc15e11fe89b761d0c51e7ed0c29ea12769273f4aa",
+    "src/slm_training/autoresearch/schemas.py": "d2aa9351d4fe7918d7455eb0b9f7858109a66c334e7b7ad153f408294bf37b53",
+    "src/slm_training/autoresearch/storage.py": "f151babbea8ed95a2c643451c5ab030fed78eccb2e03c8fe99bc602a5b9b68ce",
+    "src/slm_training/harness_core/bounded_process.py": "a0eb07adc6a7050b8c397564b81599150a60e59e06fe49a8c76877c118d1fc3e",
+    "src/slm_training/harness_core/process_tree.py": "6ca0f9bbf429783e2778e059451fe9b1c279c8af8efa2efc6a62cdfa0070a966",
+    "src/slm_training/levers.py": "2bcc306d56ef7472ab9bf8b1047ac3a75a440ef9730a06d6d1152db0127c4bee",
+    "src/slm_training/resources/versions.json": "8fb187b64bc3a1590769862ce7e26e8961214c3d1bd5d87257b93b921fc92104"
+  },
+  "runtime_owner_drift": {},
+  "pinned_source_files": {
+    "scripts/autonomy_fixture_worker.py": "9f82af9d0ac2adf809a14e012106e6263a7b87581ec2577852c57a7e85731b76",
+    "scripts/autoresearch.py": "be25ecf2708354d692a471e6665075ab5d053f9328513b2491b2e81a2932d220",
+    "scripts/autoresearch_operations.py": "216442465e25e8b677094b580ef3ceec7c3fc0c0ea6bdc95dcb4bb4d15f1705e",
+    "scripts/verify_autonomy.py": "37d5cfd90e6b3de9531fcdbb524c028193ddb4e93becf19a123dc8356ac816f8",
+    "src/slm_training/autoresearch/operations_analysis.py": "ac5caa5f56effbd168ce86744dcb9e164baa8a72dd7dcd3217d096fb570ec492",
+    "src/slm_training/autoresearch/operations_control.py": "9f5d4936d1d5ebd0c2b6c4dba0ef6642824ab38941aa99ea007b0b52faa35aa6",
+    "src/slm_training/autoresearch/operations_doctor.py": "c5c70c37506e7c1a7cda9c7d1eaba4c63d048aa2c75a5f8e317e7f920dd65029",
+    "src/slm_training/autoresearch/operations_release.py": "6b2b6735aeb83516d70459c8e1f4e0f2b9e0d8a9bcce19d628176c4542758d7e",
+    "src/slm_training/autoresearch/operations_status.py": "985b4ea19bffc62ca373b75f9408af91d834da9240ba742a0028146096c3d06b",
+    "tests/test_autoresearch/test_autonomy_adversary.py": "0c74cc9afef1f044b6b49d9049741e32f3a43c66ee732df53b49ad4dae976d84",
+    "tests/test_autoresearch/test_autonomy_cross_owner_adversary.py": "d96c3fc9be0bf4dcc54d427b69fe56af023bb43332f5d3bc80b33989bc399292",
+    "tests/test_autoresearch/test_operations.py": "b960f8c8315ffa1669fc2a5c867cedc33b297b921c8070867fe14dfdb306165c",
+    "tests/test_scripts/test_supervisor_adversary.py": "85b18e665408e2b987d42e37b8e581a57ecff9a07ed8f74ed688ccbd715693eb",
+    "tests/test_autoresearch/test_activity_runtime_demonstration.py": "6ac7de313c951d00ede3c4e493daeb7e217aa89cf3d7820d5af5c21d0f7d6e0c"
+  },
+  "release": {
+    "source_digest": "377fad5178643c6a76c1c226beebd4240582956c3fd60d3153b13773aa290bff",
+    "manifest_path": "../autonomy-ops-current2-execution/.autonomy-release.json",
+    "manifest_sha256": "c0736b3b5d87d67e6620f52c05b6d3f6e9f3722bcf42fe43343d17400b2828b8",
+    "file_count": 10131,
+    "execution": "../autonomy-ops-current2-execution"
+  },
+  "provenance_qualification": "Git-free snapshot first invocation inherited enclosing audit HEAD. Historical metadata retained. Later invocations set Git discovery ceiling and truthfully stamp UNKNOWN; full immutable release digest and tested per-owner hashes identify actual source. Start/resume now enforces the ceiling, tested independently after snapshot creation."
+}

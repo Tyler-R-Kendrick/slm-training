@@ -1,0 +1,79 @@
+{
+  "schema": "measurement_fixture_preparation/v1",
+  "base_source_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v109",
+      "evals.scoring": "v27",
+      "harness.experiments": "v168"
+    },
+    "stamped_at": "2026-09-08T19:37:03.325928+00:00"
+  },
+  "identity": {
+    "components": {
+      "harness.model_build.eval": "v109",
+      "evals.scoring": "v27",
+      "evals.loss_suite": "v2",
+      "harness.experiments": "v168",
+      "model.twotower": "v331"
+    },
+    "evaluator_sha256": "24f04aa77215ab5ec636d44cb8f03d80122555097b96483c0469f2ba32c6d724",
+    "source_files": {
+      "src/slm_training/harnesses/experiments/autonomous_learning/measurement_fixture.py": "c994a2008f6accd050eb0287b013a0b169fc9e2a4a0f2286662e55741c1abe56",
+      "src/slm_training/harnesses/experiments/autonomous_learning/measurement_fixture_evidence.py": "a0981fa93d1077f5490906537e2310b62a0ab32b63c3751d4cb239ee225bd151",
+      "src/slm_training/harnesses/experiments/autonomous_learning/measurement_fixture_plan.py": "1043d41389dd0bb1e8aac0427fac5ae8d7d2fea63dff7ba131238fdb28e64bc2",
+      "scripts/run_autotrain_continuous.py": "31052baf565ae026797b83b81bf74880d44eb08342b41c2f6b2ad77d66ae9ccf",
+      "scripts/autotrain_metrics.py": "710afa1fd59225f1f1b4db2462d6616163d9a521def13eeeda7db632f92fc591",
+      "scripts/autotrain_measurement.py": "a15f268bc23baf5692a265d14c121bc2e0fcedc6e3638a755f090dc23e83f688",
+      "scripts/autotrain_nll.py": "1a6dfae5cda7a2a88d2d8fdc3cdb02a0bcf1fe1190f1fe6131c89672d286da56",
+      "src/slm_training/evals/loss_suites.py": "a7f054305950be2b26585b024afa3144dec443af47c34859ae22dd8babf69c2b",
+      "src/slm_training/evals/denoising_nll.py": "a7de3aa468c86584efcba5082d416195e3363c75d67801fc31881bad2e5555f5",
+      "src/slm_training/autoresearch/paired_analysis.py": "921c55b2e9435b6fd901048ac2aaa9610aa8cdfe3284506d23b026ae7264325b",
+      "src/slm_training/autoresearch/search/evidence.py": "c42627af3abe5d8b1b37f82c1d4413b2381b0a53881575ff17d7171dad094599"
+    },
+    "policy_sha256": "ba8f6e3b6f5f1d3baa4be75fe6fba9635e9e09756f79d43da3527d45a25dd678"
+  },
+  "tests": {
+    "path": "outputs/runs/autonomy-validation/measurement-fixture-integrated-20260908.xml",
+    "sha256": "613007eb412906541bba5c41b65c751a80af622be44b9c7f4c1d70532e3d0865",
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "86",
+    "time": "7.752",
+    "timestamp": "2026-09-08T14:36:03.009490-05:00",
+    "hostname": "CopilotPro7"
+  },
+  "real_checkpoint_load": {
+    "control_trainable_parameters": 65826,
+    "candidate_trainable_parameters": 65826,
+    "selected_cases_validated": 6,
+    "new_training": false
+  },
+  "new_two_arm_measurement": "not_executed_pending_parent_version_composition",
+  "service": "not_touched",
+  "remote_operations": false,
+  "prepare_probe": {
+    "argv": [
+      "python",
+      "-m",
+      "slm_training.harnesses.experiments.autonomous_learning.measurement_fixture",
+      "prepare",
+      "--run-id",
+      "autonomy-mea-resolved-endpoint-20260908",
+      "--enable-fixture-experiment"
+    ],
+    "exit_code": 1,
+    "error": "release version pending: evals.scoring needs v28, found v27",
+    "child_workloads_launched": 0
+  },
+  "required_parent_versions": {
+    "harness.model_build.eval": "v109 or later",
+    "evals.scoring": "v28 or later",
+    "harness.experiments": "v169 or later"
+  }
+}

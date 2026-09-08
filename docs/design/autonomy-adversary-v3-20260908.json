@@ -1,0 +1,185 @@
+{
+  "schema_version": "autonomy_adversary_development/v1",
+  "version_stamp": {
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {"autoresearch.heal": "v11"},
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-08T20:16:41.989657+00:00"
+  },
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "source_files": {
+    "scripts/verify_autonomy.py": "08b3398236aee8c2ca432314f40b75a8d361b8670afdda304525ecac85cc179e",
+    "scripts/autonomy_fixture_worker.py": "e8e54e26c0698ecf6808c145a88327ea76116fbbce44326bfff62afe0d132a82",
+    "tests/test_autoresearch/test_autonomy_adversary.py": "cd5e92b6de088853d9b90573cbea426a48e85aa8200d09a700901279d08c6979",
+    "tests/test_autoresearch/test_activity_runtime_demonstration.py": "cfaab833fe20d93e7f7492cbb1a48523c83054ec85188cb9df9edb3600eebb9d"
+  },
+  "effective_pytest_options": ["-o", "addopts=", "-m", "", "-p", "no:cacheprovider", "-q", "--tb=short"],
+  "command_interrupt_seconds": 170,
+  "command_kill_grace_seconds": 10,
+  "receipts": [
+    {
+      "target": "tests/test_autoresearch/test_autonomy_adversary.py",
+      "passed": 8,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 35.04,
+      "execution_context": "approved_host_controller_outside_outer_Codex_sandbox",
+      "required_isolation": true,
+      "real_controller_invocations": 11,
+      "fake_agent_predicate_repairs": 1,
+      "verified_original_activity_replays": 1,
+      "injected_storage_interruptions": 2,
+      "evidence_class": "real_processes_real_rootless_verifier_fake_patch_adapter"
+    },
+    {
+      "target": "tests/test_autoresearch/test_activity_runtime_demonstration.py",
+      "passed": 2,
+      "skipped": 0,
+      "exit_code": 0,
+      "seconds": 23.42,
+      "execution_context": "normal_Codex_sandbox",
+      "real_workload_attempts": 100,
+      "complete_operational_artifacts": 75,
+      "actual_code_failure_exits": 10,
+      "evidence_class": "separate_real_process_runtime_fixture_and_mocked_capability_test"
+    }
+  ],
+  "canonical_v3_campaign": "executed_failed_incomplete_retained",
+  "canonical_pinned_v5": {
+    "status": "complete_finite_operational_fixture_only",
+    "root": "outputs/autoresearch/autonomy-adversary-v5-20260908-pinned-iso",
+    "source_snapshot_relative_to_primary": "outputs/workspaces/autonomy-finite-iso-wltduzgo",
+    "source_origin_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "plan_digest": "486b5632f8208537da17e3c1219be996b1680f55bc6dd498e075feaf610b06d6",
+    "last_completed_batch_actual_attempts": 100,
+    "source_snapshot_tree_digest": "d18e0e9351f08ccd0af4dde7f7f0d773c16a7f8b08fcabc487181a390217cc7b",
+    "expected_actual_attempts": 100,
+    "aggregate_controller_seconds_ceiling": 5725,
+    "source_identity_rule": "actual_locked_owner_content_hashes_checked_before_and_after_snapshot_and_each_batch",
+    "stamp_qualification": "Snapshot has no Git metadata; canonical stamp discovers enclosing primary baseline commit. Origin and locked content hashes, not that enclosing commit alone, identify executed candidate code.",
+    "complete_operational_artifacts": 65,
+    "fake_agent_predicate_repairs": 5,
+    "verified_original_activity_replays": 5,
+    "storage_interruptions": 10,
+    "actual_original_code_failure_exits": 5,
+    "distinct_attempt_ids": 100,
+    "controller_contexts": 112,
+    "charged_workload_seconds": 185.4603005199897,
+    "observed_workload_seconds": 35.15632425798685,
+    "observed_controller_seconds_including_workloads": 495.7994053050061,
+    "states": {"succeeded": 65, "waiting_repair": 25, "cancelled": 5, "waiting_capability": 1},
+    "batches": [
+      {"cumulative_attempts": 20, "exit_code": 10, "cumulative_controller_seconds": 88.68756204099918},
+      {"cumulative_attempts": 39, "exit_code": 10, "cumulative_controller_seconds": 189.97208477505774},
+      {"cumulative_attempts": 59, "exit_code": 10, "cumulative_controller_seconds": 292.5970849830628},
+      {"cumulative_attempts": 79, "exit_code": 10, "cumulative_controller_seconds": 387.79692683304893},
+      {"cumulative_attempts": 99, "exit_code": 10, "cumulative_controller_seconds": 491.0122748220019},
+      {"cumulative_attempts": 100, "exit_code": 0, "cumulative_controller_seconds": 495.7994053050061}
+    ],
+    "receipt": "outputs/autoresearch/autonomy-adversary-v5-20260908-pinned-iso/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/79cc26651584b3eb473263e170e0e3848f58e2a302cb5d38a24239f7f0455087.json",
+    "receipt_sha256": "95936844addad7fd1df118fa2a041f3ea6a560356590458fcc326ad750c2fa94",
+    "events": 790,
+    "events_sha256": "782dc00488a2380cd4f2ddff10a521fa5afc7797ba390df758435cb595921128",
+    "source_owner_count": 40,
+    "fixture_source_files": {
+      "scripts/verify_autonomy.py": "d3487bc644368bf5a6af18915cd345e96172a9f5a6eaf84ed34c0dbd1a797b91",
+      "scripts/autonomy_fixture_worker.py": "9bb4972dba8cbbc9446790bffc9d6fedacc7b4b9f9566f00ba2dd65268aecd54",
+      "tests/test_autoresearch/test_autonomy_adversary.py": "10599f3a67d77b59c62a055e5e6d17fee5484f82b9132aaf564b3f4725f7cbb6",
+      "tests/test_autoresearch/test_activity_runtime_demonstration.py": "8b07e39f9317fbb0fbb0ad0aa94c4ab880ef7240599f6331a317b659aaf1b3d1"
+    },
+    "final_regression": {
+      "selection": ["tests/test_autoresearch/test_autonomy_adversary.py", "tests/test_autoresearch/test_activity_runtime_demonstration.py::test_successor_resource_contract_preserves_historical_timeout_plan"],
+      "passed": 9, "skipped": 0, "exit_code": 0, "seconds": 46.73,
+      "receipt": "outputs/runs/autonomy-validation/iso-v5-final-tests-20260908.xml",
+      "receipt_sha256": "770c179d0b7b68395381541a4add8990b3299dcf2c3a27491cbfb331a68af34f",
+      "execution_context": "approved_host_controller_real_rootless_workloads"
+    },
+    "final_snapshot_tree_check": "unchanged",
+    "candidate_drift_at_closeout": {
+      "src/slm_training/resources/versions.json": {
+        "pinned": "fa15f8f94604fffee7b8c690aea7ebd4f9b3ce24a93a18eff672cbbec78753b4",
+        "current": "01e53c8410f3f4da999176e66a9928d8b57e7ed72f28ccbcf5e3577d397abfec"
+      }
+    },
+    "remaining": []
+  },
+  "failed_canonical_successors": [
+    {
+      "plan_version": 5,
+      "root": "outputs/autoresearch/autonomy-adversary-v5-20260908-final-iso-r2",
+      "actual_workload_attempts": 32,
+      "failing_index": 32,
+      "failure": "second_version_registry_source_drift_before_next_workload",
+      "failed_batch_exit_code": 1,
+      "accepted_as_complete": false
+    },
+    {
+      "plan_version": 5,
+      "root": "outputs/autoresearch/autonomy-adversary-v5-20260908-final-iso",
+      "actual_workload_attempts": 30,
+      "failing_index": 30,
+      "failure": "version_registry_source_drift_before_next_workload",
+      "failed_batch_exit_code": 1,
+      "accepted_as_complete": false
+    },
+    {
+      "plan_version": 3,
+      "root": "outputs/autoresearch/autonomy-adversary-v3-20260908-final-iso",
+      "plan_digest": "7b2bf056065b6c4079fa38d76d2f2b395eee0d3df2025c68b6ccc477d2d55aa3",
+      "actual_workload_attempts": 27,
+      "failing_index": 26,
+      "failure": "healthy_workload_killed_before_output_under_two_second_limit",
+      "failed_batch_exit_code": 1,
+      "accepted_as_complete": false
+    },
+    {
+      "plan_version": 4,
+      "root": "outputs/autoresearch/autonomy-adversary-v4-20260908-final-iso",
+      "actual_workload_attempts": 8,
+      "failing_index": 7,
+      "failure": "isolation_preparation_budget_exhausted_under_two_second_check_limit",
+      "failed_batch_exit_code": 1,
+      "accepted_as_complete": false
+    }
+  ],
+  "js_closure_followup": {
+    "test_target": "tests/test_scripts/test_merge_verification_runtime.py",
+    "test_sha256": "a01bc21a83886e75dc445a419c116fa03ac7fa81e363e96df8682ab99af0e632",
+    "owner": "scripts/merge_verification_runtime.py",
+    "owner_sha256": "012f4c18c68427bc55d03f854cfe4e0f997fbf3f3f7b6dedbc5f30079bd4ac72",
+    "receipt": "outputs/runs/autonomy-validation/iso-js-closure-20260908.xml",
+    "receipt_sha256": "4c5775255b5669f1f54dbf741475bde282e9159d09e43f01de67cdbd7b52a3a4",
+    "passed": 4, "skipped": 0, "exit_code": 0, "seconds": 6.41,
+    "evidence_class": "approved_host_real_rootless_installed_sdk_and_bridge_protocols",
+    "agentv_evaluation_published": false,
+    "source_release_authorized": false,
+    "final_updated_selection": {
+      "test_sha256": "c4f0db00441ca7846c77a831f47f483579d4b7a7f66589fdb2e1653b48f36c38",
+      "receipt": "outputs/runs/autonomy-validation/iso-js-closure-final-20260908.xml",
+      "receipt_sha256": "a4f6f472d5b5631874da6ffd58fe738f384608147ab23aaea8c8c14d55f0a850",
+      "passed": 6, "skipped": 0, "exit_code": 0, "seconds": 12.54,
+      "runtime_owner_sha256_unchanged": true
+    }
+  },
+  "v3_locked_expectations": {
+    "actual_activity_workload_attempts": 100,
+    "completed_artifacts": 65,
+    "fake_agent_predicate_repairs": 5,
+    "verified_replays": 5,
+    "storage_interruptions": 10,
+    "aggregate_controller_seconds_ceiling": 4175
+  },
+  "live_agent_repairs": 0,
+  "source_releases_authorized": 0,
+  "model_trials": 0,
+  "scientific_promotions": 0,
+  "limitations": [
+    "Normal outer Codex sandbox denies NETLINK_ROUTE during Bubblewrap setup; the same host probe succeeds.",
+    "Fake adapter plumbing is not live coding-agent autonomy or an adversarial agent isolation test.",
+    "Storage injection raises ENOSPC at real event-owner boundaries; it does not fill the physical disk.",
+    "Unverified storage-interrupted artifacts remain scoped repair waits.",
+    "Fixture predicate verification does not satisfy full source-aware release authorization.",
+    "Finite coverage does not prove perpetual reliability or recovery from all durable-state loss."
+  ]
+}

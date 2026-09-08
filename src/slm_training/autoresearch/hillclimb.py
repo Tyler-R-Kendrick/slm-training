@@ -9,7 +9,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import shutil
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Mapping, Sequence
@@ -17,6 +16,14 @@ from typing import Any, Literal, Mapping, Sequence
 from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.harness_core.promotion_engine import check_parameter_efficiency
 from slm_training.lineage.records import canonical_json
+from slm_training.harness_core.checkpoint_bundle import (
+    resolve_bundle,
+)
+from slm_training.harness_core.checkpoint_exposure import bind_exposure, cumulative_epochs
+from slm_training.harness_core.checkpoint_publication import (
+    has_champion_publication_scope,
+    publish_champion_checkpoint,
+)
 
 MetricDirection = Literal["increase", "decrease"]
 
@@ -96,13 +103,12 @@ PARSE_RATE_PERFECT = 1.0
 
 
 def parse_rate_illegal(value: Any) -> bool:
-    """True when a measured parse_rate is below perfect (unmeasured is not illegal)."""
+    """Refuse malformed rates and measured grammar failures; None is unmeasured."""
     if value is None:
         return False
-    try:
-        return float(value) + 1e-12 < PARSE_RATE_PERFECT
-    except (TypeError, ValueError):
+    if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1:
         return True
+    return float(value) + 1e-12 < PARSE_RATE_PERFECT
 
 
 def invalid_grammar_reasons(
@@ -114,6 +120,9 @@ def invalid_grammar_reasons(
     reasons: list[str] = []
     for key, raw in metrics.items():
         if str(key).split(".")[-1] != "parse_rate":
+            continue
+        if raw is not None and (type(raw) not in (int, float) or not math.isfinite(raw) or not 0 <= raw <= 1):
+            reasons.append(f"invalid_evidence:{arm}:{key}:expected_finite_rate_in_0_1")
             continue
         if parse_rate_illegal(raw):
             reasons.append(
@@ -127,8 +136,8 @@ _SYNTHESIS_ACTION_NAMES = (
 )
 
 
-CLIMB_CHAMPION_SCHEMA = "climb_champion/v2"
-_CLIMB_CHAMPION_LEGACY_SCHEMAS = frozenset({"climb_champion/v1"})
+CLIMB_CHAMPION_SCHEMA = "climb_champion/v3"
+_CLIMB_CHAMPION_LEGACY_SCHEMAS = frozenset({"climb_champion/v1", "climb_champion/v2"})
 CHAMPION_EPOCHS_EXHAUSTED = "champion_epochs_exhausted"
 DEFAULT_MAX_CUMULATIVE_EPOCHS = 50
 # Sidecar ``status`` values. ``confirmed`` champions come from a confirmed /
@@ -162,11 +171,11 @@ class ClimbChampionSidecar:
     knobs: dict[str, Any] = field(default_factory=dict)
     schema: str = CLIMB_CHAMPION_SCHEMA
     status: str = CLIMB_CHAMPION_STATUS_CONFIRMED
-    # Train corpus the cumulative steps were spent on; ``record_count`` is the
-    # count seen at write time and is re-read from the corpus manifest at park
-    # time so the epoch cap follows the current corpus, never a fixed number.
+    # Historical snapshot size, never a divisor for another snapshot's work.
     train_dir: str | None = None
     record_count: int | None = None
+    exposure_history: list[dict[str, Any]] | None = None  # None = unmeasured legacy.
+    training_bundle_digest: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -207,14 +216,23 @@ def climb_champion_dir(loop_dir: Path) -> Path:
 
 
 def climb_champion_checkpoint_path(loop_dir: Path) -> Path:
+    bundle = resolve_bundle(climb_champion_dir(loop_dir))
+    if bundle is not None:
+        return bundle[0] / "last.pt"
     return climb_champion_dir(loop_dir) / "last.pt"
 
 
 def climb_champion_sidecar_path(loop_dir: Path) -> Path:
+    bundle = resolve_bundle(climb_champion_dir(loop_dir))
+    if bundle is not None:
+        return bundle[0] / "manifest.json"
     return climb_champion_dir(loop_dir) / "last.json"
 
 
 def dump_climb_champion(sidecar: ClimbChampionSidecar, loop_dir: Path) -> Path:
+    if has_champion_publication_scope() or resolve_bundle(climb_champion_dir(loop_dir)) is not None:
+        write_climb_champion(loop_dir, checkpoint=climb_champion_checkpoint_path(loop_dir), sidecar=sidecar)
+        return climb_champion_sidecar_path(loop_dir)
     path = climb_champion_sidecar_path(loop_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -225,14 +243,17 @@ def dump_climb_champion(sidecar: ClimbChampionSidecar, loop_dir: Path) -> Path:
 
 
 def load_climb_champion(loop_dir: Path) -> ClimbChampionSidecar | None:
-    path = climb_champion_sidecar_path(loop_dir)
-    ckpt = climb_champion_checkpoint_path(loop_dir)
-    if not path.is_file() or not ckpt.is_file():
-        return None
-    raw = json.loads(path.read_text(encoding="utf-8"))
+    bundle = resolve_bundle(climb_champion_dir(loop_dir))
+    if bundle is not None:
+        raw = bundle[1]["metadata"]
+    else:
+        path = climb_champion_dir(loop_dir) / "last.json"
+        if not path.is_file() or not (path.parent / "last.pt").is_file():
+            return None
+        raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise HillClimbError("champion_sidecar:invalid")
-    schema = str(raw.get("schema") or CLIMB_CHAMPION_SCHEMA)
+    schema = str(raw.get("schema") or "climb_champion/v1")
     if schema != CLIMB_CHAMPION_SCHEMA and schema not in _CLIMB_CHAMPION_LEGACY_SCHEMAS:
         raise HillClimbError(f"champion_sidecar:unknown_schema:{schema}")
     # Pre-v2 sidecars carried no status: they were only ever written from
@@ -260,6 +281,8 @@ def load_climb_champion(loop_dir: Path) -> ClimbChampionSidecar | None:
         status=status,
         train_dir=str(raw["train_dir"]) if raw.get("train_dir") else None,
         record_count=record_count,
+        exposure_history=raw.get("exposure_history") if schema == CLIMB_CHAMPION_SCHEMA else None,
+        training_bundle_digest=raw.get("training_bundle_digest"),
     )
 
 
@@ -327,19 +350,11 @@ def champion_cumulative_epochs(
     *,
     record_count: int | None = None,
 ) -> float:
-    """Cumulative epochs against ``record_count`` (current corpus) when known.
+    """Actual per-snapshot exposure, or the explicitly legacy stored estimate.
 
-    Falls back to the accumulated sidecar value when the corpus size is not
-    resolvable, so a missing manifest never silently lifts the cap.
+    ``record_count`` remains a compatibility argument, never redivides history.
     """
-
-    try:
-        n = int(record_count) if record_count is not None else 0
-    except (TypeError, ValueError):
-        n = 0
-    if n > 0 and int(sidecar.cumulative_steps) > 0:
-        return float(sidecar.cumulative_steps) / float(n)
-    return float(sidecar.cumulative_epochs)
+    return cumulative_epochs(sidecar.as_dict())
 
 
 def champion_epoch_park_reason(
@@ -348,18 +363,15 @@ def champion_epoch_park_reason(
     max_cumulative_epochs: float = DEFAULT_MAX_CUMULATIVE_EPOCHS,
     record_count: int | None = None,
 ) -> str | None:
-    """Park once the champion has spent more than the epoch cap on the corpus.
-
-    ``record_count`` is the current train corpus size (train manifest); when
-    given, epochs are recomputed as ``cumulative_steps / record_count`` so the
-    cap follows the live corpus rather than the count at seed time.
-    """
+    """Apply the unchanged cap without shrinking historical exposure."""
 
     if sidecar is None:
         return None
     epochs = champion_cumulative_epochs(sidecar, record_count=record_count)
     if epochs > float(max_cumulative_epochs):
         return CHAMPION_EPOCHS_EXHAUSTED
+    if sidecar.schema == CLIMB_CHAMPION_SCHEMA and sidecar.exposure_history is None:
+        return "champion_exposure_unavailable"
     return None
 
 
@@ -368,40 +380,16 @@ def write_climb_champion(
     *,
     checkpoint: Path,
     sidecar: ClimbChampionSidecar,
+    expected_digest: str | None = None,
+    fence: str | None = None,
+    validate_fence=None,
 ) -> ClimbChampionSidecar:
-    dest = climb_champion_checkpoint_path(loop_dir)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    src = Path(checkpoint)
-    if not src.is_file():
-        raise HillClimbError(f"champion_checkpoint_missing:{src}")
-    if src.resolve() != dest.resolve():
-        shutil.copy2(src, dest)
-        _copy_checkpoint_tokenizer_sidecars(src, dest)
-    dump_climb_champion(sidecar, loop_dir)
+    sidecar = ClimbChampionSidecar(**bind_exposure(Path(checkpoint), sidecar.as_dict()))
+    publish_champion_checkpoint(
+        climb_champion_dir(loop_dir), Path(checkpoint), sidecar.as_dict(),
+        expected_digest=expected_digest, fence=fence, validate_fence=validate_fence,
+    )
     return sidecar
-
-
-#: Tokenizer sidecars ``TwoTowerModel.load`` reads beside a checkpoint when
-#: ``initialize_from`` is set. Suffixes mirror the loader exactly.
-_CHECKPOINT_SIDECAR_SUFFIXES = (".tokenizer.json", ".context.tokenizer.json")
-
-
-def _copy_checkpoint_tokenizer_sidecars(src: Path, dest: Path) -> None:
-    """Carry a checkpoint's tokenizer sidecars along with it.
-
-    A warm start reads ``<stem>.tokenizer.json`` and
-    ``<stem>.context.tokenizer.json`` beside the checkpoint. Copying only
-    ``last.pt`` left the context sidecar missing, so the loader fell back to
-    the *output* tokenizer and refused the warm start with
-    ``scratch-context warm starts require OpenUITokenizer sidecars`` — the
-    champion existed, the regime said climb, and every arm still died. Absent
-    sidecars stay absent; nothing is fabricated.
-    """
-
-    for suffix in _CHECKPOINT_SIDECAR_SUFFIXES:
-        source = src.with_name(src.stem + suffix)
-        if source.is_file():
-            shutil.copy2(source, dest.with_name(dest.stem + suffix))
 
 
 def maybe_advance_climb_champion(
@@ -430,14 +418,17 @@ def maybe_advance_climb_champion(
         return current
     if not confirmed or checkpoint is None:
         return current
-    n = max(int(record_count) or 1, 1)
+    if current is not None and current.training_bundle_digest == Path(checkpoint).parent.name:
+        if current.status == CLIMB_CHAMPION_STATUS_CONFIRMED:
+            return current  # Replaying a committed bundle spends no updates.
+        extra_steps = 0  # Confirmation may change claim status, never consumed work.
     prior_steps = current.cumulative_steps if current else 0
     prior_epochs = current.cumulative_epochs if current else 0.0
     sidecar = ClimbChampionSidecar(
         source_campaign=str(source_campaign),
         cumulative_steps=prior_steps + int(extra_steps),
         train_data_manifest_sha=str(train_data_manifest_sha),
-        cumulative_epochs=prior_epochs + (float(extra_steps) / n),
+        cumulative_epochs=prior_epochs,  # Actual bundle exposure is bound by writer.
         trainable_params=trainable_params,
         knobs=dict(knobs or {}),
         status=CLIMB_CHAMPION_STATUS_CONFIRMED,
@@ -501,7 +492,7 @@ def seed_climb_champion(
         source_campaign=campaign,
         cumulative_steps=int(extra_steps),
         train_data_manifest_sha=str(train_data_manifest_sha),
-        cumulative_epochs=float(extra_steps) / max(int(record_count) or 1, 1),
+        cumulative_epochs=0.0,  # Unknown until the writer validates bundle exposure.
         trainable_params=trainable_params,
         knobs=artifact_knobs,
         status=status,
@@ -717,9 +708,7 @@ def data_eval_identity(
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
-def data_generation_sha256(
-    data_generation: Mapping[str, Any] | None,
-) -> str | None:
+def data_generation_sha256(data_generation: Mapping[str, Any] | None) -> str | None:
     """Stable digest of corpus-generation knobs; None when the block is absent."""
 
     if not data_generation:
@@ -774,14 +763,13 @@ class ExhaustedKnobLedger:
         data_eval_identity: str,
         claim_class: str,
     ) -> bool:
-        for entry in self.entries:
-            if (
-                entry.knob_signature_sha256 == knob_signature_sha256
-                and entry.data_eval_identity == data_eval_identity
-                and entry.claim_class == claim_class
-            ):
-                return True
-        return False
+        return any(
+            entry.knob_signature_sha256 == knob_signature_sha256
+            and entry.data_eval_identity == data_eval_identity
+            and entry.claim_class == claim_class
+            and entry.reason != "reproduced_decode_timeout_retirement"
+            for entry in self.entries
+        )
 
     def record_null(
         self,
@@ -792,6 +780,8 @@ class ExhaustedKnobLedger:
         reason: str = "primary_lcb_within_noise",
         note: str = "",
     ) -> ExhaustedKnobEntry:
+        if reason == "reproduced_decode_timeout_retirement":
+            raise ValueError("operational timeout is not scientific null evidence")
         entry = ExhaustedKnobEntry(
             knob_signature_sha256=knob_signature_sha256,
             data_eval_identity=data_eval_identity,
@@ -1102,9 +1092,11 @@ def matrix_data_eval_identity(
 
 
 def _as_finite_float(value: Any) -> float | None:
+    if type(value) not in (int, float):
+        return None
     try:
         number = float(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
     if not math.isfinite(number):
         return None

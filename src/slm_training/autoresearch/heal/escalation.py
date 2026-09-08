@@ -61,9 +61,36 @@ _AUTHORITY_BY_CLASS = {
 }
 
 
-def blocker_fingerprint(kind: str, reason: str) -> str:
+def blocker_fingerprint(kind: str, reason: str, *, data_request=None) -> str:
     """Cross-campaign identity: campaign ids are payload, never key."""
+    if data_request is not None:
+        from slm_training.data.readiness_contract import DataReadinessRequest, evidence_digest
+
+        request = DataReadinessRequest.model_validate(data_request)
+        fields = ("purpose", "original", "target_kind", "minimum_unique_cases", "minimum_unique_families",
+                  "scored_suites", "training_ancestors", "learned_tables", "trainer_config",
+                  "additional_trainer_configs", "initialization", "starting_checkpoint_bundle",
+                  "starting_run_id", "generation_knobs", "sampling_policy_digest")
+        payload = request.model_dump(mode="json")
+        predicate = {key: payload[key] for key in fields}
+        for key in ("scored_suites", "training_ancestors", "learned_tables", "additional_trainer_configs"):
+            predicate[key] = sorted(predicate[key], key=evidence_digest)
+        return evidence_digest({"schema": "data_blocker_fingerprint/v1", "kind": kind, "predicate": predicate})
     return escalation_fingerprint(kind, reason)
+
+
+def bind_data_blocker(blocker, *, root, campaign_id):
+    """Reference-only controller actions use the same request identity as inline ones."""
+    if blocker.get("kind") != "rebuild_data" or blocker.get("data_readiness_request") is not None:
+        return blocker
+    if not (blocker.get("data_action_id") or blocker.get("data_readiness_request_sha256")):
+        return blocker  # Historical unscoped requests retain their historical key.
+    from slm_training.autoresearch.storage import CampaignStore
+    from slm_training.data.readiness_contract import load_locked_readiness_request
+
+    request = load_locked_readiness_request(CampaignStore(blocker.get("campaign_id") or campaign_id, root),
+        wanted=blocker.get("data_readiness_request_sha256"), action_id=blocker.get("data_action_id"))
+    return {**blocker, "data_readiness_request": request.model_dump(mode="json")}
 
 
 def next_backoff_seconds(seen_count: int) -> int:
@@ -112,9 +139,10 @@ class EscalationLedger:
         blocker_class: str,
         campaign_id: str,
         owner_skill: str = "",
+        data_request=None,
     ) -> EscalationRecordV1:
         """Record one sighting of a blocker; dedups on the stable fingerprint."""
-        fingerprint = blocker_fingerprint(kind, reason)
+        fingerprint = blocker_fingerprint(kind, reason, data_request=data_request)
         now = utc_now()
         existing = self.records.get(fingerprint)
         if existing is None:
@@ -154,7 +182,26 @@ class EscalationLedger:
                 }
             )
         self._put(record)
-        return record
+        return record.model_copy(update={"attempts": self.budget_attempts(fingerprint)})
+
+    def budget_attempts(self, fingerprint: str) -> int:
+        """Legacy unattributable data spending remains a shared finite grant.
+
+        Keep every historical key/counter unchanged. Until an explicit new
+        authority grant exists, splitting a spent legacy bucket cannot multiply
+        its remainder. New installations with no legacy spending retain scoped
+        per-predicate budgets. Counts stored on new keys are actual new attempts,
+        not copied legacy charges, so restart/fork never double counts them.
+        """
+        record = self.records.get(fingerprint)
+        if record is None:
+            return 0
+        family = [row for row in self.records.values()
+                  if row.kind == record.kind and row.blocker_class == "data"]
+        legacy_spent = any(row.attempts and (len(row.reason) == 400
+                           or row.fingerprint == blocker_fingerprint(row.kind, row.reason))
+                           for row in family)
+        return sum(row.attempts for row in family) if legacy_spent else record.attempts
 
     def record_attempt(self, fingerprint: str, playbook_id: str) -> None:
         record = self.records.get(fingerprint)

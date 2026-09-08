@@ -1,0 +1,391 @@
+{
+  "finite_coordinator_comparison": {
+    "evidence_class": "actual_cpu_model_and_agentv",
+    "run_root": "outputs/runs/autonomy-learning-current-20260907",
+    "campaign": "outputs/autoresearch/autonomy-learning-current-20260907",
+    "procedure_sha256": "59046fc73a39a953b1f14fe3741dbe0424b7574dbc4660be05a7a4da310e51a4",
+    "source_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "source_dirty": true,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+      "code_dirty": true,
+      "components": {"harness.model_build.train": "v44", "model.twotower": "v331", "harness.model_build.eval": "v108", "harness.autoresearch.experiment_campaign": "v298"}
+    },
+    "command_module": "python -m slm_training.harnesses.experiments.autonomous_learning.cli",
+    "canonical_alias": "python -m scripts.slm experiments learning-comparison",
+    "common_arguments": ["--run-id", "autonomy-learning-current-20260907", "--enable-fixture-experiment"],
+    "bounded_prefix": ["timeout", "-s", "INT", "-k", "10", "170"],
+    "executed_phases": [
+      {"argv": ["prepare"], "exit_code": 0},
+      {"argv": ["fidelity", "--treatment", "fast", "--updates", "1"], "exit_code": 0},
+      {"argv": ["fidelity", "--treatment", "steady", "--updates", "1"], "exit_code": 0},
+      {"argv": ["fidelity", "--treatment", "slow", "--updates", "1"], "exit_code": 0},
+      {"argv": ["fidelity", "--treatment", "fast", "--updates", "4"], "exit_code": 1, "result": "initializer_provenance_resume_mismatch_before_updates"},
+      {"argv": ["fidelity", "--treatment", "fast", "--updates", "4"], "exit_code": 0, "result": "verified_source_migration_and_original_continuation"},
+      {"argv": ["fidelity", "--treatment", "steady", "--updates", "4"], "exit_code": 0},
+      {"argv": ["fidelity", "--treatment", "slow", "--updates", "4"], "exit_code": 0},
+      {"argv": ["corrective"], "exit_code": 0}
+    ],
+    "runtime": {"python": "3.12.3", "torch": "2.5.1", "device": "cpu", "threads": 1, "machine": "aarch64", "node_lower_points": "26.5.0", "node_upper_points_and_corrective": "22.23.1"},
+    "training": {"parameters_each": 64962, "logical_incremental_updates": 17, "examples": 34, "prompt_tokens": 1368, "target_tokens": 272, "trial_attempt_seconds_including_failed_resume": 11.997815699998682, "bootstrap_train_seconds": 0.950740570000562, "end_to_end_wall_accounting_complete": false},
+    "resume_migration_sha256": "1a6387f1de50d8fe6112b023b4e2c331468774c6d0b22d3ad8e7a1e72cb41c8d",
+    "release_successor_event": "3b7ee3439717da756c5059e8cfbc49d315b1d6ad79c166ee4a04613f17c58ba3",
+    "fidelity": {
+      "result_file": "outputs/runs/autonomy-learning-current-20260907/fidelity_result.json",
+      "result_file_sha256": "667022e2fd573390da0b696f08eb7f0f0799f0e591a2545a83b4bf3c1dc8f794",
+      "complete": true, "configurations": 3, "consumed_updates": 12,
+      "pairwise_rank_agreement": 1.0, "selection_regret": 0.0,
+      "ce_at_1_and_4_updates": {"fast": [16.74394953434284, 12.311351329068957], "steady": [29.390649032592773, 20.532095689039963], "slow": [31.020020499596228, 30.50793005136343]},
+      "semantics": "conditional masked-token CE, not exact sequence likelihood",
+      "limitation": "Tiny fixed public fixture; no observed late-blooming ranking reversal; no pruning adoption. Cross-Node decoded and latency equivalence unverified."
+    },
+    "corrective": {
+      "result_file": "outputs/runs/autonomy-learning-current-20260907/corrective_result.json",
+      "result_file_sha256": "049ba5ee2c381b15294879416b32c6c2b139ed6338c272d4966fceded9ac99da",
+      "diagnostic_complete": true, "decoded_probe_complete": true,
+      "selected_case_ids": ["copy-2", "copy-3"],
+      "selected_root_ids": ["copy-family-2", "copy-family-3"],
+      "selection_sha256": "72712acd29a3324ebca087f9295decf2d5068d0d6f003800cddbd91bb862dc57",
+      "train_rows_original_and_mixture": [2, 4], "train_root_counts": [2, 2],
+      "paired_n": 2, "paired_mean_control_minus_candidate": -0.0034684726170137736,
+      "paired_sd": 0.0011862579730115114, "p_value": 1.0, "verdict": "inconclusive",
+      "reason": "insufficient_nontied_pairs:2<5",
+      "binder_f1_control_candidate": [0.0, 0.0],
+      "certified_fallback_outputs_control_candidate": [2, 2],
+      "resource_matching": "updates and examples matched; prompt-token work not matched",
+      "independence": "conditional on shared learned ancestor; two public fixture roots, not secret holdout or independent full-training seeds"
+    },
+    "verification": {"junit": "outputs/runs/autonomy-validation/release-successor-resume.xml", "sha256": "827da78e33da6b4e9ae9402ea80b4bf0588886b9438fb042f14727354aa7366e", "passed": 45, "seconds": 50.93, "pytest_options": ["-o", "addopts=", "-q"], "static_checks_passed": 18, "full_release_authorized": false},
+    "confirmation_complete": false, "promotion": false, "ship_eligible": false,
+    "service_started": false,
+    "live_agent_repair": "not_executed_capability_unavailable: no configured provider/resource grant; finite model repair was coordinator-authored, not autonomous agent evidence"
+  },
+  "path_normalization": "Portable rendering relative to the candidate checkout: dot is the candidate, parent is its workspace collection, ../../.. is the shared authoring checkout. Commands and embedded path fields are normalized representations; original workload receipts and their hashes are unchanged.",
+  "integration_update": {
+    "source_sha256": {
+      "src/slm_training/autoresearch/experiment_identity.py": "df69416207fbd42c74c12f8a547a73ab6d873d087a44f80a23e3f3120c84f2eb",
+      "src/slm_training/autoresearch/preflight/compiled_treatment.py": "0cfa8f5acc23688a18bd22df54ef61a790201661313705a1109d8935f04bfb33",
+      "src/slm_training/autoresearch/lever_effects.py": "1f5d7108ae30d776603d5350776ae58b0805844b5d45e9fdc2c9a426c822edd0",
+      "src/slm_training/autoresearch/hillclimb.py": "b78543b5d105100c826c91b867b741fd613bed39a5435cc3c7bb21a9b8ad2eeb",
+      "src/slm_training/harnesses/model_build/checkpoint_exposure.py": "5fc471230fd36e349d7d7dd8fadbe443e166c8fc4fb81865a8524797bdc2ce31",
+      "tests/test_autoresearch/test_compiled_treatment.py": "8f0545197523ae5eae3c1556beb1d92cb761612e85bb5044c8ff4607d7e8d9f0",
+      "tests/test_harnesses/model_build/test_checkpoint_exposure.py": "e5d6cd74de75fbcb9b238f8c4b560aa072ff518a07433f442e0b304bc1d8b148",
+      "src/slm_training/resources/versions.json": "cfd1349ff22549b9098aa40819582b1e246c0c04185f6ff76e16352fb62d42c8",
+      "pyproject.toml": "c49156c9524b5189b9fcf2d668bf370fb5aaf1b7a4952a71d5c29cc213a23190"
+    },
+    "proposed_shared_source_sha256": {
+      "scripts/train_model.py": "21ae579bff6dd92537918a757992e9dd4ddfdce258aca182aedf46aac854b9c5",
+      "scripts/run_autotrain_continuous.py": "53fa15e748de92e1fe738898f40828bba01981f54d340aa06d65ae18fb0a1ca1",
+      "src/slm_training/autoresearch/schemas.py": "890a05fc69fc2c222bca1404d6ca2b74c9e93d6bc10c9183b091836e05a362c4"
+    },
+    "patch_sha256": {
+      "outputs/runs/autonomy-exp-launch-integration.patch": "58b685c92ad041f66c0e34223199a52b24bf094db1d837918d89ba556536abbe",
+      "outputs/runs/autonomy-exp-legacy-serialization.patch": "726e83126f5ea8edbb02629906d5e66ebbabb3263bb8c3ba2837e525d9fb009c",
+      "outputs/runs/autonomy-exp-role-integration.patch": "4047c2c6dd5d5eeab83446449ec5b22c4f7ff3c89571e9bd4d2d78ceff26ee36",
+      "outputs/runs/autonomy-exp-role-test.patch": "efcb18911f094420ee144d99dc1f155c0e4cd52f9643a5f2abd3b3559818fb06",
+      "outputs/runs/autonomy-exp-schema-ownership.patch": "009b899afb5c9474258bb0788d334dc2a634f1409f546e5e2b2a402d19417c84",
+      "outputs/runs/autonomy-checkpoint-modelcard.patch": "41bf26450cd6c9d3fc487d74326a98a45e40dfebec65603bc8da3412e6e0dbd8"
+    },
+    "pytest": {
+      "junit": "outputs/runs/exp-mixin-overlay-final.xml",
+      "sha256": "dac6fdc47ccff3d674e6b4771fcccb850efb1cb6279f76abf22e03be201ad0bc",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "109",
+        "time": "16.750",
+        "timestamp": "2026-09-07T18:04:28.298106-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "exit_code": 0,
+      "options": [
+        "-q",
+        "-o",
+        "addopts="
+      ]
+    },
+    "evidence_class": "real_imported_proposed_source_overlay_not_supervised_model_comparison",
+    "baseline_source_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "audit_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+    "command": "timeout -s INT -k 10 170 env PYTHONPATH=src:outputs/runs/autonomy-validation/dependencies OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENUI_BRIDGE_CLI=../../../src/apps/openui_bridge/cli.mjs AGENTV_RUNNER=../../../scripts/run_agentv_eval.mjs ../../../.venv/bin/python -c 'import importlib.machinery,pathlib; original=importlib.machinery.SourceFileLoader.get_code; root=pathlib.Path.cwd(); overlay=root/\"outputs/runs/exp-patch-validation.lTjcRi\"\ndef patched(loader,name):\n path=pathlib.Path(loader.path)\n try: candidate=overlay/path.relative_to(root)\n except ValueError: return original(loader,name)\n if not candidate.is_file(): return original(loader,name)\n return compile(candidate.read_text(),loader.path,\"exec\")\nimportlib.machinery.SourceFileLoader.get_code=patched\nimport pytest; raise SystemExit(pytest.main([\"-q\",\"-o\",\"addopts=\",\"tests/test_autoresearch/test_compiled_treatment.py\",\"tests/test_harnesses/model_build/test_checkpoint_exposure.py\",\"tests/test_autoresearch/test_climb_champion.py\",\"tests/test_harnesses/model_build/test_checkpoint_bundle.py\",\"tests/test_harnesses/model_build/test_trial_continuation.py\",\"tests/test_harnesses/model_build/test_full_state_resume.py\",\"tests/test_autoresearch/test_experiment_identity.py\",\"tests/test_autoresearch/test_experiment_identity_property.py\",\"tests/test_autoresearch/test_experiment_lever_wiring.py\",\"--junitxml=outputs/runs/exp-mixin-overlay-final.xml\",\"--tb=short\"]))'",
+    "actual_real_checkpoint_exposure": {
+      "checkpoint": "outputs/runs/art-continuation-chunk2-v4-20260907/checkpoints/trial/bundles/db43f0a1f94e623d82eba3b0d3ce6a5db2c8fa1a289a4274888537fcbdebc3ad/last.pt",
+      "consumed_examples": 18,
+      "target_tokens": 546,
+      "record_count": 3,
+      "example_exposure_epochs": 6,
+      "claim": "read_validated_real_training_bundle"
+    },
+    "direct_changes": [
+      "climb_champion/v3 exposure consumers and idempotent checkpoint advancement",
+      "checkpoint_exposure shared bundle reader",
+      "compiled_treatment real CLI/compiler/model preflight and canonical event persistence",
+      "identity/role model field ownership and backward-compatible serialization",
+      "focused regression tests"
+    ],
+    "leaf_ids": [
+      "EXP-IDENTITY",
+      "EXP-CAUSAL",
+      "EXP-INVARIANTS",
+      "EXP-PREFLIGHT",
+      "ART-EXPOSURE",
+      "ART-CURSORS"
+    ],
+    "acceptance_ids": [
+      "AC-IDENTITY",
+      "AC-NOOP",
+      "AC-DATAARM",
+      "AC-EPOCH",
+      "AC-TRIAL",
+      "AC-BUNDLE"
+    ],
+    "parent_reported": [
+      "five original shared patches applied successfully",
+      "startup registration gate and delayed-registration test passed"
+    ],
+    "not_claimed": [
+      "whole-tree release authorization",
+      "real supervised treatment effect",
+      "live agent repair",
+      "new confirmation or promotion",
+      "service activation"
+    ],
+    "quality": {
+      "ruff": "passed",
+      "new_helper_complexity": "passed",
+      "case_extraction": "passed",
+      "diff_check": "passed",
+      "hillclimb_lines": 1527,
+      "hillclimb_recorded_ceiling": 1534,
+      "schema_proposed_lines": 1648,
+      "schema_previous_patched_lines": 1672,
+      "whole_tree_gate": "failed: shared module/package and dependency regressions; no baseline raised"
+    },
+    "required_final_integration": [
+      "apply sixth schema-ownership patch",
+      "rerun actual current supervised producer/consumer checks and source-aware release selection",
+      "reconcile ownership/version/quality registry on final candidate"
+    ],
+    "limitations": [
+      "compiled preflight supports authorized local CPU scratch preparation only",
+      "nonuniform examples planners must be explicitly supported; refusal is not a quality negative",
+      "legacy missing exposure stays unknown, not reconstructed from optimizer steps",
+      "proposed source overlay tests run actual owners but are not current-tree supervised E2E"
+    ]
+  },
+  "latest_domain_handoff": {
+    "junit_path": "outputs/runs/art-exp-champion-final.xml",
+    "junit_sha256": "ca9976a5fd024710c403e5503ba1b681a121e372abc9dadfa604c465f91d0045",
+    "test_suite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "93",
+      "time": "26.980",
+      "timestamp": "2026-09-07T17:32:10.755000-05:00",
+      "hostname": "CopilotPro7"
+    },
+    "plan_path": "outputs/runs/art-continuation-v3-plan.json",
+    "plan_sha256": "349adb9960b7e1b66a2f2b104b5d67cf3380634062fe63ab4af33ebfc7b73164",
+    "source_sha256": {
+      "src/slm_training/harnesses/model_build/checkpoint_bundle.py": "705b03756aa9ca9b948f5b21ce358a3548f53595c7d14592a4ce17491078cd29",
+      "src/slm_training/harnesses/model_build/champion_publication.py": "a81bb0b3c33469a49a7d2de05c2681bd8f1ba72018c0dc390ab2c53a5cff8d50",
+      "src/slm_training/harnesses/model_build/full_state.py": "8924519c2d2ca8213aa1b6fa396d32d29be370dfc3b5ee55fc3b098f8e1175d5",
+      "src/slm_training/harnesses/model_build/resume_contract.py": "ccd8157f017890747eda78d0bc1eb53bd0dafa7243fb7327cc005743aa2c4c19",
+      "src/slm_training/harnesses/model_build/train_loop.py": "67354cf0d62575e817f78b09391853b9c709d4a919bb08e97c3943f258486205",
+      "src/slm_training/autoresearch/experiment_identity.py": "022383b024f554d4140bf50f140a6ce51dbbd4751ee13e2600f245753530196a",
+      "src/slm_training/autoresearch/intervention_matching.py": "df4cabb087802c4c107041d76dafc7c04ccb5c237670e4a1fbf3bef4d1deb0fd",
+      "src/slm_training/autoresearch/lever_effects.py": "b170ffd2580233e55b6c4a7ba011a834dc31514e8595d55777c98cdbe4009027",
+      "src/slm_training/autoresearch/preflight/treatment_design.py": "f572ba3d4e12523d4b8a4f9b808cdbc8e6c3ace179fd876b7a0b831126200af7",
+      "scripts/autotrain_arms.py": "f9160975a0189ce3895f6cce3f42c19a40a0071971dc88c336320f1aa6a9bfd8",
+      "scripts/autotrain_levers.py": "ef1d56853c1f88ed5432f0d0ec432b380bc455532d2ef24eb66363f0e8a7453b"
+    },
+    "cli_training_attempts": [
+      {
+        "run_id": "art-continuation-chunk1-20260907",
+        "summary_sha256": "15ccf245106bda1916bc8b44a753738d269f9873fb4120844af1325b983fc26b",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.6984534040000199,
+        "process_wall_seconds": null
+      },
+      {
+        "run_id": "art-continuation-chunk1-v2-20260907",
+        "summary_sha256": "e8c53f042737d1a4914f071761179d1ff76acdbb4ca1fa7083a231169c983eb2",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.7044852540000193,
+        "process_wall_seconds": null
+      },
+      {
+        "run_id": "art-continuation-chunk1-v3-20260907",
+        "summary_sha256": "5485d239a5fc2e8e8d191705348ea9de0c38db8ab99671401af09d641b7dac7b",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.7325191090001226,
+        "process_wall_seconds": 4.876520346000007
+      },
+      {
+        "run_id": "art-continuation-chunk1-v4-20260907",
+        "summary_sha256": "4082bcc20d6eafc4163403c343eb58966dd3db3eef23311f5aa19e325be877a8",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.8870624119999775,
+        "process_wall_seconds": 16.759777428000007
+      },
+      {
+        "run_id": "art-continuation-chunk2-20260907",
+        "summary_sha256": "b7689b172d65a1b5081d15ae23d2bcc98c311d8315414999bd2c3fe772f923d6",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.7520526570000357,
+        "process_wall_seconds": null
+      },
+      {
+        "run_id": "art-continuation-chunk2-v2-20260907",
+        "summary_sha256": "af47ca7147f38295373cef966421434e67fa464d9e793ecf4542bb23b480c19a",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.7288323589998527,
+        "process_wall_seconds": null
+      },
+      {
+        "run_id": "art-continuation-chunk2-v3-20260907",
+        "summary_sha256": "ae7451df513c8d6797a533a67b8d140b993898cd8dc490f93c07ed316347b35a",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 0.7734493689999908,
+        "process_wall_seconds": 5.08563423999999
+      },
+      {
+        "run_id": "art-continuation-chunk2-v4-20260907",
+        "summary_sha256": "e3a317327d048d0c7a7c24afc35e991872305f1315d10826c0bdc147a87d7c9a",
+        "incremental_updates": 3,
+        "trainer_wall_seconds": 2.039804299000025,
+        "process_wall_seconds": 11.018549741000015
+      },
+      {
+        "run_id": "art-continuation-whole-20260907",
+        "summary_sha256": "4963c12f6edc0db6f8e1c2c69f0ef18e30442e1a6ec687e98375efd8db32f984",
+        "incremental_updates": 6,
+        "trainer_wall_seconds": 0.7448149299999614,
+        "process_wall_seconds": null
+      },
+      {
+        "run_id": "art-continuation-whole-v2-20260907",
+        "summary_sha256": "80ca119755b2676fc53238d835a7a62b13cbb29f55cd96b9d04a269a99791bab",
+        "incremental_updates": 6,
+        "trainer_wall_seconds": 0.7170688000001064,
+        "process_wall_seconds": null
+      },
+      {
+        "run_id": "art-continuation-whole-v3-20260907",
+        "summary_sha256": "cf1b55f492fd247ca24e0d61b98c42637db6dc6caf74c8a7d61b41d332f22c7c",
+        "incremental_updates": 6,
+        "trainer_wall_seconds": 0.780613140000014,
+        "process_wall_seconds": 5.261289457999965
+      },
+      {
+        "run_id": "art-continuation-whole-v4-20260907",
+        "summary_sha256": "f7d393f20f8dfddce826ae340d63f94194b2ca7f4b7e86e330af96c3f0bcf2a3",
+        "incremental_updates": 6,
+        "trainer_wall_seconds": 1.3124696469999435,
+        "process_wall_seconds": 9.062349053999924
+      }
+    ],
+    "total_incremental_updates": 48,
+    "trainer_wall_seconds": 10.871625380000069,
+    "recorded_process_wall_seconds": 52.06412026699991,
+    "missing_process_wall_receipts": 6,
+    "scope": "CLI continuation fixtures only; test/review/admin cost excluded; missing durations unknown, not zero",
+    "exit_code": 0,
+    "pytest_effective_options": [
+      "-q",
+      "-o",
+      "addopts="
+    ],
+    "checks": {
+      "ruff_owned_paths": "passed",
+      "test_case_extraction": "passed",
+      "test_case_review": "not_selected_by_refresh_tool"
+    },
+    "production_boundary": "Real ActivityRuntime.run child invokes write_climb_champion and load_climb_champion under DelegatedPublisher; dummy payload integrity only",
+    "remaining_parent_obligations": [
+      "Role-aware two-arm confirmation matrix replaces +1000/+1001/+1002 monitor steps",
+      "Mandatory resolved treatment design preflight and persisted treatment/replicate/attempt identities",
+      "Declared intervention launch matching",
+      "Champion exposure numeric consumer must use per-snapshot actual consumption, not cumulative_steps/current_record_count",
+      "Whole candidate quality ratchet and ownership composition",
+      "MODEL_CARD and README fixture roster"
+    ],
+    "limitations": [
+      "No supervised real two-arm diagnostic or live repair claim from this domain receipt",
+      "Asynchronous process on_start can race child delegation validation; deterministic ordering not established",
+      "Publication scope is trusted controller capability plumbing, not same-user isolation",
+      "Six earlier CLI process-wall receipts absent; retained trainer time is not total process time"
+    ]
+  },
+  "historical_fields_notice": "Original fields below are recovered historical receipts only.",
+  "current_verification": {
+    "workspace": ".",
+    "exit_code": 0,
+    "tests": 93,
+    "failures": 0,
+    "skips": 0,
+    "junit_path": "outputs/runs/art-exp-registered-final.xml",
+    "junit_sha256": "cbb9914e9659a33ef33cf8ad64f22b6e857e74fc79de3024aed9014bf5645874",
+    "scope": "Combined ART/EXP owner tests; no release authorization or scientific gain.",
+    "golden_identity": "ef2296d0e653659ac06a9248c1f07b4f5f9389f7b7d045df18251658d175fa69",
+    "property_dependency": "outputs/runs/autonomy-validation/dependencies",
+    "pytest_options": [
+      "-q",
+      "-o",
+      "addopts="
+    ],
+    "version_stamp": {
+      "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+      "code_dirty": true,
+      "components": {
+        "harness.experiment_feature_flags": "v4",
+        "harness.model_build.train": "v43"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-09-07T22:25:46.214678+00:00"
+    },
+    "parent_wiring": [
+      "HypothesisMatrix.matrix_role",
+      "resolved treatment_design mandatory verdict",
+      "persist treatment replicate attempt",
+      "declared intervention matching"
+    ]
+  },
+  "schema": "autonomy_experiments_evidence/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "working_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "candidate_source": "shared dirty authoring tree; not a release",
+  "environment": {"python": "3.12.3", "torch": "2.5.1", "architecture": "aarch64", "device": "cpu", "threads": 1},
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {"harness.model_build.train": "v42", "harness.experiment_feature_flags": "v4"},
+    "stamped_at": "2026-09-07T17:22:44.327864+00:00"
+  },
+  "limits": {"interrupt_seconds": 170, "kill_grace_seconds": 10},
+  "acceptance": {
+    "AC-IDENTITY": "new actual identity owner; deterministic metamorphic/golden tests",
+    "AC-DATAARM": "actual declared matcher plus unchanged ordinary guard regression",
+    "AC-NOOP": "actual preflight discovery, compiler flag and disabled objective rejection"
+  },
+  "current_matrix_reproducer": {"source": "actual scripts.run_autotrain_continuous._matrix", "steps": [80, 80, 1080, 1081, 1082], "schema_accepted": true, "exit_code": 0, "disposition": "reproduced; shared schema/producer parent patch required"},
+  "identity_golden": "9888d15ff30096658d5bb005011b59800b93bf816943c682b0c2e03b67a73a76",
+  "verification": [
+    {"selection": "three EXP modules, -o addopts=", "passed": 34, "skipped_dependency": 1, "elapsed_seconds": 3.54, "exit_code": 0},
+    {"selection": "existing preflight/continuous fingerprint bank lever and confirmation tests", "passed": 32, "deselected": 357, "elapsed_seconds": 2.51, "exit_code": 0}
+  ],
+  "real_cpu_wiring": {"learning_rates": [0.0003, 0.003], "optimizer_updates": [2, 2], "examples_consumed": [3, 3], "trainable_params": 64546, "changed_state_tensors": 44, "total_state_tensors": 48, "maximum_absolute_parameter_delta": 0.005906892940402031, "outputs": "outputs/experiment-contract-tests-3/test_learning_rate_changes_rea0/runs", "evidence_class": "real_cpu_training_not_quality_comparison"},
+  "scientific_outcome": "not_measured",
+  "promotion": "not_attempted",
+  "ship_eligible": false,
+  "service": "not_touched",
+  "protected_scientific_surfaces_changed": [],
+  "externally_unexecuted": [{"test": "test_experiment_identity_property.py", "probe": "import hypothesis", "observed": "ModuleNotFoundError: No module named hypothesis"}],
+  "integration_obligations": ["role-aware shared schema and padding removal", "resolved design and mandatory pass before driver launch", "versioned identity persisted in existing events/indexes", "typed data/duration matcher at declared launch", "component versions and ownership", "model-card/README fixture notes"]
+}

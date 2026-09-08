@@ -8,6 +8,7 @@ promotable; multi-seed close and hard skips still win.
 from __future__ import annotations
 
 import re
+import math
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Sequence
@@ -124,7 +125,6 @@ class SlugStats:
             + 0.5 * self.win_rate
             + 0.25 * (self.residual_hits / max(1, self.n_complete))
             - 0.75 * self.binder_fail_rate
-            - 0.1 * (self.incomplete_n / max(1, self.n_complete + self.incomplete_n))
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -160,7 +160,7 @@ def metric_from_delivery(
             value = float(metrics[key])  # type: ignore[arg-type]
         except (TypeError, ValueError):
             continue
-        if value != value:  # NaN
+        if not math.isfinite(value):
             continue
         return value
     smoke = metrics.get("smoke")
@@ -173,7 +173,7 @@ def metric_from_delivery(
                 value = float(smoke[bare])  # type: ignore[arg-type]
             except (TypeError, ValueError):
                 continue
-            if value == value:
+            if math.isfinite(value):
                 return value
     return None
 

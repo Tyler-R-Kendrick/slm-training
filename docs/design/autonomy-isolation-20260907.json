@@ -1,0 +1,50 @@
+{
+  "schema_version": "autonomy_isolation_evidence/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "authoring_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "candidate_committed": false,
+  "version_stamp": {
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {"autoresearch.heal": "v7"},
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-07T17:11:56.316802+00:00"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "bubblewrap": "0.9.0",
+    "pyproject_sha256": "c49156c9524b5189b9fcf2d668bf370fb5aaf1b7a4952a71d5c29cc213a23190"
+  },
+  "tests": {
+    "targets": ["tests/test_autoresearch/test_heal_isolation.py", "tests/test_autoresearch/test_repair_verifier.py"],
+    "effective_pytest_options": ["-o", "addopts=", "-q"],
+    "require_actual_isolation": true,
+    "passed": 33, "failed": 0, "errors": 0, "skipped": 0,
+    "exit_code": 0, "seconds": 2.721,
+    "interrupt_seconds": 170, "kill_grace_seconds": 10,
+    "junit_path": "outputs/autoresearch/isolation/acceptance-3.xml",
+    "junit_sha256": "cd31481bb640bd687cd29b054d2384b5ae77047088cea6987770e35928bc4abe"
+  },
+  "leaves": {
+    "ISO-CAPS": "implemented_actual_host_boundary_tested",
+    "ISO-ALLPATH": "shared_backend_implemented_dispatch_wiring_owned_by_recovery",
+    "ISO-VERIFY": "independent_isolated_predicate_verifier_tested",
+    "ISO-RELEASE": "scope_and_differential_wiring_equivalence_tested"
+  },
+  "acceptance_coverage": ["AC-SCOPE", "AC-ESCAPE", "AC-POLICY", "AC-FAKEFIX", "AC-RECEIPT", "AC-HANG"],
+  "evidence_class": "actual_host_process_and_filesystem_plus_imported_contract_tests",
+  "live_agent_repair": "not_executed_capability_unavailable",
+  "limitations": [
+    "No explicit live provider grant; executable availability does not grant authority",
+    "Provider egress and credentials relay unsupported",
+    "Directory write grants refused pending bounded environment backend",
+    "Controller must supply immutable snapshot, locked checks and current fence",
+    "Full source/resource/test release coverage belongs to independent validation",
+    "No perpetual, arbitrary-semantic, NFS or multi-host guarantee"
+  ],
+  "service_state": "not_installed_or_started",
+  "model_training_or_evaluation": "not_executed",
+  "promotion_or_ship_claim": false
+}
+

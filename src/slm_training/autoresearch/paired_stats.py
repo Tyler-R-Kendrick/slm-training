@@ -1,7 +1,7 @@
 """Paired screening tests: Wilcoxon signed-rank with an exact sign-test fallback.
 
-Ties are dropped. A cycle with fewer than ``min_nontied_pairs`` non-tied
-deltas is ``mechanism_no_effect`` (not a loss). Stdlib only — no scipy.
+Ties are dropped. Too few non-tied pairs is inconclusive, never evidence of
+equivalence or mechanism absence. Stdlib only — no scipy.
 """
 
 from __future__ import annotations
@@ -10,7 +10,9 @@ import math
 from dataclasses import dataclass
 from fractions import Fraction
 from statistics import NormalDist, median, stdev
-from typing import Any, Literal, Mapping, Sequence
+from typing import Literal, Mapping, Sequence
+
+from .paired_analysis import PairedSelection as PairedSelection
 
 from slm_training.autoresearch.evidence_ledger import (
     parse_alpha,
@@ -64,7 +66,7 @@ def exact_sign_test(
     """Return (n_pos, n_neg, two-sided p) after dropping zeros."""
 
     pos = neg = 0
-    for raw in deltas:
+    for raw in _finite_deltas(deltas):
         if raw > 0:
             pos += 1
         elif raw < 0:
@@ -136,7 +138,7 @@ def _wilcoxon_normal_p(ranks: Sequence[float], w_plus: float) -> float:
 def wilcoxon_signed_rank_p(deltas: Sequence[float]) -> tuple[float, float, int]:
     """Return (W+, two-sided p, n_nontied) on non-zero deltas."""
 
-    signed = [float(v) for v in deltas if v != 0]
+    signed = [v for v in _finite_deltas(deltas) if v != 0]
     n = len(signed)
     if n == 0:
         return 0.0, 1.0, 0
@@ -158,7 +160,11 @@ def paired_screening_test(
     """Decision on per-record paired deltas (positive = candidate better)."""
 
     alpha_f = parse_alpha(alpha)
-    values = [float(v) for v in deltas]
+    if kind not in {"wilcoxon_signed_rank", "sign_test"}:
+        raise ValueError("unsupported paired test")
+    if type(min_nontied_pairs) is not int or min_nontied_pairs < 1:
+        raise ValueError("min_nontied_pairs must be a positive integer")
+    values = _finite_deltas(deltas)
     n_pairs = len(values)
     ties = sum(1 for v in values if v == 0)
     nontied = n_pairs - ties
@@ -171,8 +177,8 @@ def paired_screening_test(
             statistic=0.0,
             p_value=1.0,
             alpha=str(alpha_f),
-            verdict="mechanism_no_effect",
-            reason=f"{MECHANISM_NO_EFFECT}:nontied_pairs={nontied}<{min_nontied_pairs}",
+            verdict="inconclusive",
+            reason=f"insufficient_nontied_pairs:{nontied}<{min_nontied_pairs}",
         )
 
     use_sign = kind == "sign_test" or nontied <= _SIGN_TEST_MAX_N
@@ -210,8 +216,14 @@ def paired_screening_test(
             verdict="inconclusive",
             reason="paired_p_above_alpha",
         )
-    mean_delta = sum(v for v in values if v != 0) / nontied
-    verdict: PairedVerdict = "win" if mean_delta > 0 else "loss"
+    # The direction belongs to the tested statistic, not an untested mean that
+    # an extreme observation can reverse under a sign/median test.
+    positive = (
+        statistic > 0
+        if used == "sign_test"
+        else statistic > nontied * (nontied + 1) / 4
+    )
+    verdict: PairedVerdict = "win" if positive else "loss"
     return PairedTestResult(
         kind=used,
         n_pairs=n_pairs,
@@ -265,21 +277,42 @@ def _finite(value: object) -> float | None:
     return number if math.isfinite(number) else None
 
 
+def _finite_deltas(values: Sequence[float]) -> list[float]:
+    parsed = [_finite(value) for value in values]
+    if any(value is None for value in parsed):
+        raise ValueError("invalid_evidence: paired deltas must be finite numbers")
+    return [float(value) for value in parsed if value is not None]
+
+
 def paired_record_deltas(
     control: Mapping[str, object],
     candidate: Mapping[str, object],
     *,
     direction: str = "decrease",
+    required_ids: Sequence[str] | None = None,
 ) -> PairedRecordDeltas:
     """Pair ``{record_id: value}`` maps by id into improvement-signed deltas."""
 
     if direction not in {"decrease", "increase"}:
         raise ValueError(f"direction must be decrease|increase, got {direction!r}")
+    if any(not isinstance(key, str) or not key for key in (*control, *candidate)):
+        raise ValueError("record identities must be nonempty strings")
+    required = (
+        tuple(required_ids)
+        if required_ids is not None
+        else tuple(sorted(set(control) | set(candidate)))
+    )
+    if len(set(required)) != len(required) or any(
+        not isinstance(key, str) or not key for key in required
+    ):
+        raise ValueError("locked selection contains duplicate or invalid identities")
+    if (set(control) | set(candidate)) - set(required):
+        raise ValueError("observations outside locked selection")
     ids: list[str] = []
     deltas: list[float] = []
     missing_control = 0
     missing_candidate = 0
-    for record_id in sorted(set(control) | set(candidate)):
+    for record_id in required:
         c_val = _finite(control.get(record_id))
         t_val = _finite(candidate.get(record_id))
         if c_val is None:
@@ -289,6 +322,8 @@ def paired_record_deltas(
         if c_val is None or t_val is None:
             continue
         raw = t_val - c_val
+        if not math.isfinite(raw):
+            raise ValueError("invalid_evidence: paired difference overflow")
         ids.append(str(record_id))
         deltas.append(-raw if direction == "decrease" else raw)
     return PairedRecordDeltas(
@@ -300,60 +335,44 @@ def paired_record_deltas(
 
 
 def paired_record_screening(
-    control: Mapping[str, object],
-    candidate: Mapping[str, object],
+    control,
+    candidate,
     *,
-    direction: str = "decrease",
-    alpha: Fraction | str | int = DEFAULT_ALPHA,
-    min_nontied_pairs: int = DEFAULT_MIN_NONTIED_PAIRS,
-    kind: PairedTestKind = "wilcoxon_signed_rank",
-    minimum_effect: float = 0.0,
-) -> dict[str, Any]:
-    """Paired screening verdict on per-record maps.
+    direction="decrease",
+    alpha=DEFAULT_ALPHA,
+    min_nontied_pairs=DEFAULT_MIN_NONTIED_PAIRS,
+    kind="wilcoxon_signed_rank",
+    minimum_effect=0.0,
+    selection=None,
+):
+    from .paired_analysis import paired_record_screening as analyze
 
-    ``win`` requires ``p < alpha`` on the paired test **and** a median
-    improvement strictly above ``minimum_effect``. Everything else — an
-    undecidable pair count, ``p >= alpha``, a significant loss, or a
-    significant but sub-threshold gain — is not a win. The result is a plain
-    JSON-serialisable dict for delivery records.
-    """
-
-    pairs = paired_record_deltas(control, candidate, direction=direction)
-    test = paired_screening_test(
-        pairs.deltas,
+    return analyze(
+        control,
+        candidate,
+        direction=direction,
         alpha=alpha,
         min_nontied_pairs=min_nontied_pairs,
         kind=kind,
+        minimum_effect=minimum_effect,
+        selection=selection,
     )
-    median_delta = pairs.median_delta
-    alpha_f = float(parse_alpha(alpha))
-    win = bool(
-        test.verdict == "win"
-        and test.p_value < alpha_f
-        and median_delta is not None
-        and median_delta > float(minimum_effect)
+
+
+def bernoulli_mixture_interval(successes, trials, *, alpha=DEFAULT_ALPHA):
+    from .paired_analysis import bernoulli_mixture_interval as interval
+
+    return interval(successes, trials, alpha=alpha)
+
+
+def compare_fixed_sequential_signs(
+    deltas, *, unit_ids, iid_units_declared, alpha=DEFAULT_ALPHA
+):
+    from .paired_analysis import compare_fixed_sequential_signs as compare
+
+    return compare(
+        deltas, unit_ids=unit_ids, iid_units_declared=iid_units_declared, alpha=alpha
     )
-    return {
-        "kind": test.kind,
-        "direction": direction,
-        "n_pairs": pairs.n_pairs,
-        "n_nontied": test.n_nontied,
-        "n_ties": test.n_ties,
-        "n_missing_control": pairs.n_missing_control,
-        "n_missing_candidate": pairs.n_missing_candidate,
-        "statistic": test.statistic,
-        "p_value": test.p_value,
-        "alpha": test.alpha,
-        "min_nontied_pairs": int(min_nontied_pairs),
-        "minimum_effect": float(minimum_effect),
-        "median_delta": median_delta,
-        "mean_delta": pairs.mean_delta,
-        "paired_sd": pairs.sd,
-        "verdict": test.verdict,
-        "reason": test.reason,
-        "win": win,
-        "promotion_authority": False,
-    }
 
 
 __all__ = [

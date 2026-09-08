@@ -10,6 +10,8 @@ See ``docs/design/code-quality-contract.md``.
 
 from __future__ import annotations
 
+import math
+import hashlib
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -21,15 +23,15 @@ from scripts.autotrain_io import (
 
 def metric_from_eval(path: Path, key: str) -> float | None:
     data = read_json(path)
-    if key in data and isinstance(data[key], (int, float)):
-        return float(data[key])
+    if key in data and finite_metric(data[key]) is not None:
+        return metric_leaf(data, key)
     metrics = data.get("metrics")
     if isinstance(metrics, dict) and isinstance(metrics.get(key), (int, float)):
-        return float(metrics[key])
+        return metric_leaf(metrics, key)
     for suite_name in ("smoke", "held_out"):
         suite = data.get(suite_name)
         if isinstance(suite, dict) and isinstance(suite.get(key), (int, float)):
-            return float(suite[key])
+            return metric_leaf(suite, key)
     return None
 
 
@@ -85,9 +87,8 @@ def run_metrics(
         if isinstance(smoke_sb, dict) and isinstance(
             smoke_sb.get("eval_nll"), (int, float)
         ):
-            nll = float(smoke_sb["eval_nll"])
-            out["eval_nll"] = nll
-            out["smoke.eval_nll"] = nll
+            out["eval_nll"] = finite_metric(smoke_sb["eval_nll"])
+            out["smoke.eval_nll"] = out["eval_nll"]
     return out
 
 
@@ -96,10 +97,84 @@ EVAL_NLL_RECORDS_SCHEMA = "eval_nll_records/v1"
 EVAL_NLL_RECORDS_NAME = "eval_nll_records.json"
 
 
+def paired_nll_selection(control: dict, candidate: dict) -> dict:
+    """Read equal locked identities; malformed input is never positional pairing."""
+    from slm_training.autoresearch.paired_stats import PairedSelection
+
+    for key in ("estimator_id", "units", "eval_version"):
+        if control.get(key) != candidate.get(key):
+            raise ValueError(f"paired_{key}_mismatch")
+    selection = control.get("selection")
+    if selection is None and candidate.get("selection") is None:
+        return {}  # Legacy diagnostic only; no invented independent units.
+    if not isinstance(selection, dict) or selection != candidate.get("selection"):
+        raise ValueError("paired_selection_identity_mismatch")
+    cases = selection.get("selected_record_ids")
+    roots = selection.get("selected_root_ids")
+    if not isinstance(cases, list):
+        raise ValueError("paired_selected_cases_missing")
+    locked = PairedSelection(cases)
+    result = {"selected_record_ids": list(locked.record_ids)}
+    if roots is not None:
+        if (
+            not isinstance(roots, list)
+            or len(roots) != len(cases)
+            or any(root is not None and (not isinstance(root, str) or not root) for root in roots)
+        ):
+            raise ValueError("paired_root_identity_coverage")
+        if all(root is not None for root in roots):
+            result["root_ids"] = dict(zip(cases, roots, strict=True))
+    return result
+
+
+def read_paired_nll(control_dir: Path, candidate_dir: Path) -> tuple:
+    control, control_digest = read_eval_nll_records(control_dir)
+    candidate, candidate_digest = read_eval_nll_records(candidate_dir)
+    info = {
+        "control_n": len(control),
+        "candidate_n": len(candidate),
+        "control_definition_hash": control_digest,
+        "candidate_definition_hash": candidate_digest,
+    }
+    if not control or not candidate:
+        return None, info, []
+    if not control_digest or control_digest != candidate_digest:
+        return (
+            None,
+            info,
+            [
+                f"paired_records_definition_mismatch:{control_dir.name}:{candidate_dir.name}"
+            ],
+        )
+    try:
+        selection = paired_nll_selection(
+            read_json(control_dir / EVAL_NLL_RECORDS_NAME),
+            read_json(candidate_dir / EVAL_NLL_RECORDS_NAME),
+        )
+    except (TypeError, ValueError) as exc:
+        return None, info, [f"measurement_incomplete:{exc}"]
+    return {"control": control, "candidate": candidate, **selection}, info, []
+
+
+def _nll_file_matches_scoreboard(path: Path) -> bool:
+    suites = read_json(path.parent / "scoreboard.json").get("suites", {})
+    if not isinstance(suites, dict):
+        return False
+    smoke = suites.get("smoke", {})
+    if not isinstance(smoke, dict):
+        return False
+    return "eval_nll_records_sha256" not in smoke or (
+        path.is_file() and smoke["eval_nll_records_sha256"]
+        == hashlib.sha256(path.read_bytes()).hexdigest())
+
+
 def read_eval_nll_records(run_dir: Path) -> tuple[dict[str, float], str | None]:
     """``({record_id: nll}, definition_hash)`` from ``eval_nll_records.json``."""
 
-    data = read_json(Path(run_dir) / EVAL_NLL_RECORDS_NAME)
+    path = Path(run_dir) / EVAL_NLL_RECORDS_NAME
+    if not _nll_file_matches_scoreboard(path):
+        return {}, None
+    data = read_json(path)
     if data.get("schema") != EVAL_NLL_RECORDS_SCHEMA:
         return {}, None
     raw = data.get("records")
@@ -108,8 +183,9 @@ def read_eval_nll_records(run_dir: Path) -> tuple[dict[str, float], str | None]:
     records: dict[str, float] = {}
     for record_id, value in raw.items():
         number = finite_metric(value)
-        if number is not None:
-            records[str(record_id)] = number
+        if number is None:
+            return {}, None  # Invalid evidence must not shrink the paired universe.
+        records[str(record_id)] = number
     digest = data.get("definition_hash")
     return records, (str(digest) if digest else None)
 
@@ -135,7 +211,11 @@ def find_nested_key(payload: Any, key: str, *, depth: int = 6) -> Any:
 
 
 def finite_metric(value: object) -> float | None:
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    ):
         return float(value)
     return None
 
@@ -144,13 +224,21 @@ def metric_leaf(row: Mapping[str, Any], name: str) -> float | None:
     raw = row.get(name)
     if raw is None:
         raw = row.get(f"smoke.{name}")
-    return finite_metric(raw)
+    value = finite_metric(raw)
+    rate = name.rsplit(".", 1)[-1] in {
+        "parse_rate",
+        "meaningful_program_rate",
+        "structural_similarity",
+        "binder_reference_f1",
+    }
+    return None if rate and value is not None and not 0 <= value <= 1 else value
 
 
 def rate_to_pm(value: object) -> int | None:
-    if not isinstance(value, (int, float)) or isinstance(value, bool):
+    value = finite_metric(value)
+    if value is None or not 0 <= value <= 1:
         return None
-    return int(max(0, min(1000, round(float(value) * 1000.0))))
+    return round(value * 1000.0)
 
 
 def run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
@@ -172,14 +260,14 @@ def run_suite_metrics(camp_dir: Path, run_id: str) -> dict[str, float | None]:
             continue
         for key in out:
             if out[key] is None and isinstance(metrics.get(key), (int, float)):
-                out[key] = float(metrics[key])
+                out[key] = metric_leaf(metrics, key)
         # Nested suite blocks
         for suite_key in ("held_out", "smoke"):
             suite = data.get(suite_key)
             if isinstance(suite, dict):
                 for key in out:
                     if out[key] is None and isinstance(suite.get(key), (int, float)):
-                        out[key] = float(suite[key])
+                        out[key] = metric_leaf(suite, key)
     # Fallback to smoke helpers used by Phase A
     base = run_metrics(camp_dir, run_id)
     for key, val in base.items():

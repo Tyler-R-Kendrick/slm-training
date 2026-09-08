@@ -10,6 +10,7 @@ See ``docs/design/code-quality-contract.md``.
 
 from __future__ import annotations
 
+
 from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,6 +32,16 @@ from slm_training.levers import (
     CAPACITY_SCALING_LEVERS,
     require_size_matched_arms,
 )
+
+
+def assert_declared_arm_match(control, candidate, *, contract, resource_totals, trainable_params):
+    """Explicit data/duration alternative; ordinary warm-start guards stay intact."""
+    from slm_training.autoresearch.intervention_matching import assert_intervention_match
+
+    assert_intervention_match(
+        control, candidate, contract=contract, resource_totals=resource_totals,
+        trainable_params=trainable_params,
+    )
 
 
 def counterbalanced_arm_order(
@@ -83,10 +94,14 @@ def size_match_skip_reason(
 
 def arm_trainable_params(camp_dir: Path, run_id: str) -> int:
     summary = read_json(camp_dir / "runs" / run_id / "train_summary.json")
+    track = summary.get("track")
+    if isinstance(track, Mapping) and "trainable_params" in track:
+        raw = track["trainable_params"]
+        return raw if type(raw) is int and raw > 0 else 0
     for key in ("trainable_params", "n_params", "parameter_count"):
         raw = summary.get(key)
-        if isinstance(raw, (int, float)) and not isinstance(raw, bool):
-            return int(raw)
+        if type(raw) is int and raw > 0:
+            return raw
     return 0
 
 
@@ -107,6 +122,17 @@ def arm_eval_version(run_dir: Path) -> str | None:
         if isinstance(found, str) and found.strip():
             return found.strip()
     return None
+
+
+def parse_skip_slugs(raw: str) -> frozenset[str]:
+    """Normalize CLI arm exclusions without changing treatment identity."""
+    return frozenset(slug.strip() for slug in raw.split(",") if slug.strip())
+
+
+def arm_is_self_control(extras: Mapping[str, Any] | None, train_version: str) -> bool:
+    """A data intervention equal to its own control is not a distinct treatment."""
+    public = {k: v for k, v in (extras or {}).items() if not str(k).startswith("_")}
+    return set(public) == {"train_version"} and str(public["train_version"] or "") == train_version
 
 
 def arm_swaps_train_corpus(
@@ -205,8 +231,5 @@ def arm_completed_n(metrics: Mapping[str, Any] | None) -> int | None:
         raw = metrics.get(key)
         if raw is None:
             continue
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            continue
+        return raw if type(raw) is int and raw >= 0 else None
     return None

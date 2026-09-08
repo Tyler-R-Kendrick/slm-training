@@ -415,7 +415,8 @@ def compute_screening_sample_size(
         n_max=n_max,
         chosen_n=chosen,
         binding_constraints=tuple(binding),
-        must_generate="suite_volume" in binding,
+        # Growing the suite cannot clear an already-binding wall budget.
+        must_generate="suite_volume" in binding and "wall_budget" not in binding,
         verdict=verdict,
         bounds=tuple(bounds),
         findings=tuple(findings),
@@ -684,10 +685,6 @@ def assert_eval_publish_target_writable(dataset_id: str) -> None:
         raise FrozenEvalSnapshotError(
             f"refusing to mutate frozen eval snapshot {dataset_id!r}"
         )
-    if dataset_id.startswith("e938_") and dataset_id in FROZEN_EVAL_SNAPSHOTS:
-        raise FrozenEvalSnapshotError(
-            f"refusing to mutate frozen eval snapshot {dataset_id!r}"
-        )
 
 
 # Deficit smoke records are sampled from the certified corpus, never from a
@@ -699,25 +696,22 @@ def assert_eval_publish_target_writable(dataset_id: str) -> None:
 CERTIFIED_SMOKE_SPLITS: tuple[str, ...] = ("validation",)
 
 
-def _policy_train_manifest() -> Path | None:
-    """Manifest of the climb policy's default train dataset, when resolvable.
+class ScreeningLineageUnavailable(ValueError):
+    """Generation lacks a verified training-exclusion prerequisite."""
 
-    The certified train bucket is always decontaminated against; the policy
-    train set is added so a deficit record can never be a leak of whatever the
-    climb currently trains on, even when that differs from the bucket.
-    """
 
+def _policy_train_manifest() -> Path:
+    """Verified policy training manifest; unavailable lineage is not absence."""
     try:
         from slm_training.autoresearch.climb_policy import load_climb_policy
         from slm_training.data.store import DataStore
 
         train_version = str(load_climb_policy().defaults.get("train_version") or "")
         if not train_version:
-            return None
-        manifest = DataStore().resolve("train", train_version).path / "manifest.json"
-    except Exception:  # noqa: BLE001 — unresolvable policy set adds nothing
-        return None
-    return manifest if manifest.is_file() else None
+            raise ValueError("policy train_version missing")
+        return DataStore().verify("train", train_version).path / "manifest.json"
+    except Exception as exc:  # Fail closed; preserve the original diagnosis.
+        raise ScreeningLineageUnavailable("screening_training_lineage_unavailable") from exc
 
 
 def extra_smoke_fixtures_for_deficit(
@@ -725,28 +719,32 @@ def extra_smoke_fixtures_for_deficit(
     need: int,
     *,
     seed: int = 0,
-    extra_train_manifests: Iterable[Path | str] = (),
+    extra_train_manifests: Iterable[Path | str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return up to ``need`` unused certified smoke records as seed dicts.
 
-    ``existing_ids`` is updated in place with the returned ids so repeated
-    calls keep growing the suite without duplicates. Records are plain dicts
-    in the ``test_seeds.jsonl`` shape (``split``/``meta.suite`` = smoke) so
-    the driver can append them and rebuild with ``--source fixture``.
+    Returned smoke seed dicts update ``existing_ids`` without duplicates.
     Candidates are decontaminated against the certified train bucket, the
-    climb policy's default train dataset, and ``extra_train_manifests``.
+    policy dataset, and explicitly declared actual/ancestor manifests. Empty
+    means policy-only with no additional ancestors; omission is unknown lineage.
     """
 
     if need <= 0:
         return []
+    if extra_train_manifests is None:
+        raise ScreeningLineageUnavailable("screening_training_lineage_not_declared")
     from slm_training.harnesses.test_data.certified import (
         sample_certified_candidates,
     )
 
     manifests: list[Path | str] = list(extra_train_manifests)
-    policy_manifest = _policy_train_manifest()
-    if policy_manifest is not None:
-        manifests.append(policy_manifest)
+    manifests.append(_policy_train_manifest())
+    if any(not Path(manifest).is_file() for manifest in manifests):
+        raise ScreeningLineageUnavailable("screening_training_manifest_missing")
+    from slm_training.data.leakage import load_train_fingerprints
+    fingerprints = [load_train_fingerprints(Path(path)) for path in manifests]
+    if any(not (item["ids"] and item["prompts"] and item["openuis"]) for item in fingerprints):
+        raise ScreeningLineageUnavailable("screening_training_fingerprints_incomplete")
     sample = sample_certified_candidates(
         existing_ids=set(existing_ids),
         need=need,

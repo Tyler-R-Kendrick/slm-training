@@ -185,7 +185,7 @@ def is_harness_crash(reason: str, arm_exits: object = None) -> bool:
 
 
 def classify_blocker(
-    kind: str, reason: str, *, arm_exits: object = None
+    kind: str, reason: str, *, arm_exits: object = None, code: str | None = None
 ) -> BlockerClass:
     """Map one hard-pending blocker to its heal class.
 
@@ -197,6 +197,22 @@ def classify_blocker(
     """
     kind_s = str(kind).strip()
     text = str(reason).lower()
+
+    # Producer codes outrank diagnostic prose. Unknown future codes require
+    # diagnosis; never silently reinterpret them with legacy keyword rules.
+    # Action kinds carrying formal/delivery authority cannot be weakened by a
+    # mismatched code supplied alongside the action.
+    if code is not None and kind_s not in {"stop_campaign", "repair_formal", "deliver_stack"}:
+        return {
+            "screening_wall_budget": "code",  # runtime/measurement owner
+            "screening_suite_volume": "data",
+            "screening_constraint_unknown": "unknown",
+            "harness_code_failure": "code",
+            "evaluation_wiring_failure": "code",
+            "npm_bridge_unavailable": "environment",
+            "data_not_ready": "data",
+            "formal_toolchain_unavailable": "formal_infra",
+        }.get(code, "unknown")
 
     # Human-authority decisions dominate every other class: no playbook or
     # agent session may substitute for a paid-compute / approval grant.

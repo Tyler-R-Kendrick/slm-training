@@ -69,13 +69,14 @@ def park_screening_n_deficit(
     binding = tuple(report.get("binding_constraints") or ())
     n_min = report.get("n_min") or 6
     remedies: list[AutotrainActionV1] = []
-    if "suite_volume" in binding or report.get("must_generate") or not binding:
-        # No binding constraint recorded means the cause is unknown; the
-        # historical ask stays, so an unclassified deficit never parks silently.
+    if "suite_volume" in binding:
         remedies.append(
             AutotrainActionV1(
                 kind="rebuild_data",
                 owner="synthesis-feedback",
+                blocker_code="screening_suite_volume",
+                unmet_predicate=f"usable independent screening cases >= {n_min}",
+                required_capability="screening_data_generation",
                 reason=(
                     "screening suite_volume binds "
                     f"(suite_ceiling_n={report.get('suite_ceiling_n')}): generate "
@@ -92,6 +93,9 @@ def park_screening_n_deficit(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
                 harness_family="model_build",
+                blocker_code="screening_wall_budget",
+                unmet_predicate=f"bounded measurement plan covers {n_min} selected cases",
+                required_capability="bounded_measurement_repair",
                 reason=(
                     "screening wall_budget binds: the arm wall affords "
                     f"{report.get('budget_ceiling_n')} records at the declared "
@@ -103,14 +107,15 @@ def park_screening_n_deficit(
             )
         )
     if not remedies:
-        # A constraint neither branch recognizes (a third one added later).
-        # The old code always queued a data ask, so falling back to it keeps
-        # the park from silently requesting nothing at all; the reason names
-        # the constraint so the owner can see it was not understood here.
+        # Unknown evidence requests diagnosis, never an invented data remedy.
         remedies.append(
             AutotrainActionV1(
-                kind="rebuild_data",
-                owner="synthesis-feedback",
+                kind="repair_harness",
+                owner="improve-openui-harnesses",
+                harness_family="model_build",
+                blocker_code="screening_constraint_unknown",
+                unmet_predicate="identify the binding screening constraint",
+                required_capability="bounded_diagnosis",
                 reason=(
                     "screening range is empty under an unrecognized binding "
                     f"constraint ({', '.join(binding)}); n_min={n_min}, "
@@ -120,6 +125,8 @@ def park_screening_n_deficit(
                 evidence_ids=evidence_ids,
             )
         )
+    # A wall deficit must be repaired before spending on additional data.
+    remedies.sort(key=lambda item: item.kind != "repair_harness")
     actions = (
         *remedies,
         AutotrainActionV1(
@@ -132,10 +139,10 @@ def park_screening_n_deficit(
             evidence_ids=evidence_ids,
         ),
     )
-    handoff_path.write_text(
-        handoff.model_copy(update={"actions": actions}).model_dump_json(indent=2)
-        + "\n",
-        encoding="utf-8",
+    from slm_training.autoresearch.storage import CampaignStore
+
+    CampaignStore(campaign_id, root).revise_handoff_actions(
+        handoff.model_copy(update={"actions": actions})
     )
     write_loop_state(
         root,
@@ -146,8 +153,8 @@ def park_screening_n_deficit(
             active_campaign_id=None,
             last_completed_campaign_id=campaign_id,
             cycle_index=cycle_index,
-            next_action="rebuild_data",
-            blocker_fingerprint="screening_n_suite_volume",
+            next_action=remedies[0].kind,
+            blocker_fingerprint=remedies[0].blocker_code,
             blocker_count=1,
             pid=os.getpid(),
         ),

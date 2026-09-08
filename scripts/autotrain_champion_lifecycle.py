@@ -103,6 +103,18 @@ def refresh_champion_source_recipes(root: Path, entries: list[dict[str, Any]]) -
 CONTROL_RUN_SUFFIXES = ("-control", "_control")
 
 
+def _recorded_checkpoint(run_dir: Path, summary: dict) -> Path | None:
+    raw = summary.get("checkpoint")
+    if raw is not None and not isinstance(raw, str):
+        return None
+    checkpoint = Path(raw) if raw else run_dir / "checkpoints/last.pt"
+    try:
+        checkpoint.resolve().relative_to(run_dir.resolve())
+    except ValueError:
+        return None
+    return checkpoint if checkpoint.is_file() else None
+
+
 def first_complete_control_run(
     root: Path, loop_id: str
 ) -> tuple[Path, Path, dict[str, Any]] | None:
@@ -128,8 +140,7 @@ def first_complete_control_run(
             if not run_dir.name.endswith(CONTROL_RUN_SUFFIXES):
                 continue
             summary_path = run_dir / "train_summary.json"
-            ckpt = run_dir / "checkpoints" / "last.pt"
-            if not summary_path.is_file() or not ckpt.is_file():
+            if not summary_path.is_file():
                 continue
             try:
                 summary = json.loads(summary_path.read_text(encoding="utf-8"))
@@ -142,6 +153,8 @@ def first_complete_control_run(
             except (TypeError, ValueError):
                 steps = 0
             if steps <= 0 or str(summary.get("stopped_on") or "") != "steps":
+                continue
+            if _recorded_checkpoint(run_dir, summary) is None:
                 continue
             return camp_dir, run_dir, summary
     return None
@@ -175,7 +188,7 @@ def seed_baseline_champion(root: Path, loop_id: str) -> ClimbChampionSidecar | N
         trainable = None
     sidecar = seed_climb_champion(
         loop_dir,
-        baseline_checkpoint=run_dir / "checkpoints" / "last.pt",
+        baseline_checkpoint=Path(summary.get("checkpoint") or run_dir / "checkpoints/last.pt"),
         source_campaign=camp_dir.name,
         extra_steps=steps,
         train_data_manifest_sha=str(

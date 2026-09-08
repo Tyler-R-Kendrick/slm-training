@@ -16,6 +16,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from slm_training.autoresearch.climb_measurement import (
+    metric_from_map as _metric_from_map,
+)
+from slm_training.autoresearch.climb_measurement import (
+    paired_primary_test as _paired_primary_test,
+)
+from slm_training.autoresearch.climb_measurement import (
+    scientific_status,
+)
 from slm_training.autoresearch.hillclimb import (
     ExhaustedKnobLedger,
     HillClimbError,
@@ -29,8 +38,8 @@ from slm_training.autoresearch.hillclimb import (
     is_measured_null_feedback,
     knob_signature_sha256,
 )
-from slm_training.lineage.records import canonical_json
 from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.lineage.records import canonical_json
 
 __all__ = [
     "CLIMB_POLICY_SCHEMA",
@@ -871,22 +880,6 @@ def assert_rung_allows_promotion(
         )
 
 
-def _leaf(metric: str) -> str:
-    return metric.split(".")[-1]
-
-
-def _metric_from_map(metrics: Mapping[str, Any], metric_id: str) -> float | None:
-    if metric_id in metrics and isinstance(metrics[metric_id], (int, float)):
-        return float(metrics[metric_id])
-    leaf = _leaf(metric_id)
-    if leaf in metrics and isinstance(metrics[leaf], (int, float)):
-        return float(metrics[leaf])
-    for key, val in metrics.items():
-        if str(key).endswith(f".{leaf}") and isinstance(val, (int, float)):
-            return float(val)
-    return None
-
-
 def promotion_primary_effect_met(
     *,
     control_metrics: Mapping[str, Any] | None,
@@ -966,7 +959,7 @@ def classify_positive_metrics(
     eg_params_by_seed: Sequence[float] | None = None,
     executable_unblock: bool = False,
     fixture_insufficient_n: bool = False,
-    paired_records: Mapping[str, Mapping[str, Any]] | None = None,
+    paired_records: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Direction-signed primary win + optional EG_params for Phase A positive.
 
@@ -1049,6 +1042,10 @@ def classify_positive_metrics(
                 f"control_completed={c_completed}/{c_n}:"
                 f"candidate_completed={t_completed}/{t_n}"
             )
+        elif paired is not None and not paired.get("diagnostic_complete", False):
+            reasons.append(f"measurement_incomplete:required_paired_records:{metric}")
+        elif use_paired and paired is None:
+            reasons.append(f"measurement_incomplete:paired_records_unavailable:{metric}")
         elif paired is not None:
             detail = (
                 f"paired_{paired['verdict']}:p={paired['p_value']:.6g}"
@@ -1066,6 +1063,8 @@ def classify_positive_metrics(
                     f"primary_metric_win:{metric}:{c_val}->{t_val}"
                     f":improvement={improvement}:{detail}"
                 )
+            elif paired["verdict"] == "inconclusive":
+                reasons.append(f"primary_metric_inconclusive:{metric}:{detail}")
             else:
                 reasons.append(
                     f"primary_metric_null_or_worse:{metric}:"
@@ -1100,8 +1099,7 @@ def classify_positive_metrics(
         and pos_cfg.get("allow_executable_unblock", True)
         and not grammar_illegal
     ):
-        positive = True
-        reasons.append("executable_unblock:candidate_completed_after_control_error")
+        reasons.append("operational_unblock:candidate_completed_after_control_error")
 
     fixture_clamp_exempt = bool(
         role == "screening" and paired_win_decided and not grammar_illegal
@@ -1143,6 +1141,11 @@ def classify_positive_metrics(
     if grammar_illegal:
         positive = False
 
+    if role == "screening" and leaf in PAIRED_PRIMARY_LEAVES and (
+        paired is None or not paired.get("diagnostic_complete", False)
+    ):
+        positive = False
+
     if not any(
         r.startswith("primary_metric_win") or r.startswith("executable_unblock")
         for r in reasons
@@ -1164,6 +1167,8 @@ def classify_positive_metrics(
         "policy_version": policy.version,
         "paired_test": paired,
         "fixture_clamp_exempt": fixture_clamp_exempt,
+        "operational_progress": bool(executable_unblock),
+        "scientific_status": scientific_status(reasons, positive, paired),
     }
 
 
@@ -1174,51 +1179,6 @@ PAIRED_PRIMARY_LEAVES: tuple[str, ...] = ("eval_nll",)
 # all-agree pattern can reach p < alpha, so a "win" there is fixture noise.
 SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR = 6
 FIXTURE_INSUFFICIENT_N_QUALITY_PROBE = "fixture_insufficient_n:quality_probe"
-
-
-def _paired_primary_test(
-    policy: ClimbPolicy,
-    paired_records: Mapping[str, Mapping[str, Any]] | None,
-    *,
-    direction: str,
-    minimum_effect: float,
-) -> dict[str, Any] | None:
-    """Policy paired test on per-record maps; ``None`` when either arm lacks them."""
-
-    if not isinstance(paired_records, Mapping):
-        return None
-    control = paired_records.get("control")
-    candidate = paired_records.get("candidate")
-    if not isinstance(control, Mapping) or not isinstance(candidate, Mapping):
-        return None
-    if not control or not candidate:
-        return None
-    from slm_training.autoresearch.paired_stats import (
-        DEFAULT_ALPHA,
-        DEFAULT_MIN_NONTIED_PAIRS,
-        paired_record_screening,
-    )
-
-    cfg = policy.measurement.get("paired_test")
-    if not isinstance(cfg, Mapping):
-        cfg = {}
-    kind = str(cfg.get("kind") or "wilcoxon_signed_rank")
-    if kind not in {"wilcoxon_signed_rank", "sign_test"}:
-        raise ClimbPolicyError(f"measurement.paired_test.kind unsupported: {kind!r}")
-    result = paired_record_screening(
-        control,
-        candidate,
-        direction="decrease" if direction == "decrease" else "increase",
-        alpha=cfg.get("alpha") or DEFAULT_ALPHA,
-        min_nontied_pairs=int(
-            cfg.get("min_nontied_pairs") or DEFAULT_MIN_NONTIED_PAIRS
-        ),
-        kind=kind,  # type: ignore[arg-type]
-        minimum_effect=float(minimum_effect),
-    )
-    result["claim_class"] = "diagnostic"
-    result["decidability_floor"] = SCREENING_NLL_PAIRED_DECIDABILITY_FLOOR
-    return result
 
 
 def synthesis_policy_allows_sft(

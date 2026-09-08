@@ -9,10 +9,14 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
 
 from slm_training.autoresearch.hillclimb import data_generation_sha256
 from slm_training.autoresearch.rl_gate import assert_rl_ready
+from slm_training.autoresearch.trial_execution import (
+    incomplete_train_reason as _incomplete_train_reason,
+    training_resume,
+)
 from slm_training.autoresearch.schemas import (
     CampaignSpec,
     DataGenerationKnobs,
@@ -36,6 +40,7 @@ from slm_training.harness_core.bounded_process import (
 )
 from slm_training.levers import (
     DEFAULT_TRAIN_DATA_DIR,
+    HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
     MAX_RUN_SECONDS,
@@ -95,10 +100,7 @@ def _stage_environment(
         for module in ("scripts.train_model", "scripts.evaluate_model")
     ):
         return None
-    env = os.environ.copy()
-    env["OMP_NUM_THREADS"] = "1"
-    env["MKL_NUM_THREADS"] = "1"
-    return env
+    return {**os.environ, "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
 TRACE_EVIDENCE_KINDS = {"run_insight", "telemetry", "agentv", "feedback"}
 RESULT_EVIDENCE_KINDS = {
     "prior_run",
@@ -662,10 +664,6 @@ def compile_commands(
         train.append(
             "--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints"
         )
-    if (knobs.context_backend or "hf") == "scratch" and knobs.sync_checkpoints is False:
-        # One-shot local campaign arms have no resume consumer. Keep last.pt,
-        # but do not spend the wall budget serializing optimizer/RNG state.
-        train.append("--no-full-state-checkpoint")
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -1021,6 +1019,8 @@ def compile_commands(
         sys.executable,
         "-m",
         "scripts.evaluate_model",
+        "--seed",
+        str(knobs.seed),
         "--test-dir",
         knobs.eval_version or default_eval_version(),
         "--run-root",
@@ -1101,6 +1101,7 @@ def execute_commands(
     cwd: Path | str = Path("."),
     timeout_seconds: float | None = None,
     campaign_manifest_sha256: str | None = None,
+    stage_callback: Callable[[ExperimentOutcome], None] | None = None,
 ) -> ExperimentOutcome:
     started = utc_now()
     deadline = (
@@ -1111,7 +1112,8 @@ def execute_commands(
     metrics: dict[str, float] = {}
     data_metrics: dict[str, float] = {}
     latency_preflight: dict[str, object] | None = None
-    for command in commands:
+    for declared_command in commands:
+        command = list(declared_command)
         is_probe = is_latency_probe_command(command)
         if (
             latency_preflight is not None
@@ -1158,6 +1160,9 @@ def execute_commands(
         interrupt_after = min(
             float(INTERRUPT_AFTER_SECONDS), max(0.001, stage_total - grace)
         )
+        if "scripts.train_model" in command and "--max-wall-minutes" not in command:
+            reserve = min(float(HARNESS_FINALIZATION_RESERVE_SECONDS), interrupt_after * 0.2)
+            command.extend(["--max-wall-minutes", f"{(interrupt_after - reserve) / 60:.6f}"])
         if (
             "scripts.evaluate_model" in command
             and "--evaluation-wall-seconds" not in command
@@ -1195,6 +1200,7 @@ def execute_commands(
                 "stdout": completed.stdout,
                 "stderr": completed.stderr,
                 "measurement_complete": False,
+                "duration_seconds": getattr(completed, "duration_seconds", None),
             }
             if is_probe:
                 # The probe record alone hit the stage wall: the full eval
@@ -1279,6 +1285,8 @@ def execute_commands(
                         "parsed_output": parsed,
                         "parsed_output_source": parsed_source,
                         "measurement_complete": False,
+                        "duration_seconds": getattr(completed, "duration_seconds", None),
+                        **training_resume(command, parsed, cwd=cwd),
                     }
                 )
                 return ExperimentOutcome(
@@ -1368,6 +1376,7 @@ def execute_commands(
             "parsed_output": parsed,
             "parsed_output_source": parsed_source,
             "expected_gate_rejection": expected_gate_rejection,
+            "duration_seconds": getattr(completed, "duration_seconds", None),
         }
         if probe_payload is not None:
             stage_entry["latency_probe"] = True
@@ -1423,6 +1432,16 @@ def execute_commands(
                 finished_at=utc_now(),
                 campaign_manifest_sha256=campaign_manifest_sha256,
             )
+        if stage_callback is not None:
+            stage_callback(ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id, status="running",
+                metrics=dict(metrics), data_metrics=dict(data_metrics),
+                command=tuple(" ".join(command) for command in commands),
+                stage_telemetry=tuple(dict(stage) for stage in stages),
+                started_at=started, wall_time_budget_seconds=timeout_seconds,
+                campaign_manifest_sha256=campaign_manifest_sha256,
+            ))
     return ExperimentOutcome(
         experiment_id=experiment.experiment_id,
         campaign_id=experiment.campaign_id,
@@ -1571,35 +1590,6 @@ def _resolve_stage_output(
     except OSError:
         return None, None
     return parsed, str(path) if parsed is not None else None
-
-
-def _incomplete_train_reason(
-    command: list[str], parsed: object | None, *, cwd: Path | str
-) -> str | None:
-    """Return why a nominally successful train is not decision-bearing."""
-
-    if not isinstance(parsed, dict):
-        return "training produced no typed summary"
-    stopped_on = str(parsed.get("stopped_on") or "")
-    requested_raw = _command_value(command, "--steps")
-    try:
-        requested = int(requested_raw) if requested_raw is not None else None
-    except ValueError:
-        return f"training declared invalid --steps value {requested_raw!r}"
-    completed = parsed.get("steps")
-    if stopped_on != "steps":
-        return f"training stopped_on={stopped_on or 'missing'} before declared steps"
-    if requested is not None and completed != requested:
-        return f"training completed {completed!r}/{requested} declared steps"
-    checkpoint = parsed.get("checkpoint")
-    if not isinstance(checkpoint, str) or not checkpoint:
-        return "training summary omitted checkpoint"
-    checkpoint_path = Path(checkpoint)
-    if not checkpoint_path.is_absolute():
-        checkpoint_path = Path(cwd) / checkpoint_path
-    if not checkpoint_path.is_file():
-        return f"training checkpoint is missing: {checkpoint}"
-    return None
 
 
 def _expected_gate_rejection(

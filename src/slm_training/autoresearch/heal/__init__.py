@@ -48,7 +48,7 @@ from typing import Iterable, Protocol, Sequence, runtime_checkable
 from slm_training.autoresearch.heal.classify import classify_blocker
 from slm_training.autoresearch.heal.escalation import (
     EscalationLedger,
-    blocker_fingerprint,
+    blocker_fingerprint, bind_data_blocker,
 )
 from slm_training.autoresearch.heal.schemas import (
     HealAttemptReceiptV1,
@@ -258,18 +258,18 @@ def run_playbooks(
 
     receipts: list[HealAttemptReceiptV1] = []
     for blocker in blockers:
-        kind = str(blocker.get("kind") or "")
-        reason = str(blocker.get("reason") or "")
+        blocker = bind_data_blocker(blocker, root=root, campaign_id=campaign_id)
+        kind, reason = str(blocker.get("kind") or ""), str(blocker.get("reason") or "")
         blocker_class = str(
             blocker.get("blocker_class") or classify_blocker(kind, reason)
         )
-        fingerprint = blocker_fingerprint(kind, reason)
+        fingerprint = blocker_fingerprint(kind, reason, data_request=blocker.get("data_readiness_request"))
         record = ledger.observe(
             kind=kind,
             reason=reason,
             blocker_class=blocker_class,
             campaign_id=campaign_id,
-            owner_skill=str(blocker.get("owner") or ""),
+            owner_skill=str(blocker.get("owner") or ""), data_request=blocker.get("data_readiness_request"),
         )
         matching = [
             p

@@ -1,4 +1,4 @@
-"""Lever knobs and the fingerprints that identify a treatment.
+"""Lever knobs, legacy fingerprints and versioned scientific treatment identity.
 
 One responsibility: reducing a set of experiment knobs to a stable identity --
 the fingerprint two arms are compared by, the short token a slug carries, and
@@ -93,11 +93,13 @@ EXPERIMENT_ONLY_KNOB_CATEGORIES: dict[str, str] = {"train_version": "data"}
 def bank_lever_categories() -> dict[str, str]:
     """``lever_catalog()`` categories plus the ExperimentKnobs-only knob keys."""
     from slm_training.levers import lever_catalog
+    from slm_training.autoresearch.preflight.lever_effects import bank_effects
 
     out = {
         name: str(spec.get("category") or "") for name, spec in lever_catalog().items()
     }
     out.update(EXPERIMENT_ONLY_KNOB_CATEGORIES)
+    out.update({key: effect.category for key, effect in bank_effects().items()})
     return out
 
 
@@ -140,12 +142,23 @@ def lever_knobs(knobs: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def knobs_fingerprint(levers: dict[str, Any]) -> str:
-    """Identity hash for champion dedup (excludes steps cycle jitter)."""
+    """Legacy v1 dedup only; NOT a resolved scientific treatment identity.
+
+    Historical indexes intentionally exclude steps. New locked work must use
+    ``resolved_treatment_identity``; old hashes cannot establish compatibility.
+    """
     stable = {
         k: v for k, v in (levers or {}).items() if k not in FINGERPRINT_EXCLUDE_KEYS
     }
     payload = json.dumps(stable, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def resolved_treatment_identity(resolved_config, *, bindings, intervention) -> str:
+    """Driver seam: fully resolved recipe + scientific bindings, no cycle jitter."""
+    from slm_training.autoresearch.experiment_identity import treatment_identity
+
+    return treatment_identity(resolved_config, bindings=bindings, intervention=intervention)
 
 
 def matrix_experiment_knobs(

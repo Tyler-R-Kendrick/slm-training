@@ -56,7 +56,8 @@ def measurement_is_complete(decision: dict[str, Any]) -> bool:
         "wall_timeout:",
     )
     has_metrics = all(
-        any(finite_metric(value) is not None for value in metrics.values())
+        any(finite_metric(metrics.get(key)) is not None for key in
+            ("parse_rate", "smoke.parse_rate", "held_out.parse_rate"))
         for metrics in (
             decision.get("control_metrics") or {},
             decision.get("candidate_metrics") or {},
@@ -123,3 +124,37 @@ def candidate_ship_state(camp_dir: Path, candidate_id: str) -> str:
     gates = read_json(camp_dir / "runs" / candidate_id / "gates.json")
     authoritative = gates.get("authority") == "AgentEvals assertions"
     return "ship_promoted" if authoritative and gates.get("pass") is True else "blocked"
+def locked_primary_failure(camp_dir, control_id, candidate_id, metric, role_primary):
+    """Reject policy drift before reading outcomes or updating search calibration.
+
+    Metric-only legacy callers without a journal remain diagnostic helpers, not
+    controller authorization. A present journal must prove the locked pair.
+    """
+    from slm_training.autoresearch.storage import CampaignStore
+
+    if not (camp_dir / "events.jsonl").exists():
+        return None
+    store = CampaignStore(camp_dir.name, camp_dir.parent)
+    try:
+        events = store.verify_event_chain()
+        ids = {row["experiment_id"] for row in events
+               if row["event_type"] == "experiment_campaign_locked"}
+        selected = {}
+        for experiment_id in ids:
+            lock = store.load_experiment_campaign(experiment_id)
+            arms = {arm.arm_id for arm in lock.manifest.arms}
+            for run in {control_id, candidate_id}:
+                if run == experiment_id or {control_id, candidate_id} <= arms:
+                    endpoint = next(e for e in lock.manifest.endpoints if e.role == "primary")
+                    signature = (endpoint.metric, endpoint.direction, endpoint.minimum_effect)
+                    if run in selected and selected[run] != signature:
+                        raise ValueError("ambiguous locked primary")
+                    selected[run] = signature
+        expected = (metric, str(role_primary["direction"]), float(role_primary["minimum_effect"]))
+        if set(selected) != {control_id, candidate_id} or any(
+            signature != expected for signature in selected.values()
+        ):
+            return "measurement_incomplete:locked_primary_policy_mismatch"
+    except (OSError, ValueError, KeyError, RuntimeError) as exc:
+        return f"measurement_incomplete:locked_primary_invalid:{type(exc).__name__}"
+    return None
