@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import subprocess
 import time
@@ -70,12 +71,13 @@ from slm_training.autoresearch.storage import (
     autotrain_action_is_execution,
     autotrain_action_sha256,
     bind_autotrain_action_evidence,
-    loop_result_rows,
     loop_campaigns,
-    render_loop_result_matrix,
 )
 from slm_training.autoresearch.telemetry import TrackioSink
 from slm_training.data.mixture import MixtureManifest, write_mixture_manifest
+from scripts.autoresearch_continuation import execute_with_continuation, is_continuation_pending
+from scripts.autoresearch_command_cursor import record_execution_outcome, resolved_continuation_grant
+from slm_training.levers import INTERRUPT_AFTER_SECONDS
 from slm_training.harnesses.experiments.verified_metrics import (
     optimum_feedback,
     sha256_file,
@@ -101,8 +103,8 @@ def _bounded_experiment_seconds(
     if requested_seconds is None:
         return campaign_seconds
     requested = float(requested_seconds)
-    if requested <= 0:
-        raise ValueError("--experiment-wall-seconds must be positive")
+    if not math.isfinite(requested) or requested <= 0:
+        raise ValueError("--experiment-wall-seconds must be positive and finite")
     return min(requested, campaign_seconds)
 
 
@@ -116,7 +118,7 @@ def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _validate_continuous_commits(upstream: str, integration: str) -> None:
+def _validate_continuous_source_refs(upstream: str, integration: str) -> None:
     resolved_upstream = _git(
         "rev-parse", "--verify", f"{upstream}^{{commit}}"
     ).stdout.strip()
@@ -154,6 +156,10 @@ def _validate_continuous_commits(upstream: str, integration: str) -> None:
             raise ValueError("integration_commit does not contain upstream_commit")
     elif resolved_upstream != current_head:
         raise ValueError("integration_commit does not contain upstream_commit")
+
+
+def _validate_continuous_commits(upstream: str, integration: str) -> None:
+    _validate_continuous_source_refs(upstream, integration)
     if _git("status", "--porcelain", "--untracked-files=no").stdout.strip():
         raise ValueError("continuous cycle requires a clean tracked worktree")
 
@@ -193,6 +199,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             max_experiments=args.max_experiments,
             max_gpu_hours=args.max_gpu_hours,
             max_wall_minutes=args.max_wall_minutes,
+            continuation_grant=json.loads(args.continuation_grant) if getattr(args, "continuation_grant", None) else None,
         ),
         loop_id=args.loop_id,
         cycle_index=args.cycle_index,
@@ -907,7 +914,7 @@ def _require_hypothesis_matrix(
     assert matrix is not None
     if matrix.campaign_id != campaign.campaign_id:
         raise ValueError("latest hypothesis matrix belongs to a different campaign")
-    if len(matrix.hypotheses) < campaign.min_hypotheses:
+    if matrix.matrix_role == "search" and len(matrix.hypotheses) < campaign.min_hypotheses:
         raise ValueError(
             f"run requires at least {campaign.min_hypotheses} formed hypotheses"
         )
@@ -1105,6 +1112,10 @@ def _prepare_reused_training(
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    from slm_training.harnesses.experiments.autonomous_learning.measurement_bundle import (
+        prepare_bundle_remeasurement, finalize_bundle_remeasurement, validate_continuous_source,
+    )
+
     store = _store(args)
     campaign = store.load_campaign()
     matrix = _latest_formed_matrix(store)
@@ -1121,23 +1132,23 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
     _require_hypothesis_matrix(store, campaign, experiment)
     manifest_path = getattr(args, "campaign_manifest", None)
+    diagnostic_receipt = None
     if manifest_path is not None:
         manifest = ExperimentCampaignV1.model_validate_json(
             manifest_path.read_text(encoding="utf-8")
         )
         if manifest.experiment_id != experiment.experiment_id:
             raise ValueError("campaign manifest belongs to a different experiment")
+        diagnostic_receipt = prepare_bundle_remeasurement(args, store, experiment, manifest)
         if campaign.loop_id is not None:
             assert campaign.upstream_commit is not None
             assert campaign.integration_commit is not None
-            _validate_continuous_commits(
-                campaign.upstream_commit, campaign.integration_commit
-            )
+            validate_continuous_source(campaign, diagnostic_receipt)
             if manifest.source_commit != campaign.integration_commit:
                 raise ValueError(
                     "continuous manifest source_commit must equal integration_commit"
                 )
-            if manifest.source_dirty:
+            if manifest.source_dirty and diagnostic_receipt is None:
                 raise ValueError("continuous manifest source must be clean")
         validate_formal_preflights(store.root, experiment, manifest)
         lock = store.lock_experiment_campaign(manifest)
@@ -1148,6 +1159,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             lock = None
     if args.execute and lock is None:
         raise ValueError("execution requires a preregistered --campaign-manifest lock")
+    if getattr(args, "diagnostic_bundle_plan", None) and diagnostic_receipt is None:
+        raise ValueError("diagnostic bundle execution requires its explicit campaign manifest")
     if lock is not None and manifest_path is None:
         validate_formal_preflights(store.root, experiment, lock.manifest)
     if lock is not None and lock.manifest.requires_rl:
@@ -1193,12 +1206,17 @@ def cmd_run(args: argparse.Namespace) -> int:
             source_run=reuse_run,
             lineage_paths=reuse_lineage,
         )
+    if diagnostic_receipt is not None:
+        commands = diagnostic_receipt["commands"]
+    from scripts.autotrain_cycle_context import assert_locked_cycle_plan
+    assert_locked_cycle_plan(store, experiment.experiment_id, commands, lock.manifest_sha256 if lock else None)
     plan_path = store.write_artifact(
         "execution_plans",
         {
             "commands": commands,
             "execute": args.execute,
             "reused_training": reuse_receipt,
+            "diagnostic_remeasurement": diagnostic_receipt,
             "campaign_manifest_sha256": (
                 lock.manifest_sha256 if lock is not None else None
             ),
@@ -1223,35 +1241,39 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "campaign_manifest_sha256": lock.manifest_sha256,
             },
         )
-    outcome = execute_commands(
-        experiment,
-        commands,
-        cwd=ROOT,
-        timeout_seconds=_bounded_experiment_seconds(
-            campaign, getattr(args, "experiment_wall_seconds", None)
-        ),
+    logical_grant = campaign.budget.continuation_grant
+    outcome = execute_with_continuation(
+        experiment, commands,
+        wall_seconds=min(float(INTERRUPT_AFTER_SECONDS), _bounded_experiment_seconds(
+            campaign, getattr(args, "experiment_wall_seconds", None))),
         campaign_manifest_sha256=lock.manifest_sha256,
+        execute_commands=execute_commands, cwd=ROOT,
+        store=store,
+        grant=resolved_continuation_grant(
+            ROOT,
+            campaign.budget.logical_seconds,
+            logical_grant.max_attempts if logical_grant else None,
+            interrupt_seconds=logical_grant.interrupt_seconds if logical_grant else None,
+            finalization_reserve_seconds=(
+                logical_grant.finalization_reserve_seconds if logical_grant else None
+            ),
+        ),
     )
-    if reuse_receipt is not None:
+    if diagnostic_receipt is not None and outcome.status == "completed":
+        finalize_bundle_remeasurement(store, diagnostic_receipt)
+    bound_state_receipt = reuse_receipt or diagnostic_receipt
+    if bound_state_receipt is not None:
         metrics = dict(outcome.metrics)
-        metrics["trainable_params"] = float(reuse_receipt["trainable_params"])
+        metrics["trainable_params"] = float(bound_state_receipt["trainable_params"])
         outcome = outcome.model_copy(
             update={
                 "metrics": metrics,
-                "stage_telemetry": (reuse_receipt, *outcome.stage_telemetry),
+                "stage_telemetry": (bound_state_receipt, *outcome.stage_telemetry),
             }
         )
-    outcome_path = store.write_artifact("outcomes", outcome)
-    store.append_event(
-        "experiment_finished",
-        experiment_id=experiment.experiment_id,
-        status=outcome.status,
-        artifact_sha256=outcome_path.stem,
-        detail={
-            "exit_code": outcome.exit_code,
-            "campaign_manifest_sha256": lock.manifest_sha256,
-        },
-    )
+    if record_execution_outcome(store, outcome, lock.manifest_sha256, pending=is_continuation_pending(outcome)):
+        print(outcome.model_dump_json(indent=2))
+        return 10
     diagnosis = diagnose_outcome(outcome)
     diagnosis_path = store.write_artifact("diagnoses", diagnosis)
     store.append_event(
@@ -1383,7 +1405,6 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
         _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
     print(diagnosis.model_dump_json(indent=2))
     return 0
-
 
 
 def cmd_block_experiment(args: argparse.Namespace) -> int:
@@ -1702,39 +1723,9 @@ def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    if args.loop_id:
-        limit = None if args.all else args.last
-        rows = loop_result_rows(args.root, args.loop_id, last=limit)
-        if args.matrix:
-            print(render_loop_result_matrix(args.root, args.loop_id, last=limit))
-        else:
-            campaigns = sorted(
-                [
-                    CampaignSpec.model_validate_json(path.read_text(encoding="utf-8"))
-                    for path in args.root.glob("*/campaign.json")
-                ],
-                key=lambda item: (item.cycle_index or 0, item.campaign_id),
-            )
-            campaigns = [item for item in campaigns if item.loop_id == args.loop_id]
-            print(
-                json.dumps(
-                    {
-                        "loop_id": args.loop_id,
-                        "active": True,
-                        "campaign_count": len(campaigns),
-                        "campaign_ids": [item.campaign_id for item in campaigns],
-                        "result_count": len(rows),
-                    },
-                    indent=2,
-                )
-            )
-    else:
-        if args.matrix:
-            raise ValueError("--matrix requires --loop-id")
-        if args.all or args.last != 5:
-            raise ValueError("--last/--all require --loop-id")
-        print(json.dumps(_store(args).status(), indent=2))
-    return 0
+    from scripts.autoresearch_operations import render_status
+
+    return render_status(args)
 
 
 def cmd_ack_action(args: argparse.Namespace) -> int:
@@ -1896,6 +1887,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--evidence-root", type=Path, action="append")
     init.add_argument("--max-experiments", type=int, default=12)
     init.add_argument("--max-gpu-hours", type=float, default=0)
+    init.add_argument("--continuation-grant", help="Explicit ResourceGrant JSON for the logical multi-invocation trial; command cap unchanged")
     init.add_argument(
         "--max-wall-minutes",
         type=float,
@@ -1995,6 +1987,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--trackio", action="store_true")
     run.add_argument(
+        "--diagnostic-bundle-plan", type=Path,
+        help="Controller-locked inference-only fixture bundle remeasurement; never clean-source replay.",
+    )
+    run.add_argument(
         "--experiment-wall-seconds",
         type=float,
         help=(
@@ -2077,30 +2073,9 @@ def build_parser() -> argparse.ArgumentParser:
     hypothesis_benchmark.add_argument("--output", type=Path, required=True)
     hypothesis_benchmark.set_defaults(func=cmd_evaluate_hypothesizer)
 
-    status = sub.add_parser("status")
-    status_target = status.add_mutually_exclusive_group(required=True)
-    status_target.add_argument("--campaign-id")
-    status_target.add_argument("--loop-id")
-    status.add_argument("--matrix", action="store_true")
-    status_history = status.add_mutually_exclusive_group()
-    status_history.add_argument("--last", type=int, default=5)
-    status_history.add_argument("--all", action="store_true")
-    status.set_defaults(func=cmd_status)
+    from scripts.autoresearch_operations import add_campaign_operations_parser
 
-    acknowledge = sub.add_parser("ack-action")
-    acknowledge.add_argument("--loop-id", required=True)
-    acknowledge.add_argument("--campaign-id", required=True)
-    acknowledge.add_argument("--action-index", type=int, required=True)
-    acknowledge.add_argument(
-        "--status", choices=("completed", "blocked"), default="completed"
-    )
-    acknowledge.add_argument("--evidence", action="append", required=True)
-    acknowledge.set_defaults(func=cmd_ack_action)
-
-    sync = sub.add_parser("sync")
-    sync.add_argument("--campaign-id", required=True)
-    sync.add_argument("--push", action="store_true")
-    sync.set_defaults(func=cmd_sync)
+    add_campaign_operations_parser(sub, cmd_status, cmd_ack_action, cmd_sync)
 
     mixture = sub.add_parser("materialize-mixture")
     mixture.add_argument("--output", type=Path, required=True)
@@ -2134,7 +2109,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run the built-in fixture smoke (default if no --config)",
     )
     remine.set_defaults(func=cmd_remine)
-    return parser
+    from scripts.autoresearch_operations import add_operations_parser
+
+    return add_operations_parser(parser, sub)
 
 
 def main(argv: list[str] | None = None) -> int:
