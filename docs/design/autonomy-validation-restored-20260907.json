@@ -1,0 +1,1766 @@
+{
+  "completion_20260908": {
+    "directive": "docs/design/reliable-autonomy-completion-directive-20260908.md",
+    "status": "delegated_to_linear_at_user_request",
+    "linear_handoff": {
+      "parent_issue": "SLM-579",
+      "tasks": {
+        "A01": {
+          "issue": "SLM-584",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-584/autonomy-a01-preserve-and-distribute-the-exact-autonomy-candidate-with",
+          "title": "Preserve and distribute the exact autonomy candidate with an owner map"
+        },
+        "A02": {
+          "issue": "SLM-585",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-585/autonomy-a02-bind-explicit-logical-continuation-grants-into-scientific",
+          "title": "Bind explicit logical continuation grants into scientific manifests and legacy readers"
+        },
+        "A03": {
+          "issue": "SLM-581",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-581/autonomy-a03-enforce-logical-grants-with-consistent-invocation",
+          "title": "Enforce logical grants with consistent invocation counting and bounded child deadlines"
+        },
+        "A04": {
+          "issue": "SLM-580",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-580/autonomy-a04-restore-compatible-sd-calibration-feedback-without",
+          "title": "Restore compatible SD calibration feedback without mutating running source or locked policy"
+        },
+        "A05": {
+          "issue": "SLM-583",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-583/autonomy-a05-complete-the-real-six-case-direct-and-supervised",
+          "title": "Complete the real six-case direct and supervised evaluation path on an immutable source"
+        },
+        "A06": {
+          "issue": "SLM-582",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-582/autonomy-a06-verify-data-request-dispatch-and-semantic-repair-through",
+          "title": "Verify data-request dispatch and semantic repair through the real supervisor consumer"
+        },
+        "A07": {
+          "issue": "SLM-586",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-586/autonomy-a07-prove-a-declared-multi-invocation-training-trial",
+          "title": "Prove a declared multi-invocation training trial preserves exact state and charged work"
+        },
+        "A08": {
+          "issue": "SLM-590",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-590/autonomy-a08-close-atomic-checkpoint-publication-resume-capability-and",
+          "title": "Close atomic checkpoint publication, resume capability and retention fault coverage"
+        },
+        "A09": {
+          "issue": "SLM-591",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-591/autonomy-a09-prove-scoped-waits-fair-repair-dispatch-and-graceful-stop",
+          "title": "Prove scoped waits, fair repair dispatch and graceful stop using real owned processes"
+        },
+        "A10": {
+          "issue": "SLM-589",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-589/autonomy-a10-verify-real-governed-repair-dispatch-and-isolate-the",
+          "title": "Verify real governed repair dispatch and isolate the missing live-agent grant"
+        },
+        "A11": {
+          "issue": "SLM-587",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-587/autonomy-a11-complete-compatible-search-feedback-and-the-slow-starter",
+          "title": "Complete compatible search feedback and the slow-starter fidelity falsifier"
+        },
+        "A12": {
+          "issue": "SLM-588",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-588/autonomy-a12-validate-choice-diagnostics-and-train-only-corrective",
+          "title": "Validate choice diagnostics and train-only corrective-data arms through canonical execution"
+        },
+        "A13": {
+          "issue": "SLM-593",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-593/autonomy-a13-audit-paired-inference-and-prevent-diagnostic-evidence",
+          "title": "Audit paired inference and prevent diagnostic evidence from authorizing confirmation or closure"
+        },
+        "A14": {
+          "issue": "SLM-592",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-592/autonomy-a14-strengthen-missing-guard-mutations-and-prove-mutants-fail",
+          "title": "Strengthen missing guard mutations and prove mutants fail for the intended reason"
+        },
+        "A15": {
+          "issue": "SLM-594",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-594/autonomy-a15-make-required-test-collection-and-shard-execution",
+          "title": "Make required test collection and shard execution reliably fit bounded local verification"
+        },
+        "A16": {
+          "issue": "SLM-595",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-595/autonomy-a16-drain-the-complete-frozen-candidate-release-gate-and",
+          "title": "Drain the complete frozen-candidate release gate and issue only authenticated complete evidence"
+        },
+        "A17": {
+          "issue": "SLM-597",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-597/autonomy-a17-compose-domain-patches-into-one-reachable-candidate-and",
+          "title": "Compose domain patches into one reachable candidate and freeze source-aware static contracts"
+        },
+        "A18": {
+          "issue": "SLM-596",
+          "url": "https://linear.app/quickdeploy-ai/issue/SLM-596/autonomy-a18-reconcile-all-obligations-and-publish-an-honest-final",
+          "title": "Reconcile all obligations and publish an honest final evidence and operating handoff"
+        }
+      },
+      "project": "https://linear.app/quickdeploy-ai/project/reliable-autonomous-hill-climbing-harness-completion-05e3b826daf2",
+      "receipt": "outputs/runs/autonomy-validation/linear-handoff-focused-20260908.xml",
+      "receipt_sha256": "5c950884025d58323e696febcb0307a4b6d8a05973bf38bea1dc6f837396a2c8",
+      "passed": 73, "failed": 0, "seconds": 57.39, "exit_code": 0,
+      "evidence_class": "focused_actual_owner_tests_with_explicit_fixture_workloads_not_release_verification",
+      "remaining_local_defects": ["logical_grant_missing_from_scientific_manifest", "smaller_grant_limits_not_fully_propagated", "attempt_counting_units_inconsistent", "new_paired_sd_events_need_compatible_reader_and_calibration_migration"],
+      "live_repair": "not_executed_capability_unavailable:agent_grant_missing",
+      "release_verified": false, "champion_promoted": false, "service_started": false
+    },
+    "driver_search_integration": {
+      "selection": ["tests/test_scripts/test_autotrain_search.py", "tests/test_autoresearch/test_search_preflight_ingestion.py"],
+      "settings": "timeout -s INT -k 10 170; Python 3.12; pytest -q -o addopts= -m ''; approved bridge and AgentV locations; OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
+      "receipt": "outputs/runs/autonomy-validation/driver-search-integration-20260908.xml",
+      "receipt_sha256": "93066dfebfe50978f64e04debb52f4725333414c6ab75fa5b8d8ccf20bc11231",
+      "passed": 7, "failed": 0, "seconds": 27.28, "exit_code": 0,
+      "retry_guard_receipt": "outputs/runs/autonomy-validation/driver-search-retry-20260908.xml",
+      "retry_guard_sha256": "ba571fdf0b75750bc6f8d4cba15d02d9260c9a6d1ed9cf8851b67d8579c23f26",
+      "retry_guard_passed": 8, "retry_guard_seconds": 21.09,
+      "evidence_class": "actual_compiler_model_loss_producer_and_event_consumers; synthetic_historical_selection_canary; no_quality_or_promotion_claim"
+    },
+    "same_campaign_first_failure": {
+      "receipt": "outputs/runs/autonomy-validation/supervisor-same-campaign-20260908.xml",
+      "receipt_sha256": "83aebaeecae1b09897db1d964762ec709b32da7c50d0ae93343a9bfada2519fc",
+      "selection": ["tests/test_scripts/test_driver_pending.py", "tests/test_scripts/test_supervisor_adversary.py", "tests/test_scripts/test_run_autotrain_supervisor.py"],
+      "passed": 43, "failed": 1, "seconds": 26.57, "exit_code": 1,
+      "cause": "stale-handoff refusal still occurred; old expected error changed to current-retirement predicate",
+      "gate_weakened": false
+    },
+    "obligation_tracking": [
+      {"id":"INT-TRUTH","owner":"INTEGRATOR","status":"active","remaining_predicate":"reconcile baseline/current source and historical evidence; classify each finding reproduced/already_fixed/not_reproduced/qualified with test owner.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"INT-CONTRACT","owner":"INTEGRATOR","status":"active","remaining_predicate":"map existing activity, command cursor, data request, trial state, row, repair, and release types; strict golden migrations without invented stronger legacy semantics or parallel truth stores.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"INT-WIRING","owner":"INTEGRATOR","status":"active","remaining_predicate":"connect continuation, request creation, repair/verification, successor selection, and disposition through canonical driver/supervisor.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"INT-FINAL","owner":"INTEGRATOR","status":"active","remaining_predicate":"integrate narrow domain changes, preserve WIP, update version and ownership/quality/mirror records, and finish a portable current-tree release.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"CON-CURSOR","owner":"CONTINUATION","status":"active","remaining_predicate":"persist exact compiled command position/prerequisites/outputs and mandatory successors; never repeat committed training or omit finalization.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"CON-OUTCOME","owner":"CONTINUATION","status":"active","remaining_predicate":"use current typed pending work, not historic telemetry; preserve cancellation, failure class, artifacts, and accumulated resources.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"CON-RESTART","owner":"CONTINUATION","status":"active","remaining_predicate":"recover after row/artifact/event boundaries; zero exit without required outputs is failure; no-progress yields dispatch diagnosis.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"CON-TRIAL","owner":"CONTINUATION","status":"active","remaining_predicate":"automatically consume a locked logical budget from full optimizer, sampler/RNG/masking/accumulation state without requiring champion promotion.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"RUN-STATE","owner":"INTEGRATOR","status":"active","remaining_predicate":"deterministic runnable/running/dependency/timer/repair/capability/ cancelled states with real producer and wakeup for every nonterminal wait.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"RUN-FAIR","owner":"INTEGRATOR","status":"active","remaining_predicate":"park exhausted jobs, run independent work, reserve repair/verification capacity, and keep retry/resource lineage instead of resetting budgets.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"RUN-DEADLINE","owner":"INTEGRATOR","status":"active","remaining_predicate":"independently observe live imports/workers/verifiers/descendants; enforce startup/work/cleanup/finalization cap and boot/start process identity.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"RUN-RECOVER","owner":"INTEGRATOR","status":"active","remaining_predicate":"retain existing event/lease/fence owner; test concurrent supervisors, restart/clock/rollback, child-registration ordering, stale publication, and stop.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"DAT-REQUEST","owner":"DATA","status":"active","remaining_predicate":"derive exact locked config/tokenizers/scored suites/checkpoint ancestors/learned tables/preprocessing; no defaults masquerading as provenance.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"DAT-ACTIONS","owner":"DATA","status":"active","remaining_predicate":"action-scoped request lookup, multiple actions per campaign, and first-cycle controller readiness activity with executable request producer.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"DAT-PREDICATE","owner":"DATA","status":"active","remaining_predicate":"actual trainer admission/preparation, target-specific validity versus volume, unique families, and rejection of malformed/unrelated data.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"DAT-SUCCESSOR","owner":"DATA","status":"active","remaining_predicate":"immutable rebuild, complete leakage ancestry, refusal and distribution evidence, independently restored predicate, compatible successor experiment selection. Same-count validity repair is not independent volume.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"VAL-COVERAGE","owner":"VALIDATION","status":"active","remaining_predicate":"monotone source/resource/contract/changed-test union including unknown changes, global fixtures, locks, deletion and rename ownership.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"VAL-SCHEDULE","owner":"VALIDATION","status":"active","remaining_predicate":"budget-feasible workload scheduling with startup/finalization; small allowances produce progress or typed infeasibility, never idle forever; timeout splitting preserves parent resource and retry charges.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"VAL-PROOF","owner":"VALIDATION","status":"active","remaining_predicate":"authenticate cache and bind exact nodes/source/base/environment/ runtime/data/options/selection rule; no zero, skipped required, xfail, partial, deselected, stale or candidate-authored passing evidence.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"VAL-DRAIN","owner":"VALIDATION","status":"active","remaining_predicate":"resumable finite controller dispatch of all obligations; local regressions get actual repairs, not manual resume ceremonies or unlimited retry.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"VAL-REPORT","owner":"VALIDATION","status":"active","remaining_predicate":"bounded summaries with node/shard counts and artifact references, explicit pending causes, and complete persisted receipts.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ISO-BOUNDARY","owner":"ISOLATION","status":"active","remaining_predicate":"approved OS boundary protects control stores/keys/verifier/policy; private Git; test traversal/link/socket/dirty-path/failure-path mutations.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ISO-RESULT","owner":"ISOLATION","status":"active","remaining_predicate":"workload reports remain untrusted; trusted original predicate and independent selected checks live outside candidate-controlled acceptance.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ISO-AUTHORIZE","owner":"ISOLATION","status":"active","remaining_predicate":"connect complete source-aware evidence to authenticated existing controller acceptance, current fence/grant and original reproducer, not booleans.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ISO-CLASSIFY","owner":"ISOLATION","status":"active","remaining_predicate":"environment/implementation versus measurement-semantic/trust-policy classes; versioned remeasurement and no routine authority escalation.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"REC-DISPATCH","owner":"ISOLATION","status":"active","remaining_predicate":"supported typed blockers invoke real bounded executors with structured fingerprints and preserved original inputs/predicates.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"REC-AGENT","owner":"ISOLATION","status":"active","remaining_predicate":"implemented installed compatible noninteractive adapter, capability probes, controlled stdin/files, cancellation/results, no inferred spending.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"REC-PROMPT","owner":"ISOLATION","status":"active","remaining_predicate":"complete identity/reproducer/scope/invariants/budget/output-schema prompt; logs are untrusted; reject prompt injection and self-acknowledgment.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"REC-REPLAY","owner":"ISOLATION","status":"active","remaining_predicate":"reproduce, minimal patch/regression, independent verify, immutable release activation and exact replay; preserve compatible rows/checkpoints.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ART-PUBLISH","owner":"ARTIFACTS","status":"active","remaining_predicate":"complete immutable component bundle plus one fenced/CAS pointer, missing-sidecar refusal, pointer/event reconciliation and storage fault tests.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ART-EXACT","owner":"ARTIFACTS","status":"active","remaining_predicate":"deterministic whole/chunk parity for all required continuation state; distinguish inference-only, warm-start, and exact resume capabilities.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ART-CHARGE","owner":"ARTIFACTS","status":"active","remaining_predicate":"actual per-snapshot examples/tokens/updates/batch/distribution and attempts; historical exposure never divided by a new corpus size.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ART-RETAIN","owner":"ARTIFACTS","status":"active","remaining_predicate":"protect live trials/champions/rollback/replays/evidence/human work; storage backpressure and scoped maintenance, no destructive broad cleanup.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"MEA-RETAIN","owner":"MEASUREMENT","status":"active","remaining_predicate":"validate retained bundles/rows/AgentV and original identities; reuse only compatible evidence, not mandatory retraining for documentation changes.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"MEA-PIPELINE","owner":"MEASUREMENT","status":"active","remaining_predicate":"current canonical direct and supervised tiny two-arm run with larger certified suite and exactly six locked cases, loss/decode/pairing.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"MEA-RESUME","owner":"MEASUREMENT","status":"active","remaining_predicate":"kill after committed rows and reuse them across controller restart; scorer/tokenizer/selection/randomness mismatch opens successor evidence.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"MEA-CONTRACT","owner":"MEASUREMENT","status":"active","remaining_predicate":"nonempty unique finite/count/unit evidence, timeout/invalid-gold distinction, sufficient statistics, raw latency aggregation, no NLL-only ship.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SCI-IDENTITY","owner":"EXPERIMENTS_STATISTICS","status":"active","remaining_predicate":"verify no administrative recipe mutation; treatment versus planned replicate versus attempt and meaningful resource/config identities.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SCI-MATCH","owner":"EXPERIMENTS_STATISTICS","status":"active","remaining_predicate":"ordinary matching stays; declared data/duration/batch contracts specify resource basis; detect knobs not reaching executed code.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SCI-PAIRS","owner":"EXPERIMENTS_STATISTICS","status":"active","remaining_predicate":"join locked case/root/seed/estimator identities, require coverage, reject retry/root/ancestor pseudoreplication and incompatible metric units.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SCI-INFER","owner":"EXPERIMENTS_STATISTICS","status":"active","remaining_predicate":"exact/tie/numeric fixtures, uncertainty, fixed analysis and independent confirmation/multiplicity; timeout and low power are not decisive nulls.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SCI-SEQUENTIAL","owner":"EXPERIMENTS_STATISTICS","status":"active","remaining_predicate":"applicable default-off comparator only; unbounded NLL is not made bounded by arbitrary clipping to obtain a theorem.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"LRN-CHOICE","owner":"LEARNING_SEARCH","status":"active","remaining_predicate":"actual legal-domain forced/ambiguous/forward/reachability/rank/semantic diagnostics and same-distribution overhead; singleton bypass remains zero.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"LRN-ORACLE","owner":"LEARNING_SEARCH","status":"active","remaining_predicate":"train-only learner partial assignments, genuine task oracle, abstention/provenance/replay/leakage; parser success cannot label intent.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SEA-FIDELITY","owner":"LEARNING_SEARCH","status":"active","remaining_predicate":"retain qualified completed report; deterministic slow-starter falsifier plus bounded predeclared model calibration where assumptions hold.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SEA-ALGORITHMS","owner":"LEARNING_SEARCH","status":"active","remaining_predicate":"canonical executable rotation/random/halving and choice/corrective comparisons, compatible observations; existing UCB/default objective unchanged.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"SEA-RESPONSE","owner":"LEARNING_SEARCH","status":"active","remaining_predicate":"repeated no-information outcomes invoke binding-cause repair, data readiness, continuation/calibration or genuine mechanism implementation; proposals never acquire promotion authority or novelty by renaming.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"OPS-DOCTOR","owner":"INTEGRATOR","status":"active","remaining_predicate":"actual Python/Torch/Node/bridge/AgentV/runtime mount/import/isolation/ storage/process/agent-grant probes; existence alone is not readiness.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"OPS-STATUS","owner":"INTEGRATOR","status":"active","remaining_predicate":"authoritative ownership versus artifact/scientific progress, queue waits, valid-pair age, counts/resources/fingerprints/source identities.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"OPS-CONTROL","owner":"INTEGRATOR","status":"active","remaining_predicate":"parser-tested doctor/status/verify-autonomy/start/resume/stop on canonical slm autoresearch; generated finite config, no persistent activation.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"OPS-DELIVERY","owner":"INTEGRATOR","status":"active","remaining_predicate":"evidence-driven idempotent reports, bounded/redacted logs, durable local artifacts and scoped remote wait without lost measurements.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ADV-CONTRACT","owner":"ADVERSARY","status":"active","remaining_predicate":"real cross-owner producer/consumer evidence and strict migrations, identity/count/resource/action/publication/promotion checks.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ADV-STATEFUL","owner":"ADVERSARY","status":"active","remaining_predicate":"existing Hypothesis claim/start/heartbeat/yield/crash/replay/repair/ verify/publish/cancel sequences; preserve shrunk first counterexamples.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ADV-MUTATION","owner":"ADVERSARY","status":"active","remaining_predicate":"isolated removal/corruption of each load-bearing numeric/pair/ scope/reproducer/fence/bundle/data/coverage/promotion guard must fail tests.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ADV-PROCESS","owner":"ADVERSARY","status":"active","remaining_predicate":"real child hangs/kills/concurrency/malformed artifacts/permissions/ disk faults/stale receipt; never inject into human work or live experiments.","verification":"pending_current_integrated_source_receipt"},
+      {"id":"ADV-E2E","owner":"ADVERSARY","status":"active","remaining_predicate":"independently verify integrated demonstrations and every strongest claim; mocked clock/fake agent/fixture oracle never imply live capability.","verification":"pending_current_integrated_source_receipt"}
+    ],
+    "service_started": false,
+    "host_doctor": {
+      "command": "python -m scripts.autoresearch --root outputs/runs/autonomy-validation/doctor-20260908 doctor --source .",
+      "execution": "authorized_local_host_probe_no_agent_or_service_launch",
+      "exit_code": 0,
+      "observation": {
+        "schema_version": "autonomy_doctor/v1",
+        "local_ready": true,
+        "repair_ready": false,
+        "probes": {
+          "python": {
+            "ready": true,
+            "exit_code": 0,
+            "outcome": "completed",
+            "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "seconds": 1.520146979004494
+          },
+          "agentv": {
+            "ready": true,
+            "exit_code": 0,
+            "outcome": "completed",
+            "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "seconds": 0.6189742229908006
+          },
+          "openui_bridge": {
+            "ready": true,
+            "exit_code": 0,
+            "outcome": "completed",
+            "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "seconds": 3.7986786599940388
+          },
+          "design_md_bridge": {
+            "ready": true,
+            "exit_code": 0,
+            "outcome": "completed",
+            "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "seconds": 0.18233026198868174
+          },
+          "node_version": {
+            "ready": true,
+            "exit_code": 0,
+            "outcome": "completed",
+            "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "seconds": 0.04418855199764948
+          },
+          "isolation": {
+            "ready": true,
+            "backend": "bubblewrap",
+            "reason": "available",
+            "detail_digest": "ddd9818abacfde7afed60c93129175401439367a77e69ea93e0ddb3bb38e0bd9"
+          },
+          "storage": {
+            "ready": true,
+            "writable": true,
+            "free_bytes": 53750583296,
+            "minimum_free_bytes": 268435456,
+            "available_memory_bytes": 17900732416,
+            "memory_pressure": false,
+            "action": null,
+            "deletion_performed": false
+          },
+          "agent": {
+            "ready": false,
+            "reason": "agent_grant_missing"
+          }
+        },
+        "policy_digest": "67ee67d6802372fa4a060c65dc06b92db5eb03131431c5879b0fb0acd0d2b4ea",
+        "interrupt_seconds": 170,
+        "kill_grace_seconds": 10,
+        "external_writes": false,
+        "service_activation": false
+      },
+      "nested_sandbox_isolation": {
+        "available": false,
+        "reason": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted",
+        "detail_digest": "31c2cb0dffdeb9049fa2269e24af62df15e4161d4f752a648faf9630259725fe"
+      }
+    },
+    "release_authorized": false,
+    "retained_real_trial": {
+      "junit": "outputs/runs/autonomy-validation/con-trial-preserved-20260908.xml",
+      "sha256": "a945754b4843568ee6ba09ac3caea647957e3cf41a3759ace602d2ace37353d3",
+      "selection": ["tests/test_autoresearch/test_real_command_continuation.py::test_actual_trainer_cursor_resume_is_bit_exact"],
+      "pytest_extra_options": ["-o", "junit_logging=all", "--basetemp=outputs/runs/autonomy-validation/con-trial-preserved-20260908"],
+      "passed": 1, "seconds": 21.04, "exit_code": 0,
+      "evidence_class": "actual_cpu_training_with_injected_deadline_predicate",
+      "execution_identity": "a94d6f7facc52fdaca9af14946ed3df237703ac6be07b827fd6483563e88ac26",
+      "whole_process_seconds": [5.945138542010682],
+      "resumed_process_seconds": [5.515753694009618, 6.3643478820013115],
+      "logical_grant_seconds_per_trial": 120,
+      "optimizer_updates_per_trial": 64, "examples_per_trial": 192,
+      "target_tokens_per_trial": 5824, "prompt_tokens_per_trial": 2624,
+      "exact_state_parity": true, "evaluation_complete": false, "promotion_authorized": false,
+      "retained_root": "outputs/runs/autonomy-validation/con-trial-preserved-20260908/test_actual_trainer_cursor_res0",
+      "bundles": {"whole_64": "9306612ac12cfa0b264605d1b467e28331e207e41e979234b6dace8cf41fe161", "chunked_1": "be43fc2c8f448924b337b21102b991bd7c1db974afc6405dc84e415d8e38f8fa", "chunked_64": "ef429e398f5e443ca34acd43055fb5a65a2014653838bc063d7488b892333377"}
+    },
+    "independent_boundaries": {
+      "selection": ["tests/test_autoresearch/test_autonomy_evidence_boundary_adversary.py", "tests/test_autoresearch/test_autonomy_cross_owner_adversary.py", "tests/test_harnesses/distill/test_choice_diagnostics.py"],
+      "first_failure": {"junit": "outputs/runs/autonomy-validation/independent-boundaries-current-20260908.xml", "sha256": "f1135d24afde3c0c63cec5fc659fb0488872bf22a9b0989e2d7641586374e9a4", "passed": 44, "failed": 1, "seconds": 3.93, "exit_code": 1, "cause": "approved OPENUI_BRIDGE_CLI omitted from invocation"},
+      "verified": {"junit": "outputs/runs/autonomy-validation/independent-boundaries-bridge-20260908.xml", "sha256": "849052e7ae413b32f0951f88446eae9075e8bc4536d14bffb64396ffa2b5611b", "passed": 45, "seconds": 4.18, "exit_code": 0},
+      "evidence_class": "actual_owners_independent_regressions_and_real_bridge_singleton"
+    },
+    "pending_closeout_regression": {
+      "junit": "outputs/runs/autonomy-validation/driver-yield-closeout-20260908.xml",
+      "sha256": "681ab3dbf42fa6822de4ae94bfeab816eaac2e2ae19ec1d6c74976f6c3a1791a",
+      "passed": 43, "seconds": 12.83, "exit_code": 0,
+      "selection": ["tests/test_scripts/test_driver_pending.py", "tests/test_scripts/test_supervisor_adversary.py", "tests/test_scripts/test_run_autotrain_supervisor.py"],
+      "evidence_class": "actual_supervisor_and_event_store_with_simulated_driver"
+    },
+    "runtime_statistics_regression": {
+      "junit": "outputs/runs/autonomy-validation/runtime-statistics-integration-20260908.xml",
+      "sha256": "1e30680fc2d80e1981a1a9267183dd48d20d1c7b5753123ff4921e443cf95868",
+      "passed": 87, "seconds": 17.20, "exit_code": 0,
+      "selection": ["tests/test_autoresearch/test_activity_runtime.py", "tests/test_autoresearch/test_activity_publication.py", "tests/test_autoresearch/test_campaign_event_transactions.py", "tests/test_autoresearch/test_autonomy_adversary.py", "tests/test_autoresearch/test_experiment_identity_property.py", "tests/test_autoresearch/test_paired_stats.py"],
+      "evidence_class": "actual_owners_with_test_defined_process_fault_boundaries",
+      "environment_overrides": {"SLM_REQUIRE_ISOLATION": "1"}
+    },
+    "locked_endpoint_verification": {
+      "junit": "outputs/runs/autonomy-validation/locked-endpoint-20260908.xml",
+      "sha256": "f1b5945a03cca7b8417b0c0f170e80dbe602507af28bb7de9bf5cbdd88852a07",
+      "passed": 360, "seconds": 10.259, "exit_code": 0,
+      "selection": ["tests/test_scripts/test_locked_measurement_endpoint.py", "tests/test_scripts/test_run_autotrain_continuous.py"],
+      "evidence_class": "actual_locked_campaign_and_driver_with_controlled_metric_boundary"
+    },
+    "verification_dependency_regression": {
+      "junit": "outputs/runs/autonomy-validation/supervisor-verification-dependency-20260908.xml",
+      "sha256": "5b2bed0ecd10ef5ae962b4213dd9d7d4ae7517ab69d1429b840d612ee98a3bb3",
+      "passed": 26, "seconds": 3.59, "exit_code": 0,
+      "selection": ["tests/test_scripts/test_supervisor_verification_dependency.py", "tests/test_scripts/test_run_autotrain_supervisor.py"],
+      "evidence_class": "actual_runtime_journal_with_simulated_repair_child",
+      "remaining_predicate": "canonical independent verifier drains dependency and authenticates completion before wake"
+    },
+    "bounded_test_command": {
+      "wrapper": ["timeout", "-s", "INT", "-k", "10", "170"],
+      "python": "../../../.venv/bin/python",
+      "pytest_options": ["-q", "-o", "addopts=", "-m", ""],
+      "environment": "Python 3.12 existing venv, approved Node 22.23.1 bridge/AgentV roots, CPU OMP/MKL one thread"
+    },
+    "trial_dispatch": {
+      "evidence_class": "actual_bundle_owner_and_mocked_executor",
+      "junit": "outputs/runs/autonomy-validation/trial-dispatch-20260908.xml",
+      "sha256": "483a7b8109b837c25b211e4bf53e7d51a90e4a6973ce228a37ab3ed64f161185",
+      "passed": 8, "seconds": 0.62, "exit_code": 0
+    },
+    "trial_consumers_first_failure": {
+      "junit": "outputs/runs/autonomy-validation/trial-consumers-20260908.xml",
+      "sha256": "e69b192d4d27a31626c88368e124f586c07ef93dbc110dd3bad6e034c5c162ec",
+      "passed": 157, "failed": 3, "seconds": 6.41, "exit_code": 1,
+      "reason": "Latency-probe assertions relied on mutation of declared argv. Successor tests require immutable declared prefix and bounded execution-only suffix."
+    },
+    "trial_consumers_verified": {
+      "junit": "outputs/runs/autonomy-validation/trial-consumers-fixed-20260908.xml",
+      "sha256": "d59224424766e8e1d7c8b707852858516a378175074276fd298096cf4d01a64d",
+      "passed": 168, "seconds": 12.97, "exit_code": 0,
+      "pytest_options": ["-q", "-o", "addopts=", "-m", ""],
+      "selection": ["tests/test_autoresearch/test_trial_execution.py", "tests/test_autoresearch/test_harness.py", "tests/test_scripts/test_train_model.py"]
+    },
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1", "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599", "code_dirty": true,
+      "components": {"harness.autoresearch.experiment_campaign": "v311", "harness.model_build.train": "v45"},
+      "stamped_at": "2026-09-08T18:47:14.226829+00:00"
+    }
+  },
+  "automatic_continuation_data_request_followup": {
+    "component": "harness.train_data.readiness + autoresearch execution",
+    "wiring": "The screening deficit producer now binds the exact pending action to a request built from resolved published train/eval snapshots, certified sampling metadata, preprocessing version and the real scratch TwoTower constructor. The canonical run command resumes a pending partial evaluation within the original experiment wall budget; no training retry or identity change occurs.",
+    "verified": {
+      "junit": "outputs/runs/autonomy-validation/continuation-wiring-final.xml",
+      "sha256": "4fdfabfb4ed093ba436553efac30bc04f827be0591782c35daeb2f6a3414b436",
+      "passed": 3,
+      "seconds": 1.48,
+      "selection": [
+        "test_screening_blocker_locks_request_from_driver_inputs",
+        "test_screening_request_factory_binds_published_inputs_and_sampling_authority",
+        "test_canonical_run_automatically_continues_pending_eval"
+      ],
+      "evidence_class": "real published-data metadata/request lock and canonical execution continuation with a deterministic stage boundary"
+    },
+    "limitations": [
+      "A first-cycle deficit with no predecessor campaign lock remains a scoped wait.",
+      "The configured live coding-agent authority and isolated live repair demonstration remain unavailable.",
+      "No complete current-tree release authorization is claimed until all source-aware obligations finish."
+    ],
+    "release_authorized": false
+  },
+  "release_verification_followup": {
+    "component": "scripts.merge_verification + isolated runtime binding",
+    "source_binding": {
+      "base_tree": "9d77dd15f723fd8c736f0b9f27f043f13a2f5162",
+      "candidate_tree_sha256": "acb0b23f2d2444fbf1d2606b3e0825158058088e09c8b48cc5cf141bebf76a75",
+      "verification_identity": "1ba0406e2727879f4603f471279a6bde96677ab14294d43b1ed8a17fdfede704",
+      "runtime_identity": "b344d5bcc42d80a6d6e24c7a9f46d27e14d1ee4d365f606fd93e76767ff12380",
+      "runtimes": [
+        ".venv",
+        "outputs/runs/autonomy-validation/dependencies",
+        "src/apps/openui_bridge",
+        "$NODE22_RUNTIME (Node v22.23.1)"
+      ]
+    },
+    "verified": {
+      "command": "NODE22_RUNTIME=<approved Node 22 runtime> python -m scripts.verify_merge_ready --json --state-dir /tmp/slm-release-autonomy-final-batched --max-step-seconds 140 --runtime-root .venv --runtime-root outputs/runs/autonomy-validation/dependencies --runtime-root src/apps/openui_bridge --runtime-root $NODE22_RUNTIME",
+      "isolated_static_passed": 18,
+      "collected_nodes": 11205,
+      "planned_shards": 279,
+      "passed_shards": 9,
+      "attempts": 10,
+      "evidence_class": "real_process_and_isolated_process"
+    },
+    "result": "pending",
+    "release_authorized": false,
+    "limitations": [
+      "270+ collected test nodes remain in durable shard state; no complete release authorization is claimed.",
+      "The first bridge shard failed under Node 18; the Node 22-bound retry passed, proving the runtime defect and its correction but not the full queue.",
+      "Live coding-agent repair authority and a long-lived service remain unavailable and were not fabricated."
+    ]
+  },
+  "compiled_trial_state_followup": {
+    "fast_verification": {"command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 140", "exit_code": 0, "static_passed": 18, "release_matrix_seconds": 16.43, "verification_complete": false, "release_authorized": false},
+    "component": "harness.autoresearch.experiment_campaign/v310",
+    "reproducer": {"junit": "outputs/runs/autonomy-validation/compiled-state-before.xml", "sha256": "bd8a3933994b11e49d7c5adb575a3d25c28ea2e78e7b5195ffb124b3f29e5984", "failed": 1, "deselected": 8, "seconds": 1.21, "observed": "Actual compile_commands output parsed by train_model.resolve_config disables full-state checkpointing for local scratch campaigns."},
+    "verified": {"junit": "outputs/runs/autonomy-validation/compiled-state-verified.xml", "sha256": "5de28bc0d850317ca8a88f6db178701a27dbdbdef36f19a6740544d900f7b837", "passed": 9, "seconds": 7.46, "selection": ["tests/test_autoresearch/test_compiled_treatment.py"], "evidence_class": "real compiler, CLI parser, bounded training child, bundle validation and optimizer/RNG state loading; no evaluation or promotion"},
+    "consumer_verification": {"junit": "outputs/runs/autonomy-validation/compiled-state-consumers.xml", "sha256": "9a271b102f0fd9b746a0c024f08e992b22807d77b68dcb9fd92a6bd982f68d6e", "passed": 546, "seconds": 17.49, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_autoresearch/test_harness.py", "tests/test_autoresearch/test_compiled_treatment.py", "tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_autoresearch/test_experiment_identity.py"]},
+    "change": "Deleted the local scratch override disabling the trainer's existing full-state default. No new training knob, runtime dependency or model size change. State serialization consumes the existing bounded stage budget; the historical September 2 no-full-state throughput observation is not a fresh benchmark of this path.",
+    "remaining": ["retaining exact state is not itself automatic logical-trial continuation dispatch", "current full source-aware release verification", "remaining data-request producer integration and end-to-end acceptance obligations"],
+    "runtime_service": "not installed or started; continuous autotraining not restarted",
+    "release_authorized": false
+  },
+  "resume_lineage_followup": {
+    "fast_verification_before_compiler_change": {"command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 140", "exit_code": 0, "static_passed": 18, "release_matrix_seconds": 26.03, "verification_complete": false, "release_authorized": false},
+    "component": "harness.model_build.train/v45",
+    "observed": "Completed fidelity chunks resumed loose last_full_state.pt aliases. Optimizer state survived but the next bundle lost known ancestor_exposure. Existing fast-4 evidence has unknown ancestor exposure and is not rewritten.",
+    "original_reproducer": {"junit": "outputs/runs/autonomy-validation/learning-resume-exposure-before.xml", "sha256": "00c0aea07fb103b5ece75f8ef52cf92643d6ac34c4103748d2482e83e34520a3", "failed": 1, "deselected": 7, "seconds": 2.63},
+    "fixture_local_patch": {"junit": "outputs/runs/autonomy-validation/learning-resume-exposure-verified.xml", "sha256": "bf88f242b316dbcc56d35d154d0b8483849d8eaaa201ff433224defce24f26c0", "passed": 31, "seconds": 9.76, "qualification": "Superseded by shared trainer fix; did not cover the sibling direct training entrypoint."},
+    "sibling_reproducer": {"junit": "outputs/runs/autonomy-validation/resume-sibling-before.xml", "sha256": "42f7e9c8beebe5e27ad20d3e789f549ef75c1ebd811a13c74877ec6065998f8c", "failed": 1, "passed": 1, "deselected": 7, "seconds": 2.47},
+    "first_shared_check": {"junit": "outputs/runs/autonomy-validation/resume-lineage-shared-verified.xml", "sha256": "754b83a0641ac48ee6c21753e9d20d469bda3adcd7be429d9f8f4ec561d139f9", "passed": 66, "failed": 1, "seconds": 13.35, "cause": "Existing parity test expected the loose reported input path. Updated to require the exact published path plus byte equality; numerical parity assertions retained."},
+    "verified": {"junit": "outputs/runs/autonomy-validation/resume-lineage-shared-final.xml", "sha256": "9763ae067bf7977151b199b19382818d39f91b6401149616aa5801c0616b9c78", "passed": 67, "seconds": 13.75, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_harnesses/experiments/test_learning_fixture.py", "tests/test_harnesses/model_build/test_checkpoint_exposure.py", "tests/test_harnesses/model_build/test_checkpoint_bundle.py", "tests/test_harnesses/model_build/test_full_state_resume.py", "tests/test_harnesses/model_build/test_trial_continuation.py"]},
+    "covered": ["actual trainer and learning effect two-chunk exposure", "actual uninterrupted versus resumed CPU model/optimizer/RNG/sampler parity", "no cumulative exposure double charge", "byte-identical published state resolution", "newer unsealed and legacy states retain original identity", "corrupt/missing/linked components", "malformed/wrong-role/wrong-path/boolean-count cursors", "exact approved predecessor and current source identities; recipe/source drift refused"],
+    "migration": {"path": "src/slm_training/resources/model_build/resume_compatibility_v1.json", "schema": "resume_source_migration/v2", "sha256": "f2afebfee96991d11b2e5362263f51a037647a6d509d34b74b14de13eb56bb9d", "meaning": "Existing policy location now explicitly admits two reviewed predecessor source pairs. No historical state or evidence is relabelled; optimizer/RNG/sampler/data/tokenizer/runtime checks remain mandatory."},
+    "evidence_class": "real CPU training fixtures and filesystem publication tests; opaque-byte protocol fixtures are not neural or exact-optimizer evidence",
+    "limits": "No old-source numerical replay is asserted by the enumerated migration test. No production checkpoint, champion, live agent repair, service activation or complete release authorization. All runs bounded locally; continuous autotraining stays stopped.",
+    "release_authorized": false
+  },
+  "topology_duration_probe": {"junit": "outputs/runs/autonomy-validation/topology-current-full.xml", "sha256": "7d2e8a2948a3d3ea727923a8c3fddd1da49e4bde7e2c5e515fb040c1ddf87ce7", "selection": ["tests/test_dsl/test_topology_apply.py"], "pytest_options": "-o addopts= -q --tb=short --durations=10", "exit_code": 124, "completed_tests": 9, "seconds": 167.90, "complete": false, "disposition": "Incomplete file duration is not a passing shard or replacement weight; committed 4726.16-second file estimate remains unchanged."},
+  "private_index_observation": {"staged_versions_component": "harness.autoresearch.experiment_campaign/v302", "path": "src/slm_training/resources/versions.json", "qualification": "Read-only follow-up also found this pre-existing staged version file alongside the four documented closeout paths. Its exact staging actor was not re-attributed. No index reset, commit or ref mutation performed."},
+  "verification_scheduling_followup": {
+    "corrected_plan_execution": {"identity": "d8395f753f42da5358d5ce890aa1514ee60288637f5b5e2f449aed787430c5a2", "candidate_tree_sha256": "28d62d373d84b4ec6b804311aab82f20451944be2460a92382b2f1b38876dea4", "state": "outputs/runs/autonomy-validation/verification-d8395f753f42da5358d5ce890aa1514ee60288637f5b5e2f449aed787430c5a2.json", "state_sha256": "48a863b328ae7a95392e5a4ad44122e603f9c7dfa970f7bf1a495a2de80d1721", "static_passed": 18, "collected": 11186, "collection_seconds": 14.630951342, "planned_shards": 558, "shard_budget_seconds": 60, "invocation_exit_codes": [10, 10], "completed_nodes": 4, "pending_nodes": 11182, "spent_step_seconds": 159.734044119, "failed_steps": 0, "qualification": "First invocation correctly yielded after collection without a premature tail workload. Second completed four tests. This source-bound state predates the resume-lineage fix and is historical, not current-tree or independent release authorization. Resource number excludes unrecorded controller overhead."},
+    "first_full_followup": {"identity": "e14981c5e74b5ab06b260979c6db781ff0c2f7bbde3f4706ec41f241471f6455", "static_passed": 17, "static_failed": 1, "collected": 0, "spent_step_seconds": 51.57, "cause": "repo_policy rejected the new machine-absolute diagnostic state reference. Preserved the state under outputs/runs/autonomy-validation and changed the reference to repo-relative; no validator change."},
+    "component": "ci.local_merge_gate/v14",
+    "actual_full_tree_counterexample": {"identity": "aa4a2e9a7dabeddb93a7e1afc6b6be78adb437657e21f5fa36783b5e8df1ec81", "candidate_tree_sha256": "f4bc5da7b426338bab89da35bea5c304b3767703fa55affa7b9c3f9c364aa009", "state": "outputs/runs/autonomy-validation/verification-aa4a2e9a7dabeddb93a7e1afc6b6be78adb437657e21f5fa36783b5e8df1ec81.json", "state_sha256": "97439c37d0aae4976077294e5bee182724dc7235efd37a7bdb6a6fdb1affa28e", "static_passed": 18, "collected": 11183, "planned_shards": 6370, "completed_nodes": 6, "collection_seconds": 32.051329407000594, "premature_tail_timeouts_seconds": [12.497806323000987, 16.22079820399813], "resumed_original_test_seconds": 38.92294585199852, "qualification": "Second invocation's presentation filter requested nonexistent attempts rather than steps and exited 5; the unchanged controller cache, not that filter, supplies these outcomes. No release authorization. Cache MAC is integrity under local controller ownership, not independent workload authenticity."},
+    "reproducer": {"junit": "outputs/runs/autonomy-validation/verification-scheduling-reproducer.xml", "sha256": "306adfaf6148fee3240e320606af991302f02cb44405d940845bb0aabeffc5e4", "failed": 3, "seconds": 1.83, "observed": ["real 60-test collection yielded 60 future shards rather than two", "shard launched on a twelve-second tail despite a sixty-second allocation", "actual feedback child inherited a per-shard writable bytecode prefix"]},
+    "first_fixture_failure": {"junit": "outputs/runs/autonomy-validation/verification-scheduling-before.xml", "sha256": "f618799374af003a7e6155b48d0e01feaf2469bca9dd9a6fcd4872fa143d4443", "failed": 3, "seconds": 1.89, "qualification": "Tail fixture initially omitted isolation metadata and failed while preparing a launch; corrected reproducer reaches the launch seam."},
+    "restricted_run": {"junit": "outputs/runs/autonomy-validation/verification-scheduling-verified.xml", "sha256": "3af2493db2faf5e81547be7a2b85302ef3954f2196e8962df897434d07251481", "passed": 74, "failed": 6, "seconds": 21.64, "causes": ["five outer-tool-sandbox NETLINK_ROUTE denials", "new cache test supplied a filename rather than an exact locked node ID; fixture corrected, validation unchanged"]},
+    "host_verified": {"junit": "outputs/runs/autonomy-validation/verification-scheduling-host.xml", "sha256": "81d796c9918fe69d1078c1a6a4ff281069740329258260326a84485bd4d265e6", "passed": 80, "seconds": 23.21, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_scripts/test_merge_verification_isolation.py", "tests/test_scripts/test_merge_verification.py", "tests/test_scripts/test_check_changed.py"], "evidence_class": "real local pytest/collection and rootless-isolated workloads plus deterministic scheduling-budget fixtures", "permission": "First automatic permission review expired before launch. Its permitted single retry authorized the bounded host test; rootless workload isolation remained enforced."},
+    "migration": "Shard planning uses the configured fresh-invocation allowance, max-step allowance is bound into cache identity, and an insufficient remainder yields without adding a workload attempt. Old source-bound state remains historical. Local feedback disables bytecode writes and clears inherited prefixes. Required node union, strict collected-node checks, run cap, three-attempt limit and independent-release requirement remain unchanged.",
+    "release_authorized": false
+  },
+  "source_files_scope": "The source_files table and original version_stamp below describe the historical restoration snapshot, not the latest candidate. Each followup records its own component and executed evidence; no full current-tree release authorization is asserted.",
+  "accepted_arm_followup": {
+    "final_verified": {"junit": "outputs/runs/autonomy-validation/accepted-arm-final.xml", "sha256": "f85a0d16835f6ba7d03279bad6bf1310364b92e8dfb5b2ec6b83b3d83f3aae77", "passed": 391, "seconds": 13.02, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_harnesses/train_data/test_readiness.py", "tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_scripts/test_supervisor_adversary.py"]},
+    "static_verified": {"command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 80", "passed": 18, "exit_code": 0, "release_matrix_seconds": 16.47, "release_authorized": false},
+    "quality_followup": "The initial quality check rejected two extra monolith lines and a 52-statement test. Consolidated duplicate test imports and normalized the touched function's surrounding blank lines; canonical update lowered the monolith ceiling to 12759. Complexity remains 1752, SDP 78 and SAP 10; no ceiling was raised.",
+    "component": "harness.autoresearch.experiment_campaign/v309",
+    "reproducer": {"junit": "outputs/runs/autonomy-validation/accepted-arm-reproducer.xml", "sha256": "5c9e2fedf7bdb628b64f3aedbdfb6304f89d920a9bef3face61f49dee321ee8d", "failed": 2, "seconds": 2.24, "observed": ["actual readiness observation was selectable before controller acceptance", "actual lost-arm recovery selected successor-a despite a second accepted successor"]},
+    "fixture_failure_retained": {"junit": "outputs/runs/autonomy-validation/accepted-arm-before.xml", "sha256": "4503e88a324f1d4713de04e2e4b36398394337f36282a25c025ba49da5c1feac", "failed": 2, "seconds": 5.57, "qualification": "Readiness-only defect reproduced; the second test initially changed its action identity after publication. The corrected frozen-input reproducer is recorded separately."},
+    "verified": {"junit": "outputs/runs/autonomy-validation/accepted-arm-verified.xml", "sha256": "8107732f0933a57fef8d4a95547e2462c9865d0f03fcd0798f335ed5b523d28d", "passed": 49, "seconds": 105.94, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_harnesses/train_data/test_readiness.py", "tests/test_autoresearch/test_screening_data_repair.py", "tests/test_autoresearch/test_controller_repair.py"], "precedes_final_comprehension_simplification": true},
+    "owners": ["autotrain_controller_repair.verified_training_successors", "run_autotrain_continuous._recover_heal_resume_arm"],
+    "migration": "Only accepted events with currently valid exact action/request/data/resolver identities can recover a lost arm. More than one eligible version raises a selection error into the existing bounded inspection/diagnosis path; it does not select by traversal order or change a frozen recipe. No historical artifact is rewritten.",
+    "evidence_class": "actual DataStore/trainer preparation, controller journal and imported recovery; not model training or live agent repair",
+    "remaining": "A diagnosis cannot invent authority to choose between incompatible accepted recipes. Full producer construction, current-source end-to-end selection and independent release verification remain unfinished.",
+    "release_authorized": false
+  },
+  "startup_cache_followup": {
+    "component": "harness.autoresearch.experiment_campaign/v308",
+    "broad_failure": {"junit": "outputs/runs/autonomy-validation/publication-consumers-final.xml", "sha256": "6d8216996d72fe54af964bb2a91e64c81d0fda0a5a2294dce6cc78f0bb5bcd31", "passed": 607, "failed": 1, "seconds": 91.03, "test": "test_start_and_stop_use_real_process_with_disposable_controller_fixture"},
+    "cold_import_probe": {"seconds": 4.800488681001298, "exit_code": 0, "module": "slm_training.autoresearch.runtime.activity_runtime.ActivityRuntime", "environment": "invocation-local fresh PYTHONPYCACHEPREFIX", "qualification": "Measured cold import approaches the unchanged five-second startup window. The original failure discarded stderr, so its exact exit cause is not retrospectively proven."},
+    "before": {"junit": "outputs/runs/autonomy-validation/startup-cache-before.xml", "sha256": "d25cbccdadb93319137cdd1ab66970e8f889610128f8a04dd2318a58187d69ab", "failed": 1, "seconds": 0.63, "scope": "deterministic child environment contract, not reproduction of the original timing"},
+    "after": {"junit": "outputs/runs/autonomy-validation/startup-cache-after.xml", "sha256": "86ddd72f1139268c930430ec6d5718f6658e5b66c38da46bbd0e335da77f9877", "passed": 1, "deselected": 28, "seconds": 4.42},
+    "broad_verified": {"junit": "outputs/runs/autonomy-validation/publication-startup-consumers-verified.xml", "sha256": "941dfc43943828c93804fcfff2100ccc47a384834a3d67dab46977d1d3402bd0", "passed": 608, "seconds": 92.87, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_scripts/test_supervisor_adversary.py", "tests/test_scripts/test_run_autotrain_supervisor.py", "tests/test_autoresearch/test_controller_repair.py", "tests/test_autoresearch/test_campaign_event_transactions.py", "tests/test_autoresearch/test_harness.py", "tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_harnesses/model_build/test_checkpoint_bundle.py", "tests/test_autoresearch/test_operations.py"]},
+    "change": "Clear inherited PYTHONPYCACHEPREFIX and set PYTHONDONTWRITEBYTECODE=1; reuse readable installed caches without creating per-start copies or writing immutable source. Startup and command deadlines unchanged.",
+    "evidence_class": "real disposable controller process start/repeated-start/stop; no training service installation or activation",
+    "release_authorized": false
+  },
+  "data_publication_fence_followup": {
+    "final_data_selection": {"junit": "outputs/runs/autonomy-validation/data-fencing-final.xml", "sha256": "b6dcd40572b08355b80bfe7a29c9b83d39237fb1b972b147eda47cf638c879c1", "passed": 53, "seconds": 110.74, "selection": ["tests/test_autoresearch/test_screening_data_repair.py", "tests/test_harnesses/train_data/test_readiness.py", "tests/test_autoresearch/test_heal_data_rebuild.py"], "pytest_options": "-o addopts= -q --tb=short"},
+    "component": "harness.autoresearch.experiment_campaign/v307",
+    "repair_component": "autoresearch.heal/v10",
+    "reproducers": [{"junit": "outputs/runs/autonomy-validation/data-publisher-fence-before.xml", "sha256": "48ab4b45ebc2f04c5ddf61d3d9f031464f30b60288ab6c9498eab1ee311ae840", "failed": 2, "seconds": 8.90, "observed": "actual data receipt append and acceptance ignored a revoked runtime lease"}, {"junit": "outputs/runs/autonomy-validation/inspect-publication-before.xml", "sha256": "1c5024a51f868c6775991aff106ab81011c4a1d9fff0fdd9881de5471fba1f5c", "failed": 1, "seconds": 2.48, "observed": "real controller child entered pre-cycle healing without a publication scope"}],
+    "verified": {"junit": "outputs/runs/autonomy-validation/data-inspection-fence-verified.xml", "sha256": "a4921596348d92bbd99ed940426034d92bcd600aebb02d962047c7051940bd22", "passed": 85, "seconds": 114.29, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_autoresearch/test_screening_data_repair.py", "tests/test_scripts/test_supervisor_adversary.py", "tests/test_scripts/test_run_autotrain_supervisor.py", "tests/test_autoresearch/test_controller_repair.py", "tests/test_autoresearch/test_campaign_event_transactions.py"], "precedes_final_park_scope_extension": true},
+    "intermediate_failure": {"junit": "outputs/runs/autonomy-validation/data-inspection-fence-first.xml", "sha256": "9e242a4380c4cd228b209df5fa24213e99f0981230ac1ebf5de34f7218c1154e", "failed": 3, "passed": 80, "seconds": 63.74, "cause": "In-process workload simulation lacked a real child delegation. It now uses the actual in-process runtime fence; the separate real-child test verifies delegation."},
+    "migration": "Inspect and closeout declare controller_publication because they can perform side effects. Inspect/repair/closeout enter the same trusted publication scope as driver/promotion. Receipt and data acceptance publishers validate the current lease at the write boundary. Historical acceptance events retain their original fence or its absence; reconciliation does not mint a second acceptance when a replacement owner finishes the receipt projection. No hot modification of an existing process or worker authority is permitted.",
+    "evidence_class": "actual data owners, real delegated inspection child, filesystem writes and real runtime revocation with a fixed fixture controller clock; not live source repair or model evidence",
+    "release_authorized": false
+  },
+  "finite_100_v306": {
+    "command": "python -m scripts.slm autoresearch --root outputs/autoresearch/autonomy-v306-20260908 verify-autonomy --batch-size 20",
+    "invocations": 5,
+    "exit_codes": [10, 10, 10, 10, 0],
+    "cumulative_attempts": [20, 40, 60, 80, 100],
+    "plan_digest": "008631da3b5c2a71b5f546f1409fb9c79c173847b283caace4e95dc7e0e5ee72",
+    "artifact": "outputs/autoresearch/autonomy-v306-20260908/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/8a28d5038f81d0dcb20b85131fa8e44f42fb56bcf63da4c910d40fd49a461133.json",
+    "sha256": "1398625e4d7af802961d0bdc22d6e2ea9d43328d60c351cb656fe77f22fc9f2e",
+    "actual_workload_attempts": 100,
+    "controller_contexts": 110,
+    "complete_operational_artifacts": 70,
+    "waiting_repair": 25,
+    "cancelled": 5,
+    "external_capability_waits": 1,
+    "charged_workload_seconds": 30.885300445999746,
+    "observed_workload_seconds": 10.349412423998729,
+    "observed_controller_seconds_including_workloads": 272.7759844640168,
+    "measurement_boundary": "Controller seconds sum the 100 bounded child-controller invocations; outer CLI startup/finalization overhead is not included. Each of five outer invocations retained the 170-second interrupt plus 10-second kill-grace cap.",
+    "scientific_promotions": 0,
+    "real_model_trials": 0,
+    "live_agent_repairs": 0,
+    "evidence_class": "real_workload_and_controller_processes_with_locked_faults",
+    "scope": "Completed on v306 source before the v307 data/inspection fence repair. This is finite runtime fault coverage, not perpetual autonomy, live-agent repair, or a certificate for later source changes."
+  },
+  "data_successor_acceptance_followup": {
+    "final_focused": {"junit": "outputs/runs/autonomy-validation/data-successor-final.xml", "sha256": "199e2d4af54b0bd7e2cf622c100cc84f9bd94875d1abb98366e4583b50b70aa5", "passed": 573, "seconds": 60.40},
+    "static_checks": {"passed": 18, "exit_code": 0, "command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 80", "release_matrix_seconds": 16.16, "release_authorized": false},
+    "component": "harness.autoresearch.experiment_campaign/v306",
+    "producer": "dispatch_data_actions -> complete_data_action -> CampaignStore data_successor_accepted",
+    "consumers": ["storage receipt ingestion and replay", "run_cycle -> resolve_repaired_data -> fresh screening matrix and locked designs", "actual load_suite_records -> preflight and matrix count ceilings"],
+    "schema": "autotrain_data_action_evidence/v1",
+    "data_component": "harness.train_data/v36",
+    "ownership": "data.readiness_receipt validates without depending on a repair executor; data.readiness_contract shares the existing committed-request reader; autoresearch.action_dependencies validates receipt authority; heal.data_predicate_receipt performs controller publication",
+    "migration": "Historical file/count and current-policy supersession receipts retain their bytes but cannot discharge a current data prerequisite. New receipts bind the exact action/request/candidate/ready-event and revalidate admission. Journal acceptance precedes its action receipt projection, so retry reconciles receipt failure without rebuilding. Frozen replay and confirmation/promotion selections do not follow successor mappings.",
+    "verified": {"junit": "outputs/runs/autonomy-validation/data-successor-acceptance-verified.xml", "sha256": "f4968ebf1ef1befa3bade29f8a31ec80ae0fb49ea08684f9b8c19430b341e096", "passed": 573, "seconds": 60.02, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_harnesses/train_data/test_readiness.py", "tests/test_autoresearch/test_screening_data_repair.py", "tests/test_autoresearch/test_heal_data_rebuild.py", "tests/test_autoresearch/test_harness.py", "tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_autoresearch/test_campaign_event_transactions.py"]},
+    "earlier": [{"junit": "outputs/runs/autonomy-validation/data-successor-selection-first.xml", "sha256": "7d8704cfb56149888fb962ca5331053d8ad1db914bb8560293baba85525c6223", "passed": 188, "seconds": 37.13}, {"junit": "outputs/runs/autonomy-validation/data-action-acceptance-verified.xml", "sha256": "a48a7f6c48bb4e9ca751e138c1e6ff00713c159098ba3df2bdac629bb412ad63", "passed": 184, "seconds": 16.93}],
+    "covered": ["actual same-count trainer preparation repair", "actual certified screening builder", "receipt-write failure after committed dataset and accepted event", "no duplicate successor acceptance or rebuild on retry", "ambiguous successor forks", "changed DataStore resolver", "modified original bytes", "wrong request/action/loop identity", "legacy weak receipt rejected without rewriting history", "current successor corruption reopens prerequisite", "fresh matrix consumes repaired suite version and count; frozen intents do not switch"],
+    "evidence_class": "actual imported data owners, builder child processes, local filesystem faults and matrix composition; not a trained-model result or live coding-agent repair",
+    "remaining": ["automatic construction of exact frozen data requests for all normal producer failures", "combined repaired train/eval selections need the new design's cross-lineage preflight", "bounded actual run_cycle train/eval continuation on a repaired successor", "complete independent release verification"],
+    "runtime_service": "not installed or started; continuous training not restarted",
+    "release_authorized": false
+  },
+  "workspace_preservation_followup": {
+    "final_focused": {"junit": "outputs/runs/autonomy-validation/workspace-preservation-final.xml", "sha256": "4f86d2fc90c4551d3dfb5f2d279481e10a32918e6c402045d93200a6b009b22f", "passed": 401, "seconds": 38.19},
+    "component": "harness.autoresearch.experiment_campaign/v305",
+    "original_reproducer": {"junit": "outputs/runs/autonomy-validation/workspace-preservation-before.xml", "sha256": "9a9cda1efe5deafd39959466dfc245ca7b15764ed97c6b371aac57120e7d7e3b", "failed": 2, "seconds": 1.38, "scope": "disposable pytest Git repositories only", "observed": ["legacy helper created an unauthorized controller closeout commit", "legacy conflict helper selected theirs for harness.py and committed the merge"]},
+    "changed_owners": ["run_autotrain_continuous Git/hygiene helpers and _bounded_command", "harness_core.execution_release.require_readonly_controller_git", "autotrain_controller_repair.preserve_workspace", "autotrain_supervision.register_delivery_waits"],
+    "verified": {"junit": "outputs/runs/autonomy-validation/workspace-preservation-verified.xml", "sha256": "f6a4007e33aebca16de06ce1feb04a42b43282d6743f29352838b7bb3f13a45c", "passed": 401, "seconds": 37.95, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_scripts/test_supervisor_adversary.py", "tests/test_autoresearch/test_operations.py", "tests/test_autoresearch/test_controller_repair.py"]},
+    "covered": ["unresolved merge and conflict contents preserved", "comment-only author changes preserved", "generated source mirror changes preserved", "no local commit/staging/restore/fetch from legacy controller helpers", "mutation rejected before process launch", "real healthy child progresses while workspace delivery has zero-attempt capability wait"],
+    "evidence_class": "actual imported driver, disposable Git repos, runtime events and real local child; process-launch refusal injected at runner seam",
+    "authority": "No remote Git operation, hosted workflow, paid service or live agent execution authorized. Read-only controller command validation is not a hostile-code isolation boundary.",
+    "runtime_service": "not started or installed; continuous training not restarted",
+    "static_checks": {"passed": 18, "exit_code": 0, "command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 80", "release_matrix_seconds": 16.41, "release_authorized": false},
+    "release_authorized": false
+  },
+  "data_action_dispatch_followup": {
+    "component": "harness.autoresearch.experiment_campaign/v304",
+    "producer": "run_autotrain_continuous._self_heal_rebuild_data -> autotrain_controller_repair.dispatch_data_actions",
+    "consumer": "data_rebuild.load_readiness_request -> governed playbook -> check_readiness; verified_training_successors -> _recover_heal_resume_arm",
+    "first_failures": {"junit": "outputs/runs/autonomy-validation/data-readiness-dispatch-before.xml", "sha256": "2fcae4c7dbc976a890c74df8dd5149239aa87c2a4e2e0f3fb9506960a79d7312", "failed": 3, "passed": 1, "seconds": 1.46, "reproduced": ["file presence acknowledged data action", "current policy superseded an unresolved locked action", "canonical Unicode request artifact rejected by ASCII-only digest"]},
+    "dispatch_verified": {"junit": "outputs/runs/autonomy-validation/data-readiness-dispatch-verified.xml", "sha256": "6f20773efbaefe19c2034682335e10e3a1ee509934bc5280aa7b6d35e316255d", "passed": 397, "seconds": 23.61},
+    "legacy_recovery_fixture_failures": {"junit": "outputs/runs/autonomy-validation/data-resume-proof.xml", "sha256": "7ef8f95c3e6c1ee0a281fc2b8bb235021c053aa13b973cea4e18d694b270fed9", "failed": 2, "passed": 18, "cause": "Legacy tests required recovery/retirement from directory-only fixtures; updated to require refusal and added real immutable repair/registration evidence"},
+    "verified": {"junit": "outputs/runs/autonomy-validation/data-successor-recovery-verified.xml", "sha256": "e2bed63214fcb9d0b9e5494c8a310b2b7e907cd7ed407b36aefc8086ae08a7f3", "passed": 398, "seconds": 22.43, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_harnesses/train_data/test_readiness.py", "tests/test_autoresearch/test_screening_data_repair.py", "tests/test_autoresearch/test_heal_data_rebuild.py", "tests/test_scripts/test_run_autotrain_continuous.py"]},
+    "evidence_class": "actual DataStore, trainer preparation, certified sampler/playbook and imported driver; no model training",
+    "migration": "Preserve historical request/v1 hashes and receipts. Missing action-bound requests or missing event loop/data-root scope do not acquire inferred readiness.",
+    "remaining_integration": ["Canonical preflight construction for every supported data prerequisite", "Compatible successor experiment selection and controller acknowledgment", "No claim that this data fixture resumed a complete training cycle"],
+    "static_checks": {"passed": 18, "exit_code": 0, "command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 80", "release_matrix_seconds": 16.67, "release_authorized": false, "precedes_v305": true},
+    "release_authorized": false
+  },
+  "promotion_finalization_and_delivery_scope": {
+    "component": "harness.autoresearch.experiment_campaign/v303",
+    "input_owner": "scripts.autotrain_promotion_finalize.PromotionFinalizationInput",
+    "producer": "scripts.run_autotrain_continuous.run_cycle locks inputs before chunk dispatch",
+    "consumers": ["autotrain_supervisor_operations.operation_main promotion_eval", "run_autotrain_continuous._resolve_promote_delivery", "_resolve_promotion_result", "_write_cycle_handoff"],
+    "current_wiring": "Direct completion and supervised continuation invoke the existing authoritative decision functions, not a second promotion engine. Legacy campaigns without a locked finalization input do not acquire guessed inputs.",
+    "first_real_child_failure": {"junit": "outputs/runs/autonomy-validation/promotion-finalizer-child-diagnostic.xml", "sha256": "af44f6653f3b52608715975ebb3a888d5d095561f8d4bcce08ff9cb861e5f2d0", "failed": 1, "cause": "promotion_eval did not declare the required delegated publication capability; the existing fence correctly refused it"},
+    "second_real_child_failure": {"junit": "outputs/runs/autonomy-validation/promotion-finalizer-supervised-followup.xml", "sha256": "777d5fd71530adc02c42507962e00f6e92a5e5c50c3f916353e763953379a86e", "failed": 1, "passed": 10, "cause": "Legacy document closeout wrote source docs and attempted Git add/commit. Commit failed because identity was unavailable; the source guard correctly rejected changed running source. New closeout never writes or commits its source release."},
+    "incident_scope": {"workspace": "outputs/workspaces/autonomy-candidate only", "head_after": "e0eca9f9910244ecc20eb480d363f1852417b599", "commit_created": false, "external_write": false, "candidate_index_touched_by_legacy_helper": ["README.md", "docs/MODEL_CARD.md", "docs/design/camp1-results.md", "docs/design/camp1-results.json"], "recovery": "Removed only the test-specific model-card/README note; preserved generated documents at outputs/runs/autonomy-validation/unapproved-closeout-camp1.{md,json}. No local Git ref/index workaround was used."},
+    "real_child_followup": {"junit": "outputs/runs/autonomy-validation/promotion-finalizer-no-source-write.xml", "sha256": "e35e4e4cbce3642e0764906197784ea6334f6fd71dcb4b3c378a28edca9f920a", "passed": 11, "seconds": 11.32, "evidence_class": "real_bounded_supervisor_process_and_lease_with_simulated_chunk_measurements"},
+    "integrated_selection": {"junit": "outputs/runs/autonomy-validation/promotion-delivery-scope.xml", "sha256": "46749e93cc415a1c087e860d7c4b16c72b56f948685ec8e7e29330b19d5106ff", "passed": 414, "seconds": 34.84, "pytest_options": "-o addopts= -q --tb=short"},
+    "final_focused_selection": {"junit": "outputs/runs/autonomy-validation/promotion-finalizer-final.xml", "sha256": "4d8719c584e323627b336055cf53bbb31c1f325462d3caa8e7232d8ee6cc6415", "passed": 418, "seconds": 37.34, "pytest_options": "-o addopts= -q --tb=short"},
+    "static_followup": {"command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 80", "passed": 18, "exit_code": 0, "release_matrix_seconds": 16.61, "earlier_substep_timeout_seconds": 20.2, "outer_interrupt_seconds": 170, "kill_grace_seconds": 10, "release_authorized": false, "precedes_v304": true},
+    "independent_work": {"junit": "outputs/runs/autonomy-validation/delivery-fairness.xml", "sha256": "c53db744decfea22cb825ed9d4834ee3e6301e690aea083eadbd3c90f5beb2bf", "passed": 2, "seconds": 0.47, "evidence_class": "real_local_child_artifact_while_delivery_job_waits_without_consuming_attempts"},
+    "migrations": ["Legacy absent action dependency_scope is omitted on serialization and remains campaign-blocking; only explicitly delivery-scoped document actions qualify", "Materialization does not acknowledge publication or waive formal/code/data/ship requirements", "New completed_scoreboard_sha256 is required before old evaluation interruption can be superseded; historical outcome bytes remain unchanged"],
+    "limitations": ["Simulated decoded rows do not establish neural improvement", "Missing legacy finalization inputs require an explicit compatible successor; interrupted publication without an observed successful final eval exit still requires independent reconciliation", "Authorized GitHub connector delivery and live coding-agent repair remain unavailable", "Other legacy Git synchronization/dirty-tree helpers have not all been migrated", "Full selected test universe and all directive obligations are not complete"],
+    "release_authorized": false,
+    "training_service_started": false
+  },
+  "promotion_publication_followup": {
+    "component": "harness.autoresearch.experiment_campaign/v302",
+    "producer": "scripts.run_autotrain_continuous._resolve_promotion_result",
+    "owner": "scripts.autotrain_champion_queue.publish_promotion_disposition",
+    "before": {"junit": "outputs/runs/autonomy-validation/promotion-publication-before.xml", "sha256": "cd19734d353b1846cb93147fbcbabc99815dd1e0bfdcac953a9bc6ed7113fcdf", "failed": 1, "passed": 3, "cause": "Actual resolver decremented three attempts to one for two calls resolving the same incomplete campaign"},
+    "verified": {"junit": "outputs/runs/autonomy-validation/promotion-publication-verified.xml", "sha256": "dafe134c1d3299f0fbe918af049abe1e524fec040df631f24f47540d407257db", "passed": 380, "seconds": 10.41, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_autoresearch/test_campaign_event_transactions.py", "tests/test_scripts/test_run_autotrain_continuous.py"]},
+    "migration": "Historical queue entries and learning records remain; new per-campaign refund markers prevent duplicate adjustments without inferring missing legacy accounting. Campaign events own new disposition publications. This is attempt-policy accounting, not a refund of actual consumed compute.",
+    "faults": ["event write failure", "learning projection failure", "queue projection failure", "duplicate retry", "stale retry", "foreign queue mutation", "tampered artifact"],
+    "evidence_class": "actual_resolver_and_local_filesystem_fault_tests_not_model_or_live_agent_evidence",
+    "limitation": "Promotion-resume finalization context remains to be wired; this publication boundary alone does not complete the directive or authorize release.",
+    "release_authorized": false
+  },
+  "delivery_publication_followup": {
+    "regime_followup": {"before": {"junit": "outputs/runs/autonomy-validation/delivery-regime-before.xml", "sha256": "8da7640147c173dcab52d99377410a0ef80f8c03aff63f853b6b3c3b796be0db", "failed": 1}, "after": {"junit": "outputs/runs/autonomy-validation/delivery-regime-after.xml", "sha256": "a3805ac7ea6ef1252f065fccb1ebc459fe7759a1816ad8e88700d9a280d3d7a9", "passed": 375, "seconds": 9.95}, "cause": "Static verification found a leftover legacy writer in the regime branch. Regime metadata now enters the immutable delivery before publication; real producer test requires ledger and pointer equality."},
+    "component": "harness.autoresearch.experiment_campaign/v301",
+    "producer": "scripts.run_autotrain_continuous._phase_a_delivery",
+    "owner": "scripts.autotrain_ledgers.publish_cycle_delivery",
+    "verified": {"junit": "outputs/runs/autonomy-validation/delivery-publication-verified.xml", "sha256": "89cad55b7a0e6f84414fa2840eac9943b3a7c187e38ce6b9134be6e86e1cca4f", "passed": 375, "failed": 0, "skipped": 0, "seconds": 10.303, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_autoresearch/test_campaign_event_transactions.py", "tests/test_scripts/test_run_autotrain_continuous.py"]},
+    "evidence_class": "real_filesystem_and_campaign_journal_with_injected_publication_failures",
+    "boundaries": ["event commit", "global delivery projection", "campaign delivery projection", "idempotent retry", "stale retry after successor", "symlink confinement", "tampered projection", "nonfinite payload"],
+    "limitation": "Local controller publication only. No remote delivery, live agent repair, or scientific improvement demonstrated; promotion-resume finalization remains an integration obligation.",
+    "release_authorized": false
+  },
+  "handoff_publication_followup": {
+    "component": "harness.autoresearch.experiment_campaign/v300",
+    "producer": "scripts.run_autotrain_continuous._write_cycle_handoff",
+    "publication_owner": "slm_training.autoresearch.campaign_events.publish_cycle_handoff",
+    "reconciliation_owner": "CampaignStore._reconcile_handoff_revision",
+    "fencing_owner": "ActivityRuntime / DelegatedPublisher via controller_artifact_publication",
+    "first_failure": {"junit": "outputs/runs/autonomy-validation/handoff-publication.xml", "sha256": "c067d396e1ebf9cf52f8ff1460222a85bbf0d04d77094a690a321b03dc1ab562", "passed": 383, "failed": 2, "cause": "Invalid model_copy remedy revision was persisted before schema validation"},
+    "second_check": {"junit": "outputs/runs/autonomy-validation/handoff-publication-final.xml", "sha256": "cb794f56af818c61e512163a2abe8175e22d243b51d6dc210e28d03bdbf0845b", "passed": 399, "failed": 1, "cause": "Existing guard test used an invalid ship-state literal; changed fixture to a valid but forbidden ship_promoted mutation to test authority rather than syntax"},
+    "verified": {"junit": "outputs/runs/autonomy-validation/handoff-publication-verified.xml", "sha256": "7f1d59ac2b82800a423a47da1edef7a56f171acae62c77db4f359101205c2836", "passed": 400, "seconds": 15.57, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_autoresearch/test_campaign_event_transactions.py", "tests/test_autoresearch/test_recovery_behavior.py", "tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_harnesses/model_build/test_checkpoint_bundle.py"]},
+    "injected_handoff_boundaries": ["event replace failure", "pointer replace failure", "repeated publication", "remedy and outcome revision interleaving", "revoked lease", "foreign destination", "malformed revision"],
+    "limitation": "Local POSIX handoff publication only; not a claim that every legacy writer is migrated or that promotion continuation finalization is fully wired. Direct synchronous calls explicitly carry no lease verification claim.",
+    "release_authorized": false
+  },
+  "operation_and_timeout_contract_followup": {
+    "final_combined_receipt": {"junit": "outputs/runs/autonomy-validation/operation-timeout-final.xml", "sha256": "e745f03d9d01802bfbc9df1f4602ef3e3bf907cfe18a54ef612f37ae9de119df", "passed": 431, "seconds": 13.15, "pytest_options": "-o addopts= -q --tb=short", "extracted_case_generator_applied": true},
+    "component": "harness.autoresearch.experiment_campaign/v299",
+    "operation_before": {"junit": "outputs/runs/autonomy-validation/operation-outcome-before.xml", "sha256": "db0ffe0c0420f7483f3bd4cd05297e423a99f0cc6af38e53be6347d651693613", "failed": 5, "passed": 1},
+    "operation_after": {"junit": "outputs/runs/autonomy-validation/operation-outcome-integrated.xml", "sha256": "fa30cdb96a8dfc66489bed3351383f29d7b8a44b2474cacb63d0774b4b42e9df", "passed": 29, "seconds": 3.27, "evidence_class": "real_activity_store_and_mocked_process_outcomes", "durable_repair_request_and_no_duplicate_attempt_checked": true},
+    "timeout_before": {"junit": "outputs/runs/autonomy-validation/timeout-disposition-before.xml", "sha256": "c7b2f9365daba882773a339691b4db74db248a16daba02e776c628f87a6dd7f1", "failed": 3},
+    "timeout_full_files": {"junit": "outputs/runs/autonomy-validation/timeout-driver-full.xml", "sha256": "0c6088292c7e53651383869a8ffb2cf90715a5870a0f9d2b773af6be1d2f0d12", "passed": 402, "seconds": 10.42, "pytest_options": "-o addopts= -q --tb=short", "selection": ["tests/test_scripts/test_run_autotrain_continuous.py", "tests/test_autoresearch/test_timeout_retirement_identity.py", "tests/test_autoresearch/test_hillclimb.py"]},
+    "migration": "Historical timeout/null records remain byte-preserved. The current reader refuses their use as null/exhaustion evidence; new timeout-as-null writes reject. New handoffs require repair/replay rather than retrospective deadline rejection; passive timeout repair-action erasure is removed.",
+    "new_model_evaluation": false,
+    "live_agent_repair": "not_executed_capability_unavailable",
+    "release_authorized": false
+  },
+  "broad_verification_081b7c": {
+    "identity": "081b7cb1ba6528b34a2d7c23f879b201b77b1f79bc2e28a60df0e0a1b45e948d",
+    "command": "python -m scripts.verify_merge_ready --json --max-step-seconds 80 --local-feedback --state-dir <private-controller-cache>",
+    "static_passed": 18,
+    "collected_nodes": 11128,
+    "collected_seconds": 31.56914454499929,
+    "passed_nodes": 1,
+    "pending_nodes": 11127,
+    "last_shard_status": "timeout",
+    "last_shard_seconds": 28.697417180999764,
+    "charged_check_seconds": 114.93876617999936,
+    "exit_status": 1,
+    "verification_complete": false,
+    "release_authorized": false,
+    "qualification": "This identity precedes operation/timeout v299 changes; it is not a receipt for the later candidate. A bounded invocation exhausted remaining wall time during its second shard."
+  },
+  "bridge_cleanup_followup": {
+    "component": "dsl.symbolic_surface/v8",
+    "baseline_failure": {"junit": "outputs/runs/autonomy-validation/repl-cleanup-before.xml", "sha256": "7ad302f3e13389f84a2d05dedb7b5d94d92953826ea79061af0c160034d3c5b7", "failed": 2, "exit_code": 1},
+    "first_wider_check": {"junit": "outputs/runs/autonomy-validation/repl-cleanup-after.xml", "sha256": "aeeb470d8c2f04a3f2b613d5aa9280befc3a836adece464e5bc9689ef148ee77", "passed": 43, "failed": 1, "cause": "Previously stale pack.py source hash in historical symbolic-surface evidence"},
+    "successor_check": {"junit": "outputs/runs/autonomy-validation/repl-cleanup-successor.xml", "sha256": "217c69b3d54bd364b96271541d8139513213bc9a1f9b291300c6bbf165ffb773", "passed": 44, "failed": 0, "seconds": 6.60, "pytest_options": "-o addopts= -q", "selection": ["tests/test_dsl/test_lang_core_node_engine_hint.py", "tests/test_dsl/test_language_contract.py", "tests/test_harness_core/test_bounded_process.py", "tests/test_harness_core/test_bounded_process_watchdog.py"]},
+    "static_timeout_cause": "qualified: real child cleanup defect reproduced, but direct static checks completed; no assertion that every intermittent exit-zero interrupted receipt had this cause",
+    "historical_evidence_modified": false,
+    "release_authorized": false
+  },
+  "symbolic_surface_successor": {
+    "schema": "symbolic_surface_revalidation/v1",
+    "parent_path": "docs/design/dsh0-02-symbolic-surface-policy-20260723.json",
+    "parent_sha256": "03c5ec7bd522a13cb42bdda862e6fc5dc47b794d8f3d44219516e63ba54d0b6d",
+    "claim": "Current-source deterministic contract revalidation; historical acceptance is not rewritten or pooled",
+    "source_identities": [
+      {"path": "src/slm_training/dsl/language_contract.py", "sha256": "638608134d6d15dab38aeaccf966da0d9f5f900178d422cd5f0f66b78c711462"},
+      {"path": "tests/test_dsl/test_language_contract.py", "sha256": "6390eee8bf88ab4917856556cc085292b0ab3aba2a46d5d9d176e3c520c8b95b"},
+      {"path": "src/slm_training/dsl/pack.py", "sha256": "df919a24bb3af086f0faf411dc3dc9447b890ac264ce3f340c178f9fd9de7414"},
+      {"path": "src/slm_training/data/contract.py", "sha256": "6fdcad7182e2511f1bbb3d68852cd3e092a6b9012c5d22517b73388b8f01141d"},
+      {"path": "src/slm_training/dsl/scope_env.py", "sha256": "dc89c812f9e70877dc18a894b28a76063293f5690d891bb93d1f4750198eecec"},
+      {"path": "docs/design/symbol-only-output-contract.md", "sha256": "69af4e9d2845f282808cfd45a9295e0366305ecb17552472cf796dce82994321"},
+      {"path": "src/slm_training/dsl/lang_core.py", "sha256": "f528352cad371ce522534f741a6492c796b1333c68a66ff29d57975fbb122374"}
+    ],
+    "fixture_observations": [
+      {"id": "closed", "source_sha256": "7fcbe81599eb07cf0c855a3f9a03d6af08158ec2d1d3ab52f51160ffe3e72567", "pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d", "admitted": true, "violations": []},
+      {"id": "open", "source_sha256": "d58f7f16c7171cdd7eb7176c6af255f7de5d8a482331cbd42de4411ba6dbd656", "pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d", "admitted": false, "violations": [{"category": "open_string", "decision": "template", "start": 26, "end": 35}, {"category": "comment_or_prose", "decision": "reject", "start": 49, "end": 55}, {"category": "open_number", "decision": "reject", "start": 67, "end": 68}]},
+      {"id": "graphql", "source_sha256": "723a6593b7f2fe1da6408466ebba4e8b563a86469be5d3b06fbacfc65fb40d80", "pack_version": "1799d60a6041fe5abcd969c87c48f012eba3a9e8c40cd935ad24574e13c1b947", "admitted": true, "violations": []}
+    ],
+    "scientific_evaluation": false,
+    "promotion_or_ship_claim": false
+  },
+  "static_retry_and_parser_cost_followup": {
+    "final_parser_receipt": {"junit": "outputs/runs/autonomy-validation/parser-compilation-final.xml", "sha256": "598b06f15fbc78135e806f4fe3b5b1ad89febbcde163f8f86b6de1ade0f7c18d", "passed": 33, "skipped": 1, "seconds": 34.92, "source_sha256": "df252ca4cd8d24182680a4d846ca53a39048548a957f4eac57368397f5ee0fb4", "position_mode_and_grammar_change_checks": true},
+    "failed_static_identity": "4211be0f5e8bfad0eac0c0078c1cae31d319dc89bc3f6049eab82856d0daea28",
+    "failed_static_names": ["decode_invariants", "code_quality", "formal_evidence_mutations"],
+    "static_failure_observation": "exit-zero children classified as interrupted cleanup; twelve bounded direct decode-invariant repetitions completed normally; no retrospective pass assertion",
+    "static_retry_fix": {"component": "ci.local_merge_gate/v13", "maximum_attempts": 3, "preserves_failed_receipts_and_cost": true, "junit": "outputs/runs/autonomy-validation/static-retry.xml", "sha256": "2f78fa522969aa9e7c8b52b4f3dbd490fa0b49e2440b640846985bfe82e4f40f", "passed": 40, "seconds": 23.04},
+    "incomplete_pytest": {"junit": "outputs/runs/autonomy-validation/node22-release-followup.xml", "sha256": "a7224bbb76a1e8445cace19dc2771c5b83420326e8fb7852bce8456165c5d4d5", "exit_code": 124, "completed_tests_before_interrupt": 34, "seconds": 166.04, "verification_complete": false},
+    "original_host_reproducer": {"node": "tests/test_dsl/test_topology_apply.py::TestStaleInvalidation::test_cross_request_effect_fails_closed", "junit": "outputs/runs/autonomy-validation/node22-original-host.xml", "exit_code": 124, "completed_tests": 0, "seconds": 167.45},
+    "parser_fix": {"owner": "src/slm_training/dsl/grammar/backends/lark_backend.py", "cause": "Fresh per-candidate differential backends repeatedly compiled identical LALR grammars", "cache_key": ["complete grammar text", "start symbol", "position mode"], "max_compiled_grammars": 8, "authority_checks_removed": false, "junit": "outputs/runs/autonomy-validation/parser-compilation-reuse.xml", "passed": 33, "skipped": 1, "skip_reason": "Playwright/preview dependencies unavailable", "seconds": 39.18, "original_reproducer_seconds": 38.728},
+    "release_authorized": false
+  },
+  "runtime_and_continuation_followup": {
+    "host_isolation": {"junit": "outputs/runs/autonomy-validation/onnx-privacy-host-isolation.xml", "sha256": "5b99e5ff25ed2a5f9a5caef99553cb59a92e674113e338b4d2571b46d04b0924", "passed": 50, "skipped": 0, "seconds": 2.95, "live_agent_execution": false},
+    "full_collection": {"required_targets": ["tests"], "collected_nodes": 11121, "seconds": 32.538730496, "collection_workload_sha256": "9d865103223faca460284dfacde25a1ffd441cdf3e9ea742400eca4ea374d9f1", "verification_identity": "6fe555c2b073c39924133c986d6a1505edcb3aa165a068fd4fd42941fdc419d1", "candidate_tree_sha256": "9dfc45da8d4d3253b8e63019712fb19f889ce8ffa9f1b5300c57b43bcad3a17e", "passed_nodes": 1, "failed_node": "tests/test_dsl/test_topology_apply.py::TestStaleInvalidation::test_cross_request_effect_fails_closed", "cause": "Invocation PATH selected Node 18.19.1; installed bridge requires >=20 <23. Supported Node 22.23.1 already installed.", "release_authorized": false},
+    "fix": "Verification environment identity now binds resolved executable bytes and PATH. Supported Node 22 PATH selected for subsequent invocations; no dependency upgrade.",
+    "resume_tests": {"junit": "outputs/runs/autonomy-validation/release-successor-resume.xml", "sha256": "827da78e33da6b4e9ae9402ea80b4bf0588886b9438fb042f14727354aa7366e", "passed": 45, "seconds": 50.93, "pytest_addopts": ""},
+    "static_checks": {"command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 20", "passed": 18, "exit_code": 0, "verification_complete": false, "release_authorized": false},
+    "full_candidate_verification": "pending; focused and static passes do not authorize release"
+  },
+  "finite_verification_followup": {
+    "collection_failure_and_onnx_repair": {
+      "broad_verifier_command": "python -m scripts.verify_merge_ready --json --max-step-seconds 30 --local-feedback --state-dir <private-controller-cache>",
+      "required_targets": ["tests"],
+      "static_steps_completed": 18,
+      "collection_status": "timeout",
+      "partial_collected_count_not_a_complete_universe": 9601,
+      "collection_workload_seconds": 34.66046654999991,
+      "source_guard": "source_changed_during_verification",
+      "release_authorized": false,
+      "reproducer": "Fresh pytest collection with a collectreport observer of :memory:.ses identified tests/test_models/test_onnx_contract.py; repeating collection while the session file already existed did not reproduce creation.",
+      "cause": "Native ONNX Runtime 1.29 telemetry initializes during import and created a session identifier file in the source root. Python audit hooks did not observe its native file write.",
+      "official_reference": "https://github.com/microsoft/onnxruntime/blob/main/docs/Privacy.md",
+      "correction": "SLM startup and pytest worker environment set ORT_DISABLE_TELEMETRY=1 before initialization. Root package startup is now a protected routine-repair surface. No SLM/AgentV evidence or scientific gate is disabled.",
+      "authority_migration": "governance.ownership_map/v30",
+      "external_upload_observed": false,
+      "limitation": "Earlier ORT imports used vendor defaults; no claim is made that their initialization attempted no egress. Code that imports ORT before SLM must set the documented opt-out in its launcher.",
+      "regression": {
+        "selection": ["tests/test_models/test_onnx_contract.py", "tests/test_scripts/test_check_changed.py"],
+        "pytest_options": "-o addopts= -q --tb=short",
+        "passed": 38,
+        "seconds": 3.70,
+        "receipt": "outputs/runs/autonomy-validation/onnx-startup-privacy.xml",
+        "sha256": "870138c3246658111a26c88fdf94c4d2ffb7b204afccc511440be9c158169e3f"
+      },
+      "local_scope_checks": {
+        "passed": 45,
+        "skipped": 5,
+        "seconds": 1.77,
+        "receipt": "outputs/runs/autonomy-validation/onnx-privacy-and-scope.xml",
+        "sha256": "cfc7466b2040b6de7747096b614c612b0241affce5df0db7bb4c9ce74bd83ed0",
+        "limitation": "Five isolation checks skipped in the restricted shell; host-capability rerun requested separately. Not a completed isolation acceptance claim."
+      }
+    },
+    "repaired_static_pass": {
+      "command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 20",
+      "passed_steps": 18,
+      "failed_steps": 0,
+      "exit_status": 0,
+      "verification_complete": false,
+      "release_authorized": false
+    },
+    "quality_and_extracted_case_regressions": {
+      "selection": ["tests/test_autoresearch/test_screening_data_repair.py", "tests/test_autoresearch/test_controller_repair.py", "tests/test_autoresearch/test_repair_dispatch.py", "tests/test_harnesses/distill/test_choice_diagnostics.py", "tests/test_harnesses/train_data/test_readiness.py", "tests/test_scripts/test_autotrain_nll_contract.py"],
+      "pytest_options": "-o addopts= -q --tb=short",
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 12.98,
+      "receipt": "outputs/runs/autonomy-validation/quality-and-casefiles.xml",
+      "receipt_sha256": "81167de1d8f977c7d8805486204a73f393c0888b2cf38bd15635a7fab615ec1a",
+      "evidence_class": "local_tests_with_real_data_builder_processes_not_live_agent_repair"
+    },
+    "status": "integration_in_progress_not_release_authorization",
+    "fault_run": {
+      "command": "python -m scripts.slm autoresearch --root outputs/autoresearch/autonomy-coordinator-20260907 verify-autonomy --batch-size 20",
+      "bounded_invocations": 5,
+      "invocation_timeout_seconds": 170,
+      "interrupt_kill_grace_seconds": 10,
+      "complete": true,
+      "actual_workload_attempts": 100,
+      "controller_contexts": 110,
+      "complete_operational_artifacts": 70,
+      "charged_workload_seconds": 30.79313489499964,
+      "observed_workload_seconds": 10.28026252500058,
+      "observed_controller_seconds_including_workloads": 70.59766051399674,
+      "scientific_promotions": 0,
+      "real_model_trials": 0,
+      "live_agent_repairs": 0,
+      "evidence_class": "real_workload_and_controller_processes_with_locked_faults",
+      "plan_digest": "9365378f6a7e75463c5b252276486d7c29f109ba5c8410a807c9d17ee6ef1568",
+      "receipt": "outputs/autoresearch/autonomy-coordinator-20260907/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/2e12c407a0578e9421880d4f6a01f834e5494168f8a8b3f1be0b5d08e0a64ed5.json",
+      "receipt_sha256": "a3011451d639b42bad353d264016484fbf43eed443c496b089bc32784672e35b",
+      "limitation": "Finite injected process/storage faults only; 25 repair waits and 5 cancellations remain correctly classified. Independent healthy jobs progressed alongside a capability wait. This is not live autonomous source repair or perpetual reliability."
+    },
+    "lean_restored": {
+      "toolchain": "leanprover/lean4:v4.30.0",
+      "existing_installed_toolchain": true,
+      "downloaded": false,
+      "build_command": "timeout -s INT -k 10 170 make -C src/leverproof_lean test",
+      "build_exit_status": 0,
+      "proof_or_threshold_changes": false,
+      "test_node": "tests/test_scripts/test_run_autotrain_continuous.py::test_export_promote_metric_certificate_writes_v2",
+      "passed": 1,
+      "skipped": 0,
+      "seconds": 1.380,
+      "receipt": "outputs/runs/autonomy-validation/lean-promotion-restored.xml",
+      "receipt_sha256": "60a475ad3b5411697f67d4b2611daed83f370423f2ef6ef41aa42b13dd2ad4ea"
+    },
+    "screening_quality": {
+      "selection": ["tests/test_autoresearch/test_screening_data_repair.py", "tests/test_harnesses/train_data/test_readiness.py"],
+      "pytest_options": "-o addopts= -q --tb=short",
+      "passed": 27,
+      "failed": 0,
+      "seconds": 14.71,
+      "receipt": "outputs/runs/autonomy-validation/screening-quality.xml",
+      "receipt_sha256": "92e0491f9bb8121be84aaa2680ace9bd766ae84ce3f24260cfca5f5d9b815d19",
+      "evidence_class": "real_sampler_data_publication_and_bounded_child_integration",
+      "source_version": "data.test_build/v14 plus staged quality-sidecar patch before v15 registration"
+    },
+    "initial_static_pass": {
+      "command": "python -m scripts.verify_merge_ready --fast --json --max-step-seconds 20",
+      "exit_status": 1,
+      "passed_steps": 16,
+      "failed_steps": ["extract_test_cases", "evidence_ledger"],
+      "release_authorized": false,
+      "evidence_ledger_drift": "25 additional scanned reports; 14 incomplete observations for current-rung-data-heal. Complete counts, deltas, positive counts and null counts unchanged."
+    },
+    "service": "continuous autotraining not started; stopped loop untouched"
+  },
+  "path_normalization": "Portable rendering relative to the candidate checkout: dot is the candidate, parent is its workspace collection, ../../.. is the shared authoring checkout. Commands and embedded path fields are normalized representations; original workload receipts and their hashes are unchanged.",
+  "coordinator_update": {
+  "recorded_at": "2026-09-08T00:09:47Z",
+  "status": "integration_in_progress_not_release_authorization",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "candidate_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "candidate_published": false,
+  "source_files": {
+    "scripts/autotrain_data_builder.py": "47b8f6f9fe67ad3556b796472eb6af51231b4d39b23ed3d7abd80a832420fc5a",
+    "scripts/autotrain_controller_repair.py": "f529c1bb6edd1816af03f7fc47afa9b1103743df4c7d6bc15102d068e5aedb42",
+    "scripts/autotrain_repair_activation.py": "d099a4d1455b133cd59330b6b4882c73d1574d509d9f75d9199ddc01edf9e139",
+    "scripts/autotrain_champion_lifecycle.py": "9d1cc6da367d62c77012652989a082473e69b36b79a19fbdeeb44f551d060b3d",
+    "scripts/autotrain_metrics.py": "710afa1fd59225f1f1b4db2462d6616163d9a521def13eeeda7db632f92fc591",
+    "scripts/run_autotrain_continuous.py": "62981fa7c618459afc968904585f061f853e1d9ebee1623ecf8ceb09dac14e82",
+    "src/slm_training/autoresearch/heal/playbooks/data_rebuild.py": "f9c8869cea19457bd4e0e094171ce2d560d735c394f16f9ee66943cf4d4baf8c",
+    "src/slm_training/models/onnx_inference.py": "ade58918f73794fdebb7d8e78d82562da157e0f335e0cdfba0df230593c2cde5",
+    "src/slm_training/resources/versions.json": "e8e522612673c1122b628e1aad2dcd8be7b91a13c29f6663e53ce9e3c42e5ff4"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v331",
+      "autoresearch.heal": "v9",
+      "data.test_build": "v14",
+      "harness.autoresearch.experiment_campaign": "v297"
+    }
+  },
+  "validation": {
+    "argv": [
+      "timeout",
+      "-s",
+      "INT",
+      "-k",
+      "10",
+      "170",
+      "env",
+      "OPENUI_BRIDGE_CLI=../../../src/apps/openui_bridge/cli.mjs",
+      "AGENTV_RUNNER=../../../scripts/run_agentv_eval.mjs",
+      "OMP_NUM_THREADS=1",
+      "MKL_NUM_THREADS=1",
+      "LANGSMITH_TRACING=false",
+      "PYTHONPATH=src:outputs/runs/autonomy-validation/dependencies",
+      "../../../.venv/bin/python",
+      "-m",
+      "pytest",
+      "-o",
+      "addopts=",
+      "tests/test_scripts/test_run_autotrain_continuous.py",
+      "tests/test_scripts/test_autotrain_nll_contract.py",
+      "tests/test_autoresearch/test_screening_data_repair.py",
+      "tests/test_scripts/test_repair_activation.py",
+      "tests/test_models/test_onnx_contract.py",
+      "tests/test_lineage/test_lineage.py",
+      "tests/test_autoresearch/test_operations.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=outputs/runs/autonomy-validation/coordinator-current.xml"
+    ],
+    "exit_status": 0,
+    "passed": 433,
+    "skipped": 1,
+    "failed": 0,
+    "warnings": 2,
+    "seconds": 50.97,
+    "receipt": "outputs/runs/autonomy-validation/coordinator-current.xml",
+    "receipt_sha256": "7f1a7081f39004308f39c411749ff7fb9e8eaba6fb6a5287353d66c6c86aceb2",
+    "marker_defaults_cleared": true,
+    "cache_reused": false,
+    "whole_required_universe_complete": false
+  },
+  "first_driver_failure": {
+    "receipt": "outputs/runs/autonomy-validation/continuous-driver-full.xml",
+    "sha256": "ff2de81ad6667ebda0e6872a57b0cff58a996aba7466a4fcca5b864c8e5d489a",
+    "failed": 11,
+    "passed": 346,
+    "skipped": 1,
+    "seconds": 11.98,
+    "exit_status": 1
+  },
+  "corrections": {
+    "malformed_suite": "read_eval_nll_records rejects non-mapping suite containers",
+    "checkpoint_source": "first_complete_control_run selects the recorded existing in-run bundle; seeding preserves exposure",
+    "fixture_migration": "Paired statistical tests now supply explicit record/root pairs; storage-only champion fixtures supply complete bundles with explicitly synthetic counters; historical exposure is not redivided by a new corpus",
+    "removed_behavior": "tracked screening seed append and source commit replaced with frozen request -> bounded builder -> immutable successor -> current readiness check"
+  },
+  "measurement_inspection": {
+    "evidence_class": "read_only_revalidation_of_retained_real_model_artifacts",
+    "code": "import json\nfrom pathlib import Path\nfrom slm_training.harnesses.model_build.eval_measurement import suite_result_cacheable\nfrom slm_training.harness_core.checkpoint_bundle import validate_bundle\nfrom slm_training.autoresearch.paired_stats import PairedSelection, paired_record_screening\nbase=Path(\"outputs/autoresearch/autonomy-mea-data-final-20260907/runs\")\nread=lambda p: json.loads(p.read_text())\ninputs=read(Path(\"outputs/runs/autonomy-mea-data/final-locked-inputs.json\"))\nids=inputs[\"selection\"][\"selected_record_ids\"]\nselection=PairedSelection(ids,dict(zip(ids,inputs[\"selection\"][\"selected_root_ids\"],strict=True)))\nobservations={}; arms={}\nfor arm in (\"control\",\"candidate\"):\n run=base/(arm+\"-v108\"); board=read(run/\"scoreboard.json\"); metric=read(run/\"eval_smoke.json\")\n assert suite_result_cacheable(metric) and board[\"measurement_complete\"] and board[\"publication_complete\"]\n assert metric[\"n\"]==metric[\"completed_document_n\"]==6 and metric[\"incomplete_document_n\"]==0\n assert board[\"evals\"][\"runner\"][\"execution_errors\"]==0\n assert all(Path(p).is_dir() if k==\"runDir\" else Path(p).is_file() for k,p in board[\"evals\"][\"artifacts\"].items())\n part=read(run/\"eval_smoke.partial.json\"); direct=read(base/(arm+\"-v108-direct\")/\"eval_smoke.partial.json\")\n assert part[\"record_ids\"]==direct[\"record_ids\"]==ids and not part[\"pending_record_ids\"]\n fields=(\"case_id\",\"root_id\",\"input_sha256\",\"evaluator_sha256\",\"selection_sha256\",\"decode_seed\",\"prediction_sha256\")\n assert all(part[\"records\"][i][k]==direct[\"records\"][i][k] for i in ids for k in fields)\n train=read(base/arm/\"train_summary.json\"); checkpoint=Path(train[\"checkpoint\"])\n validate_bundle(checkpoint.parent.parent.parent,checkpoint.parent.name)\n observations[arm]={r[\"id\"]:r[\"binder_reference_f1\"] for r in metric[\"details\"]}\n arms[arm]={\"selected\":len(ids),\"decoded\":metric[\"completed_document_n\"],\"parse_rate\":metric[\"parse_rate\"],\"meaningful_program_rate\":metric[\"meaningful_program_rate\"],\"binder_reference_f1\":metric[\"binder_reference_f1\"],\"sdk_execution_errors\":0,\"bundle\":checkpoint.parent.name,\"direct_chunk_prediction_identity_equal\":True,\"evaluator\":metric[\"evaluator_sha256\"]}\npaired=paired_record_screening(observations[\"control\"],observations[\"candidate\"],direction=\"increase\",selection=selection)\nassert paired[\"diagnostic_complete\"] and not paired[\"win\"]\nprint(json.dumps({\"arms\":arms,\"paired_binder\":paired,\"confirmation_complete\":False,\"ship_eligible\":False},sort_keys=True))\n",
+    "exit_status": 0,
+    "observations": {
+      "arms": {
+        "candidate": {
+          "binder_reference_f1": 0.9444444444444445,
+          "bundle": "4941dd87bceed14f4a2801e6cac36b2d25c6dbb8f8b4fa11197b2b0d22608488",
+          "decoded": 6,
+          "direct_chunk_prediction_identity_equal": true,
+          "evaluator": "65861b078a5abb845417120247c974e726dc70faa70ace45e03b6c9b3a731ed9",
+          "meaningful_program_rate": 0.16666666666666666,
+          "parse_rate": 1,
+          "sdk_execution_errors": 0,
+          "selected": 6
+        },
+        "control": {
+          "binder_reference_f1": 0.9444444444444445,
+          "bundle": "418bf96d13fd9268127772355652401aca844c22b6570076a79496cb568f2861",
+          "decoded": 6,
+          "direct_chunk_prediction_identity_equal": true,
+          "evaluator": "65861b078a5abb845417120247c974e726dc70faa70ace45e03b6c9b3a731ed9",
+          "meaningful_program_rate": 0,
+          "parse_rate": 1,
+          "sdk_execution_errors": 0,
+          "selected": 6
+        }
+      },
+      "confirmation_complete": false,
+      "paired_binder": {
+        "alpha": "1/20",
+        "diagnostic_complete": true,
+        "direction": "increase",
+        "independence": "declared_root_families",
+        "independence_contract_met": true,
+        "kind": "wilcoxon_signed_rank",
+        "mean_delta": 0,
+        "median_delta": 0,
+        "min_nontied_pairs": 5,
+        "minimum_effect": 0,
+        "n_missing_candidate": 0,
+        "n_missing_control": 0,
+        "n_nontied": 0,
+        "n_pairs": 6,
+        "n_ties": 6,
+        "p_value": 1,
+        "paired_record_ids": [
+          "lc_component_Separator_repair_c2fe1f4c1b5f",
+          "train_text_only_01__d3fdacf5",
+          "lc_component_Button_as_document__7b1d38de",
+          "lc_multi_child_as_document_aug_dir__0e7757fd",
+          "program_748f040f0cc63303__e54b667a",
+          "program_6154681f3a809853_aug_cta"
+        ],
+        "paired_sd": 0,
+        "promotion_authority": false,
+        "reason": "insufficient_nontied_pairs:0<5",
+        "root_family_n": 6,
+        "selection_locked": true,
+        "statistic": 0,
+        "verdict": "inconclusive",
+        "win": false
+      },
+      "ship_eligible": false
+    },
+    "original_manifest": "outputs/runs/autonomy-mea-data/final-evidence.json",
+    "original_sha256": "09fa9c04c0c7564803e285c637eb39b1ce87b63cf71a4f8bb1708d4ecd52ee38",
+    "original_model_version": "v330",
+    "original_eval_version": "v108",
+    "checker_first_failure": "runDir was incorrectly tested with is_file; corrected to is_dir, with other declared artifacts still required files"
+  },
+  "finite_fidelity_attempt": {
+    "argv": [
+      "python",
+      "-m",
+      "slm_training.harnesses.experiments.autonomous_learning.cli",
+      "fidelity",
+      "--run-id",
+      "autonomy-learning-final-3",
+      "--enable-fixture-experiment",
+      "--treatment",
+      "slow",
+      "--updates",
+      "4"
+    ],
+    "exit_status": 1,
+    "reason": "requested allocation is not pending under the locked resource plan",
+    "training_started": false,
+    "counts_as_negative": false
+  },
+  "live_agent_repair": {
+    "evidence_class": "not_executed_capability_unavailable",
+    "reason": "No configured preapproved provider grant; delegated provider allowance exhausted. No replacement paid inference launched."
+  },
+  "service": {
+    "installed": false,
+    "started": false,
+    "continuous_training_restarted": false,
+    "local_process_probe": "no Python supervisor or continuous driver found"
+  },
+  "remaining": [
+    "Production preflight construction of exact readiness requests and selection of successor experiments",
+    "Completed promotion-chunk ledger disposition without retraining",
+    "Long-fidelity research demonstration",
+    "Full conservative required test universe and final integrated release evidence",
+    "Live configured source-agent repair unavailable"
+  ]
+},
+  "schema": "autonomy_validation_restored/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "authoring_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "workspace": ".",
+  "junit": {
+    "path": "outputs/runs/autonomy-validation/domain-final-3.xml",
+    "sha256": "0f49be1fff2a49486ce8448f3d8580102bf688c3ddfeaf83dfd8eac0984c88f2",
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "86",
+        "time": "30.872",
+        "timestamp": "2026-09-07T17:37:00.526907-05:00",
+        "hostname": "CopilotPro7"
+      }
+    ],
+    "cases": [
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_select_tests_is_scoped_and_conservative",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_select_tests_includes_deleted_test_owner",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_select_tests_deduplicates_nested_targets",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_autotrain_skill_reference_edits_run_the_cli_parity_suite",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_autoresearch_skill_and_brains_edits_run_the_skill_guard_suite",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_script_changes_include_their_domain_suite",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_hook_prefers_explicit_changed_regressions",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_a_changed_global_test_file_is_never_narrowed_to_one_regression",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_the_hook_selection_is_still_not_monotone_for_ordinary_sources",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_hook_defers_pytest_for_large_diffs",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_version_registry_changes_run_versioning_suite",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_case_resource_selects_only_its_mirrored_test",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_runtime_eval_resources_select_their_consumers",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_loop_owned_eval_data_selects_narrow_integrity_suites",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_changed_files_can_compare_a_ci_base",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_changed_tests_are_collected_once_and_hash_balanced",
+        "time": "0.002"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_changed_test_shards_balance_each_source_file",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_parallel_runner_overdecomposes_for_work_stealing",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_ci_test_shards_are_disjoint_and_complete",
+        "time": "0.006"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_parallel_pytest_workers_limit_native_thread_pools",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_list_mode_needs_no_installed_dependencies",
+        "time": "0.048"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_duration_aware_shards_are_deterministic",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_duration_aware_shards_minimise_the_slowest_shard",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_empty_duration_table_reduces_to_node_count_balancing",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_committed_test_duration_table_is_schema_valid",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_duration_table_validator_flags_partial_and_irreducible_gaps",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_check_changed",
+        "name": "test_missing_duration_table_degrades_to_an_empty_weighting",
+        "time": "0.002"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_gate_mirrors_every_python_static_module_in_order",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_gate_mirrors_ruff_and_compileall",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_fast_skips_only_the_changed_test_execution",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_run_gate_collects_all_static_failures_then_skips_tests",
+        "time": "0.075"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_run_gate_green_path_runs_everything",
+        "time": "0.074"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_run_gate_records_timeout_as_failure",
+        "time": "0.511"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_cli_json_summary_shape",
+        "time": "0.034"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_cli_exits_nonzero_and_reports_rule_on_red",
+        "time": "0.036"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_cli_rejects_budget_above_canonical_cap",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_pre_push_hook_runs_fast_gate_with_loud_escape_hatch",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_reporter_is_a_read_only_json_wrapper",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_ready_gate",
+        "name": "test_hook_and_gate_paths_exist",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_source_resource_coverage_is_monotone",
+        "time": "0.073"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-001]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-002]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-003]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-004]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-005]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-006]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_unknown_alongside_known_target_is_conservative[case-007]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_real_collection_and_shard_include_default_excluded_markers",
+        "time": "1.879"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_actual_source_resource_and_changed_test_node_union",
+        "time": "2.172"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_real_empty_or_skipped_workload_cannot_pass[case-001]",
+        "time": "1.154"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_real_empty_or_skipped_workload_cannot_pass[case-002]",
+        "time": "1.100"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_real_empty_or_skipped_workload_cannot_pass[case-003]",
+        "time": "1.074"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_real_timeout_has_no_passing_evidence",
+        "time": "0.222"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_workload_exact_node_and_phase_accounting",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_invalid_workload_numbers_rejected[nan]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_invalid_workload_numbers_rejected[inf]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_invalid_workload_numbers_rejected[-1]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_invalid_workload_numbers_rejected[True]",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_no_candidate_cache_or_tampered_receipt",
+        "time": "0.014"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_fixture_lock_and_runner_content_change_tree_identity",
+        "time": "0.021"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_environment_binding_has_runtime_and_distribution_identity",
+        "time": "0.577"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_dependency_edit_invalidates_environment_without_metadata_change",
+        "time": "0.014"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_shards_are_nonempty_and_exact",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_real_workload_resumes_verified_collection_without_duplicate_tests",
+        "time": "13.085"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification",
+        "name": "test_local_evidence_is_not_independent_release_authority",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_missing_boundary_refuses_before_candidate_or_cache_access",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_real_isolated_manifest_cache_and_source_are_protected",
+        "time": "0.552"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_real_isolated_zero_exit_without_result_is_not_success",
+        "time": "0.492"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_real_static_failure_cannot_write_control_store",
+        "time": "0.347"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_executable_requires_approved_runtime",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_cache_identity_cannot_escape_namespace[../escape]",
+        "time": "0.005"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_cache_identity_cannot_escape_namespace[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+        "time": "0.004"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_cache_identity_cannot_escape_namespace[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]",
+        "time": "0.004"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_cache_identity_cannot_escape_namespace[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/x]",
+        "time": "0.006"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_cached_pass_counter_is_not_proof",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_quarantined_cache_cannot_be_reused_even_after_source_is_restored",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_candidate_targets_cannot_inject_options_or_host_paths[targets0]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_candidate_targets_cannot_inject_options_or_host_paths[targets1]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_candidate_targets_cannot_inject_options_or_host_paths[targets2]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_candidate_targets_cannot_inject_options_or_host_paths[targets3]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_candidate_targets_cannot_inject_options_or_host_paths[targets4]",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_exhausted_obligation_does_not_get_another_process",
+        "time": "0.000"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_private_metadata_preparation_failure_cannot_be_a_green_static",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_private_git_command_never_writes_source_refs",
+        "time": "0.001"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_real_private_git_metadata_is_readonly_and_independent",
+        "time": "6.938"
+      },
+      {
+        "classname": "tests.test_scripts.test_merge_verification_isolation",
+        "name": "test_snapshot_excludes_ignored_unbound_inputs",
+        "time": "0.002"
+      }
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "ci.local_merge_gate": "v11",
+      "governance.ownership_map": "v29"
+    },
+    "stamped_at": "2026-09-07T22:38:18.252827+00:00"
+  },
+  "source_tree_observation": "35b1bf4388c594d2d74a4bf775d2173a08176d2e22f5712c862c6d3fa72bd828",
+  "python": "3.12.3",
+  "architecture": "aarch64",
+  "domain_hashes": {
+    "scripts/check_changed.py": "b718ad70e01524b1a7c480831323f9cc9a0735a53067312732054856434017af",
+    "scripts/merge_verification.py": "729fd1c41c0ff2bace73efa1198967c50b9521fe540f868cdcd953e42e62f913",
+    "scripts/merge_verification_evidence.py": "18ae63c974fa78490388280f66b313511e4bf3300ab7fefba63d405c9b2fe048",
+    "scripts/merge_verification_isolation.py": "a77be30c9c921ef25ba3a7545b0500a2a8591323998aa00c03c2dca5bbd6443d",
+    "scripts/merge_test_worker.py": "2b092a4973765d6204c28f8bd3e5b2c7a95a8b841cb1b7bc0feb80232c2c2936",
+    "scripts/verify_merge_ready.py": "ede409fd9a174a445bd42da25f7993f06551a87dbfee68485eccd4850bcd1d17",
+    "tests/test_scripts/test_check_changed.py": "993b3c0e126c6ba2e429cb958cd59bb832400f4490a74a874ff8f9dd0d6171b5",
+    "tests/test_scripts/test_merge_ready_gate.py": "ec3d05a2f29f948dc98d7107b0c15e7acc438d04d001ac25588dff5b851a3c6b",
+    "tests/test_scripts/test_merge_verification.py": "c97c52fbbd14482759a62b59dd52be0ef18d828dbda2361cf944345c15508f62",
+    "tests/test_scripts/test_merge_verification_isolation.py": "436af7e9f5ad073294a29337499f9d5ee9f673f06601d47134975ae2d56abce6",
+    "src/slm_training/resources/test_cases/test_scripts/test_merge_verification.json": "b27ce8c3c9386a078cbe81f383ac8b5120687360761186754ceedcc205ba1f5e"
+  },
+  "domain_hashes_unchanged_during_run": true,
+  "evidence_class": [
+    "real_local_pytest",
+    "real_isolated_process",
+    "hypothesis_property",
+    "mocked_dispatch_budget",
+    "real_private_git_copy"
+  ],
+  "release_authorized": false,
+  "model_claim": false,
+  "service_touched": false,
+  "scientific_policy_changed": false,
+  "shared_registry_changed_by_validation": false,
+  "command": "rtk proxy timeout -s INT -k 10 170 env PYTHONPATH=src:outputs/runs/autonomy-validation/dependencies ../../../.venv/bin/python -m pytest -o addopts= tests/test_scripts/test_check_changed.py tests/test_scripts/test_merge_ready_gate.py tests/test_scripts/test_merge_verification.py tests/test_scripts/test_merge_verification_isolation.py -q --junitxml=outputs/runs/autonomy-validation/domain-final-3.xml",
+  "result": {
+    "exit_code": 0,
+    "passed": 86,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 30.87
+  },
+  "development_receipts": [
+    {
+      "path": "outputs/runs/autonomy-validation/restored-validation.xml",
+      "passed": 74,
+      "failed": 1,
+      "seconds": 19.64,
+      "reason": "old workflow-ignore expectation exposed and corrected"
+    },
+    {
+      "path": "outputs/runs/autonomy-validation/restored-validation-2.xml",
+      "passed": 75,
+      "failed": 0,
+      "seconds": 29.06
+    },
+    {
+      "path": "outputs/runs/autonomy-validation/restored-validation-3.xml",
+      "passed": 82,
+      "failed": 0,
+      "seconds": 22.51
+    },
+    {
+      "path": "outputs/runs/autonomy-validation/isolation-final.xml",
+      "passed": 20,
+      "failed": 0,
+      "seconds": 17.38
+    },
+    {
+      "path": "outputs/runs/autonomy-validation/domain-final.xml",
+      "passed": 85,
+      "failed": 0,
+      "seconds": 40.8
+    },
+    {
+      "path": "outputs/runs/autonomy-validation/domain-final-2.xml",
+      "passed": 85,
+      "failed": 0,
+      "seconds": 28.82
+    }
+  ],
+  "dependencies": {
+    "shared_environment_changed": false,
+    "hypothesis": "6.167.1",
+    "sortedcontainers": "2.4.0",
+    "location": "outputs/runs/autonomy-validation/dependencies"
+  },
+  "acceptance": {
+    "AC-SELECT": "test_source_resource_coverage_is_monotone; test_actual_source_resource_and_changed_test_node_union",
+    "AC-UNKNOWN": "test_unknown_alongside_known_target_is_conservative",
+    "AC-MARKERS": "test_real_collection_and_shard_include_default_excluded_markers",
+    "AC-EMPTYTEST": "test_real_empty_or_skipped_workload_cannot_pass; test_real_timeout_has_no_passing_evidence",
+    "AC-CACHE": "test_fixture_lock_and_runner_content_change_tree_identity; test_dependency_edit_invalidates_environment_without_metadata_change; test_no_candidate_cache_or_tampered_receipt; test_snapshot_excludes_ignored_unbound_inputs",
+    "AC-SCOPE": "test_real_isolated_manifest_cache_and_source_are_protected; test_real_static_failure_cannot_write_control_store",
+    "AC-ARTIFACT": "test_real_isolated_zero_exit_without_result_is_not_success"
+  },
+  "integrated_selection": {
+    "base_tree": "7f2c6faead4de5838bc275f7b395694b4f173ab5",
+    "changed_paths_at_observation": 211,
+    "targets": [
+      "tests"
+    ],
+    "all_integrated_nodes_executed": false
+  },
+  "quality_snapshot": {
+    "claim": "diagnostic snapshot of concurrently edited tree, not final gate",
+    "command": "python -m scripts.verify_code_quality",
+    "exit_code": 1,
+    "regressions": 25,
+    "output": "\ncomplexity:\n  FAIL  scripts/run_autotrain_continuous.py: complexity grew 105 -> 108 findings (+3)\n  FAIL  src/slm_training/autoresearch/storage.py: complexity grew 7 -> 8 findings (+1)\n  FAIL  src/slm_training/autoresearch/heal/repair_acceptance.py: new complexity violation (1 findings)\n  FAIL  src/slm_training/harnesses/distill/choice_diagnostics.py: new complexity violation (2 findings)\n  FAIL  tests/test_autoresearch/test_activity_runtime_demonstration.py: new complexity violation (2 findings)\n  DRIFT src/slm_training/harness_core/bounded_process.py: improved 3 -> 2 findings; lower the baseline\n  DRIFT scripts/run_autotrain_supervisor.py: no longer violates complexity; drop the baseline entry\n\nmodule_lines:\n  FAIL  src/slm_training/autoresearch/climb_policy.py: module_lines grew 1481 -> 1501 lines (+20)\n  FAIL  src/slm_training/autoresearch/engine.py: module_lines grew 1796 -> 1798 lines (+2)\n  FAIL  src/slm_training/autoresearch/schemas.py: module_lines grew 1640 -> 1647 lines (+7)\n  FAIL  src/slm_training/autoresearch/screening_sample_size.py: module_lines grew 802 -> 803 lines (+1)\n  FAIL  src/slm_training/autoresearch/storage.py: module_lines grew 1832 -> 1874 lines (+42)\n  FAIL  src/slm_training/evals/denoising_nll.py: module_lines grew 443 -> 448 lines (+5)\n  FAIL  src/slm_training/harnesses/distill/grammar_trace.py: module_lines grew 488 -> 496 lines (+8)\n  FAIL  src/slm_training/models/twotower.py: module_lines grew 16642 -> 16646 lines (+4)\n  FAIL  tests/test_autoresearch/test_climb_policy.py: module_lines grew 1246 -> 1313 lines (+67)\n  FAIL  tests/test_autoresearch/test_harness.py: module_lines grew 5792 -> 5863 lines (+71)\n  FAIL  tests/test_autoresearch/test_hillclimb.py: module_lines grew 855 -> 858 lines (+3)\n  FAIL  tests/test_autoresearch/test_screening_sample_size.py: module_lines grew 456 -> 459 lines (+3)\n  FAIL  tests/test_harnesses/model_build/test_eval_gates.py: module_lines grew 1411 -> 1413 lines (+2)\n  FAIL  tests/test_harnesses/model_build/test_eval_runner_resume.py: module_lines grew 504 -> 505 lines (+1)\n  FAIL  tests/test_scripts/test_run_autotrain_continuous.py: module_lines grew 13318 -> 13430 lines (+112)\n  FAIL  tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py: module_lines grew 487 -> 559 lines (+72)\n  DRIFT scripts/autoresearch.py: improved 2146 -> 2117 lines; lower the baseline\n  DRIFT scripts/check_changed.py: improved 906 -> 885 lines; lower the baseline\n  DRIFT scripts/run_autotrain_continuous.py: improved 14327 -> 14317 lines; lower the baseline\n  DRIFT src/slm_training/autoresearch/evidence_ledger.py: improved 845 -> 826 lines; lower the baseline\n  DRIFT src/slm_training/autoresearch/hillclimb.py: improved 1534 -> 1531 lines; lower the baseline\n  DRIFT src/slm_training/autoresearch/providers.py: improved 481 -> 480 lines; lower the baseline\n  DRIFT src/slm_training/data/quality.py: improved 957 -> 954 lines; lower the baseline\n  DRIFT src/slm_training/evals/loss_suites.py: improved 493 -> 485 lines; lower the baseline\n  DRIFT src/slm_training/harnesses/model_build/eval_runner.py: improved 3596 -> 3579 lines; lower the baseline\n  DRIFT src/slm_training/harnesses/model_build/train_loop.py: improved 1620 -> 1610 lines; lower the baseline\n  DRIFT src/slm_training/harnesses/test_data/certified.py: improved 1056 -> 1032 lines; lower the baseline\n  DRIFT tests/test_scripts/test_check_changed.py: improved 514 -> 507 lines; lower the baseline\n  DRIFT scripts/run_autotrain_supervisor.py: no longer violates module_lines; drop the baseline entry\n  DRIFT tests/test_autoresearch/test_climb_champion.py: no longer violates module_lines; drop the baseline entry\n\npackage_lines:\n  FAIL  slm_training.harnesses.experiments: package_lines grew 103189 -> 103900 lines (+711)\n  FAIL  slm_training.models: package_lines grew 49603 -> 49607 lines (+4)\n  FAIL  slm_training.autoresearch: new package_lines violation (22446 lines)\n\npackage_principles:\n  FAIL  sdp_violations: package_principles grew 80 -> 82 violations (+2)\n  DRIFT adp_cycles: improved 2 -> 1 violations; lower the baseline\n  DRIFT sap_violations: improved 11 -> 10 violations; lower the baseline\n\n25 regression(s): code quality got worse. Split the module, simplify the function, or break the dependency cycle -- do not raise the baseline by hand.\n",
+    "baseline_updated": false
+  },
+  "quality_followup": {
+    "claim": "Read-only concurrently edited tree snapshot, not final release verification",
+    "observed_before": "2026-09-07T22:42:18.022394+00:00",
+    "command": "rtk proxy timeout -s INT -k 10 170 env PATH=../../../.venv/bin:/usr/local/bin:/usr/bin:/bin ../../../.venv/bin/python -m scripts.verify_code_quality",
+    "exit_code": 1,
+    "regressions": 24,
+    "failures": [
+      {
+        "dimension": "complexity",
+        "path": "scripts/run_autotrain_continuous.py",
+        "ceiling": 105,
+        "observed": 108
+      },
+      {
+        "dimension": "complexity",
+        "path": "scripts/autotrain_supervisor_operations.py",
+        "ceiling": 0,
+        "observed": 2
+      },
+      {
+        "dimension": "complexity",
+        "path": "src/slm_training/autoresearch/heal/repair_acceptance.py",
+        "ceiling": 0,
+        "observed": 1
+      },
+      {
+        "dimension": "complexity",
+        "path": "src/slm_training/autoresearch/search_evidence.py",
+        "ceiling": 0,
+        "observed": 1
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/autoresearch/climb_policy.py",
+        "ceiling": 1481,
+        "observed": 1501
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/autoresearch/engine.py",
+        "ceiling": 1796,
+        "observed": 1798
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/autoresearch/schemas.py",
+        "ceiling": 1640,
+        "observed": 1647
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/autoresearch/screening_sample_size.py",
+        "ceiling": 802,
+        "observed": 803
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/evals/denoising_nll.py",
+        "ceiling": 443,
+        "observed": 448
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/harnesses/distill/grammar_trace.py",
+        "ceiling": 488,
+        "observed": 496
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/models/twotower.py",
+        "ceiling": 16642,
+        "observed": 16646
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_autoresearch/test_climb_policy.py",
+        "ceiling": 1246,
+        "observed": 1313
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_autoresearch/test_harness.py",
+        "ceiling": 5792,
+        "observed": 5863
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_autoresearch/test_hillclimb.py",
+        "ceiling": 855,
+        "observed": 858
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_autoresearch/test_screening_sample_size.py",
+        "ceiling": 456,
+        "observed": 459
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_harnesses/model_build/test_eval_gates.py",
+        "ceiling": 1411,
+        "observed": 1413
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_harnesses/model_build/test_eval_runner_resume.py",
+        "ceiling": 504,
+        "observed": 505
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_scripts/test_run_autotrain_continuous.py",
+        "ceiling": 13318,
+        "observed": 13430
+      },
+      {
+        "dimension": "module_lines",
+        "path": "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py",
+        "ceiling": 487,
+        "observed": 559
+      },
+      {
+        "dimension": "module_lines",
+        "path": "src/slm_training/harnesses/experiments/learning_fixture.py",
+        "ceiling": 400,
+        "observed": 401
+      },
+      {
+        "dimension": "package_lines",
+        "path": "slm_training.harnesses.experiments",
+        "ceiling": 103189,
+        "observed": 103928
+      },
+      {
+        "dimension": "package_lines",
+        "path": "slm_training.models",
+        "ceiling": 49603,
+        "observed": 49607
+      },
+      {
+        "dimension": "package_lines",
+        "path": "slm_training.autoresearch",
+        "ceiling": 20000,
+        "observed": 22509
+      },
+      {
+        "dimension": "package_principles",
+        "path": "sdp_violations",
+        "ceiling": 80,
+        "observed": 82
+      }
+    ],
+    "baseline_updated": false,
+    "subsequent_observation": {
+      "source_identity": "cd228e79f7c165a18665e171d366f902e9768305a48628227d2d169db57bd228",
+      "claim": "Observed after scan; concurrent edits mean not an exact scan-input identity",
+      "domain_hashes_still_match": true,
+      "junit_still_matches": true,
+      "supervisor_operations_focused_ruff": "passed after whole-tree snapshot; source changed",
+      "paired_sequential": "requested path absent; no successful lint claim for that path"
+    },
+    "continuous_head_comparison": {
+      "head_findings": 106,
+      "candidate_findings": 108,
+      "ceiling": 105,
+      "added": [
+        "_run_promotion_eval_chunks PLR0913 (9 arguments)",
+        "_run_arm_eval_nll C901 (12)",
+        "_run_arm_eval_nll PLR0915 (60 statements)"
+      ],
+      "removed": [
+        "_run_promotion_eval_chunks C901"
+      ]
+    },
+    "inherited_module_debt": {
+      "src/slm_training/autoresearch/screening_sample_size.py": {
+        "ceiling": 802,
+        "head": 803
+      },
+      "tests/test_autoresearch/test_screening_sample_size.py": {
+        "ceiling": 456,
+        "head": 459
+      },
+      "src/slm_training/autoresearch/schemas.py": {
+        "ceiling": 1640,
+        "head": 1643
+      },
+      "tests/test_autoresearch/test_climb_policy.py": {
+        "ceiling": 1246,
+        "head": 1299
+      },
+      "tests/test_scripts/test_run_autotrain_continuous.py": {
+        "ceiling": 13318,
+        "head": 13393
+      }
+    }
+  },
+  "limits": [
+    "No full-repository release receipt: concurrent integrated edits and remaining quality regressions.",
+    "A worker-produced workload result is not an authenticated release receipt; independent original-reproducer and scope verification must arrive through the controller-owned channel.",
+    "Linux local-file Bubblewrap boundary tested; no multi-host/network-filesystem lease claim.",
+    "No real agent/model run, promotion, service activation, remote Git operation or paid execution occurred in this packet.",
+    "Private Git operations write only a new disposable metadata copy, never authoring refs. Runtime-root file-stat identity does not establish protection against privileged filesystem rollback."
+  ],
+  "parent_registry_paths": [
+    "scripts/merge_verification_isolation.py",
+    "tests/test_scripts/test_merge_verification.py",
+    "tests/test_scripts/test_merge_verification_isolation.py",
+    "src/slm_training/resources/test_cases/test_scripts/test_merge_verification.json"
+  ]
+}

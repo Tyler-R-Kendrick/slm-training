@@ -1,0 +1,544 @@
+{
+  "schema": "autonomy_validation_evidence/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "base_source_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "candidate_owner_sha256": {
+    "scripts/check_changed.py": "4e99f62f6f7b8506b75c6336637492e81420eb1e7253cb6fd4b393d59b9d4391",
+    "scripts/verify_merge_ready.py": "9d4ac15648faee554fe8d5a175db6ec4d25af2fc6d13a33d951452f9d0d729e6",
+    "scripts/merge_verification.py": "98dfb4a11029a97a48c03979fbacb3d99715183f49263ad9dfafe93215b9ffe1",
+    "scripts/merge_verification_evidence.py": "c3d8da1cd91436146da0aa56d5233bc875cd4834893971a7e2d361304f3f960f",
+    "scripts/merge_test_worker.py": "5bcb163d3fd8ee2d7ceac5d10ab7856358e26c5bf40abcb4876f6bd825c69029",
+    "tests/test_scripts/test_check_changed.py": "f77bac7bf008045f7a9453dfa43a699eb8779ec465c9fc3b5a3f3bde1c462b78",
+    "tests/test_scripts/test_merge_ready_gate.py": "ec3d05a2f29f948dc98d7107b0c15e7acc438d04d001ac25588dff5b851a3c6b",
+    "tests/test_scripts/test_merge_verification.py": "94adee4ccad76e69e858fc4dc7106e9a3a84d765247b4c688a05876b979ca702"
+  },
+  "environment": {
+    "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+    "executable_sha256": "a7d56a8a764faf7bbf5c164055a48fd072be52287bdeb523a9e07b2042f4e7e1",
+    "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+    "machine": "aarch64",
+    "distributions_sha256": "0a3d417399d3912193028619c24d8149eee664833385a8e4b1aea081f76042d5",
+    "dependency_files_sha256": "3871eb7ffc7ea528f61b7ccd521172b4193e50070f9c3eddd219bd12d84d2da4",
+    "execution_environment_sha256": "3c7d052b8283ebcdb0836cd6f14a84762057c5a1c577f4009f81f7e2681a5549"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "governance.ownership_map": "v28"
+    },
+    "stamped_at": "2026-09-07T17:13:53.041767+00:00"
+  },
+  "tests": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "62",
+    "time": "33.440",
+    "timestamp": "2026-09-07T12:12:09.523732-05:00",
+    "hostname": "CopilotPro7"
+  },
+  "junit_case_identifiers": [
+    "tests.test_scripts.test_check_changed::test_select_tests_is_scoped_and_conservative",
+    "tests.test_scripts.test_check_changed::test_select_tests_includes_deleted_test_owner",
+    "tests.test_scripts.test_check_changed::test_select_tests_deduplicates_nested_targets",
+    "tests.test_scripts.test_check_changed::test_autotrain_skill_reference_edits_run_the_cli_parity_suite",
+    "tests.test_scripts.test_check_changed::test_autoresearch_skill_and_brains_edits_run_the_skill_guard_suite",
+    "tests.test_scripts.test_check_changed::test_script_changes_include_their_domain_suite",
+    "tests.test_scripts.test_check_changed::test_hook_prefers_explicit_changed_regressions",
+    "tests.test_scripts.test_check_changed::test_a_changed_global_test_file_is_never_narrowed_to_one_regression",
+    "tests.test_scripts.test_check_changed::test_the_hook_selection_is_still_not_monotone_for_ordinary_sources",
+    "tests.test_scripts.test_check_changed::test_hook_defers_pytest_for_large_diffs",
+    "tests.test_scripts.test_check_changed::test_version_registry_changes_run_versioning_suite",
+    "tests.test_scripts.test_check_changed::test_case_resource_selects_only_its_mirrored_test",
+    "tests.test_scripts.test_check_changed::test_runtime_eval_resources_select_their_consumers",
+    "tests.test_scripts.test_check_changed::test_loop_owned_eval_data_selects_narrow_integrity_suites",
+    "tests.test_scripts.test_check_changed::test_changed_files_can_compare_a_ci_base",
+    "tests.test_scripts.test_check_changed::test_changed_tests_are_collected_once_and_hash_balanced",
+    "tests.test_scripts.test_check_changed::test_changed_test_shards_balance_each_source_file",
+    "tests.test_scripts.test_check_changed::test_parallel_runner_overdecomposes_for_work_stealing",
+    "tests.test_scripts.test_check_changed::test_ci_test_shards_are_disjoint_and_complete",
+    "tests.test_scripts.test_check_changed::test_parallel_pytest_workers_limit_native_thread_pools",
+    "tests.test_scripts.test_check_changed::test_list_mode_needs_no_installed_dependencies",
+    "tests.test_scripts.test_check_changed::test_duration_aware_shards_are_deterministic",
+    "tests.test_scripts.test_check_changed::test_duration_aware_shards_minimise_the_slowest_shard",
+    "tests.test_scripts.test_check_changed::test_empty_duration_table_reduces_to_node_count_balancing",
+    "tests.test_scripts.test_check_changed::test_committed_test_duration_table_is_schema_valid",
+    "tests.test_scripts.test_check_changed::test_duration_table_validator_flags_partial_and_irreducible_gaps",
+    "tests.test_scripts.test_check_changed::test_missing_duration_table_degrades_to_an_empty_weighting",
+    "tests.test_scripts.test_merge_ready_gate::test_gate_mirrors_every_python_static_module_in_order",
+    "tests.test_scripts.test_merge_ready_gate::test_gate_mirrors_ruff_and_compileall",
+    "tests.test_scripts.test_merge_ready_gate::test_fast_skips_only_the_changed_test_execution",
+    "tests.test_scripts.test_merge_ready_gate::test_run_gate_collects_all_static_failures_then_skips_tests",
+    "tests.test_scripts.test_merge_ready_gate::test_run_gate_green_path_runs_everything",
+    "tests.test_scripts.test_merge_ready_gate::test_run_gate_records_timeout_as_failure",
+    "tests.test_scripts.test_merge_ready_gate::test_cli_json_summary_shape",
+    "tests.test_scripts.test_merge_ready_gate::test_cli_exits_nonzero_and_reports_rule_on_red",
+    "tests.test_scripts.test_merge_ready_gate::test_cli_rejects_budget_above_canonical_cap",
+    "tests.test_scripts.test_merge_ready_gate::test_pre_push_hook_runs_fast_gate_with_loud_escape_hatch",
+    "tests.test_scripts.test_merge_ready_gate::test_reporter_is_a_read_only_json_wrapper",
+    "tests.test_scripts.test_merge_ready_gate::test_hook_and_gate_paths_exist",
+    "tests.test_scripts.test_merge_verification::test_source_resource_coverage_is_monotone",
+    "tests.test_scripts.test_merge_verification::test_unknown_alongside_known_target_is_conservative[unknown/tool.ts]",
+    "tests.test_scripts.test_merge_verification::test_unknown_alongside_known_target_is_conservative[unknown/settings.toml]",
+    "tests.test_scripts.test_merge_verification::test_unknown_alongside_known_target_is_conservative[unknown/config.ini]",
+    "tests.test_scripts.test_merge_verification::test_unknown_alongside_known_target_is_conservative[uv.lock]",
+    "tests.test_scripts.test_merge_verification::test_real_collection_and_shard_include_default_excluded_markers",
+    "tests.test_scripts.test_merge_verification::test_actual_source_resource_and_changed_test_node_union",
+    "tests.test_scripts.test_merge_verification::test_real_empty_or_skipped_workload_cannot_pass[case-001]",
+    "tests.test_scripts.test_merge_verification::test_real_empty_or_skipped_workload_cannot_pass[case-002]",
+    "tests.test_scripts.test_merge_verification::test_real_empty_or_skipped_workload_cannot_pass[case-003]",
+    "tests.test_scripts.test_merge_verification::test_real_timeout_has_no_passing_evidence",
+    "tests.test_scripts.test_merge_verification::test_workload_exact_node_and_phase_accounting",
+    "tests.test_scripts.test_merge_verification::test_invalid_workload_numbers_rejected[nan]",
+    "tests.test_scripts.test_merge_verification::test_invalid_workload_numbers_rejected[inf]",
+    "tests.test_scripts.test_merge_verification::test_invalid_workload_numbers_rejected[-1]",
+    "tests.test_scripts.test_merge_verification::test_invalid_workload_numbers_rejected[True]",
+    "tests.test_scripts.test_merge_verification::test_no_candidate_cache_or_tampered_receipt",
+    "tests.test_scripts.test_merge_verification::test_fixture_lock_and_runner_content_change_tree_identity",
+    "tests.test_scripts.test_merge_verification::test_environment_binding_has_runtime_and_distribution_identity",
+    "tests.test_scripts.test_merge_verification::test_dependency_edit_invalidates_environment_without_metadata_change",
+    "tests.test_scripts.test_merge_verification::test_shards_are_nonempty_and_exact",
+    "tests.test_scripts.test_merge_verification::test_real_workload_resumes_verified_collection_without_duplicate_tests",
+    "tests.test_scripts.test_merge_verification::test_local_evidence_is_not_independent_release_authority"
+  ],
+  "junit_sha256": "90777b15949850470839e18fe809d8c47714aa5780833938c8ebb5225d7ebe60",
+  "claims": {
+    "VAL_SELECT": "implemented_tested",
+    "VAL_SHARD": "implemented_tested_local_processes",
+    "VAL_CACHE": "implemented_tested_local_controller_cache",
+    "VAL_AUTHORIZE": "implemented_local_evidence_independent_authority_required",
+    "release_authorized": false
+  },
+  "evidence_classes": [
+    "imported_baseline_implementation",
+    "actual_pytest_child_process",
+    "property_test",
+    "injected_voluntary_yield",
+    "synthetic_base_lookup_for_uncommitted_fixture"
+  ],
+  "limits": [
+    "No hostile sandbox acceptance demonstrated by VALIDATION.",
+    "Independent verifier channel must be authenticated and inaccessible to candidate workloads.",
+    "Whole shared-candidate code quality still requires integrated repair and ratchet updates.",
+    "Installed environment file-stat identity is not privileged rollback protection."
+  ],
+  "recovery_annotation": {
+    "evidence_class": "recovered_historical_not_revalidated",
+    "restored_after_filesystem_loss": true,
+    "tests_rerun_after_restoration": false,
+    "historical_content_sha256": "158dce7fa74953cb953c925e7e5501daeeb05ff9aa7258f6554980bd0fdea0e2",
+    "source_events": [
+      "rollout-2026-09-07T11-55-20-01a07ccb-b887-7f33-982e-b477ca3441c8.jsonl:432",
+      "rollout-2026-09-07T11-55-20-01a07ccb-b887-7f33-982e-b477ca3441c8.jsonl:439"
+    ],
+    "note": "Recovered historical report only. Referenced run artifacts and passing results are not verified in the reconstructed workspace; no current release or autonomy authorization is asserted."
+  },
+  "completion_followups": [
+    {
+      "date": "2026-09-08",
+      "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+      "execution_head": "e0eca9f9910244ecc20eb480d363f1852417b599",
+      "candidate_dirty": true,
+      "release_authorized": false,
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+        "code_dirty": true,
+        "components": {},
+        "stamped_at": "2026-09-08T19:21:35.589091+00:00"
+      },
+      "version_composition": "Parent-owned final component and ownership composition remains required.",
+      "initial_81_test_receipt": {
+        "passed": 81,
+        "seconds": 34.55,
+        "exit_code": 0,
+        "receipt_kind": "observed_tool_stdout; no separate JUnit was requested",
+        "selection": [
+          "tests/test_scripts/test_merge_verification.py",
+          "tests/test_scripts/test_merge_verification_scheduling.py",
+          "tests/test_scripts/test_merge_ready_gate.py",
+          "tests/test_scripts/test_merge_verification_isolation.py"
+        ],
+        "owner_sha256_at_receipt": {
+          "scripts/merge_verification.py": "86d9654af7c9f95f2a2d0a996fe92cfa36e8a56cde8cb5d24d235b5d5be99606",
+          "scripts/merge_verification_evidence.py": "c7cc3c2548eb67dbef3a4a863db2d36936ae002aed7bafc63c1eeccb1df1fefe",
+          "scripts/merge_verification_summary.py": "825f59b5630b22bfc2e4babd7ba246c942462f439654a9d10b5a220d12f98341",
+          "tests/test_scripts/test_merge_verification.py": "445ee7e26800761db295ff0f542253f58ef25a6d1fef265a8f569a037031a5f1",
+          "tests/test_scripts/test_merge_verification_scheduling.py": "d55a803ecc4b925aa8b622e5b2007c4781a45816e7a52d5fc644d4a0b16f6689"
+        }
+      },
+      "six_file_selection": [
+        "tests/test_scripts/test_merge_verification.py",
+        "tests/test_scripts/test_merge_verification_scheduling.py",
+        "tests/test_scripts/test_merge_ready_gate.py",
+        "tests/test_scripts/test_merge_verification_isolation.py",
+        "tests/test_scripts/test_merge_verification_controller.py",
+        "tests/test_scripts/test_autotrain_verification.py"
+      ],
+      "successful_expanded_receipt": {
+        "passed": 105, "seconds": 66.71, "exit_code": 0,
+        "junit": "outputs/runs/autonomy-validation/validation-integrated-20260908.xml",
+        "junit_sha256": "5e7fa44df70649512418bf8c53c56002113b60fc2c0e4a03a387531f8b473e46"
+      },
+      "interrupted_rerun": {
+        "reported_passed": 105, "seconds": 164.81, "exit_code": 124,
+        "verification_complete": false,
+        "junit": "outputs/runs/autonomy-validation/validation-recovered-20260908.xml",
+        "junit_sha256": "b2d8a9a7ae0ce5431fb19831a004f707c73692ab26e4f097b1ec460301482c8d"
+      },
+      "isolated_fixture_first_attempt": {
+        "passed": 13, "failed": 1, "seconds": 22.84, "exit_code": 1,
+        "cause": "test assumed one-pass completion despite valid collection deferral; fixture now resumes locked evidence within three bounded invocations"
+      },
+      "environment": {
+        "path_base": "candidate working directory; relative paths resolve to the originally recorded host locations",
+        "python": "../../../.venv/bin/python",
+        "node": "../../../../../.nvm/versions/node/v22.23.1/bin",
+        "PYTHONPATH": "src:outputs/runs/autonomy-validation/dependencies",
+        "OPENUI_BRIDGE_CLI": "../../../src/apps/openui_bridge/cli.mjs",
+        "AGENTV_RUNNER": "../../../scripts/run_agentv_eval.mjs",
+        "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
+        "pytest_options": ["-o", "addopts=", "-m", "", "-q"],
+        "command_prefix": ["timeout", "-s", "INT", "-k", "10", "170"],
+        "pyproject_sha256": "c49156c9524b5189b9fcf2d668bf370fb5aaf1b7a4952a71d5c29cc213a23190",
+        "uv_lock": "absent; no lock identity fabricated",
+        "isolation_tests": "authorized local host rootless boundary; outer sandbox denies NETLINK_ROUTE"
+      },
+      "protocol": {
+        "binding_schema": "merge_verification_binding/v3",
+        "summary_schema": "merge_verification/v2",
+        "consumer": "scripts.autotrain_verification.drain_source_verification(runtime, common, log_event)",
+        "event": "source_verification_requested",
+        "artifact_category": "source_verification_requests",
+        "resource_authority": "dependency.grant; no inferred total or max_attempts",
+        "wake": "exact dependency.wake only after current authenticated complete isolated journal; never running repair",
+        "independent_acceptance": "ISO remains owner; completion wakes but does not acknowledge repair"
+      },
+      "evidence_classes": ["real_process", "real_rootless_isolation", "real_runtime_leases", "authenticated_cache", "synthetic_fixture_source_selection", "injected_yield", "mocked_missing_capability"],
+      "not_claimed": ["full_final_tree_verification", "real_agent_repair", "model_quality", "promotion", "service_activation", "perpetual_reliability"],
+      "disk_recovery": "ENOSPC interrupted an added check; external recovery only; no files removed; source/domain JSON and successful JUnit reparsed",
+      "completed_followup_shards": [
+        {
+          "junit": "outputs/runs/autonomy-validation/validation-wake-resume-20260908.xml",
+          "sha256": "f7b78c4cbd5b28e559d6edebe3b4fc7f0ceb4abe53d6288a9feb6704205c6b47",
+          "passed": 14, "seconds": 42.62, "exit_code": 0,
+          "selection": ["tests/test_scripts/test_autotrain_verification.py"]
+        },
+        {
+          "junit": "outputs/runs/autonomy-validation/validation-scheduling-final-20260908.xml",
+          "sha256": "77c07e352525b72c5b6be65c05318505f28376ff4b28d5f4906a364db1f6d50f",
+          "passed": 55, "seconds": 31.32, "exit_code": 0,
+          "selection": ["tests/test_scripts/test_merge_verification.py", "tests/test_scripts/test_merge_verification_scheduling.py", "tests/test_scripts/test_merge_ready_gate.py"]
+        },
+        {
+          "junit": "outputs/runs/autonomy-validation/validation-controller-final-20260908.xml",
+          "sha256": "c030b4b60bc4e7c16e3cb530b9379d2f8601ed2d1001c518586b6522634229ff",
+          "passed": 52, "seconds": 86.86, "exit_code": 0,
+          "selection": ["tests/test_scripts/test_merge_verification_isolation.py", "tests/test_scripts/test_merge_verification_controller.py", "tests/test_scripts/test_autotrain_verification.py"]
+        },
+        {
+          "junit": "outputs/runs/autonomy-validation/validation-controller-waits-20260908.xml",
+          "sha256": "abbb9505d8eebc13f2acf2ef16d543d5b32048279eff649f65bedb5eed8818cc",
+          "passed": 14, "seconds": 51.97, "exit_code": 0,
+          "selection": ["tests/test_scripts/test_merge_verification_controller.py"]
+        }
+      ],
+      "distinct_tests_in_final_three_receipts": 110,
+      "receipt_scope": "Incremental focused receipts; overlapping identities counted once; no immutable full-candidate release receipt claimed.",
+      "handoff_owner_sha256": {
+        "scripts/merge_verification.py": "60c13a6a439f89d28ecf4ca30f72b10815409595e77d78322f8461bfbc9211b2",
+        "scripts/merge_verification_evidence.py": "66c38add2d50e09f0c20ca49a48a8a19d6befca9a3ce97e1f8f854699f854fee",
+        "scripts/merge_verification_summary.py": "9f57c529501c0017a7411e641980349eb0731dee939c11f16fb4a555ab33422d",
+        "scripts/merge_verification_controller.py": "42246b1a4cc44be732c1a633dd1e1a9da323733d8a20c9c8741a73615ee89375",
+        "scripts/verify_merge_ready.py": "ba2344f65d3f12bf655ff0a2c48c6c37d79ce2270aa968ebc0294faad2f8b358",
+        "scripts/autoresearch_operations.py": "081452f614b776a747ddffa828e887320144c94f2a29e4c7a9cf3b9b04759ab5",
+        "scripts/autotrain_verification.py": "54afffa8fa647f2340bc380c4a88c015701d32e08517d78621113e58511f060a",
+        "tests/test_scripts/test_merge_verification.py": "445ee7e26800761db295ff0f542253f58ef25a6d1fef265a8f569a037031a5f1",
+        "tests/test_scripts/test_merge_verification_scheduling.py": "8cc9ebbd7c7e47b4d51abe5b8939daf7f3e2e35c5a89036d8960593f5155fe77",
+        "tests/test_scripts/test_merge_verification_controller.py": "7f4362eba9965a5358d65111d3e76c0fd68220f93c5408aa86d7e81fbbc1c16d",
+        "tests/test_scripts/test_autotrain_verification.py": "9ce387748c698fc07a02e3cc5c1cb2d6de58e786e49be36dff9dfbbf4be57c50"
+      },
+      "handoff_hash_semantics": "Source bytes at handoff, not retroactively attached to earlier receipts.",
+      "source_bootstrap_boundary": "python -I with explicit trusted imports; candidate sitecustomize regression executed",
+      "historical_duration_table": {"files": 138, "summed_seconds": 5838.56, "largest_file_seconds": 4726.16, "full_universe_forecast": false},
+      "final_checks": {"ruff": "passed", "complexity": "passed", "format": "passed", "parser_help": "both canonical commands exit 0"},
+      "execution_context_reconciliation": {
+        "date": "2026-09-08",
+        "probe": "slm_training.autoresearch.heal.isolation.probe_isolation",
+        "normal_codex_sandbox": {"available": false, "backend": "bubblewrap", "executable": "/usr/bin/bwrap", "reason": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"},
+        "explicitly_authorized_host": {"available": true, "backend": "bubblewrap", "executable": "/usr/bin/bwrap", "reason": "available"},
+        "final_execution": "Parent runs controller on authorized host; candidate workloads retain actual rootless isolation; never --local-feedback.",
+        "release_authorized": false, "service_activated": false, "paid_or_remote_authority_added": false
+      },
+      "bridge_binding_followup": {
+        "environment": {
+          "path_base": "candidate working directory; resolve before setting subprocess environment",
+          "OPENUI_BRIDGE_CLI": "../../../src/apps/openui_bridge/cli.mjs",
+          "DESIGN_MD_BRIDGE_CLI": "../../../src/apps/design_md_bridge/cli.mjs",
+          "AGENTV_RUNNER": "../../../scripts/run_agentv_eval.mjs"
+        },
+        "change": "Bind Design-MD entrypoint path and bytes alongside OpenUI/AgentV; new regression rejects content and path drift.",
+        "passed": 15, "seconds": 0.72, "exit_code": 0,
+        "selection": ["tests/test_scripts/test_merge_verification_scheduling.py"],
+        "junit": "outputs/runs/autonomy-validation/validation-bridge-binding-final-20260908.xml",
+        "junit_sha256": "8e8c0a493dad0be0c2c53a93d8326abac17bffe3c9910d49224a6bbe758648a7",
+        "successor_owner_sha256": {
+          "scripts/merge_verification_evidence.py": "4bed8009f558ebcfb4ebded5576f4acfbae25537b3f9808333f00713ee9a91ec",
+          "tests/test_scripts/test_merge_verification_scheduling.py": "5a3ab60b51e5690ec4a8eacb02517fa58a5fddddbcd7ad231ad7d335044fbc5a"
+        },
+        "prior_handoff_hashes": "Historical; these two successor hashes supersede the earlier handoff. Full binding must be recomputed.",
+        "isolation_integration": "ISO owns approved complete JS dependency mounts and AgentV runner/SDK relative layout; not verified by this entrypoint identity regression.",
+        "release_authorized": false
+      }
+    }
+  ],
+  "prefinal_diagnostic_20260908": {
+    "job_id": "autonomy-prefinal-diagnostic",
+    "state_root": "../../../outputs/runs/autonomy-prefinal-diagnostic",
+    "canonical_invocation": "Same documented verify-release argv and six approved roots; separate external events/cache and job/activity names autonomy-prefinal-diagnostic; total-seconds 14400, max-invocations 1024, max-step-seconds 60; actual authorized-host Bubblewrap, no local-feedback.",
+    "canonical_exit_code": 20,
+    "canonical_attempts": 1,
+    "canonical_charged_activity_seconds": 35.0972935250029,
+    "binding": "f5af219c8838feba195938286f4807790419a27dd73da3ac5039f1ef4700ae1a",
+    "journal": "../../../outputs/runs/autonomy-prefinal-diagnostic/cache/f5af219c8838feba195938286f4807790419a27dd73da3ac5039f1ef4700ae1a.json",
+    "verified_observation": "repo_policy passed isolated_process exit 0 in 19.424913067006855 seconds; authoritative journal then invalidated source_changed_during_verification before collection.",
+    "reporting_fix": "Controller now retains exit-1 invalid_evidence reason from its verifier child, while forcibly rejecting all completion/release claims; a failed child claiming nonfailure remains refused.",
+    "diagnostic_collection_contract": "Separately invoked the same canonical run_workload owner with targets=[tests], collect_only=true, isolated=true, seconds=60 and exact configured runtime roots. These diagnostic artifacts/events never populate a passing release cache; before/after source digests and all elapsed workload costs are retained.",
+    "collections": [
+      {
+        "artifact": "../../../outputs/runs/autonomy-prefinal-diagnostic/collection-diagnostic.json",
+        "sha256": "2f2c3644d7f912ad8dc69768ec9d665ba1cab9218f843dce9f17aca84b997441",
+        "status": "timeout", "workload_seconds": 61.8761167509947,
+        "spent_seconds": 62.14598591699905, "workload_exit_code": -2,
+        "completed_collection_nodes": 0,
+        "count_qualification": "The diagnostic command printed collected_node_count=1 from the input selector [tests], not actual collected cases. This is not successful collection evidence."
+      },
+      {
+        "artifact": "../../../outputs/runs/autonomy-prefinal-diagnostic/collection-compact-diagnostic.json",
+        "sha256": "c179d1a923ae39db85e1f70c6a888c2f68769861fe04d7fe3db8bd97f605316a",
+        "status": "timeout", "workload_seconds": 62.21337278498686,
+        "spent_seconds": 62.714178834998165, "workload_exit_code": -2,
+        "completed_collection_nodes": 0
+      },
+      {
+        "artifact": "../../../outputs/runs/autonomy-prefinal-diagnostic/collection-stack-diagnostic.json",
+        "sha256": "5c6c7afcc8fa7c88bd820eaa010d1b8a759d94c1d7a37a5e56a5ca9f24b36d4d",
+        "status": "ok", "workload_seconds": 60.21873103600228,
+        "spent_seconds": 60.477440108006704, "workload_exit_code": 0,
+        "completed_collection_nodes": 11611, "unique_nodes": 11611,
+        "collection_errors": [], "deselected": 0,
+        "marked_training": 21, "marked_slow": 10,
+        "source_before": "e4b69e13596dbac504eb182a38cd378ba38a7091c871b7334ab01cf6a42cd3d7",
+        "source_after": "a89bcb7c1ab084d54b7373a43a79e2d5b5c19a26a6b50cce734713f5d8d0028c"
+      }
+    ],
+    "collection_spend_accounting": "Supplemental diagnostics are charged by their own persisted event spent_seconds; they are additional to, not included in, the canonical activity's 35.0972935250029 seconds. All remain within the explicit 14400-second logical ceiling; no grant was reset.",
+    "worker_fix": "Collect-only terminal listing is suppressed through pytest plugin unregister after options parse. Every node/marker remains in the protocol artifact; import failures retain bounded original error details. A delayed 30-second stack diagnostic exposes future stalls without changing timeout or acceptance.",
+    "timing_qualification": "Compact output was not proven to cure timeout: the first compact rerun still timed out. The next collection passed under the unchanged 60-second request. Duration includes snapshot/setup/cleanup; this is marginal headroom under current host contention, not a stable timing guarantee.",
+    "owner_hashes": {
+      "scripts/merge_test_worker.py": "f54dac54efe7b4941cd63070577f02a680b2478403b814dc3907276169bfa314",
+      "scripts/merge_verification_controller.py": "1259b05dacf1e4050052b7f05405366fab10bc4f3b6efab0a1326b6b846eb9e0",
+      "tests/test_scripts/test_merge_verification_runtime.py": "c4f0db00441ca7846c77a831f47f483579d4b7a7f66589fdb2e1653b48f36c38",
+      "tests/test_scripts/test_merge_verification_controller.py": "47c6937e23ee9a0cd3c7d935f8e4baf436cdd107754d0e7f74f871b4a840d289"
+    },
+    "regression_receipts": [
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-invalidation-diagnostic-20260908.xml",
+        "passed": 1, "failed": 1, "deselected": 23, "seconds": 0.26, "exit_code": 1,
+        "cause": "New test recreated its fixture directory twice; fixed by reusing its single plan, no implementation guard relaxation."
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-invalidation-diagnostic-fixed-20260908.xml",
+        "passed": 2, "deselected": 23, "seconds": 0.20, "exit_code": 0
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-compact-collection-20260908.xml",
+        "passed": 3, "deselected": 26, "seconds": 2.72, "exit_code": 0,
+        "note": "Two new tests subsequently moved into the existing runtime test owner to preserve module ceiling; both reran in the final receipt."
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-prefinal-followup-20260908.xml",
+        "sha256": "d4f22d67a46554b628fe69be6cf3a4e6b389898404f67c28b0bdaa7978f09b5a",
+        "selection": ["tests/test_scripts/test_merge_verification_controller.py", "tests/test_scripts/test_merge_verification_runtime.py"],
+        "passed": 31, "seconds": 43.59, "exit_code": 0,
+        "class": "actual_rootless_js_consumer_and_controller_protocol_process_regressions"
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-prefinal-worker-regressions-20260908.xml",
+        "sha256": "11ce82378899326a0565a6a99d9d7e07d0335f3323a56040cdf0431e5a10f2bd",
+        "selection": ["tests/test_scripts/test_merge_verification.py"],
+        "passed": 27, "seconds": 22.72, "exit_code": 0
+      }
+    ],
+    "lint_exit": 0, "complexity_exit": 0, "extract_cases_check_exit": 0,
+    "release_authorized": false,
+    "full_selected_tests_executed": false,
+    "final_quiet_source_run": "Parent-owned; all source changes invalidate this diagnostic identity."
+  },
+  "finite_cli_runtime_followup_20260908": {
+    "source_head": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+    "implemented_owners": [
+      "scripts/merge_verification_runtime.py",
+      "scripts/merge_verification_isolation.py::_workload_argv",
+      "scripts/merge_verification_isolation.py::isolated_static",
+      "scripts/merge_verification_controller.py::add_release_parser",
+      "scripts/verify_merge_ready.py",
+      "scripts/merge_verification.py::verification_binding",
+      "scripts/autoresearch_operations.py::add_campaign_operations_parser",
+      "scripts/autoresearch.py::build_parser",
+      "tests/test_scripts/test_merge_verification_runtime.py",
+      "tests/test_scripts/test_merge_verification_controller.py"
+    ],
+    "interfaces": {
+      "runtime_argv": "Explicit read-only approved roots; source-matched bridge and staged AgentV runner; scratch SDK ancestor and preserve-symlinks Node wrapper; no checkout-wide mount or SDK copy.",
+      "finite_controller": "Canonical verify-release handler drains existing ActivityRuntime jobs with explicit grant, authenticated journal, automatic continuation and charged replay.",
+      "parent_hook": "drain_source_verification(runtime, common, log_event) consumes persisted dependency events and wakes only the matching waiting_dependency repair after authenticated full completion.",
+      "outputs": ["phase_progress", "next_action", "required_seconds", "charged_activity_seconds", "verification_complete", "release_authorized"]
+    },
+    "receipts": [
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-js-runtime-20260908.xml",
+        "passed": 2, "failed": 2, "seconds": 3.91, "exit_code": 1,
+        "cause": "Node realpath discarded node_modules ancestor; repaired by explicit isolated preserve-symlinks wrapper.",
+        "class": "real_bubblewrap_process"
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-js-runtime-preserved-20260908.xml",
+        "sha256": "04399160e5732412af0f5913a33ee6e03340e7a6312aa8aa36b8661ba8fc3ccb",
+        "passed": 4, "seconds": 15.10, "exit_code": 0,
+        "selection": ["tests/test_scripts/test_merge_verification_runtime.py"],
+        "class": "real_bubblewrap_installed_sdk_import_and_bridge_protocol_not_model_eval"
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-production-cli-20260908.xml",
+        "sha256": "265a6683cddad3499933644311ed4b883311873d6e9fe38b80a6ed22c514aefa",
+        "passed": 41, "seconds": 44.42, "exit_code": 0,
+        "selection": ["tests/test_scripts/test_merge_verification_isolation.py", "tests/test_scripts/test_merge_verification_controller.py"],
+        "class": "isolated_contract_tests_and_canonical_cli_actual_process_fixture_with_local_feedback"
+      },
+      {
+        "junit": "outputs/runs/autonomy-validation/validation-operations-extraction-20260908.xml",
+        "passed": 51, "failed": 2, "seconds": 153.97, "exit_code": 1,
+        "selection": ["tests/test_scripts/test_merge_verification_controller.py", "tests/test_autoresearch/test_operations.py"],
+        "failures": ["test_verifier_bootstrap_does_not_import_candidate_sitecustomize:15s subprocess timeout", "test_start_and_stop_use_real_process_with_disposable_controller_fixture:startup_failed exit -2"],
+        "class": "actual_process_failed_run_not_release_evidence"
+      }
+    ],
+    "pytest_options": ["-o", "addopts=", "-m", "", "-q"],
+    "command_manifest": {
+      "interpreter": "../../../.venv/bin/python",
+      "path_base": "candidate working directory; relative runtime and environment paths must resolve to absolute paths before subprocess execution; exact host shell command retained in matching markdown",
+      "module": "scripts.autoresearch",
+      "environment": {
+        "PATH_entries": ["../../../../../.nvm/versions/node/v22.23.1/bin", "../../../.venv/bin", "/usr/local/bin", "/usr/bin", "/bin"],
+        "PYTHONPATH": "src:outputs/runs/autonomy-validation/dependencies",
+        "OPENUI_BRIDGE_CLI": "../../../src/apps/openui_bridge/cli.mjs",
+        "DESIGN_MD_BRIDGE_CLI": "../../../src/apps/design_md_bridge/cli.mjs",
+        "AGENTV_RUNNER": "../../../scripts/run_agentv_eval.mjs",
+        "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"
+      },
+      "argv": [
+        "--root", "../../../outputs/runs/autonomy-final-verification/events",
+        "verify-release", "--source", ".",
+        "--state-dir", "../../../outputs/runs/autonomy-final-verification/cache",
+        "--job-id", "autonomy-final-frozen", "--activity-id", "autonomy-final-frozen",
+        "--base-ref", "e0eca9f9910244ecc20eb480d363f1852417b599",
+        "--total-seconds", "14400", "--max-invocations", "1024", "--max-step-seconds", "60",
+        "--require-js-runtime",
+        "--runtime-root", "../../../.venv",
+        "--runtime-root", "../../../../../.nvm/versions/node/v22.23.1",
+        "--runtime-root", "../../../src/apps/openui_bridge",
+        "--runtime-root", "../../../src/apps/design_md_bridge",
+        "--runtime-root", "../../../node_modules",
+        "--runtime-root", "outputs/runs/autonomy-validation/dependencies"
+      ],
+      "interrupt_seconds": 170, "kill_grace_seconds": 10,
+      "context": "explicitly_authorized_host_controller_with_actual_bubblewrap_workloads",
+      "full_frozen_universe_executed_by_this_specialist": false,
+      "grant_is_forecast": false
+    },
+    "quality_extraction": {
+      "before_lines": 2130, "after_lines": 2109, "recorded_ceiling": 2115,
+      "operations_owner_lines": 186, "baseline_raised": false,
+      "quality_check_exit": 1, "regressions": 0, "improvements_awaiting_parent_ratchet": 6,
+      "lint_exit": 0,
+      "source_hashes_at_extraction": {
+        "scripts/autoresearch.py": "301017cc9b8260d3a782cdc9687c9596f129f72bcbcea5da483a2b36d6ab4721",
+        "scripts/autoresearch_operations.py": "c83de0737ba58ba5c9ba7745d17b7ab294826c04ad49f22abe85ed4b8013e412",
+        "tests/test_scripts/test_merge_verification_controller.py": "10610f0090d8cd05b444bbe1aec7530a2b6ca766d82711ba0b50b50023ed6885"
+      }
+    },
+    "remaining_integration": [
+      "Parent records quality reductions and runtime-helper ownership/version composition before source freeze.",
+      "Python design_md consumer still ignores DESIGN_MD_BRIDGE_CLI; compose consumer fix/regression before claiming full Python-JS closure.",
+      "Parent executes all required collected tests against final immutable identity and obtains separate trusted acceptance; focused receipts are not full release verification."
+    ],
+    "python_js_consumer_closure_followup": {
+      "supersedes": "Earlier remaining_integration entry for Python DESIGN_MD_BRIDGE_CLI consumer; parent implemented the consumer, validation specialist changed tests only.",
+      "selection": ["tests/test_scripts/test_merge_verification_runtime.py"],
+      "junit": "outputs/runs/autonomy-validation/validation-python-js-closure-20260908.xml",
+      "sha256": "7588ad9ab7ad7cfb8178deb2e39e9d94d4ccdafe0990829197012141acec4ba5",
+      "passed": 4, "seconds": 15.29, "exit_code": 0,
+      "pytest_options": ["-o", "addopts=", "-m", "", "-q"],
+      "class": "real_bubblewrap_installed_sdk_and_actual_python_consumer",
+      "checks": [
+        "Actual installed AgentV core import with complete transitive dependencies",
+        "Actual OpenUI and Design-MD bridge protocols",
+        "Actual candidate Python Design-MD module imported from read-only candidate src mount",
+        "Python CLI and working directory resolve to explicitly approved mounted Design-MD root",
+        "Public lint uses live REPL; after cache clear, explicit one-shot mode produces equal results and no REPL",
+        "Fresh Python process with nonexistent override refuses readiness and lint without fallback",
+        "Primary host checkout remains inaccessible; dependency trees are not copied"
+      ],
+      "test_owner_sha256": "2bf63d56f515ba008e277d71cb66c37eb8ea35fc33153399f741b606e5de5f5c",
+      "parent_consumer_sha256": "e45d6b31de1df588bdab453ea54773a6ddf8a81f72240a58fba320f2eb2adcad",
+      "consumer_file_modified_by_validation_specialist": false,
+      "lint_exit": 0,
+      "full_frozen_tree_verification": "Still parent-owned; this focused contract receipt is not the full selected-universe gate.",
+      "release_authorized": false
+    },
+    "release_authorized": false, "service_activated": false, "continuous_training_started": false,
+    "extraction_validation_followup": {
+      "failed_combined_run_retained": true,
+      "deadline_increased": false,
+      "separate_reruns": [
+        {
+          "selection": ["tests/test_scripts/test_merge_verification_controller.py"],
+          "junit": "outputs/runs/autonomy-validation/validation-extraction-controller-rerun-20260908.xml",
+          "sha256": "edecabec7e114d141004bbe28c83dc66ae369d3be1532ddc5bd422f37fa84a34",
+          "passed": 24, "seconds": 50.62, "exit_code": 0
+        },
+        {
+          "selection": ["tests/test_autoresearch/test_operations.py"],
+          "junit": "outputs/runs/autonomy-validation/validation-extraction-operations-rerun-20260908.xml",
+          "sha256": "28641f46e7f5d061624cbadf2b3552efac15d9bc4118f511397a7a74ecfbe693",
+          "passed": 29, "seconds": 59.59, "exit_code": 0
+        },
+        {
+          "selection": ["tests/test_scripts/test_merge_verification_controller.py", "-k", "extracted"],
+          "junit": "outputs/runs/autonomy-validation/validation-extracted-cases-20260908.xml",
+          "passed": 10, "deselected": 14, "seconds": 1.69, "exit_code": 0
+        }
+      ],
+      "canonical_extractor_command": "python -m scripts.extract_test_cases --write tests/test_scripts/test_merge_verification_controller.py",
+      "generated_resource": "src/slm_training/resources/test_cases/test_scripts/test_merge_verification_controller.json",
+      "extractor_check_exit": 0,
+      "ruff_exit": 0,
+      "relative_command_parser_and_runtime_paths_exit": 0,
+      "domain_new_design_artifact_path_errors": [],
+      "path_normalization": "Stored path fields now resolve relative to candidate working directory to identical original host paths; exact shell command remains in markdown. Earlier measured outcomes and hashes are unchanged.",
+      "post_generator_full_controller": {
+        "selection": ["tests/test_scripts/test_merge_verification_controller.py"],
+        "junit": "outputs/runs/autonomy-validation/validation-controller-generated-final-20260908.xml",
+        "sha256": "ebc197a2bbc407c737a739be1ccf8ad9bd03b2efcf94deae2511016507a7384b",
+        "passed": 24, "seconds": 25.96, "exit_code": 0,
+        "test_owner_sha256": "c1aad3ca69a782c523ef5d6aa328c3b08b31a22cf15b8fa9c8e96419769e7dd5",
+        "case_resource_sha256": "ea5d126122e61975a8547d36e94548685b24dd43918d4eaaed1f68e159044f07"
+      }
+    }
+  }
+}

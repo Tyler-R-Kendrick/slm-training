@@ -1,0 +1,224 @@
+{
+  "arms": {
+    "candidate": {
+      "agentv_artifacts": {
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-loss-suites-loss-suites.eval.jsonl": "a112adf38c8f1399ecfc03c3d737c4429c8ebd596280472a87288e07cc6c27d2",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-loss-suites-loss-suites/benchmark.json": "0a42e7d0668a7a3b099774d4ec7657f8ac0bb22a7af88ca9f31ed2607492513a",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-loss-suites-loss-suites/index.jsonl": "46332fabd712b49604d9f318f46802b39e12034147f08ec40acad0d55290d5d4",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-loss-suites-loss-suites/timing.json": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-model-ship-gates-2026-09-08t20-04-06-906696-00-00.eval.jsonl": "af8dbbd1b1dfdbc77b71e6ec0d3eed4927583759749c5261f40721b24cf7c30b",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-model-ship-gates-2026-09-08t20-04-06-906696-00-00/benchmark.json": "1a3098d27b83019953412b0e51e6761bfb9a737c362e281bf8200237e8946fea",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-model-ship-gates-2026-09-08t20-04-06-906696-00-00/index.jsonl": "54a919e9e2681eb2897d724c784e24d05cfef4306942cd11efdef336ff1421b7",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/agentv/openui-model-ship-gates-2026-09-08t20-04-06-906696-00-00/timing.json": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+      },
+      "checkpoint_sha256": "5629e875a061b2a8c32bafa966e098448e59a8f6c63a9c22d7fe5a3e619e91af",
+      "loss_report": "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/loss_suites.json",
+      "meaningful_program_rate": 0.16666666666666666,
+      "scoreboard": "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/candidate/scoreboard.json",
+      "trainable_parameters": 65826
+    },
+    "control": {
+      "agentv_artifacts": {
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-loss-suites-loss-suites.eval.jsonl": "378cbc38c90c2092c678d14030ec5315d480841e4ff9de07c009571e28455f34",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-loss-suites-loss-suites/benchmark.json": "30e566ca53e0314fb3eec457f39d44a8c9a22bfd069d60ada90f853efdc179e3",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-loss-suites-loss-suites/index.jsonl": "9e01a683ddc5869e940753d846c47c4071b1b8c4642a91616285a4d2b852584d",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-loss-suites-loss-suites/timing.json": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-model-ship-gates-2026-09-08t20-01-24-708088-00-00.eval.jsonl": "e396e70e8649f8e1c85b8881515d79df02bd81d496cae03ff558fb0897afc68d",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-model-ship-gates-2026-09-08t20-01-24-708088-00-00/benchmark.json": "19e573b55e435ff0e291b5edf187462545751c6fc0b383342a657e1f24b7c7ed",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-model-ship-gates-2026-09-08t20-01-24-708088-00-00/index.jsonl": "12e553e747911a81462fe9045da1824a236ab26d920dc97050be5fb1401bad99",
+        "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/agentv/openui-model-ship-gates-2026-09-08t20-01-24-708088-00-00/timing.json": "cd28eaee0ed17ce9e7b5d167aab0712cf67cbdfdb2bc5e53319de5e23faa2746"
+      },
+      "checkpoint_sha256": "2bb324f99a3bfb5defa2d6b84aea0e00989d97d5249b3792433bbbb111ea839b",
+      "loss_report": "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/loss_suites.json",
+      "meaningful_program_rate": 0.0,
+      "scoreboard": "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/runs/control/scoreboard.json",
+      "trainable_parameters": 65826
+    }
+  },
+  "charged_child_seconds": 92.7314963589597,
+  "command_receipts": {
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/candidate-decode1.json": {
+      "seconds": 10.009685815995908,
+      "sha256": "597979a37ddfb286e034724589a1161cae922b7be578fe7ac7fe2d48c5091340"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/candidate-decode2.json": {
+      "seconds": 9.358786940996652,
+      "sha256": "5e66e6c95f3d0c31e9336f0e4dd952c7f179d312a63d1f6905f9d83b4b25fb51"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/candidate-decode3.json": {
+      "seconds": 13.541157045998261,
+      "sha256": "7f30e7f9c4e339054facbbefe0c65954ecf4b9888f2f18d7c6771825366e39c0"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/candidate-loss.json": {
+      "seconds": 6.646793199994136,
+      "sha256": "dcdbe6357a12834c287d98736a02dc40cd4f8e3ed480cfe645bcb802b2a14ad2"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/control-decode1.json": {
+      "seconds": 9.239345009991666,
+      "sha256": "c64e4ca5bd4a0f5deeb63b4b0b2b2828ab39f08f02098a94ef3661b7b3b719bb"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/control-decode2.json": {
+      "seconds": 17.207715333992383,
+      "sha256": "8d9789c487cbef1440532faae4961341c5cb34ee25e40a903254b31dee3dbc62"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/control-decode3.json": {
+      "seconds": 19.936290843994357,
+      "sha256": "9d22a70eb3c2c1b98d7098e35975f1032092cb0dd284c9d4343232e924a9faf6"
+    },
+    "outputs/autoresearch/autonomy-mea-resolved-endpoint-20260908-r2/measurement_receipts/control-loss.json": {
+      "seconds": 6.79172216799634,
+      "sha256": "15878120b6d7823de23fb5e6e14fa4e1a5ab94d1467de62f2f70a8fe59d2123e"
+    }
+  },
+  "confirmation_complete": false,
+  "decision": {
+    "baseline_trainable_params": 65826,
+    "candidate_id": "candidate",
+    "candidate_metrics": {
+      "binder_reference_f1": 0.9444444444444445,
+      "eval_nll": 24.752520328730494,
+      "latency_ms_p50": 1107.06,
+      "meaningful_program_rate": 0.16666666666666666,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.9444444444444445,
+      "smoke.eval_nll": 24.752520328730494,
+      "smoke.latency_ms_p50": 1107.06,
+      "smoke.meaningful_program_rate": 0.16666666666666666,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.24445000000000003,
+      "structural_similarity": 0.24445000000000003
+    },
+    "candidate_trainable_params": 65826,
+    "control_id": "control",
+    "control_metrics": {
+      "binder_reference_f1": 0.9444444444444445,
+      "eval_nll": 25.511491634754794,
+      "latency_ms_p50": 1152.82,
+      "meaningful_program_rate": 0.0,
+      "parse_rate": 1.0,
+      "smoke.binder_reference_f1": 0.9444444444444445,
+      "smoke.eval_nll": 25.511491634754794,
+      "smoke.latency_ms_p50": 1152.82,
+      "smoke.meaningful_program_rate": 0.0,
+      "smoke.parse_rate": 1.0,
+      "smoke.structural_similarity": 0.06526666666666667,
+      "structural_similarity": 0.06526666666666667
+    },
+    "direction": "decrease",
+    "fixture_clamp_exempt": true,
+    "fixture_volume_gate_hits": 2,
+    "operational_progress": false,
+    "paired_records": {
+      "candidate_definition_hash": "c1e0823a457578a87eeddd631afed59eca770774c862499694a0054b42554125",
+      "candidate_n": 6,
+      "control_definition_hash": "c1e0823a457578a87eeddd631afed59eca770774c862499694a0054b42554125",
+      "control_n": 6
+    },
+    "paired_test": {
+      "alpha": "1/20",
+      "claim_class": "diagnostic",
+      "decidability_floor": 6,
+      "diagnostic_complete": true,
+      "direction": "decrease",
+      "independence": "declared_root_families",
+      "independence_contract_met": true,
+      "kind": "sign_test",
+      "mean_delta": 0.7785168020102547,
+      "median_delta": 0.7739877144817395,
+      "min_nontied_pairs": 5,
+      "minimum_effect": 0.02,
+      "n_missing_candidate": 0,
+      "n_missing_control": 0,
+      "n_nontied": 6,
+      "n_pairs": 6,
+      "n_ties": 0,
+      "p_value": 0.03125,
+      "paired_record_ids": [
+        "lc_component_Separator_repair_c2fe1f4c1b5f",
+        "train_text_only_01__d3fdacf5",
+        "lc_component_Button_as_document__7b1d38de",
+        "lc_multi_child_as_document_aug_dir__0e7757fd",
+        "program_748f040f0cc63303__e54b667a",
+        "program_6154681f3a809853_aug_cta"
+      ],
+      "paired_sd": 0.04968982326027575,
+      "promotion_authority": false,
+      "reason": "paired_sign_test_win",
+      "root_family_n": 6,
+      "selection_locked": true,
+      "statistic": 6.0,
+      "verdict": "win",
+      "win": true
+    },
+    "policy_sha256": "67ee67d6802372fa4a060c65dc06b92db5eb03131431c5879b0fb0acd0d2b4ea",
+    "policy_version": "v15",
+    "positive": true,
+    "primary_metric": "smoke.eval_nll",
+    "reasons": [
+      "fixture_insufficient_n:candidate",
+      "fixture_insufficient_n:control",
+      "quality_metric_win:meaningful_program_rate:0.0->0.16666666666666666:lat=1152.82->1107.06",
+      "primary_metric_win:smoke.eval_nll:25.511491634754794->24.752520328730494:improvement=0.7589713060243:paired_win:p=0.03125:alpha=1/20:n_pairs=6:n_nontied=6:median_delta=0.7739877144817395:minimum_effect=0.02",
+      "screening_quality_secondary:smoke.structural_similarity:control=0.06526666666666667 candidate=0.24445000000000003:recorded_not_verdict",
+      "fixture_insufficient_n:quality_probe"
+    ],
+    "role": "screening",
+    "scientific_status": "supported_diagnostic_benefit",
+    "stack_layer": true
+  },
+  "decoded_probe_complete": true,
+  "diagnostic_complete": true,
+  "evidence_class": "actual_checkpoint_remeasurement_and_canonical_disposition",
+  "manifest_sha256": "7bc61bcbd50354ee844b115291b2ae73fc8ed151f34e44ae5b8720e44af5ad57",
+  "new_training": false,
+  "paired_counts": {
+    "candidate_definition_hash": "c1e0823a457578a87eeddd631afed59eca770774c862499694a0054b42554125",
+    "candidate_n": 6,
+    "control_definition_hash": "c1e0823a457578a87eeddd631afed59eca770774c862499694a0054b42554125",
+    "control_n": 6
+  },
+  "promotion_allowed": false,
+  "schema": "measurement_fixture_result/v1",
+  "scope": "six public regression roots; conditional on retained initializations; no trained capability claim",
+  "selection": {
+    "input_sha256s": [
+      "755ada885a4122ca4e14ed02b0a26b9e5c52871883e1aeafdc2ca222737dd68e",
+      "b4911d294594635d33ab3a14123a4f2bfc8cafaf33331e2671c971f387003a36",
+      "ad9ba20271e3fd7ad38903b65b01a5696684189ba5059616c9bde619b9e69fec",
+      "90aab19f99123a738d8dc6c08db0033f39630ef26a042a8aec293177a6273c7f",
+      "c8f01b15cd69bf18512d271c820bd2543e19b64d08d76f8432f8efba692e612e",
+      "51e524a062e6af685af52f7d60d0c1dcf708f9d0652e53c7ea73bec68925d7ac"
+    ],
+    "selected_record_ids": [
+      "lc_component_Separator_repair_c2fe1f4c1b5f",
+      "train_text_only_01__d3fdacf5",
+      "lc_component_Button_as_document__7b1d38de",
+      "lc_multi_child_as_document_aug_dir__0e7757fd",
+      "program_748f040f0cc63303__e54b667a",
+      "program_6154681f3a809853_aug_cta"
+    ],
+    "selected_root_ids": [
+      "lc_component_Separator",
+      "train_text_only_01",
+      "lc_component_Button",
+      "lc_multi_child",
+      "program_748f040f0cc63303",
+      "program_6154681f3a809853"
+    ],
+    "selection_sha256": "11ccffe86a6cf32ed1788721a39e6f1818fb91a0b9cedd0560a8ee4c3f29c3ff"
+  },
+  "ship_eligible": false,
+  "version_stamp": {
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "evals.loss_suite": "v2",
+      "evals.scoring": "v27",
+      "harness.experiments": "v168",
+      "harness.model_build.eval": "v109",
+      "model.twotower": "v331"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-08T20:04:36.673312+00:00"
+  }
+}

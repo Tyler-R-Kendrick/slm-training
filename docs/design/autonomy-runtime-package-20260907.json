@@ -1,0 +1,532 @@
+{
+  "pre_move_evidence": {
+    "manifest": "docs/design/autonomy-operations-20260907.json",
+    "manifest_sha256": "3ff9a5c88269edb9136a9ae80ec887952d84802ffe9f4b3b559c748d9eae7d13",
+    "release_digest": "377fad5178643c6a76c1c226beebd4240582956c3fd60d3153b13773aa290bff",
+    "plan_digest": "9454365c9d8483f1b7db259d60af67309eba4074910485d655fabdb1dee76f98",
+    "finite_artifact": "outputs/autoresearch/ops-current2-pinned/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/d41f4ec6ac68fd33d4895ba195446279ad17969e7bdd956e4fcbe546e80e232d.json",
+    "finite_artifact_sha256": "97ef83cc117e6c2f12422008527579667d707a50b532ca8e0c35c47305d5286e"
+  },
+  "release": {
+    "source_digest": "313a97a43f12f5587ce10a68674cfb01d02f188e8b6941011ff8a9ab4a20a2d4",
+    "execution": "../autonomy-runtime-package-execution",
+    "manifest": "../autonomy-runtime-package-execution/.autonomy-release.json",
+    "manifest_sha256": "59bd39eb31819eb518008c9eebfd264e92bdb0e1168ad68f3324bbcc9a9b59f1",
+    "source_files": 10216
+  },
+  "tests": [
+    {
+      "path": "outputs/runs/autonomy-ops-verification/runtime-package-core-tests.xml",
+      "sha256": "6d4081cf7a6b51dbf639dd87019037835a38abd5acc798b0dd13d92094350d6c",
+      "result": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "3",
+        "skipped": "0",
+        "tests": "79",
+        "time": "25.510",
+        "timestamp": "2026-09-07T18:00:39.079367-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "effective_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/runs/autonomy-ops-verification/runtime-package-consumer-tests.xml",
+      "sha256": "ccee98e82fa1626281c69d51cdc208257bc9b68745e5b3722ecb4e54a4ba5129",
+      "result": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "72",
+        "time": "19.477",
+        "timestamp": "2026-09-07T18:00:50.052309-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "effective_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/runs/autonomy-ops-verification/runtime-package-core-successor-tests.xml",
+      "sha256": "e0c78ca53aebca8554c5673b6a44ec99d05e7686916c779033adcdaada9061e3",
+      "result": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "80",
+        "time": "26.705",
+        "timestamp": "2026-09-07T18:02:15.822214-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "effective_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/runs/autonomy-ops-verification/runtime-package-consumer-successor-tests.xml",
+      "sha256": "9f3e9bae2ddf2539638e7265bce20da08a8b291de8cbe9c7ca2503b14004b7be",
+      "result": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "74",
+        "time": "13.268",
+        "timestamp": "2026-09-07T18:02:17.526935-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "effective_options": "-o addopts= -q"
+    },
+    {
+      "path": "outputs/autoresearch/runtime-package-successor/runtime-package-pinned-tests.xml",
+      "sha256": "80301c0cbfb47bf6ba7f68fde4e934955bbdbf4f54de4f269807b78eae3463e8",
+      "result": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "80",
+        "time": "20.956",
+        "timestamp": "2026-09-07T18:03:10.803162-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "effective_options": "-o addopts= -q"
+    }
+  ],
+  "schema_version": "autonomy_operations_evidence/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "candidate_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "move": {
+    "old_package": "slm_training.autoresearch",
+    "new_package": "slm_training.autoresearch.runtime",
+    "files": [
+      {
+        "old": "tests/test_autoresearch/test_operations.py",
+        "new": "tests/test_autoresearch/test_operations.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_activity_runtime_demonstration.py",
+        "new": "tests/test_autoresearch/test_activity_runtime_demonstration.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_repair_acceptance.py",
+        "new": "tests/test_autoresearch/test_repair_acceptance.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_search_contracts.py",
+        "new": "tests/test_autoresearch/test_search_contracts.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_repair_release.py",
+        "new": "tests/test_autoresearch/test_repair_release.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_operation_recovery.py",
+        "new": "tests/test_autoresearch/test_operation_recovery.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_activity_runtime.py",
+        "new": "tests/test_autoresearch/test_activity_runtime.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_autonomy_adversary.py",
+        "new": "tests/test_autoresearch/test_autonomy_adversary.py"
+      },
+      {
+        "old": "tests/test_autoresearch/test_activity_publication.py",
+        "new": "tests/test_autoresearch/test_activity_publication.py"
+      },
+      {
+        "old": "tests/test_harnesses/model_build/test_checkpoint_bundle.py",
+        "new": "tests/test_harnesses/model_build/test_checkpoint_bundle.py"
+      },
+      {
+        "old": "tests/test_scripts/test_run_autotrain_supervisor.py",
+        "new": "tests/test_scripts/test_run_autotrain_supervisor.py"
+      },
+      {
+        "old": "tests/test_scripts/test_supervisor_adversary.py",
+        "new": "tests/test_scripts/test_supervisor_adversary.py"
+      },
+      {
+        "old": "scripts/autonomy_fixture_worker.py",
+        "new": "scripts/autonomy_fixture_worker.py"
+      },
+      {
+        "old": "scripts/autoresearch_operations.py",
+        "new": "scripts/autoresearch_operations.py"
+      },
+      {
+        "old": "scripts/run_autotrain_supervisor.py",
+        "new": "scripts/run_autotrain_supervisor.py"
+      },
+      {
+        "old": "scripts/autotrain_supervisor_operations.py",
+        "new": "scripts/autotrain_supervisor_operations.py"
+      },
+      {
+        "old": "scripts/verify_autonomy.py",
+        "new": "scripts/verify_autonomy.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/activity_state.py",
+        "new": "src/slm_training/autoresearch/runtime/activity_state.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/search/allocation.py",
+        "new": "src/slm_training/autoresearch/search/allocation.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/search/proposals.py",
+        "new": "src/slm_training/autoresearch/search/proposals.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/search/stagnation.py",
+        "new": "src/slm_training/autoresearch/search/stagnation.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/activity_publication.py",
+        "new": "src/slm_training/autoresearch/runtime/activity_publication.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/activity_runtime.py",
+        "new": "src/slm_training/autoresearch/runtime/activity_runtime.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/operations_analysis.py",
+        "new": "src/slm_training/autoresearch/runtime/operations_analysis.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/operations_release.py",
+        "new": "src/slm_training/autoresearch/runtime/operations_release.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/activity_projection.py",
+        "new": "src/slm_training/autoresearch/runtime/activity_projection.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/operations_doctor.py",
+        "new": "src/slm_training/autoresearch/runtime/operations_doctor.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/activity_process.py",
+        "new": "src/slm_training/autoresearch/runtime/activity_process.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/operations_control.py",
+        "new": "src/slm_training/autoresearch/runtime/operations_control.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/heal/repair_release.py",
+        "new": "src/slm_training/autoresearch/heal/repair_release.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/heal/operation_recovery.py",
+        "new": "src/slm_training/autoresearch/heal/operation_recovery.py"
+      },
+      {
+        "old": "src/slm_training/autoresearch/operations_status.py",
+        "new": "src/slm_training/autoresearch/runtime/operations_status.py"
+      },
+      {
+        "old": "src/slm_training/resources/ownership_map.json",
+        "new": "src/slm_training/resources/ownership_map.json"
+      }
+    ],
+    "compatibility_shims": false,
+    "shared_map_change": "autotrain_activity_contract.owner_module path only",
+    "scientific_threshold_changes": false
+  },
+  "doctor": {
+    "schema_version": "autonomy_doctor/v1",
+    "local_ready": true,
+    "repair_ready": false,
+    "probes": {
+      "python": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 1.3481844140001158
+      },
+      "agentv": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 0.40283455600001616
+      },
+      "openui_bridge": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 2.6260513329998503
+      },
+      "design_md_bridge": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 0.15060438500040618
+      },
+      "node_version": {
+        "ready": true,
+        "exit_code": 0,
+        "outcome": "completed",
+        "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "seconds": 0.04243708100011645
+      },
+      "isolation": {
+        "ready": false,
+        "backend": "bubblewrap",
+        "reason": "isolation_probe_failed",
+        "detail_digest": "31c2cb0dffdeb9049fa2269e24af62df15e4161d4f752a648faf9630259725fe"
+      },
+      "storage": {
+        "ready": true,
+        "writable": true,
+        "free_bytes": 109681307648,
+        "minimum_free_bytes": 268435456,
+        "available_memory_bytes": 21557944320,
+        "memory_pressure": false,
+        "action": null,
+        "deletion_performed": false
+      },
+      "agent": {
+        "ready": false,
+        "reason": "agent_grant_missing"
+      }
+    },
+    "policy_digest": "67ee67d6802372fa4a060c65dc06b92db5eb03131431c5879b0fb0acd0d2b4ea",
+    "interrupt_seconds": 170,
+    "kill_grace_seconds": 10,
+    "external_writes": false,
+    "service_activation": false
+  },
+  "status": {
+    "schema_version": "autonomy_status/v1",
+    "loop_id": "autonomy-ops-not-started",
+    "active": false,
+    "controller": {
+      "alive": false,
+      "reason": "no_controller_identity"
+    },
+    "activity_counts": {},
+    "attempted_activities": 0,
+    "operational_artifact_advances": 0,
+    "recorded_experiment_results": 0,
+    "verified_paired_comparisons": null,
+    "last_verified_comparison": null,
+    "paired_evidence_status": "not_established_by_runtime_history",
+    "scientific_progress": false,
+    "resource_seconds_by_kind": {},
+    "waiting": [],
+    "source_identities": [],
+    "champion_state": "not_inferred_from_operational_activity",
+    "ship_state": "not_inferred_from_operational_activity"
+  },
+  "read_only_process_observation": {
+    "read_only": true,
+    "service_start_requests_in_owned_campaign": [],
+    "visible_processes": [],
+    "process_visibility": "current tool PID namespace only; not a global host inventory",
+    "runtime_controller_identity_files": [],
+    "installation_or_activation_commands_issued": false,
+    "signals_sent_by_probe": false,
+    "actual_workload_observations": 60
+  },
+  "validation": {
+    "ownership_map": "passed",
+    "domain_ruff": "passed including C901 and PLR limits",
+    "test_case_extraction": "passed",
+    "old_import_search": "no legacy imports in src/scripts/tests",
+    "code_quality": {
+      "exit_code": 1,
+      "regressions": 8,
+      "package_lines": {
+        "autoresearch": 19953,
+        "runtime": 1937
+      },
+      "remaining_boundary_edges": [
+        "runtime -> heal -> runtime cycle",
+        "runtime -> heal SDP",
+        "search -> runtime SDP"
+      ],
+      "baseline_raised": false
+    },
+    "version_stamps": {
+      "exit_code": 1,
+      "reason": "parent-owned README/model-card slm228_spectral_disposition version update pending"
+    },
+    "repo_policy": {
+      "exit_code": 1,
+      "reason": "pre-existing design records contain absolute paths; historical operations evidence preserved as requested"
+    },
+    "diff_check": {
+      "exit_code": 2,
+      "reason": "parent-owned tests have new blank EOF lines"
+    },
+    "release_authorized": false
+  },
+  "commands": {
+    "finite": {
+      "argv": "python -m scripts.autoresearch --root outputs verify-autonomy --batch-size 20",
+      "working_directory": "../autonomy-runtime-package-execution",
+      "environment": {
+        "PYTHONPATH": "src",
+        "GIT_CEILING_DIRECTORIES": "resolved parent directory of execution; prevents inherited Git HEAD"
+      },
+      "interrupt_seconds": 170,
+      "kill_grace_seconds": 10,
+      "invocations": 5,
+      "exit_codes": [
+        10,
+        10,
+        10,
+        10,
+        0
+      ]
+    },
+    "tests": {
+      "effective_pytest_options": "-o addopts= -q",
+      "collection_and_outcomes": "content-bound JUnit receipts in tests list",
+      "initial_failures_retained": true
+    },
+    "doctor": {
+      "argv": "python -m scripts.autoresearch --root outputs/autoresearch/runtime-package-successor doctor --source .",
+      "exit_code": 0
+    },
+    "status": {
+      "argv": "python -m scripts.autoresearch --root outputs/autoresearch/runtime-package-successor status --loop-id autonomy-ops-not-started",
+      "exit_code": 0
+    }
+  },
+  "service": {
+    "installed": false,
+    "started": false,
+    "old_continuous_loop_restarted": false,
+    "unrelated_processes_signalled": false,
+    "live_agent_execution": "not_executed_capability_unavailable: agent_grant_missing"
+  },
+  "limitations": [
+    "Operational fixtures are not trained model evidence or live autonomous agent repair.",
+    "Tool process inspection is PID-namespace scoped, not an inventory of all host/user processes.",
+    "Pre-move evidence remains immutable and is not relabelled as post-move evidence.",
+    "Whole-repository quality, versions, policy and merge authorization remain parent integration work.",
+    "Rootless host isolation was tested in the preceding packet, not re-executed as part of this package relocation."
+  ],
+  "finite_artifact": "outputs/autoresearch/runtime-package-successor/autonomy-adversary-finite-100/artifacts/autonomy_adversary_evidence/f241b11b513e85f797ffc7eb8ea674a05c4b4127b497f03b6e837e12915c6c83.json",
+  "finite_artifact_sha256": "ad08b96b919997d0401c25d19d7fa27ab47a52c9b9ada2b1adf6d17efb913814",
+  "finite_evidence": {
+    "actual_workload_attempts": 100,
+    "charged_workload_seconds": 33.69418890700172,
+    "complete": true,
+    "complete_operational_artifacts": 70,
+    "controller_contexts": 110,
+    "evidence_class": "real_workload_and_controller_processes_with_locked_faults",
+    "live_agent_repairs": 0,
+    "observed_controller_seconds_including_workloads": 100.58580343099447,
+    "observed_workload_seconds": 13.41674358100181,
+    "plan_digest": "42f5e9be433c206945d0646aae88f7f07823bcbf98ec434c46704cb9da1433db",
+    "real_model_trials": 0,
+    "schema_version": "autonomy_adversary_evidence/v1",
+    "scientific_promotions": 0,
+    "version_stamp": {
+      "code_commit": "UNKNOWN",
+      "code_dirty": null,
+      "components": {
+        "autoresearch.heal": "v8"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-09-07T23:06:52.582544+00:00"
+    }
+  },
+  "event_chain": "outputs/autoresearch/runtime-package-successor/autonomy-adversary-finite-100/events.jsonl",
+  "event_count": 783,
+  "event_tip": "392638cb63f37ceee41a7823dd872eb58ece77d595686db68502ad2c6f32b38c",
+  "states": {
+    "waiting_repair": 25,
+    "cancelled": 5,
+    "succeeded": 70,
+    "waiting_capability": 1
+  },
+  "tested_runtime_sources": {
+    "scripts/autonomy_fixture_worker.py": "8d82ffc03b9e8576fc82f903c0e387a31f76ba5dbf9d06477b5638aadb8da6ca",
+    "scripts/verify_autonomy.py": "62c0918abb00ee931bce44c6ff2450e72ffaf19b653d789823231490b292e9b0",
+    "src/slm_training/autoresearch/campaign_events.py": "75999517efdab325a7452cf93227ac485f3549835f4675a6b44a73389f3adba9",
+    "src/slm_training/autoresearch/campaign_formal_evidence.py": "d9fa89c6bcea01a143b1299a4552e234e4ca11d28e1f06b56d8133f947a900a3",
+    "src/slm_training/autoresearch/experiment_campaign.py": "5720fd3e2b6f91e45b0619dc15e11fe89b761d0c51e7ed0c29ea12769273f4aa",
+    "src/slm_training/autoresearch/runtime/__init__.py": "d64499e951c3fab5d4c6ff5bcb78b0896a8a3b26e2e79e048adcfef4549d0a89",
+    "src/slm_training/autoresearch/runtime/activity_process.py": "4281f079528b63f656cb0f9e52d367fe95a49205875f1aed01b563c3e7802e5d",
+    "src/slm_training/autoresearch/runtime/activity_projection.py": "4b7f8fbb0f7e422d9561c74fadd8f16e4ecf1385d491e0563e36d210fd99ce8f",
+    "src/slm_training/autoresearch/runtime/activity_publication.py": "99d4d45d2fa45171ed7d3465c157cf83697eca810849b361d8561b3694877638",
+    "src/slm_training/autoresearch/runtime/activity_runtime.py": "e5e842423de755a5f04bb401af6e6b6132ef62143644a547e648db924793b691",
+    "src/slm_training/autoresearch/runtime/activity_state.py": "a0bd23953af85ea73f447fd9fff6682f0c2e065e9936aaa00468079e6a043679",
+    "src/slm_training/autoresearch/schemas.py": "c70f2d5abd48d3f0f819115f1b3eacb54ed17ee7afb170382caddd20bee786a4",
+    "src/slm_training/autoresearch/storage.py": "f151babbea8ed95a2c643451c5ab030fed78eccb2e03c8fe99bc602a5b9b68ce",
+    "src/slm_training/harness_core/bounded_process.py": "a0eb07adc6a7050b8c397564b81599150a60e59e06fe49a8c76877c118d1fc3e",
+    "src/slm_training/harness_core/process_tree.py": "6ca0f9bbf429783e2778e059451fe9b1c279c8af8efa2efc6a62cdfa0070a966",
+    "src/slm_training/levers.py": "2bcc306d56ef7472ab9bf8b1047ac3a75a440ef9730a06d6d1152db0127c4bee",
+    "src/slm_training/resources/versions.json": "8fb187b64bc3a1590769862ce7e26e8961214c3d1bd5d87257b93b921fc92104"
+  },
+  "current_runtime_owner_drift": {
+    "src/slm_training/resources/versions.json": {
+      "tested": "8fb187b64bc3a1590769862ce7e26e8961214c3d1bd5d87257b93b921fc92104",
+      "current": "cfd1349ff22549b9098aa40819582b1e246c0c04185f6ff76e16352fb62d42c8"
+    }
+  },
+  "final_owned_controller_observation": {
+    "alive": false,
+    "process_identity": "6f33e4c1-0d95-4c89-aa73-7846bdc72870:10:406496",
+    "lock_owned": false,
+    "heartbeat_age_seconds": 21.75832962989807,
+    "epoch": "bfa17a31b466428095ff581392b378dc",
+    "scientific_progress": false
+  },
+  "service_start_requests": 0,
+  "old_manifest_sha256": "3ff9a5c88269edb9136a9ae80ec887952d84802ffe9f4b3b559c748d9eae7d13",
+  "version_stamp": {
+    "code_commit": "UNKNOWN",
+    "code_dirty": null,
+    "components": {
+      "autoresearch.heal": "v8"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-07T23:06:52.582544+00:00"
+  },
+  "owned_workloads": [
+    {
+      "name": "runtime-package-successor finite campaign",
+      "status": "completed",
+      "actual_attempts": 100,
+      "active_children": 0,
+      "evidence": "five bounded CLI exits and final lock-unowned controller observation"
+    },
+    {
+      "name": "new-path core verification",
+      "status": "completed",
+      "tests": 80
+    },
+    {
+      "name": "producer-consumer verification",
+      "status": "completed",
+      "tests": 74
+    },
+    {
+      "name": "pinned new-path core verification",
+      "status": "completed",
+      "tests": 80
+    },
+    {
+      "name": "persistent continuous training service",
+      "status": "not_started_by_this_packet",
+      "installed": false,
+      "owned_service_processes": []
+    },
+    {
+      "name": "live repair agent",
+      "status": "not_executed_capability_unavailable",
+      "reason": "agent_grant_missing"
+    }
+  ],
+  "final_outcome": "operational successor completed; not full repository release authorization"
+}

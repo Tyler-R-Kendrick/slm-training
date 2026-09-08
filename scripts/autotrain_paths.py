@@ -95,6 +95,7 @@ def is_continuous_closeout_path(rel: str) -> bool:
 LOOP_OWNED_GENERATED_PATHS = frozenset(
     {
         "src/slm_training/resources/evidence_store/local_index.jsonl",
+        SCREENING_EXPECTATIONS_REL.as_posix(),
     }
 )
 

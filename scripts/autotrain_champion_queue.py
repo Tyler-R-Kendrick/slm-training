@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import json
 import os
+import fcntl
+import hashlib
+import time
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +43,12 @@ RETRYABLE_PROMOTE_STATUSES = frozenset(
 )
 
 REGIME_PARKED_STATUS = "regime-parked"
+CHAMPION_STATUSES = frozenset({
+    "queued", "confirming", "confirmation_inconclusive", "confirmed", "rejected",
+    "skipped_duplicate", "promoting", "climb_accepted", "promotion_failed",
+    "promotion_inconclusive", "harness_failure",
+    "promoted",  # Read-only compatibility for pre-v30 queue ledgers.
+})
 
 
 def clear_loop_blocker(root: Path, loop_id: str, *, reason: str) -> None:
@@ -78,6 +87,129 @@ def write_champion_queue(path: Path, entries: list[dict[str, Any]]) -> None:
         for row in entries:
             fh.write(json.dumps(row, sort_keys=True) + "\n")
     tmp.replace(path)
+
+
+def _result_digest(value):
+    from slm_training.lineage.records import canonical_json
+
+    return hashlib.sha256(canonical_json(value).encode()).hexdigest()
+
+
+def _promotion_row(before, record, changes, refund):
+    row = {**before, **changes}
+    if row["status"] in {"promoted", "climb_accepted"}:
+        for key in ("recert_required", "recert_required_at", "recert_from_status"):
+            row.pop(key, None)
+    campaign = record["campaign_id"]
+    refunded = set(before.get("refunded_promotion_campaigns", []))
+    attempts = int(before.get("promote_attempts") or 0)
+    if refund and campaign not in refunded:
+        row["promote_attempts"] = max(0, attempts - 1)
+        refunded.add(campaign)
+    elif not refund and campaign in refunded:
+        row["promote_attempts"] = attempts + 1
+        refunded.remove(campaign)
+    row["refunded_promotion_campaigns"] = sorted(refunded)
+    stamp = record["finished_at"]
+    if row["status"] in {"promotion_inconclusive", "harness_failure"}:
+        key = "last_inconclusive_at" if row["status"] == "promotion_inconclusive" else "last_harness_failure_at"
+        row[key] = stamp
+        row.pop("resolved_at", None)
+    else:
+        row["resolved_at"] = stamp
+    return row
+
+
+def _promotion_artifact(store, before, record, changes, refund):
+    identity = {"record": {k: v for k, v in record.items() if k != "finished_at"},
+                "changes": changes, "refund": refund}
+    key = "promotion-disposition:" + _result_digest(identity)
+    events = [row for row in store.verify_event_chain() if row["event_type"] == "promotion_disposition_published"]
+    previous = next((row for row in events if row.get("idempotency_key") == key), None)
+    if previous is not None:
+        if previous != events[-1]:
+            raise ValueError("stale promotion disposition retry")
+        sha = previous["artifact_sha256"]
+        payload = json.loads((store.root / "artifacts/promotion_dispositions" / f"{sha}.json").read_text())
+        if _result_digest(payload) != sha:
+            raise ValueError("promotion disposition artifact changed")
+        return payload
+    record = {**record, "publication_id": key,
+              "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    payload = {"before": before, "after": _promotion_row(before, record, changes, refund),
+               "record": record, "identity": identity}
+    artifact = store.write_artifact("promotion_dispositions", payload)
+    store.append_event("promotion_disposition_published", artifact_sha256=artifact.stem,
+                       detail={"entry_id": record["entry_id"]}, idempotency_key=key)
+    return payload
+
+
+def _reconcile_promotion(store, path, rows, index):
+    events = [row for row in store.verify_event_chain() if row["event_type"] == "promotion_disposition_published"]
+    if not events:
+        return
+    sha = events[-1]["artifact_sha256"]
+    payload = json.loads((store.root / "artifacts/promotion_dispositions" / f"{sha}.json").read_text())
+    if _result_digest(payload) != sha:
+        raise ValueError("promotion disposition artifact changed")
+    _project_promotion(store, path, rows, index, payload)
+
+
+def _project_promotion(store, path, rows, index, payload):
+    if rows[index] not in (payload["before"], payload["after"]):
+        raise ValueError("promotion queue changed since committed disposition")
+    ledger = path.parent / "learning_certificate_ledger.jsonl"
+    old = ledger.read_text() if ledger.exists() else ""
+    records = [json.loads(line) for line in old.splitlines() if line.strip()]
+    record = payload["record"]
+    matching = [row for row in records if row.get("publication_id") == record["publication_id"]]
+    if matching and matching != [record]:
+        raise ValueError("promotion learning projection differs from journal")
+    if not matching:
+        prefix = old + ("\n" if old and not old.endswith("\n") else "")
+        store._replace_durable(ledger, prefix + json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
+    rows[index] = payload["after"]
+    store._replace_durable(path, "".join(json.dumps(row, sort_keys=True, allow_nan=False) + "\n" for row in rows))
+    return payload["after"]
+
+
+def publish_promotion_disposition(root, loop_id, *, record, changes, refund):
+    """Publish the existing verdict, learning event and attempt accounting once.
+
+    The campaign event owns the decision; queue and learning ledger are local
+    recoverable projections. This function does not decide promotion eligibility.
+    """
+    from scripts.autotrain_paths import champion_queue_path
+    from slm_training.autoresearch.storage import CampaignStore
+    from slm_training.harness_core.checkpoint_publication import controller_artifact_publication
+
+    path = champion_queue_path(root, loop_id)
+    store = CampaignStore(record["campaign_id"], root)
+    if (record.get("loop_id") != loop_id or record.get("schema") != "autotrain_learning_event/v1"
+        or type(refund) is not bool or changes.get("status") != record.get("outcome")
+        or changes.get("status") not in CHAMPION_STATUSES
+        or changes.get("entry_id", record.get("entry_id")) != record.get("entry_id")):
+        raise ValueError("invalid promotion publication contract")
+    json.dumps({"record": record, "changes": changes}, allow_nan=False)
+    if not path.resolve().is_relative_to(root.resolve()) or any(
+        p.is_symlink() for p in (path, path.parent, path.parent / "learning_certificate_ledger.jsonl")
+    ):
+        raise ValueError("promotion publication path is not confined")
+    with controller_artifact_publication(path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(path.parent / ".promotion-publication.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+            indices = [i for i, row in enumerate(rows) if row.get("entry_id") == record["entry_id"]]
+            if len(indices) != 1:
+                raise ValueError("promotion requires one existing queue entry")
+            index = indices[0]
+            _reconcile_promotion(store, path, rows, index)
+            payload = _promotion_artifact(store, rows[index], record, changes, refund)
+            return _project_promotion(store, path, rows, index, payload)
+        finally:
+            os.close(fd)
 
 
 def queue_head_open(entries: list[dict[str, Any]]) -> dict[str, Any] | None:

@@ -162,45 +162,6 @@ def rebuild_data_artifact_sources(train_dir: Path) -> dict[str, Path] | None:
     }
 
 
-def ack_rebuild_data_action(
-    root: Path,
-    handoff: AutotrainCycleHandoffV1,
-    *,
-    action_index: int,
-    evidence_uris: Sequence[str],
-    counts: tuple[int, int] | None = None,
-) -> None:
-    """Acknowledge one ``rebuild_data`` action with bound evidence.
-
-    ``counts`` is the heal's ``(records_before, records_after)`` postcondition:
-    when given, an ack is refused unless the count actually grew — a sidecar
-    path alone is never evidence that data changed.
-    """
-    action = handoff.actions[action_index]
-    if action.kind != "rebuild_data":
-        raise ValueError(f"refusing to ack non-rebuild_data action: {action.kind}")
-    if counts is not None:
-        before, after = int(counts[0]), int(counts[1])
-        if after <= before:
-            raise ValueError(
-                "refusing to ack rebuild_data without a count postcondition: "
-                f"records_before={before} records_after={after}"
-            )
-    uris = tuple(evidence_uris)
-    evidence = bind_autotrain_action_evidence(root, handoff, action, uris)
-    append_autotrain_action_receipt(
-        root,
-        AutotrainActionReceiptV1(
-            loop_id=handoff.loop_id,
-            campaign_id=handoff.campaign_id,
-            action_index=action_index,
-            action_sha256=autotrain_action_sha256(action),
-            action_kind="rebuild_data",
-            status="completed",
-            evidence_uris=uris,
-            evidence=evidence,
-        ),
-    )
 
 
 def retired_heal_versions(root: Path, loop_id: str) -> set[str]:

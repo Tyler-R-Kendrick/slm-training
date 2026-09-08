@@ -18,6 +18,9 @@ here can reach back into the loop. See ``docs/design/code-quality-contract.md``.
 from __future__ import annotations
 
 import json
+import fcntl
+import hashlib
+import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
@@ -30,6 +33,94 @@ from slm_training.autoresearch.thrash_residuals import (
     classify_delivery_residual,
     residual_boosts_from_observations,
 )
+
+
+def _delivery_artifact(store, record):
+    from slm_training.lineage.records import canonical_json
+
+    # Time of a retry is not another comparison. All decision-bearing fields
+    # remain part of the key; this does not authenticate worker-supplied output.
+    identity = {key: value for key, value in record.items() if key not in {"finished_at", "publication_id"}}
+    key = "delivery:" + hashlib.sha256(canonical_json(identity).encode()).hexdigest()
+    if record.get("publication_id", key) != key:
+        raise ValueError("delivery publication identity mismatch")
+    events = store.verify_event_chain()
+    previous = next((row for row in reversed(events) if row.get("idempotency_key") == key), None)
+    if previous is not None:
+        latest = next(row for row in reversed(events) if row["event_type"] == "cycle_delivery_published")
+        if latest != previous:
+            raise ValueError("stale delivery cannot replace a newer committed outcome")
+        artifact = store.root / "artifacts/cycle_deliveries" / f"{previous['artifact_sha256']}.json"
+        stored = json.loads(artifact.read_text())
+        if hashlib.sha256(canonical_json(stored).encode()).hexdigest() != artifact.stem:
+            raise ValueError("committed delivery artifact changed")
+        return stored
+    stored = {**record, "publication_id": key}
+    artifact = store.write_artifact("cycle_deliveries", stored)
+    projection = store.root / "sdlc_delivery.json"
+    before = store.write_artifact("cycle_deliveries", json.loads(projection.read_text())) if projection.exists() else None
+    store.append_event("cycle_delivery_published", artifact_sha256=artifact.stem,
+                       detail={"publication_id": key, "previous_delivery_sha256": before.stem if before else None},
+                       idempotency_key=key)
+    return stored
+
+
+def _project_delivery(root, store, record):
+    ledger = root / "sdlc_delivery_ledger.jsonl"
+    projection = store.root / "sdlc_delivery.json"
+    if ledger.is_symlink() or projection.is_symlink():
+        raise ValueError("delivery projection cannot follow a symlink")
+    old = ledger.read_text() if ledger.exists() else ""
+    rows = [json.loads(line) for line in old.splitlines() if line.strip()]
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError("malformed legacy delivery ledger")
+    matching = [row for row in rows if row.get("publication_id") == record["publication_id"]]
+    if any(row != record for row in matching):
+        raise ValueError("delivery ledger differs from committed artifact")
+    if not matching:
+        prefix = old + ("\n" if old and not old.endswith("\n") else "")
+        store._replace_durable(ledger, prefix + json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
+    store._replace_durable(projection, json.dumps(record, indent=2, allow_nan=False) + "\n")
+
+
+def validate_cycle_delivery(record, *, campaign_id=None, loop_id=None):
+    """Shared publication/consumption contract; validation never publishes."""
+    if (not isinstance(record, dict)
+        or record.get("schema") != "autotrain_sdlc_delivery/v1"
+        or type(record.get("positive")) is not bool
+        or type(record.get("measurement_complete")) is not bool
+        or not isinstance(record.get("loop_id"), str) or not record["loop_id"]
+        or not isinstance(record.get("campaign_id"), str) or not record["campaign_id"]
+        or (campaign_id is not None and record["campaign_id"] != campaign_id)
+        or (loop_id is not None and record["loop_id"] != loop_id)):
+        raise ValueError("invalid controller delivery contract")
+    json.dumps(record, allow_nan=False)
+
+
+def publish_cycle_delivery(root: Path, record: dict) -> dict:
+    """Journal-first delivery with idempotent local projections, not a verdict.
+
+    Existing ledger lines remain historical. A crash after either projection
+    reconciles from the same committed artifact, without rerunning measurement.
+    """
+    from slm_training.autoresearch.storage import CampaignStore
+    from slm_training.harness_core.checkpoint_publication import controller_artifact_publication
+
+    validate_cycle_delivery(record)
+    store = CampaignStore(record["campaign_id"], root)
+    with controller_artifact_publication(store.root):
+        for path in (root, store.root, root / "sdlc_delivery_ledger.jsonl", store.root / "sdlc_delivery.json"):
+            if path.is_symlink():
+                raise ValueError("delivery publication cannot follow a symlink")
+        root.mkdir(parents=True, exist_ok=True)
+        fd = os.open(root / ".sdlc-delivery.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            stored = _delivery_artifact(store, record)
+            _project_delivery(root, store, stored)
+            return stored
+        finally:
+            os.close(fd)
 
 
 def dynamic_thrash_arms_path(root: Path, loop_id: str) -> Path:

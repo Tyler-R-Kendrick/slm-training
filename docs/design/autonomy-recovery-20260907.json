@@ -1,0 +1,69 @@
+{
+  "schema_version": "autonomy_recovery_evidence/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "candidate_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "candidate_state": "uncommitted shared authoring clone; integrator owns final source identity",
+  "version_stamp": {
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "autoresearch.heal": "v7"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-07T17:12:40.935201+00:00"
+  },
+  "test_receipt": {
+    "command": "timeout -s INT -k 10s 170s env PYTHONPATH=/tmp/slm-autonomy-20260907/src PYTHONPYCACHEPREFIX=/tmp/slm-autonomy-20260907/outputs/recovery-pycache /home/codex/repos/slm-training/.venv/bin/python -m pytest -o addopts= --basetemp=outputs/recovery-tests-final -q tests/test_autoresearch/test_repair_dispatch.py tests/test_autoresearch/test_recovery_dispatch_entrypoint.py tests/test_autoresearch/test_repair_acceptance.py tests/test_autoresearch/test_heal_classify.py tests/test_autoresearch/test_heal_harness_crash.py tests/test_autoresearch/test_heal_playbooks.py",
+    "exit_code": 0,
+    "passed": 102,
+    "seconds": 6.74,
+    "default_marker_exclusions_disabled": true
+  },
+  "read_only_capability_probe": {
+    "codex_version": "codex-cli 0.153.4",
+    "required_flags_present": true,
+    "model_request_executed": false,
+    "grant": "not_configured",
+    "isolation": "bubblewrap",
+    "isolation_available": false,
+    "isolation_failure": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+  },
+  "evidence_classes": {
+    "adapter_protocol": "fake_agent_real_campaign_store",
+    "independent_reproducer": "real_subprocess_with_explicitly_simulated_isolation",
+    "live_source_repair": "not_executed_capability_unavailable",
+    "model_training": "not_executed_by_recovery_swarm"
+  },
+  "audit_reproduction": {
+    "source": "actual baseline classify.py loaded from Git object, no transcribed helper",
+    "legacy_screening_prose_result": "data",
+    "baseline_accepts_typed_code": false,
+    "candidate_wall_code_result": "code",
+    "regression": "tests/test_autoresearch/test_repair_dispatch.py::test_typed_code_outranks_misleading_screening_prose"
+  },
+  "protected_changes": [],
+  "service": "not_installed_or_started",
+  "scientific_claim": "none",
+  "integration_obligations": [
+    "INTEGRATOR calls recovery_dispatch.dispatch_hard_pending under an activity lease",
+    "INTEGRATOR publishes independently verified immutable source with fencing and replays original activity",
+    "INTEGRATOR composes autoresearch.heal version bump and final tree-bound verification"
+  ],
+  "limitations": [
+    "No configured provider grant; CLI presence conveys no spending authority",
+    "Current host namespace probe refused; no unsandboxed repair fallback",
+    "Initial Bubblewrap backend refuses provider network egress",
+    "Real process verifier tests do not certify OS isolation or an actual agent patch",
+    "Finite covered fault tests do not prove perpetual autonomous recovery"
+  ],
+  "recovery_annotation": {
+    "evidence_class": "recovered_historical_not_revalidated",
+    "restored_after_filesystem_loss": true,
+    "tests_rerun_after_restoration": false,
+    "historical_content_sha256": "a4f470bc2e044e9c7c7d63e1e9bb1fb206e79329f682c8a49d163d8cb926dc02",
+    "source_events": [
+      "rollout-2026-09-07T11-55-20-01a07ccb-b6f4-7d42-baf6-6f749c0867f5.jsonl:448"
+    ],
+    "note": "Recovered historical report only. Referenced run artifacts and passing results are not verified in the reconstructed workspace; no current release or autonomy authorization is asserted."
+  }
+}

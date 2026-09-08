@@ -1,0 +1,1224 @@
+{
+  "path_normalization": "Portable rendering relative to the candidate checkout: dot is the candidate, parent is its workspace collection, ../../.. is the shared authoring checkout. Commands and embedded path fields are normalized representations; original workload receipts and their hashes are unchanged.",
+  "successor_execution_update": {
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+      "code_dirty": true,
+      "components": {
+        "autoresearch.heal": "v8"
+      },
+      "stamped_at": "2026-09-07T23:09:52.040716+00:00"
+    },
+    "source_files": {
+      "src/slm_training/autoresearch/heal/controller_repair.py": "fbce586444b61a9242ce5f2e6979dd39fc58526dbdd22787042de2aa358585c7",
+      "src/slm_training/autoresearch/heal/operation_recovery.py": "77f5f4671af7eef847a6bca551cc61f13946cfa40616c3068f5c5ca23c31c491",
+      "src/slm_training/autoresearch/heal/repair_release.py": "e8b6b532d9d083badd59dd0465f6310acf2cf1779d95d49b90b2a5c85527ab30",
+      "src/slm_training/autoresearch/heal/repair_acceptance.py": "0b020ce934ab96695d18fb0606a28d85a6271673c0acf0cf928cd9bb87cfb44a",
+      "src/slm_training/autoresearch/heal/recovery_dispatch.py": "ca5c8ae04573a5de204b46863b142a82e26639e83ad18bb52449b730d3049003",
+      "src/slm_training/autoresearch/heal/dispatch.py": "bfb8ec168def87a36c11783a1d287252602dfa1b4e8c05d878f1ddd78ea575cf",
+      "scripts/autotrain_supervisor_operations.py": "148883c738786c4ace65cf0065a8454530ad2582a19770953ad984a906a2dbe1",
+      "tests/test_autoresearch/test_controller_repair.py": "22139589b7da0d4eec7f36eb973c49cbc9d16fc24d3df2b5c5810af3ef317075",
+      "tests/test_autoresearch/test_operation_recovery.py": "b0ab37cede38b97a070ab486d5b33f2af6db7420b9cde9b91a847c4d74de4e52",
+      "tests/test_autoresearch/test_repair_release.py": "b7ac0b0d32da7f28eb4e495c2ab3c7aeb55f898b853722d51ad5c03411e1f8c7",
+      "tests/test_autoresearch/test_repair_acceptance.py": "a1325b5cd965c92bac3e9e23e183034887759f8348e3692faa7890327639e25f"
+    },
+    "junit": {
+      "path": "outputs/runs/recovery-isolation-20260907/supervisor-repair-final.xml",
+      "sha256": "a96e62a589925590bddb434314e30b1542a7bdb1410a24febdaaf98d6a5e6136",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "46",
+        "time": "5.496",
+        "timestamp": "2026-09-07T18:09:07.706691-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "cases": [
+        {
+          "classname": "tests.test_autoresearch.test_controller_repair",
+          "name": "test_real_operation_keeps_typed_wait_not_success[waiting_capability-waiting_capability]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_controller_repair",
+          "name": "test_real_operation_keeps_typed_wait_not_success[waiting_verification-waiting_retry]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_controller_repair",
+          "name": "test_real_operation_keeps_typed_wait_not_success[waiting_diagnosis-waiting_retry]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_controller_repair",
+          "name": "test_real_operation_keeps_typed_wait_not_success[verified-waiting_dependency]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_controller_repair",
+          "name": "test_script_repair_calls_pinned_source_and_publication_seam"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_publish_and_reconcile_without_activation"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_publication_crash_reconciles_same_intent[pointer]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_publication_crash_reconciles_same_intent[terminal]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[forged]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[stale]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[changed]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[expired]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[outputs]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_candidate_drift_during_materialization_is_rejected"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_marker_source_excludes_live_git_and_linked_outputs"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_unpinned_source_refused"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_trusted_callback_and_activation_require_recorded_acceptance"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_pointer_hash_without_acceptance_cannot_activate"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_missing_original_activity_cannot_activate"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_same_request_wake_requires_successor_import_identity[none]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_same_request_wake_requires_successor_import_identity[register_crash]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_same_request_wake_requires_successor_import_identity[exhausted]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_failed_operation_queue_reaches_actual_diagnosis_and_executor"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unreproduced_or_wrong_authority_never_launches_agent[argparse]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unreproduced_or_wrong_authority_never_launches_agent[missing_recipe]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unreproduced_or_wrong_authority_never_launches_agent[typed_formal]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unrelated_probe_cannot_repair_original_observation[0]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unrelated_probe_cannot_repair_original_observation[1]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unrelated_probe_cannot_repair_original_observation[2]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_interrupted_diagnosis_retries_next_bounded_attempt_without_budget_reset"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[False-True]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[False-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[True-True]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[True-False]"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_handle_hard_pending_records_escalation_and_governs_backoff"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_park_is_wait_state_not_exit"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_exit_on_park_preserves_legacy_single_check"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_handle_hard_pending_never_raises"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_handle_hard_pending_tolerates_hostile_blocker_shapes"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_default_primary_metric_matches_climb_policy"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_supervisor_operation_uses_real_activity_contract[False]"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_supervisor_operation_uses_real_activity_contract[True]"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_operation_driver_zero_without_handoff_is_failure[False]"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_operation_driver_zero_without_handoff_is_failure[True]"
+        },
+        {
+          "classname": "tests.test_scripts.test_run_autotrain_supervisor",
+          "name": "test_watchdog_no_campaign_governs_backoff_and_keeps_counting"
+        },
+        {
+          "classname": "tests.test_scripts.test_supervisor_adversary",
+          "name": "test_supervisor_reuses_verified_before_terminal_event_after_restart"
+        }
+      ]
+    },
+    "exit_status": 0,
+    "passed": 46,
+    "skipped": 0,
+    "command": "rtk proxy timeout -s INT -k 10 170 env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 ../../../.venv/bin/python -m pytest -o addopts= -q tests/test_autoresearch/test_controller_repair.py tests/test_autoresearch/test_repair_release.py tests/test_autoresearch/test_operation_recovery.py tests/test_autoresearch/test_repair_acceptance.py tests/test_scripts/test_run_autotrain_supervisor.py tests/test_scripts/test_supervisor_adversary.py --junitxml=outputs/runs/recovery-isolation-20260907/supervisor-repair-final.xml --tb=short",
+    "scope": "Latest scoped code evidence. Earlier bridge/initial hashes remain historical snapshots.",
+    "wiring": {
+      "production": "scripts.autotrain_supervisor_operations.repair_operation -> heal.controller_repair.dispatch_controller_repairs -> recovery_dispatch.dispatch_hard_pending -> verified_release_callback",
+      "typed_outcomes": "interpret_operation_result preserves repair capability/dependency/yield states; no fresh SUCCEEDED job for a capability wait.",
+      "successor_registration": "_operation_state reuses the registered immutable successor spec after checking request/source/grant identities.",
+      "parent_remaining": "Actual fresh supervisor restart after releasing runtime ownership; finite-cycle carry-forward; call wake_verified_operation in successor and run its returned request."
+    },
+    "continuation": {
+      "semantics": "New source requires a new operational activity, not an in-place mutation or new scientific replicate.",
+      "old_activity": "Cancelled explicitly after durable successor plan, before registering new activity.",
+      "resource_accounting": "Remaining seconds=predecessor grant minus charged seconds; remaining attempts=predecessor max_attempts minus consumed attempts. Logical receipt carries cumulative ancestor charges and original total grant.",
+      "exhaustion": "SuccessorGrantExhausted; old activity remains waiting; no expanded grant.",
+      "reconciliation": "Plan -> old cancellation -> successor registration -> activation event. Replaying after interrupted registration reuses the same plan/id/grant.",
+      "request_fields": [
+        "cwd",
+        "source_digest",
+        "successor_activity_id",
+        "resource_grant",
+        "logical_continuation"
+      ]
+    },
+    "tests": "Real ledger/filesystem and operation/reproducer processes. Some controller workloads/publication delegation are mocked. Positive successor-import identity remains explicitly simulated; actual stale imports are rejected.",
+    "lint": "Scoped F,I,C901,PLR0911,PLR0912,PLR0913,PLR0915 passed; no baseline increase.",
+    "no_claims": [
+      "No live configured agent inference or host isolation proof",
+      "No process/service restart performed",
+      "No model/scientific promotion or shipment",
+      "No full candidate merge authorization"
+    ],
+    "namespace": "Runtime module imports migrated by OPS to slm_training.autoresearch.runtime.*; no runtime/activity implementation edited by RECOVERY."
+  },
+  "operation_bridge_update": {
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+      "code_dirty": true,
+      "components": {
+        "autoresearch.heal": "v8"
+      },
+      "stamped_at": "2026-09-07T22:57:42.170637+00:00"
+    },
+    "source_files": {
+      "src/slm_training/autoresearch/heal/operation_recovery.py": "be5ff02662ac189e5b89783c40ce0b295546f781c20fb9b22fef197d5ff47d8c",
+      "src/slm_training/autoresearch/heal/repair_release.py": "b4b8d9c59e2445125b2b3774bf98cda8449fa0be9c7e453de11fe14abeb02134",
+      "src/slm_training/autoresearch/heal/repair_acceptance.py": "0b020ce934ab96695d18fb0606a28d85a6271673c0acf0cf928cd9bb87cfb44a",
+      "src/slm_training/autoresearch/heal/recovery_dispatch.py": "ca5c8ae04573a5de204b46863b142a82e26639e83ad18bb52449b730d3049003",
+      "src/slm_training/autoresearch/heal/dispatch.py": "bfb8ec168def87a36c11783a1d287252602dfa1b4e8c05d878f1ddd78ea575cf",
+      "tests/test_autoresearch/test_operation_recovery.py": "e0b6f1710449d828cb5f4ed6cb783f525392530af000696d5959a5d7c6969282",
+      "tests/test_autoresearch/test_repair_release.py": "91bb306b02c33bc18c72908cf2f9303f3e508551517f40d5357b15ff18ea0a0a",
+      "tests/test_autoresearch/test_repair_acceptance.py": "fb510503b1b1c1b119562eb4990f51f6f2be7daf9290b0ee8979a97521b8b872"
+    },
+    "junit": {
+      "path": "outputs/runs/recovery-isolation-20260907/operation-bridge-current-2.xml",
+      "sha256": "8f36afd6b8747673ca95a6fe5bcc75a58118901f0dbf37c4497cb0b7048c5f57",
+      "suite": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "66",
+        "time": "12.088",
+        "timestamp": "2026-09-07T17:56:59.286773-05:00",
+        "hostname": "CopilotPro7"
+      },
+      "cases": [
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_failed_operation_queue_reaches_actual_diagnosis_and_executor"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unreproduced_or_wrong_authority_never_launches_agent[argparse]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unreproduced_or_wrong_authority_never_launches_agent[missing_recipe]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unreproduced_or_wrong_authority_never_launches_agent[typed_formal]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unrelated_probe_cannot_repair_original_observation[0]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unrelated_probe_cannot_repair_original_observation[1]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_unrelated_probe_cannot_repair_original_observation[2]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_operation_recovery",
+          "name": "test_interrupted_diagnosis_retries_next_bounded_attempt_without_budget_reset"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_publish_and_reconcile_without_activation"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_publication_crash_reconciles_same_intent[pointer]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_publication_crash_reconciles_same_intent[terminal]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[forged]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[stale]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[changed]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[expired]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_rejected_publication_cannot_write_pointer[outputs]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_candidate_drift_during_materialization_is_rejected"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_marker_source_excludes_live_git_and_linked_outputs"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_unpinned_source_refused"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_trusted_callback_and_activation_require_recorded_acceptance"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_pointer_hash_without_acceptance_cannot_activate"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_missing_original_activity_cannot_activate"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_release",
+          "name": "test_same_request_wake_requires_successor_import_identity"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[False-True]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[False-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[True-True]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_acceptance",
+          "name": "test_real_original_reproducer_controls_acceptance[True-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_recovery_dispatch_entrypoint",
+          "name": "test_actual_supervisor_seam_missing_config_is_durable_scoped_wait"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_recovery_dispatch_entrypoint",
+          "name": "test_config_parser_builds_full_request_without_manual_request_file"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_typed_code_outranks_misleading_screening_prose[screening_wall_budget-code]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_typed_code_outranks_misleading_screening_prose[screening_suite_volume-data]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_typed_code_outranks_misleading_screening_prose[screening_constraint_unknown-unknown]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_typed_code_outranks_misleading_screening_prose[future_code-unknown]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_formal_action_cannot_be_softened_with_data_code"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_dispatch_reaches_executor_once_and_requires_independent_verification"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_capability_absence_never_launches[missing]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_capability_absence_never_launches[expired]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_capability_absence_never_launches[isolation]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_capability_absence_never_launches[executable]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_agent_final_answer_cannot_heal[\"fixed\"]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_agent_final_answer_cannot_heal[{\"status\":\"healed\"}]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_agent_final_answer_cannot_heal[{\"request_digest\":\"bad\"}]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[original_failure_reproduced-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[original_predicate_restored-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[required_checks_passed-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[protected_surfaces_unchanged-False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[input_digest-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[manifest_digest-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_original_predicate_and_all_identities_required[fence-stale]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_forged_receipt_rejected_by_independent_channel"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_semantics_change_requires_successor_measurement"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_stale_owner_cannot_publish"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_same_attempt_after_crash_is_not_executed_twice"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_no_budget_reset_for_new_attempt_or_log_timestamp"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_prompt_keeps_injection_as_untrusted_data"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_traversal_request_refused[../controller]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_traversal_request_refused[/host]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_traversal_request_refused[.]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_traversal_request_refused[src/../tests]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_traversal_request_refused[src\\\\tests]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_tampered_event_history_rejected"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_repair_dispatch",
+          "name": "test_worker_cancellation_is_not_a_failed_repair"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_isolated_agent",
+          "name": "test_runner_mounts_only_result_file_and_cancels_independently[False]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_isolated_agent",
+          "name": "test_runner_mounts_only_result_file_and_cancels_independently[True]"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_isolated_agent",
+          "name": "test_existing_tests_cannot_be_writable_source"
+        },
+        {
+          "classname": "tests.test_autoresearch.test_isolated_agent",
+          "name": "test_cancelled_process_preserves_spent_compute"
+        }
+      ]
+    },
+    "command": "rtk proxy timeout -s INT -k 10 170 env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 ../../../.venv/bin/python -m pytest -o addopts= -q tests/test_autoresearch/test_operation_recovery.py tests/test_autoresearch/test_repair_release.py tests/test_autoresearch/test_repair_acceptance.py tests/test_autoresearch/test_recovery_dispatch_entrypoint.py tests/test_autoresearch/test_repair_dispatch.py tests/test_autoresearch/test_isolated_agent.py --junitxml=outputs/runs/recovery-isolation-20260907/operation-bridge-current-2.xml --tb=short",
+    "exit_status": 0,
+    "passed": 66,
+    "skipped": 0,
+    "deselected": 0,
+    "lint": "F,I,C901,PLR0911,PLR0912,PLR0913,PLR0915: exit 0 on changed recovery source/tests",
+    "evidence_classes": [
+      "actual failed operation process",
+      "actual independent diagnostic reproducer process",
+      "actual canonical campaign events and publication filesystem",
+      "fake agent for adapter-dispatch assertion",
+      "mocked OS isolation",
+      "successful successor-import identity simulated in wake unit test; old real imports rejected"
+    ],
+    "schema_changes": [
+      "RecoveryConfig.operation_recipes defaults to an empty mapping; old configs gain no execution authority.",
+      "repair_release_accepted now includes controller-owned handoff; legacy receipts without it cannot authorize activation.",
+      "verify_repair now accepts typed VerificationWorkspace(base,candidate,runtime_roots), seven arguments; both callers updated."
+    ],
+    "exact_parent_calls": [
+      "record_operation_failure(runtime, lease, request, result, outcome=outcome) before runtime.finish",
+      "pending_operation_repairs(runtime) drained before repeating a waiting inspect",
+      "pinned_repair_source(cwd, request['source_digest']) for RecoveryContext source/identity",
+      "verified_release_callback(publisher, lease, destinations=(release_root, root)) passed to dispatch_hard_pending",
+      "verified_activation_handoff(runtime.store, handoff) before fresh restart",
+      "wake_verified_operation(runtime, handoff, cwd=cwd) only within fresh successor imports, returning original logical request"
+    ],
+    "limitations": [
+      "Parent owns actual supervisor call sites, release activation process and original-request transport; helpers alone do not prove full CLI resume.",
+      "No current host isolation or live agent grant; no live source repair or service restart.",
+      "Zero-exit/missing-output or mismatched-error cases not covered by the exact preapproved original predicate remain bounded diagnosis, never fake repaired.",
+      "Formal/data/environment/delivery structured outcomes cannot be downgraded into code repair by this adapter.",
+      "Earlier snapshot hashes in the top-level manifest describe earlier measured code; this scoped update supersedes only listed source files."
+    ],
+    "failures_preserved": [
+      {
+        "junit": "outputs/runs/recovery-isolation-20260907/activation-seam.xml",
+        "cause": "Parent campaign store extraction transient CampaignLockV1 import; 4 failed, 2 passed, 12 errors; fixed by parent."
+      },
+      {
+        "junit": "outputs/runs/recovery-isolation-20260907/activation-seam-final.xml",
+        "cause": "Two fixture proposal/request mismatches after adding affected activity identity; fixture producer and consumer corrected."
+      },
+      {
+        "junit": "outputs/runs/recovery-isolation-20260907/operation-bridge.xml",
+        "cause": "Two mocked-isolation test adapters omitted required kill_grace_seconds; fixed using canonical constant."
+      },
+      {
+        "junit": "outputs/runs/recovery-isolation-20260907/operation-bridge-final.xml",
+        "cause": "One wake fixture could not claim second job under one-slot capacity; fixture explicitly allocates two slots."
+      }
+    ]
+  },
+  "schema_version": "recovery_integration_evidence/v1",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "candidate_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "candidate_source_identity": "Dirty candidate; exact scoped source hashes below. Not a committed or whole-repository release identity.",
+  "workspace": ".",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "autoresearch.heal": "v8"
+    },
+    "stamped_at": "2026-09-07T22:27:08.513517+00:00"
+  },
+  "environment": {
+    "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+    "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39"
+  },
+  "source_files": {
+    "src/slm_training/autoresearch/heal/repair_release.py": "4579180b1367bf685eb83d2d8551e9e27b030571c89f940d1d74b197e0035f6a",
+    "src/slm_training/autoresearch/heal/isolation.py": "9649140ef665cfac3047eb1fcada51fedee555d2bf17fd8ed016b91e539a07ea",
+    "src/slm_training/autoresearch/heal/isolated_agent.py": "323bba4387f1754530fa8770248437a0b6c276902372cd4fba810318b2db919c",
+    "src/slm_training/autoresearch/heal/agent_executor.py": "ca93ff55e5b1ccb45bd87e4ba51c0c43ed2b03f26aafaa5c79bb7d09a8d2a93e",
+    "src/slm_training/autoresearch/heal/recovery_dispatch.py": "e8e8553bff365fefd3dfa9e56fbb46fb0ebce82317a320c158fe0c6b3d7f04f4",
+    "src/slm_training/autoresearch/heal/dispatch.py": "567e953efe70966b57f889b80a8962650885a00e53264a9cdcf5f6497ae2cbd7",
+    "src/slm_training/autoresearch/heal/repair_contracts.py": "1034f11b0fa19c5b886ef61b890ea336a70b1693c326c18a41194c034b4e8075",
+    "src/slm_training/autoresearch/heal/repair_acceptance.py": "17084e033d335a5cad33f6240ce718d2fd15a7e96a5c03fc80eb9100a1c5baa7",
+    "tests/test_autoresearch/test_repair_release.py": "10d45948880a846e95b89b6411f24ac959a9f16448b24a9085823aab21e74847",
+    "tests/test_autoresearch/test_isolated_agent.py": "e5569fd07521da187296662188c75be27425c19725ad867b098a82674ea9947f",
+    "tests/test_autoresearch/test_repair_acceptance.py": "d96ecf936a9cdb1e2fa36ce40633cc9438986d62708622294b5c63c147110915",
+    "tests/test_autoresearch/test_repair_dispatch.py": "800c15124998715555eceb674a2d92fc7fb24ae11d2f56619fcf03d99c1cb833",
+    "tests/test_autoresearch/test_recovery_dispatch_entrypoint.py": "8ad9fbf490cc52e4facb7a650399869b3de1cc509485be136d651e6d4f88c75a",
+    "tests/test_autoresearch/test_repair_verifier.py": "efaf404c35329a113dd7b50b3e54112dc9ecfbc396efacc04d65666916eef5d6",
+    "tests/test_autoresearch/test_heal_isolation.py": "1b7e8a4374c90d451d7799b3b1f0d2d24c1a678dd5fab94790f834005448d9a4"
+  },
+  "junit": {
+    "path": "outputs/runs/recovery-isolation-20260907/post-recovery-v8.xml",
+    "sha256": "27265bf3fe5e9ad08abcd2c78dc5d263504c58249f73ec74ecc331e9ba0695dc",
+    "suite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "10",
+      "tests": "84",
+      "time": "4.066",
+      "timestamp": "2026-09-07T17:24:31.658311-05:00",
+      "hostname": "CopilotPro7"
+    },
+    "cases": [
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_publish_and_reconcile_without_activation",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_publication_crash_reconciles_same_intent[pointer]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_publication_crash_reconciles_same_intent[terminal]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_rejected_publication_cannot_write_pointer[forged]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_rejected_publication_cannot_write_pointer[stale]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_rejected_publication_cannot_write_pointer[changed]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_rejected_publication_cannot_write_pointer[expired]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_rejected_publication_cannot_write_pointer[outputs]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_release",
+        "name": "test_candidate_drift_during_materialization_is_rejected",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_isolated_agent",
+        "name": "test_runner_mounts_only_result_file_and_cancels_independently[False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_isolated_agent",
+        "name": "test_runner_mounts_only_result_file_and_cancels_independently[True]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_isolated_agent",
+        "name": "test_existing_tests_cannot_be_writable_source",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_isolated_agent",
+        "name": "test_cancelled_process_preserves_spent_compute",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_typed_code_outranks_misleading_screening_prose[screening_wall_budget-code]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_typed_code_outranks_misleading_screening_prose[screening_suite_volume-data]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_typed_code_outranks_misleading_screening_prose[screening_constraint_unknown-unknown]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_typed_code_outranks_misleading_screening_prose[future_code-unknown]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_formal_action_cannot_be_softened_with_data_code",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_dispatch_reaches_executor_once_and_requires_independent_verification",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_capability_absence_never_launches[missing]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_capability_absence_never_launches[expired]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_capability_absence_never_launches[isolation]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_capability_absence_never_launches[executable]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_agent_final_answer_cannot_heal[\"fixed\"]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_agent_final_answer_cannot_heal[{\"status\":\"healed\"}]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_agent_final_answer_cannot_heal[{\"request_digest\":\"bad\"}]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[original_failure_reproduced-False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[original_predicate_restored-False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[required_checks_passed-False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[protected_surfaces_unchanged-False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[input_digest-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[manifest_digest-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_original_predicate_and_all_identities_required[fence-stale]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_forged_receipt_rejected_by_independent_channel",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_semantics_change_requires_successor_measurement",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_stale_owner_cannot_publish",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_same_attempt_after_crash_is_not_executed_twice",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_no_budget_reset_for_new_attempt_or_log_timestamp",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_prompt_keeps_injection_as_untrusted_data",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_traversal_request_refused[../controller]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_traversal_request_refused[/host]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_traversal_request_refused[.]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_traversal_request_refused[src/../tests]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_traversal_request_refused[src\\\\tests]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_tampered_event_history_rejected",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_dispatch",
+        "name": "test_worker_cancellation_is_not_a_failed_repair",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_recovery_dispatch_entrypoint",
+        "name": "test_actual_supervisor_seam_missing_config_is_durable_scoped_wait",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_recovery_dispatch_entrypoint",
+        "name": "test_config_parser_builds_full_request_without_manual_request_file",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_acceptance",
+        "name": "test_real_original_reproducer_controls_acceptance[False-True]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_acceptance",
+        "name": "test_real_original_reproducer_controls_acceptance[False-False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_acceptance",
+        "name": "test_real_original_reproducer_controls_acceptance[True-True]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_acceptance",
+        "name": "test_real_original_reproducer_controls_acceptance[True-False]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_original_failure_replayed_and_independent_predicate_restored",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_agent_says_fixed_but_original_fails",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_exit_zero_without_observation_is_not_verification",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_different_original_failure_cannot_authorize_edit",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_wrong_candidate_digest_never_runs",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_test_weakening_rejected_before_execution",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_forged_worker_receipt_is_out_of_scope",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_existing_tests_are_immutable",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_policy_and_measurement_changes_require_separate_authority",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_empty_or_duplicate_verification_contract_is_refused",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_eval_wiring_repair_requires_and_executes_unchanged_golden",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_repair_verifier",
+        "name": "test_original_directory_mode_changes_are_not_hidden",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_repeated_edit_of_already_dirty_path_is_a_scope_violation",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_mode_and_deletion_are_checked",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_noncanonical_mounts_rejected[../private]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_noncanonical_mounts_rejected[/tmp]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_noncanonical_mounts_rejected[./editable.py]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_noncanonical_mounts_rejected[editable.py/../protected.py]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_symlink_mount_alias_rejected",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_external_symlink_and_hardlink_rejected",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_live_git_metadata_refused",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_private_snapshot_does_not_copy_shared_metadata",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_cap_is_not_optional[nan]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_cap_is_not_optional[inf]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_cap_is_not_optional[0]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_cap_is_not_optional[171]",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_missing_bwrap_never_executes_unsandboxed",
+        "skipped": null
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_real_denied_access_and_exact_writable_mount",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "real isolation unavailable: bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_real_failure_cannot_mutate_protected_file",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "real isolation unavailable: bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_real_host_socket_and_result_channel_are_inaccessible",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "real isolation unavailable: bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_real_file_limit_is_hard",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "real isolation unavailable: bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      },
+      {
+        "classname": "tests.test_autoresearch.test_heal_isolation",
+        "name": "test_real_hung_descendants_terminated",
+        "skipped": {
+          "type": "pytest.skip",
+          "message": "real isolation unavailable: bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+        }
+      }
+    ]
+  },
+  "verification": {
+    "command": "rtk proxy timeout -s INT -k 10 170 env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 ../../../.venv/bin/python -m pytest -o addopts= -q tests/test_autoresearch/test_repair_release.py tests/test_autoresearch/test_isolated_agent.py tests/test_autoresearch/test_repair_dispatch.py tests/test_autoresearch/test_recovery_dispatch_entrypoint.py tests/test_autoresearch/test_repair_acceptance.py tests/test_autoresearch/test_repair_verifier.py tests/test_autoresearch/test_heal_isolation.py -k 'not test_socket_mount_rejected' --junitxml=outputs/runs/recovery-isolation-20260907/post-recovery-v8.xml --tb=short",
+    "exit_status": 0,
+    "passed": 74,
+    "skipped": 10,
+    "deselected": 1,
+    "effective_pytest_addopts": "",
+    "timeout_interrupt_seconds": 170,
+    "kill_grace_seconds": 10,
+    "cache_reuse": false,
+    "merge_authorization": false,
+    "initial_failure": {
+      "test": "tests/test_autoresearch/test_heal_isolation.py::test_socket_mount_rejected",
+      "error": "PermissionError: [Errno 1] Operation not permitted at socket.bind",
+      "exit_status": 1,
+      "passed": 61,
+      "skipped": 10,
+      "failed": 1,
+      "note": "Preserved first broad-run limitation. Test code unchanged; final command explicitly deselects it."
+    },
+    "lint": {
+      "selection": "F,I,C901,PLR0911,PLR0912,PLR0913,PLR0915",
+      "exit_status": 0,
+      "scope": [
+        "repair_release.py",
+        "isolation.py",
+        "isolated_agent.py",
+        "agent_executor.py",
+        "recovery_dispatch.py",
+        "dispatch.py",
+        "test_repair_release.py",
+        "test_isolated_agent.py",
+        "test_repair_acceptance.py"
+      ]
+    },
+    "diff_whitespace": {
+      "exit_status": 0,
+      "scope": "Owned heal, tests, recovered documentation"
+    }
+  },
+  "capability_probes": {
+    "codex": {
+      "available": true,
+      "version": "codex-cli 0.153.4",
+      "missing_flags": [],
+      "inference_launched": false
+    },
+    "isolation": {
+      "available": false,
+      "backend": "bubblewrap",
+      "executable": "/usr/bin/bwrap",
+      "reason": "bwrap: loopback: Failed to create NETLINK_ROUTE socket: Operation not permitted"
+    },
+    "provider_grant": "No explicit provider/egress grant supplied",
+    "live_repair_evidence": "not_executed_capability_unavailable"
+  },
+  "evidence_classes": {
+    "dispatch_verification_publication": "Actual canonical dispatch and independent verifier subprocesses, real CampaignStore/ActivityRuntime and filesystem publication; fake agent and mocked OS isolation explicitly used.",
+    "host_isolation": "Unavailable; ten tests skipped; no denied-access claim.",
+    "adapter": "Actual installed CLI help/version probe plus protocol/process-contract fixtures; no live inference.",
+    "model_or_scientific_result": "none",
+    "service": "not installed, started, restarted or activated"
+  },
+  "tested_failure_coverage": [
+    "original predicate still fails despite successful proposed tests",
+    "forged receipt",
+    "stale/current verification fences",
+    "expired grant/lease",
+    "candidate content drift before and during materialization",
+    "pointer write failure",
+    "terminal-event write failure and idempotent reconciliation",
+    "existing-test writable mount refused",
+    "independent cancellation event and spent compute",
+    "missing provider/isolation grants",
+    "prompt injection in untrusted evidence",
+    "wrong identities and protected path changes"
+  ],
+  "restored_historical_reports": [
+    "docs/design/autonomy-recovery-20260907.md",
+    "docs/design/autonomy-recovery-20260907.json",
+    "docs/design/runtime-activities-results.json",
+    "docs/design/autonomy-validation-20260907.md",
+    "docs/design/autonomy-validation-20260907.json"
+  ],
+  "integration_contract": {
+    "producer": "heal.recovery_dispatch.dispatch_hard_pending(..., publish_verified=trusted_callback)",
+    "consumer": "heal.repair_release.publish_verified_repair(request, result, runtime=publisher, lease=lease, candidate=candidate, destinations=(release_root, run_outputs), expected_previous=observed_publication_id, authenticated=controller_authentication)",
+    "publisher": "ActivityRuntime or canonical DelegatedPublisher; control child requires controller_publication capability",
+    "result": "release_handoff; successor_execution/source_digest, original input/request and resume activity/campaign identities, requires_fresh_process=true",
+    "remaining_parent_wiring": "Supervisor must pass trusted publication callback, consume handoff and resume exact blocked work in fresh process; not established by this sidecar's tests.",
+    "source": "RecoveryContext.source must be the private immutable input snapshot with the corresponding isolation tree digest, not a shared mutable checkout or execution directory containing the external outputs symlink."
+  },
+  "claims": {
+    "repair_pipeline_fixture_verified": true,
+    "live_source_repair_verified": false,
+    "supervisor_successor_restart_verified": false,
+    "production_ready": false,
+    "scientific_promotion": false,
+    "ship_authorization": false,
+    "perpetual_reliability": false
+  },
+  "limitations": [
+    "Unavailable Bubblewrap namespace/socket enforcement on current host; no unsandboxed fallback.",
+    "No authorized live agent/provider inference grant.",
+    "No whole-repository merge authorization, 100-attempt acceptance, real model comparison or actual service restart performed by this sidecar.",
+    "Historical restored reports are not current verification receipts.",
+    "Finite unit/process/fault fixtures are not universal recovery guarantees."
+  ],
+  "evidence_collection_note": "An initial metadata extraction requested nonexistent version key autoresearch and failed with KeyError; no result file was written. This manifest uses canonical autoresearch.heal v8 from a fresh successful invocation."
+}

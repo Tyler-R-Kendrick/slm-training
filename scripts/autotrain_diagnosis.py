@@ -131,6 +131,9 @@ def quality_held_reasons(reasons: list[str] | None) -> bool:
 HARNESS_INCOMPLETE_REASON_PREFIXES: tuple[str, ...] = (
     "harness_failure:",
     "measurement_incomplete:",
+    "candidate_runtime_rejected_after_frozen_replay:",
+    "control_runtime_rejected_after_frozen_replay:",
+    "candidate_runtime_unblock_reproduced:",
     "promote_cert_incomplete_metrics:",
     "promote_cert_missing_run_ids",
     "formal_preflight_timed_out:",
