@@ -1612,6 +1612,7 @@ def _run_arm_eval_nll(
     selection: Mapping[str, Any] | None = None,
     row_evidence: list[dict[str, Any]] | None = None,
     estimator_id: str | None = None,
+    attempt_id: str | None = None,
 ) -> dict[str, Any]:
     """Attach canonical diagnostic loss; completeness never implies promotion."""
     from scripts.autotrain_nll import run_arm_eval_nll
@@ -1630,8 +1631,23 @@ def _run_arm_eval_nll(
             "selection": selection,
             "row_evidence": row_evidence,
             "estimator_id": estimator_id,
+            "attempt_id": attempt_id,
         },
     )
+
+
+def _latest_attempt_id(camp_dir: Path, arm_id: str) -> str | None:
+    """Read the current arm attempt from the authoritative campaign events."""
+    from slm_training.autoresearch.storage import CampaignStore
+
+    store = CampaignStore(Path(camp_dir).name, Path(camp_dir).parent)
+    latest = None
+    for event in store.verify_event_chain():
+        if event["experiment_id"] != arm_id:
+            continue
+        if event["event_type"] == "experiment_attempt_started":
+            latest = event["detail"].get("attempt_id")
+    return latest
 
 
 def _attach_screening_eval_nll(
@@ -1639,6 +1655,7 @@ def _attach_screening_eval_nll(
     *,
     exit_code: int | None = None,
     eval_version: str | None = None,
+    attempt_id: str | None = None,
 ) -> dict[str, Any] | None:
     """Compute canonical smoke.eval_nll for any arm that has a checkpoint.
 
@@ -1682,6 +1699,7 @@ def _attach_screening_eval_nll(
             test_dir=test_dir,
             checkpoint=checkpoint,
             eval_version=eval_id,
+            attempt_id=attempt_id,
         )
     except Exception as exc:  # noqa: BLE001 — NLL is diagnostic, never abort quality
         print(
@@ -7170,8 +7188,14 @@ def _classify_positive(
     control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
     candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
     if role == "screening":
-        _attach_screening_eval_nll(camp_dir / "runs" / control_id)
-        _attach_screening_eval_nll(camp_dir / "runs" / candidate_id)
+        _attach_screening_eval_nll(
+            camp_dir / "runs" / control_id,
+            attempt_id=_latest_attempt_id(camp_dir, control_id),
+        )
+        _attach_screening_eval_nll(
+            camp_dir / "runs" / candidate_id,
+            attempt_id=_latest_attempt_id(camp_dir, candidate_id),
+        )
         control = _run_metrics(camp_dir, control_id, prefer_held_out=prefer_held)
         candidate = _run_metrics(camp_dir, candidate_id, prefer_held_out=prefer_held)
     # Merge full primary metric keys when leaf-only maps were collected.
