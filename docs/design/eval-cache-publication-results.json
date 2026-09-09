@@ -1,0 +1,51 @@
+{
+  "schema": "focused_regression/v1",
+  "assignment": "A05 / SLM-586 cache-publication fix",
+  "base_source_sha": "943604270784524ccc032b63359a33913d242b74",
+  "source_under_test": "exact remote eval_runner.py with the narrow publication patch, imported under its canonical module name",
+  "dependency_environment": "existing candidate Python 3.12 virtualenv; not a full remote-base checkout",
+  "version_stamp": {
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v109"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-09T00:24:35.506560+00:00"
+  },
+  "version_stamp_scope": "Canonical stamp of dependency workspace, not a claim that remote base or PR has v109. Published component successor is v107 from remote v106.",
+  "before": {
+    "tests": 5,
+    "failed": 5,
+    "exit_code": 1,
+    "seconds": 1.57
+  },
+  "after": {
+    "tests": 5,
+    "passed": 5,
+    "exit_code": 0,
+    "seconds": 1.46
+  },
+  "pytest_options": [
+    "-q",
+    "-o",
+    "addopts=",
+    "-m",
+    ""
+  ],
+  "evidence_class": "actual imported evaluator and disk cache with StubModel fixture; mocked SDK publication boundary; no live SDK or neural capability claim",
+  "bounds": {
+    "interrupt_seconds": 170,
+    "kill_grace_seconds": 10
+  },
+  "checks": {
+    "ruff": "passed",
+    "module_lines": "unchanged at 3596 physical lines"
+  },
+  "unexecuted": [
+    "full remote-base dependency checkout verification",
+    "live AgentV SDK publication",
+    "hosted checks (not authorized)"
+  ],
+  "invariants": "No threshold, selection, grammar, singleton-forward, training budget, or promotion-policy changes"
+}

@@ -1214,28 +1214,40 @@ def _suite_result_cacheable(metrics: dict[str, Any]) -> bool:
     )
 
 
+def _publish_suite_metrics(config, metrics):
+    """Publish only this run; cached SDK receipts never confer current authority."""
+    from slm_training.evals.agentv import publish_model_evaluation
+
+    metrics["publication_complete"] = False
+    if config.suite in DEFAULT_SHIP_GATES:
+        metrics["agentv"] = publish_model_evaluation(
+            config.run_dir, {config.suite: metrics}, include_missing_suites=False,
+        )
+        metrics["agentv"]["suites_run"] = [config.suite]
+        metrics["publication_complete"] = True
+    else:
+        metrics["agentv"] = {"skipped": f"suite {config.suite!r} is not in the ship-gate policy"}
+
+
 def _replay_cached_suite(
-    config: ModelBuildConfig,
-    metrics: dict[str, Any],
-    *,
-    record_n: int,
-    evaluation_remaining_records: list[int] | None = None,
+    config: ModelBuildConfig, metrics: dict[str, Any], *, record_n: int,
+    publish_agentv: bool = False, evaluation_remaining_records: list[int] | None = None,
 ) -> dict[str, Any]:
-    """Materialize a validated cached suite result under the current run."""
+    """Reuse complete measurements, not a prior run's publication receipt."""
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
+    replay = {key: value for key, value in metrics.items() if key != "agentv"}
     suite_path = run_dir / f"eval_{config.suite}.json"
-    replay = dict(metrics)
-    replay["output"] = str(suite_path)
-    replay["cache_replay"] = True
-    payload = json.dumps(replay, indent=2) + "\n"
-    suite_path.write_text(payload, encoding="utf-8")
-    if config.suite == "smoke":
-        (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    replay.update(output=str(suite_path), cache_replay=True, publication_complete=False)
+    paths = [suite_path, *([run_dir / "eval.json"] if config.suite == "smoke" else [])]
+    for path in paths:
+        _write_partial_scoreboard(path, replay)
+    if publish_agentv:
+        _publish_suite_metrics(config, replay)
+        for path in paths:
+            _write_partial_scoreboard(path, replay)
     if evaluation_remaining_records is not None:
-        evaluation_remaining_records[0] = max(
-            0, evaluation_remaining_records[0] - record_n
-        )
+        evaluation_remaining_records[0] = max(0, evaluation_remaining_records[0] - record_n)
     (run_dir / "decode_progress.json").unlink(missing_ok=True)
     return replay
 
@@ -1419,6 +1431,7 @@ def evaluate(
                 config,
                 cache_preflight.cached_metrics,
                 record_n=len(records),
+                publish_agentv=publish_agentv,
                 evaluation_remaining_records=evaluation_remaining_records,
             )
         train_records = []
@@ -1606,6 +1619,7 @@ def evaluate(
                         config,
                         cached_metrics,
                         record_n=len(records),
+                        publish_agentv=publish_agentv,
                         evaluation_remaining_records=evaluation_remaining_records,
                     )
 
@@ -3095,21 +3109,7 @@ def evaluate(
     metrics["version_stamp"] = progress_version_stamp
     metrics["output"] = str(suite_path)
     if publish_agentv:
-        if config.suite in DEFAULT_SHIP_GATES:
-            from slm_training.evals.agentv import publish_model_evaluation
-
-            # Single-suite runs publish only the suite that actually ran —
-            # never four missing_suite auto-failures dressed up as 5/5 failed.
-            metrics["agentv"] = publish_model_evaluation(
-                run_dir,
-                {config.suite: metrics},
-                include_missing_suites=False,
-            )
-            metrics["agentv"]["suites_run"] = [config.suite]
-        else:
-            metrics["agentv"] = {
-                "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
-            }
+        _publish_suite_metrics(config, metrics)
     # SDE3-01: persist the full suite result for exact replay when enabled.
     if (
         cache is not None
