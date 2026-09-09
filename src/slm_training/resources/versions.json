@@ -16743,6 +16743,11 @@
     "harness.model_build.data": {
       "history": [
         {
+          "date": "2026-09-08",
+          "note": "SLM-587: shared record loading rejects opaque-marker, semantic-label and placeholder-role violations before model construction; no target rewriting or gate changes.",
+          "version": "v3"
+        },
+        {
           "date": "2026-07-23",
           "note": "reject malformed or metadata-divergent Harness DSL prompts before train or eval records reach model input construction",
           "version": "v2"
@@ -16755,9 +16760,10 @@
       ],
       "kind": "harness",
       "paths": [
-        "src/slm_training/harnesses/model_build/data.py"
+        "src/slm_training/harnesses/model_build/data.py",
+        "src/slm_training/data/record_admission.py"
       ],
-      "version": "v2"
+      "version": "v3"
     },
     "harness.model_build.eval": {
       "history": [
