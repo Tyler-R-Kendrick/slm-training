@@ -11,6 +11,7 @@ import fcntl
 import os
 import time
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,6 +35,11 @@ class DelegatedPublisher:
         return delegated_publication(
             self.store, lease, source_digest=self.source_digest
         )
+
+
+_ACTIVE_PUBLICATION: ContextVar[tuple[str, str, str] | None] = ContextVar(
+    "delegated_publication", default=None
+)
 
 
 def validate_activity_fence(states, lease, *, epoch, owner, now):
@@ -79,41 +85,56 @@ def delegated_publication(store, lease: ActivityLease, *, source_digest: str):
     Source release equality supplements OS isolation; it does not authenticate
     arbitrary same-user Python code. Unsupported procfs fails closed.
     """
+    key = (str(Path(store.root).resolve()), lease.activity_id, lease.token)
+    if _ACTIVE_PUBLICATION.get() == key:
+        # ponytail: the outer guard already owns the flock; reacquiring it on a
+        # second descriptor deadlocks same-process delegated publication.
+        yield _validate_delegation(store, lease, source_digest=source_digest)
+        return
+
     fd = os.open(
         store.root / ".activities.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600
     )
     try:
         fcntl.flock(fd, fcntl.LOCK_EX)
-        events = store.verify_event_chain()
-        starts = [
-            row for row in events if row["event_type"] == "activity_controller_started"
-        ]
-        if not starts:
-            raise StaleLease("missing controller epoch")
-        parent = starts[-1]["detail"]
-        state = validate_activity_fence(
-            ActivityProjection(store).read(),
-            lease,
-            epoch=parent["epoch"],
-            owner=parent["owner_identity"],
-            now=time.time(),
-        )
-        pid = int(parent["owner_identity"].split(":")[1])
-        if (
-            state.spec.kind != "control"
-            or "controller_publication" not in state.spec.capabilities
-            or state.spec.source_digest != source_digest
-            or os.getppid() != pid
-            or state.worker_identity != process_identity()
-        ):
-            raise StaleLease("publication not delegated to this controller child")
+        token = _ACTIVE_PUBLICATION.set(key)
         try:
-            alive = process_identity(pid) == parent["owner_identity"]
-            locked = _parent_holds_lock(store.root / ".activity-controller.lock", pid)
-        except (OSError, ValueError) as exc:
-            raise StaleLease("controller ownership cannot be verified") from exc
-        if not alive or not locked:
-            raise StaleLease("parent controller no longer owns its lock")
-        yield state
+            yield _validate_delegation(store, lease, source_digest=source_digest)
+        finally:
+            _ACTIVE_PUBLICATION.reset(token)
     finally:
         os.close(fd)
+
+
+def _validate_delegation(store, lease: ActivityLease, *, source_digest: str):
+    events = store.verify_event_chain()
+    starts = [
+        row for row in events if row["event_type"] == "activity_controller_started"
+    ]
+    if not starts:
+        raise StaleLease("missing controller epoch")
+    parent = starts[-1]["detail"]
+    state = validate_activity_fence(
+        ActivityProjection(store).read(),
+        lease,
+        epoch=parent["epoch"],
+        owner=parent["owner_identity"],
+        now=time.time(),
+    )
+    pid = int(parent["owner_identity"].split(":")[1])
+    if (
+        state.spec.kind != "control"
+        or "controller_publication" not in state.spec.capabilities
+        or state.spec.source_digest != source_digest
+        or os.getppid() != pid
+        or state.worker_identity != process_identity()
+    ):
+        raise StaleLease("publication not delegated to this controller child")
+    try:
+        alive = process_identity(pid) == parent["owner_identity"]
+        locked = _parent_holds_lock(store.root / ".activity-controller.lock", pid)
+    except (OSError, ValueError) as exc:
+        raise StaleLease("controller ownership cannot be verified") from exc
+    if not alive or not locked:
+        raise StaleLease("parent controller no longer owns its lock")
+    return state
