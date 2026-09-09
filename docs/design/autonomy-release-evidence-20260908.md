@@ -77,3 +77,13 @@ it does not stop unrelated source verification.
   the candidate workspace bridge dependency is absent.
 - The 3-minute command cap was preserved; no training loop was started and no
   champion or serving pointer was changed.
+
+## Verification correction
+
+The OpenUI bridge was available in the primary pinned environment and was
+passed explicitly through `OPENUI_BRIDGE_CLI` while importing the candidate
+source. The complete learning/data diagnostic set then passed `28 passed in
+4.59s`. This replaces the earlier candidate-workspace dependency limitation
+for those tests. Hypothesis/property evidence and live noninteractive repair
+remain unexecuted; the rootless isolation probe remains a scoped
+`waiting_capability` result.
