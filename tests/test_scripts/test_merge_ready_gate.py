@@ -179,3 +179,40 @@ def test_hook_and_gate_paths_exist() -> None:
         ".githooks/pre-commit",
     ):
         assert (Path(ROOT) / relative).is_file(), relative
+
+
+@pytest.mark.parametrize("fast", [False, True])
+@pytest.mark.parametrize("relative", [False, True])
+@pytest.mark.parametrize("exit_code", [0, 3])
+def test_cli_runs_checks_in_requested_source(
+    tmp_path, monkeypatch, capsys, fast, relative, exit_code
+) -> None:
+    """Real child processes must use the selected tree and preserve failure."""
+    source = tmp_path / "candidate with spaces"
+    source.mkdir()
+    monkeypatch.chdir(tmp_path)
+    location = Step(
+        "candidate-location",
+        (
+            sys.executable,
+            "-c",
+            "import pathlib, sys; "
+            "assert pathlib.Path.cwd() == pathlib.Path(sys.argv[1])",
+            str(source),
+        ),
+    )
+    outcome = _step("candidate-outcome", f"raise SystemExit({exit_code})")
+    monkeypatch.setattr(
+        "scripts.verify_merge_ready.merge_gate_steps",
+        lambda *, fast: (location, outcome),
+    )
+    selected = source.name if relative else str(source)
+    argv = ["--json", "--source", selected, "--max-step-seconds", "5"]
+    if fast:
+        argv.append("--fast")
+    result = main(argv)
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["steps"][0]["status"] == "ok"
+    assert summary["steps"][1]["status"] == ("ok" if exit_code == 0 else "failed")
+    assert result == (0 if exit_code == 0 else 1)
+    assert summary["ok"] is (exit_code == 0)
