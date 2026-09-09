@@ -1,0 +1,1807 @@
+{
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "candidate_head": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "capability_limits": [
+    "rootless verifier probe: NETLINK_ROUTE Operation not permitted",
+    "Hypothesis dependency unavailable in restored environment",
+    "live noninteractive repair grant not configured"
+  ],
+  "claim_limits": [
+    "not a release authorization",
+    "not a model-quality or champion claim",
+    "training remains stopped"
+  ],
+  "fixture_policy": "Do not copy virtualenv, node_modules, credentials, shared Git metadata, or ignored generated outputs into a handoff release.",
+  "inventory": [
+    {
+      "path": "README.md",
+      "sha256": "6c4c645bc05ec8131397f6045e4943cf0f611a1cace5560125abb2178cf311c6",
+      "status": "MM"
+    },
+    {
+      "path": "docs/MODEL_CARD.md",
+      "sha256": "128171a85590ccbec486edec6a85b002541542c09ebe28b099f5e35b8506da09",
+      "status": "MM"
+    },
+    {
+      "path": "docs/design/autonomy-a02-grant-lock-20260908.json",
+      "sha256": "817b1ac75185037785cbbabdab3942fb7583bb926e8739f0308830f646c0aae2",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-a02-grant-lock-20260908.md",
+      "sha256": "ca55739112b4837cd3ced67c50818675d5ffce56e72b68b0a16771742d5d963d",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-adversary-20260907.md",
+      "sha256": "fb41d442f4c8868b9cb4637e85af8ae38539a37868f201ead71f8822ef5449e4",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-adversary-v3-20260908.json",
+      "sha256": "18d296156f4755cf839f25c9a9bed53cf5646471412723b5459f452f8c2e836f",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-artifacts-20260907.json",
+      "sha256": "344e69c3bfb881c2e0eded9d9ce8bf75e978b22a82aa70d5a225ea763b017d3c",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-artifacts-20260907.md",
+      "sha256": "79517bcb7ace7d2fa4ce9c22e6ad331e60d1afe471ee298b95d818bc67bdda9c",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-coverage-mutation-20260908.json",
+      "sha256": "e77058d51dcc180befdddaa32a3521a1a2e628b0e58b0c5bd829db5fd8cae709",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-coverage-mutation-20260908.md",
+      "sha256": "fac679a1e07c995f5f5c8d1a7da1bf42244c02dd65fc087c9dbc333495ddd504",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-experiments-20260907.json",
+      "sha256": "161cee01f738f6fcf8bbb86cdfb234af461ef23a55da9fd7dc418762a140b678",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-experiments-20260907.md",
+      "sha256": "48c47130e659fc8b70428401cdd68d794fde3351ab0220c4a474629959e4e9b2",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-isolation-20260907.json",
+      "sha256": "c6bf5a09b50674a7b9ee295bf53ab55ce2ada1ec8cc0ab4a92ebc22017f60025",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-isolation-20260907.md",
+      "sha256": "61243227f193c6b175918fc7978e924e23acaef15d4d4dfd96cc552161b6f460",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-measurement-20260907.json",
+      "sha256": "e2f3dd7d772da0f19808520dcbac3e6210843c2a471e0d16ad6f2a64c58b9e87",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-measurement-20260907.md",
+      "sha256": "23fd627915e9ace00d9eb452bd73d35d8a3a9b7a036e239dcce198c4da08ed43",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-measurement-autonomy-mea-resolved-endpoint-20260908-r2.json",
+      "sha256": "f331cb21244ecab02e2b2dee6777e08d41087587724eda82ee65eeae9438d226",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-measurement-autonomy-mea-resolved-endpoint-20260908-r2.md",
+      "sha256": "f1b3544e78e70de9374686f898246d81a2d9369775fcdc2bc2f2edacbdcf9cd2",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-measurement-finite-preparation-20260908.json",
+      "sha256": "0be4d3632783a6fc0ad708767a42fef5889ce78f9b91ba503e96064592da9cbb",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-operations-20260907.json",
+      "sha256": "fe830a91630a2c3fa130be11bc3f10f97a9ddb08e4e4de56f63ecab65eddca18",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-operations-20260907.md",
+      "sha256": "4c85190ec958626296a2973397b38df454fcd5d401573fb7e51431318176221e",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-recovery-20260907.json",
+      "sha256": "b1baa9afe906d46b88084268a3d0753eb29fa3df4265de6ffe7fadfb85638c46",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-recovery-20260907.md",
+      "sha256": "30ed3cee12af80b161b2582d30b9ee70c5957ab763baa0367448a6f9c31d65e5",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-recovery-integration-20260907.json",
+      "sha256": "94696ba59699d147b602039f4ec1d077b7402c0bb713b33a03c4109f97760af8",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-recovery-integration-20260907.md",
+      "sha256": "d885b38dd9bf0f7af4368f67b708a787399465c945e54fab42173cd5a4ae1ca8",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-release-evidence-20260908.md",
+      "sha256": "a76f54ba92507b7d9ba665ba862a003e0cc44f0ccdbfe422f7e96c4dc0b5f089",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-runtime-package-20260907.json",
+      "sha256": "c006840aa0d6f34ddec4f8a5d40fa277387317cb0e97f6e377a07031bc117910",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-runtime-package-20260907.md",
+      "sha256": "344a922d3e9d24d9c4d112b20dbdae6be169a8c7e7ce4588a9800d3a1e228cee",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-validation-20260907.json",
+      "sha256": "8554325574da3e0bc11fd5eff00fef537f0eea45d6d946ac9b63659338c36441",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-validation-20260907.md",
+      "sha256": "47068410379c2f32bf9ca51c4119366f978bfa3dad740eff523f857dcbb4952f",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/autonomy-validation-restored-20260907.json",
+      "sha256": "b891d232a26554a7cae73a571d6578d7573bde52561ae9340ce24b69caa9630f",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/camp1-results.json",
+      "sha256": null,
+      "status": "AD"
+    },
+    {
+      "path": "docs/design/camp1-results.md",
+      "sha256": null,
+      "status": "AD"
+    },
+    {
+      "path": "docs/design/reliable-autonomy-20260907.md",
+      "sha256": "79ceab603d49e706461e84b56efdb3cb53756b5088e31ef43750705358d9b92a",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/reliable-autonomy-completion-directive-20260908.md",
+      "sha256": "fae1391861ab1eaa4cf4c76717f24ab0ee0661a7abf38c9e404ecdb82918d7c0",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/runtime-activities-results.json",
+      "sha256": "e2f37b7397ff9a4363b2e3cdd40f142c4101cf0ad38af142aeeb0547d98f44be",
+      "status": "??"
+    },
+    {
+      "path": "docs/design/runtime-activities.md",
+      "sha256": "1e1ff4d517ed5db129202557aa2bb1942821348a3609383fbc978e76db8f6667",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autonomy_fixture_worker.py",
+      "sha256": "9bb4972dba8cbbc9446790bffc9d6fedacc7b4b9f9566f00ba2dd65268aecd54",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autoresearch.py",
+      "sha256": "43bcc709fe5238bf7140b84ed92d3d8729c9b2e37c1de336be3fbc4eb2366fa4",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autoresearch_command_cursor.py",
+      "sha256": "7fa8d59ac355e594a38ed53cb6f050bd0690cffd58772dedae60a9e8b1adf864",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autoresearch_continuation.py",
+      "sha256": "154264303cfb017964cc54c5ad3deba47b89ee0efed1703c947f4ea40b2b784f",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autoresearch_operations.py",
+      "sha256": "c83de0737ba58ba5c9ba7745d17b7ab294826c04ad49f22abe85ed4b8013e412",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_arms.py",
+      "sha256": "38815829ffbcded6e9ff77dd919fe7ed9e09bb49803d173d2d6f6999ac74785e",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_champion_lifecycle.py",
+      "sha256": "9d1cc6da367d62c77012652989a082473e69b36b79a19fbdeeb44f551d060b3d",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_champion_queue.py",
+      "sha256": "cde4305d42b93a1bc305563bf8126ad33c47ad1b454e1ea56be9454949e2bbd5",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_controller_repair.py",
+      "sha256": "7b0cb5b9b644c4709f7da12711bb98b6de55ae75189cf3a3986a542b7ea9b114",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_cycle_context.py",
+      "sha256": "d2658d5c4d3aa470205afa1827061d57f80155341c03a15eda47bb2d0ef14cbd",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_cycle_execution.py",
+      "sha256": "96cff35b3dd199b1401b935d94e55a8ea469251eb4dfecdb595da7c668265f24",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_cycle_finalize.py",
+      "sha256": "4aea1cfaa3a6045a9e715317a929f0f8370c8374bc0ceba7b391202bdfd54104",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_cycle_prepare.py",
+      "sha256": "630ff032742cdc6c2e2f2fb05329a6ba0f92313e45c29755dc1d6248112e20fd",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_cycle_reconcile.py",
+      "sha256": "639d31d784d0d81d9a8eb9c4308b2f38f038aa122d0f5c11bd89fbf4baead968",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_data_builder.py",
+      "sha256": "ba46515c97da23d8bffa62448c775195349647bab7ec1aa2ec2b473d6cf82c10",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_diagnosis.py",
+      "sha256": "8905f19ca90e2546c06df483fad4bdd6029644d20cd5434d0ef418b2963e9b10",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_heal_actions.py",
+      "sha256": "43e088348fc175b24fdb3ded97b684d147d5a12a83a091e0f7ec2b8f634ec2c8",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_ledgers.py",
+      "sha256": "60b5a28214aa6a1b08c085a278b87583f4c182bd4f2cb89cee79253f61a72f8d",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_levers.py",
+      "sha256": "93af61d4f97bd7f5a9480a351cabe6e7f45071473979071ecabfc03ca8594a25",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_measurement.py",
+      "sha256": "0d6e0bea730590e36a8f3412dee503f43ab603192f4c6db62e41fd7c69c3f6f6",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_metrics.py",
+      "sha256": "710afa1fd59225f1f1b4db2462d6616163d9a521def13eeeda7db632f92fc591",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_nll.py",
+      "sha256": "1a6dfae5cda7a2a88d2d8fdc3cdb02a0bcf1fe1190f1fe6131c89672d286da56",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_park.py",
+      "sha256": "2d42c96ed8c5dc12fc94e9f61d877b6e1f9fa1b125ef7e5e98cd68445785499e",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_pending.py",
+      "sha256": "a6a485cd3d79c6def021c8662c0e55403d3bf466393c65a1b9354dc27ba14cb9",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_promotion.py",
+      "sha256": "9704a820b8b0f8168c45797033527dcdb3752380c73392702bb09c79228201a5",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_promotion_chunks.py",
+      "sha256": "37659b39070691e48e4180e4543f7ea6d3537ec0864c155662d4c0990546ce87",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_promotion_finalize.py",
+      "sha256": "7c31d28356babc50c32cafbaa4950f834530b79985d2d38c4992af77b37599db",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_readiness.py",
+      "sha256": "0e9f5508e53a8297082c3c7e499154fbd8c9b6a267283bb3f2e2a07e140b6b45",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_readiness_probe.py",
+      "sha256": "871bc6d1edb17be1240738093b66ff1d9db38e4c8f8e96919f904519857834c0",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_readiness_wake.py",
+      "sha256": "4b996515e6e2720a39970e3e868fc4c1d5d2ba8ca691cdf57db1dcdcfb84fae9",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_records.py",
+      "sha256": "5038073920f085fe79984d11ef828d87500e6931f40c5f42e679f87c461e4026",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_repair_activation.py",
+      "sha256": "d099a4d1455b133cd59330b6b4882c73d1574d509d9f75d9199ddc01edf9e139",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_search.py",
+      "sha256": "37f9f65de594db0475ff93fe5a6076302a18f7b5962a049539486d0d52d76d5c",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_supervision.py",
+      "sha256": "831a0772923975c2bf1a61f51b32dbf810a425769ce3292b504440116e26840f",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_supervisor_operations.py",
+      "sha256": "03ce6ba222aacc494123e607a0e9a0688ac270ce76a4332127687140ad91ee3f",
+      "status": "??"
+    },
+    {
+      "path": "scripts/autotrain_timeout_state.py",
+      "sha256": "7d26a60149b72198e1a2c50e18183dbddd77ad333e3c19de56749ca4835d833d",
+      "status": " M"
+    },
+    {
+      "path": "scripts/autotrain_verification.py",
+      "sha256": "54afffa8fa647f2340bc380c4a88c015701d32e08517d78621113e58511f060a",
+      "status": "??"
+    },
+    {
+      "path": "scripts/check_changed.py",
+      "sha256": "0b77292d3a8791c5d2fc63e23a59a5ced696e659c6bde9d67c1fe38b6a10b095",
+      "status": " M"
+    },
+    {
+      "path": "scripts/evaluate_loss_suites.py",
+      "sha256": "9152a5a133569889579a8df7f265d02c29447fe28b6511442d6cbe9c48859664",
+      "status": " M"
+    },
+    {
+      "path": "scripts/evaluate_model.py",
+      "sha256": "e77ffcbc4c707933c9dc02bf02c82daa7c7f37a7488a16293ea222e360f44637",
+      "status": " M"
+    },
+    {
+      "path": "scripts/export_playground_onnx.py",
+      "sha256": "deefbcc6382027e703c354e178041a0f29b113dc870b47d5941a3e77264c2cc0",
+      "status": " M"
+    },
+    {
+      "path": "scripts/merge_test_worker.py",
+      "sha256": "f54dac54efe7b4941cd63070577f02a680b2478403b814dc3907276169bfa314",
+      "status": "??"
+    },
+    {
+      "path": "scripts/merge_verification.py",
+      "sha256": "043e2c96ffd6935c570e137328b82932fd42c60ec4be3986d562d03fd29fd5a7",
+      "status": "??"
+    },
+    {
+      "path": "scripts/merge_verification_controller.py",
+      "sha256": "1259b05dacf1e4050052b7f05405366fab10bc4f3b6efab0a1326b6b846eb9e0",
+      "status": "??"
+    },
+    {
+      "path": "scripts/merge_verification_evidence.py",
+      "sha256": "4bed8009f558ebcfb4ebded5576f4acfbae25537b3f9808333f00713ee9a91ec",
+      "status": "??"
+    },
+    {
+      "path": "scripts/merge_verification_isolation.py",
+      "sha256": "65353e0f1917895b7b77aab886b586d5dda1112a143935656fe850ae6465bf73",
+      "status": "??"
+    },
+    {
+      "path": "scripts/merge_verification_runtime.py",
+      "sha256": "012f4c18c68427bc55d03f854cfe4e0f997fbf3f3f7b6dedbc5f30079bd4ac72",
+      "status": "??"
+    },
+    {
+      "path": "scripts/merge_verification_summary.py",
+      "sha256": "9f57c529501c0017a7411e641980349eb0731dee939c11f16fb4a555ab33422d",
+      "status": "??"
+    },
+    {
+      "path": "scripts/run_autotrain_continuous.py",
+      "sha256": "af11896fd7ec9752c76e6b9fc307e13913575e30406864b91971270742e625b3",
+      "status": " M"
+    },
+    {
+      "path": "scripts/run_autotrain_supervisor.py",
+      "sha256": "6f79ece2b6df8dea54991c4193bcf54e37211b5f1ae88d543d19a66ac3cfeeae",
+      "status": " M"
+    },
+    {
+      "path": "scripts/slm.py",
+      "sha256": "8d40f8cd41b3d161ee1e261947cf97b543d641a5033ed946f9decebb77afd411",
+      "status": " M"
+    },
+    {
+      "path": "scripts/train_model.py",
+      "sha256": "88d8b83fded050441d04edef7d4781be82b05d0f47740998e805341e1f840f28",
+      "status": " M"
+    },
+    {
+      "path": "scripts/verify_autonomy.py",
+      "sha256": "d3487bc644368bf5a6af18915cd345e96172a9f5a6eaf84ed34c0dbd1a797b91",
+      "status": "??"
+    },
+    {
+      "path": "scripts/verify_merge_ready.py",
+      "sha256": "22984980082f75f18c1f2c8bb65c7505fa924d63e1879161bbcd68a7727fc1a0",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/__init__.py",
+      "sha256": "5d51c14c1fb5e23bf13df61f57db70a1ab4aa7c274847ddf9493225c8f19a460",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/action_dependencies.py",
+      "sha256": "84e1ccaa5f443bcdf13a65b06276b9cf9b4c1d04c3814c3822bb2f3ab0a91b8e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/autotrain_actions.py",
+      "sha256": "a431a2f7730f197549d9094ad8d834e7c5f0cf646a87e2847a548d5100de2306",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/campaign_events.py",
+      "sha256": "10061c6899959c242ef851761f27d3e953ee504f1b75fb34f80b7826f3dba847",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/climb_measurement.py",
+      "sha256": "ddff1b4a5c6f1f680185d67a5c244c8f9c19e113f06781169f38420b2586e714",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/climb_policy.py",
+      "sha256": "934ecabe768147168ce63293fc58d37991c46a009054144e409c2910bb1f1d62",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/engine.py",
+      "sha256": "6acad9f13185441fc6493a53f744f67079f8028dad305bf2b19b1d35a99f331f",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/evidence_ledger.py",
+      "sha256": "fec9e4e9bc05a72fff96d421cd26e8ffb711608766db9e34bc51215893198ed6",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/experiment_identity.py",
+      "sha256": "df69416207fbd42c74c12f8a547a73ab6d873d087a44f80a23e3f3120c84f2eb",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/__init__.py",
+      "sha256": "2274accb0b51344ac816e37759b19f53c08b7855848f7394bb16873879a2e4f3",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/agent_executor.py",
+      "sha256": "ca93ff55e5b1ccb45bd87e4ba51c0c43ed2b03f26aafaa5c79bb7d09a8d2a93e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/classify.py",
+      "sha256": "d331a3d18b5c8515aa84fbc1cb04a992c0b7f4e44a73226e6a13e545bd79abf7",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/data_predicate_receipt.py",
+      "sha256": "fe56067252bb4d5323b01a9a320c196c09724bb9f101f68c176584e0505fb04b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/dispatch.py",
+      "sha256": "bfb8ec168def87a36c11783a1d287252602dfa1b4e8c05d878f1ddd78ea575cf",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/escalation.py",
+      "sha256": "a6aeec9186631eafc46df4c457d4c7a8f65e07a27c07cf46cb43cec0748928ae",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/hypothesis_executor.py",
+      "sha256": "410a572a3dec9018748013ba8a2f3fe5c708f256f1a4974d4b01c514afe86d87",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/isolated_agent.py",
+      "sha256": "323bba4387f1754530fa8770248437a0b6c276902372cd4fba810318b2db919c",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/isolation.py",
+      "sha256": "afe02ba947cbbe255d2e0750a0a6b4eceac6b67eba5c311d441f799910d4b1be",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/isolation_workspace.py",
+      "sha256": "9f7b9ce6038e9a64475cade65667ee14c86c3da4d7ade90042f47b8fcc1d9e53",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/operation_recovery.py",
+      "sha256": "80cbcab8ce8bc08e718947fdf321479569865e044a6e5d2520072f1e47bb2d2e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/playbooks/data_rebuild.py",
+      "sha256": "82ca5472ecd4e39bf78298719f249bda170a1539bd35177f64b2ace1b24a74b2",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/recovery_dispatch.py",
+      "sha256": "1e927d1c1ea200204365097563906bc2093146788cbf329cda612fee4a098bed",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_acceptance.py",
+      "sha256": "e3f8f2864e42b70dad652e2d4a26aa72361e4e1b268713eede8a0c7e9b47efe2",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_contracts.py",
+      "sha256": "1034f11b0fa19c5b886ef61b890ea336a70b1693c326c18a41194c034b4e8075",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_jobs.py",
+      "sha256": "120e9b3f02a7f03e98eb9fb617ad0ccf47c0c4c7d4161ab45ac47f6fdc928457",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_prompt.py",
+      "sha256": "7d703c97242090fcffc47f79d246b1252d1b59206f7bbf62a17449e4286bd049",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_release.py",
+      "sha256": "e14bbe652ed908a0737b65f128dbcf4d01fbc6c27c10cd7256401d30bf5d67fb",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_scope.py",
+      "sha256": "f1ecd1e4062c1a3a37371619e5d8d34dc3447719fdc34d61cb23cec58803a299",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_source_workspace.py",
+      "sha256": "d27c9bda68ccba61e02d2f566957f106e6e69402dbed41663ac7579cd67837fd",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/heal/repair_verifier.py",
+      "sha256": "883f963f9118c1badd4b4e7b249a523e31640e4c80f0380d9f96399119d4c496",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/hillclimb.py",
+      "sha256": "91f8a90580f8faea254814dc893e91ec800fda58088940056aba3937e82564ce",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/intervention_matching.py",
+      "sha256": "df4cabb087802c4c107041d76dafc7c04ccb5c237670e4a1fbf3bef4d1deb0fd",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/paired_analysis.py",
+      "sha256": "921c55b2e9435b6fd901048ac2aaa9610aa8cdfe3284506d23b026ae7264325b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/paired_stats.py",
+      "sha256": "57d201051950a8d6ddc72546fef52f7e1c9b451e22d2957a75bec5bb0bcffa83",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/preflight/compiled_treatment.py",
+      "sha256": "7867df7c402e756167001a5adb7ced3930f82970eb366a4b6042c4a102f5b71d",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/preflight/lever_effects.py",
+      "sha256": "af59d7822b988fdcf0449983879afe253c06901ce5f52e5f6fabce2ea6423d24",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/preflight/loss_binding.py",
+      "sha256": "bb09d5e3c48f1e0a85a23ed2a03a1b44adda5d554a7ee816d1cd19bcbe5c4b89",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/preflight/search_binding.py",
+      "sha256": "536b499b190c953090146210605b6522c129b45f21915f01afa1c3e327086366",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/preflight/treatment_design.py",
+      "sha256": "19f281586ecc1638f28e9739db9bcd60ff9230ef0de8030f6287e50abb28692b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/providers.py",
+      "sha256": "f35cc5acaaa5cf21ffda619909a9b71c84ed27bd54543ad39c70902150ae614a",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/run_insights.py",
+      "sha256": "dc1e8d74df753f367a989ef1b5e4b8649596744ada0944d0af584aff6d940109",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/__init__.py",
+      "sha256": "d64499e951c3fab5d4c6ff5bcb78b0896a8a3b26e2e79e048adcfef4549d0a89",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/activity_process.py",
+      "sha256": "2d0bd277b2ae11e8c68837126c5cc7d08dd57846c0ee7daa52c9593dff0b8574",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/activity_projection.py",
+      "sha256": "f2d927902882b9d1046164e8bf8c07244745a8e1697898174e3302c01b4a6548",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/activity_publication.py",
+      "sha256": "61ae9a5ca4d3d2e5467aee205603e1bb4aa81705023b149171b1bd352a5fa8c1",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/activity_runtime.py",
+      "sha256": "44dc6ab2cde091e86731ab5ca06a55386088d835f9d382dc460e83195eccce99",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/operations_analysis.py",
+      "sha256": "3ddd2cc6b6431cfcffd0ad5aeb69f5926af4cbce1050233bac2b931e5972df78",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/operations_control.py",
+      "sha256": "390da53d004c9cd7d974217c731edf06115f589a6321eb96b2c67c0a29dc8439",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/operations_doctor.py",
+      "sha256": "c5c70c37506e7c1a7cda9c7d1eaba4c63d048aa2c75a5f8e317e7f920dd65029",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/runtime/operations_status.py",
+      "sha256": "a6d3c146a2dcc70820b2ab29ddc5a9c119451b56f6c328a062dc4b4d4865673b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/schema_base.py",
+      "sha256": "5487503f5949a8059bde95ceae40eb1f4b9a5fcceef47ee5359ce7233b38827b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/schemas.py",
+      "sha256": "8fa554c0c7ebc7f517cc741f14ccd2e8c15f6477730cb10e2a0b6f1672ab4ed6",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/screening_sample_size.py",
+      "sha256": "110b8d15395dd23f302c1ec59c9f8322cf3004c3fcaf5d3c5c4263e98eb8127f",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/search/__init__.py",
+      "sha256": "b0453601e9eedefeaccef6cfe552c86f3ab30c61bfa49df9123d7cb6f8f2bdba",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/search/allocation.py",
+      "sha256": "1138d7c666ec96964ec79ea81f2fc8448e6944260ae76f8fc4fa0cf3ced1545e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/search/evidence.py",
+      "sha256": "c42627af3abe5d8b1b37f82c1d4413b2381b0a53881575ff17d7171dad094599",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/search/ingestion.py",
+      "sha256": "c6d49ab0b80ef00f444812e71cc3f9ecd797e841d0c27b8ec9c2ca6863c29d21",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/search/proposals.py",
+      "sha256": "9f4b2b6afab99a91782087326265490627f1de32da9c813994006be67ac1301a",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/search/stagnation.py",
+      "sha256": "024141ec3cb4780c80c562b53ffd73f81e159115eb2c47c1120954c9a228aec0",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/autoresearch/storage.py",
+      "sha256": "7ea02653c7c6da5a868637521130e0ce78716c30e52eb80d184718d73db04051",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/thrash_residuals.py",
+      "sha256": "d2b0988248dd48f8e2bf4b52215a737097e86f01b06af8a9e239fe315e04b7cf",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/autoresearch/trial_execution.py",
+      "sha256": "c15d9f4298af05f74ed05e2aad0d34b424c827dfc799e6095dbb5eb0e1645088",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/data/publication.py",
+      "sha256": "e133d73dde7dfcd35887664e404e849647f40ebb4fdd86093fb2066db9c6f6c3",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/data/quality.py",
+      "sha256": "26f1468ddffb620d9071c0ca47c3e2bba1b4b65ca1d05ee541c59adc8ca2de0c",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/data/readiness_contract.py",
+      "sha256": "8f90ecac77c9b3fc6da196fc1e3ec04aead1b398e48dc8a69071d6a0238293e4",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/data/readiness_lineage.py",
+      "sha256": "aceb8d44e956b5b82b59f7ff23a3c9196d909ce2be2f4051041b042d4d267101",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/data/readiness_receipt.py",
+      "sha256": "b29bdfbb34ee7a1a09513a3b546306039a0c9183e831dc318a0c42011676dafc",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/data/record_admission.py",
+      "sha256": "a2db59a76edde7e50b8f45d4af1e4655207f0d21da7ade8af707525e850a1e33",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/data/splits.py",
+      "sha256": "78dab6a6907b4a25956d691473f7ba7f1b5f223a54f853a42c9c8c408f1a4ef7",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/data/store.py",
+      "sha256": "a5568f47e743809e26d872c7e72f1442215300f798b54db494d423e430b2eb3e",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/dsl/design_md/__init__.py",
+      "sha256": "b6b14ea1e1f36adcdb9ae62cf80cb215c9164ffdd76baca54de8c2f2551244d3",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/dsl/grammar/backends/lark_backend.py",
+      "sha256": "df252ca4cd8d24182680a4d846ca53a39048548a957f4eac57368397f5ee0fb4",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/dsl/lang_core.py",
+      "sha256": "f528352cad371ce522534f741a6492c796b1333c68a66ff29d57975fbb122374",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/evals/choice_proxy.py",
+      "sha256": "489beecaa06de2750146c976875d983097f836925beae3e4785e6dadba081091",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/evals/denoising_nll.py",
+      "sha256": "a7de3aa468c86584efcba5082d416195e3363c75d67801fc31881bad2e5555f5",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/evals/loss_suites.py",
+      "sha256": "a7f054305950be2b26585b024afa3144dec443af47c34859ae22dd8babf69c2b",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/evals/measurement_identity.py",
+      "sha256": "f6b3d7a6b19148896d7b19c22289d1db3e181b1411259c9cc7a35ebaab5dfe06",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harness_core/activity_contract.py",
+      "sha256": "99bb3d3b61b2974db552ea7de5ec354882623d6f9a0dae9e9316e527e3b841e8",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harness_core/bounded_process.py",
+      "sha256": "a0eb07adc6a7050b8c397564b81599150a60e59e06fe49a8c76877c118d1fc3e",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harness_core/checkpoint_bundle.py",
+      "sha256": "15aa383a0e6935b220fcb0de222f02dbdb6dc6c1c5bc0d55a55083ab25821889",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harness_core/checkpoint_exposure.py",
+      "sha256": "5fc471230fd36e349d7d7dd8fadbe443e166c8fc4fb81865a8524797bdc2ce31",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harness_core/checkpoint_publication.py",
+      "sha256": "6de3afd55aacb74cbd60d88c38a963d6f19853a034d74613f5fbbb771f002f76",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harness_core/checkpoint_reference.py",
+      "sha256": "d366960f65067aa6ff466ba040b5a169ed927a3d34f9a45e959a493bbd8422c2",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harness_core/execution_release.py",
+      "sha256": "4d1341c7dca7429f6ef3929c2a4233a9589c1f5ea362cb7f774ef009039b1e2b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harness_core/lineage/interventions.py",
+      "sha256": "61b6f67d823f471d2e0dfba8618731a6e16b9a4051ddd0c1b071cb2005348661",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harness_core/lineage/records.py",
+      "sha256": "48cf55669324df591832b642fb70d57e06169bdb02cd63156f9145c37491fb97",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harness_core/process_tree.py",
+      "sha256": "6ca0f9bbf429783e2778e059451fe9b1c279c8af8efa2efc6a62cdfa0070a966",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/distill/choice_diagnostics.py",
+      "sha256": "b606d0d02e5c1fc00114e7d97a2661d77add6d15e039309ad690c648972c53f5",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/distill/grammar_trace.py",
+      "sha256": "f0767a04671d2de036227a0b03b22ffd8eb647fc60d8441f3f4c0b67e9e98081",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/__init__.py",
+      "sha256": "132e231cc60eb798ddb5da5e0c85b3b61633dd2d603a308c57bee0a76976ff69",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/cli.py",
+      "sha256": "3a8614b62f0ecebf2dd81a8a467f75c0f66f2fdf866aafb5c3884bfdebde2aa9",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/learner_correction.py",
+      "sha256": "4104fd107e4a1a54505d38aa4bfe225d4ccccd3a01ea56f5d9534ca9f290ad51",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/measurement_bundle.py",
+      "sha256": "7027f58e2b7aa1bda5137837cce34dc3f5671a4926c5d4dcd3937e366e023693",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/measurement_fixture.py",
+      "sha256": "5081b423dfe53ac041687eaab0de0e0aaa9564d12b8b632d24196dee1736578e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/measurement_fixture_evidence.py",
+      "sha256": "55d2f3db1a939b51127a4d346075073ffa0c426a5aae2e8f92c3ae7098809edb",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/measurement_fixture_plan.py",
+      "sha256": "7dad9bc38baa19ca21a0e9855ae4a4cadfb3aa664cc7aa9a6b65c2eac52f2165",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/measurement_supervised.py",
+      "sha256": "825aba8816bdd91f2f1e0588e0de1b386613ff6f215d7531720801f1efda8562",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/autonomous_learning/measurement_supervised_evidence.py",
+      "sha256": "3845e333faabd378393a20be35e269a3356f9d354bfe792b80fc80e44f36b05a",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/efficiency_gain.py",
+      "sha256": "4056f362ddccc0baa3dd09860078516841bcae40452d094eb567c02949ead473",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/data.py",
+      "sha256": "93e50e19112a69dfb6f3b12a1456d0f89ff33fa135e01129953f8bbf93dab35d",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/eval_measurement.py",
+      "sha256": "0acda3d89f6d81c7cf1ce6faa8d2372bf75f12203a89cf2f85edf3f68b2a1383",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/eval_runner.py",
+      "sha256": "fdf8fd99114a1a1515c10c1e29c7e75f2235a522dbf02c900cd78a9594ba7523",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/full_state.py",
+      "sha256": "cca23f5d5d18ce4953a9edb46f723669615c471df43843189701c9ad311f0d8e",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/readiness.py",
+      "sha256": "aa5d8768f30ba564e461f5cdf9aef480c2388478cdd689175ee36ff7a9493ff9",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/resume_contract.py",
+      "sha256": "12f96ef57a97adbf4d45386ed9e5ed5634e5c25647522f610c2924bfd2fe9e80",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/model_build/train_loop.py",
+      "sha256": "e27a1fba77a012add67eca6242c4f06fe28899374e377de659135d45bf62f81d",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/test_data/certified.py",
+      "sha256": "0b126817aa5c214dc434717cbb01471d96c13e349a603344b629665350c26ff7",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/harnesses/train_data/learner_corrections.py",
+      "sha256": "9a4e17d86d26c25ff3c14373bb305244e8822c20c3dfb6b5467d7bc2d9c77f04",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/train_data/readiness.py",
+      "sha256": "d0498214e7f422cc9091df84858a6683c3ba161f09597d56c18305a22edea7c0",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/harnesses/train_data/repair.py",
+      "sha256": "ceda647cb1dfcd2005285aff0c23e009dacc71434f439561b752fc674f4b4bee",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/models/onnx_inference.py",
+      "sha256": "ade58918f73794fdebb7d8e78d82562da157e0f335e0cdfba0df230593c2cde5",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/models/twotower.py",
+      "sha256": "1218a955e0eb4ce344cc1395b02360edf4f23a1c31dffa7c93a4e478113abf7a",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/resources/code_quality_baseline.json",
+      "sha256": "8c53f878949b01ed6d1d433cbbac66556230ce213d9d4baf6d1dca19724ca87e",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/resources/evals/loss_suite_v2.json",
+      "sha256": "190c8904860c5e6d7e2d62d50b5fce61af80c777633358cae9a9ef383d97a26a",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/evidence_store/local_index.jsonl",
+      "sha256": "9ceac767b44da121172d38808588df7ad6d067e4fa2d5e8cffd57577d9b1d764",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/resources/experiments/autotrain_climb/evidence_ledger.v1.json",
+      "sha256": "cf1465fbfdfa238eaf15d60a35e4c900b443e473e7dd473ba99c5ee09d266ed5",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/resources/experiments/autotrain_climb/metric_expectations.screening.v1.json",
+      "sha256": "13654448fe940bdbeb0ca12837da4eda1e38541e4370416738f53e3252717e7b",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/resources/model_build/resume_compatibility_v1.json",
+      "sha256": "f2afebfee96991d11b2e5362263f51a037647a6d509d34b74b14de13eb56bb9d",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/ownership_map.json",
+      "sha256": "5e28dcd2c5d346c1e5873fd1048344e06dff36a00d22c5c331356dec3b1ba85d",
+      "status": " M"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_controller_repair.json",
+      "sha256": "c2a8de316329fd02a088d0d60a88a9736cfb084dc19a3629c144ba8dffeefe0e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_data_blocker_identity.json",
+      "sha256": "2575303339c11f1b3e5207e990e54264d8d2d9303768be7fb3227fc9d020f0f3",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_driver_cycle_independent_adversary.json",
+      "sha256": "9b240f3b509c10159df1ea47da57112b4a8ff59808454c7ddc79abc5388856a0",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_experiment_identity.json",
+      "sha256": "df864c6aa173ac02c1f9141db4938626451d1dc8ff88cd8e00bbf2091d01d340",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_experiment_lever_wiring.json",
+      "sha256": "4f612e8c008e517a90fdd963264dcddaeddf03af345818bf89cce74eba16fd99",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_repair_dispatch.json",
+      "sha256": "3219699070ce0cafda2d508415285c010c9476c77d3fbac4b4a54210d8b9be8f",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_autoresearch/test_trial_execution.json",
+      "sha256": "15a622d4b31ed4736fd9b976eedc7162d0ead1b5e44f1f1643862056beff9087",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_harnesses/distill/test_choice_diagnostics.json",
+      "sha256": "e57b0152bb9f64b5f22a51912c66851654b9245c5ccbcd716d841fe11cd1678e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_harnesses/experiments/test_measurement_bundle.json",
+      "sha256": "46c87bafddd383a333d71c1ca41ec7adafebbd11f9dabdec0553c1360337bd24",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_harnesses/experiments/test_measurement_fixture.json",
+      "sha256": "d4db7d52b0ed2f681a1da977003b69444f8f14ffd843e7709e3a02d3c227d3da",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_harnesses/model_build/test_checkpoint_exposure.json",
+      "sha256": "610c454eebe7f86f65d0cccbd1dd58fa169c7e3dab5506e4a2d9c9773d7ba97f",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_harnesses/train_data/test_readiness.json",
+      "sha256": "6d3cb22a3ada426a49e3b0bfa364c902f623a7cc7d8540a2b264f07c768098f7",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_autotrain_nll_contract.json",
+      "sha256": "66a2d5f6eb69a62a5f27ee5b9f086334743f210cdb59c34ed5dd98e82b84265a",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_autotrain_promotion_ledger.json",
+      "sha256": "650d9daf1cb2b3b857f7d5577c25cc4c73d451f14fa30fd17ab16296585aa4df",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_locked_measurement_endpoint.json",
+      "sha256": "bcd17d43c3bcd97c33f1f9ed08336bf5f0fb313e47d893831774d2fd046beeb4",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_merge_verification.json",
+      "sha256": "b27ce8c3c9386a078cbe81f383ac8b5120687360761186754ceedcc205ba1f5e",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_merge_verification_controller.json",
+      "sha256": "ea5d126122e61975a8547d36e94548685b24dd43918d4eaaed1f68e159044f07",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_readiness_pending_dispatch.json",
+      "sha256": "22f8e7383007eafe8af8e0e366f1498036b2ed4c147942fbf7c234ce3a9c2b02",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_run_autotrain_supervisor.json",
+      "sha256": "b4ba0db20522165e08c075a3e6dd260f6ae67ba8e68b449894eb3de872d9a92b",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/test_cases/test_scripts/test_supervisor_adversary.json",
+      "sha256": "e22810b24fbb85366169dbb63aecaba0c92da98cbfca9c717da0a168bf7b35df",
+      "status": "??"
+    },
+    {
+      "path": "src/slm_training/resources/versions.json",
+      "sha256": "89c3f5231f05ca806b6909db6b3a62f9e45d50acf8904656c32b5bd2c048e174",
+      "status": "MM"
+    },
+    {
+      "path": "tests/test_autoresearch/deadline_train_fixture.py",
+      "sha256": "ec8610ef89400d9fe7c45f787ed7a9ec2ebf9939055ccaa00ce3b7a6e1999282",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/supervised_cycle_fixture.py",
+      "sha256": "275fab5c2ecdb365b72a41cff253e2c2c2a56385f9796564c545159c50bb174c",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_activity_publication.py",
+      "sha256": "ddbc71c1ef8a22a039f0ab12b49929ff227081ee9706c55cccb8a08efebd7b87",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_activity_runtime.py",
+      "sha256": "3df851e29727a955c8a6ac573e1de0e61ac35d9cee34f4a9bf8b49d666189759",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_activity_runtime_demonstration.py",
+      "sha256": "8b07e39f9317fbb0fbb0ad0aa94c4ab880ef7240599f6331a317b659aaf1b3d1",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_autonomy_adversary.py",
+      "sha256": "10599f3a67d77b59c62a055e5e6d17fee5484f82b9132aaf564b3f4725f7cbb6",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_autonomy_coverage_mutation.py",
+      "sha256": "ae69471080301cd0cd59662e0f9c4f52909363cb139a65bc2b26bfa5e757e812",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_autonomy_cross_owner_adversary.py",
+      "sha256": "130ac98d94604ff86539541e6f80d62a5a3efc67af3fc26efcb957cdb22136b4",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_autonomy_evidence_boundary_adversary.py",
+      "sha256": "2bc73c52897dd608bb8bdf9e21ddf33349e424b0ff1fae1c5d024d0999e18c25",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_autonomy_load_bearing_mutations.py",
+      "sha256": "41dd68cd142399c856e6e3e908e758ae47633995ac86e3cdb9e29024bd71377d",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_autonomy_protocol_independent_adversary.py",
+      "sha256": "fcccd7a5f9478c2a3b5491f6a5c7d2817ffc16b8573ef46e0d938a6d998712df",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_campaign_event_transactions.py",
+      "sha256": "da4a707d4c4a6c84555ccc0652018b8e216bb90e3a84da6adfa434fa41bf5b60",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_campaign_grant_lock.py",
+      "sha256": "91426eca44afdcd98d2e68d9e6507e81ca896f2e7697ce354dd1ab4a7e63bfaf",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_climb_champion.py",
+      "sha256": "90a70fc7f68f44a833b507308f4c466444a9efc15f94ef509a495a9d10ba00bf",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_climb_policy.py",
+      "sha256": "c0aead45b73848041e280056cff6e031f3bc06d38eb2c13d167310021a97646a",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_climb_policy_pairs.py",
+      "sha256": "c5fea48ba9aee06d7b9767a1f5dabb3ce6e7dd41addeb9a1f90f4da03286d7a8",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_command_cursor_cli.py",
+      "sha256": "293b0e116957425f29568ce3d874cfb0a3cda131fb5523b3929cf8cea0805e15",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_compiled_treatment.py",
+      "sha256": "4f6a8b247c662c59cd6a97adb2e515f2996cf2bdd84a06e094715fee9bf49017",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_controller_repair.py",
+      "sha256": "1113826bb8ea6dce79dc0de3baf8d068c7dc609c397dc85bd2510189cb4bdf11",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_data_blocker_identity.py",
+      "sha256": "683eb24a5a94312b89b0a53dad9c5fef271c5e69cde8cf59fb50729f2760dfea",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_driver_cycle_continuation.py",
+      "sha256": "cb4561199b16688e0287822a067ae45448791bf2339ba826dc426f52c507784a",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_driver_cycle_independent_adversary.py",
+      "sha256": "c2f7f54c31ddeb858b700f61defca3e5215d52c24d58d121c534178cec046218",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_driver_cycle_recovery.py",
+      "sha256": "c97bfb240e9365b39fbd5024d70d4b73e5b7ef26c97cfafdee8bcd348d88d7f5",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_driver_cycle_supervision.py",
+      "sha256": "1e71d8816afbaa2e8c1f076128730f76285df1d2bb8b13a5417f354bbff4fb72",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_evaluation_continuation.py",
+      "sha256": "0a560c59207ec451b7dec7d9c1717c7ca7035d6fdb3e08160e811dc0de67d6c7",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_experiment_identity.py",
+      "sha256": "5bbdd937de8792a3fa453a7d206d52c52ce67840041f8f8c0c4f1a50201f402b",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_experiment_identity_property.py",
+      "sha256": "e2fd97fb9c48c9198a5c0342d43744ab43ae8001ff1ff3fb5e9f627b99e1c026",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_experiment_lever_wiring.py",
+      "sha256": "9550c9da108f2f01d3954c6b0b3d37dfb6cf773d71e97fe0adf4b0d652b2337e",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_harness.py",
+      "sha256": "023060d2a81dce14085987e91b3fc483c53d3472dbaba8e7ca3d7d9635db9d8e",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_heal_data_rebuild.py",
+      "sha256": "b981d73216089dd2790cb919164ae3c4d79b75716a05571e5ceaf2943fc73084",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_heal_isolation.py",
+      "sha256": "1b7e8a4374c90d451d7799b3b1f0d2d24c1a678dd5fab94790f834005448d9a4",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_hillclimb.py",
+      "sha256": "4c5de3cdcea578dea83abae170ad8fef9e4eeb4fa9315a2e0bb647876d51adf3",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_isolated_agent.py",
+      "sha256": "e5569fd07521da187296662188c75be27425c19725ad867b098a82674ea9947f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_logical_grant_binding.py",
+      "sha256": "b3e09851e43a1ff7a1773fbeb172c00f43f21bec457041fa31d41313e436f2a7",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_operation_recovery.py",
+      "sha256": "37d844403e1ace8ae15a908884cc4b59117d2c547280b9adb21a5e9b1f05b082",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_operations.py",
+      "sha256": "178f6258dfe6a4beb84f77d599738cbc01414d79c79b02ab2a77c251b23b5d9d",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_paired_stats.py",
+      "sha256": "bdaef036721e442b8177e46a37dad1b4cde41e42d7137fc8b41e544c010ede8f",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_real_command_continuation.py",
+      "sha256": "3969f4ef36d0f89786686c1facffc9c70ad2f68326bd123535b1ec0291d410df",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_recovery_behavior.py",
+      "sha256": "1a94c8861bcdcc05c6e338059c3c62e03e1427aca9f930f72b1b84dd06633e53",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_recovery_dispatch_entrypoint.py",
+      "sha256": "8ad9fbf490cc52e4facb7a650399869b3de1cc509485be136d651e6d4f88c75a",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_repair_acceptance.py",
+      "sha256": "3d7132f119ac91fc3a3ba06e68d29f3e9c5e493f4f36ee5540d8eb06cf22bdc0",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_repair_dispatch.py",
+      "sha256": "96b329995e9b31cb0da44fc02deb2c62c57f9f4dc64b1bfc523f057b906a3b6f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_repair_release.py",
+      "sha256": "02a27912ee86410a45f4f205b5878c5ec479a626b174055ef14716ebb6ea0236",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_repair_source_verification.py",
+      "sha256": "1b253b68cb18147850dfd58b10f1b7c5a2d46f4a2d5a8ec9f3b4d087e189396f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_repair_source_workspace.py",
+      "sha256": "0de20cdee350e60fe6bdcdd916d5a2ba01f395ff5eebde93328c701d6f2334d6",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_repair_verifier.py",
+      "sha256": "0ed16facda56b93632952db27d0d3f6f963c048f9b2a8c5d37ec7cc9664ebccd",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_resource_grant_execution.py",
+      "sha256": "6191dfe78c95109ad8caef3c5b7d9981335012d14c55351a9d4439f66d53adc8",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_screening_data_repair.py",
+      "sha256": "9998f53e2cc06aebdf5ee36f1680a439c8f2dfeb09c3b652de6269970858bf3e",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_screening_lineage.py",
+      "sha256": "1cb87b0e91a675785ac1be6477472b8a10c9311c7f88bdc3a15b88f7030dccf1",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_screening_sample_size.py",
+      "sha256": "7abed588273a531c057beb3e7d4cbff6b193855d1f3aaacf9c10c0ad09c77f23",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_search_contracts.py",
+      "sha256": "be67c4be99b0ec5a8b962cd12ab768ed2e3fb371f79c2beaf1557b849a53475b",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_search_ingestion.py",
+      "sha256": "8c88381bc1eb5ffbdc4a7a115e53ef50c4fda81fd68ad1072aa45e06b857107d",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_search_preflight_ingestion.py",
+      "sha256": "46ecd66a889449a319b27a4c0d84db52b939e02491139356158b774e402f3e3c",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_autoresearch/test_timeout_retirement_identity.py",
+      "sha256": "63ebcf81fc20102d7df5510b3cfb6b560f925db9d6a1d2acfd8f6191db19a5d9",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_autoresearch/test_trial_execution.py",
+      "sha256": "f9183800d81afdcd1b794cc4f4f6c477a2f1f294bf9bf1ef945c8a905b3e0c42",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_data/test_semantic_plan_extraction/test_requirements_extract.py",
+      "sha256": "fedd80d995c1eb3516a1fc2a79bb414e0b89037c4f26d0045db1a237fca366a7",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_dsl/design_md/test_lint_and_reward.py",
+      "sha256": "8167c68cd3635004bc5590219c7b0a69b2c73a01be03eb044032d7858d80cf24",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_dsl/test_grammar_backends.py",
+      "sha256": "f43971589e607e2b6ddf5616bb6e8e9ffec1de97b9681b4a6f219b0321e1a94a",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_dsl/test_lang_core_node_engine_hint.py",
+      "sha256": "bc76470687a9a80c4532464d2ceffea639977407a7d9b8d44bc300d6dce25f5f",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_dsl/test_language_contract.py",
+      "sha256": "6390eee8bf88ab4917856556cc085292b0ab3aba2a46d5d9d176e3c520c8b95b",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_evals/test_denoising_nll.py",
+      "sha256": "6f4468b5b0cd483a9438ede70aa19ead900cb25454f08da89441b243403da5e5",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_harness_core/test_bounded_process_watchdog.py",
+      "sha256": "97ee52f8c02ec4f27f022545e824221a13a463f7663ace0c6fe5a5a23c57c2bf",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harness_core/test_file_artifact.py",
+      "sha256": "3a9e0a3fbf70c8038e28d27d3442a40dc8231da96ef4eeb8b533da701668ab08",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/distill/test_choice_diagnostics.py",
+      "sha256": "153b883e712c11b0bc57340f42ce1d314ec9f35d0a8192cbfc8368340bfeb1f7",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/experiments/measurement_fixture_support.py",
+      "sha256": "2f4990ea3e2419e1e60fcf4a035f66d9af9200da8a1534c61f09d5f6adc05dd3",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/experiments/test_learning_fixture.py",
+      "sha256": "3aabc6a28e6b1d709f13588c5e01f7de2761e5858fbb4f62737694591cd45a08",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/experiments/test_measurement_bundle.py",
+      "sha256": "16a28ec51f189462c06d85e283c87516b5c9a9264065d557036f0748d1766613",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/experiments/test_measurement_fixture.py",
+      "sha256": "216ccb35e145798f4b3354c5a6b0242b01aac35b2dad7fef129bad7a31fd915c",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/experiments/test_measurement_supervised_evidence.py",
+      "sha256": "bad07a5580776bb899bd449f73af264883c1f75bcc7466ab9a94fa6b03ba588f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_checkpoint_bundle.py",
+      "sha256": "fe8de09f6a4606e60270e14ee59496d0c3cd61f0155c9351967f89343ba30057",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_checkpoint_exposure.py",
+      "sha256": "12e0c7692719090530bd445f31cca0ebbb0711c690584ae429457e33fd57ff3e",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_eval_gates.py",
+      "sha256": "17ade4859fcb04077848e22c97f652832c064cd7e248c0cf4689f65761043579",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_eval_metric_semantics.py",
+      "sha256": "d371d7d950513ae363dde5f15916c27926d978fd772e80d57dc628e7d8ccafbb",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_eval_resume_invocation_budget.py",
+      "sha256": "85e8939a761c04b478b21e8a74051c1735d1908080851b2794889910763f4f04",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_eval_runner_resume.py",
+      "sha256": "7b7ff6532377088fa5e51ca3211bcf29fa9ea671d88234303955a0cf4dc7c517",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_full_state_resume.py",
+      "sha256": "8ebbea91884cccd6fed6ce5fbb36928ca61bb12a871d11ba8ba647d5dd0bce07",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_measurement_contract.py",
+      "sha256": "f02984c1f95e7087c479b3d310266529443a52c40a124584ed4ecbfba4083315",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/model_build/test_trial_continuation.py",
+      "sha256": "eb51fb158f8c54c863d8e258dabfc8548afb29d8c8c9eb067dfbec8e388dd0b4",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/test_learner_corrections.py",
+      "sha256": "603384a0ee3132aef0ddc27bd6a1a4c3a615f20fbd9923fa8486a2f379aeea35",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/train_data/readiness_fixtures.py",
+      "sha256": "904b4c43e55abb0df7ccc8a2a4761641eeee36b7ff181fe330f737250a830e8f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_harnesses/train_data/test_readiness.py",
+      "sha256": "5f3452a064ad3a33390ed5cad0975e6421de817822702d577cdab68836dda729",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_lineage/test_lineage.py",
+      "sha256": "add029cf490bb5bfd22287b16dba9042db6fd603b67f567bf66e7beea39978a8",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_models/test_onnx_contract.py",
+      "sha256": "d8959e03ad45f49ba82be0f3d1a9de96e721cc68d7567960a6595b4503096450",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/autotrain_champion_fixtures.py",
+      "sha256": "6df0f4c18bc62a6492a08aa09d7495bbcbb0c4d7d5cd475b2a5bc05c21e1e991",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_chunk_outcomes.py",
+      "sha256": "b7e29c51162df5b2b3e83eb4b3298b95a02f9c89c2739290842e3d10c3719f34",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_continuation.py",
+      "sha256": "396dfebc9ac3c077b388551648ecf74e66ca6f857c30ba9458870117f0c3f96c",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_nll_contract.py",
+      "sha256": "e076d811fe77fb2da0086209a30b0013c2ecd792089c66f45fd511281351c027",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_nll_integration.py",
+      "sha256": "4cee41df88967f7afaa8726d3be2ab23a2537e945436d35590e79ee3cef64398",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_promotion_ledger.py",
+      "sha256": "c428ec468ce8b34fe57f8fde3dc6bffb2854fef20e1e8120a21b25f5a824bd91",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_readiness.py",
+      "sha256": "80f0c91d1b5338ef1201f8d816b0cbb5f8b800987105b555b020dced0dc19c10",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_search.py",
+      "sha256": "ec4f8a8541e8c561623c81cb95762187567233efb46f99682252a9fb263e924a",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_autotrain_verification.py",
+      "sha256": "9ce387748c698fc07a02e3cc5c1cb2d6de58e786e49be36dff9dfbbf4be57c50",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_check_changed.py",
+      "sha256": "d3b4ed23cd83f253eecf60f5b970520984cba6f2eb0fa5000b273873a3df795a",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_scripts/test_controller_readiness.py",
+      "sha256": "84477212395310e8ee9501332faad94fd8a8620dadadc623b192cae11b3abadf",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_driver_pending.py",
+      "sha256": "ad7ff5d079304a7aeffe5c7a52e772fd0028349f856d1a829cc2e8448efe6068",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_locked_measurement_endpoint.py",
+      "sha256": "c6733cbdfd3a690c9d23b0cc2fc690913b481c7b4e69d398a9a9c17d72ccfe61",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_merge_ready_gate.py",
+      "sha256": "37c24d82e75bb27a94d0f7c50950f1412f3dbbc8eea428091120f381f9470817",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_scripts/test_merge_verification.py",
+      "sha256": "445ee7e26800761db295ff0f542253f58ef25a6d1fef265a8f569a037031a5f1",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_merge_verification_controller.py",
+      "sha256": "47c6937e23ee9a0cd3c7d935f8e4baf436cdd107754d0e7f74f871b4a840d289",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_merge_verification_isolation.py",
+      "sha256": "a9b49fad279a1dd5b0ca5f41750b190728e5eda31b57708c64c9abec58f0462f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_merge_verification_runtime.py",
+      "sha256": "c4f0db00441ca7846c77a831f47f483579d4b7a7f66589fdb2e1653b48f36c38",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_merge_verification_scheduling.py",
+      "sha256": "5a3ab60b51e5690ec4a8eacb02517fa58a5fddddbcd7ad231ad7d335044fbc5a",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_promotion_status.py",
+      "sha256": "1defcf84ff409f5ac185bafb1b879a153d616ed68c4e4af29c9d5819804da039",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_readiness_pending_dispatch.py",
+      "sha256": "52454f3a1a2c5f1a81d0b4e8f95b5bda867d8f63a39fae0bc06c9b18fa1d4f0f",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_repair_activation.py",
+      "sha256": "4afbf7e2c621ee2ae15ce6bc9db8969c4a0b29b7bec2578e1fddba22135c7421",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_run_autotrain_continuous.py",
+      "sha256": "9a6c8524db04b89f6d901144ac5e0c2e273fe700fa173938707f081e7e13404c",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py",
+      "sha256": "5ed1c7472b07aee7f457a6dc54899d046dfcf645209e7c2ce84d306ea8d61b60",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_scripts/test_run_autotrain_supervisor.py",
+      "sha256": "157d824bcf82ca71d943a3aeb5abb8c7fa90f017908dfc2c625f9233d11374da",
+      "status": " M"
+    },
+    {
+      "path": "tests/test_scripts/test_supervisor_adversary.py",
+      "sha256": "aca0f6af0a776be967dd80cd428693fa7eb7a14ba4e7bb71550fdd7ea2ca7394",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_supervisor_verification_dependency.py",
+      "sha256": "be0f1b245e9eda26d572a378499f54760a2dec0040a5c574ddab9b442937d355",
+      "status": "??"
+    },
+    {
+      "path": "tests/test_scripts/test_train_model.py",
+      "sha256": "6904ef6433f3e574e842743c6d913524d4beb4bda1cc5e7b9c692c04bbe0ae33",
+      "status": " M"
+    }
+  ],
+  "inventory_count": 342,
+  "owner_map": {
+    "A01": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-584"
+    },
+    "A02": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-585"
+    },
+    "A03": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-581"
+    },
+    "A04": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-580"
+    },
+    "A05": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-583"
+    },
+    "A06": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-582"
+    },
+    "A07": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-586"
+    },
+    "A08": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-590"
+    },
+    "A09": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-591"
+    },
+    "A10": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-589"
+    },
+    "A11": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-587"
+    },
+    "A12": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-588"
+    },
+    "A13": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-593"
+    },
+    "A14": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-592"
+    },
+    "A15": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-594"
+    },
+    "A16": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-595"
+    },
+    "A17": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-597"
+    },
+    "A18": {
+      "disposition": "implemented_unverified",
+      "issue": "SLM-596"
+    }
+  },
+  "schema": "autonomy_source_handoff/v1",
+  "source_tree_observation": "37b802af272e150afb7a6c80bdf4ab1f8f55805e50e998e18f887cb3622a8bb3",
+  "tracker_path": "docs/design/autonomy-validation-restored-20260907.json",
+  "tracker_sha256": "b891d232a26554a7cae73a571d6578d7573bde52561ae9340ce24b69caa9630f",
+  "workspace": "outputs/workspaces/autonomy-candidate"
+}
