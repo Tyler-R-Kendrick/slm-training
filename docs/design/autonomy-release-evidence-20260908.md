@@ -40,19 +40,40 @@ Subsequent focused slices merged after the initial record:
 
 ## Evidence limits
 
-The current environment does not provide the complete project test dependency
-set (`pytest`, `pydantic`, `torch`, and `lark` are unavailable in the candidate
-interpreter), so full pytest, model training, real AgentV evaluation, and live
-noninteractive source repair were not executed here. Compile-time checks and
-the connector-reported PR checks are not substitutes for those obligations.
-The absence of live repair authority is a scoped capability limitation, not a
-successful repair result. Existing user worktrees and training state remain
-untouched.
+The candidate verification environment was restored with the repository's pinned
+Python environment and ran focused pytest, compile, version-stamp, and agent
+surface checks. The candidate workspace still lacks the OpenUI bridge
+`node_modules` dependency, so the three bridge-dependent learning/data
+tests were not executable there; they are recorded as capability-limited rather
+than passed. The primary checkout has the bridge dependency, but it was not
+used to claim candidate-tree evidence. Hypothesis is also unavailable in the
+restored environment, so property/stateful evidence requiring it remains
+unexecuted. Full model training, real AgentV evaluation, and live noninteractive
+source repair were not executed. These limitations are scoped and do not
+fabricate success.
 
-## Required next evidence
+## Bounded operational probe
 
-The remaining owners must publish focused fixes and rerun the frozen candidate
-through the complete local verification manifest before Linear A18 or the
-parent issue is marked complete. In particular, the final report must bind the
-exact source tree, selected test nodes/options, environment identity, repair
-receipts, data/evaluation bundle identities, and any unavailable capabilities.
+The canonical command
+
+`PYTHONPATH=src:. timeout -s INT -k 10 170 python -m scripts.verify_autonomy --root outputs/runs/autonomy-verify-20260909 --batch-size 20`
+
+returned exit `10` with typed status `waiting_capability` and capability
+`rootless_isolated_verifier`. The host probe reported that bubblewrap
+could not create its required NETLINK_ROUTE socket (`Operation not permitted`).
+No unisolated fallback was used, no fixture attempts were counted, and no
+success or repair evidence was fabricated. This is a scoped capability result;
+it does not stop unrelated source verification.
+
+## Current focused verification
+
+- Search contracts: `43 passed` in `15.86s`.
+- Runtime/repair/operations focused subset: `110 passed, 5 skipped, 4 deselected`
+  in `39.46s`.
+- Checkpoint bundle/exposure/continuation/grant subset: `63 passed` across the
+  published focused runs.
+- Agent-surface and version-stamp checks pass on the candidate tree.
+- Learning/data diagnostic subset: `25 passed, 3 capability-limited` because
+  the candidate workspace bridge dependency is absent.
+- The 3-minute command cap was preserved; no training loop was started and no
+  champion or serving pointer was changed.
