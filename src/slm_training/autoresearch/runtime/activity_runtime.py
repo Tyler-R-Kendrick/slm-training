@@ -61,6 +61,7 @@ class ActivityRuntime:
         self.owner = process_identity()
         self._fd: int | None = None
         self._mutex = threading.RLock()
+        self._transaction_local = threading.local()
         self.cancel_event = threading.Event()
 
     def __enter__(self):
@@ -103,14 +104,20 @@ class ActivityRuntime:
     def _transaction(self):
         if self._fd is None or process_identity() != self.owner:
             raise StaleLease("controller context not owned by this process")
+        if getattr(self._transaction_local, "depth", 0):
+            # ponytail: reuse the process-local flock owner for nested mutations.
+            yield
+            return
         with self._mutex:
             fd = os.open(
                 self.store.root / ".activities.lock", os.O_CREAT | os.O_RDWR, 0o600
             )
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX)
+                self._transaction_local.depth = 1
                 yield
             finally:
+                self._transaction_local.depth = 0
                 os.close(fd)
 
     def snapshot(self) -> dict[str, ActivityState]:
