@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Literal
+import math
 from pydantic import BaseModel, ConfigDict, Field, model_serializer
 from slm_training.harness_core.activity_contract import ResourceGrant
 from slm_training.levers import MAX_RUN_MINUTES
@@ -44,3 +45,18 @@ class CampaignBudget(StrictModel):
     def logical_seconds(self) -> float:
         return (self.continuation_grant.total_seconds if self.continuation_grant
                 else min(self.max_wall_minutes, MAX_RUN_MINUTES) * 60)
+
+    def require_matching_grant(self, other: CampaignBudget) -> None:
+        """Legacy absence is not authority to attach a larger grant on replay."""
+        if self.continuation_grant != other.continuation_grant:
+            raise ValueError("continuation grant differs from locked manifest; successor required")
+
+    def bounded_invocation_seconds(self, requested_seconds: float | None = None) -> float:
+        """Legacy wall declarations never increase a command's canonical cap."""
+        ceiling = min(float(self.max_wall_minutes * 60), float(MAX_RUN_MINUTES * 60))
+        if requested_seconds is None:
+            return ceiling
+        requested = float(requested_seconds)
+        if not math.isfinite(requested) or requested <= 0:
+            raise ValueError("--experiment-wall-seconds must be positive and finite")
+        return min(requested, ceiling)

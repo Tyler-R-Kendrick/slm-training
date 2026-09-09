@@ -1,0 +1,33 @@
+{
+  "schema": "autonomy_focused_evidence/v1",
+  "issue": "SLM-585",
+  "local_base_sha": "e0eca9f9910244ecc20eb480d363f1852417b599",
+  "publication_base_sha": "a809e81878302baa27a9d6fedd8f0b79ee3af857",
+  "claim": "Reject campaign versus scientific-manifest continuation grant mismatch before compilation",
+  "published_source_paths": ["src/slm_training/autoresearch/schema_base.py", "scripts/autoresearch.py"],
+  "published_test_path": "tests/test_autoresearch/test_campaign_grant_lock.py",
+  "verification": {
+    "evidence_class": "actual_imported_owner_with_compilation_tripwire",
+    "addopts": "",
+    "markers": "",
+    "passed": 21,
+    "duration_seconds": 2.09,
+    "exit_code": 0,
+    "focused_pr_case_count": 9,
+    "additional_local_wip_case_count": 12,
+    "receipt": "outputs/runs/autonomy-validation/a02-publish-grant-lock.xml",
+    "receipt_sha256": "6afd12c2c1c2c7c42d5ddfb2ab3d24a340e1e769e826544ebfaead36bc342f78"
+  },
+  "first_counterexamples": {
+    "failures": 4,
+    "passed": 8,
+    "duration_seconds": 1.83,
+    "receipt": "outputs/runs/autonomy-validation/a02-grant-binding-before.xml",
+    "receipt_sha256": "e9dc08710b3f7a53278bba9488af4cd427a1307950b543fa788a719d3c996c05"
+  },
+  "remaining": ["caller grant propagation and treatment identity local WIP", "full exact-PR-tree release verification", "integration-owner version accounting"],
+  "scientific_improvement": false,
+  "training_started": false,
+  "service_started": false,
+  "hosted_workflow_dispatched": false
+}
