@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from fractions import Fraction
-from statistics import NormalDist, median, stdev
+from statistics import NormalDist, mean, median_high, median_low, stdev
 from typing import Literal, Mapping, Sequence
 
 from .paired_analysis import PairedSelection as PairedSelection
@@ -258,16 +258,24 @@ class PairedRecordDeltas:
 
     @property
     def median_delta(self) -> float | None:
-        return median(self.deltas) if self.deltas else None
+        # Exact accumulation avoids overflowing the even-sample midpoint.
+        return (
+            mean((median_low(self.deltas), median_high(self.deltas)))
+            if self.deltas
+            else None
+        )
 
     @property
     def mean_delta(self) -> float | None:
-        return sum(self.deltas) / len(self.deltas) if self.deltas else None
+        return mean(self.deltas) if self.deltas else None
 
     @property
     def sd(self) -> float | None:
         """Sample SD of the paired deltas (``None`` below two pairs)."""
-        return stdev(self.deltas) if len(self.deltas) >= 2 else None
+        try:
+            return stdev(self.deltas) if len(self.deltas) >= 2 else None
+        except OverflowError as exc:
+            raise ValueError("invalid_evidence: paired dispersion overflow") from exc
 
 
 def _finite(value: object) -> float | None:
