@@ -3,11 +3,12 @@
 ## A12 canonical learning-comparison fixture — 2026-09-09
 
 `autonomy-a12-fixture-20260909b` completed the canonical prepare path on CPU
-with one fixture update and emitted local diagnostic observations plus an
-ancestor checkpoint. The corrective comparison was operationally incomplete
-within the bounded invocation, so there is no paired quality result, AgentV
-publication, confirmation, champion, or ship claim. The checkpoint is local
-scratch evidence only and was not synced. See
+with two matched fixture arms from a shared initialization, decoded probes, and
+AgentV publication with zero SDK execution errors. The paired masked-denoising
+NLL diagnostic is complete but inconclusive (n=2, n_nontied=2, Wilcoxon p=1.0);
+its fixture gate failed. This is conditional diagnostic evidence with no
+independent confirmation, promotion, champion, or ship claim. Checkpoints
+remain local scratch and were not synced. See
 [`autonomy-learning-comparison-20260909.md`](design/autonomy-learning-comparison-20260909.md).
 
 
