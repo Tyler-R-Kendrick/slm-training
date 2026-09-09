@@ -10,6 +10,7 @@ import math
 import os
 import platform
 import secrets
+import site
 import shutil
 import stat
 import subprocess
@@ -59,7 +60,13 @@ def source_paths(root: Path) -> list[str]:
 
 
 def environment_identity() -> dict:
-    installed = list(importlib.metadata.distributions())
+    # Keep package discovery independent of the caller's sys.path[0].
+    package_paths = list(site.getsitepackages())
+    try:
+        package_paths.append(site.getusersitepackages())
+    except (AttributeError, PermissionError):
+        pass
+    installed = list(importlib.metadata.distributions(path=package_paths))
     commands = {name: shutil.which(name) for name in ("node", "npm", "npx")}
     for key in "OPENUI_BRIDGE_CLI DESIGN_MD_BRIDGE_CLI AGENTV_RUNNER".split():
         commands[key] = os.environ.get(key)
