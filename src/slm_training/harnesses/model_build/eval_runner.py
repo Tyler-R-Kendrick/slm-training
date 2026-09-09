@@ -35,6 +35,24 @@ from slm_training.harnesses.eval.harness_replay import (
     prediction_lineage,
 )
 from slm_training.harnesses.model_build.config import ModelBuildConfig
+from slm_training.harnesses.model_build.eval_measurement import (
+    PARTIAL_SCOREBOARD_SCHEMA,
+    decode_seed,
+    evaluator_identity,
+    exclusive_suite_writer,
+    load_partial_scoreboard,
+    measurement_states,
+    partial_policy_digest,
+    partial_scoreboard_path,
+    preserve_rejected_partial,
+    publish_suite_metrics,
+    replay_cached_suite as _replay_cached_suite,
+    resume_rejection as _partial_scoreboard_resume_rejection,
+    selection_identity,
+    suite_result_cacheable as _suite_result_cacheable,
+    validate_selection,
+    write_json_atomic as _write_partial_scoreboard,
+)
 from slm_training.harnesses.model_build.data import (
     load_suite_records,
     load_train_records,
@@ -199,7 +217,6 @@ def _persist_decode_progress(
     return path
 
 
-PARTIAL_SCOREBOARD_SCHEMA = "EvalPartialScoreboardV1"
 # Per-record quality leaves mirrored into the partial scoreboard so a resumed
 # run can be audited record-by-record without re-reading ``details``.
 _PARTIAL_RECORD_METRIC_KEYS = (
@@ -215,66 +232,6 @@ _PARTIAL_RECORD_METRIC_KEYS = (
     "decode_outcome",
     "error",
 )
-
-
-def partial_scoreboard_path(run_dir: Path, suite: str) -> Path:
-    """Per-record resumable progress file for one suite under ``run_dir``."""
-    return Path(run_dir) / f"eval_{suite}.partial.json"
-
-
-def load_partial_scoreboard(run_dir: Path | None, suite: str) -> dict[str, Any] | None:
-    """Load a prior partial scoreboard; None when absent or unreadable."""
-    if run_dir is None:
-        return None
-    path = partial_scoreboard_path(run_dir, suite)
-    if not path.is_file():
-        return None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if (
-        not isinstance(payload, dict)
-        or payload.get("schema_version") != PARTIAL_SCOREBOARD_SCHEMA
-        or not isinstance(payload.get("records"), dict)
-    ):
-        return None
-    return payload
-
-
-def _write_partial_scoreboard(path: Path, payload: dict[str, Any]) -> None:
-    """Atomically persist per-record progress (survives a mid-chunk kill)."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    tmp.replace(path)
-
-
-def _partial_scoreboard_resume_rejection(
-    prior: dict[str, Any], identity: dict[str, Any]
-) -> str | None:
-    """Reason a prior partial scoreboard may not be merged into this run.
-
-    Fail closed on evidence reuse: every stored prediction must come from the
-    same checkpoint, suite manifest, record window and decode policy digest.
-    A mismatch never aborts the evaluation; it restarts from record zero.
-    """
-    for key in ("checkpoint_sha256", "eval_suite_manifest_sha"):
-        if identity.get(key) is None or prior.get(key) is None:
-            return f"{key}_unavailable"
-    for key in (
-        "suite",
-        "checkpoint_sha256",
-        "eval_suite_manifest_sha",
-        "eval_limit",
-        "eval_offset",
-        "evaluation_policy_sha256",
-    ):
-        if prior.get(key) != identity.get(key):
-            return f"{key}_mismatch"
-    if list(prior.get("record_ids") or []) != list(identity.get("record_ids") or []):
-        return "record_ids_mismatch"
-    return None
 
 
 def _prediction_diversity(predictions: list[str]) -> dict[str, Any]:
@@ -1123,10 +1080,7 @@ def _suite_cache_preflight(
 ) -> _SuiteCachePreflight:
     """Resolve a full-suite hit without materializing the checkpoint model.
 
-    This key deliberately includes the complete caller config. A cold run only
-    writes it after model construction has established the effective checkpoint
-    policy, so the preflight is a validated shortcut rather than an attempt to
-    infer checkpoint config from partial metadata.
+    Bind caller config and live scorer bytes; only a completed cold run fills it.
     """
     if cache is None or cache.config.mode is EvalCacheMode.OFF:
         return _SuiteCachePreflight()
@@ -1146,6 +1100,7 @@ def _suite_cache_preflight(
             component_id: component_version(component_id)
             for component_id in _evaluation_version_components(config)
         }
+        evaluator_sha = evaluator_identity({"components": component_versions})
     except Exception:  # noqa: BLE001 - missing version identity forbids reuse
         return _SuiteCachePreflight(
             checkpoint_sha256=checkpoint_sha256,
@@ -1174,6 +1129,7 @@ def _suite_cache_preflight(
         "suite_offset": suite_offset,
         "generation_overrides": generation_overrides,
         "component_versions": component_versions,
+        "evaluator_sha256": evaluator_sha,
     }
     key = EvalCacheKey(
         layer="suite_result_preflight",
@@ -1187,6 +1143,7 @@ def _suite_cache_preflight(
             "eval_suite_manifest_sha": eval_suite_manifest_sha,
             "eval_offset": suite_offset,
             "generation_overrides": generation_overrides,
+            "evaluator_sha256": evaluator_sha,
         },
     )
     cached_metrics = None
@@ -1204,40 +1161,6 @@ def _suite_cache_preflight(
         component_versions=component_versions,
         dependencies=dependencies,
     )
-
-
-def _suite_result_cacheable(metrics: dict[str, Any]) -> bool:
-    """Only complete suite measurements may become reusable evidence."""
-    return (
-        int(metrics.get("decode_timeout_count", 0) or 0) == 0
-        and int(metrics.get("incomplete_document_n", 0) or 0) == 0
-    )
-
-
-def _replay_cached_suite(
-    config: ModelBuildConfig,
-    metrics: dict[str, Any],
-    *,
-    record_n: int,
-    evaluation_remaining_records: list[int] | None = None,
-) -> dict[str, Any]:
-    """Materialize a validated cached suite result under the current run."""
-    run_dir = config.run_dir
-    run_dir.mkdir(parents=True, exist_ok=True)
-    suite_path = run_dir / f"eval_{config.suite}.json"
-    replay = dict(metrics)
-    replay["output"] = str(suite_path)
-    replay["cache_replay"] = True
-    payload = json.dumps(replay, indent=2) + "\n"
-    suite_path.write_text(payload, encoding="utf-8")
-    if config.suite == "smoke":
-        (run_dir / "eval.json").write_text(payload, encoding="utf-8")
-    if evaluation_remaining_records is not None:
-        evaluation_remaining_records[0] = max(
-            0, evaluation_remaining_records[0] - record_n
-        )
-    (run_dir / "decode_progress.json").unlink(missing_ok=True)
-    return replay
 
 
 def _seed_eval_rng(seed: int) -> None:
@@ -1308,6 +1231,7 @@ def _effective_record_decode_timeout(
     return max(0.05, fair_share)
 
 
+@exclusive_suite_writer
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -1354,6 +1278,7 @@ def evaluate(
             suite_offset + max(0, int(suite_limit)) if suite_limit is not None else None
         )
     ]
+    validate_selection(records, limit=suite_limit)
     if evaluation_deadline is None and config.evaluation_wall_seconds:
         evaluation_deadline = time.monotonic() + float(config.evaluation_wall_seconds)
     if evaluation_remaining_records is None and evaluation_deadline is not None:
@@ -1419,6 +1344,7 @@ def evaluate(
                 config,
                 cache_preflight.cached_metrics,
                 record_n=len(records),
+                publish_agentv=publish_agentv,
                 evaluation_remaining_records=evaluation_remaining_records,
             )
         train_records = []
@@ -1523,6 +1449,10 @@ def evaluate(
     progress_version_stamp = build_version_stamp(
         *_evaluation_version_components(config)
     )
+    from slm_training.evals.measurement_identity import row_identity, selected_identity
+
+    selected_sha = selection_identity(records)
+    evaluator_sha = evaluator_identity(progress_version_stamp)
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
     cache_bypass_reason: str | None = cache_preflight.bypass_reason
@@ -1569,6 +1499,7 @@ def evaluate(
                 "evaluation_policy": evaluation_policy,
                 "generation_overrides": generation_overrides,
                 "component_versions": component_versions,
+                "evaluator_sha256": evaluator_sha,
             }
             cache_key = suite_result_key(
                 suite=config.suite,
@@ -1582,6 +1513,7 @@ def evaluate(
                     "eval_offset": suite_offset,
                     "generation_overrides": generation_overrides,
                     "checkpoint_bundle_sha256": checkpoint_bundle_sha256,
+                    "evaluator_sha256": evaluator_sha,
                 },
             )
             if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
@@ -1591,7 +1523,6 @@ def evaluate(
                 ):
                     if (
                         cache_preflight.key is not None
-                        and _suite_result_cacheable(cached_metrics)
                         and cache.config.mode is EvalCacheMode.READ_WRITE
                     ):
                         try:
@@ -1606,6 +1537,7 @@ def evaluate(
                         config,
                         cached_metrics,
                         record_n=len(records),
+                        publish_agentv=publish_agentv,
                         evaluation_remaining_records=evaluation_remaining_records,
                     )
 
@@ -1760,6 +1692,7 @@ def evaluate(
         decode running for minutes past ``decode_timeout_seconds``.
         """
         nonlocal decode_timeout_count, processed_record_n
+        _seed_eval_rng(decode_seed(int(config.seed), config.suite, chunk))
         decode_chunk_sizes.append(len(chunk))
         requested_seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
         remaining_record_n = (
@@ -1960,6 +1893,9 @@ def evaluate(
         nonlocal match_error_count, reward_error_count, empty_prediction_count
         nonlocal decode_timeout_document_n
         timed_out = bool((decode_meta or {}).get("timed_out"))
+        record_identity = row_identity(record, selection_sha256=selected_sha,
+            seed=int(config.seed), estimator_id="constrained_decode/" + evaluator_sha,
+            evaluator_sha256=evaluator_sha)
         evidence = dict(prediction_evidence or {})
         if len(topology_target_evidence) > len(topology_evidence):
             evidence.update(topology_target_evidence[len(topology_evidence)])
@@ -1978,6 +1914,7 @@ def evaluate(
             details.append(
                 {
                     "id": record.id,
+                    **record_identity,
                     "target_kind": record.target_kind,
                     "incomplete": True,
                     "parse_ok": None,
@@ -2040,6 +1977,7 @@ def evaluate(
             details.append(
                 {
                     "id": record.id,
+                    **record_identity,
                     "target_kind": record.target_kind,
                     "target_score": target_score,
                     "latency_ms": round(latency_ms, 2),
@@ -2207,6 +2145,7 @@ def evaluate(
         details.append(
             {
                 "id": record.id,
+                **record_identity,
                 "parse_ok": ok,
                 "meaningful_program_v1": ok,
                 "binding_aware_meaningful_v2": semantic_report_v2.verdict,
@@ -2316,12 +2255,17 @@ def evaluate(
             "eval_suite_manifest_sha": eval_suite_manifest_sha,
             "eval_limit": suite_limit,
             "eval_offset": suite_offset,
-            "evaluation_policy_sha256": hashlib.sha256(
-                json.dumps(evaluation_policy, sort_keys=True, default=str).encode(
-                    "utf-8"
-                )
-            ).hexdigest(),
+            "evaluation_policy_sha256": partial_policy_digest(evaluation_policy),
             "record_ids": [record.id for record in records],
+            "selection_sha256": selection_identity(records),
+            "checkpoint_bundle_sha256": (
+                _checkpoint_bundle_sha256(loaded_checkpoint)
+                if loaded_checkpoint is not None else None
+            ),
+            "evaluator_sha256": evaluator_sha,
+            "seed": int(config.seed),
+            "generate_batch_size": batch_size,
+            "decode_timeout_seconds": config.decode_timeout_seconds,
         }
         resume_dir = Path(resume_from) if resume_from is not None else config.run_dir
         prior = load_partial_scoreboard(resume_dir, config.suite)
@@ -2337,6 +2281,9 @@ def evaluate(
                     for record_id, entry in prior["records"].items()
                     if isinstance(entry, dict) and "prediction" in entry
                 }
+        rejected_evidence = preserve_rejected_partial(
+            config.run_dir, partial_scoreboard_path(resume_dir, config.suite), resume_rejection
+        )
         partial_payload: dict[str, Any] = {
             "schema_version": PARTIAL_SCOREBOARD_SCHEMA,
             "run_id": config.run_id,
@@ -2401,6 +2348,7 @@ def evaluate(
             ]
             partial_payload["measurement_complete"] = bool(
                 final and not partial_payload["pending_record_ids"]
+                and not any(row["timed_out"] for row in stored_records.values())
             )
             partial_payload["recorded_at"] = datetime.now(UTC).isoformat()
             _write_partial_scoreboard(partial_path, partial_payload)
@@ -2451,6 +2399,9 @@ def evaluate(
                 details[-1]["amortized_batch_latency_ms"] = round(per, 2)
                 details[-1]["batch_size"] = int(entry.get("batch_size") or 1)
                 details[-1]["resumed_from_partial"] = True
+                entry["metrics"] = {
+                    key: details[-1].get(key) for key in _PARTIAL_RECORD_METRIC_KEYS
+                }
 
         def _decode_and_store(chunk: list[ExampleRecord]) -> None:
             nonlocal decoded_this_run
@@ -2468,16 +2419,16 @@ def evaluate(
                     latencies.append(elapsed)
                 amortized_latencies.append(per)
                 evidence = evidence_rows[index] if index < len(evidence_rows) else None
-                _score_one(record, pred, elapsed, evidence, chunk_meta)
-                row = details[-1] if details else {}
-                if details:
-                    row["request_completion_latency_ms"] = round(elapsed, 2)
-                    row["amortized_batch_latency_ms"] = round(per, 2)
-                    row["batch_size"] = len(chunk)
                 stored_records[record.id] = {
                     "id": record.id,
+                    **row_identity(record, selection_sha256=selected_sha,
+                        seed=int(config.seed), estimator_id="constrained_decode/" + evaluator_sha,
+                        evaluator_sha256=evaluator_sha),
                     "index": identity["record_ids"].index(record.id),
                     "prediction": pred,
+                    "input_sha256": selection_identity([record]),
+                    "prediction_sha256": hashlib.sha256(pred.encode()).hexdigest(),
+                    "decode_seed": decode_seed(int(config.seed), config.suite, chunk),
                     "prediction_evidence": (
                         evidence if isinstance(evidence, dict) else None
                     ),
@@ -2491,12 +2442,23 @@ def evaluate(
                     "decode_stats": (
                         stats.as_dict() if isinstance(stats, _DecodeStats) else None
                     ),
-                    "metrics": {
-                        key: row.get(key) for key in _PARTIAL_RECORD_METRIC_KEYS
-                    },
+                    "metrics": {},
                     "decoded_at": datetime.now(UTC).isoformat(),
                 }
                 decoded_this_run += 1
+            # Commit the entire generated batch before any fallible scoring.
+            _persist_partial()
+            for record, pred in zip(chunk, preds):
+                evidence = stored_records[record.id]["prediction_evidence"]
+                _score_one(record, pred, elapsed, evidence, chunk_meta)
+                if details:
+                    row = details[-1]
+                    row["request_completion_latency_ms"] = round(elapsed, 2)
+                    row["amortized_batch_latency_ms"] = round(per, 2)
+                    row["batch_size"] = len(chunk)
+                    stored_records[record.id]["metrics"] = {
+                        key: row.get(key) for key in _PARTIAL_RECORD_METRIC_KEYS
+                    }
             if record_budget is not None:
                 record_budget[0] = max(0, int(record_budget[0]) - len(chunk))
             _persist_partial()
@@ -2517,8 +2479,7 @@ def evaluate(
             if batched:
                 # A batch never exceeds the records this run may still decode
                 # (record budget) or fit under the wall at the full timeout;
-                # the tail of a suite is decoded as a smaller batch, not
-                # refused.
+                # the tail of a suite is decoded as a smaller batch, not refused.
                 max_chunk = int(batch_size)
                 if record_budget is not None:
                     max_chunk = min(max_chunk, max(1, int(record_budget[0])))
@@ -2553,6 +2514,7 @@ def evaluate(
             "partial_scoreboard": str(partial_path),
             "resumed_from": str(resume_dir),
             "resume_rejected": resume_rejection,
+            "rejected_evidence": rejected_evidence,
             "replayed_record_n": replayed_n,
             "decoded_this_run_n": decoded_this_run,
             "decoded_record_n": len(stored_records),
@@ -3086,7 +3048,9 @@ def evaluate(
     if resume_report is not None:
         metrics["resume"] = resume_report
         metrics["pending_document_n"] = pending_document_n
-        metrics["measurement_complete"] = not pending_records
+    metrics.update(measurement_states(metrics, pending_n=len(pending_records)))
+    metrics.update(selected_identity(records))
+    metrics["evaluator_sha256"] = evaluator_sha
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -3094,22 +3058,10 @@ def evaluate(
     suite_path = run_dir / f"eval_{config.suite}.json"
     metrics["version_stamp"] = progress_version_stamp
     metrics["output"] = str(suite_path)
+    # Preserve measured rows even when external SDK publication fails.
+    _write_partial_scoreboard(suite_path, metrics)
     if publish_agentv:
-        if config.suite in DEFAULT_SHIP_GATES:
-            from slm_training.evals.agentv import publish_model_evaluation
-
-            # Single-suite runs publish only the suite that actually ran —
-            # never four missing_suite auto-failures dressed up as 5/5 failed.
-            metrics["agentv"] = publish_model_evaluation(
-                run_dir,
-                {config.suite: metrics},
-                include_missing_suites=False,
-            )
-            metrics["agentv"]["suites_run"] = [config.suite]
-        else:
-            metrics["agentv"] = {
-                "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
-            }
+        publish_suite_metrics(run_dir, config.suite, metrics)
     # SDE3-01: persist the full suite result for exact replay when enabled.
     if (
         cache is not None
@@ -3120,7 +3072,6 @@ def evaluate(
             EvalCacheMode.READ_WRITE,
             EvalCacheMode.REFRESH,
         )
-        and not metrics.get("incomplete_document_n")
         and metrics.get("eval_data_manifest_sha")
         and metrics.get("eval_suite_manifest_sha")
         and metrics.get("cache_bypass_reason") is None
@@ -3346,6 +3297,8 @@ def evaluate_suites(
 
     if model is not None and checkpoint is not None:
         raise ValueError("provide either a preloaded model or a checkpoint, not both")
+    if not suites or len(suites) != len(set(suites)):
+        raise ValueError("evaluation requires a nonempty selection of unique suites")
 
     def selected_record_n(suite: str) -> int:
         records = load_suite_records(config.test_dir, suite)
@@ -3530,6 +3483,8 @@ def evaluate_suites(
         scoreboard["suite_reachability"] = dict(suite_reachability)
     path = run_dir / "scoreboard.json"
     scoreboard["output"] = str(path)
+    scoreboard["measurement_complete"] = measurement_complete
+    scoreboard["publication_complete"] = False
     if partial_mode:
         scoreboard["measurement_complete"] = measurement_complete
         scoreboard["resume"] = {
@@ -3552,6 +3507,7 @@ def evaluate_suites(
             },
         }
     gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
+    _write_partial_scoreboard(path, scoreboard)
     if not measurement_complete:
         # A resumable chunk left records pending: no AgentV publication and no
         # ship gates until a later run merges the suite to completion.
@@ -3569,6 +3525,7 @@ def evaluate_suites(
             suite_reachability=suite_reachability,
         )
         scoreboard["evals"]["suites_run"] = gate_suites
+        scoreboard["publication_complete"] = True
     else:
         scoreboard["evals"] = {"skipped": "no ship-gate policy suites evaluated"}
     if write_gates:

@@ -262,26 +262,13 @@ def test_dual_interface_model_keeps_batched_decode_and_stats(tmp_path: Path) -> 
     ][0]["amortized_batch_latency_ms"]
 
 
-def test_empty_suite_aggregates_to_none_not_zero(tmp_path: Path) -> None:
+def test_empty_suite_refuses_without_a_successful_measurement(tmp_path: Path) -> None:
     config = _smoke_config(tmp_path)
     write_jsonl(config.test_dir / "suites" / "smoke" / "records.jsonl", [])
-    metrics = evaluate(config, model=_EchoGoldModel(), publish_agentv=False)
-    assert metrics["n"] == 0
-    assert metrics["document_n"] == 0
-    for name in (
-        "parse_rate",
-        "meaningful_program_rate",
-        "syntax_parse_rate",
-        "raw_syntax_validity",
-        "contract_precision",
-        "contract_recall",
-        "placeholder_fidelity",
-        "structural_similarity",
-        "component_type_recall",
-        "reward_score",
-    ):
-        assert metrics[name] is None, name
-    assert metrics["metric_defined_n"]["contract_precision"] == 0
+    with pytest.raises(ValueError, match="evaluation selection is empty"):
+        evaluate(config, model=_EchoGoldModel(), publish_agentv=False)
+    assert not (config.run_dir / "eval_smoke.json").exists()
+    assert not (config.run_dir / "eval.json").exists()
 
 
 def test_reward_harness_error_is_counted_not_scored(
