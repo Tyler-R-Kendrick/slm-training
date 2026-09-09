@@ -1,0 +1,22 @@
+{
+  "schema": "autonomy_measurement_evidence/v1",
+  "run_id": "autonomy-mea-supervised-20260909-c0003",
+  "source": "successor source identity after pending-continuation wiring",
+  "device": "cpu",
+  "logical_invocations": 1,
+  "measurement_complete": true,
+  "publication_complete": true,
+  "decoded_cases_per_arm": 6,
+  "agentv": {"sdk": "@agentv/core", "execution_errors": 0, "suites": ["smoke"]},
+  "diagnostic": {"complete": true, "claim_class": "diagnostic", "promotion_authority": false},
+  "gates": {"ship": false, "reason": "fixture quality and required production suites fail/are absent"},
+  "scientific_outcome": "diagnostic_only",
+  "checkpoint_bucket": null,
+  "champion": null,
+  "limitations": [
+    "public fixture and retained inference-only bundles; not independent training confirmation",
+    "live coding-agent repair was not executed because agent_grant_missing",
+    "host Bubblewrap NETLINK_ROUTE capability is unavailable in this sandbox"
+  ],
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "14bb2c126528e2420c120969e922ed6830b27521", "code_dirty": false}
+}
