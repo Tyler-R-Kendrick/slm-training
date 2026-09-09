@@ -7,7 +7,7 @@ from pathlib import Path
 
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.data.store import DataStore
-from slm_training.dsl.language_contract import assert_symbol_only_output
+from slm_training.data.record_admission import assert_training_record
 from slm_training.dsl.harness_dsl import (
     HARNESS_SCHEMA,
     is_harness_prompt,
@@ -16,7 +16,7 @@ from slm_training.dsl.harness_dsl import (
 
 
 def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
-    """Load records only after every completion target clears contract v2."""
+    """Load records only after all persisted-record trainer contracts pass."""
     records = load_jsonl(path)
     for record in records:
         try:
@@ -37,10 +37,7 @@ def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
                 }
                 if harness_meta != expected:
                     raise ValueError("Harness prompt metadata mismatch")
-            assert_symbol_only_output(
-                record.openui,
-                output_kind=record.target_kind,
-            )
+            assert_training_record(record)
         except ValueError as exc:
             raise ValueError(
                 f"{path}: record {record.id!r} violates the symbol-only output "

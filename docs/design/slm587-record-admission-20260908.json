@@ -1,0 +1,22 @@
+{
+  "task": "A11/SLM-587",
+  "evidence_class": "local_contract_tests",
+  "release_authorized": false,
+  "delivery_base": "a809e81878302baa27a9d6fedd8f0b79ee3af857",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+    "code_dirty": true,
+    "components": {"harness.model_build.data": "v3"},
+    "stamped_at": "2026-09-09T00:12:56.492322+00:00"
+  },
+  "test_command": "PYTHONPATH=src OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m pytest -o addopts= -m '' -q tests/test_harnesses/model_build/test_record_admission.py tests/test_harnesses/model_build/test_harness_data.py tests/test_harnesses/test_data/test_certified_admission_mutation.py",
+  "tests": {"passed": 26, "exit_code": 0, "reported_seconds": 2.42},
+  "bounds": {"interrupt_seconds": 170, "kill_grace_seconds": 10},
+  "checks": {"repo_policy": 0, "verify_version_stamps": 0, "extract_test_cases": 0, "git_diff_check": 0},
+  "limitations": [
+    "Focused tests ran on the local baseline plus patch, not the entire remote merge tree.",
+    "Remote base omits readiness modules required by data_rebuild; this focused admission fix does not close all A11 integration.",
+    "No training, live agent repair, service activation or full release verification executed."
+  ]
+}
