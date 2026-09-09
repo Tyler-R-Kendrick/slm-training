@@ -8,10 +8,13 @@ observations, manifests, quality reports, and a local ancestor checkpoint.
 The first prepare invocation failed because the candidate bridge dependency was
 not resolved; the rerun with
 `OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/openui_bridge/cli.mjs`
-completed. The subsequent corrective comparison did not produce a complete
-paired result within the bounded invocation. This is an operationally
-incomplete fixture, not a negative model result, and it is not AgentV/ship or
-champion evidence. No checkpoint was synced or promoted.
+completed. The subsequent bounded continuation completed both matched arms,
+decoded probes, and AgentV publication with zero SDK execution errors. The
+locked paired masked-denoising NLL diagnostic is complete but inconclusive
+(n=2, n_nontied=2, mean delta -0.0034681 nats/masked token, Wilcoxon p=1.0,
+insufficient-nontied-pairs reason). This is conditional fixture evidence, not
+an independent production confirmation; its fixture gate failed and no
+checkpoint was promoted or synced.
 
 Evidence: [machine-readable result](autonomy-learning-comparison-20260909.json)
 and the run root under `outputs/runs/autonomy-a12-fixture-20260909b/`.

@@ -49,7 +49,7 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 
 | Local checkpoint evidence | Result | Scope |
 | --- | --- | --- |
-| `autonomy-a12-fixture-20260909b` | Canonical prepare completed; corrective comparison incomplete under bounded CPU invocation | Diagnostic wiring only; no paired result, promotion, champion, or ship claim. [Measured result](docs/design/autonomy-learning-comparison-20260909.md). |
+| `autonomy-a12-fixture-20260909b` | Two matched CPU arms completed; AgentV ran with zero execution errors; paired NLL diagnostic inconclusive (n=2) | Conditional fixture diagnostic only; ship gates failed, no promotion/champion/ship claim. [Measured result](docs/design/autonomy-learning-comparison-20260909.md). |
 
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
 summary and the full card whenever a checkpoint is created or promoted.

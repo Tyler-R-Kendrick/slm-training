@@ -1,7 +1,7 @@
 {
   "run_id": "autonomy-a12-fixture-20260909b",
   "phase": "prepare_then_corrective",
-  "status": "incomplete_operational_timeout",
+  "status": "diagnostic_complete_inconclusive",
   "scope": "fixture_only",
   "device": "cpu",
   "steps": 1,
@@ -12,12 +12,14 @@
   "checkpoint_bucket": null,
   "artifact_root": "outputs/runs/autonomy-a12-fixture-20260909b/autonomy-a12-fixture-20260909b",
   "prepared_digest": "f0f53c5c6cd83fe453bfb4cfd5b4b94f92810e5443f133cd910bfa5985bb3130",
-  "observations": "choice_diagnostics.json and learner_observations.json were emitted; the corrective comparison did not produce a complete paired result before the bounded invocation ended. No scientific null, positive, confirmation, or ship claim is made.",
-  "capability_limit": "candidate bridge required explicit OPENUI_BRIDGE_CLI override; the first prepare attempt failed before rerun. The subsequent prepare completed; corrective execution was incomplete under the bounded local invocation.",
+  "observations": "Both matched arms completed two optimizer updates from the shared initialized checkpoint. Decoded probes and AgentV completed with zero execution errors. Paired masked-denoising NLL diagnostic is complete but inconclusive: n_pairs=2, n_nontied=2, mean_delta=-0.0034680956885928538 nats/token, Wilcoxon p=1.0, reason=insufficient_nontied_pairs:2<5.",
+  "agentv": {"sdk": "@agentv/core", "execution_errors": 0, "suites": ["smoke"], "criteria_passed": 0, "criteria_total": 9, "gate_result": "failed_as_expected_fixture_gate"},
+  "paired_diagnostic": {"n_pairs": 2, "n_nontied": 2, "mean_delta_nats_per_masked_token": -0.0034680956885928538, "p_value": 1.0, "verdict": "inconclusive", "reason": "insufficient_nontied_pairs:2<5"},
+  "capability_limit": "The candidate bridge required explicit OPENUI_BRIDGE_CLI override; AgentV used the authorized primary-checkout AGENTV_RUNNER override. Fixture roots and shared initialization make this conditional diagnostic evidence, not an independent production confirmation.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
     "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
     "code_dirty": true,
-    "components": {}
+    "components": {"evals.loss_suite": "v2", "harness.model_build.eval": "v109"}
   }
 }
