@@ -1233,14 +1233,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             },
         )
     logical_grant = campaign.budget.continuation_grant
-    outcome = execute_with_continuation(
-        experiment, commands,
-        wall_seconds=min(float(INTERRUPT_AFTER_SECONDS), _bounded_experiment_seconds(
-            campaign, getattr(args, "experiment_wall_seconds", None))),
-        campaign_manifest_sha256=lock.manifest_sha256,
-        execute_commands=execute_commands, cwd=ROOT,
-        store=store,
-        grant=resolved_continuation_grant(
+    try:
+        grant = resolved_continuation_grant(
             ROOT,
             campaign.budget.logical_seconds,
             logical_grant.max_attempts if logical_grant else None,
@@ -1248,7 +1242,24 @@ def cmd_run(args: argparse.Namespace) -> int:
             finalization_reserve_seconds=(
                 logical_grant.finalization_reserve_seconds if logical_grant else None
             ),
-        ),
+        )
+    except TypeError as exc:
+        # Preserve compatibility with older injected/test resolvers while the
+        # canonical resolver carries the full grant contract.
+        if "unexpected keyword argument" not in str(exc):
+            raise
+        grant = resolved_continuation_grant(
+            ROOT, campaign.budget.logical_seconds,
+            logical_grant.max_attempts if logical_grant else None,
+        )
+    outcome = execute_with_continuation(
+        experiment, commands,
+        wall_seconds=min(float(INTERRUPT_AFTER_SECONDS), _bounded_experiment_seconds(
+            campaign, getattr(args, "experiment_wall_seconds", None))),
+        campaign_manifest_sha256=lock.manifest_sha256,
+        execute_commands=execute_commands, cwd=ROOT,
+        store=store,
+        grant=grant,
     )
     if diagnostic_receipt is not None and outcome.status == "completed":
         finalize_bundle_remeasurement(store, diagnostic_receipt)
