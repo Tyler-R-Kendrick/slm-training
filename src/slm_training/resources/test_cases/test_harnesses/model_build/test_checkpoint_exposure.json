@@ -1,0 +1,73 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_harnesses/model_build/test_checkpoint_exposure.py",
+  "case_sets": {
+    "test_published_resume_alias_requires_actual_bundle_identity": {
+      "parameters": [
+        "change"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "identical"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "newer"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "legacy"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            "corrupt"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            "path"
+          ]
+        },
+        {
+          "id": "case-006",
+          "values": [
+            "count"
+          ]
+        },
+        {
+          "id": "case-007",
+          "values": [
+            "role"
+          ]
+        },
+        {
+          "id": "case-008",
+          "values": [
+            "missing"
+          ]
+        },
+        {
+          "id": "case-009",
+          "values": [
+            "linked"
+          ]
+        },
+        {
+          "id": "case-010",
+          "values": [
+            "malformed"
+          ]
+        }
+      ]
+    }
+  }
+}
