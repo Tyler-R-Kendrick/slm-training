@@ -8,6 +8,7 @@ from __future__ import annotations
 import fcntl
 import json
 import math
+import subprocess
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,9 +44,20 @@ def resolved_continuation_grant(
     from slm_training.harness_core.activity_contract import contract_digest
     from slm_training.harness_core.execution_release import runtime_source_identity
 
+    identity_root = Path(root).resolve()
+    if not (identity_root / ".autonomy-release.json").is_file():
+        try:
+            identity_root = Path(
+                subprocess.run(
+                    ["git", "-C", str(identity_root), "rev-parse", "--show-toplevel"],
+                    check=True, capture_output=True, text=True, timeout=10,
+                ).stdout.strip()
+            ).resolve()
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass
     identity = contract_digest(
         {
-            "source": runtime_source_identity(root) or source_identity(root),
+            "source": runtime_source_identity(identity_root) or source_identity(identity_root),
             "environment": environment_identity(),
         }
     )
