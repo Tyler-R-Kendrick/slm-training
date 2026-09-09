@@ -123,6 +123,7 @@ def _manifest_path(store, continuous, value, experiment):
             if (value["cycle_intent"] == "promote" and "-promote" in eid)
             else None,
             chunk_plan=value["promotion_chunk_plan"],
+            continuation_grant=store.load_campaign().budget.continuation_grant,
         )
         _write_manifest(path, manifest)
     return path
