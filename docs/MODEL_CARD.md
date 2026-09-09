@@ -1,5 +1,16 @@
 # Model card — OpenUI TwoTower / grammar-diffusion
 
+## A12 canonical learning-comparison fixture — 2026-09-09
+
+`autonomy-a12-fixture-20260909b` completed the canonical prepare path on CPU
+with one fixture update and emitted local diagnostic observations plus an
+ancestor checkpoint. The corrective comparison was operationally incomplete
+within the bounded invocation, so there is no paired quality result, AgentV
+publication, confirmation, champion, or ship claim. The checkpoint is local
+scratch evidence only and was not synced. See
+[`autonomy-learning-comparison-20260909.md`](design/autonomy-learning-comparison-20260909.md).
+
+
 Canonical card for checkpoints produced by this repo. Agents **must update
 this file whenever a new checkpoint is created or promoted** (full train,
 remote train, bootstrap demo, or matrix champion intended for reuse), then
