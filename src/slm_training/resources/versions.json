@@ -269,6 +269,11 @@
     "ci.local_merge_gate": {
       "history": [
         {
+          "date": "2026-09-08",
+          "note": "Allow explicit --source selection in the local gate and resolve it for both fast and full checks. Real-process tests cover relative/absolute paths, spaces, and nonzero outcomes. Check selection, thresholds, and fast/full claim semantics are unchanged.",
+          "version": "v11"
+        },
+        {
           "date": "2026-09-03",
           "note": "mirror the new python-static `verify_code_quality` step (between `ruff check .` and `compileall`) and refresh the docstring step list, which had drifted eight steps behind the real sequence.",
           "version": "v10"
@@ -337,7 +342,7 @@
         ".githooks/check-changed",
         "tests/test_scripts/test_merge_ready_gate.py"
       ],
-      "version": "v10"
+      "version": "v11"
     },
     "config.levers": {
       "history": [

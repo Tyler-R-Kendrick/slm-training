@@ -43,7 +43,7 @@ evidence (`slm_training.levers.MAX_RUN_MINUTES`).
 
 Rule: red ``verify_merge_ready`` ⇒ no merge. GHA silence is not approval.
 
-Run: ``python -m scripts.verify_merge_ready [--fast] [--json]``
+Run: ``python -m scripts.verify_merge_ready [--fast] [--json] [--source PATH]``
 """
 
 from __future__ import annotations
@@ -251,6 +251,9 @@ def main(argv: list[str] | None = None) -> int:
     max_run_minutes = canonical_run_minutes()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--source", type=Path, default=ROOT, help="source tree to check (default: repository root)"
+    )
+    parser.add_argument(
         "--fast",
         action="store_true",
         help="static checks only; skip the changed-test execution (pre-push mode)",
@@ -284,6 +287,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = run_gate(
         merge_gate_steps(fast=args.fast),
         budget_seconds=args.max_step_seconds,
+        root=args.source.resolve(),
         echo=echo,
     )
     summary["fast"] = args.fast
