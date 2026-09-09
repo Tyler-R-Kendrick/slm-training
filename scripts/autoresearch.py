@@ -88,24 +88,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _bounded_campaign_seconds(campaign: CampaignSpec) -> float:
-    """Honor old campaign records without exceeding the current run cap."""
-    return min(
-        float(campaign.budget.max_wall_minutes * 60),
-        float(MAX_RUN_MINUTES * 60),
-    )
+    return campaign.budget.bounded_invocation_seconds()
 
 
 def _bounded_experiment_seconds(
     campaign: CampaignSpec, requested_seconds: float | None
 ) -> float:
-    """Apply a driver's dynamic arm share inside the preregistered ceiling."""
-    campaign_seconds = _bounded_campaign_seconds(campaign)
-    if requested_seconds is None:
-        return campaign_seconds
-    requested = float(requested_seconds)
-    if not math.isfinite(requested) or requested <= 0:
-        raise ValueError("--experiment-wall-seconds must be positive and finite")
-    return min(requested, campaign_seconds)
+    return campaign.budget.bounded_invocation_seconds(requested_seconds)
 
 
 def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -1139,6 +1128,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
         if manifest.experiment_id != experiment.experiment_id:
             raise ValueError("campaign manifest belongs to a different experiment")
+        campaign.budget.require_matching_grant(manifest.budget)
         diagnostic_receipt = prepare_bundle_remeasurement(args, store, experiment, manifest)
         if campaign.loop_id is not None:
             assert campaign.upstream_commit is not None
@@ -1162,6 +1152,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     if getattr(args, "diagnostic_bundle_plan", None) and diagnostic_receipt is None:
         raise ValueError("diagnostic bundle execution requires its explicit campaign manifest")
     if lock is not None and manifest_path is None:
+        campaign.budget.require_matching_grant(lock.manifest.budget)
         validate_formal_preflights(store.root, experiment, lock.manifest)
     if lock is not None and lock.manifest.requires_rl:
         if not experiment.requires_rl or not experiment.rl_readiness_report:
