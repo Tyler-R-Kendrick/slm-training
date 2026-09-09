@@ -119,12 +119,14 @@ def load_context(store, digest=None):
 def verify_inputs(store, cwd, value):
     from slm_training.autoresearch.climb_policy import load_climb_policy
 
-    if (
-        value["execution_identity"]
-        != resolved_continuation_grant(cwd, value["total_seconds"]).execution_identity
-        or value["policy_sha256"] != load_climb_policy().sha256
-    ):
-        raise ValueError("driver continuation release/environment/policy changed")
+    current_identity = resolved_continuation_grant(cwd, value["total_seconds"]).execution_identity
+    if value["execution_identity"] != current_identity:
+        raise ValueError(
+            "driver continuation release/environment/policy changed: "
+            f"expected={value['execution_identity']} current={current_identity}"
+        )
+    if value["policy_sha256"] != load_climb_policy().sha256:
+        raise ValueError("driver continuation release/environment/policy changed: policy")
     for filename, expected in value["files"].items():
         path = Path(filename)
         if not path.is_absolute():
