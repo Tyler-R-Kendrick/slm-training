@@ -28,6 +28,16 @@ It is an engineering evidence record, not a model-quality or champion claim.
 - `python -m scripts.verify_version_stamps --check` passes on the candidate
   tree.
 
+Subsequent focused slices merged after the initial record:
+
+- `3f35459c` — cached evaluation publication boundary and cache-hit regressions.
+- `df8665bb` — checkpoint bundle, exposure, and trial-continuation tests.
+- `2cae246f` — owned-process activity restart and continuation tests.
+- `e764d583` — governed repair dispatch and independent-verifier tests.
+- `08eccb33` — diagnostic/confirmation evidence-boundary adversarial tests.
+- `a5d41135` — complete merge-gate collection, isolation, runtime, and scheduling tests.
+- `9ced4cc8` — composed runtime-safety adversary suite.
+
 ## Evidence limits
 
 The current environment does not provide the complete project test dependency
