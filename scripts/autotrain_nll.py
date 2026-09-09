@@ -74,6 +74,7 @@ def run_arm_eval_nll(run_dir: Path, inputs: dict[str, Any]) -> dict[str, Any]:
     selection = inputs.get("selection")
     row_evidence = inputs.get("row_evidence")
     estimator_id = inputs.get("estimator_id")
+    attempt_id = inputs.get("attempt_id")
     from slm_training.autoresearch.climb_policy import screening_nll_definition_hash
 
     digest = inputs.get("definition_hash") or screening_nll_definition_hash()
@@ -150,6 +151,7 @@ def run_arm_eval_nll(run_dir: Path, inputs: dict[str, Any]) -> dict[str, Any]:
                     "records": {k: per_record[k] for k in sorted(per_record)},
                     "selection": dict(selection) if selection is not None else None,
                     "row_evidence": row_evidence,
+                    "attempt_id": attempt_id,
                     "estimator_id": estimator_id,
                     "units": "nats_per_masked_token",
                     "selection_locked": selection is not None,
