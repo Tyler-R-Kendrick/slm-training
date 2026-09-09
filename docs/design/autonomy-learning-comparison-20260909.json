@@ -1,0 +1,23 @@
+{
+  "run_id": "autonomy-a12-fixture-20260909b",
+  "phase": "prepare_then_corrective",
+  "status": "incomplete_operational_timeout",
+  "scope": "fixture_only",
+  "device": "cpu",
+  "steps": 1,
+  "backend": "local_two_tower_fixture",
+  "suite_n": 0,
+  "honesty_mode": "diagnostic_wiring_only",
+  "promotion_eligible": false,
+  "checkpoint_bucket": null,
+  "artifact_root": "outputs/runs/autonomy-a12-fixture-20260909b/autonomy-a12-fixture-20260909b",
+  "prepared_digest": "f0f53c5c6cd83fe453bfb4cfd5b4b94f92810e5443f133cd910bfa5985bb3130",
+  "observations": "choice_diagnostics.json and learner_observations.json were emitted; the corrective comparison did not produce a complete paired result before the bounded invocation ended. No scientific null, positive, confirmation, or ship claim is made.",
+  "capability_limit": "candidate bridge required explicit OPENUI_BRIDGE_CLI override; the first prepare attempt failed before rerun. The subsequent prepare completed; corrective execution was incomplete under the bounded local invocation.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {}
+  }
+}

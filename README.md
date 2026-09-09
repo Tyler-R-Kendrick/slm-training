@@ -47,6 +47,10 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 
 ## Model card (summary)
 
+| Local checkpoint evidence | Result | Scope |
+| --- | --- | --- |
+| `autonomy-a12-fixture-20260909b` | Canonical prepare completed; corrective comparison incomplete under bounded CPU invocation | Diagnostic wiring only; no paired result, promotion, champion, or ship claim. [Measured result](docs/design/autonomy-learning-comparison-20260909.md). |
+
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
 summary and the full card whenever a checkpoint is created or promoted.
 
