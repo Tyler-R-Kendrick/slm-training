@@ -1,0 +1,61 @@
+{
+  "issue": "SLM-588",
+  "assignment": "A12 scoped paired-statistics guardrail",
+  "baseline_source_sha": "2c4e2df3f9b9bfb6efe13e88108a57ea2ac9f64c",
+  "pr_base_sha": "a809e81878302baa27a9d6fedd8f0b79ee3af857",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_dirty": true,
+    "components": {},
+    "stamped_at": "2026-09-09T00:12:39.636150+00:00"
+  },
+  "source_sha256": "57d201051950a8d6ddc72546fef52f7e1c9b451e22d2957a75bec5bb0bcffa83",
+  "tested_local_test_file_sha256": "bdaef036721e442b8177e46a37dad1b4cde41e42d7137fc8b41e544c010ede8f",
+  "evidence_class": "actual_imported_arithmetic_regression_and_runtime_property_mutation",
+  "before": {
+    "selected": 6,
+    "failed": 6,
+    "exit_code": 1,
+    "receipt": "outputs/runs/autonomy-validation/a12-paired-overflow-before.xml"
+  },
+  "after": {
+    "selected": 37,
+    "passed": 37,
+    "skipped": 0,
+    "exit_code": 0,
+    "seconds": 0.17,
+    "command": "timeout -s INT -k 10 170 env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:outputs/runs/autonomy-validation/dependencies /home/codex/repos/slm-training/.venv/bin/python -m pytest tests/test_autoresearch/test_paired_stats.py -o addopts= -m '' -p no:cacheprovider -q --tb=short --junitxml=outputs/runs/autonomy-validation/a12-paired-overflow-unit.xml",
+    "receipt": "outputs/runs/autonomy-validation/a12-paired-overflow-unit.xml",
+    "receipt_sha256": "32ad91d6eced227b828b4d466bdc5db7af7dfd8f53be0be27d7a223477c4b2c0"
+  },
+  "mutation": {
+    "producer": "PairedRecordDeltas.median_delta",
+    "mutation": "restore statistics.median overflowing midpoint",
+    "baseline_oracle": "win is False below minimum_effect",
+    "mutant_result": "matching AssertionError",
+    "mutant_calls": 1
+  },
+  "broader_checks": [
+    {
+      "passed": 94,
+      "failed": 1,
+      "reason": "other-owned keyed pairing mutation fixture has observations outside locked selection"
+    },
+    {
+      "passed": 108,
+      "failed": 4,
+      "reason": "screening sample policy tests see corpus/power state different from expected"
+    },
+    {
+      "passed": 74,
+      "failed": 1,
+      "reason": "Hypothesis seed identity timing flake (745.82ms first call; 3.14ms replay; 200ms unchanged deadline)"
+    }
+  ],
+  "publication_scope": "Patched source is byte-identical to tested local owner. PR test file preserves remote base tests and adds only these six cases; the local 37-test file includes other pending guardrail tests not published here.",
+  "scientific_thresholds_changed": false,
+  "model_runs": 0,
+  "promotions": 0,
+  "full_release_verification": false
+}

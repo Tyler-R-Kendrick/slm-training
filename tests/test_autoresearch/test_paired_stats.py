@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
 from slm_training.autoresearch.paired_stats import (
+    PairedSelection,
     exact_sign_test,
     paired_screening_test,
     wilcoxon_signed_rank_p,
@@ -116,3 +119,73 @@ def test_paired_record_screening_win_requires_alpha_and_minimum_effect() -> None
         control, worse, direction="decrease", minimum_effect=0.05
     )
     assert loss["win"] is False and loss["verdict"] == "loss"
+
+
+@pytest.mark.parametrize("count", [6, 7])
+@pytest.mark.parametrize("sign", [-1.0, 1.0])
+def test_finite_extreme_pairs_do_not_overflow_summary_or_effect_gate(count, sign):
+    import json
+
+    from slm_training.autoresearch.paired_stats import paired_record_screening
+
+    ids = tuple(f"root-{i}" for i in range(count))
+    result = paired_record_screening(
+        dict.fromkeys(ids, sign * 1e308),
+        dict.fromkeys(ids, 0.0),
+        selection=PairedSelection(ids, dict(zip(ids, ids, strict=True))),
+        minimum_effect=1.5e308,
+    )
+    assert result["diagnostic_complete"] is True
+    assert result["median_delta"] == sign * 1e308
+    assert result["mean_delta"] == sign * 1e308
+    assert result["paired_sd"] == 0.0
+    assert result["p_value"] == 2 / 2**count
+    assert result["win"] is False, "overflow must not bypass the minimum effect"
+    assert result["promotion_authority"] is False
+    json.dumps(result, allow_nan=False)
+
+
+def test_unrepresentable_paired_dispersion_is_invalid_evidence():
+    from slm_training.autoresearch.paired_stats import paired_record_screening
+
+    with pytest.raises(
+        ValueError, match="invalid_evidence: paired dispersion overflow"
+    ):
+        paired_record_screening(
+            {"a": 1.7e308, "b": -1.7e308},
+            {"a": 0.0, "b": 0.0},
+            selection=PairedSelection(("a", "b"), {"a": "a", "b": "b"}),
+        )
+
+
+def test_effect_gate_oracle_kills_overflowing_median_mutation(monkeypatch):
+    from statistics import median
+
+    from slm_training.autoresearch.paired_stats import (
+        PairedRecordDeltas,
+        paired_record_screening,
+    )
+
+    def check_effect_gate():
+        ids = tuple(f"root-{i}" for i in range(6))
+        result = paired_record_screening(
+            dict.fromkeys(ids, 1e308),
+            dict.fromkeys(ids, 0.0),
+            selection=PairedSelection(ids, dict(zip(ids, ids, strict=True))),
+            minimum_effect=1.5e308,
+        )
+        assert result["win"] is False, "effect gate accepted overflowing median"
+
+    check_effect_gate()
+    calls = []
+
+    def overflowing_median(pairs):
+        calls.append(pairs.record_ids)
+        return median(pairs.deltas)
+
+    monkeypatch.setattr(
+        PairedRecordDeltas, "median_delta", property(overflowing_median)
+    )
+    with pytest.raises(AssertionError, match="effect gate accepted overflowing median"):
+        check_effect_gate()
+    assert len(calls) == 1  # The mutated producer, not an unrelated error, killed it.
