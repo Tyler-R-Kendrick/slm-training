@@ -67,6 +67,7 @@ def verification_binding(
     )
     return {
         "schema": "merge_verification_binding/v3",
+        "base_ref": base_ref,
         "base_tree": base_tree,
         "candidate_tree_sha256": source_identity(root),
         "changed_paths": paths,
