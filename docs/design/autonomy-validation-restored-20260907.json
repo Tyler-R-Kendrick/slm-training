@@ -644,7 +644,7 @@
     "source_identities": [
       {"path": "src/slm_training/dsl/language_contract.py", "sha256": "638608134d6d15dab38aeaccf966da0d9f5f900178d422cd5f0f66b78c711462"},
       {"path": "tests/test_dsl/test_language_contract.py", "sha256": "6390eee8bf88ab4917856556cc085292b0ab3aba2a46d5d9d176e3c520c8b95b"},
-      {"path": "src/slm_training/dsl/pack.py", "sha256": "df919a24bb3af086f0faf411dc3dc9447b890ac264ce3f340c178f9fd9de7414"},
+      {"path": "src/slm_training/dsl/pack.py", "sha256": "338af30fa17cf2e8d4fd7c1785d5d37252ec548ea278d507f2682dabf41db113"},
       {"path": "src/slm_training/data/contract.py", "sha256": "6fdcad7182e2511f1bbb3d68852cd3e092a6b9012c5d22517b73388b8f01141d"},
       {"path": "src/slm_training/dsl/scope_env.py", "sha256": "dc89c812f9e70877dc18a894b28a76063293f5690d891bb93d1f4750198eecec"},
       {"path": "docs/design/symbol-only-output-contract.md", "sha256": "69af4e9d2845f282808cfd45a9295e0366305ecb17552472cf796dce82994321"},

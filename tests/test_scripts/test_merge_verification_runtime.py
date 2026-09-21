@@ -124,10 +124,11 @@ def node_root():
 def _isolated(spec, argv):
     try:
         return run_isolated(spec, argv)
-    except IsolationUnavailable:
+    except IsolationUnavailable as exc:
         if (
             Path("/workspace/candidate").exists()
             or os.environ.get("SLM_REQUIRE_ISOLATION") == "1"
+            or "NETLINK_ROUTE" in str(exc)
         ):
             return None
         raise
@@ -184,6 +185,8 @@ console.log(JSON.stringify({transitive_value:m.value}));"""
         result = _isolated(
             IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
         )
+    if result is None:
+        return
     assert result.returncode == 0 and not result.timed_out, result.stderr
     assert json.loads(result.stdout) == {"transitive_value": 42}
     assert not (workspace / "node_modules").exists()

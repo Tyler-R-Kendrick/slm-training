@@ -566,9 +566,6 @@ def _openui_completion_domain(request: Any) -> Any:
         # coverage "none", so exact_forced_token_id will not commit the
         # budget-manufactured singleton.
         _note_witness(false_singleton=True)
-        reference = _openui_completion_domain_reference(request)
-        if reference.status == "complete":
-            return _finish(reference)
         return _finish(
             CompletionDomainV1(
                 status="incomplete",
