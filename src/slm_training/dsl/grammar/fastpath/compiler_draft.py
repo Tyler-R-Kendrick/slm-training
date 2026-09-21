@@ -1786,7 +1786,7 @@ def _build_openui_completion_forest_direct(
             if isinstance(caller_engine, OpenUIIncrementalEngine)
             else OpenUIIncrementalEngine()
         )
-    if state is not None:
+    if state is not None and callable(getattr(state, "sync_ids", None)):
         prefix_text = state.sync_ids(tokenizer, prefix_ids)
     else:
         prefix_text = decode_prefix(tokenizer, prefix_ids)
