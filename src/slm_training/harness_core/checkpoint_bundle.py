@@ -43,11 +43,18 @@ def _regular(path: Path) -> Path:
     return path
 
 
+def _check_model_contract(meta: dict) -> None:
+    if (
+        meta.get("kind") not in {"twotower", "grammar_diffusion"}
+        or meta.get("output_contract_version") != 2
+    ):
+        raise ValueError("bundle:unsupported_model_contract")
+
+
 def _components(checkpoint: Path, full_state: Path | None) -> dict[str, Path]:
     meta_path = _regular(checkpoint.with_suffix(".meta.json"))
     meta = json.loads(meta_path.read_text())
-    if meta.get("kind") != "twotower" or meta.get("output_contract_version") != 2:
-        raise ValueError("bundle:unsupported_model_contract")
+    _check_model_contract(meta)
     files = {"last.pt": _regular(checkpoint), "last.meta.json": meta_path}
     files["last.tokenizer.json"] = _regular(checkpoint.with_suffix(".tokenizer.json"))
     context = checkpoint.with_name(checkpoint.stem + ".context.tokenizer.json")
@@ -153,8 +160,7 @@ def validate_bundle(root: Path, digest: str) -> tuple[Path, dict]:
         ):
             raise ValueError("bundle:component_digest_mismatch")
     meta = json.loads((directory / "last.meta.json").read_text())
-    if meta.get("kind") != "twotower" or meta.get("output_contract_version") != 2:
-        raise ValueError("bundle:unsupported_model_contract")
+    _check_model_contract(meta)
     if meta.get("context_tokenizer") and "last.context.tokenizer.json" not in files:
         raise ValueError("bundle:missing_context_tokenizer")
     return directory, manifest

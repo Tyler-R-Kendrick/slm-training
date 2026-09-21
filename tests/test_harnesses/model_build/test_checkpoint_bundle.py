@@ -29,6 +29,18 @@ def _checkpoint(root: Path, marker: bytes = b"weights") -> Path:
     return path
 
 
+def test_grammar_diffusion_bundle_contract(tmp_path):
+    root = tmp_path / "store"
+    checkpoint = _checkpoint(tmp_path / "source")
+    meta_path = checkpoint.with_suffix(".meta.json")
+    meta = json.loads(meta_path.read_text())
+    meta["kind"] = "grammar_diffusion"
+    meta_path.write_text(json.dumps(meta))
+    digest = bundles.stage_checkpoint_bundle(root, checkpoint, {"claim": "fixture"})
+    directory, _ = bundles.validate_bundle(root, digest)
+    assert directory.name == digest
+
+
 def _publish(root, checkpoint, expected=None, fence="current"):
     digest = bundles.stage_checkpoint_bundle(root, checkpoint, {"claim": "fixture"})
     bundles.publish_bundle(
