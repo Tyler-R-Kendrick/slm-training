@@ -41,6 +41,17 @@ def test_grammar_diffusion_bundle_contract(tmp_path):
     assert directory.name == digest
 
 
+def test_tree_edit_diffusion_bundle_contract_stays_fail_closed(tmp_path):
+    checkpoint = _checkpoint(tmp_path / "source")
+    meta_path = checkpoint.with_suffix(".meta.json")
+    meta = json.loads(meta_path.read_text())
+    meta["kind"] = "tree_edit_diffusion"
+    meta.pop("output_contract_version", None)
+    meta_path.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="bundle:unsupported_model_contract"):
+        bundles.stage_checkpoint_bundle(tmp_path / "store", checkpoint, {})
+
+
 def _publish(root, checkpoint, expected=None, fence="current"):
     digest = bundles.stage_checkpoint_bundle(root, checkpoint, {"claim": "fixture"})
     bundles.publish_bundle(
