@@ -23,6 +23,10 @@ BRIDGES = {
         "design_md_bridge",
         ("cli.mjs", "package.json", "package-lock.json"),
     ),
+    "GRAPHQL_BRIDGE_CLI": (
+        "graphql_bridge",
+        ("cli.mjs", "package.json", "package-lock.json"),
+    ),
 }
 
 # This runs inside the existing namespace, without network/host home/store.
@@ -48,21 +52,18 @@ os.execvpe(argv[0],argv,os.environ)
 
 def bridge_grant(source, runtime, index):
     for variable, (name, files) in BRIDGES.items():
-        if runtime.name != name:
+        if not (runtime / "cli.mjs").is_file():
             continue
-        for filename in files:
-            expected, installed = (
-                source / "src/apps" / name / filename,
-                runtime / filename,
-            )
-            if (
-                not expected.is_file()
-                or not installed.is_file()
-                or file_digest(expected) != file_digest(installed)
-            ):
-                raise ValueError(
-                    "bridge_runtime_source_mismatch:" + name + "/" + filename
-                )
+        if not all(
+            (source / "src/apps" / name / filename).is_file()
+            and (runtime / filename).is_file()
+            and file_digest(source / "src/apps" / name / filename)
+            == file_digest(runtime / filename)
+            for filename in files
+        ):
+            if runtime.name == name:
+                raise ValueError("bridge_runtime_source_mismatch:" + name)
+            continue
         declared = os.environ.get(variable)
         if declared and Path(declared).resolve() != runtime / "cli.mjs":
             raise ValueError("declared_bridge_not_in_approved_runtime:" + variable)
@@ -87,10 +88,7 @@ def javascript_grants(source: Path, runtimes: tuple[Path, ...], *, required=Fals
         runtime = runtime.resolve(strict=True)
         if (runtime / "bin/node").is_file():
             grants["node_index"] = index
-        if (
-            runtime.name == "node_modules"
-            and (runtime / "@agentv/core/dist/index.js").is_file()
-        ):
+        if (runtime / "@agentv/core/dist/index.js").is_file():
             if grants["sdk_index"] is not None:
                 raise ValueError("ambiguous_agentv_runtime_grant")
             grants["sdk_index"] = index
@@ -123,11 +121,20 @@ def runtime_argv(source, runtimes, argv, *, workspace=None, required=False):
     pythonpath = ["/workspace/candidate/src"] + [
         f"/runtime/{index}" for index in range(1, len(runtimes))
     ]
-    bins = [f"/runtime/{index}/bin" for index in range(len(runtimes))]
+    bins = (["/workspace/control/bin"] if workspace is not None and (workspace / "control/bin/git").is_file() else []) + [
+        f"/runtime/{index}/bin" for index in range(len(runtimes))
+    ]
     settings = [
         "PYTHONPATH=" + ":".join(pythonpath),
         "PATH=" + ":".join([*bins, "/usr/bin", "/bin"]),
     ]
+    library_paths = [
+        f"/runtime/{index}/lib"
+        for index, root in enumerate(runtimes)
+        if (root / "libstdc++.so.6").is_file()
+    ]
+    if library_paths:
+        settings.append("LD_LIBRARY_PATH=" + ":".join(library_paths))
     settings.extend(f"{key}={value}" for key, value in grants["bridges"].items())
     if grants["sdk_index"] is not None:
         if workspace is None:
