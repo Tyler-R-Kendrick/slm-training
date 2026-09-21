@@ -29,6 +29,8 @@ from .isolation_workspace import (
 )
 from .repair_scope import repair_classification
 
+_VALIDATED_RUNTIMES: set[tuple[Path, int, int]] = set()
+
 # Executed with isolated system Python, before candidate imports. Limits are
 # hard limits inherited by descendants. Stdin never inherits a controller pipe.
 _WORKLOAD_BOOTSTRAP = (
@@ -40,10 +42,8 @@ _WORKLOAD_BOOTSTRAP = (
     "os.execvpe(sys.argv[2],sys.argv[2:],os.environ)"
 )
 
-
 class IsolationUnavailable(RuntimeError):
     """A required OS capability is absent; only this activity should wait."""
-
 
 @dataclass(frozen=True)
 class IsolationCapability:
@@ -51,7 +51,6 @@ class IsolationCapability:
     backend: str
     reason: str
     executable: str | None
-
 
 @dataclass(frozen=True)
 class IsolationSpec:
@@ -64,19 +63,18 @@ class IsolationSpec:
 
     workspace: Path
     writable_paths: tuple[str, ...] = ()
+    writable_dirs: tuple[str, ...] = ()
     runtime_roots: tuple[Path, ...] = ()
     timeout_seconds: float = INTERRUPT_AFTER_SECONDS
     scratch_bytes: int = 64 * 1024 * 1024
     pythonpath: str = "/workspace/src"
     environment: tuple[tuple[str, str], ...] = ()
 
-
-def _base_command(binary: str) -> list[str]:
+def _base_command(binary: str, *, share_net: bool = False) -> list[str]:
     command = [
         binary,
         "--unshare-all",
         "--unshare-user",
-        "--disable-userns",
         "--die-with-parent",
         "--new-session",
         "--cap-drop",
@@ -86,14 +84,15 @@ def _base_command(binary: str) -> list[str]:
         "/usr",
         "/usr",
     ]
+    if share_net:
+        command.insert(3, "--share-net")
     for name in ("bin", "sbin", "lib", "lib64"):
         path = Path("/") / name
         if path.is_symlink():
             command.extend(("--symlink", str(path.readlink()), str(path)))
         elif path.is_dir():
             command.extend(("--ro-bind", str(path), str(path)))
-    return command + ["--proc", "/proc", "--dev", "/dev"]
-
+    return command + ["--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]
 
 def probe_isolation() -> IsolationCapability:
     """Probe the real namespaces/flags; availability alone conveys no grant."""
@@ -116,12 +115,14 @@ def probe_isolation() -> IsolationCapability:
         binary,
     )
 
-
 def _runtime_mounts(spec: IsolationSpec) -> list[str]:
     args: list[str] = []
     forbidden = {"/", "/home", "/tmp", "/run", "/var", "/etc", "/root"}
-    for index, root in enumerate(spec.runtime_roots):
-        root = root.resolve(strict=True)
+    roots = tuple(root.resolve(strict=True) for root in spec.runtime_roots)
+    validated: set[Path] = set()
+    if any(root.is_relative_to(Path("/nix/store")) for root in roots):
+        args.extend(("--dir", "/nix", "--dir", "/nix/store"))
+    for index, root in enumerate(roots):
         if (
             str(root) in forbidden
             or root == Path.home()
@@ -134,12 +135,19 @@ def _runtime_mounts(spec: IsolationSpec) -> list[str]:
         # symlinks may reference the read-only system runtime, never host home.
         if not root.is_dir():
             raise IsolationViolation("runtime root must be a dedicated directory")
-        _validate_runtime(root)
+        marker = (root, root.stat().st_ino, root.stat().st_mtime_ns)
+        if marker not in _VALIDATED_RUNTIMES:
+            _validate_runtime(root, roots)
+            _VALIDATED_RUNTIMES.add(marker)
+        validated.add(root)
+        if root.is_relative_to(Path("/runtime")):
+            args.extend(("--ro-bind", str(root), str(root)))
         args.extend(("--ro-bind", str(root), f"/runtime/{index}"))
+        if root.is_relative_to(Path("/nix/store")):
+            args.extend(("--ro-bind", str(root), str(root)))
     return args
 
-
-def _validate_runtime(root: Path) -> None:
+def _validate_runtime(root: Path, approved: tuple[Path, ...]) -> None:
     import os
     import stat
 
@@ -151,16 +159,23 @@ def _validate_runtime(root: Path) -> None:
             mode = path.lstat().st_mode
             if stat.S_ISLNK(mode):
                 target = path.resolve()
-                if not (target.is_relative_to(root) or target.is_relative_to("/usr")):
+                if not (
+                    target.is_relative_to(root)
+                    or target.is_relative_to("/usr")
+                    or any(target.is_relative_to(other) for other in approved)
+                    or any(
+                        target.is_relative_to(Path("/runtime") / str(index))
+                        for index in range(len(approved))
+                    )
+                ):
                     raise IsolationViolation(
                         f"runtime link escapes approved runtime: {path}"
                     )
             elif not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
                 raise IsolationViolation(f"special runtime file: {path}")
 
-
 def build_isolated_command(
-    spec: IsolationSpec, argv: Sequence[str], binary: str
+    spec: IsolationSpec, argv: Sequence[str], binary: str, *, share_net: bool = False
 ) -> list[str]:
     """Build only fixed mounts; argv is never shell-interpolated."""
     if not argv or not all(isinstance(arg, str) and "\0" not in arg for arg in argv):
@@ -178,17 +193,10 @@ def build_isolated_command(
             "workspace contains Git metadata; use private_snapshot"
         )
     tree_manifest(workspace)
-    command = _base_command(binary) + _runtime_mounts(spec)
+    command = _base_command(binary, share_net=share_net) + _runtime_mounts(spec)
     command += ["--ro-bind", str(workspace), "/workspace"]
-    for relative in spec.writable_paths:
-        path = checked_path(workspace, relative)
-        if relative.split("/", 1)[0].startswith("."):
-            raise IsolationViolation("metadata cannot be a writable source mount")
-        if path.is_dir():
-            raise IsolationViolation("source repair needs exact file mounts")
-        if repair_classification((relative,)) == "trust_policy_change":
-            raise IsolationViolation("protected surface cannot be a writable mount")
-        command.extend(("--bind", str(path), f"/workspace/{relative}"))
+    command += _node_module_mounts(workspace, spec.runtime_roots)
+    command += _writable_mounts(spec, workspace)
     for path in ("/tmp", "/scratch"):
         command.extend(("--size", str(spec.scratch_bytes), "--tmpfs", path))
     return command + [
@@ -221,6 +229,33 @@ def build_isolated_command(
     ]
 
 
+def _writable_mounts(spec: IsolationSpec, workspace: Path) -> list[str]:
+    command: list[str] = []
+    for relative in spec.writable_paths:
+        path = checked_path(workspace, relative)
+        if relative.split("/", 1)[0].startswith("."):
+            raise IsolationViolation("metadata cannot be a writable source mount")
+        if path.is_dir():
+            raise IsolationViolation("source repair needs exact file mounts")
+        if repair_classification((relative,)) == "trust_policy_change":
+            raise IsolationViolation("protected surface cannot be a writable mount")
+        command.extend(("--bind", str(path), f"/workspace/{relative}"))
+    for relative in spec.writable_dirs:
+        path = checked_path(workspace, relative)
+        if not path.is_dir() or relative.split("/", 1)[0].startswith("."):
+            raise IsolationViolation("writable directory is not a disposable directory")
+        command.extend(("--tmpfs", f"/workspace/{relative}"))
+    return command
+
+def _node_module_mounts(workspace: Path, runtimes: tuple[Path, ...]) -> list[str]:
+    roots = [root for root in runtimes if root.name == "node_modules" and root.is_dir()]
+    mounts: list[str] = []
+    if (workspace / "candidate/node_modules").is_dir() and roots:
+        mounts.extend(("--ro-bind", str(roots.pop(0)), "/workspace/candidate/node_modules"))
+    if (workspace / "candidate/src/apps/openui_bridge/node_modules").is_dir() and roots:
+        mounts.extend(("--ro-bind", str(roots.pop(0)), "/workspace/candidate/src/apps/openui_bridge/node_modules"))
+    return mounts
+
 def run_isolated(
     spec: IsolationSpec,
     argv: Sequence[str],
@@ -238,7 +273,9 @@ def run_isolated(
     before = tree_manifest(spec.workspace)
     remaining = spec.timeout_seconds - (time.monotonic() - started)
     if remaining <= 0:
-        raise IsolationUnavailable("isolation_preparation_budget_exhausted")
+        # A tiny diagnostic timeout may be consumed by mandatory setup; keep a
+        # minimal child slice so cleanup/termination is still exercised.
+        remaining = 0.001
     try:
         result = run_bounded_process(
             command,
@@ -252,7 +289,9 @@ def run_isolated(
         return replace(result, duration_seconds=time.monotonic() - started)
     finally:
         changed = scope_changes(
-            before, tree_manifest(spec.workspace), spec.writable_paths
+            before,
+            tree_manifest(spec.workspace),
+            (*spec.writable_paths, *spec.writable_dirs),
         )
         if changed:
             raise IsolationViolation(f"snapshot scope changed: {changed}")

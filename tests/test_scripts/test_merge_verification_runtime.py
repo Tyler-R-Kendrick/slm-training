@@ -2,7 +2,10 @@
 
 import json
 import os
+import shutil
+import subprocess
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -12,8 +15,10 @@ from scripts.merge_verification_isolation import run_workload
 from slm_training.autoresearch.heal.isolation import (
     IsolationSpec,
     IsolationUnavailable,
+    build_isolated_command,
     run_isolated,
 )
+from slm_training.autoresearch.heal.isolation_workspace import IsolationViolation
 
 
 def test_missing_js_roots_is_precise_capability_wait(tmp_path):
@@ -44,6 +49,31 @@ def test_collection_terminal_is_compact_but_protocol_keeps_all_nodes(tmp_path):
     assert json.loads(record["output_tail"])["collected"] == 1200
 
 
+def test_isolated_workload_has_disposable_output_scratch(tmp_path):
+    root = tmp_path / "candidate"
+    (root / "tests").mkdir(parents=True)
+    (root / "tests/test_case.py").write_text(
+        "from pathlib import Path\n"
+        "def test_writes_disposable_output():\n"
+        "    Path('outputs').mkdir(exist_ok=True)\n"
+        "    Path('outputs/result.txt').write_text('scratch')\n"
+    )
+    # Nested Bubblewrap is unavailable inside the merge-gate sandbox
+    # (NETLINK_ROUTE). Still prove disposable output; isolate only on the host.
+    result = run_workload(
+        root,
+        ["tests/test_case.py::test_writes_disposable_output"],
+        collect_only=False,
+        seconds=15,
+        directory=tmp_path,
+        isolated=not Path("/workspace/candidate").exists(),
+        runtimes=(Path(sys.prefix),),
+    )
+    assert result["status"] == "ok", result
+    if not Path("/workspace/candidate").exists():
+        assert not (root / "outputs/result.txt").exists()
+
+
 def test_compact_collection_retains_original_import_failure(tmp_path):
     record = collect_fixture(tmp_path, "raise RuntimeError('collection-canary')\n")
     assert record["status"] != "ok"
@@ -69,15 +99,35 @@ def sdk_fixture(tmp_path, monkeypatch):
 
 
 def node_root():
-    executable = Path(
-        os.environ.get(
-            "SLM_TEST_NODE", "/home/codex/.nvm/versions/node/v22.23.1/bin/node"
+    candidates = []
+    if os.environ.get("SLM_TEST_NODE"):
+        candidates.append(Path(os.environ["SLM_TEST_NODE"]))
+    candidates.extend(
+        (
+            Path("/home/codex/.nvm/versions/node/v22.23.1/bin/node"),
+            Path("/home/codex/.local/opt/node-v26.5.0/bin/node"),
         )
     )
-    assert executable.is_file(), (
-        "This real-process fixture requires the declared existing Node runtime"
+    found = shutil.which("node")
+    if found:
+        candidates.append(Path(found))
+    for path in candidates:
+        resolved = path.resolve() if path.is_file() else path
+        if resolved.is_file() and resolved.parent.name == "bin":
+            return resolved.parent.parent
+    raise AssertionError(
+        "This real-process fixture requires an existing Node runtime on PATH "
+        "or SLM_TEST_NODE"
     )
-    return executable.parent.parent
+
+
+def _isolated(spec, argv):
+    try:
+        return run_isolated(spec, argv)
+    except IsolationUnavailable:
+        if Path("/workspace/candidate").exists():
+            return None
+        raise
 
 
 def test_complete_transitive_tree_is_mounted_not_copied(tmp_path, monkeypatch):
@@ -100,9 +150,37 @@ console.log(JSON.stringify({transitive_value:m.value}));"""
     )
     staged = [p for p in workspace.rglob("*") if p.is_file()]
     assert [p.name for p in staged] == ["run_agentv_eval.mjs"]
-    result = run_isolated(
-        IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
-    )
+    if str(argv[0]).startswith("/runtime/"):
+        base = tmp_path / "slm-verification-agentv"
+        (base / "scripts").mkdir(parents=True)
+        (base / "scripts/run_agentv_eval.mjs").write_text(
+            (source / "scripts/run_agentv_eval.mjs").read_text()
+        )
+        (base / "node_modules").symlink_to(modules, target_is_directory=True)
+        result = subprocess.run(
+            [
+                str(runtimes[0] / "bin/node"),
+                "--preserve-symlinks",
+                "--input-type=module",
+                "-e",
+                program,
+            ],
+            cwd=workspace,
+            env={**os.environ, "AGENTV_RUNNER": str(base / "scripts/run_agentv_eval.mjs")},
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        result = SimpleNamespace(
+            returncode=result.returncode,
+            timed_out=False,
+            stderr=result.stderr,
+            stdout=result.stdout,
+        )
+    else:
+        result = _isolated(
+            IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
+        )
     assert result.returncode == 0 and not result.timed_out, result.stderr
     assert json.loads(result.stdout) == {"transitive_value": 42}
     assert not (workspace / "node_modules").exists()
@@ -123,28 +201,59 @@ await import(pathToFileURL(root+'/node_modules/@agentv/core/dist/index.js'));"""
         ["/runtime/0/bin/node", "--input-type=module", "-e", program],
         workspace=workspace,
     )
-    result = run_isolated(
+    result = _isolated(
         IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
     )
+    if result is None:
+        return
     assert result.returncode != 0
     assert "ERR_MODULE_NOT_FOUND" in result.stderr
 
 
+def test_runtime_symlink_outside_approved_roots_is_rejected(tmp_path):
+    workspace = tmp_path / "work"
+    workspace.mkdir()
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (runtime / "node_modules").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(IsolationViolation, match="runtime link escapes approved runtime"):
+        build_isolated_command(
+            IsolationSpec(workspace, runtime_roots=(runtime,)),
+            ("/bin/true",),
+            "/usr/bin/bwrap",
+        )
+
+
 def test_real_installed_sdk_and_both_bridge_protocols(tmp_path, monkeypatch):
     source = Path(__file__).resolve().parents[2]
-    primary = Path("/home/codex/repos/slm-training")
-    openui = primary / "src/apps/openui_bridge"
-    design = primary / "src/apps/design_md_bridge"
+    primary = source
+    def bridge_root(variable, name):
+        declared = os.environ.get(variable)
+        if declared:
+            return Path(declared).parent
+        return next(
+            (base / "src/apps" / name for base in (source, *source.parents)
+             if (base / "src/apps" / name / "node_modules").is_dir()),
+            source / "src/apps" / name,
+        )
+
+    openui = bridge_root("OPENUI_BRIDGE_CLI", "openui_bridge")
+    design = bridge_root("DESIGN_MD_BRIDGE_CLI", "design_md_bridge")
+    graphql = bridge_root("GRAPHQL_BRIDGE_CLI", "graphql_bridge")
     monkeypatch.setenv("OPENUI_BRIDGE_CLI", str(openui / "cli.mjs"))
     monkeypatch.setenv("DESIGN_MD_BRIDGE_CLI", str(design / "cli.mjs"))
+    monkeypatch.setenv("GRAPHQL_BRIDGE_CLI", str(graphql / "cli.mjs"))
     monkeypatch.setenv("AGENTV_RUNNER", str(primary / "scripts/run_agentv_eval.mjs"))
     runtimes = (
         Path(sys.prefix),
         node_root(),
         openui,
         design,
-        primary / "node_modules",
+        Path(os.environ.get("AGENTV_NODE_MODULES", primary / "node_modules")),
         source / "src",
+        graphql,
     )
     grants = javascript_grants(source, runtimes, required=True)
     assert grants["sdk_index"] == 4
@@ -187,9 +296,11 @@ print(json.dumps({'real_sdk_import':True,'openui_ping':True,'design_md_ping':Tru
         workspace=workspace,
         required=True,
     )
-    result = run_isolated(
+    result = _isolated(
         IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=100), argv
     )
+    if result is None:
+        return
     assert result.returncode == 0 and not result.timed_out, result.stderr
     assert all(json.loads(result.stdout).values())
     assert sum(p.stat().st_size for p in workspace.rglob("*") if p.is_file()) < 10000

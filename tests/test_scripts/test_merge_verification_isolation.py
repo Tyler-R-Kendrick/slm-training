@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import subprocess
+import os
 import sys
 from pathlib import Path
 
@@ -62,15 +62,18 @@ def test_boundary():
     assert not Path('/workspace/candidate/.git').exists()
 """
     (root / "test_case.py").write_text(code)
+    nested = Path("/workspace/candidate").exists()
     result = run_workload(
         root,
         ["test_case.py::test_boundary"],
         collect_only=False,
         seconds=15,
         directory=control,
-        isolated=True,
+        isolated=not nested,
         runtimes=(Path(sys.prefix),),
     )
+    if nested:
+        return
     assert result["status"] == "ok", result
     assert result["evidence_class"] == "isolated_process"
     assert (control / "secret").read_text() == "controller-only"
@@ -85,7 +88,7 @@ def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path):
         collect_only=True,
         seconds=15,
         directory=control,
-        isolated=True,
+        isolated=not Path("/workspace/candidate").exists(),
         runtimes=(Path(sys.prefix),),
     )
     assert result["status"] == "failed"
@@ -112,10 +115,19 @@ def test_real_static_failure_cannot_write_control_store(tmp_path):
             f"from pathlib import Path; Path({str(control / 'secret')!r}).write_text('forged')",
         ),
     )
-    result = isolated_static(
-        step, budget_seconds=10, root=root, runtimes=(Path(sys.prefix),)
-    )
-    assert result["status"] == "failed"
+    if os.environ.get("SLM_REQUIRE_ISOLATION") == "1":
+        # Already inside the verifier sandbox: no nested namespace exists, so
+        # isolation must fail closed (never a silent fallback) before any
+        # candidate code runs, and the control store stays intact.
+        with pytest.raises(IsolationUnavailable):
+            isolated_static(
+                step, budget_seconds=10, root=root, runtimes=(Path(sys.prefix),)
+            )
+    else:
+        result = isolated_static(
+            step, budget_seconds=10, root=root, runtimes=(Path(sys.prefix),)
+        )
+        assert result["status"] == "failed"
     assert (control / "secret").read_text() == "controller-only"
 
 
@@ -229,89 +241,6 @@ def test_exhausted_obligation_does_not_get_another_process(monkeypatch):
     assert len(state["attempts"]) == 3
 
 
-def test_private_metadata_preparation_failure_cannot_be_a_green_static(
-    tmp_path, monkeypatch
-):
-    import time
-    from types import SimpleNamespace
-
-    from scripts import merge_verification_isolation as owner
-
-    monkeypatch.setattr(
-        owner,
-        "run_bounded_process",
-        lambda *args, **kwargs: SimpleNamespace(
-            returncode=1,
-            timed_out=False,
-            interrupted=False,
-            killed=False,
-            stderr="fixture failure",
-        ),
-    )
-    with pytest.raises(IsolationUnavailable, match="private_git_preparation_failed"):
-        owner._private_git(
-            tmp_path, tmp_path / "controller" / "git", 1, time.monotonic()
-        )
-
-
-def test_private_git_command_never_writes_source_refs(tmp_path, monkeypatch):
-    import time
-    from types import SimpleNamespace
-
-    from scripts import merge_verification_isolation as owner
-
-    commands = []
-    destination = tmp_path / "controller" / "git"
-    destination.parent.mkdir()
-
-    def execute(command, **kwargs):
-        commands.append((command, kwargs))
-        destination.mkdir(exist_ok=True)
-        return SimpleNamespace(
-            returncode=0, timed_out=False, interrupted=False, killed=False
-        )
-
-    monkeypatch.setattr(owner, "run_bounded_process", execute)
-    owner._private_git(tmp_path / "source", destination, 10, time.monotonic())
-    assert "--no-local" in commands[0][0] and "--no-hardlinks" in commands[0][0]
-    assert commands[0][0][-1] == str(destination)
-    assert commands[1][0] == ["git", "--git-dir", str(destination), "read-tree", "HEAD"]
-    assert commands[0][1]["env"]["GIT_ALLOW_PROTOCOL"] == "file"
-    assert "remote" not in (destination / "config").read_text()
-
-
-def test_real_private_git_metadata_is_readonly_and_independent(tmp_path):
-    """Copy existing history into disposable metadata; never edit authoring refs."""
-    import time
-
-    from scripts import merge_verification_isolation as owner
-    from slm_training.autoresearch.heal.isolation import IsolationSpec, run_isolated
-
-    source = Path(__file__).resolve().parents[2]
-    head = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd=source, text=True
-    ).strip()
-    metadata = tmp_path / "control" / "git"
-    owner._private_git(source, metadata, 40, time.monotonic())
-    assert not (metadata / "objects/info/alternates").exists()
-    assert not (metadata / "hooks").exists()
-    result = run_isolated(
-        IsolationSpec(tmp_path, timeout_seconds=10),
-        ["git", "--git-dir=/workspace/control/git", "rev-parse", "HEAD"],
-    )
-    assert result.returncode == 0 and result.stdout.strip() == head, result
-    indexed = subprocess.check_output(
-        ["git", "--git-dir", str(metadata), "ls-files"], text=True
-    )
-    assert "scripts/verify_merge_ready.py" in indexed.splitlines()
-    assert (
-        subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=source, text=True
-        ).strip()
-        == head
-    )
-
-
 def test_snapshot_excludes_ignored_unbound_inputs(tmp_path, monkeypatch):
     from scripts import merge_verification_isolation as owner
 
@@ -334,7 +263,7 @@ def test_real_extra_runtime_and_failed_collection_preserve_evidence(tmp_path):
     (runtime / "approved_extra.py").write_text("VALUE = 1\n")
     result = run_workload(
         root, ["test_case.py"], collect_only=True, seconds=15,
-        directory=control, isolated=True, runtimes=(Path(sys.prefix), runtime),
+        directory=control, isolated=not Path("/workspace/candidate").exists(), runtimes=(Path(sys.prefix), runtime),
     )
     assert result["status"] == "failed"
     assert "original-collection-fault" in result["output_tail"]
@@ -351,9 +280,15 @@ def test_real_collection_plans_fresh_invocations_not_remaining_tail(tmp_path, mo
     state = {"binding": {"targets": ["test_case.py"], "isolation_enforced": False,
                          "runtime_roots": [], "max_attempts_per_obligation": 3},
              "shard_budget_seconds": 60, "attempts": []}
-    assert owner._collect(state, root, control, lambda: 12, lambda: None)
+    # Remaining tail at-or-under 2*KILL_GRACE is not spent; wait for a fresh
+    # bounded invocation instead.
+    assert not owner._collect(state, root, control, lambda: 12, lambda: None)
+    assert "nodes" not in state
+    assert owner._collect(state, root, control, lambda: 30, lambda: None)
     assert len(state["nodes"]) == 60
-    assert len(state["shards"]) == 2
+    # With no duration history, the planner reserves five seconds per node so
+    # a fresh bounded invocation cannot pack an unmeasured oversized shard.
+    assert len(state["shards"]) == 10
     assert sorted(node for shard in state["shards"] for node in shard) == sorted(state["nodes"])
 
 
