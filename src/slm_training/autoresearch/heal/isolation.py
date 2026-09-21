@@ -7,6 +7,7 @@ mounted. Missing isolation is an explicit capability failure, never a fallback.
 from __future__ import annotations
 
 import math
+import os
 import shutil
 import threading
 import time
@@ -96,6 +97,10 @@ def _base_command(binary: str, *, share_net: bool = False) -> list[str]:
 
 def probe_isolation() -> IsolationCapability:
     """Probe the real namespaces/flags; availability alone conveys no grant."""
+    if os.environ.get("SLM_REQUIRE_ISOLATION") == "1":
+        return IsolationCapability(
+            False, "bubblewrap", "nested_isolation_not_allowed", None
+        )
     binary = shutil.which("bwrap")
     if binary is None:
         return IsolationCapability(False, "bubblewrap", "bwrap_not_installed", None)
