@@ -125,7 +125,10 @@ def _isolated(spec, argv):
     try:
         return run_isolated(spec, argv)
     except IsolationUnavailable:
-        if Path("/workspace/candidate").exists():
+        if (
+            Path("/workspace/candidate").exists()
+            or os.environ.get("SLM_REQUIRE_ISOLATION") == "1"
+        ):
             return None
         raise
 
