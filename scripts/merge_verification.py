@@ -83,6 +83,7 @@ def verification_binding(
         "merge_verification_isolation.py",
         "merge_verification_summary.py",
         "merge_verification_controller.py",
+        "merge_verification_successor.py",
         "merge_verification_runtime.py",
         "verify_merge_ready.py",
     )
