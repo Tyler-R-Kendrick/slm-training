@@ -55,7 +55,10 @@ def source_paths(root: Path) -> list[str]:
     return sorted(set(result.stdout.decode().split("\0")) - {""})
 
 
-def environment_identity() -> dict:
+def environment_identity(*, runtime_identity_value: str | None = None) -> dict:
+    runtime_identity_value = runtime_identity_value or os.environ.get(
+        "MERGE_VERIFICATION_RUNTIME_IDENTITY"
+    )
     # Keep package discovery independent of the caller's sys.path[0].
     package_paths = list(site.getsitepackages())
     try:
@@ -86,7 +89,9 @@ def environment_identity() -> dict:
             for key, path in commands.items()
             if key != "AGENTV_NODE_MODULES"
         },
-        "javascript_runtime_dependencies": _javascript_runtime_dependencies(commands),
+        "javascript_runtime_dependencies": _javascript_runtime_dependencies(
+            commands, runtime_identity_value
+        ),
         "execution_environment_sha256": digest(
             {
                 key: os.pathsep.join(map(os.path.abspath, value.split(os.pathsep)))
@@ -102,7 +107,9 @@ def environment_identity() -> dict:
     }
 
 
-def _javascript_runtime_dependencies(commands: dict[str, str | None]) -> dict:
+def _javascript_runtime_dependencies(
+    commands: dict[str, str | None], runtime_identity_value: str | None = None
+) -> dict:
     roots = set()
     locks = {}
     if modules := commands.get("AGENTV_NODE_MODULES"):
@@ -123,12 +130,21 @@ def _javascript_runtime_dependencies(commands: dict[str, str | None]) -> dict:
             modules = directory / "node_modules"
             if modules.is_dir():
                 roots.add(modules)
-    return {
-        "trees": {
+    if runtime_identity_value is None:
+        trees = {
             str(root.resolve()): runtime_identity((root,))
             for root in sorted(roots, key=str)
             if root.is_dir()
-        },
+        }
+    else:
+        if len(runtime_identity_value) != 64 or any(
+            char not in "0123456789abcdef" for char in runtime_identity_value
+        ):
+            raise ValueError("invalid controller runtime identity")
+        # The controller's immutable runtime bundle already covers these trees.
+        trees = {"controller_runtime_identity": runtime_identity_value}
+    return {
+        "trees": trees,
         "package_locks": locks,
     }
 
