@@ -390,4 +390,4 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
                 ]
             )
             == 1
-        
+        )
