@@ -40,7 +40,21 @@ def repair_grant_budget(events, grant, journal):
         known,
         event_grants,
         request_grants,
+        grant_ids,
     )
+
+
+def diagnosis_budget_exhausted(events, grant, journal, request_digest, allocation):
+    reserved, seconds, attempts, _, _, _, grant_ids = repair_grant_budget(
+        events, grant, journal
+    )
+    charged = sum(
+        event.get("detail", {}).get("grant_id") in grant_ids
+        and event.get("detail", {}).get("original_request_digest") == request_digest
+        for event in events
+        if event["event_type"] == "operation_diagnosis_started"
+    )
+    return charged >= attempts or reserved + allocation > seconds
 
 
 def validate_blocker_grant_successor(
@@ -99,21 +113,32 @@ def _stored_grant_bindings(events, journal):
     event_grants, request_grants = {}, {}
     root = journal.root / "artifacts" / "repair_requests"
     for event in events:
+        detail = event.get("detail", {})
+        stored = _inline_grant(detail)
         sha = event.get("artifact_sha256")
-        if event["event_type"] != "repair_started" or not isinstance(sha, str):
-            continue
-        if not re.fullmatch(r"[0-9a-f]{64}", sha):
-            continue
-        try:
-            value = json.loads((root / f"{sha}.json").read_text())
-            stored = RepairGrant.model_validate_json(json.dumps(value["grant"]))
-        except (OSError, ValueError, KeyError, TypeError):
+        if event["event_type"] == "repair_started" and isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha):
+            try:
+                value = json.loads((root / f"{sha}.json").read_text())
+                stored = RepairGrant.model_validate_json(json.dumps(value["grant"]))
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        if stored is None:
             continue
         event_grants[id(event)] = stored
-        request_digest = event.get("detail", {}).get("request_digest")
+        request_digest = detail.get("request_digest")
         if isinstance(request_digest, str):
             request_grants[request_digest] = stored
     return event_grants, request_grants
+
+
+def _inline_grant(detail):
+    value = detail.get("grant_record")
+    if not isinstance(value, dict):
+        return None
+    try:
+        return RepairGrant.model_validate_json(json.dumps(value))
+    except (ValueError, TypeError):
+        return None
 
 
 def _stored_event_grant(event, event_grants, request_grants):

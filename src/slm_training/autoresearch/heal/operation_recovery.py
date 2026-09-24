@@ -21,7 +21,7 @@ from slm_training.harness_core.bounded_process import ProcessOutcome
 from slm_training.levers import KILL_GRACE_SECONDS
 
 from .isolation import IsolationSpec, IsolationUnavailable, run_isolated
-from .dispatch import reserved_repair_seconds
+from .grant_accounting import diagnosis_budget_exhausted
 from .isolation_workspace import manifest_digest, private_snapshot, tree_manifest
 from .repair_release import verified_activation_handoff
 
@@ -155,20 +155,24 @@ def diagnose_operation(pending, context, config, journal):
     if grant is None or grant.expires_at <= time.time():
         return None, "diagnosis_grant_missing_or_expired", False
     seconds = min(10.0, grant.interrupt_seconds)
-    reserved = reserved_repair_seconds(events, grant, journal)
-    if (
-        len(matches) >= grant.max_attempts
-        or reserved + seconds + KILL_GRACE_SECONDS > grant.total_seconds
+    if diagnosis_budget_exhausted(
+        events,
+        grant,
+        journal,
+        pending["original_request_digest"],
+        seconds + KILL_GRACE_SECONDS,
     ):
         return None, "diagnosis_grant_exhausted", False
     journal.append_event(
         "operation_diagnosis_started",
         detail={
             "diagnosis_id": identity,
+            "original_request_digest": pending["original_request_digest"],
             "attempt_id": context.attempt_id,
             "grant_digest": grant.digest(),
             "grant_id": grant.grant_id,
             "grant_accounting_digest": grant.accounting_digest(),
+            "grant_record": grant.model_dump(mode="json"),
             "reserved_seconds": seconds + KILL_GRACE_SECONDS,
         },
     )

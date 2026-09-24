@@ -10,7 +10,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable
 
-from slm_training.autoresearch.heal.dispatch import accept_verification, reserved_repair_seconds
+from slm_training.autoresearch.heal.dispatch import accept_verification
+from slm_training.autoresearch.heal.grant_accounting import repair_grant_budget
 from slm_training.autoresearch.heal.isolation_workspace import (
     manifest_digest,
     owner_write_preparation,
@@ -197,8 +198,10 @@ def _reserve_verification(
     count = 4 + len(spec.checks) + 2 * len(spec.equivalence_checks)
     reserve = min(MAX_RUN_SECONDS, count * (spec.timeout_seconds + KILL_GRACE_SECONDS))
     events = journal.verify_event_chain()
-    spent = reserved_repair_seconds(events, request.grant, journal)
-    if spent + reserve > request.grant.total_seconds:
+    spent, total_budget, _, _, _, _, _ = repair_grant_budget(
+        events, request.grant, journal
+    )
+    if spent + reserve > total_budget:
         return "verification_grant_exhausted"
     journal.append_event(
         "repair_verification_started",

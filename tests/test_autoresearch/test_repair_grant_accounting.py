@@ -256,3 +256,40 @@ def test_successor_budget_and_attempts_are_cumulative(
             fork_request, executor=executor, journal=journal, fence_valid=lambda _: True
         )
     assert executor.runner.calls == 2
+
+
+def test_successor_budget_covers_independent_verification(
+    repair_request, journal
+):
+    from types import SimpleNamespace
+
+    from slm_training.autoresearch.heal.repair_acceptance import _reserve_verification
+
+    predecessor = repair_request.grant.model_copy(update={"total_seconds": 100.0})
+    original = repair_request.model_copy(update={"grant": predecessor})
+    artifact = journal.write_artifact("repair_requests", original)
+    journal.append_event(
+        "repair_started",
+        artifact_sha256=artifact.stem,
+        detail={
+            "fingerprint": original.blocker.fingerprint(),
+            "attempt_id": original.attempt_id,
+            "request_digest": original.digest(),
+            "grant_id": predecessor.grant_id,
+            "grant_accounting_digest": predecessor.accounting_digest(),
+            "reserved_seconds": 80,
+        },
+    )
+    successor = predecessor.model_copy(
+        update={
+            "grant_id": "verification-successor",
+            "successor_of": predecessor.grant_id,
+            "max_attempts": 1,
+            "total_seconds": 50.0,
+        }
+    )
+    request = original.model_copy(update={"grant": successor})
+    spec = SimpleNamespace(
+        checks=(), equivalence_checks=(), timeout_seconds=1, fencing_token="fence"
+    )
+    assert _reserve_verification(request, spec, journal) is None

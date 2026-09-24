@@ -78,6 +78,50 @@ def test_diagnosis_cannot_ignore_agent_reservations(diagnosed):
     assert reason == "diagnosis_grant_exhausted" and not ran and not probes
 
 
+def test_successor_grant_carries_diagnosis_budget_and_attempts(diagnosed):
+    context, config, probes = diagnosed
+    predecessor = config.grant
+    successor = predecessor.model_copy(
+        update={
+            "grant_id": "fixture-successor",
+            "successor_of": predecessor.grant_id,
+            "max_attempts": 1,
+            "total_seconds": 20,
+        }
+    )
+    config = config.model_copy(update={"grant": successor})
+    pending = {
+        "original_operation": "inspect",
+        "original_request_digest": SHA,
+        "observed_outcome": "unknown_failure",
+        "affected_activity_id": "original",
+        "failure_observation": {
+            "returncode": 1,
+            "stdout_sha256": hashlib.sha256(b"broken\n").hexdigest(),
+            "stderr_sha256": hashlib.sha256(b"").hexdigest(),
+            "truncated": False,
+        },
+    }
+    journal = CampaignStore("campaign", context.root)
+    journal.append_event(
+        "operation_diagnosis_started",
+        detail={
+            "diagnosis_id": "prior-config-diagnosis",
+            "original_request_digest": SHA,
+            "attempt_id": "previous-attempt",
+            "grant_id": predecessor.grant_id,
+            "grant_accounting_digest": predecessor.accounting_digest(),
+            "grant_record": predecessor.model_dump(mode="json"),
+            "reserved_seconds": 90,
+        },
+    )
+    resolved, reason, ran = bridge.diagnose_operation(
+        pending, context, config, journal
+    )
+    assert resolved and reason == "original_fault_reproduced" and ran
+    assert len(probes) == 1
+
+
 def test_other_explicit_grant_is_not_charged(repair_request, journal, executor):
     from slm_training.autoresearch.heal.dispatch import dispatch_repair
 

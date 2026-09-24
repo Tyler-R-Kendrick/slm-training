@@ -145,7 +145,15 @@ def dispatch_repair(
             ),
         )
     assert request.grant is not None and executor is not None
-    reserved, total_budget, attempt_budget, known, event_grants, request_grants = (
+    (
+        reserved,
+        total_budget,
+        attempt_budget,
+        known,
+        event_grants,
+        request_grants,
+        _,
+    ) = (
         repair_grant_budget(events, request.grant, journal)
     )
     validate_blocker_grant_successor(
