@@ -63,6 +63,9 @@ def verification_binding(
     runtimes: tuple[Path, ...] = (),
     runtime_digest_value: str | None = None,
 ) -> dict:
+    runtime_digest_value = runtime_digest_value or os.environ.get(
+        "MERGE_VERIFICATION_RUNTIME_IDENTITY"
+    )
     if runtime_digest_value is not None and (
         len(runtime_digest_value) != 64
         or any(char not in "0123456789abcdef" for char in runtime_digest_value)
@@ -91,7 +94,9 @@ def verification_binding(
         "candidate_tree_sha256": source_identity(root),
         "changed_paths": paths,
         "targets": targets,
-        "environment": environment_identity(),
+        "environment": environment_identity(
+            runtime_identity_value=runtime_digest_value
+        ),
         "pytest_options": PYTEST_OPTIONS,
         "selection_rules": {
             name: file_digest(Path(__file__).with_name(name)) for name in rule_paths
@@ -123,7 +128,7 @@ def _identity_mismatch(state, root: Path) -> str:
     runtime_digest = os.environ.get("MERGE_VERIFICATION_RUNTIME_IDENTITY")
     checks = (
         (source_identity(root), state["binding"]["candidate_tree_sha256"], "source_changed_during_verification"),
-        (environment_identity(), state["binding"]["environment"], "environment_changed_during_verification"),
+        (environment_identity(runtime_identity_value=runtime_digest), state["binding"]["environment"], "environment_changed_during_verification"),
         (
             runtime_digest
             or runtime_identity(
