@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import importlib
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 torch = pytest.importorskip("torch")
 
-from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.train_loop import train
 from slm_training.levers import MAX_HARNESS_WALL_MINUTES
@@ -137,7 +138,10 @@ def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None
     assert full_state.exists()
 
     part_b = train(_cfg(train_dir, tmp_path, "part_b", 6, resume_from=full_state))
-    assert part_b["resumed_from"] == str(full_state)
+    # The reported input is now the entire validated publication, not its loose alias.
+    published_state = Path(part_a["checkpoint"]).parent / "last_full_state.pt"
+    assert part_b["resumed_from"] == str(published_state)
+    assert published_state.read_bytes() == full_state.read_bytes()
     assert part_b["steps"] == 6
     assert part_b["last_loss"] == pytest.approx(full["last_loss"], abs=0.0)
     assert part_b["seen_target_tokens"] == full["seen_target_tokens"]
@@ -176,7 +180,7 @@ def test_periodic_full_state_checkpoint_saves_after_optimizer_steps(
         _cfg(train_dir, tmp_path, "periodic", 2, checkpoint_every_steps=1)
     )
 
-    assert saved_steps == [1, 2, 2]
+    assert saved_steps == [0, 1, 2, 2]
     assert summary["stopped_on"] == "steps"
     assert (
         tmp_path / "runs" / "periodic" / "checkpoints" / "last_full_state.pt"
@@ -228,32 +232,8 @@ def test_initialize_from_resets_state_for_new_corpus(
     other_dir = tmp_path / "other_train"
     other_dir.mkdir()
     rows = [
-        ExampleRecord(
-            id=f"new-{index}",
-            prompt=prompt,
-            openui=openui,
-            split="train",
-            placeholders=placeholders,
-        )
-        for index, (prompt, openui, placeholders) in enumerate(
-            [
-                (
-                    "Hero",
-                    HERO,
-                    [":slot_0", ":slot_1"],
-                ),
-                (
-                    "CTA",
-                    CTA,
-                    [":slot_0"],
-                ),
-                (
-                    "Hero two",
-                    HERO,
-                    [":slot_0", ":slot_1"],
-                ),
-            ]
-        )
+        replace(record, id=f"new-{index}")
+        for index, record in enumerate(load_jsonl(train_dir / "records.jsonl"))
     ]
     write_jsonl(other_dir / "records.jsonl", rows)
 

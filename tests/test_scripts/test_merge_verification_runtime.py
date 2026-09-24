@@ -10,7 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from scripts.merge_verification_runtime import javascript_grants, runtime_argv
+from scripts.merge_verification_runtime import (
+    approved_runtime_roots,
+    javascript_grants,
+    runtime_argv,
+)
 from scripts.merge_verification_isolation import run_workload
 from slm_training.autoresearch.heal.isolation import (
     IsolationSpec,
@@ -26,6 +30,20 @@ def test_missing_js_roots_is_precise_capability_wait(tmp_path):
         IsolationUnavailable, match="explicit_js_runtime_grants_missing"
     ):
         javascript_grants(tmp_path, (), required=True)
+
+
+def test_approved_runtime_roots_include_source_bridge_and_node(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    bridge = source / "src/apps/openui_bridge/node_modules"
+    bridge.mkdir(parents=True)
+    node_root = tmp_path / "node"
+    node = node_root / "bin/node"
+    node.parent.mkdir(parents=True)
+    node.write_text("#!/bin/sh\nexit 0\n")
+    node.chmod(0o755)
+    monkeypatch.setenv("PATH", str(node.parent))
+
+    assert approved_runtime_roots(source, ()) == (Path(sys.prefix), bridge, node_root)
 
 
 def collect_fixture(tmp_path, source):

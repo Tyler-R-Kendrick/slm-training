@@ -21,6 +21,7 @@ from slm_training.harness_core.bounded_process import ProcessOutcome
 from slm_training.levers import KILL_GRACE_SECONDS
 
 from .isolation import IsolationSpec, IsolationUnavailable, run_isolated
+from .dispatch import reserved_repair_seconds
 from .isolation_workspace import manifest_digest, private_snapshot, tree_manifest
 from .repair_release import verified_activation_handoff
 
@@ -75,7 +76,8 @@ def pending_operation_repairs(runtime) -> list[dict]:
     """Recover the repair queue from the canonical events, including after crash."""
     states = runtime.snapshot()
     latest = {}
-    for event in runtime.store.verify_event_chain():
+    events = runtime.store.verify_event_chain()
+    for event in events:
         if event["event_type"] == "operation_repair_requested":
             latest[event["experiment_id"]] = event["detail"]
     jobs = []
@@ -87,6 +89,8 @@ def pending_operation_repairs(runtime) -> list[dict]:
         }:
             continue
         original = detail["request"]
+        if detail["pending"].get("observed_outcome") == ActivityOutcome.WALL_BUDGET.value:
+            continue  # Remaining grant/cursor reconciliation belongs to the driver.
         # Do not spawn recursive repair-of-repair chains. The original durable
         # job remains visible and capability/diagnosis receipts explain its wait.
         if original["operation"] == "repair":
@@ -102,7 +106,10 @@ def pending_operation_repairs(runtime) -> list[dict]:
                 "playbooks_enabled": original.get("playbooks_enabled", False),
             }
         )
-    return jobs
+    serviced = {event["experiment_id"]: index for index, event in enumerate(events)
+                if event["event_type"] == "operation_repair_serviced"}
+    return sorted(jobs, key=lambda job: serviced.get(
+        job["hard_pending"][0]["affected_activity_id"], -1))
 
 
 def diagnose_operation(pending, context, config, journal):
@@ -148,12 +155,7 @@ def diagnose_operation(pending, context, config, journal):
     if grant is None or grant.expires_at <= time.time():
         return None, "diagnosis_grant_missing_or_expired", False
     seconds = min(10.0, grant.interrupt_seconds)
-    reserved = sum(
-        e["detail"]["reserved_seconds"]
-        for e in events
-        if e["event_type"] == "operation_diagnosis_started"
-        and e["detail"]["grant_digest"] == grant.digest()
-    )
+    reserved = reserved_repair_seconds(events, grant.digest())
     if (
         len(matches) >= grant.max_attempts
         or reserved + seconds + KILL_GRACE_SECONDS > grant.total_seconds
@@ -246,6 +248,7 @@ def wake_verified_operation(runtime, handoff, *, cwd):
     )
 
     checked = verified_activation_handoff(runtime.store, handoff)
+    activation = checked.get("activation_id", checked["publication_id"])
     if (
         Path(cwd).resolve() != Path(checked["successor_execution"]).resolve()
         or runtime_source_identity(Path(cwd)) != checked["source_digest"]
@@ -265,19 +268,19 @@ def wake_verified_operation(runtime, handoff, *, cwd):
     runtime.store.append_event(
         "operation_successor_planned",
         experiment_id=activity,
-        idempotency_key="operation-plan:" + checked["publication_id"],
+        idempotency_key="operation-plan:" + activation,
         detail=plan,
     )
     # Cancel before register: crash recovery replays the plan without allowing
     # old/new executions to overlap or losing the remainder of the logical grant.
     runtime.cancel(
-        activity, reason="replaced_by_verified_release:" + checked["publication_id"]
+        activity, reason="replaced_by_verified_release:" + activation
     )
     runtime.register(ActivitySpec.model_validate(plan["spec"]))
     runtime.store.append_event(
         "operation_successor_activated",
         experiment_id=activity,
-        idempotency_key="operation-activation:" + checked["publication_id"],
+        idempotency_key="operation-activation:" + activation,
         detail={
             "handoff": checked,
             "successor_request_digest": contract_digest(plan["request"]),
@@ -323,16 +326,19 @@ def _successor_plan(runtime, checked, events):
         }
     )
     prior = original.get("logical_continuation", {})
+    activation = checked.get("activation_id", checked["publication_id"])
+    environment = _successor_environment(state.spec.environment_digest, checked)
     successor_id = (
         "successor-"
         + contract_digest(
-            {"activity": activity, "publication": checked["publication_id"]}
+            {"activity": activity, "publication": activation}
         )[:24]
     )
     request = {
         **original,
         "cwd": checked["successor_execution"],
         "source_digest": checked["source_digest"],
+        "environment_digest": environment,
         "successor_activity_id": successor_id,
         "resource_grant": remaining.model_dump(mode="json"),
         "logical_continuation": {
@@ -350,6 +356,7 @@ def _successor_plan(runtime, checked, events):
             + state.charged_seconds,
             "prior_attempts": prior.get("prior_attempts", 0) + state.attempts,
             "publication_id": checked["publication_id"],
+            "activation_id": activation,
             "scientific_replicate_increment": 0,
         },
     }
@@ -358,6 +365,7 @@ def _successor_plan(runtime, checked, events):
             **state.spec.model_dump(mode="json"),
             "activity_id": successor_id,
             "source_digest": checked["source_digest"],
+            "environment_digest": environment,
             "input_digest": contract_digest(request),
             "output_namespace": "attempts/" + successor_id,
             "grant": remaining.model_dump(mode="json"),
@@ -368,3 +376,16 @@ def _successor_plan(runtime, checked, events):
         "request": request,
         "spec": spec.model_dump(mode="json"),
     }
+
+
+def _successor_environment(original, checked):
+    """Only the recorded path relocation may change an operation environment."""
+    from scripts.merge_verification_evidence import digest, environment_identity
+
+    transition = checked.get("environment_transition")
+    if transition is None:
+        return original
+    current = digest(environment_identity())
+    if transition["predecessor_digest"] != original or transition["successor_digest"] != current:
+        raise ValueError("successor_environment_transition_mismatch")
+    return current

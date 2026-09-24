@@ -351,16 +351,19 @@ class CommandCursor:
         self.unresolved = True
         self._event("started", attempt=self.attempt, reserved_seconds=allowance)
 
-    def checkpoint(self, outcome, position):
+    def _payload(self, outcome, position, spent, kind):
         self._validate_outcome(outcome)
-        payload = dict(
+        return dict(
             input_digest=self.digest,
             outcome=outcome.model_dump(mode="json"),
             position=position,
-            spent_seconds=0.0,
+            spent_seconds=spent,
             attempt=self.attempt,
-            record_type="checkpoint",
+            record_type=kind,
         )
+
+    def checkpoint(self, outcome, position):
+        payload = self._payload(outcome, position, 0.0, "checkpoint")
         self._checkpoint_count += 1
         artifact = self.store.write_artifact("command_cursors", payload)
         self._event(
@@ -368,15 +371,7 @@ class CommandCursor:
         )
 
     def commit(self, outcome, position, spent):
-        self._validate_outcome(outcome)
-        payload = dict(
-            input_digest=self.digest,
-            outcome=outcome.model_dump(mode="json"),
-            position=position,
-            spent_seconds=spent,
-            attempt=self.attempt,
-            record_type="committed",
-        )
+        payload = self._payload(outcome, position, spent, "committed")
         artifact = (
             self.store.write_artifact("command_cursors", payload)
             if self.store

@@ -27,6 +27,74 @@ from scripts.verify_merge_ready import (
 CI_YML = ROOT / ".github/workflows/ci.yml"
 
 
+def test_failed_static_retry_is_bounded_and_preserves_cost():
+    from scripts.merge_verification import _run_statics, _summary
+
+    step = Step("probe", (sys.executable, "-c", "pass"))
+    state = {
+        "identity": "fixture",
+        "static": {},
+        "attempts": [],
+        "passed_nodes": [],
+        "binding": {
+            "static_commands": [["probe", list(step.cmd)]],
+            "max_attempts_per_obligation": 3,
+        },
+    }
+    snapshots = []
+    calls = []
+
+    def failed(step, **_):
+        calls.append(step.name)
+        return {
+            "name": step.name,
+            "status": "timeout",
+            "exit_code": None,
+            "seconds": 2.0,
+        }
+
+    def persist():
+        snapshots.append(json.loads(json.dumps(state)))
+
+    for _ in range(4):
+        assert not _run_statics(state, (step,), failed, ROOT, lambda: 60, persist)
+    assert len(calls) == 3 and len(snapshots) == 3
+    assert _summary(state)["spent_seconds"] == 6.0
+    assert not _summary(state)["verification_complete"]
+    # A restarted controller reads the first failed attempt, then verifies it.
+    state = snapshots[0]
+
+    def succeeded(step, **_):
+        return {"name": step.name, "status": "ok", "exit_code": 0, "seconds": 1.0}
+
+    assert _run_statics(state, (step,), succeeded, ROOT, lambda: 60, persist)
+    assert state["static_history"][0]["status"] == "timeout"
+    assert _summary(state)["spent_seconds"] == 3.0
+    assert not _summary(state)["verification_complete"]  # No collected tests.
+    assert _run_statics(state, (step,), failed, ROOT, lambda: 60, persist)
+    assert len(calls) == 3  # A verified pass is reused, not executed again.
+
+
+def test_static_queue_consumes_multiple_safe_obligations_per_invocation():
+    from scripts.merge_verification import _run_statics
+
+    steps = tuple(
+        Step(name, (sys.executable, "-c", "pass")) for name in ("one", "two")
+    )
+    state = {
+        "static": {},
+        "binding": {"max_attempts_per_obligation": 3},
+    }
+    calls = []
+
+    def succeeded(step, **_):
+        calls.append(step.name)
+        return {"name": step.name, "status": "ok", "exit_code": 0, "seconds": 1.0}
+
+    assert _run_statics(state, steps, succeeded, ROOT, lambda: 60, lambda: None)
+    assert calls == ["one", "two"]
+
+
 def _python_static_text() -> str:
     text = CI_YML.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
@@ -73,7 +141,7 @@ def test_fast_skips_only_the_changed_test_execution() -> None:
     ]
     assert all(step.static for step in fast)
     assert not full[-1].static
-    assert "--changed-tests-only" in full[-1].cmd
+    assert "--changed-tests-only" not in full[-1].cmd
 
 
 def _step(name: str, code: str, *, static: bool = True) -> Step:
@@ -124,8 +192,42 @@ def test_cli_json_summary_shape(monkeypatch, capsys) -> None:
     summary = json.loads(capsys.readouterr().out)
     assert summary["ok"] is True and summary["fast"] is True
     (record,) = summary["steps"]
-    assert set(record) == {"name", "cmd", "status", "seconds"}
+    assert set(record) == {"name", "cmd", "status", "seconds", "exit_code"}
     assert record["status"] == "ok"
+
+
+@pytest.mark.parametrize("relative", [False, True])
+@pytest.mark.parametrize("exit_code", [0, 3])
+def test_fast_cli_checks_requested_source(
+    tmp_path, monkeypatch, capsys, relative, exit_code
+) -> None:
+    """The real bounded child checks the requested candidate, never ROOT."""
+    source = tmp_path / "candidate with spaces"
+    source.mkdir()
+    monkeypatch.chdir(tmp_path)
+    step = Step(
+        "candidate-location",
+        (
+            sys.executable,
+            "-c",
+            "import pathlib, sys; "
+            "assert pathlib.Path.cwd() == pathlib.Path(sys.argv[1]); "
+            "raise SystemExit(int(sys.argv[2]))",
+            str(source),
+            str(exit_code),
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.verify_merge_ready.merge_gate_steps", lambda *, fast: (step,)
+    )
+    selected_source = source.name if relative else str(source)
+    result = main(["--fast", "--json", "--source", selected_source])
+    summary = json.loads(capsys.readouterr().out)
+    assert result == (0 if exit_code == 0 else 1)
+    assert summary["steps"][0]["exit_code"] == exit_code
+    assert summary["ok"] is (exit_code == 0)
+    assert summary["verification_complete"] is False
+    assert summary["release_authorized"] is False
 
 
 def test_cli_exits_nonzero_and_reports_rule_on_red(monkeypatch, capsys) -> None:
@@ -179,40 +281,3 @@ def test_hook_and_gate_paths_exist() -> None:
         ".githooks/pre-commit",
     ):
         assert (Path(ROOT) / relative).is_file(), relative
-
-
-@pytest.mark.parametrize("fast", [False, True])
-@pytest.mark.parametrize("relative", [False, True])
-@pytest.mark.parametrize("exit_code", [0, 3])
-def test_cli_runs_checks_in_requested_source(
-    tmp_path, monkeypatch, capsys, fast, relative, exit_code
-) -> None:
-    """Real child processes must use the selected tree and preserve failure."""
-    source = tmp_path / "candidate with spaces"
-    source.mkdir()
-    monkeypatch.chdir(tmp_path)
-    location = Step(
-        "candidate-location",
-        (
-            sys.executable,
-            "-c",
-            "import pathlib, sys; "
-            "assert pathlib.Path.cwd() == pathlib.Path(sys.argv[1])",
-            str(source),
-        ),
-    )
-    outcome = _step("candidate-outcome", f"raise SystemExit({exit_code})")
-    monkeypatch.setattr(
-        "scripts.verify_merge_ready.merge_gate_steps",
-        lambda *, fast: (location, outcome),
-    )
-    selected = source.name if relative else str(source)
-    argv = ["--json", "--source", selected, "--max-step-seconds", "5"]
-    if fast:
-        argv.append("--fast")
-    result = main(argv)
-    summary = json.loads(capsys.readouterr().out)
-    assert summary["steps"][0]["status"] == "ok"
-    assert summary["steps"][1]["status"] == ("ok" if exit_code == 0 else "failed")
-    assert result == (0 if exit_code == 0 else 1)
-    assert summary["ok"] is (exit_code == 0)

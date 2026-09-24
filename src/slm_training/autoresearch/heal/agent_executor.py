@@ -19,6 +19,7 @@ from slm_training.autoresearch.heal.repair_contracts import (
     RepairRequest,
 )
 from slm_training.autoresearch.heal.repair_prompt import repair_prompt
+from slm_training.harness_core.provider_bridge import SANDBOX_AUTHORITY
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
@@ -95,11 +96,13 @@ def probe_codex(executable: str) -> dict:
 
 class CodexExecutor:
     def __init__(
-        self, runner: IsolatedAgentRunner | None, *, instructions: str, contract: str
+        self, runner: IsolatedAgentRunner | None, *, instructions: str, contract: str,
+        verification_manifest: dict,
     ) -> None:
         self.runner = runner
         self.instructions = instructions
         self.contract = contract
+        self.verification_manifest = verification_manifest
 
     def capability(self, request: RepairRequest) -> str | None:
         grant = request.grant
@@ -141,7 +144,8 @@ class CodexExecutor:
             "--ignore-user-config",
             "--ignore-rules",
             "--config",
-            "model_provider=" + json.dumps(request.grant.provider),
+            "model_provider=" + json.dumps("slm_repair" if request.grant.provider_endpoint else request.grant.provider),
+            *_provider_config(request),
             "--ephemeral",
             "--skip-git-repo-check",
             "--sandbox",
@@ -153,16 +157,20 @@ class CodexExecutor:
             "/input/proposal-schema.json",
             "--output-last-message",
             "/output/proposal.json",
-            "Read /input/repair-instructions.json and execute only that scoped repair task.",
+            "-",  # Complete trusted input arrives on stdin from the readonly file.
         )
+        schema = RepairProposal.model_json_schema()
+        # Native structured output requires every property, including defaults.
+        schema["required"] = list(schema["properties"])
         result = self.runner.run(
             request,
             argv,
             inputs={
                 "repair-instructions.json": repair_prompt(
-                    request, instructions=self.instructions, contract=self.contract
+                    request, instructions=self.instructions, contract=self.contract,
+                    verification_manifest=self.verification_manifest,
                 ),
-                "proposal-schema.json": RepairProposal.model_json_schema(),
+                "proposal-schema.json": schema,
             },
             progress=progress,
             cancelled=cancelled,
@@ -193,6 +201,21 @@ class CodexExecutor:
             reason="independent_verification_required",
             **fields,
         )
+
+
+def _provider_config(request: RepairRequest) -> tuple[str, ...]:
+    endpoint = request.grant.provider_endpoint
+    if endpoint is None:
+        return ()
+    provider = "model_providers.slm_repair"
+    settings = {
+        "model": json.dumps(endpoint.model),
+        provider + ".name": json.dumps("OpenAI" if endpoint.authentication == "codex_subscription" else request.grant.provider),
+        provider + ".base_url": json.dumps("http://" + SANDBOX_AUTHORITY + endpoint.base_path),
+        provider + ".wire_api": '"responses"',
+        provider + ".requires_openai_auth": "false",
+    }
+    return tuple(arg for key, value in settings.items() for arg in ("--config", key + "=" + value))
 
 
 def _cli_failure(executable: str, expected_digest: str) -> str | None:

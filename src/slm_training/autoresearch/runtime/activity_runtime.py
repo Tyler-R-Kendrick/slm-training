@@ -211,7 +211,7 @@ class ActivityRuntime:
                 self._append(
                     state, self._event(state, "park", outcome=outcome, wake=wake)
                 )
-            elif state.action.startswith("auto_") and not missing and not dependencies:
+            elif (state.status.startswith("waiting_") and state.action.startswith("auto_") and not missing and not dependencies):
                 self._append(state, self._event(state, "wake", wake=state.wake))
 
     def claim_next(

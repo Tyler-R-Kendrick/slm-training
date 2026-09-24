@@ -30,6 +30,7 @@ _INCIDENTAL = frozenset(
         "hypothesis_id",
         "decode_timeout_seconds",
         "checkpoint_every_steps",
+        "max_updates_this_invocation",
         "resume_from",
         "initialize_from",  # Content identity and role are required in bindings.
         "train_dir",  # Snapshot/preprocessing identities are required in bindings.

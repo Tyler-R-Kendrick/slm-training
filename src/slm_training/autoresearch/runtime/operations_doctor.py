@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from slm_training.bridge_utils import agentv_node_modules
 from slm_training.autoresearch.climb_policy import load_climb_policy
 from slm_training.autoresearch.heal.agent_executor import probe_codex
 from slm_training.autoresearch.heal.isolation import probe_isolation
@@ -97,7 +98,7 @@ def _javascript_probes(source: Path) -> dict:
     runner = Path(
         os.environ.get("AGENTV_RUNNER", source / "scripts/run_agentv_eval.mjs")
     )
-    sdk = runner.resolve().parents[1] / "node_modules/@agentv/core/dist/index.js"
+    sdk = agentv_node_modules(runner.resolve().parents[1]) / "@agentv/core/dist/index.js"
     code = "const m=await import(process.argv[1]);if(typeof m.evaluate!=='function')process.exit(2)"
     result = {
         "agentv": _probe(
@@ -179,6 +180,15 @@ def doctor(
     }
     probes["storage"] = storage_health(root)
     probes["agent"] = _agent_probe(recovery_config)
+    probes["user_systemd"] = (
+        _probe(("systemctl", "--user", "show-environment"), source)
+        if shutil.which("systemctl")
+        else {"ready": False, "reason": "systemctl_missing"}
+    )
+    probes["connector_delivery"] = {
+        "ready": False,
+        "reason": "unattended_connector_host_not_probed",
+    }
     if require_lean:
         lean = shutil.which("lean")
         probes["lean"] = (

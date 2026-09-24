@@ -69,9 +69,8 @@ const experiment = option("--experiment");
 const sdkRoot = option("--sdk-root");
 const traceId = optional("--trace-id");
 const runId = optional("--run-id");
-const sdkUrl = pathToFileURL(
-  `${sdkRoot}/node_modules/@agentv/core/dist/index.js`,
-);
+const sdkModules = process.env.AGENTV_NODE_MODULES || `${sdkRoot}/node_modules`;
+const sdkUrl = pathToFileURL(`${sdkModules}/@agentv/core/dist/index.js`);
 const { evaluate } = await import(sdkUrl.href);
 
 const result = await evaluate({

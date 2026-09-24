@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 from scripts.merge_verification import _summary, verification_binding
@@ -20,11 +21,13 @@ from scripts.merge_verification_evidence import (
 )
 from scripts.verify_merge_ready import merge_gate_steps
 from slm_training.autoresearch.storage import _sha
+from slm_training.autoresearch.heal.repair_acceptance import source_verification_activity_id
 from slm_training.harness_core.activity_contract import (
     ActivitySpec,
     ResourceGrant,
     WakeCondition,
 )
+from slm_training.levers import KILL_GRACE_SECONDS
 
 
 class VerificationCapabilityUnavailable(ValueError):
@@ -68,12 +71,12 @@ def dependency_plan(dependency):
     # The inner gate keeps its own monotonic deadline, leaving five seconds for
     # child exit/summary publication before the independently enforced watchdog.
     step_seconds = grant.interrupt_seconds - 35
-    if step_seconds <= 0:
+    if step_seconds <= 2 * KILL_GRACE_SECONDS:
         raise VerificationCapabilityUnavailable(
             "source_verifier_grant_below_startup_reserve"
         )
     identity = dependency["verification_identity"]
-    if dependency["activity_id"] != "source-verification-" + identity:
+    if dependency["activity_id"] != source_verification_activity_id(identity, grant):
         raise ValueError("source_verification_activity_identity_mismatch")
     wake = WakeCondition.model_validate(dependency["wake"])
     if wake != WakeCondition(
@@ -175,7 +178,7 @@ def wake_repair(runtime, event, dependency, plan):
     return True
 
 
-def drain_source_verification(runtime, common, log_event):
+def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
     """Parent pre-cycle hook; at most one actual bounded pass, no busy retry loop."""
     del common  # All load-bearing inputs belong to the immutable dependency.
     events = [
@@ -184,10 +187,17 @@ def drain_source_verification(runtime, common, log_event):
         if event["event_type"] == "source_verification_requested"
     ]
     states = runtime.snapshot()
-    # Least-attempted verification first; a blocked dependency never consumes
-    # the invocation or prevents another independently runnable job progressing.
+    # Rotate a bounded window before loading per-request dependencies. A full
+    # sort here would still walk an unbounded blocked backlog before the limit.
+    if len(events) > 32:
+        start = (max(1, cycle) - 1) * 32 % len(events)
+        events = (events[start:] + events[:start])[:32]
+    # Least-attempted runnable verification first within this bounded window.
     events.sort(key=lambda event: _attempt_count(runtime.store, states, event))
+    scan_deadline = time.monotonic() + KILL_GRACE_SECONDS
     for event in events:
+        if time.monotonic() >= scan_deadline:
+            break
         repair = runtime.snapshot().get(event["experiment_id"])
         if repair is None or repair.status != "waiting_dependency":
             continue

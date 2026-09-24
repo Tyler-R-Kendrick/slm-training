@@ -131,7 +131,7 @@ def _recover_arm(journal, continuous, fresh):
         if e["event_type"] == "experiment_attempt_started" and e["experiment_id"] == eid
     ]
     if not terminal or not attempts:
-        return False
+        return _recover_pending_cursor(journal, eid, attempts, fresh) if attempts else False
     postprocessing = {
         event["event_type"] for event in fresh if event["experiment_id"] == eid
     }
@@ -169,6 +169,82 @@ def _recover_arm(journal, continuous, fresh):
     else:
         code = returns[0]["exit_code"]
     return accept_arm(journal, continuous, eid, result, code)
+
+
+def _recover_pending_cursor(journal, eid, attempts, fresh):
+    """Resume a previously certified eval yield, retaining all lost reservations."""
+    from scripts.autoresearch_command_cursor import CommandCursor
+    from slm_training.autoresearch.schemas import ExperimentSpec
+    from slm_training.harness_core.checkpoint_publication import controller_artifact_publication
+
+    store, value = journal.store, journal.value
+    arm = value["arms"][eid]
+    expected = {p["design_digest"] for p in value["locked_designs"].values() if eid in p["arm_ids"]}
+    if {p["design_digest"] for p in attempts} != expected:
+        return False
+    locks = [e for e in store.verify_event_chain() if e["event_type"] == "command_cursor_locked"
+             and e["experiment_id"] == eid]
+    if len(locks) != 1:
+        return False
+    inputs = read_artifact(store, "command_cursor_inputs", locks[0]["artifact_sha256"])
+    experiment = ExperimentSpec.model_validate(inputs["experiment"])
+    if experiment.experiment_id != eid:
+        raise ValueError("interrupted cursor belongs to a different arm")
+    grant = store.load_campaign().budget.continuation_grant
+    with controller_artifact_publication(store.root) as fence:
+        if fence is None:
+            return False  # A file lock alone cannot fence a surviving old worker.
+        with CommandCursor(
+            store, experiment, arm["commands"], arm["manifest_digest"],
+            value["execution_identity"], value["total_seconds"], cwd=value["cwd"],
+            max_attempts=grant.max_attempts if grant else None,
+        ) as cursor:
+            pending = _resumable_cursor_outcome(cursor)
+            if pending is None:
+                return False
+            returned = {e["detail"]["attempt_id"] for e in fresh
+                        if e["event_type"] == "experiment_attempt_returned"
+                        and e["experiment_id"] == eid}
+            if returned and returned != {a["attempt_id"] for a in attempts}:
+                return False
+            if cursor.unresolved:
+                # This is an operational settlement, not an observed completion.
+                # The existing evaluator must verify and resume its partial rows.
+                cursor.commit(pending, cursor.position, cursor.reserved)
+            if not returned:
+                return_attempts(store, eid, attempts, 10, reconciled=True)
+            store.append_event(
+                "driver_interrupted_eval_reconciled", experiment_id=eid,
+                detail={"cursor_digest": cursor.digest, "attempt": cursor.attempt,
+                        "position": cursor.position, "spent_seconds": cursor.spent,
+                        "process_exit_code": None, "scientific_completion": False,
+                        "fence": fence},
+                idempotency_key=f"interrupted-eval:{cursor.digest}:{cursor.attempt}:{fence}",
+            )
+            journal.state["last_yield"] = cursor.outcome.model_dump(mode="json")
+    return True
+
+
+def _resumable_cursor_outcome(cursor):
+    from scripts.autoresearch_continuation import _canonical, _pending_stage, _resume_commands, _stage_complete
+    from slm_training.autoresearch.engine import is_resumable_eval_command
+
+    outcome, position, commands = cursor.outcome, cursor.position, cursor.inputs["commands"]
+    if outcome is None or position >= len(commands) or not is_resumable_eval_command(commands[position]):
+        return None
+    pending = _pending_stage(outcome)
+    expected = _resume_commands(commands, position, {})[0]
+    if pending is not None and _canonical(pending["command"]) in (
+        _canonical(commands[position]), _canonical(expected)
+    ):
+        return outcome
+    # A committed prefix may precede the first yield of an idempotent evaluator.
+    # Only its explicit resume entrypoint may reconcile unknown partial rows.
+    if cursor.unresolved and position and outcome.stage_telemetry and "--resume-run" in commands[position]:
+        previous = outcome.stage_telemetry[-1]
+        if _stage_complete(previous) and _canonical(previous["command"]) == _canonical(commands[position - 1]):
+            return outcome.model_copy(update={"status": "stopped", "error": "continuation_budget_pending"})
+    return None
 
 
 def _recover_publication(journal, fresh):

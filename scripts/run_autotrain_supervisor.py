@@ -19,13 +19,30 @@ backs off; soft failures heal and immediately continue. Parked
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
-import os
+import signal
 import subprocess
 import sys
-import time
 from pathlib import Path
+
+from scripts.autotrain_supervisor_operations import (
+    run_operation as _run_operation,
+)
+from scripts.autotrain_supervision import (
+    _MAX_HARD_RETRY_SECONDS as _MAX_HARD_RETRY_SECONDS,
+    _NO_CAMPAIGN_THRESHOLD as _NO_CAMPAIGN_THRESHOLD,
+    _STALL_KIND as _STALL_KIND,
+    watchdog_no_campaign as _watchdog_no_campaign,
+)
+
+
+def _source_identity(cwd: Path) -> str:
+    from slm_training.harness_core.execution_release import runtime_source_identity
+    from scripts.merge_verification_evidence import source_identity
+
+    return runtime_source_identity(cwd) or source_identity(cwd)
 
 
 def _load_continuous():
@@ -33,6 +50,7 @@ def _load_continuous():
     spec = importlib.util.spec_from_file_location("run_autotrain_continuous", script)
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -58,8 +76,7 @@ def _handle_hard_pending(
         from slm_training.autoresearch.heal.escalation import EscalationLedger
 
         blockers = [
-            {**entry, "_root": root, "_loop_id": loop_id}
-            for entry in hard_pending
+            {**entry, "_root": root, "_loop_id": loop_id} for entry in hard_pending
         ]
         receipts = ()
         if playbooks_enabled:
@@ -81,8 +98,7 @@ def _handle_hard_pending(
         quarantined = [
             r
             for r in receipts
-            if r.outcome == "healed"
-            and r.playbook_id.startswith("quarantine_dirt")
+            if r.outcome == "healed" and r.playbook_id.startswith("quarantine_dirt")
         ]
         if len(quarantined) == 1:
             stash_sha = _stash_head_sha(cwd)
@@ -97,7 +113,9 @@ def _handle_hard_pending(
         ledger.save()
         return {
             "any_healed": any_healed,
-            "sleep_seconds": ledger.sleep_seconds(default=30.0),
+            "sleep_seconds": min(
+                _MAX_HARD_RETRY_SECONDS, ledger.sleep_seconds(default=30.0)
+            ),
             "outcomes": [r.outcome for r in receipts],
             "open_escalations": len(ledger.open_records()),
         }
@@ -123,8 +141,6 @@ def _stash_head_sha(cwd: Path) -> str | None:
 
 
 _POLICY_PRIMARY_FALLBACK = "smoke.eval_nll"
-_NO_CAMPAIGN_THRESHOLD = 5
-_STALL_KIND = "loop_stalled_no_campaign"
 
 
 def _default_primary_metric() -> str:
@@ -141,63 +157,6 @@ def _default_primary_metric() -> str:
             flush=True,
         )
         return _POLICY_PRIMARY_FALLBACK
-
-
-def _watchdog_no_campaign(
-    *,
-    root: Path,
-    loop_id: str,
-    passes_without_campaign: int,
-    total_no_campaign_passes: int,
-    campaign_id: str | None,
-    log_event,
-    threshold: int = _NO_CAMPAIGN_THRESHOLD,
-) -> float | None:
-    """No-campaign watchdog: escalate through the ledger, return its backoff.
-
-    Returns the ledger's ``next_backoff_seconds`` for the stall fingerprint once
-    ``passes_without_campaign`` reaches ``threshold`` (``None`` below it). The
-    caller's consecutive counter is never reset here: a chronic stall keeps
-    re-observing the same fingerprint so ``seen_count`` and the governed backoff
-    grow instead of the alarm re-arming from zero every ``threshold`` passes.
-    ``total_no_campaign_passes`` is the running total kept in the ledger note.
-    """
-    if passes_without_campaign < threshold:
-        return None
-    try:
-        from slm_training.autoresearch.heal.escalation import EscalationLedger
-
-        ledger = EscalationLedger.load(root, loop_id)
-        record = ledger.observe(
-            kind=_STALL_KIND,
-            reason="supervised passes without a new campaign",
-            blocker_class="unknown",
-            campaign_id=campaign_id or "unknown",
-            owner_skill="autotrain",
-        )
-        ledger.escalate(
-            record.fingerprint,
-            note=(
-                f"supervisor watchdog: consecutive={passes_without_campaign} "
-                f"total_no_campaign_passes={total_no_campaign_passes} "
-                f"threshold={threshold}"
-            ),
-        )
-        ledger.save()
-        backoff = float(ledger.records[record.fingerprint].next_backoff_seconds)
-        log_event(
-            {
-                "event": _STALL_KIND,
-                "passes": passes_without_campaign,
-                "total_no_campaign_passes": total_no_campaign_passes,
-                "seen_count": record.seen_count,
-                "next_backoff_seconds": backoff,
-            }
-        )
-        return backoff
-    except Exception as exc:  # noqa: BLE001
-        log_event({"event": "watchdog_error", "error": repr(exc)})
-        return None
 
 
 def _write_family_closures(log_event) -> None:
@@ -230,6 +189,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--train-version", default="wf_smoke_v2")
     parser.add_argument("--steps", type=int, default=20)
+    parser.add_argument("--continuation-grant", help="Explicit ResourceGrant JSON shared by the driver and locked campaign")
     parser.add_argument(
         "--primary-metric",
         default=_default_primary_metric(),
@@ -275,179 +235,112 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable heal-playbook dispatch (ledger + governed backoff only)",
     )
+    parser.add_argument("--operation-request", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--operation-output", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--stop-after-pass", type=int, help=argparse.SUPPRESS)
+    parser.add_argument("--delivery-config", type=Path,
+                        help="Trusted GitHub connector host configuration")
+    parser.add_argument(
+        "--repair-config",
+        type=Path,
+        help="Explicit preapproved local repair grant/recipes; absent means a scoped capability wait",
+    )
     return parser
+
+
+def _operation_main(request_path: Path, output_path: Path) -> int:
+    from scripts.autotrain_supervisor_operations import operation_main
+
+    return operation_main(
+        request_path,
+        output_path,
+        source_identity=_source_identity,
+        load_continuous=_load_continuous,
+        handle_hard_pending=_handle_hard_pending,
+        write_family_closures=_write_family_closures,
+    )
+
+
+def _supervise(args, runtime, common: dict) -> int:
+    from scripts.autotrain_supervision import supervise
+
+    return supervise(
+        args,
+        runtime,
+        common,
+        run_operation=_run_operation,
+        watchdog=_watchdog_no_campaign,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
+    if args.operation_request or args.operation_output:
+        if not args.operation_request or not args.operation_output:
+            raise ValueError("operation requires both request and output")
+        return _operation_main(args.operation_request, args.operation_output)
+    from scripts.merge_verification_evidence import digest, environment_identity
+    from slm_training.autoresearch.runtime.activity_runtime import (
+        ActivityRuntime,
+        ControllerBusy,
+    )
+    from slm_training.autoresearch.storage import CampaignStore
+    from scripts.autotrain_repair_activation import (
+        VerifiedRestart, recover_release, restart_supervisor,
+    )
 
-    cwd = Path.cwd()
-    root = args.root if args.root.is_absolute() else cwd / args.root
-    root.mkdir(parents=True, exist_ok=True)
-    continuous = _load_continuous()
-    log_dir = root / "loops" / args.loop_id
-    log_dir.mkdir(parents=True, exist_ok=True)
-    supervisor_log = log_dir / "supervisor.jsonl"
-
-    def log_event(event: dict) -> None:
-        event = {
-            **event,
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "loop_id": args.loop_id,
-        }
-        with supervisor_log.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(event, sort_keys=True) + "\n")
-        print(json.dumps(event, sort_keys=True), flush=True)
-
-    py = sys.executable
-    cycle = 0
-    passes_without_campaign = 0
-    total_no_campaign_passes = 0
-    while args.max_cycles == 0 or cycle < args.max_cycles:
-        cycle += 1
-        # Heal first (including local-CPU rebuild_data). Park is not a stop
-        # while a locally executable rebuild is pending.
-        try:
-            report = continuous.self_heal_unblock_loop(
-                cwd=cwd,
-                root=root,
-                loop_id=args.loop_id,
-            )
-            log_event({"event": "pre_cycle_unblock", "cycle": cycle, **report})
-        except Exception as exc:  # noqa: BLE001
-            log_event({"event": "pre_cycle_unblock_error", "error": repr(exc)})
-            report = {}
-        parked = continuous._check_regime_parked(
-            root=root, loop_id=args.loop_id, cwd=cwd
-        )
-        if parked:
-            log_event(
-                {
-                    "event": "regime_parked",
-                    "status": parked,
-                    "cycle": cycle,
-                    "soft_healed": list(report.get("soft_healed") or []),
-                }
-            )
-            if args.exit_on_park:
-                return 0
-            # Park is a wait state, never process exit: the pre-cycle unblock
-            # above can complete a local rebuild_data heal, and the park check
-            # itself recovers lost heal arms / resumes on fingerprint movement.
-            # Exiting here is what made the loop depend on an external agent.
-            time.sleep(max(1.0, float(args.park_backoff_seconds)))
-            continue
-        if report.get("hard_pending"):
-            outcome = _handle_hard_pending(
-                report["hard_pending"],
-                cwd=cwd,
-                root=root,
-                loop_id=args.loop_id,
-                campaign_id=str(report.get("predecessor_campaign_id") or ""),
-                max_heal_attempts=int(args.max_heal_attempts),
-                playbooks_enabled=not args.no_playbooks,
-                log_event=log_event,
-            )
-            log_event(
-                {
-                    "event": "hard_pending_heal",
-                    "cycle": cycle,
-                    "hard_pending": report["hard_pending"],
-                    **outcome,
-                }
-            )
-            if outcome.get("any_healed"):
-                # Floor sleep: a blocker whose reason text shifts each cycle
-                # mints fresh fingerprints, so the attempt budget alone does
-                # not bound a heal-spin — never loop with zero delay.
-                time.sleep(max(0.5, float(args.soft_backoff_seconds)))
-                continue  # re-run the unblock loop
-            time.sleep(
-                max(
-                    1.0,
-                    float(
-                        outcome.get("sleep_seconds")
-                        or args.hard_backoff_seconds
-                    ),
-                )
-            )
-            continue
-
-        cmd = [
-            py,
-            "-m",
-            "scripts.run_autotrain_continuous",
-            "--loop-id",
-            args.loop_id,
-            "--root",
-            str(args.root),
-            "--supervised",
-            "--max-cycles",
-            "1",
-            "--train-version",
-            args.train_version,
-            "--steps",
-            str(args.steps),
-            "--primary-metric",
-            args.primary_metric,
-        ]
-        env = os.environ.copy()
-        src = cwd / "src"
-        if src.is_dir():
-            env["PYTHONPATH"] = (
-                str(src)
-                if not env.get("PYTHONPATH")
-                else f"{src}{os.pathsep}{env['PYTHONPATH']}"
-            )
-        before_campaign = continuous._latest_cycle(root, args.loop_id)[1]
-        log_event({"event": "start_driver", "cycle": cycle, "cmd": cmd})
-        proc = subprocess.run(cmd, cwd=cwd, env=env, check=False)
-        log_event(
-            {
-                "event": "driver_exit",
-                "cycle": cycle,
-                "returncode": int(proc.returncode),
+    cwd = Path.cwd().resolve()
+    root = args.root.resolve()
+    if Path(args.loop_id).name != args.loop_id or args.loop_id in {".", ".."}:
+        raise ValueError("loop-id must be a single path component")
+    store = CampaignStore("runtime", root / "loops" / args.loop_id)
+    try:
+        # Lease ownership is acquired before importing or invoking the driver/heal.
+        with ActivityRuntime(store) as runtime:
+            passes = sum(e["event_type"] == "supervisor_pass" for e in store.verify_event_chain())
+            if args.max_cycles and args.stop_after_pass is None:
+                args.stop_after_pass = passes + args.max_cycles
+            common = {
+                "cwd": str(cwd),
+                "root": str(root),
+                "loop_id": args.loop_id,
+                "source_digest": _source_identity(cwd),
+                "environment_digest": digest(environment_identity()),
+                "repair_config": str(args.repair_config.resolve())
+                if args.repair_config
+                else None,
+                "repair_config_digest": hashlib.sha256(
+                    args.repair_config.read_bytes()
+                ).hexdigest()
+                if args.repair_config
+                else None,
+                "delivery_config": str(args.delivery_config.resolve())
+                if args.delivery_config else None,
+                "delivery_config_digest": hashlib.sha256(args.delivery_config.read_bytes()).hexdigest()
+                if args.delivery_config else None,
             }
-        )
-        after_campaign = continuous._latest_cycle(root, args.loop_id)[1]
-        if after_campaign == before_campaign:
-            passes_without_campaign += 1
-            total_no_campaign_passes += 1
-        else:
-            passes_without_campaign = 0
-        if int(proc.returncode) == int(getattr(continuous, "_STALL_EXIT_CODE", 3)):
-            # The driver wrote its typed loop_stalled_no_campaign park.
-            log_event({"event": "driver_parked_stalled", "cycle": cycle})
-        watchdog_backoff = _watchdog_no_campaign(
-            root=root,
-            loop_id=args.loop_id,
-            passes_without_campaign=passes_without_campaign,
-            total_no_campaign_passes=total_no_campaign_passes,
-            campaign_id=after_campaign,
-            log_event=log_event,
-        )
-        # Post-cycle unblock regardless of exit code.
-        _write_family_closures(log_event)
-        try:
-            report = continuous.self_heal_unblock_loop(
-                cwd=cwd,
-                root=root,
-                loop_id=args.loop_id,
-            )
-            log_event({"event": "post_cycle_unblock", "cycle": cycle, **report})
-            if report.get("hard_pending"):
-                sleep_seconds = max(1.0, float(args.hard_backoff_seconds))
-            else:
-                sleep_seconds = max(0.5, float(args.soft_backoff_seconds))
-        except Exception as exc:  # noqa: BLE001
-            log_event({"event": "post_cycle_unblock_error", "error": repr(exc)})
-            sleep_seconds = max(1.0, float(args.soft_backoff_seconds))
-        if watchdog_backoff is not None:
-            # The escalation ledger governs the no-campaign path: never spin
-            # at the soft backoff while the loop is provably stalled.
-            sleep_seconds = max(sleep_seconds, float(watchdog_backoff))
-        time.sleep(sleep_seconds)
-    return 0
+            previous = {
+                sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)
+            }
+            for sig in previous:
+                signal.signal(sig, lambda *_: runtime.cancel_event.set())
+            try:
+                recovered = recover_release(
+                    runtime, common, sequence=passes, log_event=lambda e: print(json.dumps(e)),
+                    run_operation=_run_operation,
+                )
+                return 10 if recovered == "waiting_delivery" else _supervise(args, runtime, common)
+            finally:
+                if runtime.cancel_event.is_set():
+                    runtime.cancel_all(reason="explicit supervisor stop")
+                for sig, handler in previous.items():
+                    signal.signal(sig, handler)
+    except ControllerBusy:
+        print("supervisor already owned by a current controller", file=sys.stderr)
+        return 2
+    except VerifiedRestart as restart:
+        restart_supervisor(args, restart.handoff)
+        raise AssertionError("execve returned without replacing the controller")
 
 
 if __name__ == "__main__":

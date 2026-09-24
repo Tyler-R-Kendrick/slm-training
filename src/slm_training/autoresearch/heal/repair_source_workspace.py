@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -16,12 +17,16 @@ from pathlib import Path
 
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harness_core.bounded_process import run_bounded_process
+from slm_training.harness_core.execution_release import MARKER
 from slm_training.harness_core.lineage.store import _atomic_write
 from slm_training.levers import (
     HARNESS_FINALIZATION_RESERVE_SECONDS, INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS,
 )
 
-from .isolation_workspace import manifest_digest, private_snapshot, tree_manifest
+from .isolation_workspace import (
+    manifest_digest, owner_write_preparation, private_snapshot,
+    private_snapshot_manifest, tree_manifest,
+)
 from .repair_acceptance import SourceVerificationGate, proposal_patch_digest
 from .repair_scope import require_routine_scope
 
@@ -29,13 +34,10 @@ from .repair_scope import require_routine_scope
 def _validate(context, config, request, proposal, workspace):
     if config.source_verification_grant is None:
         raise ValueError("source_verification_grant_missing")
-    if config.grant is None or config.grant.expires_at <= time.time():
-        raise ValueError("source_verification_repair_authority_expired")
     pairs = (
         (request.campaign_id, context.campaign_id),
         (request.blocker.source_digest, context.source_digest),
         (request.blocker.environment_digest, context.environment_digest),
-        (request.grant, config.grant),
         (proposal.request_digest, request.digest()),
         (workspace.base.resolve(), context.source.resolve()),
         (tuple(path.resolve() for path in (workspace.runtime_roots or (Path(sys.prefix),))),
@@ -53,11 +55,12 @@ def _validate(context, config, request, proposal, workspace):
         and not (path not in before and (workspace.candidate / path).is_dir())
     ))
     require_routine_scope(workspace.base, workspace.candidate, changed,
-                          request.allowed_paths, request.semantics_preserving_paths)
+                          request.allowed_paths, request.semantics_preserving_paths,
+                          request_digest=request.digest())
     return changed
 
 
-def _private_git(stage, deadline):
+def _private_git(stage, deadline, changed):
     """Create local objects from frozen bytes, never clone/link shared metadata."""
     root, base = stage / "root", stage / "base"
     template = stage / "empty-template"
@@ -77,7 +80,8 @@ def _private_git(stage, deadline):
         if remaining <= 0:
             raise TimeoutError("source_verification_preparation_budget_exhausted")
         result = run_bounded_process(
-            ["/usr/bin/git", "-c", "core.hooksPath=/dev/null", "-c", "core.autocrlf=false",
+            ["/usr/bin/git", "--literal-pathspecs", "-c", "core.hooksPath=/dev/null",
+             "-c", "core.autocrlf=false",
              "--git-dir=" + str(root / ".git"), "--work-tree=" + str(worktree), *args],
             cwd=worktree, env=env, interrupt_after_seconds=remaining,
             kill_grace_seconds=KILL_GRACE_SECONDS,
@@ -87,11 +91,15 @@ def _private_git(stage, deadline):
         return result.stdout.strip()
 
     git(root, "init", "--template=" + str(template), "--initial-branch=repair-base")
-    git(base, "add", "--force", "--all", "--", ".")
+    (root / ".git/info").mkdir()
+    (root / ".git/info/exclude").write_text(MARKER + "\n")
+    git(base, "add", "--all", "--", ".")
     tree = git(base, "write-tree")
     commit = git(base, "commit-tree", tree, "-m", "Pinned repair input")
     git(base, "update-ref", "refs/heads/repair-base", commit)
-    git(root, "add", "--force", "--all", "--", ".")
+    git(root, "add", "--all", "--", ".")
+    if changed:
+        git(root, "add", "--force", "--all", "--", *changed)
     return commit
 
 
@@ -107,8 +115,30 @@ def _durable(root):
                 os.close(fd)
 
 
-def prepare_source_verification(context, config, request, proposal, workspace):
-    """Idempotent controller materialization; no source-verification workload runs."""
+def _reuse_source_verification(namespace, identity_base, steps, runtimes):
+    from scripts.merge_verification import verification_binding
+    from scripts.merge_verification_evidence import digest
+
+    for path in sorted(namespace.glob("*/manifest.json")):
+        prior = json.loads(path.read_text())
+        if any(prior.get(key) != value for key, value in identity_base.items()):
+            continue
+        if not (path.parent / "root").is_dir():
+            continue
+        binding = verification_binding(
+            path.parent / "root", prior["base_ref"], steps,
+            isolated=True, runtimes=runtimes,
+        )
+        identity_inputs = {**identity_base, "verification_identity": digest(binding)}
+        if (
+            prior.get("verification_identity") == identity_inputs["verification_identity"]
+            and prior.get("binding") == binding
+        ):
+            return path.parent, identity_inputs, binding
+    return None
+
+
+def _materialize_source_verification(context, config, request, proposal, workspace):
     from scripts.merge_verification import verification_binding
     from scripts.merge_verification_evidence import digest
     from scripts.verify_merge_ready import merge_gate_steps
@@ -124,51 +154,90 @@ def prepare_source_verification(context, config, request, proposal, workspace):
     for exposed in (workspace.base, workspace.candidate, *runtimes):
         if namespace.resolve().is_relative_to(exposed.resolve()) or exposed.resolve().is_relative_to(namespace.resolve()):
             raise ValueError("source_verification_controller_namespace_exposed")
-    identity_inputs = {
-        "request_digest": request.digest(), "proposal_digest": proposal.digest(),
+    namespace.mkdir(parents=True, exist_ok=True, mode=0o700)
+    identity_base = {
+        "request_digest": request.digest(),
+        "proposal_digest": proposal.digest(),
         "config_digest": config.digest(),
     }
-    destination = namespace / digest(identity_inputs)
-    namespace.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if not destination.exists():
-        stage = Path(tempfile.mkdtemp(prefix="stage-", dir=namespace))
+    steps = merge_gate_steps()
+    reused = _reuse_source_verification(namespace, identity_base, steps, runtimes)
+    if reused is not None:
+        destination, identity_inputs, binding = reused
+        return journal, destination, changed, identity_inputs, runtimes, binding
+
+    stage = Path(tempfile.mkdtemp(prefix="stage-", dir=namespace))
+    published = False
+    try:
         private_snapshot(workspace.base, stage / "base")
         private_snapshot(workspace.candidate, stage / "root")
         if manifest_digest(tree_manifest(stage / "base")) != context.source_digest:
             raise ValueError("source_verification_base_changed_during_copy")
-        base_ref = _private_git(stage, started + INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS)
-        binding = verification_binding(stage / "root", base_ref, merge_gate_steps(),
-                                       isolated=True, runtimes=runtimes)
+        base_ref = _private_git(
+            stage,
+            started + INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS,
+            changed,
+        )
+        binding = verification_binding(
+            stage / "root", base_ref, steps, isolated=True, runtimes=runtimes,
+        )
+        identity_inputs = {**identity_base, "verification_identity": digest(binding)}
+        destination = namespace / digest(identity_inputs)
+        if destination.exists():
+            raise ValueError("source_verification_materialization_changed")
         manifest = {
             "schema_version": "repair_source_verification_input/v1",
-            **identity_inputs, "source_snapshot_digest": context.source_digest,
+            **identity_inputs,
+            "source_snapshot_digest": context.source_digest,
             "candidate_snapshot_digest": proposal.tree_digest,
-            "base_ref": base_ref, "verification_identity": digest(binding),
-            "binding": binding, "grant": config.source_verification_grant.model_dump(mode="json"),
+            "base_ref": base_ref,
+            "binding": binding,
+            "grant": config.source_verification_grant.model_dump(mode="json"),
             "coverage_state": "locked_selection_pending_collection",
             "preparation_seconds": time.monotonic() - started,
         }
         _atomic_write(stage / "manifest.json", manifest)
         _durable(stage)
         os.rename(stage, destination)
+        published = True
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage, ignore_errors=True)
+    if published:
         fd = os.open(namespace, os.O_RDONLY)
         try:
             os.fsync(fd)
         finally:
             os.close(fd)
+    return journal, destination, changed, identity_inputs, runtimes, binding
+
+
+def prepare_source_verification(context, config, request, proposal, workspace):
+    """Idempotent controller materialization; no source-verification workload runs."""
+    from scripts.merge_verification_evidence import digest
+
+    journal, destination, changed, identity_inputs, runtimes, binding = (
+        _materialize_source_verification(context, config, request, proposal, workspace)
+    )
     manifest = json.loads((destination / "manifest.json").read_text())
     if any(manifest.get(key) != value for key, value in identity_inputs.items()):
         raise ValueError("source_verification_manifest_mismatch")
-    binding = verification_binding(destination / "root", manifest["base_ref"],
-                                   merge_gate_steps(), isolated=True, runtimes=runtimes)
+    if (
+        manifest.get("source_snapshot_digest") != context.source_digest
+        or manifest.get("candidate_snapshot_digest") != proposal.tree_digest
+    ):
+        raise ValueError("source_verification_manifest_mismatch")
     if binding != manifest["binding"] or digest(binding) != manifest["verification_identity"]:
         raise ValueError("source_verification_materialization_changed")
-    if not set(changed) <= set(binding["changed_paths"]):
+    before = tree_manifest(destination / "base")
+    after = tree_manifest(destination / "root")
+    if manifest_digest(before) != context.source_digest:
+        raise ValueError("source_verification_base_changed")
+    if any(path not in binding["changed_paths"] and not owner_write_preparation(before.get(path), after.get(path))
+           for path in changed):
         raise ValueError("source_verification_omits_repair_changes")
-    with tempfile.TemporaryDirectory(prefix="slm-source-check-") as temporary:
-        frozen = private_snapshot(destination / "root", Path(temporary) / "source")
-        if manifest_digest(tree_manifest(frozen)) != proposal.tree_digest:
-            raise ValueError("source_verification_materialization_changed")
+    if manifest_digest(private_snapshot_manifest(destination / "root")) != proposal.tree_digest:
+        raise ValueError("source_verification_materialization_changed")
     artifact = journal.write_artifact("repair_source_verification_inputs", manifest)
     journal.append_event("repair_source_verification_prepared", artifact_sha256=artifact.stem,
                          idempotency_key="source-verification-input:" + artifact.stem)

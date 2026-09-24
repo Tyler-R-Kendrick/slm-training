@@ -493,6 +493,7 @@ from scripts.autotrain_timeout_state import (  # noqa: F401
 from scripts.autotrain_timeout_state import (  # noqa: F401
     require_predecessor_actions as _require_predecessor_actions,
 )
+from scripts.autotrain_timeout_state import route_timeout_actions as _route_timeout_actions
 from scripts.autotrain_records import (  # noqa: F401
     OBSERVED_PAIRED_SD_SCHEMA as _OBSERVED_PAIRED_SD_SCHEMA,
 )
@@ -716,18 +717,11 @@ from scripts.autotrain_formal_preflight import (  # noqa: F401
 )
 from scripts.autotrain_docs import (  # noqa: F401
     FIVE_LANES as _FIVE_LANES,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     render_continuous_cycle_docs as _render_continuous_cycle_docs,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     replay_successor_manifest as _replay_successor_manifest,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     write_five_lane_successor as _write_five_lane_successor,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     build_five_lane_successor_matrix as build_five_lane_successor_matrix,
+    with_evidence_ledger as _with_evidence_ledger,
 )
 from scripts.autotrain_heal_actions import (  # noqa: F401
     ack_document_action as _ack_document_action,
@@ -4017,6 +4011,7 @@ def _self_heal_document_actions(
     files = {
         path.relative_to(workspace).as_posix(): path.read_text() for path in touched
     }
+    files = _with_evidence_ledger(cwd, files)
     artifact = store.write_artifact(
         "delivery_documents",
         {
@@ -7596,6 +7591,7 @@ def _phase_a_delivery(
     arm_skipped: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
+    from slm_training.harness_core.execution_release import runtime_source_identity
     from slm_training.autoresearch.climb_policy import (
         cycle_role_for_index,
         load_climb_policy,
@@ -7603,9 +7599,7 @@ def _phase_a_delivery(
 
     policy = load_climb_policy()
     camp_dir = root / campaign_id
-    # Prefer the exact matrix identities supplied by the driver.  Filename
-    # heuristics are retained only for legacy callers and must never relabel a
-    # dynamic successor arm.
+    # Preserve exact matrix identities; filename heuristics serve legacy callers.
     man_dir = camp_dir / "manifests"
     control_run = control_id
     candidate_run = candidate_id
@@ -7695,7 +7689,7 @@ def _phase_a_delivery(
             loop_id=loop_id,
             stage="phase-a-git-status",
         )
-        if cwd
+        if cwd and runtime_source_identity(cwd) is None
         else ""
     )
     has_tracked_delta = bool(porcelain.strip())
@@ -7707,10 +7701,10 @@ def _phase_a_delivery(
         )
     elif stack_layer:
         stack_action = "open_or_update_stacked_pr"
-        agent_required = "gh stack add/submit --open for this positive layer"
+        agent_required = "publish this positive layer through the authorized GitHub connector"
     else:
         stack_action = "no_stack_layer_non_positive"
-        agent_required = "continue loop; local commits/docs only"
+        agent_required = "continue loop; retain docs for authorized connector delivery"
 
     record = {
         "schema": "autotrain_sdlc_delivery/v1",
@@ -7811,8 +7805,7 @@ def _phase_a_delivery(
     for reason in record.get("reasons") or []:
         print(f"SDLC_PHASE_A reason={reason}", flush=True)
 
-    # Optional design-doc closeout for the cycle (iron law); keep under campaign
-    # root so the git worktree stays clean for the next fetch/merge.
+    # Required cycle notes stay in the campaign output namespace.
     hill = _persist_hillclimb_cycle_outputs(
         root=root,
         loop_id=loop_id,
@@ -8485,9 +8478,6 @@ def _write_cycle_handoff(
     ]
     theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
     assumption_miss = any("assumption_backed_band_miss" in item for item in reasons)
-    # A finalized AgentV timeout is more specific than the evaluate process's
-    # generic non-zero exit. Preserve both repair and content-bound retry actions
-    # so acknowledging the repair cannot make the required replay unreachable.
     harness_failure = (
         climb_state == "harness_failure"
         or any(item.startswith("harness_failure:") for item in reasons)
@@ -8527,12 +8517,12 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         )
-    elif harness_failure or finalized_decode_timeout or control_only_model_timeout:
-        family = (
-            "model_build"
-            if (finalized_decode_timeout or control_only_model_timeout)
-            else _primary_harness_family(camp_dir)
-        )
+    elif _route_timeout_actions(
+        actions, camp_dir, candidate_id, evidence_id, cycle_intent, delivery,
+        finalized_decode_timeout, control_only_model_timeout):
+        pass
+    elif harness_failure:
+        family = _primary_harness_family(camp_dir)
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
         manifest_sha = (
             hashlib.sha256(manifest_path.read_bytes()).hexdigest()
@@ -10564,7 +10554,8 @@ def _manifest(
             continuation_grant=continuation_grant,
         ),
         stopping_rules=(
-            "Stop after the declared seeds finish or the wall cap is hit.",
+            "Stop after the declared seeds finish or the locked logical grant is exhausted; bounded invocation yields do not reset it."
+            if continuation_grant is not None else "Stop after the declared seeds finish or the wall cap is hit.",
         ),
         controls=controls,
         negative_controls=negative_controls,
@@ -10626,6 +10617,7 @@ def run_cycle(
     continuation_grant: str | None = None,
 ) -> str | dict[str, Any]:
     from scripts.autotrain_cycle_execution import continuous_owner, resume_cycle
+    from slm_training.harness_core.checkpoint_publication import controller_work_deadline
 
     resumed = resume_cycle(cwd, root, loop_id, continuous_owner(globals()))
     if resumed is not None:
@@ -10640,7 +10632,7 @@ def run_cycle(
         stage_wall_minutes_for_role,
     )
 
-    deadline = time.monotonic() + MAX_RUN_SECONDS
+    deadline = controller_work_deadline(MAX_RUN_SECONDS, KILL_GRACE_SECONDS + HARNESS_FINALIZATION_RESERVE_SECONDS)
     policy = load_climb_policy()
     # Defaults from external policy when caller still uses legacy pins.
     if train_version == "wf_smoke_v2":
@@ -10949,22 +10941,6 @@ def run_cycle(
                     f"streak={saturation_state['tie_streak']}",
                     flush=True,
                 )
-    screening_deficit = None
-    if cycle_intent == "screening" and replay is None:
-        from scripts.autotrain_pending import screening_deficit_report
-        smoke_n, ss_report = _screening_n_report(
-            policy, eval_version=current_eval_version
-        )
-        screening_deficit = screening_deficit_report(
-            smoke_n, ss_report, _screening_suite_records(current_eval_version),
-            automatic=policy.measurement.get("screening_smoke_n_mode") == "auto")
-        if screening_deficit is not None:
-            print(
-                "SCREENING_N_DEFICIT "
-                f"smoke_n={smoke_n} n_min={screening_deficit.get('n_min')} "
-                f"binding={screening_deficit.get('binding_constraints')}",
-                flush=True,
-            )
     # When multi-seed thrash bank is empty but a retryable promote head still
     # exists (confirmed / promotion_inconclusive / harness_failure), do not hard
     # block the loop — spend a promote slot. Observed: scaffold-prefix was the
@@ -11601,15 +11577,6 @@ def run_cycle(
         chunk_plan=promotion_chunk_plan,
     )
     matrix = _matrix(**matrix_inputs)
-    if screening_deficit is not None:
-        from scripts.autotrain_pending import resolve_screening_matrix
-        matrix, pending = resolve_screening_matrix(matrix, matrix_inputs, screening_deficit,
-            context={"cwd": cwd, "root": root, "loop_id": loop_id, "policy": policy,
-                "resolved_data": resolved_data, "fitted_candidates": fitted_candidate_count
-                if confirm_levers is None and promote_levers is None else 1})
-        if pending is not None:
-            return pending
-        eval_version = current_eval_version = resolved_data["eval_version"]
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
         if isinstance(regime_payload, dict):
@@ -11661,6 +11628,19 @@ def run_cycle(
         matrix = choose_matrix(matrix, continuous_owner(globals()), root=root,
             loop_id=loop_id, integration=integration, policy=policy)
         rec_slug = _slug_from_candidate_id(matrix["recommended_experiment_id"]) or rec_slug
+    if cycle_intent == "screening" and replay is None:
+        from scripts.autotrain_pending import resolve_screening_matrix, screening_deficit_report
+        smoke_n, report = _screening_n_report(policy, eval_version=eval_version)
+        deficit = screening_deficit_report(smoke_n, report, _screening_suite_records(eval_version),
+            automatic=policy.measurement.get("screening_smoke_n_mode") == "auto")
+        matrix, pending = resolve_screening_matrix(matrix,
+            {**matrix_inputs, "recommended_slug": rec_slug}, deficit,
+            context={"cwd": cwd, "root": root, "loop_id": loop_id, "policy": policy,
+                "resolved_data": resolved_data, "minimum": (report or {}).get("n_min", smoke_n),
+                "fitted_candidates": fitted_candidate_count})
+        if pending is not None:
+            return pending
+        eval_version = current_eval_version = resolved_data["eval_version"]
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")

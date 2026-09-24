@@ -74,7 +74,7 @@ def require_release_versions(identity):
             )
 
 
-def _inputs(evidence_path, train_version, eval_version):
+def _inputs(evidence_path, train_version, eval_version, *, checkpoint_paths=None):
     retained = _read(evidence_path)
     data = DataStore()
     train_dir = data.verify("train", train_version).path
@@ -87,7 +87,7 @@ def _inputs(evidence_path, train_version, eval_version):
     arms = {}
     for arm in ("control", "candidate"):
         row = retained["arms"][arm]
-        checkpoint = Path(row["checkpoint"]).resolve()
+        checkpoint = Path(checkpoint_paths[arm] if checkpoint_paths else row["checkpoint"]).resolve()
         validate_bundle(checkpoint.parent.parent.parent, checkpoint.parent.name)
         if _sha(checkpoint) != row["checkpoint_sha256"]:
             raise ValueError("retained checkpoint hash mismatch")

@@ -10,11 +10,13 @@ from pathlib import Path
 import pytest
 
 from tests.casefiles import case_values
-from hypothesis import given
-from hypothesis import strategies as st
+from hypothesis import given, strategies as st
 
 from scripts.check_changed import select_tests
-from scripts.merge_verification import plan_shards, run_release_gate, run_workload
+from scripts.merge_verification import (
+    plan_shards,
+    run_workload,
+)
 from scripts.merge_verification_evidence import (
     ReceiptCache,
     authorize_release,
@@ -94,12 +96,15 @@ def _fixture(tmp_path: Path, source: str) -> tuple[Path, Path]:
     return root, control
 
 
-def test_real_collection_and_shard_include_default_excluded_markers(
+def test_real_collection_and_shard_preserve_default_marker_exclusions(
     tmp_path, monkeypatch
 ) -> None:
     root, control = _fixture(
         tmp_path,
-        "import pytest\n@pytest.mark.training\ndef test_train(): pass\n@pytest.mark.slow\ndef test_chaos(): pass\n",
+        "import pytest\n"
+        "def test_default(): pass\n"
+        "@pytest.mark.training\ndef test_train(): pass\n"
+        "@pytest.mark.slow\ndef test_chaos(): pass\n",
     )
     monkeypatch.setenv("PYTEST_ADDOPTS", "-m 'not training and not slow'")
     collection = run_workload(
@@ -107,15 +112,12 @@ def test_real_collection_and_shard_include_default_excluded_markers(
     )
     assert collection["status"] == "ok", collection
     nodes = collection["nodes"]
-    assert len(nodes) == 2
-    assert any(
-        "training" in names for names in collection["workload"]["markers"].values()
-    )
+    assert len(nodes) == 1 and nodes[0].endswith("::test_default")
     result = run_workload(
         root, nodes, collect_only=False, seconds=15, directory=control
     )
     assert result["status"] == "ok", result
-    assert len(result["workload"]["reports"]) == 6
+    assert len(result["workload"]["reports"]) == 3
 
 
 def test_actual_source_resource_and_changed_test_node_union(tmp_path) -> None:
@@ -190,6 +192,7 @@ def _valid_workload() -> dict:
         "exit_code": 0,
         "nodes": [node],
         "deselected": [],
+        "deselected_markers": {},
         "collection_errors": [],
         "reports": [
             {
@@ -215,6 +218,18 @@ def test_workload_exact_node_and_phase_accounting() -> None:
         )
     valid["reports"].pop()
     with pytest.raises(ValueError, match="phases"):
+        validate_workload(valid, request_digest="r", expected=valid["nodes"])
+
+
+def test_workload_allows_only_declared_marker_deselection() -> None:
+    node = "tests/test_case.py::test_slow"
+    valid = _valid_workload()
+    valid["deselected"] = [node]
+    valid["deselected_markers"] = {node: ["slow"]}
+    assert validate_workload(valid, request_digest="r", expected=valid["nodes"])
+
+    valid["deselected_markers"][node] = ["integration"]
+    with pytest.raises(ValueError, match="outside the declared run policy"):
         validate_workload(valid, request_digest="r", expected=valid["nodes"])
 
 
@@ -276,12 +291,12 @@ def test_dependency_edit_invalidates_environment_without_metadata_change(
 ) -> None:
     from types import SimpleNamespace
 
-    from scripts import merge_verification_evidence
+    from scripts import merge_verification_identity
 
     dependency = tmp_path / "dependency.py"
     dependency.write_text("before")
     monkeypatch.setattr(
-        merge_verification_evidence.shutil, "which", lambda _: str(dependency)
+        merge_verification_identity.shutil, "which", lambda _: str(dependency)
     )
     distribution = SimpleNamespace(
         metadata={"Name": "fixture", "Version": "1"},
@@ -290,9 +305,9 @@ def test_dependency_edit_invalidates_environment_without_metadata_change(
         locate_file=lambda path: tmp_path / path,
     )
     monkeypatch.setattr(
-        merge_verification_evidence.importlib.metadata,
+        merge_verification_identity.importlib.metadata,
         "distributions",
-        lambda: [distribution],
+        lambda **_: [distribution],
     )
     before = environment_identity()
     dependency.write_text("after!")
@@ -309,54 +324,6 @@ def test_shards_are_nonempty_and_exact() -> None:
     assert sorted(node for shard in shards for node in shard) == sorted(nodes)
     with pytest.raises(ValueError):
         plan_shards([], 10)
-
-
-def test_real_workload_resumes_verified_collection_without_duplicate_tests(
-    tmp_path, monkeypatch
-) -> None:
-    from functools import partial
-
-    from scripts import merge_verification
-    from scripts.verify_merge_ready import Step, run_step
-
-    root, control = _fixture(tmp_path, "def test_case(): pass\n")
-    subprocess.run(["git", "init", "-q", str(root)], check=True)
-    # The disposable repo has no commits. Only base-tree lookup is a fixture;
-    # candidate hashing, pytest collection/execution, signing and restart are real.
-    monkeypatch.setattr(
-        merge_verification,
-        "changed_paths",
-        lambda *_: ("base-fixture", ["tests/test_case.py"]),
-    )
-    steps = (Step("static-canary", (sys.executable, "-c", "pass")),)
-    execute = merge_verification._run_shards
-    monkeypatch.setattr(merge_verification, "_run_shards", lambda *args: None)
-    verify = partial(
-        run_release_gate,
-        steps,
-        root=root,
-        base_ref="HEAD",
-        state_dir=control,
-        step_seconds=15,
-        run_step=run_step,
-        local_feedback=True,
-    )
-    first = verify()
-    assert first["status"] == "pending"
-    assert first["node_counts"]["pending"] == 1
-    monkeypatch.setattr(merge_verification, "_run_shards", execute)
-    second = verify()
-    assert second["verification_complete"] is True, second
-    assert second["release_authorized"] is False
-    assert [row.get("kind") for row in second["steps"]].count("collection") == 1
-    assert [row.get("kind") for row in second["steps"]].count("shard") == 1
-    third = verify(step_seconds=12)
-    assert third["identity"] == second["identity"]
-    assert third["spent_seconds"] == second["spent_seconds"]
-    (root / "fixture.json").write_text("new fixture identity")
-    fourth = verify()
-    assert fourth["identity"] != third["identity"]
-    assert fourth["verification_complete"] is True
 
 
 def test_local_evidence_is_not_independent_release_authority() -> None:

@@ -40,7 +40,7 @@ from slm_training.autoresearch.experiment_campaign import (
 )
 from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
-from slm_training.levers import MAX_RUN_MINUTES, MAX_RUN_SECONDS
+from slm_training.levers import INTERRUPT_AFTER_SECONDS, MAX_RUN_MINUTES, MAX_RUN_SECONDS
 from slm_training.autoresearch.providers import (
     AgentHypothesisProvider,
     OpenAIHypothesizer,
@@ -682,7 +682,7 @@ def test_strict_schema_and_allowlist() -> None:
 
 
 def test_hypothesis_matrix_requires_five_distinct_grounded_candidates() -> None:
-    with pytest.raises(ValidationError, match="at least 5 items"):
+    with pytest.raises(ValidationError, match="search requires at least five arms"):
         hypothesis_matrix(4)
     matrix = hypothesis_matrix()
     validate_hypothesis_matrix(campaign(), matrix, matrix_evidence(), [])
@@ -5575,7 +5575,7 @@ def test_execute_latency_probe_skips_full_eval_over_budget(
     outcome = execute_commands(
         spec, [probe, full], cwd=tmp_path, timeout_seconds=60.0
     )
-    assert calls == [probe]  # full eval never ran
+    assert [call[:-2] for call in calls] == [probe] and all(call[-2] == "--evaluation-wall-seconds" and 0 < float(call[-1]) <= INTERRUPT_AFTER_SECONDS for call in calls)  # full eval never ran
     assert outcome.status == "completed"
     probe_stage, skipped_stage = outcome.stage_telemetry
     assert probe_stage["latency_probe"] is True
@@ -5674,7 +5674,7 @@ def test_execute_latency_probe_failure_fails_open(
         spec, [probe, full], cwd=tmp_path, timeout_seconds=300.0
     )
     # Pre-check failure never blocks the full measurement.
-    assert calls == [probe, full]
+    assert [call[:-2] for call in calls] == [probe, full] and all(call[-2] == "--evaluation-wall-seconds" and 0 < float(call[-1]) <= INTERRUPT_AFTER_SECONDS for call in calls)
     assert outcome.status == "completed"
     assert outcome.stage_telemetry[0]["latency_preflight"]["verdict"] == (
         "latency_preflight_probe_failed"
@@ -5715,7 +5715,7 @@ def test_execute_latency_probe_timeout_stops_before_full_eval(
         spec, [probe, full], cwd=tmp_path, timeout_seconds=300.0
     )
     # Probe timeout stops the arm at one record: the full eval never starts.
-    assert calls == [probe]
+    assert [call[:-2] for call in calls] == [probe] and all(call[-2] == "--evaluation-wall-seconds" and 0 < float(call[-1]) <= INTERRUPT_AFTER_SECONDS for call in calls)
     assert outcome.status == "stopped"
     assert outcome.stage_telemetry[0]["latency_probe"] is True
 

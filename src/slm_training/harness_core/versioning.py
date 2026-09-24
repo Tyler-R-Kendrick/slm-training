@@ -93,10 +93,22 @@ def component_version(component_id: str) -> str:
 
 
 def _git_output(args: list[str]) -> str | None:
+    from .execution_release import MARKER, runtime_git_provenance
+
     # Prefer the caller's worktree so isolated experiment runs do not inherit
     # another checkout's HEAD or dirty state. Packaged/non-repo callers retain
     # the source-tree fallback below.
     for cwd in dict.fromkeys((Path.cwd(), _REPO_ROOT)):
+        if (cwd / MARKER).exists():
+            try:
+                frozen = runtime_git_provenance(cwd)
+                if args == ["rev-parse", "HEAD"]:
+                    return frozen["integration_commit"]
+                if args == ["status", "--porcelain"]:
+                    return "frozen source dirty" if frozen["code_dirty"] else ""
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+            return None  # Invalid release metadata never falls back to outer Git.
         try:
             return subprocess.check_output(
                 ["git", *args],

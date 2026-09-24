@@ -45,3 +45,19 @@ scheduling/CLI run had 28 passes and one failure: the registered
 documentation. Those broader changes are excluded here. A frozen-tree release
 gate, authenticated independent verification, and integration closeout remain
 open. No training, agent job, service activation, or paid CI was run.
+
+## Candidate target-base selection hardening — 2026-09-23
+
+The full gate now compares against `origin/main` by default; callers targeting a
+different PR base must pass `--base-ref` explicitly. If the comparison has no
+changed paths, the release binding selects the complete `tests` target instead
+of recording `no_tests_required`. A nonempty docs-only change may still select
+zero tests because that empty selection is based on an explicit changed-path
+set. The pre-patch regression had incorrectly treated an identical clean tree
+as release-complete without collecting any tests.
+
+Focused verification after this fix: the autonomy integration, merge-verifier,
+and resumption suites passed **50 tests**; scoped Ruff and `git diff --check`
+passed. The source-bound full release gate is still pending; these focused
+checks do not authorize a merge. `ci.local_merge_gate` advances to v18 and now
+owns the selector/CLI implementation and regression test paths.

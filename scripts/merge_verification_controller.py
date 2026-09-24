@@ -31,16 +31,16 @@ from slm_training.harness_core.activity_contract import (
     ResourceGrant,
     WakeCondition,
 )
-from slm_training.levers import INTERRUPT_AFTER_SECONDS
+from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
 
 
 def release_grant(plan):
-    if not 0 < plan["step_seconds"] <= INTERRUPT_AFTER_SECONDS - 80:
+    if not 2 * KILL_GRACE_SECONDS < plan["step_seconds"] <= INTERRUPT_AFTER_SECONDS - 120:
         raise ValueError(
             "finite controller step allowance must fit startup and finalization reserves"
         )
     return ResourceGrant(
-        interrupt_seconds=plan["step_seconds"] + 35,
+        interrupt_seconds=plan["step_seconds"] + 70,
         total_seconds=plan["total_seconds"],
         finalization_reserve_seconds=10,
         max_attempts=plan["max_invocations"],
@@ -120,16 +120,17 @@ def verification_argv(plan):
 
 
 def validate_observation(result, plan):
+    if result.timed_out:
+        return _authenticated_journal_summary(plan)
     if (
-        result.timed_out
-        or result.cancelled
+        result.cancelled
         or result.progress_stalled
         or result.returncode not in {0, 1, 10, 20}
     ):
         raise ValueError(
             "verification child did not produce a complete operational observation"
         )
-    summary = json.loads(result.stdout)
+    summary = _last_json_object(result.stdout)
     if result.returncode == 1:
         if summary.get("status") != "invalid_evidence":
             raise ValueError("failed verification child asserted a nonfailure outcome")
@@ -168,6 +169,53 @@ def validate_observation(result, plan):
     return summary
 
 
+def _authenticated_journal_summary(plan):
+    """Recover a bounded child's durable result when stdout was interrupted."""
+    cache = ReceiptCache(Path(plan["state_dir"]), Path(plan["source"]))
+    identities = (
+        [plan["identity"]]
+        if plan.get("identity")
+        else [
+            path.stem
+            for path in cache.directory.glob("*.json")
+            if len(path.stem) == 64
+            and all(char in "0123456789abcdef" for char in path.stem)
+        ]
+    )
+    matches = []
+    for identity in identities:
+        state = cache.load(identity)
+        if state is None:
+            continue
+        binding = state["binding"]
+        if (
+            binding["candidate_tree_sha256"] != plan["source_digest"]
+            or digest(binding["environment"]) != plan["environment_digest"]
+            or binding["runtime_identity"] != plan["runtime_digest"]
+            or binding["base_ref"] != plan["base_ref"]
+            or binding["isolation_enforced"] == plan["local_feedback"]
+        ):
+            continue
+        validate_cached_state(state, binding)
+        matches.append(state)
+    if len(matches) != 1:
+        raise ValueError("verification source/journal mismatch")
+    return _summary(matches[0])
+
+
+def _last_json_object(stdout: str) -> dict:
+    """Read the trusted entrypoint's final JSON object after child diagnostics."""
+    starts = [0, *(index + 1 for index, char in enumerate(stdout) if char == "\n")]
+    for start in reversed(starts):
+        try:
+            value = json.loads(stdout[start:])
+        except ValueError:
+            continue
+        if isinstance(value, dict):
+            return value
+    raise ValueError("verification child did not end with a JSON object")
+
+
 def execute_release_attempt(runtime, plan, lease):
     started = time.monotonic()
     env = dict(os.environ)
@@ -175,6 +223,7 @@ def execute_release_attempt(runtime, plan, lease):
         env["PYTHONPATH"] = os.pathsep.join(
             map(os.path.abspath, env["PYTHONPATH"].split(os.pathsep))
         )
+    env["MERGE_VERIFICATION_RUNTIME_IDENTITY"] = plan["runtime_digest"]
     result = runtime.run(
         lease, verification_argv(plan), cwd=Path(plan["source"]), env=env
     )
@@ -279,7 +328,6 @@ def drain_release(runtime, plan, *, deadline):
 
 
 def verify_release(args):
-    started = time.monotonic()
     source = args.source.resolve()
     roots = args.runtime_root or [Path(sys.prefix)]
     plan = {
@@ -299,6 +347,7 @@ def verify_release(args):
         "runtime_roots": [str(root.resolve()) for root in roots],
         "runtime_digest": runtime_identity(tuple(roots)),
     }
+    started = time.monotonic()
     store = CampaignStore(args.job_id, args.root.resolve())
     with ActivityRuntime(store) as runtime:
         summary = drain_release(
@@ -313,39 +362,3 @@ def verify_release(args):
             },
         )
     return summary
-
-
-def add_release_parser(sub):
-    command = sub.add_parser(
-        "verify-release",
-        help="Finite controller-owned resumable local verification; never promotion",
-    )
-    command.add_argument("--source", type=Path, default=Path.cwd())
-    command.add_argument("--identity", help="locked independent verifier identity")
-    command.add_argument("--activity-id", default="release-verification")
-    command.add_argument("--state-dir", type=Path, required=True)
-    command.add_argument("--job-id", default="release-verification")
-    command.add_argument("--base-ref", default="HEAD")
-    command.add_argument("--total-seconds", type=float, required=True)
-    command.add_argument("--max-invocations", type=int, required=True)
-    command.add_argument("--max-step-seconds", type=float, default=30)
-    command.add_argument("--runtime-root", type=Path, action="append", default=[])
-    command.add_argument("--local-feedback", action="store_true")
-    command.add_argument(
-        "--require-js-runtime",
-        action="store_true",
-        help="Require explicit complete bridge/SDK runtime grants before workloads",
-    )
-    command.set_defaults(func=cmd_verify_release)
-
-
-def cmd_verify_release(args):
-    result = verify_release(args)
-    print(json.dumps(result, sort_keys=True))
-    return (
-        0
-        if result["verification_complete"]
-        else 10
-        if result["status"] in {"runnable", "waiting_retry"}
-        else 20
-    )

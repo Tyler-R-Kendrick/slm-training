@@ -9,10 +9,12 @@ from pathlib import Path
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
+from slm_training.harnesses.model_build.data import resolve_published_train_version
 from slm_training.levers import (
     DEFAULT_CONTEXT_BACKEND,
     DEFAULT_OUTPUT_TOKENIZER,
     DEFAULT_TRAIN_DATA_DIR,
+    MAX_HARNESS_WALL_MINUTES,
 )
 
 
@@ -30,23 +32,8 @@ def _positive_int(value: str) -> int:
     return parsed
 
 
-def resolve_published_train_version(
-    version: str,
-    *,
-    root: Path | None = None,
-    store: DataStore | None = None,
-) -> tuple[Path, Path | None]:
-    """Resolve a committed corpus and its canonical online-sampling policy."""
-    train_dir = (
-        root / version
-        if root is not None
-        else (store or DataStore()).resolve("train", version).path
-    )
-    mixture = train_dir / "mixture.json"
-    return train_dir, mixture if mixture.is_file() else None
-
-
-def main(argv: list[str] | None = None) -> int:
+def resolve_config(argv: list[str] | None = None) -> ModelBuildConfig:
+    """Resolve the real CLI defaults/contracts without training or telemetry writes."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--train-dir",
@@ -83,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
         help="Use a published source-controlled corpus version from src/slm_training/resources/data/train.",
     )
     parser.add_argument("--run-id", default="latest")
+    parser.add_argument("--max-wall-minutes", type=float, default=float(MAX_HARNESS_WALL_MINUTES),
+                        help="Bound this invocation; persist exact trial state before yielding.")
     parser.add_argument(
         "--test-dir",
         type=Path,
@@ -155,10 +144,8 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
-        "--no-full-state-checkpoint",
-        action="store_true",
-        help="Skip writing last_full_state.pt (serving last.pt still written).",
-    )
+        "--no-full-state-checkpoint", action="store_true",
+        help="Skip last_full_state.pt; serving last.pt is still written.")
     parser.add_argument(
         "--checkpoint-every-steps",
         type=int,
@@ -234,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Model plug-in to train (default: twotower).",
     )
     parser.add_argument("--steps", type=int, default=200)
+    parser.add_argument("--max-updates-this-invocation", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument(
@@ -1441,6 +1429,8 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     args = parser.parse_args(argv)
+    if not 0 < args.max_wall_minutes <= MAX_HARNESS_WALL_MINUTES:
+        parser.error("--max-wall-minutes must be positive and within the canonical cap")
     data_store = DataStore()
     if args.train_version:
         args.train_dir, version_mixture = resolve_published_train_version(
@@ -1519,6 +1509,9 @@ def main(argv: list[str] | None = None) -> int:
             "reduce-overhead" if want_fast and accel.backend == "cuda" else "default"
         )
 
+    sync_checkpoints = not args.no_sync_checkpoints and (
+        args.sync_checkpoints or args.context_backend == "hf"
+    )
     config = ModelBuildConfig(
         train_dir=args.train_dir,
         requested_capability=args.requested_capability,
@@ -1529,7 +1522,9 @@ def main(argv: list[str] | None = None) -> int:
         suite=args.eval_suite,
         run_root=args.run_root,
         run_id=args.run_id,
+        max_wall_minutes=args.max_wall_minutes,
         steps=args.steps,
+        max_updates_this_invocation=args.max_updates_this_invocation,
         batch_size=args.batch_size,
         lr=args.lr,
         optimizer_name=args.optimizer,
@@ -1812,31 +1807,27 @@ def main(argv: list[str] | None = None) -> int:
             if args.checkpoint_bucket is not None
             else (
                 DEFAULT_CHECKPOINT_BUCKET_URI
-                if (
-                    not args.no_sync_checkpoints
-                    and (args.sync_checkpoints or args.context_backend == "hf")
-                )
+                if sync_checkpoints
                 else None
             )
         ),
-        sync_checkpoints=(
-            False
-            if args.no_sync_checkpoints
-            else True
-            if args.sync_checkpoints or args.context_backend == "hf"
-            else False
-        ),
+        sync_checkpoints=sync_checkpoints,
         checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
         adapter_spec=args.adapter_spec,
         adapter_trainable=not bool(args.adapter_frozen),
     )
+    return config
+
+
+def main(argv: list[str] | None = None) -> int:
+    config = resolve_config(argv)
     from slm_training.runtime.telemetry import run_trace
 
     with run_trace(
-        args.run_id,
+        config.run_id,
         "train",
         run_dir=config.run_dir,
-        attributes={"slm.data.path": args.train_dir.as_posix()},
+        attributes={"slm.data.path": config.train_dir.as_posix()},
     ) as trace:
         summary = train(config)
         summary["trace_id"] = trace.trace_id

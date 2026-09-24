@@ -286,9 +286,9 @@ def test_real_collection_plans_fresh_invocations_not_remaining_tail(tmp_path, mo
     assert "nodes" not in state
     assert owner._collect(state, root, control, lambda: 30, lambda: None)
     assert len(state["nodes"]) == 60
-    # With no duration history, the planner reserves five seconds per node so
-    # a fresh bounded invocation cannot pack an unmeasured oversized shard.
-    assert len(state["shards"]) == 10
+    # With no duration history, the planner applies its four-times safety
+    # factor to five seconds per node, keeping each initial shard small.
+    assert len(state["shards"]) == 20
     assert sorted(node for shard in state["shards"] for node in shard) == sorted(state["nodes"])
 
 

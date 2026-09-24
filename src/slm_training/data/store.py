@@ -270,6 +270,24 @@ class DataStore:
                 plan.append((source, destination))
         return plan
 
+    def publish_successor(
+        self, kind: DataKind, dataset_id: str, *, source: Path, metadata: dict[str, Any]
+    ) -> DatasetRef:
+        """Publish a new local snapshot, never mutate a previous version.
+
+        Admission and action-specific lineage are checked by the caller before
+        publication and independently after it. This method grants no heal or
+        promotion authority. Metadata must bind the original readiness request.
+        """
+        from slm_training.data.publication import publish_tree
+
+        self._validate(kind, dataset_id)
+        if not metadata.get("successor_of") or not metadata.get("readiness_request_sha256"):
+            raise ValueError("successor requires original snapshot and action identities")
+        publish_tree(Path(source), self.path(kind, dataset_id),
+                     metadata={**metadata, "kind": kind, "dataset_id": dataset_id})
+        return self.verify(kind, dataset_id)
+
     def migrate(self) -> list[tuple[Path, Path]]:
         plan = self.migration_plan()
         for source, destination in plan:

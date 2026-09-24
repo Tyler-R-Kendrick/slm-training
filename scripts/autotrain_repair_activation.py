@@ -33,6 +33,18 @@ def recover_release(runtime, common, *, sequence, log_event, run_operation):
     checked = verified_activation_handoff(
         runtime.store, accepted[-1]["detail"]["handoff"]
     )
+    if checked.get("source_delivery"):
+        from scripts.autotrain_supervision import register_delivery_waits
+        from slm_training.autoresearch.heal.repair_delivered import resolve_delivered_activation
+
+        outcomes = register_delivery_waits(
+            runtime, common, [checked["source_delivery"]], log_event
+        )
+        if outcomes[0]["state"] != "succeeded":
+            return "waiting_delivery"
+        checked = resolve_delivered_activation(
+            runtime.store, outcomes[0]["reconciliation"]["delivered_activation"]
+        )
     if Path(common["cwd"]).resolve() != Path(checked["successor_execution"]).resolve():
         raise VerifiedRestart(checked)
     request = wake_verified_operation(runtime, checked, cwd=Path(common["cwd"]))

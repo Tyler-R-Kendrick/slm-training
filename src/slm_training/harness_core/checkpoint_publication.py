@@ -8,6 +8,8 @@ training/decode workloads must never receive this object or controller storage.
 from __future__ import annotations
 
 import os
+import math
+import time
 import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -65,6 +67,20 @@ def champion_publication_scope(publisher, lease, *, loop_dir: Path):
 
 def has_champion_publication_scope() -> bool:
     return _SCOPE.get() is not None
+
+
+def controller_work_deadline(max_seconds: float, reserve_seconds: float) -> float:
+    """Reserve shutdown/publication time inside the current operation lease."""
+    if (not math.isfinite(max_seconds) or max_seconds < 0
+            or not math.isfinite(reserve_seconds) or reserve_seconds < 0):
+        raise ValueError("invalid controller invocation budget")
+    scope = _SCOPE.get()
+    if scope is not None:
+        if os.getpid() != scope.pid:
+            raise ValueError("controller_publication:foreign_process")
+        remaining = scope.lease.expires_at - time.time()
+        max_seconds = min(max_seconds, remaining - reserve_seconds)
+    return time.monotonic() + max(0.0, max_seconds)
 
 
 @contextmanager

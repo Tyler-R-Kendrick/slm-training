@@ -66,7 +66,37 @@ def approved_rl_report() -> RLReadinessReport:
 
 
 @pytest.fixture
-def approved_rl_report_path(tmp_path, approved_rl_report):
+def approved_rl_report_path(tmp_path):
+    import json
+
+    from slm_training.autoresearch.rl_gate import REQUIRED_SUITES, assess_rl_readiness
+
+    evaluation = tmp_path / "frozen-evaluation.json"
+    evaluation.write_text(
+        json.dumps(
+            {
+                "evaluation_snapshot": {
+                    "metadata": {
+                        "kind": "frozen_production_evaluation",
+                        "human_feedback_holdout_n": 1,
+                        "suite_sizes": {"rico_held": 1500},
+                    }
+                },
+                "suites": {
+                    name: {"n": 1500 if name == "rico_held" else 8}
+                    for name in REQUIRED_SUITES
+                },
+                "gates": {"authority": "AgentEvals assertions", "pass": True},
+                "evals": {
+                    "criteria": {"pass": True, "total": 1},
+                    "runner": {"execution_errors": 0},
+                },
+                "reward_samples": [0.1, 0.9],
+            }
+        )
+        + "\n"
+    )
     path = tmp_path / "rl_readiness.json"
-    path.write_text(approved_rl_report.model_dump_json(indent=2) + "\n")
+    report = assess_rl_readiness(evaluation)
+    path.write_text(report.model_dump_json(indent=2) + "\n")
     return path

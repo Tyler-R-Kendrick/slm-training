@@ -1,5 +1,4 @@
 """Bounded continuation; campaign history owns the cursor, not old telemetry."""
-
 from __future__ import annotations
 
 import math
@@ -7,7 +6,6 @@ import shlex
 import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
-
 from scripts.autoresearch_command_cursor import CommandCursor, ContinuationGrant
 from slm_training.autoresearch.engine import is_resumable_eval_command
 from slm_training.autoresearch.schemas import (
@@ -18,8 +16,8 @@ from slm_training.autoresearch.schemas import (
 from slm_training.levers import (
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
 )
-
 
 def _merged(previous, current):
     if (previous.experiment_id, previous.campaign_id) != (
@@ -45,7 +43,6 @@ def _merged(previous, current):
         }
     )
 
-
 def _pending_stage(outcome):
     if outcome is None or outcome.status != "stopped" or not outcome.stage_telemetry:
         return None
@@ -64,14 +61,13 @@ def _pending_stage(outcome):
     )
     if (
         stage.get("resume_pending") is True
-        and not any(
-            stage.get(key) for key in ("timed_out", "killed", "interrupted", "skipped")
-        )
+        and not stage.get("skipped")
+        and (not any(stage.get(key) for key in ("timed_out", "killed", "interrupted"))
+             or _interrupted_resume(stage))
         and (evaluation or training)
     ):
         return stage
     return None
-
 
 def is_continuation_pending(outcome: ExperimentOutcome) -> bool:
     """Normal bounded yield only; no-progress/reconciliation need typed repair."""
@@ -89,7 +85,6 @@ def is_continuation_pending(outcome: ExperimentOutcome) -> bool:
     ):
         return False
     return error == "continuation_budget_pending" or _pending_stage(outcome) is not None
-
 
 def _progress(stage):
     if stage.get("resume_kind") == "training":
@@ -126,9 +121,27 @@ def _progress(stage):
         return None
     return "eval", counts
 
+def _interrupted_resume(stage):
+    return stage.get("resume_pending") is True and is_resumable_eval_command(stage.get("command") or []) and stage.get("resume_validation") == "required_by_evaluator_before_decode" and any(stage.get(k) for k in ("timed_out", "killed", "interrupted"))
+
+def _wall_yield(stage):
+    """Every pending suite must prove a wall deferral, not failed decoding."""
+    parsed = stage.get("parsed_output") or {}
+    suites = parsed.get("suites") or {}
+    counts = (parsed.get("resume") or {}).get("pending_record_n") or {}
+    pending = {name: count for name, count in counts.items() if type(count) is int and count > 0}
+    receipts = {name: (suites.get(name) or {}).get("resume") or {} for name in pending}
+    return bool(pending) and all(row.get("schema") == "eval_resume/v1"
+        and row.get("pending_record_n") == pending[name]
+        and row.get("stop_reason") == "evaluation_wall"
+        and row.get("decoded_this_run_n") == 0 for name, row in receipts.items())
+
 
 def _advanced(before, after):
     old, new = _progress(before), _progress(after)
+    if old is None and _interrupted_resume(before) and new is not None:
+        decoded = ((after.get("parsed_output") or {}).get("resume") or {}).get("decoded_this_run_n") or {}
+        return new[0] == "eval" and decoded.keys() == new[1].keys() and all(type(n) is int and n >= 0 for n in decoded.values()) and sum(decoded.values()) > 0
     if before.get("resume_kind") == "training" and before.get(
         "progress_identity"
     ) == after.get("progress_identity"):
@@ -142,7 +155,6 @@ def _advanced(before, after):
         and sum(new[1].values()) < sum(old[1].values())
     )
 
-
 def _canonical(command):
     """Only the engine-injected invocation deadline is incidental to argv."""
     result = list(command)
@@ -151,7 +163,6 @@ def _canonical(command):
             index = result.index(flag)
             del result[index : index + 2]
     return result
-
 
 def _stage_complete(stage):
     if stage.get("measurement_complete") is False:
@@ -164,7 +175,6 @@ def _stage_complete(stage):
         stage.get(key)
         for key in ("resume_pending", "timed_out", "killed", "interrupted", "skipped")
     )
-
 
 def _position(outcome, commands):
     position = 0
@@ -180,7 +190,6 @@ def _position(outcome, commands):
             continue
         break
     return position
-
 
 def _stop(outcome, code):
     signal = HarnessSignalV1(
@@ -198,7 +207,6 @@ def _stop(outcome, code):
         }
     )
 
-
 def _resume_commands(commands, position, stage):
     suffix = [list(command) for command in commands[position:]]
     override = stage.get("resume_command")
@@ -213,7 +221,6 @@ def _resume_commands(commands, position, stage):
     elif "--resume-run" not in suffix[0]:
         suffix[0].append("--resume-run")
     return suffix
-
 
 def continue_pending_evaluation(
     experiment: ExperimentSpec,
@@ -261,16 +268,17 @@ def continue_pending_evaluation(
         if (
             next_stage is not None
             and advanced == 0
-            and not _advanced(stage, next_stage)
+            and not _advanced(stage, next_stage) and not _wall_yield(next_stage) and not _interrupted_resume(next_stage)
         ):
             return _stop(
                 outcome, "continuation_no_progress:repair_measurement_required"
             )
         if current.status == "completed" and position != len(plan):
             return _stop(outcome, "continuation_required_commands_missing")
+        if next_stage and (_wall_yield(next_stage) or _interrupted_resume(next_stage)):
+            return outcome
         stage = next_stage
     return outcome
-
 
 def execute_with_continuation(
     experiment,
@@ -283,11 +291,7 @@ def execute_with_continuation(
     store=None,
     grant: ContinuationGrant | None = None,
 ) -> ExperimentOutcome:
-    """Execute one invocation; an explicit total grant spans journaled restarts.
-
-    The controller supplies the release/environment/input identity in ``grant``
-    and retains activity leases. Uncommitted starts require reconciliation.
-    """
+    """Run one bounded invocation under the controller's immutable identity/grant."""
     invocation_started = time.monotonic()
     interrupt_limit = (
         INTERRUPT_AFTER_SECONDS
@@ -322,16 +326,14 @@ def execute_with_continuation(
         cursor.track_invocation(invocation_started, time.monotonic)
         return _execute_cursor(cursor, execute_commands, cwd, deadline, wall_seconds, reserve)
 
-
 def _cursor_allowance(cursor, deadline, reserve=HARNESS_FINALIZATION_RESERVE_SECONDS):
     if cursor.attempt >= cursor.inputs.get("max_attempts", math.inf):
         return 0, "continuation_total_attempts_exhausted"
     remaining = min(deadline - time.monotonic(), cursor.remaining) - reserve
     code = ("continuation_total_budget_insufficient"
-            if cursor.remaining <= HARNESS_FINALIZATION_RESERVE_SECONDS
+            if cursor.remaining <= reserve + min(reserve, KILL_GRACE_SECONDS)
             else "continuation_budget_pending")
     return remaining, code
-
 
 def _execute_cursor(cursor, execute_commands, cwd, deadline, wall_seconds, reserve=HARNESS_FINALIZATION_RESERVE_SECONDS):
     outcome, position = cursor.outcome, cursor.position
@@ -344,7 +346,7 @@ def _execute_cursor(cursor, execute_commands, cwd, deadline, wall_seconds, reser
     plan = cursor.inputs["commands"]
     while position < len(plan):
         remaining, code = _cursor_allowance(cursor, deadline, reserve)
-        if remaining <= 0:
+        if remaining <= 0 or (cursor.attempt > 0 and remaining <= min(reserve, KILL_GRACE_SECONDS)):
             return cursor.result(code)
         stage = _pending_stage(outcome)
         suffix = (
@@ -356,7 +358,8 @@ def _execute_cursor(cursor, execute_commands, cwd, deadline, wall_seconds, reser
             outcome is not None
             and stage is None
             and not (
-                outcome.stage_telemetry and _stage_complete(outcome.stage_telemetry[-1])
+                (outcome.error == "continuation_budget_pending" and not outcome.stage_telemetry)
+                or (outcome.stage_telemetry and _stage_complete(outcome.stage_telemetry[-1]))
             )
         ):
             return cursor.result("continuation_reconciliation_required")
@@ -382,14 +385,14 @@ def _execute_cursor(cursor, execute_commands, cwd, deadline, wall_seconds, reser
         position += advance
         outcome = _merged(outcome, current) if outcome is not None else current
         next_stage = _pending_stage(current)
-        if stage and next_stage and advance == 0 and not _advanced(stage, next_stage):
+        if stage and next_stage and advance == 0 and not _advanced(stage, next_stage) and not _wall_yield(next_stage) and not _interrupted_resume(next_stage):
             outcome = _stop(
                 outcome, "continuation_no_progress:repair_measurement_required"
             )
         if current.status == "completed" and position != len(plan):
             outcome = _stop(outcome, "continuation_required_commands_missing")
         cursor.commit(outcome, position, time.monotonic() - started)
-        if next_stage is None or (outcome.error or "").startswith(
+        if next_stage is None or _wall_yield(next_stage) or _interrupted_resume(next_stage) or (outcome.error or "").startswith(
             "continuation_no_progress"
         ):
             return outcome

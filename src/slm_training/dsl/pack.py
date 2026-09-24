@@ -28,13 +28,10 @@ Plus honesty metadata required by F3/F4:
   paths, so the F4 ontology variant (grammar → graph-walk constraint,
   oracle → ontology reasoner) can fill the same slots.
 
-Packs may be **partial**: a slot a language genuinely does not provide yet is
-``None``, and :meth:`DslPack.require` fails closed with a message naming the
-pack and the missing slot. ``toy-layout`` is the shipped partial example.
-
-The registry here does not duplicate the grammar-backend registry
-(``dsl/grammar/backends``): the ``backend`` slot references it, and pack
-resolution follows the same ``SLM_GRAMMAR_DSL`` / ``active_dsl()`` convention.
+Partial packs use ``None`` for unavailable slots; :meth:`DslPack.require`
+fails closed naming the pack and slot. ``toy-layout`` is the shipped example.
+The ``backend`` references ``dsl/grammar/backends`` and uses its
+``SLM_GRAMMAR_DSL`` / ``active_dsl()`` resolution convention.
 """
 
 from __future__ import annotations

@@ -160,6 +160,7 @@ def _write_record_nll(run_dir: Path, plugin, records) -> Path:
 
 
 def train(config: ModelBuildConfig, model=None) -> dict:
+    from slm_training.harness_core import checkpoint_bundle
     from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
     from slm_training.runtime.accel import (
         autocast_context,
@@ -173,9 +174,17 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         load_full_state,
         restore_rng_states,
         save_full_state,
+        seed_training_rngs,
+    )
+    from slm_training.harnesses.model_build.resume_contract import (
+        count_snapshot_tokens,
+        exposure_by_snapshot,
+        invocation_update_limit,
+        validate_resume_contract,
     )
 
     config, flag_snapshot = resolve(config, phase="training")
+    config = replace(config, resume_from=checkpoint_bundle.published_resume_state(config.resume_from))
     from slm_training.harnesses.capability_gates import require_training_authorized
     from slm_training.harnesses.experiments.slm228_spectral_disposition import (
         validate_spectral_recipe,
@@ -224,12 +233,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             locked_manifest_path=locked_manifest_path,
         )
 
-    max_wall_minutes = getattr(config, "max_wall_minutes", None)
-    max_wall_minutes = (
-        float(MAX_HARNESS_WALL_MINUTES)
-        if max_wall_minutes is None
-        else float(max_wall_minutes)
-    )
+    max_wall_minutes = float(MAX_HARNESS_WALL_MINUTES if config.max_wall_minutes is None else config.max_wall_minutes)
     if not 0 < max_wall_minutes <= MAX_HARNESS_WALL_MINUTES:
         raise ValueError(
             f"max_wall_minutes must be positive and at most {MAX_HARNESS_WALL_MINUTES}"
@@ -242,6 +246,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if config.device in {"auto", "best"}:
         config.device = accel.device
 
+    seed_training_rngs(config.seed)
     primary_records = load_train_records(config.train_dir)
     if not primary_records:
         raise ValueError("train records empty")
@@ -711,7 +716,6 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 count += parameter.numel()
         return math.sqrt(squared / count) if count else None
 
-    # ── Token accounting / full-state resume ────────────────────────────────
     step = 0
     last_loss = 0.0
     micro = 0
@@ -721,14 +725,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     accum_example_losses: list[float] = []
     seen_prompt_tokens = 0
     seen_target_tokens = 0
-    seen_primary_examples = 0
-    seen_replay_examples = 0
+    seen_primary_examples = seen_replay_examples = 0
+    snapshot_tokens: dict = {}
     source_loss_proxy = {
         "primary": {"count": 0, "sum": 0.0, "first": [], "last": []},
         "replay": {"count": 0, "sum": 0.0, "first": [], "last": []},
     }
-    best_weighted_nll = math.inf
-    best_ship_score = -math.inf
+    best_weighted_nll, best_ship_score = math.inf, -math.inf
     pending: list[list] = []
     primary_manifest_sha = data_manifest_sha(config.train_dir)
     manifest_sha = primary_manifest_sha
@@ -745,24 +748,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ).encode("utf-8")
         ).hexdigest()
     resumed_from: str | None = None
+    resume_compatibility = None
 
     if resume_path:
         resume_path = Path(resume_path)
         payload = load_full_state(resume_path)
-        previous_mixture_hash = payload.get("mixture_hash")
-        current_mixture_hash = (mixture_meta or {}).get("hash")
-        if previous_mixture_hash and previous_mixture_hash != current_mixture_hash:
-            raise ValueError(
-                "resume_from mixture mismatch: checkpoint used "
-                f"{previous_mixture_hash[:12]}… but current policy uses "
-                f"{str(current_mixture_hash)[:12]}…"
-            )
-        prev_sha = payload.get("data_manifest_sha")
-        if prev_sha and manifest_sha and prev_sha != manifest_sha:
-            raise ValueError(
-                "resume_from data mismatch: checkpoint was trained on "
-                f"manifest {prev_sha[:12]}… but train_dir has {manifest_sha[:12]}…"
-            )
+        resume_compatibility = validate_resume_contract(payload, config, plugin, manifest_sha, optimizer, scaler)
         if payload.get("model") is not None and hasattr(plugin, "load_state_dict"):
             if hasattr(plugin, "_state_dict_for_checkpoint"):
                 # Reject silent trainable-weight mismatches (TwoTower-style).
@@ -772,20 +763,6 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             else:
                 plugin.load_state_dict(payload["model"], strict=False)
         if optimizer is not None and payload.get("optimizer") is not None:
-            saved_fp = payload.get("optimizer_fingerprint")
-            current_fp = (
-                optimizer.fingerprint if hasattr(optimizer, "fingerprint") else None
-            )
-            if saved_fp is not None and saved_fp != current_fp:
-                raise ValueError(
-                    "optimizer fingerprint mismatch: "
-                    f"checkpoint={saved_fp}, current={current_fp}"
-                )
-            if saved_fp is None and current_fp is not None:
-                raise ValueError(
-                    "checkpoint has no optimizer fingerprint but current optimizer "
-                    f"is {current_fp}; resume across optimizer families is not allowed"
-                )
             optimizer.load_state_dict(payload["optimizer"])
         if (
             scaler is not None
@@ -799,6 +776,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         seen_target_tokens = int(payload.get("seen_target_tokens") or 0)
         seen_primary_examples = int(payload.get("seen_primary_examples") or 0)
         seen_replay_examples = int(payload.get("seen_replay_examples") or 0)
+        snapshot_tokens = payload["snapshot_tokens"]
         if payload.get("best_weighted_nll") is not None:
             best_weighted_nll = float(payload["best_weighted_nll"])
         if payload.get("best_ship_score") is not None:
@@ -822,7 +800,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         seen_replay_examples += replay_examples
         seen_primary_examples += len(batch) - replay_examples
         if hasattr(plugin, "count_batch_tokens"):
-            pt, tt = plugin.count_batch_tokens(batch)
+            pt, tt = count_snapshot_tokens(plugin, batch, snapshot_tokens)
             seen_prompt_tokens += int(pt)
             seen_target_tokens += int(tt)
 
@@ -902,6 +880,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     None if math.isinf(best_ship_score) else best_ship_score
                 ),
                 mixture_hash=(mixture_meta or {}).get("hash") if mixture_meta else None,
+                snapshot_tokens=snapshot_tokens,
             )
 
     def _maybe_eval(step: int, force: bool = False) -> dict | None:
@@ -1072,14 +1051,20 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         return row
 
     stopped_on = "steps"
+    invocation_start_step = step
+    invocation_limit = invocation_update_limit(config, step, plugin)
     checkpoint_every_steps = int(getattr(config, "checkpoint_every_steps", 0) or 0)
     mode = "a" if resumed_from else "w"
+    _save_full_state_now()
     with bind_telemetry(tel), metrics_path.open(mode, encoding="utf-8") as metrics_file:
         while step < config.steps:
-            if _wall_budget_exhausted():
+            if micro == 0 and step >= invocation_limit:
+                stopped_on = "invocation_update_budget"
+                break
+            if micro == 0 and _wall_budget_exhausted():
                 stopped_on = "wall_time_budget"
                 break
-            if _budget_exhausted():
+            if micro == 0 and _budget_exhausted():
                 stopped_on = "token_budget"
                 break
             if not pending:
@@ -1138,7 +1123,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     row = {
                         "step": step,
                         "loss": last_loss,
-                        "batch_size": len(batch) * grad_accum,
+                        "batch_size": len(accum_batch_meta),
                         "seen_prompt_tokens": seen_prompt_tokens,
                         "seen_target_tokens": seen_target_tokens,
                         "model": config.model_name,
@@ -1186,17 +1171,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 step += 1
                 _maybe_eval(step)
 
-        # Flush partial accum.
-        if is_twotower and optimizer is not None and micro > 0:
-            import torch
-
-            with timed("optim_step"):
-                scaler.unscale_(optimizer)
-                _clip_optimizer_parameter_groups(optimizer, 1.0)
-                scaler.step(optimizer)
-                scaler.update()
-                _retain_initialized_weights()
-            micro = 0
+        # Voluntary yields occur only at optimizer boundaries. A hard kill
+        # replays the last durable boundary, never a fractional uncounted update.
+        assert micro == 0
 
         with timed("device_sync"):
             sync_device(config.device)
@@ -1216,6 +1193,11 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 force=bool(config.test_dir),
             )
         _save_full_state_now()
+        if is_twotower:
+            ckpt_path = checkpoint_bundle.seal_trial_checkpoint(ckpt_path, config, manifest_sha, step,
+                exposure_by_snapshot(primary_manifest_sha, replay_manifest_sha,
+                    len(records), len(replay_records), seen_primary_examples,
+                    seen_replay_examples, snapshot_tokens))
 
     if bool(getattr(config, "register_promoted", False)):
         from slm_training.harnesses.experiments.promotion import (
@@ -1283,8 +1265,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "run_id": config.run_id,
         "steps": step,
         "stopped_on": stopped_on,
+        "invocation_start_step": invocation_start_step,
         "last_loss": last_loss,
         "checkpoint": str(ckpt_path.as_posix()),
+        "continuation_kind": "exact_same_environment" if resumed_from else "warm_start" if initialized_from else "fresh",
+        "exposure_by_snapshot": exposure_by_snapshot(
+            primary_manifest_sha, replay_manifest_sha, len(records), len(replay_records),
+            seen_primary_examples, seen_replay_examples,
+            snapshot_tokens,
+        ),
         "train_dir": str(config.train_dir),
         "record_count": len(records),
         "replay": {
@@ -1325,6 +1314,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "max_wall_minutes": max_wall_minutes,
         "elapsed_wall_seconds": time.monotonic() - wall_started,
         "resumed_from": resumed_from,
+        "resume_compatibility": resume_compatibility,
         "initialized_from": initialized_from,
         "initialized_prior_fields": initialized_prior_fields,
         "rebuilt_prior_fields": rebuilt_prior_fields,

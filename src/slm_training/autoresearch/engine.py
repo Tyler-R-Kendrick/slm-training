@@ -631,27 +631,25 @@ def compile_commands(
             "embedded execution supports twotower and grammar_diffusion; "
             "causal_lm proposals must use the agent-driven model_cycle lineage workflow"
         )
-    train = [
-        sys.executable,
-        "-m",
-        "scripts.train_model",
-        "--run-root",
-        str(root.parent),
-        "--run-id",
-        root.name,
-        "--steps",
-        str(knobs.steps or 200),
-        "--batch-size",
-        str(knobs.batch_size or 4),
-        "--lr",
-        str(knobs.lr or 3e-4),
-        "--seed",
-        str(knobs.seed or 0),
-        "--context-backend",
-        knobs.context_backend or "hf",
-        "--device",
-        "cpu" if campaign.budget.max_gpu_hours == 0 else "auto",
-    ]
+    train_options = {
+        "run-root": root.parent,
+        "run-id": root.name,
+        "steps": knobs.steps or 200,
+        "batch-size": knobs.batch_size or 4,
+        "lr": knobs.lr or 3e-4,
+        "seed": knobs.seed or 0,
+        "context-backend": knobs.context_backend or "hf",
+        "device": "cpu" if campaign.budget.max_gpu_hours == 0 else "auto",
+        "d-model": knobs.d_model,
+        "n-heads": knobs.n_heads,
+        "context-layers": knobs.context_layers,
+        "denoiser-layers": knobs.denoiser_layers,
+        "max-updates-this-invocation": knobs.max_updates_this_invocation,
+    }
+    train = [sys.executable, "-m", "scripts.train_model"]
+    for flag, value in train_options.items():
+        if value is not None:
+            train.extend(["--" + flag, str(value)])
     if knobs.train_version:
         train.extend(["--train-version", knobs.train_version])
     else:
@@ -1135,7 +1133,7 @@ def execute_commands(
         remaining_seconds = (
             max(0.0, deadline - time.monotonic()) if deadline is not None else None
         )
-        if remaining_seconds == 0:
+        if remaining_seconds == 0 or (is_resumable_eval_command(command) and remaining_seconds is not None and remaining_seconds <= KILL_GRACE_SECONDS):
             return ExperimentOutcome(
                 experiment_id=experiment.experiment_id,
                 campaign_id=experiment.campaign_id,
@@ -1143,7 +1141,7 @@ def execute_commands(
                 metrics=metrics,
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
-                error="experiment exceeded cumulative wall-time budget",
+                error="continuation_budget_pending" if is_resumable_eval_command(command) else "experiment exceeded cumulative wall-time budget",
                 wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
                 started_at=started,
@@ -1200,11 +1198,11 @@ def execute_commands(
                 "stdout": completed.stdout,
                 "stderr": completed.stderr,
                 "measurement_complete": False,
+                "resume_pending": is_resumable_eval_command(command) and not is_probe,
+                "resume_validation": "required_by_evaluator_before_decode",
                 "duration_seconds": getattr(completed, "duration_seconds", None),
             }
             if is_probe:
-                # The probe record alone hit the stage wall: the full eval
-                # would burn n x that budget for the same incomplete result.
                 stage["latency_probe"] = True
             partial = _read_changed_json(progress_artifact, progress_revision_before)
             run_id = _command_value(command, "--run-id")

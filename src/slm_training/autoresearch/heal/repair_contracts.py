@@ -6,7 +6,7 @@ import hashlib
 from pathlib import PurePosixPath
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer, model_validator
 
 from slm_training.levers import INTERRUPT_AFTER_SECONDS
 from slm_training.lineage.records import canonical_json
@@ -25,6 +25,43 @@ class RepairModel(BaseModel):
         ).hexdigest()
 
 
+class ProviderEndpoint(RepairModel):
+    """Controller-approved host loopback proxy; contains no provider credentials."""
+
+    port: Annotated[int, Field(ge=1, le=65535)] | None = None
+    model: Name
+    authentication: Literal["host_proxy", "codex_subscription"] = "host_proxy"
+    base_path: str = "/v1"
+    paths: tuple[str, ...] = ("/v1/responses",)
+    methods: tuple[Literal["GET", "POST"], ...] = ("POST",)
+
+    @model_validator(mode="after")
+    def canonical_routes(self):
+        import re
+
+        if (self.authentication == "host_proxy") != (self.port is not None):
+            raise ValueError("only host_proxy authentication takes a loopback port")
+        if self.authentication == "codex_subscription" and (
+            self.base_path != "/v1" or self.paths != ("/v1/responses",) or self.methods != ("POST",)
+        ):
+            raise ValueError("subscription grant permits only POST /v1/responses")
+        paths = (self.base_path, *self.paths)
+        if not self.paths or not self.methods or any(
+            not re.fullmatch(r"(?:/[A-Za-z0-9_-]+)+", path) for path in paths
+        ):
+            raise ValueError("provider routes must be nonempty canonical absolute paths")
+        if any(not path.startswith(self.base_path + "/") for path in self.paths):
+            raise ValueError("provider routes must be below the granted base path")
+        return self
+
+    @model_serializer(mode="wrap")
+    def preserve_proxy_contract(self, handler):
+        value = handler(self)
+        if self.authentication == "host_proxy":
+            value.pop("authentication", None)
+        return value
+
+
 class RepairGrant(RepairModel):
     grant_id: Name
     provider: Name
@@ -35,9 +72,23 @@ class RepairGrant(RepairModel):
     total_seconds: Annotated[float, Field(gt=0, allow_inf_nan=False)]
     interrupt_seconds: Annotated[int, Field(ge=1, le=INTERRUPT_AFTER_SECONDS)]
     network: Literal["none", "approved_provider_only"] = "none"
+    provider_endpoint: ProviderEndpoint | None = None
     repair_classes: tuple[
         Literal["code", "environment", "data", "formal_infra"], ...
     ] = ("code",)
+
+    @model_validator(mode="after")
+    def endpoint_requires_network_grant(self):
+        if self.provider_endpoint is not None and self.network != "approved_provider_only":
+            raise ValueError("provider endpoint requires approved_provider_only")
+        return self
+
+    @model_serializer(mode="wrap")
+    def omit_absent_endpoint(self, handler):
+        value = handler(self)
+        if self.provider_endpoint is None:
+            value.pop("provider_endpoint", None)
+        return value
 
 
 class RepairBlocker(RepairModel):
@@ -162,4 +213,3 @@ class RepairDispatchResult(RepairModel):
     proposal: RepairProposal | None = None
     verification: RepairVerification | None = None
     spent_seconds: Annotated[float, Field(ge=0, allow_inf_nan=False)] = 0.0
-

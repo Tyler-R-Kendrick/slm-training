@@ -371,26 +371,25 @@ def extract_observations(
     return []
 
 
-# ---------------------------------------------------------------------------
-# Ledger build / IO
-# ---------------------------------------------------------------------------
-
-
-def build_ledger(design_dir: Path) -> dict[str, Any]:
+def build_ledger(design_dir: Path, *, replacements: Mapping[Path, str] | None = None) -> dict[str, Any]:
     """Mine ``design_dir`` (recursively, ``*.json``) into a ledger payload.
 
     Deterministic: files are processed in sorted order and observations are
     deduplicated on ``(campaign_id, cycle_index, slug, seed)`` keeping the
     first occurrence.
     """
+    replacements = replacements or {}
+    if any(not isinstance(p, Path) or p.suffix != ".json"
+           or not p.resolve().is_relative_to(design_dir.resolve()) for p in replacements):
+        raise ValueError("ledger replacements must be JSON below the design directory")
     scanned = 0
     unreadable = 0
     seen: set[tuple[str, int | None, str, int | None]] = set()
     per_arm: dict[str, dict[str, Any]] = {}
-    for path in sorted(design_dir.rglob("*.json")):
+    for path in sorted(set(design_dir.rglob("*.json")) | replacements.keys()):
         scanned += 1
         try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload = json.loads(replacements[path] if path in replacements else path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             unreadable += 1
             continue

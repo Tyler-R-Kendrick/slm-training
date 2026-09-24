@@ -5736,9 +5736,8 @@ class TwoTowerModel(nn.Module):
                             legal_action_ids=legal_ids,
                             compiler_coverage=coverage,
                             selected_action_id=token_str,
-                            logits_or_energies=logits_1d.detach().tolist()
-                            if grec.capture_logits and logits_1d is not None
-                            else None,
+                            logits_or_energies=grec.legal_logits(tok, legal_ids, logits_1d)
+                            if grec.capture_logits else None,
                             convention="logit",
                             scope_signature="",
                             expected_type=None,
@@ -14924,6 +14923,8 @@ class TwoTowerModel(nn.Module):
                     if admitted:
                         exact_commit = (position, int(exact))
             if exact_commit is not None:
+                if (grec := getattr(self, "grammar_trace_recorder", None)) is not None:
+                    grec.record_forced_canvas(self, ids, unknown, exact_commit, step)
                 if successor_cache is not None and len(successor_cache):
                     stats.successor_misses += 1
                 successor_cache = None
@@ -14943,9 +14944,8 @@ class TwoTowerModel(nn.Module):
                     stats.clusters_proposed += 1
                     if cluster_verify:
                         stats.clusters_accepted += 1
-                # S12/N3: the I2 singleton bypass is a whole step whose single
-                # commit cost zero forwards. Recorded under the same opt-in
-                # flag as the ordinary steps below.
+                # S12/N3: the I2 singleton bypass costs zero forwards and uses
+                # the same opt-in step recording as the ordinary steps below.
                 if active_stats is not None and active_stats.record_step_commits:
                     active_stats.step_commits.append(
                         {
@@ -16264,11 +16264,10 @@ class TwoTowerModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
+        from slm_training.data.record_admission import assert_training_record
+
         for record in records:
-            assert_no_template_semantic_labels(record.prompt, record.design_md)
-            assert_canonical_template_markers(record)
-            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
-            assert_role_safe_output(record.openui, output_kind=record.target_kind)
+            assert_training_record(record)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

@@ -83,6 +83,20 @@ def test_evidence_changes_selection_retry_does_not():
     assert compatible_effects([row, retry], identity())[1] == ["duplicate_retry"]
 
 
+def test_compatible_comparisons_balance_gain_exploration_and_repeated_nulls():
+    effects = [
+        effect(slug=slug, treatment_id=contract_digest(slug), replicate_id=f"seed-{seed}",
+               comparison_id=contract_digest([slug, seed]), candidate=2.0 - delta)
+        for slug, count, delta in (("dead", 12, -0.02), ("weak", 6, 0.04), ("good", 6, 0.08))
+        for seed in range(count)
+    ]
+    ranked = rank_arms_by_evidence(
+        ["dead", "fresh", "weak", "good"], {},
+        search_identity=identity(), search_effects=effects,
+    )
+    assert ranked == ["good", "fresh", "weak", "dead"]
+
+
 @pytest.mark.parametrize(
     "change",
     [

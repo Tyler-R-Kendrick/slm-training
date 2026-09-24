@@ -35,8 +35,8 @@ class ModelBuildConfig:
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
-    # Cumulative harness deadline (reserves interrupt+finalize headroom from
-    # MAX_RUN_MINUTES). Canonical run policy lives in slm_training.levers.
+    max_updates_this_invocation: int | None = None
+    # Invocation limits preserve the logical steps endpoint.
     max_wall_minutes: float | None = float(MAX_HARNESS_WALL_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4

@@ -5,15 +5,12 @@ For a held-out prompt/context ``c``, target program ``y``, fixed mask rate
 
     L_{r,s}(c, y) = -1/|M| * sum_{i in M} log p(y_i | y_without_M, c)
 
-where ``M`` is derived from ``sha256(suite_version | record_id | rate | seed)``
-so it is stable across dataset order, training configuration, and process
-restarts. This is a *conditional denoising NLL* (masked-token NLL), not an
-exact full-sequence likelihood.
+``M`` hashes objective version, record ID, rate and seed, independently of input
+order, training config or process state. This is masked-token conditional NLL,
+not exact sequence likelihood. Evidence v2 retains the frozen v1 objective.
 
-Invariance contract (never read from the model config): mask rates, mask
-positions, loss weighting. MDLM weighting, LTR suffix fusion, fidelity aux,
-visible corruption, and best-of-N must not affect this number for a fixed
-checkpoint.
+Masking and weighting ignore model config: MDLM/LTR, fidelity auxiliary loss,
+visible corruption and best-of-N cannot change this fixed-checkpoint metric.
 
 Raw vs legal-support decomposition: ``L_raw`` scores over the full output
 vocabulary; ``L_legal`` renormalizes over the grammar-allowed token support at
@@ -28,25 +25,25 @@ import hashlib
 import math
 import random
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Sequence
 
 import torch
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.evals.measurement_identity import (
+    content_digest, grouped_nll, row_identity, selected_identity,
+)
 from slm_training.harnesses.train_data.catalog import classify_source_family
 
 DEFAULT_MASK_RATES: tuple[float, ...] = (0.15, 0.30, 0.50, 0.70, 0.85)
 
-# Canonical loss-suite objective version. Defined here (the leaf of the
-# loss-suite import DAG: loss_suites and emptiness_probe both import this
-# module) and re-exported by ``loss_suites`` so every probe shares one value;
-# an objective change bumps it once, mirrored in
-# ``src/slm_training/resources/versions.json`` (``evals.loss_suite``).
-LOSS_SUITE_VERSION = "v1"
+# Shared leaf identity, re-exported by loss_suites; registry: evals.loss_suite.
+# v2 strengthens evidence identity, preserving every frozen v1 objective value.
+LOSS_SUITE_VERSION = "v2"
 
-# Positions eligible for masking given a record + its target token ids.
-PositionFilter = Callable[[ExampleRecord, list[int]], Sequence[int]]
+PositionFilter = Callable[[ExampleRecord, list[int]], Sequence[int]]  # Eligible target positions.
 
 
 @dataclass(frozen=True)
@@ -71,6 +68,8 @@ class DenoisingNLLConfig:
 def _mask_rng(
     record_id: str, rate: float, *, suite_version: str, mask_seed: int
 ) -> random.Random:
+    # v2 changes evidence attribution, not the frozen v1 masking objective.
+    suite_version = "v1" if suite_version == "v2" else suite_version
     payload = f"{suite_version}|{record_id}|{rate:.4f}|{mask_seed}"
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     return random.Random(int(digest[:16], 16))
@@ -202,6 +201,19 @@ def evaluate_denoising_nll(
     the restricted set at each configured rate.
     """
     cfg = config or DenoisingNLLConfig()
+    selection = selected_identity(records)
+    if not cfg.mask_rates or len(set(cfg.mask_rates)) != len(cfg.mask_rates) or any(
+        not math.isfinite(rate) or not 0 < rate <= 1 for rate in cfg.mask_rates
+    ):
+        raise ValueError("mask rates must be unique finite fractions in (0, 1]")
+    evaluator_sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    estimator_id = "conditional_masked_token_ce/" + content_digest({
+        **cfg.key(), "evaluator_sha256": evaluator_sha,
+        "position_filter": "all_eligible" if position_filter is None else "declared_subset",
+    })
+    identities = {record.id: row_identity(record,
+        selection_sha256=selection["selection_sha256"], seed=cfg.mask_seed,
+        estimator_id=estimator_id, evaluator_sha256=evaluator_sha) for record in records}
     was_training = bool(getattr(model, "training", False))
     model.eval()
     tokenizer = model.tokenizer
@@ -385,37 +397,23 @@ def evaluate_denoising_nll(
         per_record.append(
             {
                 "id": row["id"],
+                **identities[row["id"]],
                 "source_family": row["source_family"],
                 "task": row["task"],
                 "mean_nll": row["nll_sum"] / tokens if tokens else None,
                 "masked_tokens": tokens,
+                "nll_sum": row["nll_sum"],
+                "units": "nats_per_masked_token",
             }
         )
-
-    def grouped(key: str) -> dict[str, Any]:
-        groups: dict[str, list[dict[str, Any]]] = {}
-        for row in per_record:
-            groups.setdefault(str(row[key]), []).append(row)
-        return {
-            name: {
-                "n_records": len(rows),
-                "masked_tokens": sum(int(row["masked_tokens"]) for row in rows),
-                "mean_nll": (
-                    sum(
-                        float(row["mean_nll"]) * int(row["masked_tokens"])
-                        for row in rows
-                        if row["mean_nll"] is not None
-                    )
-                    / max(1, sum(int(row["masked_tokens"]) for row in rows))
-                ),
-            }
-            for name, rows in sorted(groups.items())
-        }
 
     from slm_training.data.dedup import memorization_diagnostic
 
     return {
         **cfg.key(),
+        **selection,
+        "estimator_id": estimator_id,
+        "estimator_description": "conditional masked-token cross entropy; not exact sequence NLL",
         "n_records": scored_records,
         "n_skipped": len(skipped),
         "skipped": skipped[:20],
@@ -423,6 +421,8 @@ def evaluate_denoising_nll(
         "aggregate": {
             "mean_nll": mean_nll_all,
             "masked_tokens": total_tokens,
+            "nll_sum": total_nll,
+            "units": "nats_per_masked_token",
             "legal_mean_nll": legal_mean_all if legal_available else None,
             "constraint_rescue_gap": (
                 mean_nll_all - legal_mean_all
@@ -437,7 +437,7 @@ def evaluate_denoising_nll(
         "nll_per_char": (bits_num / bits_den if bits_den else None),
         "legal_support_available": legal_available,
         "per_record": per_record,
-        "by_family": grouped("source_family"),
-        "by_task": grouped("task"),
+        "by_family": grouped_nll(per_record, "source_family"),
+        "by_task": grouped_nll(per_record, "task"),
         "memorization_by_family": memorization_diagnostic(per_record),
     }

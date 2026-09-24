@@ -340,19 +340,7 @@ def test_write_climb_champion_carries_tokenizer_sidecars(tmp_path: Path) -> None
     )
 
     run = tmp_path / "run" / "checkpoints"
-    run.mkdir(parents=True)
-    (run / "last.pt").write_bytes(b"weights")
-    (run / "last.tokenizer.json").write_text('{"output": 1}', encoding="utf-8")
-    (run / "last.context.tokenizer.json").write_text('{"context": 1}', encoding="utf-8")
-    (run / "last.meta.json").write_text(
-        json.dumps(
-            {
-                "kind": "twotower",
-                "output_contract_version": 2,
-                "context_tokenizer": "last.context.tokenizer.json",
-            }
-        )
-    )
+    checkpoint = _checkpoint(run)
 
     loop_dir = tmp_path / "loop"
     sidecar = ClimbChampionSidecar(
@@ -362,17 +350,17 @@ def test_write_climb_champion_carries_tokenizer_sidecars(tmp_path: Path) -> None
         cumulative_epochs=0.0,
         status=CLIMB_CHAMPION_STATUS_BASELINE_SEED,
     )
-    write_climb_champion(loop_dir, checkpoint=run / "last.pt", sidecar=sidecar)
+    write_climb_champion(loop_dir, checkpoint=checkpoint, sidecar=sidecar)
 
     ckpt = climb_champion_checkpoint_path(loop_dir)
     assert ckpt.read_bytes() == b"weights"
     assert (
         ckpt.with_name("last.tokenizer.json").read_text(encoding="utf-8")
-        == '{"output": 1}'
+        == checkpoint.with_name("last.tokenizer.json").read_text(encoding="utf-8")
     )
     assert (
         ckpt.with_name("last.context.tokenizer.json").read_text(encoding="utf-8")
-        == '{"context": 1}'
+        == checkpoint.with_name("last.context.tokenizer.json").read_text(encoding="utf-8")
     )
 
 

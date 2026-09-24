@@ -10,9 +10,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable
 
-from slm_training.autoresearch.heal.dispatch import accept_verification
+from slm_training.autoresearch.heal.dispatch import accept_verification, reserved_repair_seconds
 from slm_training.autoresearch.heal.isolation_workspace import (
     manifest_digest,
+    owner_write_preparation,
+    patch_manifest_digest,
     private_snapshot,
     tree_manifest,
 )
@@ -29,6 +31,7 @@ from slm_training.autoresearch.heal.repair_verifier import (
     verify_candidate,
 )
 from slm_training.autoresearch.storage import CampaignStore
+from slm_training.harness_core.activity_contract import ResourceGrant, contract_digest
 from slm_training.levers import (
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
@@ -36,6 +39,15 @@ from slm_training.levers import (
     MAX_RUN_SECONDS,
 )
 from slm_training.lineage.records import canonical_json
+
+
+def source_verification_activity_id(identity: str, grant: ResourceGrant | dict) -> str:
+    grant = ResourceGrant.model_validate(grant)
+    bound = contract_digest({
+        "verification_identity": identity,
+        "grant": grant.model_dump(mode="json"),
+    })
+    return "source-verification-" + bound
 
 
 @dataclass(frozen=True)
@@ -109,11 +121,15 @@ class SourceVerificationGate:
             source = private_snapshot(self.root, Path(temporary) / "source")
             if tree_manifest(source) != tree_manifest(workspace.candidate):
                 raise ValueError("source_verification_candidate_mismatch")
-        before, after = tree_manifest(workspace.base), tree_manifest(workspace.candidate)
+        frozen_base = self.root.parent / "base"
+        before, after = tree_manifest(frozen_base), tree_manifest(self.root)
+        if before != tree_manifest(workspace.base):
+            raise ValueError("source_verification_base_mismatch")
         changed = {
             path for path in before.keys() | after.keys()
             if before.get(path) != after.get(path)
-            and not ((workspace.candidate / path).is_dir() and path not in before)
+            and not ((self.root / path).is_dir() and path not in before)
+            and not owner_write_preparation(before.get(path), after.get(path))
         }
         if not changed <= set(binding["changed_paths"]):
             raise ValueError("source_verification_omits_repair_changes")
@@ -156,18 +172,6 @@ def proposal_patch_digest(base: Path, candidate: Path) -> str:
     return patch_manifest_digest(tree_manifest(base), tree_manifest(candidate))
 
 
-def patch_manifest_digest(before: dict, after: dict) -> str:
-    # JSON transport turns manifest tuples into lists; normalize both sides.
-    before = {path: list(entry) for path, entry in before.items()}
-    after = {path: list(entry) for path, entry in after.items()}
-    changes = {
-        path: {"before": before.get(path), "after": after.get(path)}
-        for path in sorted(before.keys() | after.keys())
-        if before.get(path) != after.get(path)
-    }
-    return hashlib.sha256(canonical_json(changes).encode()).hexdigest()
-
-
 def _reserve_verification(
     request: RepairRequest,
     spec: VerificationRequest,
@@ -191,13 +195,7 @@ def _reserve_verification(
         return "verification_attempt_requires_reconciliation"
     count = 2 + len(spec.checks) + 2 * len(spec.equivalence_checks)
     reserve = min(MAX_RUN_SECONDS, count * (spec.timeout_seconds + KILL_GRACE_SECONDS))
-    spent = sum(float(event["detail"]["reserved_seconds"]) for event in starts)
-    spent += sum(
-        float(event["detail"]["reserved_seconds"])
-        for event in journal.verify_event_chain()
-        if event["event_type"] == "operation_diagnosis_started"
-        and event["detail"]["grant_digest"] == request.grant.digest()
-    )
+    spent = reserved_repair_seconds(journal.verify_event_chain(), request.grant.digest())
     if spent + reserve > request.grant.total_seconds:
         return "verification_grant_exhausted"
     journal.append_event(
@@ -207,6 +205,7 @@ def _reserve_verification(
             "fingerprint": request.blocker.fingerprint(),
             "request_digest": request.digest(),
             "fence": spec.fencing_token,
+            "grant_digest": request.grant.digest(),
             "authority_binding_digest": binding.digest() if binding else None,
             "reserved_seconds": reserve,
         },
@@ -233,8 +232,8 @@ def verify_repair(
     """
     deadline = time.monotonic() + INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
     current_fence = binding.fence if binding else request.fence
-    if request.grant is None or request.grant.expires_at <= time.time() or not fence_valid(current_fence):
-        raise ValueError("verification requires a current grant and fence")
+    if request.grant is None or not fence_valid(current_fence):
+        raise ValueError("verification requires the original grant and a current fence")
     if proposal.request_digest != request.digest():
         raise ValueError("proposal identity mismatch")
     if proposal.patch_digest != proposal_patch_digest(

@@ -7,11 +7,11 @@ mounted. Missing isolation is an explicit capability failure, never a fallback.
 from __future__ import annotations
 
 import math
-import os
 import shutil
 import threading
 import time
 from collections.abc import Callable, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -20,7 +20,9 @@ from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
 )
-from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
+from slm_training.levers import (
+    HARNESS_FINALIZATION_RESERVE_SECONDS, INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS,
+)
 
 from .isolation_workspace import (
     IsolationViolation,
@@ -70,8 +72,10 @@ class IsolationSpec:
     scratch_bytes: int = 64 * 1024 * 1024
     pythonpath: str = "/workspace/src"
     environment: tuple[tuple[str, str], ...] = ()
+    provider_socket: Path | None = None
+    codex_mount_target: bool = False
 
-def _base_command(binary: str, *, share_net: bool = False) -> list[str]:
+def _base_command(binary: str) -> list[str]:
     command = [
         binary,
         "--unshare-all",
@@ -85,8 +89,6 @@ def _base_command(binary: str, *, share_net: bool = False) -> list[str]:
         "/usr",
         "/usr",
     ]
-    if share_net:
-        command.insert(3, "--share-net")
     for name in ("bin", "sbin", "lib", "lib64"):
         path = Path("/") / name
         if path.is_symlink():
@@ -97,10 +99,6 @@ def _base_command(binary: str, *, share_net: bool = False) -> list[str]:
 
 def probe_isolation() -> IsolationCapability:
     """Probe the real namespaces/flags; availability alone conveys no grant."""
-    if os.environ.get("SLM_REQUIRE_ISOLATION") == "1":
-        return IsolationCapability(
-            False, "bubblewrap", "nested_isolation_not_allowed", None
-        )
     binary = shutil.which("bwrap")
     if binary is None:
         return IsolationCapability(False, "bubblewrap", "bwrap_not_installed", None)
@@ -180,7 +178,7 @@ def _validate_runtime(root: Path, approved: tuple[Path, ...]) -> None:
                 raise IsolationViolation(f"special runtime file: {path}")
 
 def build_isolated_command(
-    spec: IsolationSpec, argv: Sequence[str], binary: str, *, share_net: bool = False
+    spec: IsolationSpec, argv: Sequence[str], binary: str
 ) -> list[str]:
     """Build only fixed mounts; argv is never shell-interpolated."""
     if not argv or not all(isinstance(arg, str) and "\0" not in arg for arg in argv):
@@ -198,12 +196,15 @@ def build_isolated_command(
             "workspace contains Git metadata; use private_snapshot"
         )
     tree_manifest(workspace)
-    command = _base_command(binary, share_net=share_net) + _runtime_mounts(spec)
+    command = _base_command(binary) + _runtime_mounts(spec)
     command += ["--ro-bind", str(workspace), "/workspace"]
     command += _node_module_mounts(workspace, spec.runtime_roots)
     command += _writable_mounts(spec, workspace)
     for path in ("/tmp", "/scratch"):
         command.extend(("--size", str(spec.scratch_bytes), "--tmpfs", path))
+    if spec.provider_socket is not None:
+        command.extend(_provider_mounts(spec.provider_socket))
+        argv = ("/usr/bin/python3", "-I", "-S", "/provider/bridge.py", "/provider/socket", *argv)
     return command + [
         "--setenv",
         "PATH",
@@ -232,6 +233,16 @@ def build_isolated_command(
         str(spec.scratch_bytes),
         *argv,
     ]
+
+
+def _provider_mounts(path: Path) -> list[str]:
+    import stat
+    from slm_training.harness_core import provider_bridge
+
+    if not path.is_absolute() or path.is_symlink() or not stat.S_ISSOCK(path.stat().st_mode):
+        raise IsolationViolation("provider transport must be a controller-owned Unix socket")
+    return ["--dir", "/provider", "--ro-bind", str(path), "/provider/socket",
+            "--ro-bind", str(Path(provider_bridge.__file__)), "/provider/bridge.py"]
 
 
 def _writable_mounts(spec: IsolationSpec, workspace: Path) -> list[str]:
@@ -275,8 +286,36 @@ def run_isolated(
     if not capability.available:
         raise IsolationUnavailable(capability.reason)
     command = build_isolated_command(spec, argv, capability.executable or "")
+    with _codex_mount_target(spec):
+        return _run_checked(spec, command, started, (on_start, on_heartbeat, cancel_event))
+
+
+@contextmanager
+def _codex_mount_target(spec):
+    """Empty readonly target for nested Codex; never copy host Git metadata.
+
+    build_isolated_command already refused a preexisting Git directory. Remove
+    the controller-created target only after the bounded process tree exits.
+    """
+    target = spec.workspace / ".git" if spec.codex_mount_target else None
+    if target is not None:
+        target.mkdir()
+    try:
+        yield
+    finally:
+        if target is not None:
+            target.rmdir()
+
+
+def _run_checked(spec, command, started, callbacks):
+    on_start, on_heartbeat, cancel_event = callbacks
     before = tree_manifest(spec.workspace)
     remaining = spec.timeout_seconds - (time.monotonic() - started)
+    if spec.codex_mount_target:
+        # Agent deadline includes termination and the mandatory post-run scope hash.
+        remaining -= KILL_GRACE_SECONDS + HARNESS_FINALIZATION_RESERVE_SECONDS
+        if remaining <= 0:
+            raise TimeoutError("repair deadline cannot fund execution and cleanup")
     if remaining <= 0:
         # A tiny diagnostic timeout may be consumed by mandatory setup; keep a
         # minimal child slice so cleanup/termination is still exercised.
@@ -291,7 +330,6 @@ def run_isolated(
             on_heartbeat=on_heartbeat,
             cancel_event=cancel_event,
         )
-        return replace(result, duration_seconds=time.monotonic() - started)
     finally:
         changed = scope_changes(
             before,
@@ -300,3 +338,4 @@ def run_isolated(
         )
         if changed:
             raise IsolationViolation(f"snapshot scope changed: {changed}")
+    return replace(result, duration_seconds=time.monotonic() - started)

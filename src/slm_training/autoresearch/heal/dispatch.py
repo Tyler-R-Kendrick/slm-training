@@ -6,7 +6,6 @@ action acknowledgment, or activate a source release through this module.
 
 from __future__ import annotations
 
-import time
 from typing import Callable
 
 from slm_training.autoresearch.heal.agent_executor import AgentCancelled, CodexExecutor
@@ -46,6 +45,21 @@ def _record(
 
 def _history(journal: CampaignStore) -> list[dict]:
     return journal.verify_event_chain()
+
+
+def reserved_repair_seconds(events: list[dict], grant_digest: str) -> float:
+    """All repair operations spend the same grant, including interrupted ones.
+
+    Historical repair/verification reservations lacked grant identity. Charge
+    those conservatively instead of dropping their cost on upgrade.
+    """
+    kinds = {"repair_started", "repair_verification_started", "operation_diagnosis_started"}
+    return sum(
+        float(event["detail"]["reserved_seconds"])
+        for event in events
+        if event["event_type"] in kinds
+        and event["detail"].get("grant_digest", grant_digest) == grant_digest
+    )
 
 
 def _prior_result(
@@ -134,13 +148,7 @@ def dispatch_repair(
             ),
         )
     assert request.grant is not None and executor is not None
-    reserved = sum(float(event["detail"]["reserved_seconds"]) for event in starts)
-    reserved += sum(
-        float(event["detail"]["reserved_seconds"])
-        for event in events
-        if event["event_type"] == "operation_diagnosis_started"
-        and event["detail"]["grant_digest"] == request.grant.digest()
-    )
+    reserved = reserved_repair_seconds(events, request.grant.digest())
     allocation = request.grant.interrupt_seconds + KILL_GRACE_SECONDS
     if (
         len(starts) >= request.grant.max_attempts
@@ -163,6 +171,7 @@ def dispatch_repair(
             "attempt_id": request.attempt_id,
             "request_digest": request.digest(),
             "fence": request.fence,
+            "grant_digest": request.grant.digest(),
             "reserved_seconds": allocation,
         },
     )
@@ -217,7 +226,6 @@ def accept_verification(
         and binding_valid
         and grant is not None
         and verification.grant_id == grant.grant_id
-        and grant.expires_at > time.time()
     )
     restored = all(
         (

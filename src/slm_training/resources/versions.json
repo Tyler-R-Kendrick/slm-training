@@ -97,6 +97,66 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-22",
+          "note": "Make controller-owned repair version reconciliation atomic and interruption-safe, require authenticated overlay provenance, support every live registry version shape, forbid worker grants for the registry, and let immutable retained proposals complete verification after coding authority expires.",
+          "version": "v18"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Apply version governance after an isolated repair worker exits: deterministically bump every watched component touched by the worker patch, preserve the worker proposal in the authenticated journal, bind verification and publication to the governed candidate, and independently reject any altered registry overlay.",
+          "version": "v17"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Exclude the controller-owned execution-release marker from only synthetic private Git indexes, force changed paths through literal pathspecs, prove coverage from frozen verifier snapshots, and remove unpublished stage trees on success, failure, or interruption.",
+          "version": "v16"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Preserve ignore semantics in controller-owned private Git verification repositories: stage ordinary source with normal Git rules, then force-add only independently verified changed paths so granted ignored regressions remain covered without tracking runtime caches.",
+          "version": "v15"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Stage an immutable stdlib-only proposal digest command from the trusted controller. It binds the pinned baseline and exact repair grant, hashes granted files through stable no-follow descriptors, and remains advisory to independent full-tree acceptance.",
+          "version": "v14"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Validate pinned source before owner-write preparation of exact private regular files. Stage the trusted prepared manifest for native namespace projection; retain full physical candidate and scope verification. Source-test coverage exempts only unchanged regular-file owner-write additions that Git cannot represent, while changed bytes, executable bits and types still require coverage.",
+          "version": "v13"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Expose the digest-bound complete independent verification recipe to Codex, include full repair policies only once, direct structured input reading, reserve termination and scope-validation time inside the repair deadline, and preserve truthful interrupted diagnostics without accepting partial work. Mandatory-isolation mode probes real nested namespaces instead of treating the requirement flag as a prohibition.",
+          "version": "v12"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Make native Codex tool execution compatible with the outer scoped Bubblewrap sandbox using a temporary empty read-only Git mount target; retain isolated execution receipts and propagate approved runtimes for reproducer verification. No host Git metadata or credentials are mounted.",
+          "version": "v11"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Reuse explicitly granted host Codex subscription through the existing isolated bridge; activate only independently reconciled delivered source without refilling the original grant.",
+          "version": "v10"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Bind accepted repair source delivery to controller artifacts and predecessor provenance, preserving scoped authority and original operation identity.",
+          "version": "v9"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Wire controller-granted provider routes into the isolated repair executor through a fixed-destination Unix bridge with host-only credentials and bounded lifecycle.",
+          "version": "v8"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Connect ordinary supervised repair to isolated proposals, shared attempt budgets, independent acceptance and source activation.",
+          "version": "v7"
+        },
+        {
           "date": "2026-09-03",
           "note": "PLAYBOOK_FAULTS makes the playbook boundary total: discovery import, matches, plan, execute and plan execution now degrade SystemExit to a receipt (step_failed / not-matched) instead of unwinding into the driver. A playbook driving an argparse-based module in process raises SystemExit(2) on a bad argv, so the documented 'a crashing playbook yields a step_failed receipt, never an exception' invariant was false at the seam it was written for. KeyboardInterrupt stays uncaught: the run cap interrupts with SIGINT and kill is not evidence.",
           "version": "v6"
@@ -138,7 +198,7 @@
         },
         {
           "date": "2026-08-16",
-          "note": "no-bump: adversarial review fixes inside the unreleased v1 delivery \u2014 crash-safe per-blocker runner with incremental receipt/ledger persistence (forbidden allowlists become refused_scope receipts), healed plans excluded from cycle detection so environment regressions stay repairable, per-step scope baseline re-advance, traversal/absolute allowlist rejection, word-boundary reason normalization, BlockerClass-typed fields, authority marker classification, receipts stamped recorded_at, sys.executable/json.dumps probe hardening, backoff exponent clamp.",
+          "note": "no-bump: adversarial review fixes inside the unreleased v1 delivery — crash-safe per-blocker runner with incremental receipt/ledger persistence (forbidden allowlists become refused_scope receipts), healed plans excluded from cycle detection so environment regressions stay repairable, per-step scope baseline re-advance, traversal/absolute allowlist rejection, word-boundary reason normalization, BlockerClass-typed fields, authority marker classification, receipts stamped recorded_at, sys.executable/json.dumps probe hardening, backoff exponent clamp.",
           "version": "v1"
         },
         {
@@ -167,7 +227,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_data_rebuild.py"
       ],
-      "version": "v6"
+      "version": "v18"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -236,7 +296,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fix (real bug): config_fingerprint excluded FINGERPRINT_EXCLUDE_KEYS (steps) only in its local fallback, but passed the unfiltered config to the evidence-store helper when importable \u2014 since that module ships in this same PR the helper path always won, so the fingerprint changed every cycle and prior-attempt matching silently never fired. Stable mapping is now built once and used by both paths.",
+          "note": "CodeRabbit fix (real bug): config_fingerprint excluded FINGERPRINT_EXCLUDE_KEYS (steps) only in its local fallback, but passed the unfiltered config to the evidence-store helper when importable — since that module ships in this same PR the helper path always won, so the fingerprint changed every cycle and prior-attempt matching silently never fired. Stable mapping is now built once and used by both paths.",
           "version": "v3"
         },
         {
@@ -268,6 +328,41 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-23",
+          "note": "Bind full-suite selection to the target base (origin/main by default) and select the repository test target when a clean comparison has no changed paths; docs-only deltas remain eligible for explicit zero-test coverage.",
+          "version": "v18"
+        },
+        {
+          "date": "2026-09-23",
+          "note": "Start the bounded controller deadline after the one-time runtime identity scan so plan preparation does not consume the child attempt window.",
+          "version": "v17"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Reuse the controller-calculated runtime identity through a controller-only child environment so duplicate full-runtime scans cannot consume the workload window; final journal validation still requires the exact controller identity.",
+          "version": "v16"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Resume an outer-timeout verifier child only from one exact authenticated journal bound to the source, environment, runtime, base ref, and isolation mode.",
+          "version": "v15"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Preserve typed verifier failures when bounded child diagnostics precede the final JSON summary; trailing non-JSON output remains invalid evidence.",
+          "version": "v14"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Nest the isolated verifier budgets so a 50-second shard has a 120-second outer interrupt plus 10-second kill grace and leaves explicit startup, claim, and authenticated-publication reserves within the canonical cap.",
+          "version": "v13"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Route canonical merge validation through complete source-aware resumable verification and conservative changed-test selection.",
+          "version": "v12"
+        },
         {
           "date": "2026-09-08",
           "note": "Allow explicit --source selection in the local gate and resolve it for both fast and full checks. Real-process tests cover relative/absolute paths, spaces, and nonzero outcomes. Check selection, thresholds, and fast/full claim semantics are unchanged.",
@@ -320,7 +415,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fix: report_merge_readiness.sh printed a bare 'READY' verdict for --fast runs even though verify_merge_ready.py's own summary already flags fast=true (changed-test execution skipped) \u2014 the wrapper never read that field. Verdict now reads STATIC-READY for a passing fast run and labels the mode explicitly, so a fast/static pass is never mistaken for full merge readiness.",
+          "note": "CodeRabbit fix: report_merge_readiness.sh printed a bare 'READY' verdict for --fast runs even though verify_merge_ready.py's own summary already flags fast=true (changed-test execution skipped) — the wrapper never read that field. Verdict now reads STATIC-READY for a passing fast run and labels the mode explicitly, so a fast/static pass is never mistaken for full merge readiness.",
           "version": "v2"
         },
         {
@@ -337,12 +432,35 @@
       "kind": "harness",
       "paths": [
         "scripts/verify_merge_ready.py",
+        "scripts/merge_verification.py",
+        "scripts/merge_verification_cli.py",
+        "scripts/merge_verification_collection.py",
+        "scripts/merge_verification_evidence.py",
+        "scripts/merge_verification_git.py",
+        "scripts/merge_verification_identity.py",
+        "scripts/merge_verification_isolation.py",
+        "scripts/merge_verification_runtime.py",
+        "scripts/merge_verification_shards.py",
+        "scripts/merge_verification_summary.py",
+        "scripts/merge_test_worker.py",
+        "docs/design/local-merge-gate-source-20260908.md",
         "scripts/report_merge_readiness.sh",
         ".githooks/pre-push",
         ".githooks/check-changed",
-        "tests/test_scripts/test_merge_ready_gate.py"
+        "tests/test_scripts/test_merge_ready_gate.py",
+        "tests/test_scripts/test_autonomy_integration_regressions.py",
+        "tests/test_scripts/test_merge_verification.py",
+        "tests/test_scripts/test_merge_verification_cli.py",
+        "tests/test_scripts/test_merge_verification_git.py",
+        "tests/test_scripts/test_merge_verification_isolation.py",
+        "tests/test_scripts/test_merge_verification_resumable_workload.py",
+        "tests/test_scripts/test_merge_verification_resumption.py",
+        "tests/test_scripts/test_merge_verification_runtime.py",
+        "tests/test_scripts/test_merge_verification_scheduling.py",
+        "scripts/merge_verification_controller.py",
+        "tests/test_scripts/test_merge_verification_controller.py"
       ],
-      "version": "v11"
+      "version": "v18"
     },
     "config.levers": {
       "history": [
@@ -847,6 +965,11 @@
     "data.prompt_requirements": {
       "history": [
         {
+          "date": "2026-09-21",
+          "note": "Exclude numeric identifiers before component quantity extraction; preserve explicit numeric and word quantities.",
+          "version": "v5"
+        },
+        {
           "date": "2026-08-08",
           "note": "SGS-006 (SLM-454): advisory satisfaction + soft action annotation adapters between PromptSemanticRequirementsV1 and SemanticPlanV1; hard-prune remains certified-evidence gated.",
           "version": "v4"
@@ -858,12 +981,12 @@
         },
         {
           "date": "2026-08-08",
-          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form\u2282FormControl / Card\u2282CardHeader substring suppression).",
+          "note": "SGS-004 hotfix: either/or ambiguous-component filter matches exact required component names only (no Form⊂FormControl / Card⊂CardHeader substring suppression).",
           "version": "v2"
         },
         {
           "date": "2026-08-08",
-          "note": "SGS-004 (SLM-442): conservative deterministic GenerationRequest \u2192 PromptSemanticRequirementsV1 extractor with stable rule ids, gold-target access guards, ambiguity abstention, and reuse of existing _prompt_component_requirements inventory behavior; registers the SGS-003 contract + canonicalize + extract surface under one component.",
+          "note": "SGS-004 (SLM-442): conservative deterministic GenerationRequest → PromptSemanticRequirementsV1 extractor with stable rule ids, gold-target access guards, ambiguity abstention, and reuse of existing _prompt_component_requirements inventory behavior; registers the SGS-003 contract + canonicalize + extract surface under one component.",
           "version": "v1"
         }
       ],
@@ -880,7 +1003,7 @@
         "tests/test_data/test_semantic_plan_extraction/test_requirements_integrate.py",
         "tests/test_data/test_semantic_plan_extraction/test_requirements_project.py"
       ],
-      "version": "v4"
+      "version": "v5"
     },
     "data.semantic_contrast": {
       "history": [
@@ -961,6 +1084,11 @@
     "data.test_build": {
       "history": [
         {
+          "date": "2026-09-21",
+          "note": "Use shared root-family closure and canonical trainer admission for certified data.",
+          "version": "v13"
+        },
+        {
           "date": "2026-09-02",
           "note": "Certified split admission applies every record contract TwoTowerModel.from_records applies (assert_no_template_semantic_labels, assert_canonical_template_markers, assert_symbol_only_output, assert_role_safe_output) at a role_safety stage, using the record target_kind and falling back to the document kind the model resolves. Checking only one of the four still left the bucket untrainable. Refusals are recorded in rejected.jsonl and raise a role_unsafe_output recommendation. openui_verified_train_v2 rebuilt: 893 train / 154 validation / 118 test, 256 role refusals across splits, 0 admitted records failing any contract. Admission is stricter, never looser.",
           "version": "v12"
@@ -1038,7 +1166,7 @@
         "src/slm_training/resources/test_seeds.jsonl",
         "scripts/build_certified_train_bucket.py"
       ],
-      "version": "v12"
+      "version": "v13"
     },
     "decode.invariants": {
       "history": [
@@ -1228,7 +1356,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "RSP-003/SLM-485: add packed_semantic_summary.py \u2014 request-independent packed semantic kind summary derived solely from tokenizer_authority (ids/kinds/special ids); load_checked/try_load fail closed; excluded from production default; consumed by EXP-SR-7 fixture campaign only.",
+          "note": "RSP-003/SLM-485: add packed_semantic_summary.py — request-independent packed semantic kind summary derived solely from tokenizer_authority (ids/kinds/special ids); load_checked/try_load fail closed; excluded from production default; consumed by EXP-SR-7 fixture campaign only.",
           "version": "v23"
         },
         {
@@ -1243,7 +1371,7 @@
         },
         {
           "date": "2026-08-08",
-          "note": "no-bump: PCT-004 (SLM-440) \u2014 added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged.",
+          "note": "no-bump: PCT-004 (SLM-440) — added StaticCompletionArtifactProvider + provider_for_pack in completion_artifact.py so a pack-declared completion_artifact path is the single source of truth for artifact/manifest locations, instead of the private DEFAULT_ARTIFACT_PATH/DEFAULT_MANIFEST_PATH constants duplicated across four call sites. engine.py's _direct_map and static_control_domain.py's require_certified_static_projection/static_lalr_adapter/require_certified_static_lalr now resolve the OpenUI provider through the pack registry (dsl/pack.py's completion_artifact_provider_for_grammar_path) rather than a hardcoded 'openui.lark' filename check. The checker (load_checked_completion_artifact) is unchanged and remains authoritative; resolved paths for the openui pack are byte-identical to the old defaults, so default OpenUI outputs, static_artifact_hits/fallbacks counters, and the fail-closed live-construction fallback for packs without a declared artifact are unchanged.",
           "version": "v21"
         },
         {
@@ -1508,7 +1636,7 @@
         },
         {
           "date": "2026-07-25",
-          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 \u2014 one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle",
+          "note": "DSH5-02: initial exact atomic bulk openui.map_set_property operator over SelectorRefV1 — one schema-valid property update applied to every exact selected node atomically, with per-target effect deltas, replay, fresh post-commit reference-table continuation, and a diagnostic-only primitive-lowering equivalence oracle",
           "version": "v1"
         }
       ],
@@ -1854,7 +1982,7 @@
         },
         {
           "date": "2026-07-25",
-          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally \u2014 public behavior and every test_operator_merge.py test are unchanged",
+          "note": "no-bump: DSH5-05 extracts the private _merge_value/_StructuralConflict/MergeConflictKind primitive into the new src/slm_training/dsl/operators/ast_merge.py module (merge_ast_value/StructuralMergeConflict/MergeConflictKind) so the transaction executor's N-way fold can reuse it without importing merge.py (which imports conversation.py) and closing an import cycle; merge.py now imports from ast_merge.py instead of defining these locally — public behavior and every test_operator_merge.py test are unchanged",
           "version": "v1"
         },
         {
@@ -1917,6 +2045,11 @@
     "dsl.operators.registry": {
       "history": [
         {
+          "date": "2026-09-21",
+          "note": "no-bump: shorten DSL pack contract documentation; operator behavior is unchanged.",
+          "version": "v14"
+        },
+        {
           "date": "2026-08-10",
           "note": "no-bump: PGS-E02 (SLM-505) goal_support_* telemetry regression tests in tests/test_models/test_decode_stats.py; decode_stats.py owned by harness.model_build.eval.",
           "version": "v14"
@@ -1928,12 +2061,12 @@
         },
         {
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) \u2014 dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected.",
+          "note": "SRP-001 (SLM-441) — dsl/pack.py's _ensure_builtin_packs registers a new opt-in `symbolic_regression` DslPack (built by the new dsl/symbolic_regression_pack.py) alongside openui/toy-layout/graphql. Behavioral addition to the watched file: a new pack_id becomes resolvable via get_pack('symbolic_regression')/SLM_GRAMMAR_DSL, but it is never aliased to the default (_ALIASES and _active_dsl() are unchanged, both still resolve to 'openui'), so existing callers and the default pack are unaffected.",
           "version": "v14"
         },
         {
           "date": "2026-08-08",
-          "note": "no-bump: PCT-004 (SLM-440) \u2014 added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam.",
+          "note": "no-bump: PCT-004 (SLM-440) — added DslPack.completion_artifact-driven completion_artifact_provider_for_grammar_path(grammar_path) to dsl/pack.py, resolving the registered pack whose backend grammar matches and returning its StaticCompletionArtifactProvider (completion_artifact.py). Registry contract (DslPack fields, register_pack/get_pack/list_packs) unchanged; new lookup is additive and only consumed by engine.py's fastpath _direct_map seam.",
           "version": "v13"
         },
         {
@@ -2232,7 +2365,7 @@
         },
         {
           "date": "2026-07-25",
-          "note": "DSH5-05: initial atomic multi-action operator transaction executor \u2014 independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained",
+          "note": "DSH5-05: initial atomic multi-action operator transaction executor — independent per-action constituent replay against one fixed base, base-relative N-way AST composition (a fold over the new shared ast_merge.merge_ast_value primitive, extracted from merge.py to avoid a conversation<->transaction_executor import cycle), a real structural-conflict safety net over declared-but-unverified commutativity, full pack-authority validation, fresh branch-local reference-table continuation via a caller-supplied builder, exact commit replay, and one CRDT conversation turn (TRANSACTION_COMMIT) carrying the whole transaction with every constituent application ID retained",
           "version": "v1"
         }
       ],
@@ -2249,7 +2382,7 @@
       "history": [
         {
           "date": "2026-07-25",
-          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all \u2014 previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes",
+          "note": "DSH5-05: extend _target_lineage to also map ReferenceTableV1.selectors (not just .entries), so a selector-argument operator (openui.map_set_property, DSH5-02's only bulk operator) can be prepared into a transaction at all — previously unresolvable in both prepare_operator_action's semantic-id derivation and derive_read_write_set's precondition footprint, invisible until DSH5-05's bulk-plus-primitive matrix requirement exercised it; purely additive, no existing non-selector lineage entry changes",
           "version": "v3"
         },
         {
@@ -2259,7 +2392,7 @@
         },
         {
           "date": "2026-07-25",
-          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts \u2014 one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired",
+          "note": "DSH5-04: initial OperatorTransactionV1/PreparedOperatorActionV1/OperatorReadWriteSetV1 base-state, dependency, and conflict contracts — one-base multi-action preparation, semantic read/write footprints, write/write and write/read conflict resolution via mutual commutativity (reusing merge.py's _effect_targets and mutually-commuting gate), dependency-cycle detection, and canonical permutation-invariant transaction identity; schema/safety layer only, no execution path wired",
           "version": "v1"
         }
       ],
@@ -2385,7 +2518,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "PGS-E01 (SLM-504): decode-time goal_support_mode seam in dsl/solver/decode.py \u2014 normalize/validate config, build_goal_support_decode_binding, goal_support_certified_prune via exact_goal_closure, goal_support_diagnostic_observe forest-parity path.",
+          "note": "PGS-E01 (SLM-504): decode-time goal_support_mode seam in dsl/solver/decode.py — normalize/validate config, build_goal_support_decode_binding, goal_support_certified_prune via exact_goal_closure, goal_support_diagnostic_observe forest-parity path.",
           "version": "v7"
         },
         {
@@ -2506,7 +2639,7 @@
         },
         {
           "date": "2026-08-08",
-          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral \u2014 never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy.",
+          "note": "SRP-001 (SLM-441) initial registration: opt-in `symbolic_regression` DslPack registered through the canonical dsl.pack registry (not the deprecated dsl/packs shadow registry). Adds SymbolicRegressionProblemV1 (versioned, hashable, validate-on-construct problem contract), a minimal placeholder Lark grammar/backend for a single `root` expression over allow-listed operators, a syntactic-only oracle (well_formed_not_behavioral — never numeric fit), and a fixed-dispatch-table reference evaluator that never calls eval/exec. No sympy/scipy/scikit-learn/PySR/julia dependency. SRP-002 (SLM-453) supersedes the placeholder grammar with a typed expression IR/codec; SRP-003 (SLM-461) supersedes the reference evaluator with a vectorized NumPy evaluator honoring numeric_domain_policy.",
           "version": "v1"
         }
       ],
@@ -2655,6 +2788,11 @@
     "evals.agentv": {
       "history": [
         {
+          "date": "2026-09-22",
+          "note": "Honor explicit AGENTV_NODE_MODULES in SDK resolution and publication; readiness probes use the same installed dependency path and never bootstrap an invalid explicit runtime.",
+          "version": "v11"
+        },
+        {
           "date": "2026-08-06",
           "note": "AgentV SDK reuse requires lockfile-marker integrity (_sdk_installed); reject stale node_modules that only have @agentv/core/package.json",
           "version": "v10"
@@ -2714,9 +2852,10 @@
       "paths": [
         "src/slm_training/evals/agentv.py",
         "scripts/run_agentv_eval.mjs",
-        "tests/test_evals/test_agentv.py"
+        "tests/test_evals/test_agentv.py",
+        "src/slm_training/bridge_utils.py"
       ],
-      "version": "v10"
+      "version": "v11"
     },
     "evals.bulk_operator_matrix": {
       "history": [
@@ -2900,6 +3039,11 @@
     "evals.loss_suite": {
       "history": [
         {
+          "date": "2026-09-21",
+          "note": "Freeze resumable loss-suite v2 identity while retaining v1 objective mask/corruption draws and explicit completion evidence.",
+          "version": "v2"
+        },
+        {
           "date": "2026-09-02",
           "note": "no-bump: evaluate_loss_suites adds an additive per_record row list (broad/binding/structural/schema_ood NLL per record id) and per_record_nll_map; aggregate fields, weights, LOSS_SUITE_VERSION unchanged.",
           "version": "v1"
@@ -2932,10 +3076,15 @@
         "src/slm_training/evals/denoising_nll.py",
         "src/slm_training/evals/emptiness_probe.py"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "evals.meaningful_program": {
       "history": [
+        {
+          "date": "2026-09-21",
+          "note": "Prevent generated program and slot identifiers from becoming component multiplicities in binding-aware scoring; native evaluator hang regression.",
+          "version": "2.14.0"
+        },
         {
           "date": "2026-07-22",
           "note": "Reject duplicate declared template-marker identities instead of treating set coverage as sufficient",
@@ -3016,7 +3165,7 @@
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
-      "version": "2.13.0"
+      "version": "2.14.0"
     },
     "evals.operator_systems_benchmark": {
       "history": [
@@ -3113,6 +3262,11 @@
     },
     "evals.scoring": {
       "history": [
+        {
+          "date": "2026-09-21",
+          "note": "Bind partial and paired measurement evidence to exact selected records and input identities.",
+          "version": "v27"
+        },
         {
           "date": "2026-08-13",
           "note": "Learnability diagnostics load real suite prompts, stamp version_stamp/v1, and stay fixture_wiring with no capability certificate",
@@ -3215,7 +3369,7 @@
         },
         {
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack",
+          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack",
           "version": "v9"
         },
         {
@@ -3273,7 +3427,7 @@
       "paths": [
         "src/slm_training/evals/"
       ],
-      "version": "v26"
+      "version": "v27"
     },
     "evals.semantic_bits": {
       "history": [
@@ -3352,12 +3506,12 @@
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fix: schema.sql revoked anon/authenticated on evidence_records and relied on RLS bypass for the service-role sync client, but table-level GRANTs and RLS are separate Postgres controls \u2014 RLS bypass does not imply a table-level privilege. Added an explicit 'grant select, insert, update, delete on evidence_records to service_role' so the upsert sync keeps working even on a project without Supabase's default service_role privileges (self-hosted Postgres+PostgREST, or a project with altered default privileges) instead of silently degrading to the local-only mirror on a 42501.",
+          "note": "CodeRabbit fix: schema.sql revoked anon/authenticated on evidence_records and relied on RLS bypass for the service-role sync client, but table-level GRANTs and RLS are separate Postgres controls — RLS bypass does not imply a table-level privilege. Added an explicit 'grant select, insert, update, delete on evidence_records to service_role' so the upsert sync keeps working even on a project without Supabase's default service_role privileges (self-hosted Postgres+PostgREST, or a project with altered default privileges) instead of silently degrading to the local-only mirror on a 42501.",
           "version": "v4"
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes: find_prior_attempts now unions remote results with the local mirror instead of replacing it (a successful-but-empty remote query \u2014 schema.sql applied but not yet synced, or a lagging remote table \u2014 no longer silently hides a local match); write_local_index writes atomically (temp file + os.replace); _map_climb_ledger populates version_stamp from the source payload instead of hardcoding {}; schema.sql enables row-level security and revokes anon/authenticated access (the sync client's service-role key bypasses RLS, so this only closes the anonymous-read exposure of a table created in public).",
+          "note": "CodeRabbit fixes: find_prior_attempts now unions remote results with the local mirror instead of replacing it (a successful-but-empty remote query — schema.sql applied but not yet synced, or a lagging remote table — no longer silently hides a local match); write_local_index writes atomically (temp file + os.replace); _map_climb_ledger populates version_stamp from the source payload instead of hardcoding {}; schema.sql enables row-level security and revokes anon/authenticated access (the sync client's service-role key bypasses RLS, so this only closes the anonymous-read exposure of a table created in public).",
           "version": "v3"
         },
         {
@@ -3391,12 +3545,12 @@
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes: (1) ScreenConfig.max_minutes had no upper bound (only ge=1, default 30) while the repo's own MAX_RUN_MINUTES hard-run-cap law caps every run at 3 minutes and hf_jobs_train.py already enforces this exactly \u2014 hf_jobs_screen.py now caps max_minutes at MAX_RUN_MINUTES too, same as its sibling script. (2) collect_results' seed-file identity check omitted run_id and steps, so a stale seed_<n>.json from an earlier run at a different step count could pass identity and silently enter the aggregate; both are now part of the required identity match. (3) a seed file containing valid-but-non-object JSON (an array/scalar/null) crashed with AttributeError on payload.get(...) instead of degrading to incomplete like other malformed inputs \u2014 now guarded before the identity check.",
+          "note": "CodeRabbit fixes: (1) ScreenConfig.max_minutes had no upper bound (only ge=1, default 30) while the repo's own MAX_RUN_MINUTES hard-run-cap law caps every run at 3 minutes and hf_jobs_train.py already enforces this exactly — hf_jobs_screen.py now caps max_minutes at MAX_RUN_MINUTES too, same as its sibling script. (2) collect_results' seed-file identity check omitted run_id and steps, so a stale seed_<n>.json from an earlier run at a different step count could pass identity and silently enter the aggregate; both are now part of the required identity match. (3) a seed file containing valid-but-non-object JSON (an array/scalar/null) crashed with AttributeError on payload.get(...) instead of degrading to incomplete like other malformed inputs — now guarded before the identity check.",
           "version": "v3"
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes (real security issues): ScreenConfig validates screen_id/metric/suite against a safe charset (they were interpolated into generated shell/Python script text \u2014 a crafted --config could otherwise inject shell commands or escape the intended bucket path); collect_results validates each seed file's identity (schema/screen_id/seed/suite/metric) before aggregating and requires a finite numeric value, so a stale or unrelated seed_<k>.json can no longer silently enter this screen's evidence; hf_jobs_train.ensure_hf_token_env aliases HUGGING_FACE_HUB_TOKEN to HF_TOKEN in-process before submission (never via a literal secret value on argv) so a caller with only that variable set still authenticates the remote job instead of silently starting one with no token.",
+          "note": "CodeRabbit fixes (real security issues): ScreenConfig validates screen_id/metric/suite against a safe charset (they were interpolated into generated shell/Python script text — a crafted --config could otherwise inject shell commands or escape the intended bucket path); collect_results validates each seed file's identity (schema/screen_id/seed/suite/metric) before aggregating and requires a finite numeric value, so a stale or unrelated seed_<k>.json can no longer silently enter this screen's evidence; hf_jobs_train.ensure_hf_token_env aliases HUGGING_FACE_HUB_TOKEN to HF_TOKEN in-process before submission (never via a literal secret value on argv) so a caller with only that variable set still authenticates the remote job instead of silently starting one with no token.",
           "version": "v2"
         },
         {
@@ -3418,6 +3572,11 @@
     },
     "features.openfeature": {
       "history": [
+        {
+          "date": "2026-09-22",
+          "note": "Preserve recorded AgentV summaries when committed experiment evidence is projected into top-level and matched-run dashboard scoreboards.",
+          "version": "v14"
+        },
         {
           "date": "2026-09-02",
           "note": "no-bump: gate_metric_keys skips the min_n evidence-volume knob (a policy key, not a metric); fixes the red-on-main lineage metric-contract test.",
@@ -3543,7 +3702,7 @@
         "src/slm_training/web/static/openui/dsl-packs.openui",
         "docs/design/openfeature-experiments.md"
       ],
-      "version": "v13"
+      "version": "v14"
     },
     "flow.proposals": {
       "history": [
@@ -3810,7 +3969,7 @@
         },
         {
           "date": "2026-07-30",
-          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology\u00d7diffusion ADR (\u0393 tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo\u2260AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md.",
+          "note": "ConstrainedDiffusion.lean: machine-checked claim cores for topology×diffusion ADR (Γ tighten, E1 parity, residual ranking, forced-macro no-literal, singleton forwards optimum 0, E9 memo≠AOT, stack order, forest-verified subset). Map in adr-constrained-diffusion-topology-proofs.md.",
           "version": "v3"
         },
         {
@@ -4277,6 +4436,11 @@
     "governance.code_quality": {
       "history": [
         {
+          "date": "2026-09-21",
+          "note": "Ratchet existing improvements and recovered integration reductions downward; no module, complexity, dependency or component baseline is raised.",
+          "version": "v2"
+        },
+        {
           "date": "2026-09-04",
           "note": "no-bump: baseline ratcheted down after the TwoTowerModel staticmethod extraction (twotower.py 17,283 -> 16,642). Complexity re-attributed, not added: twotower.py falls 109 -> 104 findings, the 5 reappear in the new modules, and the repo total holds at 1,772 on this branch and on origin/main. Gate rules, thresholds and dimensions unchanged.",
           "version": "v1"
@@ -4325,10 +4489,15 @@
         "src/slm_training/resources/code_quality_baseline.json",
         "tests/test_quality/"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "governance.ownership_map": {
       "history": [
+        {
+          "date": "2026-09-21",
+          "note": "Make changed-test selection monotone across source, resources and explicit tests with conservative unknown-path fallback.",
+          "version": "v29"
+        },
         {
           "date": "2026-09-03",
           "note": "no-bump: docstring only. Corrects an overstatement in the entry below, which said the monotone union 'measurably exceeds MAX_RUN_MINUTES for a typical diff'. Measured: tests/test_data runs 152s (664 passed) inside the 180s cap, so no single suite busts it. The real cost is breadth -- seven targets instead of four files on a representative diff. Selection behaviour is unchanged.",
@@ -4486,47 +4655,47 @@
         },
         {
           "date": "2026-08-11T13:14:39Z",
-          "note": "no-bump: HARN-10 (SLM-548) wires check_changed path\u2192test map for revmath profile_binding / run_revmath_profile only; ownership map unchanged.",
+          "note": "no-bump: HARN-10 (SLM-548) wires check_changed path→test map for revmath profile_binding / run_revmath_profile only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11T12:54:41Z",
-          "note": "no-bump: HARN-09 (SLM-560) wires check_changed path\u2192test map for revmath self_healing only; ownership map unchanged.",
+          "note": "no-bump: HARN-09 (SLM-560) wires check_changed path→test map for revmath self_healing only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11T12:35:52Z",
-          "note": "no-bump: HARN-08 (SLM-537) wires check_changed path\u2192test map for revmath labeling only; ownership map unchanged.",
+          "note": "no-bump: HARN-08 (SLM-537) wires check_changed path→test map for revmath labeling only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11T12:28:02Z",
-          "note": "no-bump: HARN-06 (SLM-546) wires check_changed path\u2192test map for revmath constructivization/counterexample only; ownership map unchanged.",
+          "note": "no-bump: HARN-06 (SLM-546) wires check_changed path→test map for revmath constructivization/counterexample only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11",
-          "note": "no-bump: HARN-07 (SLM-547) wires check_changed path\u2192test map for revmath quantitative_bound only; ownership map unchanged.",
+          "note": "no-bump: HARN-07 (SLM-547) wires check_changed path→test map for revmath quantitative_bound only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11",
-          "note": "no-bump: HARN-05 (SLM-545) wires check_changed path\u2192test map for revmath reversal only; ownership map unchanged.",
+          "note": "no-bump: HARN-05 (SLM-545) wires check_changed path→test map for revmath reversal only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11",
-          "note": "no-bump: HARN-04 (SLM-544) wires check_changed path\u2192test map for revmath assumption_ablation only; ownership map unchanged.",
+          "note": "no-bump: HARN-04 (SLM-544) wires check_changed path→test map for revmath assumption_ablation only; ownership map unchanged.",
           "version": "v23"
         },
         {
           "date": "2026-08-11",
-          "note": "no-bump: HARN-03 (SLM-536) wires check_changed path\u2192test map for revmath runner/replay/fixtures/CLI; no ownership_map.json structural change.",
+          "note": "no-bump: HARN-03 (SLM-536) wires check_changed path→test map for revmath runner/replay/fixtures/CLI; no ownership_map.json structural change.",
           "version": "v23"
         },
         {
           "date": "2026-08-11",
-          "note": "no-bump: HARN-02 (SLM-527) wires check_changed path\u2192test map for harnesses/reasoning/revmath/ and owner-map refresh; no ownership_map.json structural change.",
+          "note": "no-bump: HARN-02 (SLM-527) wires check_changed path→test map for harnesses/reasoning/revmath/ and owner-map refresh; no ownership_map.json structural change.",
           "version": "v23"
         },
         {
@@ -4601,7 +4770,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "no-bump: SLM-483 (SIE-006) knowledge-surface link only \u2014 ownership_map.json SIE-006 row cites iter-slm483-sie-006-construct-validity-20260810.md; no owner_symbols or structural map change.",
+          "note": "no-bump: SLM-483 (SIE-006) knowledge-surface link only — ownership_map.json SIE-006 row cites iter-slm483-sie-006-construct-validity-20260810.md; no owner_symbols or structural map change.",
           "version": "v12"
         },
         {
@@ -4636,7 +4805,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only \u2014 repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change.",
+          "note": "no-bump: SLM-476 (SIE-002) knowledge-surface link only — repository-ownership-map.md + ownership_map.json cite iter-slm476-sie-002-oracle-localization-20260810.md on the SIE-002 row (authorized_factors roles+bindings, claim_class=fixture); no owner_symbols or structural map change.",
           "version": "v9"
         },
         {
@@ -4646,7 +4815,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "no-bump: SLM-478 (SIE-005) knowledge-surface link only \u2014 repository-ownership-map.md + ownership_map.json cite iter-slm478-sie-005-blinded-packet-20260810.md on the SIE-005 row and name SIE-006/EXP-SR-3 as campaign successor; no owner_symbols or structural map change.",
+          "note": "no-bump: SLM-478 (SIE-005) knowledge-surface link only — repository-ownership-map.md + ownership_map.json cite iter-slm478-sie-005-blinded-packet-20260810.md on the SIE-005 row and name SIE-006/EXP-SR-3 as campaign successor; no owner_symbols or structural map change.",
           "version": "v9"
         },
         {
@@ -4656,7 +4825,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "no-bump: SLM-474 (SRP-010) knowledge-surface link only \u2014 repository-ownership-map.md cites iter-slm474-srp-010-portability-20260810.md on the SRP-010 fixture row and names EXP-SR-12/RSP-008 (SLM-487) as the campaign execution successor; no owner_symbols or ownership_map.json structural change.",
+          "note": "no-bump: SLM-474 (SRP-010) knowledge-surface link only — repository-ownership-map.md cites iter-slm474-srp-010-portability-20260810.md on the SRP-010 fixture row and names EXP-SR-12/RSP-008 (SLM-487) as the campaign execution successor; no owner_symbols or ownership_map.json structural change.",
           "version": "v8"
         },
         {
@@ -4791,7 +4960,7 @@
         "tests/test_data/test_synthesis_contract_versions.py",
         "tests/test_scripts/test_verify_ownership_map.py"
       ],
-      "version": "v28"
+      "version": "v29"
     },
     "governance.research_citation_catalog": {
       "history": [
@@ -4824,9 +4993,9 @@
     "governance.research_experiment_preregistry": {
       "history": [
         {
-          "version": "v2",
+          "date": "2026-08-16",
           "note": "no-bump: broaden duplicate-signature test match to current reject-equivalent wording; validator behavior unchanged.",
-          "date": "2026-08-16"
+          "version": "v2"
         },
         {
           "date": "2026-08-12",
@@ -5258,6 +5427,46 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-23",
+          "note": "Rebind legacy retained NLL reports only through the exact locked selection, successful controller attempt, hashed command cursor, committed evaluation stage, checkpoint, source and report identities; preserve fail-closed refusal on any mismatch. Extract the bounded supervisor child dispatcher without changing its protocol.",
+          "version": "v296"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Report a positive locked fresh-invocation budget for an unmeasured static obligation after its current deadline is exhausted; admission still refuses exhausted slices and all signed evidence/charges remain unchanged.",
+          "version": "v295"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Canonicalize static receipt ordering in status projection so in-memory output exactly matches the authenticated sorted-key journal after reload; retain strict consumer equality and all release predicates.",
+          "version": "v294"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Readiness resolves the configured AgentV SDK outside immutable source using the canonical bridge runtime helper.",
+          "version": "v293"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Bind explicit exploratory loss-probe limit and mask seed before computation and successor selection; retain default full-smoke contracts and reject mismatched historical selection.",
+          "version": "v292"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Connect verified repair source delivery, independent reconciliation and fresh controller activation without publishing arbitrary workspace inventory. Register delivery and activation entrypoints in the component watcher.",
+          "version": "v291"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Bind campaign geometry and deterministic invocation update limits; preserve scientific identity and finite continuation charges. Require exact verified document successors before connector delivery. Materialize the canonical derived ledger and stabilize closeout stamps across retries.",
+          "version": "v290"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Integrate ordinary supervisor entrypoints, scoped delivery/repair, exact readiness and locked continuation grants, including lease-fenced partial-cursor and completed-prefix recovery.; preserve command cursors by yielding before an evaluation without kill-grace headroom; typed evaluator wall deferral and finite residual-budget exhaustion; preserve interrupted evaluator resume obligations without treating timeout as evidence",
+          "version": "v289"
+        },
+        {
           "date": "2026-09-04",
           "note": "no-bump: extracted promote_replicates, promotion, formal_claims, formal_preflight, stage, docs and heal_actions from run_autotrain_continuous.py, re-exported under their original private aliases. FormalClaimV1/FormalPreflightV1 kept as explicit re-exports for the suite. Pure move; 357 tests pass unchanged.",
           "version": "v288"
@@ -5593,99 +5802,99 @@
           "version": "v249"
         },
         {
-          "version": "v248",
           "date": "2026-08-20",
-          "note": "no-bump: rebuild evidence_ledger.v1.json scanned count 2181 -> 2218 after c420 cycle docs on main; deterministic fold only, FROZEN_TRAIN_REUSE_SKIP behavior unchanged."
+          "note": "no-bump: rebuild evidence_ledger.v1.json scanned count 2181 -> 2218 after c420 cycle docs on main; deterministic fold only, FROZEN_TRAIN_REUSE_SKIP behavior unchanged.",
+          "version": "v248"
         },
         {
-          "version": "v248",
           "date": "2026-08-20",
-          "note": "Fail-closed FROZEN_TRAIN_REUSE_SKIP when the frozen-replay source arm finalized with decode_timeout_count>0 (or measurement_incomplete\u2026decode_timeout_count=) so successors force a fresh control/candidate eval instead of replaying a timeout-incomplete train."
+          "note": "Fail-closed FROZEN_TRAIN_REUSE_SKIP when the frozen-replay source arm finalized with decode_timeout_count>0 (or measurement_incomplete…decode_timeout_count=) so successors force a fresh control/candidate eval instead of replaying a timeout-incomplete train.",
+          "version": "v248"
         },
         {
-          "version": "v247",
           "date": "2026-08-19",
-          "note": "after ancestry skip, autoresearch init uses HEAD as both --upstream-commit and --integration-commit when origin/main is not contained in HEAD; _validate_continuous_commits still requires origin/main when HEAD contains it."
+          "note": "after ancestry skip, autoresearch init uses HEAD as both --upstream-commit and --integration-commit when origin/main is not contained in HEAD; _validate_continuous_commits still requires origin/main when HEAD contains it.",
+          "version": "v247"
         },
         {
-          "version": "v246",
           "date": "2026-08-19",
-          "note": "diverged origin/main is not CYCLE_ERROR: _integrate_origin_main skips merge when main is already an ancestor, fast-forwards when HEAD is behind, and on conflict/stamp-hook failure merge --abort then SELF_HEAL_GIT_ANCESTRY_SKIP reason=diverged_unmergeable so the supervised cycle continues on local HEAD."
+          "note": "diverged origin/main is not CYCLE_ERROR: _integrate_origin_main skips merge when main is already an ancestor, fast-forwards when HEAD is behind, and on conflict/stamp-hook failure merge --abort then SELF_HEAL_GIT_ANCESTRY_SKIP reason=diverged_unmergeable so the supervised cycle continues on local HEAD.",
+          "version": "v246"
         },
         {
-          "version": "v245",
           "date": "2026-08-19",
-          "note": "failed origin/main self-heal merge-commit now git merge --abort (fail closed): version-stamp history-order failures left MERGE_HEAD + dirty versions.json and parked the loop as foreign_dirty_tree for 960s; _self_heal_incomplete_merge and _self_heal_git_ancestry abort an in-progress merge instead of leaving the supervisor blocked."
+          "note": "failed origin/main self-heal merge-commit now git merge --abort (fail closed): version-stamp history-order failures left MERGE_HEAD + dirty versions.json and parked the loop as foreign_dirty_tree for 960s; _self_heal_incomplete_merge and _self_heal_git_ancestry abort an in-progress merge instead of leaving the supervisor blocked.",
+          "version": "v245"
         },
         {
-          "version": "v244",
           "date": "2026-08-19",
-          "note": "park resume requires a selectable heal snapshot, not mere process-arm registration: leftover=[] now tombstones the spent heal train_version before writing the terminal verdict; _check_regime_parked unparks only when a process arm is still a screening candidate (not null-closed, not tombstoned); recovery skips spent snapshots instead of REGIME_RESUMED heal_resume_arm_open spinning the supervisor."
+          "note": "park resume requires a selectable heal snapshot, not mere process-arm registration: leftover=[] now tombstones the spent heal train_version before writing the terminal verdict; _check_regime_parked unparks only when a process arm is still a screening candidate (not null-closed, not tombstoned); recovery skips spent snapshots instead of REGIME_RESUMED heal_resume_arm_open spinning the supervisor.",
+          "version": "v244"
         },
         {
-          "version": "v243",
           "date": "2026-08-19",
-          "note": "hands-off supervisor: regime park is a wait state, not process exit \u2014 run_autotrain_supervisor sleeps --park-backoff-seconds (default 300) and re-checks (pre-cycle unblock can complete a local rebuild_data heal; _check_regime_parked recovers lost heal arms and resumes on fingerprint movement) instead of returning 0, which made every resume depend on an external agent relaunch; legacy --exit-on-park keeps the old single-check behavior; park check now passes cwd for correct snapshot recovery."
+          "note": "hands-off supervisor: regime park is a wait state, not process exit — run_autotrain_supervisor sleeps --park-backoff-seconds (default 300) and re-checks (pre-cycle unblock can complete a local rebuild_data heal; _check_regime_parked recovers lost heal arms and resumes on fingerprint movement) instead of returning 0, which made every resume depend on an external agent relaunch; legacy --exit-on-park keeps the old single-check behavior; park check now passes cwd for correct snapshot recovery.",
+          "version": "v243"
         },
         {
-          "version": "v242",
           "date": "2026-08-19",
-          "note": "null-tally honors snapshot identity: complete non-positives on arms with a non-default train_version count against the version only, not the slug spelling. The shared current-rung-data-heal slug was being permanently closed after two measured snapshots, causing an endless park/resume ping-pong instead of measuring the next fresh snapshot."
+          "note": "null-tally honors snapshot identity: complete non-positives on arms with a non-default train_version count against the version only, not the slug spelling. The shared current-rung-data-heal slug was being permanently closed after two measured snapshots, causing an endless park/resume ping-pong instead of measuring the next fresh snapshot.",
+          "version": "v242"
         },
         {
-          "version": "v241",
           "date": "2026-08-19",
-          "note": "park recovery for lost heal arms: _check_regime_parked re-registers the heal-resume arm from a completed on-disk rebuild_data snapshot (receipts present under outputs/data/train/continuous_i10_*) when no process arm is registered, so an acked heal never parks forever; _retire_i10_heal_arm tombstones retired train_versions (loops/<id>/heal_retired_versions.jsonl) so recovery never resurrects a measured snapshot."
+          "note": "park recovery for lost heal arms: _check_regime_parked re-registers the heal-resume arm from a completed on-disk rebuild_data snapshot (receipts present under outputs/data/train/continuous_i10_*) when no process arm is registered, so an acked heal never parks forever; _retire_i10_heal_arm tombstones retired train_versions (loops/<id>/heal_retired_versions.jsonl) so recovery never resurrects a measured snapshot.",
+          "version": "v241"
         },
         {
-          "version": "v240",
           "date": "2026-08-19",
-          "note": "self-heal rebuild_data is rung-honest and tree-clean: local heal build passes --no-publish (no writes to tracked resources/data/train), heal resume slug renamed simplified-nl-i10-heal -> current-rung-data-heal, and capability-refresh / park resume_predicate prose derives the rung from policy rung_gates.current_rung instead of hardcoding simplified-NL-to-AST (an I10 skip no legal heal could execute)."
+          "note": "self-heal rebuild_data is rung-honest and tree-clean: local heal build passes --no-publish (no writes to tracked resources/data/train), heal resume slug renamed simplified-nl-i10-heal -> current-rung-data-heal, and capability-refresh / park resume_predicate prose derives the rung from policy rung_gates.current_rung instead of hardcoding simplified-NL-to-AST (an I10 skip no legal heal could execute).",
+          "version": "v240"
         },
         {
-          "version": "v239",
           "date": "2026-08-19",
-          "note": "Do not park leftover isolate OFAT as I10 rebuild_data; omit sample_adequacy.json from rebuild receipts; skip I10 heal-arm register while isolate slugs remain."
+          "note": "Do not park leftover isolate OFAT as I10 rebuild_data; omit sample_adequacy.json from rebuild receipts; skip I10 heal-arm register while isolate slugs remain.",
+          "version": "v239"
         },
         {
-          "version": "v238",
           "date": "2026-08-19",
-          "note": "Do not re-enqueue a rejected champion fingerprint; fixture-n confirm rejects must exhaust that knob set until knobs change."
+          "note": "Do not re-enqueue a rejected champion fingerprint; fixture-n confirm rejects must exhaust that knob set until knobs change.",
+          "version": "v238"
         },
         {
-          "version": "v237",
           "date": "2026-08-18",
-          "note": "Serena cache/memories are local agent dirt, never a continuous foreign_dirty hard block; tracked .serena/project.yml and .serena/.gitignore still fail closed."
+          "note": "Serena cache/memories are local agent dirt, never a continuous foreign_dirty hard block; tracked .serena/project.yml and .serena/.gitignore still fail closed.",
+          "version": "v237"
         },
         {
-          "version": "v236",
           "date": "2026-08-17",
-          "note": "no-bump: rebuild evidence_ledger.v1.json so merge-ready matches docs/design after cherry-picked continuous closeout docs."
+          "note": "no-bump: rebuild evidence_ledger.v1.json so merge-ready matches docs/design after cherry-picked continuous closeout docs.",
+          "version": "v236"
         },
         {
-          "version": "v236",
           "date": "2026-08-17",
-          "note": "no-bump: agent-skill docs only \u2014 between-iteration PR resolve/squash-merge delivery law in autotrain/sdlc skills; continuous driver behavior unchanged."
+          "note": "no-bump: agent-skill docs only — between-iteration PR resolve/squash-merge delivery law in autotrain/sdlc skills; continuous driver behavior unchanged.",
+          "version": "v236"
         },
         {
-          "version": "v236",
           "date": "2026-08-16",
-          "note": "Allow retired heal/snapshot train_version arms to enqueue as champions when slug left the thrash bank."
+          "note": "Allow retired heal/snapshot train_version arms to enqueue as champions when slug left the thrash bank.",
+          "version": "v236"
         },
         {
-          "version": "v235",
           "date": "2026-08-16",
-          "note": "Enqueue fixture-n screening primary wins as confirm candidates; do not tally them as thrash null seeds so smoke n=3 can still climb into confirm/promote."
+          "note": "Enqueue fixture-n screening primary wins as confirm candidates; do not tally them as thrash null seeds so smoke n=3 can still climb into confirm/promote.",
+          "version": "v235"
         },
         {
-          "version": "v234",
           "date": "2026-08-16",
-          "note": "I10 heal: prepare harness-only SFT snapshot + synthesis_feedback_actions; refresh/retire heal process arm after complete dual-arm measurement so fixture-n rejects do not rematch forever."
+          "note": "I10 heal: prepare harness-only SFT snapshot + synthesis_feedback_actions; refresh/retire heal process arm after complete dual-arm measurement so fixture-n rejects do not rematch forever.",
+          "version": "v234"
         },
         {
-          "version": "v233",
+          "date": "2026-08-16",
           "note": "Replace dangling sdlc_delivery_ledger.jsonl symlink before Phase A append so continuous closeout cannot FileNotFoundError on a removed /tmp worktree.",
-          "date": "2026-08-16"
+          "version": "v233"
         },
         {
           "date": "2026-08-16",
@@ -5704,12 +5913,12 @@
         },
         {
           "date": "2026-08-16",
-          "note": "no-bump: adversarial review fixes inside the unreleased v230 delivery \u2014 SELF_HEAL_ENV_REPAIR now rejects heal receipts recorded before the handoff's created_at (a historical heal never clears a later regression of the same cross-campaign fingerprint); supervisor floor-sleeps on the healed path and annotates the quarantine stash SHA only when unambiguous.",
+          "note": "no-bump: adversarial review fixes inside the unreleased v230 delivery — SELF_HEAL_ENV_REPAIR now rejects heal receipts recorded before the handoff's created_at (a historical heal never clears a later regression of the same cross-campaign fingerprint); supervisor floor-sleeps on the healed path and annotates the quarantine stash SHA only when unambiguous.",
           "version": "v230"
         },
         {
           "date": "2026-08-16",
-          "note": "Self-healing escalation layer: hard-pending blockers carry a typed blocker_class; environment-incomplete repair_harness with a verified heal receipt is rewritten to next_experiment (SELF_HEAL_ENV_REPAIR, the thrash-timeout precedent \u2014 never a receipt ack; code-class crashes stay hard); the true-crash marker list moved to autoresearch.heal.classify (single source of truth); the supervisor replaces the blind fixed hard-pending sleep with playbook dispatch + escalation-governed backoff and runs the WP-4 family-closure writer post-cycle; closed_approaches.v1.json joins the continuous closeout commit set.",
+          "note": "Self-healing escalation layer: hard-pending blockers carry a typed blocker_class; environment-incomplete repair_harness with a verified heal receipt is rewritten to next_experiment (SELF_HEAL_ENV_REPAIR, the thrash-timeout precedent — never a receipt ack; code-class crashes stay hard); the true-crash marker list moved to autoresearch.heal.classify (single source of truth); the supervisor replaces the blind fixed hard-pending sleep with playbook dispatch + escalation-governed backoff and runs the WP-4 family-closure writer post-cycle; closed_approaches.v1.json joins the continuous closeout commit set.",
           "version": "v230"
         },
         {
@@ -5819,7 +6028,7 @@
         },
         {
           "date": "2026-08-12",
-          "note": "no-bump: SLM-578 harvest of 97 docs/design measured-results from agent/autotrain-continuous-live (continuous-openui-local-* + related autotrain-cycle / decode-timeout self-heal notes) + evidence_ledger.v1.json rebuild; campaign contract unchanged. Live tip self-heal already superseded on main \u2014 no run_autotrain_continuous.py port.",
+          "note": "no-bump: SLM-578 harvest of 97 docs/design measured-results from agent/autotrain-continuous-live (continuous-openui-local-* + related autotrain-cycle / decode-timeout self-heal notes) + evidence_ledger.v1.json rebuild; campaign contract unchanged. Live tip self-heal already superseded on main — no run_autotrain_continuous.py port.",
           "version": "v211"
         },
         {
@@ -6094,12 +6303,12 @@
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fix: the matched-control fingerprint (_manifest's ctrl dict) reset the pre-existing treatment knobs to their off-defaults but never reset solver_energy_loss_weight/solver_energy_decode_weight/legal_edit_hazard_loss_weight/legal_edit_hazard_decode_weight added by the solver-energy-rerank and legal-edit-hazard arms \u2014 a candidate config using either arm could hash-collide its own control, silently invalidating the matched-control contract. Added the four missing resets.",
+          "note": "CodeRabbit fix: the matched-control fingerprint (_manifest's ctrl dict) reset the pre-existing treatment knobs to their off-defaults but never reset solver_energy_loss_weight/solver_energy_decode_weight/legal_edit_hazard_loss_weight/legal_edit_hazard_decode_weight added by the solver-energy-rerank and legal-edit-hazard arms — a candidate config using either arm could hash-collide its own control, silently invalidating the matched-control contract. Added the four missing resets.",
           "version": "v202"
         },
         {
           "date": "2026-08-10",
-          "note": "Merge origin/main (#1551 evidence-ledger stamping) into this PR's branch: main independently bumped this component again from the shared ancestor (stamping continuous_cycle_results with build_version_stamp and regenerating the evidence ledger) while this branch's own history already used the same v200 label for a different entry \u2014 both are kept byte-identical to their own parent's history (duplicate version labels across distinct entries are an existing, tolerated pattern in this file \u2014 see the v195 entries below) and this new top-level entry uses a genuinely fresh label so both lines combine into one sequence without altering any entry already published on either side.",
+          "note": "Merge origin/main (#1551 evidence-ledger stamping) into this PR's branch: main independently bumped this component again from the shared ancestor (stamping continuous_cycle_results with build_version_stamp and regenerating the evidence ledger) while this branch's own history already used the same v200 label for a different entry — both are kept byte-identical to their own parent's history (duplicate version labels across distinct entries are an existing, tolerated pattern in this file — see the v195 entries below) and this new top-level entry uses a genuinely fresh label so both lines combine into one sequence without altering any entry already published on either side.",
           "version": "v201"
         },
         {
@@ -6114,7 +6323,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "_preflight_screening_slug now passes the arm's cumulative ledger n_complete (+1 for this cycle) as the preflight candidate's n_seeds, instead of a literal 1 \u2014 reconciles the seeds policy with the power preflight so screening can actually accumulate evidence across cycles.",
+          "note": "_preflight_screening_slug now passes the arm's cumulative ledger n_complete (+1 for this cycle) as the preflight candidate's n_seeds, instead of a literal 1 — reconciles the seeds policy with the power preflight so screening can actually accumulate evidence across cycles.",
           "version": "v199"
         },
         {
@@ -6129,7 +6338,7 @@
         },
         {
           "date": "2026-08-09",
-          "note": "darkfactory completion (units G+L): terminal governance \u2014 park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution \u2014 staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8",
+          "note": "darkfactory completion (units G+L): terminal governance — park the loop under a typed regime_exhausted verdict with a deterministic bank-fingerprint resume predicate (REGIME_PARKED/REGIME_RESUMED), retire compose-filler synthesis and confirm-seed burning behind policy v8 terminal.park_on_exhaust, lock a power_feasibility/v1 report on promote campaigns and refuse non-decisive ones (promotion_infeasible_by_design), promotion_suite_n=6 makes promotion decidable; ledger evolution — staleness-decayed cross-version pooling from versions.json history distance, sdlc_delivery embedded in closeout docs and mined, operator status with posterior-UCB top-10 + screening power geometry; policy v7->v8",
           "version": "v198"
         },
         {
@@ -6154,7 +6363,7 @@
         },
         {
           "date": "2026-08-08",
-          "note": "no-bump: _git_commit_paths() no longer overrides committer identity with user.email=autotrain@local / user.name=autotrain for the docs self-heal commit; it now inherits the ambient (signed) git identity instead. Commit content, staging, and campaign semantics are unchanged \u2014 only the committer metadata on self-heal commits.",
+          "note": "no-bump: _git_commit_paths() no longer overrides committer identity with user.email=autotrain@local / user.name=autotrain for the docs self-heal commit; it now inherits the ambient (signed) git identity instead. Commit content, staging, and campaign semantics are unchanged — only the committer metadata on self-heal commits.",
           "version": "v195"
         },
         {
@@ -6204,7 +6413,7 @@
         },
         {
           "date": "2026-08-06",
-          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness\u2192next_experiment; robust porcelain path parse",
+          "note": "bank exhaust self-heal: compose thrash successors AND rewrite handoff repair_harness→next_experiment; robust porcelain path parse",
           "version": "v188"
         },
         {
@@ -6244,12 +6453,12 @@
         },
         {
           "date": "2026-08-06",
-          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/\u2026) still fail closed",
+          "note": "continuous self-heal: driver-owned document closeout + continuous-only dirty-tree commit (SELF_HEAL_DOCUMENT / SELF_HEAL_DIRTY_TREE) so thrash never blocks on unacked document or auto-docs dirt; hard prereqs (repair_harness/formal/deliver_stack/…) still fail closed",
           "version": "v183"
         },
         {
           "date": "2026-08-05",
-          "note": "dual-regime thrash: isolate + climb residual + timeout\u2192decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes",
+          "note": "dual-regime thrash: isolate + climb residual + timeout→decode residual routing; climb no-op residual skip via materialized knob signatures; thrash_regime on AutotrainCycleHandoffV1; policy v6 thrash_regimes",
           "version": "v182"
         },
         {
@@ -6314,7 +6523,7 @@
         },
         {
           "date": "2026-08-03",
-          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred \u2260 hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor",
+          "note": "Thrash never binds handoff-pred feedback_ids (handoff pred ≠ hypothesize lineage); only confirm/promote/replay bind; fixes CYCLE_ERROR conflicts with supplied feedback ids after incomplete successor",
           "version": "v170"
         },
         {
@@ -6324,7 +6533,7 @@
         },
         {
           "date": "2026-08-03",
-          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n\u00d7decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++",
+          "note": "Pareto thrash timing: screening decode 8s + thrash steps 40 so n×decode fits 70s arm wall; thrash_timing/v1 telemetry; incomplete rate drives recalibration not wall++",
           "version": "v168"
         },
         {
@@ -7134,7 +7343,7 @@
         },
         {
           "date": "2026-08-01",
-          "note": "Promote formal timeout 600s \u2192 timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout",
+          "note": "Promote formal timeout 600s → timed_out / promotion_inconclusive (not failed); refund promote_attempts on timeout",
           "version": "v27"
         },
         {
@@ -7331,6 +7540,7 @@
         ".grok/workflows/autotrain.rhai",
         "docs/design/autoresearch-autotraining.md",
         "docs/design/experiment-campaign-governance.md",
+        "docs/design/autonomy-recovery-integration-20260907.md",
         "docs/design/autotrain-climb-policy.md",
         "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.json",
         "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.md",
@@ -7364,9 +7574,43 @@
         "src/slm_training/autoresearch/sample_adequacy.py",
         "src/slm_training/autoresearch/screening_sample_size.py",
         "tests/test_autoresearch/test_screening_sample_size.py",
-        "docs/design/screening-sample-size-bounds.md"
+        "docs/design/screening-sample-size-bounds.md",
+        "scripts/github_delivery_adapter.py",
+        "scripts/github_source_delivery.py",
+        "scripts/github_source_preparation.py",
+        "scripts/github_source_authority.py",
+        "scripts/autotrain_repair_activation.py",
+        "scripts/autotrain_controller_repair.py",
+        "scripts/autotrain_cycle_execution.py",
+        "scripts/autotrain_cycle_reconcile.py",
+        "scripts/autotrain_docs.py",
+        "scripts/autotrain_operation_worker.py",
+        "scripts/autotrain_pending.py",
+        "scripts/autotrain_promotion.py",
+        "scripts/autotrain_promotion_chunks.py",
+        "scripts/autotrain_promotion_finalize.py",
+        "scripts/autotrain_readiness.py",
+        "scripts/autotrain_records.py",
+        "scripts/autotrain_supervisor_operations.py",
+        "scripts/autotrain_supervision.py",
+        "scripts/autotrain_timeout_state.py",
+        "scripts/autotrain_verification.py",
+        "scripts/github_source_verification.py",
+        "scripts/autotrain_nll.py",
+        "src/slm_training/autoresearch/preflight/loss_binding.py",
+        "scripts/autotrain_search.py",
+        "tests/test_scripts/test_autonomy_entrypoint_contracts.py",
+        "tests/test_scripts/test_autotrain_docs.py",
+        "tests/test_scripts/test_autotrain_nll_contract.py",
+        "tests/test_scripts/test_autotrain_nll_integration.py",
+        "tests/test_scripts/test_autotrain_promotion_ledger.py",
+        "tests/test_scripts/test_autotrain_readiness.py",
+        "tests/test_scripts/test_autotrain_search.py",
+        "tests/test_scripts/test_autotrain_verification.py",
+        "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py",
+        "tests/test_scripts/test_supervisor_interruption.py"
       ],
-      "version": "v288"
+      "version": "v296"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -7412,7 +7656,7 @@
         },
         {
           "date": "2026-08-11",
-          "note": "INTEG-02 (SLM-555): document MechanismTrigger admission via preflight.mechanism_no_effect; break formal\u2194revmath.profile_binding circular import by TYPE_CHECKING-only RevmathFourAxisAnalysisV1 import.",
+          "note": "INTEG-02 (SLM-555): document MechanismTrigger admission via preflight.mechanism_no_effect; break formal↔revmath.profile_binding circular import by TYPE_CHECKING-only RevmathFourAxisAnalysisV1 import.",
           "version": "v18"
         },
         {
@@ -7467,7 +7711,7 @@
         },
         {
           "date": "2026-08-03",
-          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again \u2014 test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged.",
+          "note": "no-bump: CI no-torch fast path excludes tests/test_versioning again — test_mirrors.py imports torch transitively, so versions.json-only PRs failed collection; formal-contract behavior unchanged.",
           "version": "v14"
         },
         {
@@ -7632,6 +7876,31 @@
     "harness.core": {
       "history": [
         {
+          "date": "2026-09-22",
+          "note": "Clear automatic wait actions when their predicate wakes and ignore legacy stale auto actions on already-runnable activities, so an obsolete capability wait cannot abort claims for an independent runnable verifier.",
+          "version": "v21"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Host-only Codex subscription authentication and native refresh; immutable delivered source materialization bound to exact remote commit and full source tree.",
+          "version": "v20"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Preserve validated predecessor ancestry when materializing accepted repair source and extend exact-tree GitHub delivery to accepted repair scope.",
+          "version": "v19"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Add bounded provider and GitHub connector transports, reconcile immutable document publication, and map exact documentation successors to independently authenticated full verification.",
+          "version": "v18"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Enforce bounded cancellation/progress deadlines, live descendant cleanup, immutable release provenance, and lease-reserved driver finalization; distinguish zombie-only groups from live workers.",
+          "version": "v17"
+        },
+        {
           "date": "2026-08-10",
           "note": "Replace the normal-approximation z=1.96 EG_params/EG_time interval with exact Student-t critical values and require n>=2 finite seeds for any lcb/ucb (single-seed now yields nan, failing closed on lcb>=threshold gates instead of a zero-width interval)",
           "version": "v16"
@@ -7716,10 +7985,15 @@
       "paths": [
         "src/slm_training/harness_core/"
       ],
-      "version": "v16"
+      "version": "v21"
     },
     "harness.distill": {
       "history": [
+        {
+          "date": "2026-09-22",
+          "note": "Record legal-domain choice diagnostics, project logits onto exact supplied domains, use stable finite score normalization, and capture proved singleton canvas decisions without neural forwards.",
+          "version": "v12"
+        },
         {
           "date": "2026-08-08",
           "note": "SLM-446 (VCE-002): add RepairResidualV1, a pure/stateless projection of SemanticRepairRecordV1 + ConflictSlice into an advisory residual-obligation view (unsatisfied obligations, conflict slice/completeness, protected regions, legal repair-action domain, witness/source ids, tamper-evident residual_hash); optionally reconciles VCE-001 VerifierWitnessV1.unresolved_localizations as additional obligations without ever fabricating legal edits, converting UNKNOWN to failure, or letting HEURISTIC evidence authorize repair -- no second repair registry or verifier authority introduced.",
@@ -7805,6 +8079,11 @@
         "src/slm_training/harnesses/distill/semantic_repair.py",
         "src/slm_training/harnesses/distill/repair.py",
         "src/slm_training/harnesses/distill/sft.py",
+        "src/slm_training/harnesses/distill/choice_diagnostics.py",
+        "src/slm_training/harnesses/distill/grammar_trace.py",
+        "src/slm_training/resources/test_cases/test_harnesses/distill/test_choice_diagnostics.json",
+        "tests/test_harnesses/distill/test_choice_diagnostics.py",
+        "tests/test_harnesses/distill/test_grammar_trace.py",
         "tests/test_harnesses/distill/test_legal_set_kl.py",
         "tests/test_harnesses/distill/test_operator_decision_state.py",
         "tests/test_harnesses/distill/test_operator_teacher_ceiling.py",
@@ -7814,7 +8093,7 @@
         "tests/test_harnesses/distill/test_semantic_repair.py",
         "tests/test_harnesses/distill/test_select_sft.py"
       ],
-      "version": "v11"
+      "version": "v12"
     },
     "harness.eval.replay": {
       "history": [
@@ -7936,6 +8215,21 @@
     "harness.experiments": {
       "history": [
         {
+          "date": "2026-09-22",
+          "note": "Bind loss remeasurement to actual producer attempt and committed command cursor report digest; preserve retry ingestion guards and prior source evidence.",
+          "version": "v169"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Recover previously committed ordinary-supervisor measurement after wrapper interruption; publish the exact result idempotently and reserve derived cleanup/finalization headroom within the canonical invocation cap.",
+          "version": "v168"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Execute retained two-arm comparison through the public supervisor with current-pass source-bound completion evidence.",
+          "version": "v167"
+        },
+        {
           "date": "2026-09-02",
           "note": "declare the locked selection_rule=best_by_primary_then_smallest on multi-candidate campaign manifests; ExperimentCampaignV1 has required it since the vacuous-pass fail-closed change and these manifests raised at construction. Arms, seeds, endpoints and gates unchanged; the only allowed rule is now stated rather than implied.",
           "version": "v166"
@@ -7972,7 +8266,7 @@
         },
         {
           "date": "2026-08-11",
-          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py \u2014 default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence.",
+          "note": "PGS-H01 (SLM-510): add goal_support_domain_adequacy.py fixture campaign harness + scripts/run_goal_support_domain_adequacy.py — default-off bounded diagnostic ExperimentCampaignV1 over word-tree fixtures with structural/production-exact/evaluation-oracle/certified arms, falsifiers (zero false hard prune), deterministic result digest, and harness/CLI tests. Harness + tests only; SLM-511 publishes measured evidence.",
           "version": "v163"
         },
         {
@@ -8017,22 +8311,22 @@
         },
         {
           "date": "2026-08-10",
-          "note": "RSP-008/SLM-487: add rsp008_second_pack_portability.py \u2014 diagnostic EXP-SR-12 second-pack portability certification composing SRP-010 seams on OpenUI (control) and symbolic_regression (candidate) under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic, promotion=false). Scores second_pack_portability_parity_rate; honest fork inventory falsifies zero-fork certification. Dedicated component harness.experiments.slm487_rsp008_portability owns the harness/CLI/tests/docs paths.",
+          "note": "RSP-008/SLM-487: add rsp008_second_pack_portability.py — diagnostic EXP-SR-12 second-pack portability certification composing SRP-010 seams on OpenUI (control) and symbolic_regression (candidate) under ExperimentCampaignV1/CampaignStore (claim_class=diagnostic, promotion=false). Scores second_pack_portability_parity_rate; honest fork inventory falsifies zero-fork certification. Dedicated component harness.experiments.slm487_rsp008_portability owns the harness/CLI/tests/docs paths.",
           "version": "v159"
         },
         {
           "date": "2026-08-10",
-          "note": "SIE-004/SLM-482: add sie004_predictor_campaign.py \u2014 fixture-scale EXP-SR-2 matched prompt-requirement predictor campaign composing SIE-003's advisory predictor seam (none/deterministic/frequency/retrieval/learned/gold-oracle arms) with the SIE-001 exp-sr-2 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) group-by-source_program splits over openui_hard_valid_v1; loads SIE-002 authorized_factors (roles, bindings) as the RequirementFact emission gate; legal_support_parity exact. Durable docs/design/iter-slm482-sie-004-predictor-campaign-20260810.{json,md}.",
+          "note": "SIE-004/SLM-482: add sie004_predictor_campaign.py — fixture-scale EXP-SR-2 matched prompt-requirement predictor campaign composing SIE-003's advisory predictor seam (none/deterministic/frequency/retrieval/learned/gold-oracle arms) with the SIE-001 exp-sr-2 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) group-by-source_program splits over openui_hard_valid_v1; loads SIE-002 authorized_factors (roles, bindings) as the RequirementFact emission gate; legal_support_parity exact. Durable docs/design/iter-slm482-sie-004-predictor-campaign-20260810.{json,md}.",
           "version": "v158"
         },
         {
           "date": "2026-08-10",
-          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py \u2014 fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips.",
+          "note": "SIE-002/SLM-476: add sie002_oracle_localization.py — fixture-scale EXP-SR-1 factor-wise semantic oracle localization composing VCE-009's generate_baseline_arms/load_fixture_plan_pool (no forked arm generator) with the SIE-001 exp-sr-1 catalogue identity under ExperimentCampaignV1/CampaignStore (claim_class=fixture, promotion=false). Multi-seed (0,1,2) matched arms over VCE-008-cleaned openui_hard_valid_v1; durable docs/design/iter-slm476-sie-002-oracle-localization-20260810.{json,md} report oracle_factor_localization_precision and authorized_factors for later learned-predictor work. Also re-digest PlanInterventionRecordV1 after attaching compute.apply_ms in VCE-009's generate_baseline_arms so from_dict round-trips.",
           "version": "v157"
         },
         {
           "date": "2026-08-10",
-          "note": "RSP-004 (SLM-479): add symbolic_egraph.py -- a minimal union-find e-graph over the typed symbolic-expression IR, seeded and rewritten exclusively through SRP-005's certified REWRITE_RULES (no new rewrite semantics), plus a cycle-safe bottom-up extractor (safe_representatives) and independent numerical re-verification (verify_rewrite_numerically, NaN-aware) of every applied rewrite. scripts/run_exp_sr8_egraph_experiment.py executes the locked SIE-001 exp-sr-8 identity (exp_sr_catalogue.py) over a fixed fixture corpus, comparing canonical-hash dedup alone against e-graph saturation+extraction at a matched budget, and persists honest evidence to docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}: e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly (expected -- the current REWRITE_RULES are each complexity-non-increasing and confluent, so both mechanisms converge to the same fixed point), egraph_certified_equivalence_rate=1.0 (10/10 applications independently re-verified), rollback gate clear. Per SLM-479's acceptance criterion, this stays an isolated, default-off experiment module -- no import from dsl/symbolic_regression_pack.py or any production canonicalization path. Bumped v155\u2192v156 on rebase onto main.",
+          "note": "RSP-004 (SLM-479): add symbolic_egraph.py -- a minimal union-find e-graph over the typed symbolic-expression IR, seeded and rewritten exclusively through SRP-005's certified REWRITE_RULES (no new rewrite semantics), plus a cycle-safe bottom-up extractor (safe_representatives) and independent numerical re-verification (verify_rewrite_numerically, NaN-aware) of every applied rewrite. scripts/run_exp_sr8_egraph_experiment.py executes the locked SIE-001 exp-sr-8 identity (exp_sr_catalogue.py) over a fixed fixture corpus, comparing canonical-hash dedup alone against e-graph saturation+extraction at a matched budget, and persists honest evidence to docs/design/exp-sr-8-egraph-equivalence-experiment.{json,md}: e-graph regions matched canonical-hash dedup's unique-form set and Pareto frontier exactly (expected -- the current REWRITE_RULES are each complexity-non-increasing and confluent, so both mechanisms converge to the same fixed point), egraph_certified_equivalence_rate=1.0 (10/10 applications independently re-verified), rollback gate clear. Per SLM-479's acceptance criterion, this stays an isolated, default-off experiment module -- no import from dsl/symbolic_regression_pack.py or any production canonicalization path. Bumped v155→v156 on rebase onto main.",
           "version": "v156"
         },
         {
@@ -8042,7 +8336,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "no-bump: SLM-474 (SRP-010) optional corpus/enumerate exercise lives in srp010_pack_portability.py, owned by dedicated component harness.experiments.slm474_srp010_portability (v1\u2192v2).",
+          "note": "no-bump: SLM-474 (SRP-010) optional corpus/enumerate exercise lives in srp010_pack_portability.py, owned by dedicated component harness.experiments.slm474_srp010_portability (v1→v2).",
           "version": "v154"
         },
         {
@@ -8137,7 +8431,7 @@
         },
         {
           "date": "2026-07-27",
-          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes \u2014 the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2.",
+          "note": "SLM-431 (LAR0-06): land src/slm_training/harnesses/experiments/slm317_repair_hybrid.py byte-identical from unmerged branch commit 48e5cadc (its own tests pass unmodified against main HEAD); the harness module itself carries no logic changes — the powered-rerun surface lives in scripts/run_slm317_repair_hybrid.py under harness.experiments.slm317_repair_hybrid v2.",
           "version": "v138"
         },
         {
@@ -8802,7 +9096,7 @@
         },
         {
           "date": "2026-07-20",
-          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness",
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness",
           "version": "v31"
         },
         {
@@ -8842,7 +9136,7 @@
         },
         {
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness",
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness",
           "version": "v24"
         },
         {
@@ -8902,7 +9196,7 @@
         },
         {
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support",
+          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support",
           "version": "v13"
         },
         {
@@ -8998,9 +9292,10 @@
         "src/slm_training/harnesses/experiments/goal_support_domain_adequacy.py",
         "scripts/run_goal_support_domain_adequacy.py",
         "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
-        "tests/test_scripts/test_run_goal_support_domain_adequacy.py"
+        "tests/test_scripts/test_run_goal_support_domain_adequacy.py",
+        "scripts/evaluate_loss_suites.py"
       ],
-      "version": "v166"
+      "version": "v169"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [
@@ -9031,7 +9326,7 @@
         },
         {
           "date": "2026-07-31",
-          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python\u2194Lean bridges; hollow residual theorems documented as ADR sketches.",
+          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python↔Lean bridges; hollow residual theorems documented as ADR sketches.",
           "version": "v7"
         },
         {
@@ -9051,12 +9346,12 @@
         },
         {
           "date": "2026-07-31",
-          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17\u2013C19 efficiency gates.",
+          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17–C19 efficiency gates.",
           "version": "v3"
         },
         {
           "date": "2026-07-31",
-          "note": "Measured SFF suite n_ranked=78 (26\u00d73 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class.",
+          "note": "Measured SFF suite n_ranked=78 (26×3 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class.",
           "version": "v2"
         },
         {
@@ -9153,7 +9448,7 @@
         },
         {
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness",
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness",
           "version": "v1"
         }
       ],
@@ -9749,7 +10044,7 @@
       "history": [
         {
           "date": "2026-07-21",
-          "note": "initial registration; SLM-210 SDE5-03 prompt-plan \u00d7 grammar-mass \u00d7 high-debt exposure floor-escape matrix wiring/fixture harness",
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness",
           "version": "sde5-03-v1"
         }
       ],
@@ -9764,9 +10059,14 @@
     "harness.experiments.semantic_floor_gate": {
       "history": [
         {
-          "version": "v1",
+          "date": "2026-09-23",
+          "note": "no-bump: regenerate the inconclusive semantic-floor artifacts after upstream harness component stamps changed; thresholds and gate behavior are unchanged.",
+          "version": "v1"
+        },
+        {
           "date": "2026-08-16",
-          "note": "no-bump: refresh stale published SemanticFloorGateV1 JSON/Markdown fingerprints so --check matches live closeout (content regeneration only)."
+          "note": "no-bump: refresh stale published SemanticFloorGateV1 JSON/Markdown fingerprints so --check matches live closeout (content regeneration only).",
+          "version": "v1"
         },
         {
           "date": "2026-08-10",
@@ -10334,7 +10634,7 @@
         },
         {
           "date": "2026-07-20",
-          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness",
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness",
           "version": "v1"
         }
       ],
@@ -11512,7 +11812,7 @@
         },
         {
           "date": "2026-07-25",
-          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy \u2014 exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)",
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy — exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)",
           "version": "v4"
         },
         {
@@ -11970,29 +12270,34 @@
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
         {
-          "version": "v3",
-          "date": "2026-09-02",
-          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "date": "2026-09-22",
+          "note": "no-bump: README and MODEL_CARD record the separate CPU SCI-LAB continuation checkpoints; SLM-228 spectral-disposition implementation, experiment definition and existing results are unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-09-02",
-          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-09-02",
-          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-09-02",
-          "note": "no-bump: record scheduled loop climb-c continuous-loop-20260902-climb-c-7a4ba2f4-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-09-02",
-          "note": "no-bump: record scheduled loop climb-b continuous-loop-20260902-climb-b-cad96bc5-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop climb-c continuous-loop-20260902-climb-c-7a4ba2f4-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop climb-b continuous-loop-20260902-climb-b-cad96bc5-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
           "date": "2026-09-02",
@@ -12000,539 +12305,539 @@
           "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260821-continuous-openui-local-8c0b60dd-c541's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260821-continuous-openui-local-8c0b60dd-c541's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260821-continuous-openui-local-8c0b60dd-c538's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260821-continuous-openui-local-8c0b60dd-c538's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c534's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c534's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c533's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c533's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c532's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c532's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c531's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c531's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c530's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c530's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c529's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c529's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c528's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c528's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c527's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c527's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c526's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c526's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c525's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c525's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c524's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c524's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c523's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c523's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c522's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c522's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c521's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c521's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c520's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c520's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c519's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c519's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c518's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c518's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-21",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c517's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c517's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c515's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c515's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c514's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c514's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c512's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c512's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c510's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c510's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c509's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c509's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c508's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c508's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c507's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c507's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c506's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c506's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c505's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c505's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c504's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c504's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c503's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c503's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c502's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c502's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c500's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c500's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c498's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c498's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c497's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c497's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c496's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c496's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c495's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c495's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c494's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c494's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c493's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c493's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c492's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c492's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c491's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c491's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c489's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c489's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c488's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c488's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c487's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c487's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c486's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c486's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c485's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c485's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c484's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c484's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c483's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c483's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c482's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c482's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c477's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c477's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c476's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c476's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c475's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c475's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c474's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c474's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c473's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c473's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c472's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c472's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c471's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c471's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c470's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c470's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c469's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c469's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c468's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c468's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c467's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c467's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c466's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c466's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c465's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c465's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c464's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c464's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c463's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c463's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c462's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c462's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c461's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c461's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c460's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c460's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c458's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c458's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c457's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c457's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c456's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c456's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c455's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c455's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c454's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c454's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c453's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c453's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c452's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c452's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c451's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c451's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c450's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c450's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c449's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c449's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c448's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c448's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c447's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c447's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c446's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c446's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c445's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c445's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c444's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c444's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c443's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c443's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c442's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c442's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c441's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c441's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c440's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c440's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c439's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c439's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c438's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c438's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c437's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c437's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c436's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c436's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c435's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c435's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c434's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c434's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c433's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c433's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c432's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c432's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c431's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c431's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c430's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c430's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c429's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c429's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c428's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c428's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c427's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c427's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c426's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c426's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c425's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c425's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c424's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c424's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c423's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c423's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c422's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c422's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
-          "version": "v3",
           "date": "2026-08-20",
-          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c421's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged."
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c421's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
         },
         {
           "date": "2026-08-12",
@@ -15678,7 +15983,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "SLM-474 (SRP-010): end-to-end symbolic-pack portability fixture \u2014 default OpenUI isolation, SR pack parse/canonicalize/oracle/evaluate-fit/evidence, VerifiedSynthesisProblemV1 + SyGuS capability export (inspired_interoperability), AST import audit, honest forks/unsupported_hooks inventory. claim_class=fixture; cites exp-sr-12 without locking ExperimentCampaignV1.",
+          "note": "SLM-474 (SRP-010): end-to-end symbolic-pack portability fixture — default OpenUI isolation, SR pack parse/canonicalize/oracle/evaluate-fit/evidence, VerifiedSynthesisProblemV1 + SyGuS capability export (inspired_interoperability), AST import audit, honest forks/unsupported_hooks inventory. claim_class=fixture; cites exp-sr-12 without locking ExperimentCampaignV1.",
           "version": "v1"
         }
       ],
@@ -15967,7 +16272,7 @@
       "history": [
         {
           "date": "2026-08-10",
-          "note": "SLM-491: honest external-blocked prepared-package closeout for EXP-SR-3 \u2014 reuses SIE-006 external-blocked mode + frozen SIE-005 pin; kappa/calibration metrics stay null.",
+          "note": "SLM-491: honest external-blocked prepared-package closeout for EXP-SR-3 — reuses SIE-006 external-blocked mode + frozen SIE-005 pin; kappa/calibration metrics stay null.",
           "version": "v1"
         }
       ],
@@ -15985,7 +16290,7 @@
       "history": [
         {
           "date": "2026-08-10",
-          "note": "SLM-492: honest external-blocked prepared-package closeout for EXP-SR-11 \u2014 reuses RSP-007 + SRP-011 adapter isolation; no SOTA claim when PySR/Julia unavailable.",
+          "note": "SLM-492: honest external-blocked prepared-package closeout for EXP-SR-11 — reuses RSP-007 + SRP-011 adapter isolation; no SOTA claim when PySR/Julia unavailable.",
           "version": "v1"
         }
       ],
@@ -16008,7 +16313,7 @@
         },
         {
           "date": "2026-08-12",
-          "note": "RESEARCH-08/SLM-540: default-off Myhill\u2013Nerode quotient of terminal-continuation static residual DFA; fixture evidence; never production authority.",
+          "note": "RESEARCH-08/SLM-540: default-off Myhill–Nerode quotient of terminal-continuation static residual DFA; fixture evidence; never production authority.",
           "version": "v1"
         }
       ],
@@ -16743,6 +17048,11 @@
     "harness.model_build.data": {
       "history": [
         {
+          "date": "2026-09-21",
+          "note": "Enforce readiness receipts and canonical record admission at the actual training loader.",
+          "version": "v4"
+        },
+        {
           "date": "2026-09-08",
           "note": "SLM-587: shared record loading rejects opaque-marker, semantic-label and placeholder-role violations before model construction; no target rewriting or gate changes.",
           "version": "v3"
@@ -16763,10 +17073,15 @@
         "src/slm_training/harnesses/model_build/data.py",
         "src/slm_training/data/record_admission.py"
       ],
-      "version": "v3"
+      "version": "v4"
     },
     "harness.model_build.eval": {
       "history": [
+        {
+          "date": "2026-09-21",
+          "note": "Bind evaluator continuation to locked measurement identity and complete scoreboards.",
+          "version": "v107"
+        },
         {
           "date": "2026-09-02",
           "note": "Merge of S6/S12 decode telemetry (step_commits histogram, context-ablation flip counters) with the X1 and S14 counters; both parents' histories preserved. All read-only.",
@@ -16844,7 +17159,7 @@
         },
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fix (data minimization): the PostHog LLM-telemetry mirror in trace.py now forwards only an explicit allowlist of scalar llm.* metadata keys (temperature, max_tokens, finish_reason, cost_usd, cached, retry_count, stream) instead of every llm.*-prefixed attribute verbatim \u2014 the prior passthrough could have forwarded free-form generation content (a prompt, completion, or raw response) to the third-party mirror if a caller ever tagged a span with such an attribute.",
+          "note": "CodeRabbit fix (data minimization): the PostHog LLM-telemetry mirror in trace.py now forwards only an explicit allowlist of scalar llm.* metadata keys (temperature, max_tokens, finish_reason, cost_usd, cached, retry_count, stream) instead of every llm.*-prefixed attribute verbatim — the prior passthrough could have forwarded free-form generation content (a prompt, completion, or raw response) to the third-party mirror if a caller ever tagged a span with such an attribute.",
           "version": "v96"
         },
         {
@@ -17423,10 +17738,20 @@
         "tests/test_harnesses/model_build/test_eval_gates.py",
         "tests/test_models/test_decode_stats_fractions.py"
       ],
-      "version": "v106"
+      "version": "v107"
     },
     "harness.model_build.train": {
       "history": [
+        {
+          "date": "2026-09-22",
+          "note": "Yield at a deterministic optimizer boundary under the unchanged logical endpoint; exact full-state resume preserves scheduler, RNG, data and accumulated update accounting.",
+          "version": "v44"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Recover exact full-state continuation, optimizer/RNG state and checkpoint-bound resume compatibility.",
+          "version": "v43"
+        },
         {
           "date": "2026-08-03",
           "note": "Persist per-family denoising-NLL learning curves so the next-run mixture scheduler can distinguish learning from high-flat noise.",
@@ -17659,7 +17984,7 @@
         "src/slm_training/harnesses/model_build/full_state.py",
         "src/slm_training/harnesses/quality/__init__.py"
       ],
-      "version": "v42"
+      "version": "v44"
     },
     "harness.oracle_scoring_replay": {
       "history": [
@@ -17766,6 +18091,11 @@
     },
     "harness.preference.remine_campaign": {
       "history": [
+        {
+          "date": "2026-09-21",
+          "note": "no-bump: remove duplicate local math import; preference campaign behavior is unchanged.",
+          "version": "v6"
+        },
         {
           "date": "2026-08-20",
           "note": "no-bump: frozen-train reuse skips instead of raising when compile_commands is not one train plus one eval; remine campaign behavior unchanged.",
@@ -18313,9 +18643,9 @@
     "harness.synthesis_plan": {
       "history": [
         {
-          "version": "v7",
+          "date": "2026-08-16",
           "note": "no-bump: retarget cap0_tiny_v2 generator/oracle pins to active harness.train_data v32 so local I10 rebuild_data can execute.",
-          "date": "2026-08-16"
+          "version": "v7"
         },
         {
           "date": "2026-08-16",
@@ -18385,6 +18715,11 @@
     },
     "harness.train_data": {
       "history": [
+        {
+          "date": "2026-09-21",
+          "note": "Restore request-bound readiness repair and learner correction evidence without widening admission gates.",
+          "version": "v35"
+        },
         {
           "date": "2026-09-03",
           "note": "DIAGNOSTIC_ONLY_FAMILIES and TRAINABLE_FAMILIES partition KNOWN_FAMILIES. semantic_counterfactual, semantic_prompt and cue_intervention are CAP-1 causal-probe interventions -- counterfactual pairs and cue-ablated prompts built to measure what a model attends to -- and carry no default SFT mixture weight on purpose: training on the manipulation a probe depends on destroys the probe. The mixture test now checks both directions, so a diagnostic corpus can never silently enter the training mixture.",
@@ -18467,7 +18802,7 @@
         },
         {
           "date": "2026-07-25",
-          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified \u2014 the new module is versioned under harness.experiments.slm379_operator_frames v1",
+          "note": "no-bump: additive self-contained module operator_nl_turns.py (SLM-379 operator NL edit turns); no existing train_data builder, validator, preference, quality, leakage, or publication path is modified — the new module is versioned under harness.experiments.slm379_operator_frames v1",
           "version": "v19"
         },
         {
@@ -18590,7 +18925,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v34"
+      "version": "v35"
     },
     "harness_core.evidence_bundle": {
       "history": [
@@ -18757,7 +19092,7 @@
       "history": [
         {
           "date": "2026-08-03",
-          "note": "no-bump: Round 7 follow-up docs \u2014 record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged.",
+          "note": "no-bump: Round 7 follow-up docs — record the landed finalize_ms/attributed_fraction telemetry and HEAD re-validation numbers in runtime-performance.md; matrix behavior unchanged.",
           "version": "v9"
         },
         {
@@ -19661,6 +19996,21 @@
     "model.twotower": {
       "history": [
         {
+          "date": "2026-09-22",
+          "note": "Emit zero-forward singleton grammar traces before deterministic commit and expose only the current legal-domain logits to optional distillation diagnostics.",
+          "version": "v332"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "Expose bounded optimizer-update invocations through the canonical training CLI without changing the locked logical training endpoint or allowing inference-only resume.",
+          "version": "v331"
+        },
+        {
+          "date": "2026-09-21",
+          "note": "Use shared training record admission and expose exact full-state continuation through train_model. Shared quality helper excludes numeric identifiers from component multiplicities; dependent prompt requirements and meaningful-program metrics also versioned.",
+          "version": "v330"
+        },
+        {
           "date": "2026-09-04",
           "note": "no-bump: moved all 21 plain @staticmethod bodies out of TwoTowerModel into twotower_schema / _semantic_roles / _semantic_plan / _slots / _surface, leaving one-line `_name = staticmethod(name)` aliases so both TwoTowerModel._name(...) and self._name(...) resolve exactly as before. No method touching self was moved and no signature changed; tests/test_models is unchanged at 1,278 passing.",
           "version": "v329"
@@ -19762,12 +20112,12 @@
         },
         {
           "date": "2026-08-10",
-          "note": "PGS-E01 (SLM-504): default-off goal_support_mode off/diagnostic/certified on compiler-tree decode \u2014 GoalSupportProvider construction from structured GenerationRequest inputs, diagnostic exact_goal_closure observation without forest mutation, certified goal_support_certified_prune via exact_goal_closure, factory/runtime override + CLI wiring; off remains byte-identical.",
+          "note": "PGS-E01 (SLM-504): default-off goal_support_mode off/diagnostic/certified on compiler-tree decode — GoalSupportProvider construction from structured GenerationRequest inputs, diagnostic exact_goal_closure observation without forest mutation, certified goal_support_certified_prune via exact_goal_closure, factory/runtime override + CLI wiring; off remains byte-identical.",
           "version": "v314"
         },
         {
           "date": "2026-08-09",
-          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers \u2014 solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough",
+          "note": "darkfactory unit M: solver-energy reranker + legal-edit hazard (flow) ranking levers — solver_energy_decode_weight / legal_edit_hazard_{loss,decode}_weight config fields, solver-energy / legal-edit-hazard structural_aux_head_profiles with isolated_aux_init prebuild parity, compiler-decision-seam features (pooled ctx + hidden + candidate embedding, symbol-only), pairwise energy and multi-positive-mass hazard objectives on the detached-auxiliary path, tanh-clamped fail-closed decode biases in both _select_compiler_path branches after the untouched singleton bypass; factory/train_model passthrough",
           "version": "v313"
         },
         {
@@ -21719,7 +22069,7 @@
         "src/slm_training/dsl/grammar/fastpath/trust_train.py",
         "tests/test_dsl/test_grammar_fastpath.py"
       ],
-      "version": "v329"
+      "version": "v332"
     },
     "ops.vocab": {
       "history": [
@@ -21758,7 +22108,7 @@
       "history": [
         {
           "date": "2026-08-10",
-          "note": "CodeRabbit fixes: default_distinct_id no longer falls back to the machine hostname (can reveal infrastructure naming or a person's machine) \u2014 falls straight to the fixed literal 'slm-training'; close() now bounds the worker-thread join and the final drain by one shared absolute deadline (including the flush-lock acquisition itself, not just the loop body), so a full queue behind a slow transport can no longer delay process shutdown past the requested timeout, with a deadline-exceeded drop counted in stats.dropped.",
+          "note": "CodeRabbit fixes: default_distinct_id no longer falls back to the machine hostname (can reveal infrastructure naming or a person's machine) — falls straight to the fixed literal 'slm-training'; close() now bounds the worker-thread join and the final drain by one shared absolute deadline (including the flush-lock acquisition itself, not just the loop body), so a full queue behind a slow transport can no longer delay process shutdown past the requested timeout, with a deadline-exceeded drop counted in stats.dropped.",
           "version": "v2"
         },
         {

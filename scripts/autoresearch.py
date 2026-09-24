@@ -107,49 +107,16 @@ def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _validate_continuous_source_refs(upstream: str, integration: str) -> None:
-    resolved_upstream = _git(
-        "rev-parse", "--verify", f"{upstream}^{{commit}}"
-    ).stdout.strip()
-    resolved_integration = _git(
-        "rev-parse", "--verify", f"{integration}^{{commit}}"
-    ).stdout.strip()
-    current_upstream = _git(
-        "rev-parse", "--verify", "origin/main^{commit}"
-    ).stdout.strip()
-    current_head = _git("rev-parse", "--verify", "HEAD^{commit}").stdout.strip()
-    if resolved_integration != current_head:
-        raise ValueError("integration_commit must be the current checked-out HEAD")
-    main_in_head = (
-        _git(
-            "merge-base",
-            "--is-ancestor",
-            current_upstream,
-            current_head,
-            check=False,
-        ).returncode
-        == 0
-    )
-    if main_in_head:
-        if resolved_upstream != current_upstream:
-            raise ValueError(
-                "upstream_commit is stale; fetch origin/main before the cycle"
-            )
-        if _git(
-            "merge-base",
-            "--is-ancestor",
-            resolved_upstream,
-            resolved_integration,
-            check=False,
-        ).returncode:
-            raise ValueError("integration_commit does not contain upstream_commit")
-    elif resolved_upstream != current_head:
-        raise ValueError("integration_commit does not contain upstream_commit")
+def _validate_continuous_source_refs(upstream: str, integration: str) -> dict | None:
+    from slm_training.harness_core.execution_release import validate_source_refs
+
+    return validate_source_refs(ROOT, upstream, integration, git=_git)
 
 
 def _validate_continuous_commits(upstream: str, integration: str) -> None:
-    _validate_continuous_source_refs(upstream, integration)
-    if _git("status", "--porcelain", "--untracked-files=no").stdout.strip():
+    frozen = _validate_continuous_source_refs(upstream, integration)
+    if (frozen["code_dirty"] if frozen is not None
+            else _git("status", "--porcelain", "--untracked-files=no").stdout.strip()):
         raise ValueError("continuous cycle requires a clean tracked worktree")
 
 
@@ -1493,7 +1460,6 @@ def _baseline_primary_from_store(
     metrics that already name a baseline. Absolute candidate scores alone are
     never treated as the baseline of themselves.
     """
-    import math
 
     from slm_training.autoresearch.hillclimb import resolve_baseline_primary
 

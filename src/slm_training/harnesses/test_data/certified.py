@@ -73,6 +73,8 @@ from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.train_data.split_policy import RootFamilySplitPolicyV1
 from slm_training.versioning import build_version_stamp
 
+from slm_training.data.splits import _FAMILY_LINK_KEYS, _UnionFind, root_family_index as root_family_index
+
 CERTIFIED_SCHEMA = "certified_eval_candidates/v1"
 CERTIFIED_CORPUS_ID = "openui_verified_v1"
 CERTIFIED_TRAIN_BUCKET_ID = "openui_verified_train_v2"
@@ -86,8 +88,6 @@ SPLIT_FOR_SUITE: Mapping[str, str] = {v: k for k, v in SUITE_FOR_SPLIT.items()}
 DEFAULT_SEED = 0
 _STAMP_COMPONENT = "data.test_build"
 
-# Family links recorded on certified records, in precedence order.
-_FAMILY_LINK_KEYS = ("root_parent_id", "split_group_id", "parent_id")
 # Certified meta carried onto eval records (the rest is build-time provenance).
 _EVAL_META_KEYS = (
     "split_group_id",
@@ -99,79 +99,6 @@ _EVAL_META_KEYS = (
 )
 
 
-class _UnionFind:
-    def __init__(self) -> None:
-        self._parent: dict[str, str] = {}
-
-    def find(self, key: str) -> str:
-        parent = self._parent
-        parent.setdefault(key, key)
-        root = key
-        while parent[root] != root:
-            root = parent[root]
-        while parent[key] != root:
-            parent[key], key = root, parent[key]
-        return root
-
-    def union(self, left: str, right: str) -> None:
-        root_left, root_right = self.find(left), self.find(right)
-        if root_left != root_right:
-            # Deterministic: the lexicographically smaller root survives.
-            if root_right < root_left:
-                root_left, root_right = root_right, root_left
-            self._parent[root_right] = root_left
-
-
-def _family_links(record: ExampleRecord) -> list[str]:
-    meta = record.meta or {}
-    links = [record.id]
-    for key in _FAMILY_LINK_KEYS:
-        value = meta.get(key)
-        if value:
-            links.append(str(value))
-    return links
-
-
-def root_family_index(
-    records: Iterable[ExampleRecord], *, close_under_program_text: bool = True
-) -> dict[str, str]:
-    """Map every record id to its canonical root-family id.
-
-    Families are the connected components of the id / root_parent_id /
-    split_group_id / parent_id link graph, additionally closed under identical
-    normalized program text when ``close_under_program_text`` is set (the
-    default; see the module docstring for the evidence). The canonical id is
-    the smallest ``root_parent_id`` seen in the component, else the smallest
-    record id.
-    """
-
-    rows = list(records)
-    forest = _UnionFind()
-    for record in rows:
-        links = _family_links(record)
-        for link in links[1:]:
-            forest.union(links[0], link)
-    if close_under_program_text:
-        first_with_program: dict[str, str] = {}
-        for record in rows:
-            program = fingerprint_openui(record.openui)
-            anchor = first_with_program.setdefault(program, record.id)
-            if anchor != record.id:
-                forest.union(anchor, record.id)
-    roots: dict[str, set[str]] = defaultdict(set)
-    ids: dict[str, set[str]] = defaultdict(set)
-    for record in rows:
-        component = forest.find(record.id)
-        ids[component].add(record.id)
-        root = (record.meta or {}).get("root_parent_id")
-        if root:
-            roots[component].add(str(root))
-    canonical: dict[str, str] = {}
-    for component, members in ids.items():
-        family = min(roots[component]) if roots[component] else min(members)
-        for member in members:
-            canonical[member] = family
-    return canonical
 
 
 def bucket_of(family_id: str, policy: RootFamilySplitPolicyV1 | None = None) -> int:
@@ -238,34 +165,10 @@ _ROLE_SAFE_OUTPUT_KIND = "document"
 
 
 def _assert_certified_role_safe(record: ExampleRecord) -> None:
-    """Raise unless the record satisfies every contract the trainer applies.
+    """Use the trainer's canonical record admission, not a duplicate list."""
+    from slm_training.data.record_admission import assert_training_record
 
-    ``TwoTowerModel.from_records`` asserts four record contracts before it
-    builds anything and raises on the first violation, which takes the whole
-    training arm down. Admission must apply the same four or it admits records
-    the trainer refuses: measured on 2026-09-02, the certified bucket carried
-    29 programs with a placeholder in a non-content property and a further set
-    of prompts carrying semantic role labels, and every screening arm exited
-    non-zero. The contracts themselves are never relaxed — a failing record is
-    refused at admission and recorded in the rejected ledger like any other
-    refusal.
-
-    Kept deliberately in lock-step with ``from_records``: if that list grows,
-    this one grows with it.
-    """
-
-    from slm_training.data.contract import (
-        assert_canonical_template_markers,
-        assert_no_template_semantic_labels,
-    )
-    from slm_training.dsl.analysis.templatize import assert_role_safe_output
-    from slm_training.dsl.language_contract import assert_symbol_only_output
-
-    kind = record.target_kind or _ROLE_SAFE_OUTPUT_KIND
-    assert_no_template_semantic_labels(record.prompt, record.design_md)
-    assert_canonical_template_markers(record)
-    assert_symbol_only_output(record.openui, output_kind=kind)
-    assert_role_safe_output(record.openui, output_kind=kind)
+    assert_training_record(record)
 
 
 def partition_certified_corpus(

@@ -225,7 +225,8 @@ def verify_candidate(
         )
     )
     require_routine_scope(base, candidate, changed, request.allowed_paths,
-                          request.semantics_preserving_paths)
+                          request.semantics_preserving_paths,
+                          request_digest=request.request_digest)
     try:
         return _verify_observations(request, base, candidate, changed, runtime_roots, deadline)
     finally:

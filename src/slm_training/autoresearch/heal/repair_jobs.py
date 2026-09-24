@@ -9,24 +9,41 @@ from slm_training.autoresearch.heal.repair_contracts import RepairRequest, Verif
 from slm_training.lineage.records import canonical_json
 
 
-def logical_job_digest(request: RepairRequest, config_digest: str) -> str:
+def logical_job_digest(
+    request: RepairRequest, config_digest: str, *, normalize_expiry: bool = True,
+) -> str:
     payload = request.model_dump(mode="json", exclude={"attempt_id", "fence", "parent_event"})
     payload["blocker"].pop("evidence")
+    if normalize_expiry and payload.get("grant") is not None:
+        payload["grant"].pop("expires_at", None)
     return hashlib.sha256(canonical_json({"request": payload, "config": config_digest}).encode()).hexdigest()
 
 
-def resumable_proposal(journal, request: RepairRequest, config_digest: str):
+def resumable_proposal(
+    journal, request: RepairRequest, config_digest: str,
+    *, legacy_config_digest: str | None = None,
+):
     """Read actual verified history and content-bound objects, never latest files."""
     job = logical_job_digest(request, config_digest)
     events = journal.verify_event_chain()
     for event in reversed(events):
-        if event["event_type"] != "repair_job_attempt" or event.get("detail", {}).get("job_digest") != job:
+        if event["event_type"] != "repair_job_attempt":
             continue
         digest = event["detail"]["request_digest"]
         path = journal.root / "artifacts/repair_requests" / (digest + ".json")
         original = RepairRequest.model_validate_json(path.read_text())
-        if original.digest() != digest or logical_job_digest(original, config_digest) != job:
+        if original.digest() != digest:
             raise ValueError("repair_job_request_integrity_failure")
+        event_job = event.get("detail", {}).get("job_digest")
+        if event_job != job and (
+            legacy_config_digest is None
+            or event_job != logical_job_digest(
+                original, legacy_config_digest, normalize_expiry=False
+            )
+        ):
+            continue
+        if logical_job_digest(original, config_digest) != job:
+            continue
         result = _prior_result(journal, original, events)
         if result and result.status == "waiting_verification" and result.proposal is not None:
             return original, result
@@ -46,4 +63,3 @@ def bind_verification(journal, request, proposal, context) -> VerificationBindin
     journal.append_event("repair_verification_bound", idempotency_key="verification-binding:"+binding.digest(),
                         detail=binding.model_dump(mode="json"))
     return binding
-

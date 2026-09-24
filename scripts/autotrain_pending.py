@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from slm_training.autoresearch.storage import CampaignStore, _sha
+from slm_training.autoresearch.heal.repair_acceptance import source_verification_activity_id
 from slm_training.harness_core.activity_contract import ActivityOutcome, WakeCondition
 
 
@@ -15,6 +16,23 @@ def validate_pending(payload):
     if not payload.get("reason") or payload.get("measurement_complete") is not False:
         raise ValueError("driver pending requires an unmet predicate, not a measurement")
     return outcome, WakeCondition.model_validate(payload["wake"])
+
+
+def recover_driver_request(runtime, request):
+    """Newly observed campaign IDs cannot refill an interrupted driver's grant."""
+    if request["operation"] != "driver":
+        return request
+    states = runtime.snapshot()
+    stable = {k: v for k, v in request.items() if k != "predecessor_campaign_id"}
+    for event in reversed(runtime.store.verify_event_chain()):
+        if event["event_type"] != "operation_repair_requested":
+            continue
+        state = states.get(event["experiment_id"])
+        original = event["detail"]["request"]
+        if (state is not None and state.status not in {"succeeded", "cancelled"}
+                and {k: v for k, v in original.items() if k != "predecessor_campaign_id"} == stable):
+            return original
+    return request
 
 
 def publish_pending(root: Path, loop_id: str, payload: dict) -> None:
@@ -116,13 +134,15 @@ def resolve_screening_matrix(matrix, matrix_inputs, deficit, *, context):
     frozen = {"matrix": selected, "cwd": str(cwd), "loop_id": context["loop_id"],
               "policy": policy.identity_dict(), "eval_version": matrix_inputs["eval_version"],
               "expected_selected_experiment_ids": selected["selected_experiment_ids"]}
-    if set(deficit.get("binding_constraints") or ()) != {"suite_volume"}:
+    if deficit is not None and set(deficit.get("binding_constraints") or ()) != {"suite_volume"}:
         return matrix, screening_constraint_pending(deficit, inputs=frozen, root=root)
-    args = {"cwd": cwd, "root": root, "loop_id": context["loop_id"], "minimum": deficit["n_min"]}
+    args = {"cwd": cwd, "root": root, "loop_id": context["loop_id"], "minimum": deficit["n_min"] if deficit is not None else context["minimum"]}
     ready = resolve_matrix_readiness(selected, **args)
     if ready["status"] != "ready":
         return matrix, data_pending(ready)
     version = ready["eval_version"]
+    if deficit is None and version == matrix_inputs["eval_version"]:
+        return matrix, None  # The selected matrix itself passed actual preparation.
     rebuilt = driver._matrix(**{**matrix_inputs, "eval_version": version})
     n, report = driver._screening_n_report(policy, eval_version=version)
     remaining = screening_deficit_report(n, report, driver._screening_suite_records(version),
@@ -133,18 +153,28 @@ def resolve_screening_matrix(matrix, matrix_inputs, deficit, *, context):
         remaining = {"binding_constraints": ["unknown"], "reason": "successor_changed_scheduled_arms"}
     if remaining is not None:
         return matrix, screening_constraint_pending(remaining, inputs=frozen, root=root)
-    final_ready = resolve_matrix_readiness(final, **args)
-    if final_ready["status"] != "ready":
-        return matrix, data_pending(final_ready)
-    if final_ready["eval_version"] != version:
-        return matrix, screening_constraint_pending({"binding_constraints": ["unknown"],
-            "reason": "successor_readiness_changed_again"}, inputs=frozen, root=root)
+    final_ready, pending = _verify_screening_successor(final, args, frozen)
+    if pending is not None:
+        return matrix, pending
     resolved = context["resolved_data"]
     resolved["eval_version"] = version
     resolved["successions"].append({"kind": "eval", "original": matrix_inputs["eval_version"],
         "successor": version, "readiness": ready, "resolved_readiness": final_ready,
         "selected_experiment_ids": selected["selected_experiment_ids"]})
     return rebuilt, None
+
+
+def _verify_screening_successor(matrix, args, frozen):
+    """A rebuilt matrix must prepare successfully against that exact successor."""
+    from scripts.autotrain_readiness import resolve_matrix_readiness
+
+    ready = resolve_matrix_readiness(matrix, **args)
+    if ready["status"] != "ready":
+        return ready, data_pending(ready)
+    if ready["eval_version"] != frozen["eval_version"]:
+        return ready, screening_constraint_pending({"binding_constraints": ["unknown"],
+            "reason": "successor_readiness_changed_again"}, inputs=frozen, root=args["root"])
+    return ready, None
 
 
 def unresolved_driver_pending(runtime):
@@ -253,12 +283,16 @@ def verification_wait(runtime, lease, payload):
         raise ValueError("unknown source verification dependency")
     wake = WakeCondition.model_validate(dependency["wake"])
     identity = dependency.get("verification_identity")
-    if identity is not None and (wake.identity_digest != identity
-                                or dependency.get("activity_id") != "source-verification-" + identity):
+    if identity is not None and (
+        wake.identity_digest != identity
+        or dependency.get("activity_id")
+        != source_verification_activity_id(identity, dependency.get("grant"))
+    ):
         raise ValueError("source verification dependency identity mismatch")
-    artifact = runtime.store.write_artifact("source_verification_requests", dependency)
-    runtime.store.append_event("source_verification_requested", experiment_id=lease.activity_id,
-        artifact_sha256=artifact.stem, detail={"dependency_digest": artifact.stem,
-                                             "repair_activity_id": lease.activity_id},
-        idempotency_key=f"source-verification:{lease.activity_id}:{artifact.stem}")
+    with runtime.publication(lease):
+        artifact = runtime.store.write_artifact("source_verification_requests", dependency)
+        runtime.store.append_event("source_verification_requested", experiment_id=lease.activity_id,
+            artifact_sha256=artifact.stem, detail={"dependency_digest": artifact.stem,
+                                                 "repair_activity_id": lease.activity_id},
+            idempotency_key=f"source-verification:{lease.activity_id}:{artifact.stem}")
     return (ActivityOutcome.DEPENDENCY if identity and dependency.get("grant") else ActivityOutcome.CAPABILITY, wake)

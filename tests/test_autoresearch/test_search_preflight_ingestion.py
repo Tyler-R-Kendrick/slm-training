@@ -260,3 +260,64 @@ def test_changed_current_selection_does_not_read_old_credit(production_inputs):
     assert saved["design"]["bindings"]["endpoint"]["loss_measurement"]["selection"][
         "selected_record_ids"
     ] == [row.id for row in rows]
+
+
+def test_explicit_loss_probe_matches_real_producer_and_canonical_selection(production_inputs, monkeypatch):
+    from types import SimpleNamespace
+    from scripts import autotrain_search as search, run_autotrain_continuous as driver
+    from slm_training.evals.denoising_nll import DenoisingNLLConfig
+    from slm_training.evals.loss_suites import evaluate_loss_suites
+
+    store, by_id, template, eval_root, model = production_inputs
+    probe = {"limit": 2, "mask_seed": 7301}
+    pair = lock_driver_designs(store, by_id, "control", ["candidate"],
+        endpoint={"kind": "denoising_loss", "loss_probe": probe},
+        manifest_templates={"candidate": template}, search_slugs={"candidate": "candidate"})["candidate"]
+    manifest = store.load_experiment_campaign("candidate").manifest
+    measurement = pair["design"]["bindings"]["endpoint"]["loss_measurement"]
+    assert len(measurement["selection"]["selected_record_ids"]) == 2
+    assert pair["randomness"]["loss_mask_seed"] == 7301
+    attempts = [begin_attempt(store, pair, role) for role in ("control", "candidate")]
+    report = evaluate_loss_suites(model, eval_root, base_suite="smoke", ood_suite="smoke", limit=2,
+        nll_config=DenoisingNLLConfig(mask_seed=7301, compute_legal_support=False))
+    assert report["selection"] == measurement["selection"]
+    assert report["estimator_id"] == measurement["estimator_id"]
+    effect = ingest_loss_reports(store, manifest, artifact_digest=content_sha,
+        lineage={"design_sha256": persist_pair(store, pair).stem,
+                 "control_attempt_id": attempts[0]["attempt_id"],
+                 "candidate_attempt_id": attempts[1]["attempt_id"]}, control=report, candidate=report)
+    assert effect.complete and effect.benefit == 0
+    specs = [ExperimentSpec.model_validate_json(path.read_text()) for path in by_id.values()]
+    owner = SimpleNamespace(_manifest=lambda *a, **k: template,
+        _slug_from_candidate_id=lambda eid: eid, _evidence_ranked_slug=driver._evidence_ranked_slug)
+    context = {"integration": template.source_commit, "policy": None, "loss_probe": probe}
+    _, identity, _, _ = search._prospective(store, *specs, owner, context)
+    assert identity == effect.identity
+    _, default_identity, _, _ = search._prospective(store, *specs, owner,
+        {"integration": template.source_commit, "policy": None})
+    assert default_identity != identity
+    matrix = {"campaign_id": store.campaign_id, "recommended_experiment_id": "candidate",
+              "hypotheses": [{"experiment": spec.model_dump(mode="json")} for spec in specs]}
+    monkeypatch.setattr(search, "loop_campaigns", lambda *a, **k: [store.load_campaign()])
+    chosen = search.choose_matrix(matrix, owner, root=store.root.parent,
+        loop_id=store.load_campaign().loop_id, integration=template.source_commit,
+        policy=None, loss_probe=probe)
+    assert chosen["recommended_experiment_id"] == "candidate"
+    event = [e for e in store.verify_event_chain() if e["event_type"] == "search_selection_observed"][-1]
+    selection = json.loads((store.root/"artifacts/search_selections"/f"{event['artifact_sha256']}.json").read_text())
+    assert selection["effect_count"] == 1
+
+
+def test_explicit_loss_probe_rejects_invalid_geometry(production_inputs):
+    from slm_training.autoresearch.preflight.loss_binding import bind_endpoint, screening_loss_binding
+
+    store, by_id, _, _, _ = production_inputs
+    spec = ExperimentSpec.model_validate_json(by_id["control"].read_text())
+    commands = engine.compile_commands(store.load_campaign(), spec, output_root=store.root.parent)
+    for invalid in ({"limit": 0}, {"limit": True}, {"mask_seed": -1}, {"mask_seed": True}):
+        with pytest.raises(ValueError, match="treatment_design:invalid_loss"):
+            screening_loss_binding(commands, **invalid)
+    for invalid in ([], False, {"undeclared_seed": 7301}):
+        with pytest.raises(ValueError, match="invalid_explicit_loss_probe"):
+            bind_endpoint([{"commands": commands}] * 2,
+                          {"loss_probe": invalid}, "diagnostic")
