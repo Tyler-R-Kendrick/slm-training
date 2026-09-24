@@ -12766,7 +12766,14 @@ def test_attach_screening_eval_nll_runs_on_failed_quality_eval(
     )
     calls: list[tuple[Path, str]] = []
 
-    def fake_run(run_dir: Path, *, test_dir: Path, checkpoint: Path, eval_version: str):
+    def fake_run(
+        run_dir: Path,
+        *,
+        test_dir: Path,
+        checkpoint: Path,
+        eval_version: str,
+        attempt_id: str | None = None,
+    ):
         calls.append((Path(test_dir), eval_version))
         return {"eval_nll": 1.25, "records": {"a": 1.0, "b": 1.5}}
 
@@ -12784,10 +12791,14 @@ def test_attach_screening_eval_nll_runs_on_failed_quality_eval(
     _mod._run_arm_eval_nll(run, eval_nll=1.25, records={"a": 1.0, "b": 1.5})
     assert _mod._attach_screening_eval_nll(run, exit_code=124) is None
     # Driver arm loop no longer gates NLL on exit code 0.
-    source = _SCRIPT.read_text(encoding="utf-8")
+    source = (
+        Path(__file__).resolve().parents[2]
+        / "scripts"
+        / "autotrain_cycle_reconcile.py"
+    ).read_text(encoding="utf-8")
     assert "if int(code) == 0:\n            _attach_screening_eval_nll" not in source
     assert (
-        '_attach_screening_eval_nll(camp_dir / "runs" / eid, exit_code=int(code))'
+        'continuous._attach_screening_eval_nll(\n        journal.store.root / "runs" / eid, exit_code=code'
         in source
     )
 
