@@ -34,7 +34,7 @@ def test_release_successor_reuses_only_unspent_budget_and_attempts(tmp_path):
             capabilities={"local_process"}, activity_id=old["activity_id"]
         )
         assert lease is not None
-        runtime.finish(lease, outcome=ActivityOutcome.FAILED, spent_seconds=12)
+        runtime.finish(lease, outcome=ActivityOutcome.RETRY, spent_seconds=12)
 
         current = {
             **old,
