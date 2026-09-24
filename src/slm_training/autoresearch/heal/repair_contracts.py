@@ -91,10 +91,12 @@ class RepairGrant(RepairModel):
         return hashlib.sha256(canonical_json(payload).encode()).hexdigest()
 
     @model_serializer(mode="wrap")
-    def omit_absent_endpoint(self, handler):
+    def omit_absent_optional_grant_fields(self, handler):
         value = handler(self)
         if self.provider_endpoint is None:
             value.pop("provider_endpoint", None)
+        if self.successor_of is None:
+            value.pop("successor_of", None)
         return value
 
 

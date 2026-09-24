@@ -1,6 +1,7 @@
 """Grant refreshes cannot reset repair attempt or time accounting."""
 
 import hashlib
+import json
 import time
 
 import pytest
@@ -174,6 +175,17 @@ def test_unidentified_legacy_grant_reservation_is_charged(repair_request, journa
         )
         == 19
     )
+
+
+def test_legacy_grant_serialization_preserves_request_identity(repair_request):
+    from slm_training.autoresearch.heal.repair_contracts import RepairGrant
+
+    grant = repair_request.grant
+    legacy = grant.model_dump(mode="json")
+    assert "successor_of" not in legacy
+    restored = RepairGrant.model_validate_json(json.dumps(legacy))
+    assert restored.digest() == grant.digest()
+    assert restored.accounting_digest() == grant.accounting_digest()
 
 
 def test_successor_carries_predecessor_reservations_and_adds_only_its_budget(
