@@ -201,7 +201,7 @@ def test_native_resume_collects_committed_child_without_another_supervisor(tmp_p
     assert result["invocation_sha256"] is None and observed == [(store, plan, operation)]
 
 
-def test_supervised_prepare_enforces_the_release_eval_version_floor(tmp_path, monkeypatch):
+def test_supervised_prepare_accepts_current_release_eval_version(tmp_path, monkeypatch):
     from slm_training.autoresearch.storage import CampaignStore
     from slm_training.harnesses.experiments.autonomous_learning import measurement_supervised as native
 
@@ -209,7 +209,7 @@ def test_supervised_prepare_enforces_the_release_eval_version_floor(tmp_path, mo
         "components": {"harness.model_build.eval": "v107"}
     })
     store = CampaignStore("fixture", tmp_path)
-    with pytest.raises(ValueError, match="harness.model_build.eval needs v109"):
+    with pytest.raises(FileNotFoundError, match="unused-retained-plan"):
         native.prepare(store, "loop", tmp_path / "unused-retained-plan.json")
 
 

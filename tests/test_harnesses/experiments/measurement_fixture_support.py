@@ -28,8 +28,8 @@ def prepared(tmp_path, monkeypatch):
     }
     identity = {
         "components": {
-            "harness.model_build.eval": "v109",
-            "evals.scoring": "v28",
+            "harness.model_build.eval": "v107",
+            "evals.scoring": "v27",
             "harness.experiments": "v169",
         }
     }

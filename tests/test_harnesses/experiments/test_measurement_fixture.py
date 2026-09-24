@@ -65,13 +65,13 @@ def test_compiled_commands_lock_current_endpoint_and_preserve_full_selection(pre
 @pytest.mark.parametrize(
     "component,version",
     [
-        ("harness.model_build.eval", "v108"),
+        ("harness.model_build.eval", "v106"),
     ],
 )
 def test_old_version_cannot_start_new_measurement(component, version):
     components = {
-        "harness.model_build.eval": "v109",
-        "evals.scoring": "v28",
+        "harness.model_build.eval": "v107",
+        "evals.scoring": "v27",
         "harness.experiments": "v169",
     }
     components[component] = version
@@ -83,7 +83,7 @@ def test_current_measurement_does_not_wait_for_unrelated_release_composition():
     fixture.require_release_versions(
         {
             "components": {
-                "harness.model_build.eval": "v109",
+                "harness.model_build.eval": "v107",
                 "evals.scoring": "v27",
                 "harness.experiments": "v168",
             }

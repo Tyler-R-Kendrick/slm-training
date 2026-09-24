@@ -8260,6 +8260,11 @@
     "harness.experiments": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Align supervised measurement readiness with the canonical evaluator history: accept v107, which binds measurement identity and complete scoreboards, and reject stale v106 instead of requiring nonexistent v109.",
+          "version": "v170"
+        },
+        {
           "date": "2026-09-22",
           "note": "Bind loss remeasurement to actual producer attempt and committed command cursor report digest; preserve retry ingestion guards and prior source evidence.",
           "version": "v169"
@@ -9340,7 +9345,7 @@
         "tests/test_scripts/test_run_goal_support_domain_adequacy.py",
         "scripts/evaluate_loss_suites.py"
       ],
-      "version": "v169"
+      "version": "v170"
     },
     "harness.experiments.anti_e237_semantic_factor_frontier": {
       "history": [

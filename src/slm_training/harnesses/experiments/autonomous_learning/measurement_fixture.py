@@ -66,7 +66,10 @@ def source_identity():
 
 
 def require_release_versions(identity):
-    for component, minimum in (("harness.model_build.eval", 109),):
+    # v107 is the current canonical evaluator contract: locked measurement
+    # identity and complete scoreboards. v109 was a stale pre-reconciliation
+    # floor and no longer exists in the component history.
+    for component, minimum in (("harness.model_build.eval", 107),):
         version = identity["components"][component]
         if not version.startswith("v") or int(version[1:]) < minimum:
             raise ValueError(
