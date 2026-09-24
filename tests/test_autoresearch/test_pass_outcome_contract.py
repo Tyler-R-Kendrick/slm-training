@@ -1,173 +1,27 @@
-"""Contract tests: the heal package and the driver must agree on vocabulary.
-
-The heal package writes receipts; the driver's pass classifier reads them and
-decides whether a pass made progress. Nothing links the two but string
-literals, and a string that stops matching does not raise â€” it falls through a
-``.get`` default. That is not a hypothetical: ``HealOutcome`` carries both
-``verify_failed`` and ``postcondition_failed``, the driver mapped only the
-first, and so ``postcondition_failed`` â€” the verdict the data-rebuild playbook
-writes when its record-count postcondition does *not* hold, added precisely to
-make a no-op data heal visible â€” scored as the generic ``heal_attempted``.
-The check that exists to expose vacuous heals was itself being flattened.
-
-These tests pin each cross-module agreement as a totality claim rather than as
-a list of examples, so the next added outcome, action kind or blocker class
-fails here instead of silently landing in a default bucket.
-"""
-
-from __future__ import annotations
-
-import importlib.util
-import sys
-import typing
-from pathlib import Path
-from typing import Any
-
-import pytest
-
-pytestmark = pytest.mark.contract
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-
-def _driver() -> Any:
-    if "run_autotrain_continuous" in sys.modules:
-        return sys.modules["run_autotrain_continuous"]
-    path = REPO_ROOT / "scripts" / "run_autotrain_continuous.py"
-    spec = importlib.util.spec_from_file_location("run_autotrain_continuous", path)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["run_autotrain_continuous"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-def _heal_outcomes() -> frozenset[str]:
-    from slm_training.autoresearch.heal import schemas
-
-    return frozenset(typing.get_args(schemas.HealOutcome))
-
-
-# ---------------------------------------------------------------------------
-# heal receipts -> driver pass classification
-# ---------------------------------------------------------------------------
-
-
-def test_every_heal_outcome_has_a_declared_pass_classification() -> None:
-    """Totality. A missing entry hides itself in the ``heal_attempted`` default."""
-    mapped = set(_driver()._PASS_OUTCOME_BY_HEAL_OUTCOME)
-    missing = _heal_outcomes() - mapped
-
-    assert not missing, (
-        f"heal outcomes with no declared pass classification: {sorted(missing)} â€” "
-        "each would score as the generic 'heal_attempted' without anyone "
-        "deciding that it should"
-    )
-
-
-def test_the_pass_map_declares_no_outcome_the_heal_package_cannot_write() -> None:
-    """The other direction: a stale key is a rule that can never fire."""
-    stale = set(_driver()._PASS_OUTCOME_BY_HEAL_OUTCOME) - _heal_outcomes()
-
-    assert not stale, f"pass map keys that are not HealOutcome members: {sorted(stale)}"
-
-
-def test_both_failed_proof_obligations_score_as_a_failed_postcondition() -> None:
-    """A no-op heal is a counted failure however the verdict was reached.
-
-    ``verify_failed`` comes from the subprocess verify probe and
-    ``postcondition_failed`` from an in-process playbook's count check. They
-    are the same fact about the pass, and flattening either one into
-    ``heal_attempted`` is how a heal that changed nothing reads as work done.
-    """
-    mapping = _driver()._PASS_OUTCOME_BY_HEAL_OUTCOME
-
-    assert mapping["verify_failed"] == "heal_postcondition_failed"
-    assert mapping["postcondition_failed"] == "heal_postcondition_failed"
-
-
-def test_only_a_verified_heal_scores_as_progress() -> None:
-    """Exactly one outcome may read as a successful heal."""
-    mapping = _driver()._PASS_OUTCOME_BY_HEAL_OUTCOME
-    progress = {
-        outcome
-        for outcome, pass_outcome in mapping.items()
-        if pass_outcome == "verified_heal"
-    }
-
-    assert progress == {"healed"}
-
-
-def test_the_data_rebuild_playbook_writes_a_mapped_outcome() -> None:
-    """The producer side of the drift: pin the literal the playbook emits.
-
-    Reading the constant from the driver proves the consumer is total; this
-    proves the producer's verdict is one of the outcomes it is total over.
-    """
-    from slm_training.autoresearch.heal.playbooks import data_rebuild
-
-    source = Path(data_rebuild.__file__).read_text(encoding="utf-8")
-    assert 'outcome = "postcondition_failed"' in source
-    assert "postcondition_failed" in _driver()._PASS_OUTCOME_BY_HEAL_OUTCOME
-
-
-# ---------------------------------------------------------------------------
-# heal classification -> playbook coverage
-# ---------------------------------------------------------------------------
-
-
-def test_every_blocker_class_a_playbook_handles_is_a_real_class() -> None:
-    """A playbook declaring a class nobody produces can never be selected."""
-    from slm_training.autoresearch.heal import discovered_playbooks, schemas
-
-    classes = frozenset(typing.get_args(schemas.BlockerClass))
-    for playbook in discovered_playbooks():
-        unknown = set(playbook.handles) - classes
-        assert not unknown, (
-            f"{playbook.playbook_id} handles {sorted(unknown)}, which "
-            "classify_blocker never returns"
-        )
-
-
-def test_classification_is_total_over_its_own_class_vocabulary() -> None:
-    """Every classifier answer is a declared class, for any input."""
-    from slm_training.autoresearch.heal import schemas
-    from slm_training.autoresearch.heal.classify import classify_blocker
-
-    classes = frozenset(typing.get_args(schemas.BlockerClass))
-    probes = [
-        ("repair_harness", "harness_failure:control:experiment_failed"),
-        ("repair_harness", "npm ci must run: agentv sdk is unavailable"),
-        ("rebuild_data", "records_after == records_before"),
-        ("repair_formal", "lake build failed"),
-        ("stop_campaign", "paid gpu requires user authority"),
-        ("", ""),
-        ("nonsense-kind", "nonsense reason"),
-    ]
-    for kind, reason in probes:
-        assert classify_blocker(kind, reason) in classes, (kind, reason)
-
-
-# ---------------------------------------------------------------------------
-# park actions -> typed action schema
-# ---------------------------------------------------------------------------
-
-
-def test_the_park_only_emits_action_kinds_the_schema_declares() -> None:
-    """The park writes into a validated handoff, so a bad kind is a crash.
-
-    Pinned here rather than left to the writer's validation because the park
-    is on the loop's failure path: a crash there replaces a typed park with a
-    traceback, which is the state the recovery was undoing.
-    """
-    from slm_training.autoresearch.schemas import AutotrainActionV1
-
-    kinds = frozenset(
-        typing.get_args(AutotrainActionV1.model_fields["kind"].annotation)
-    )
-    owners = frozenset(
-        typing.get_args(AutotrainActionV1.model_fields["owner"].annotation)
-    )
-
-    assert {"rebuild_data", "repair_harness", "next_experiment"} <= kinds
-    assert {"synthesis-feedback", "improve-openui-harnesses", "autotrain"} <= owners
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíÛ~7N‹Z–‹­¦ëeŠw¬Ôˆˆ‰½¹ÑÉ…ÐÑ•ÍÑÌèÑ¡”¡•…°Á…­…”…¹Ñ¡”‘É¥Ù•ÈµÕÍÐ…É•”½¸Ù½…‰Õ±…Éä¸()Q¡”¡•…°Á…­…”ÝÉ¥Ñ•ÌÉ••¥ÁÑÌìÑ¡”‘É¥Ù•ÈÌÁ…ÍÌ±…ÍÍ¥™¥•ÈÉ•…‘ÌÑ¡•´…¹)‘•¥‘•ÌÝ¡•Ñ¡•È„Á…ÍÌµ…‘”ÁÉ½É•ÍÌ¸9½Ñ¡¥¹œ±¥¹­ÌÑ¡”ÑÝ¼‰ÕÐÍÑÉ¥¹œ)±¥Ñ•É…±Ì°…¹„ÍÑÉ¥¹œÑ¡…ÐÍÑ½ÁÌµ…Ñ¡¥¹œ‘½•Ì¹½ÐÉ…¥Í”ƒŠP¥Ð™…±±ÌÑ¡É½Õ „)€¹•Ñ€‘•™…Õ±Ð¸Q¡…Ð¥Ì¹½Ð„¡åÁ½Ñ¡•Ñ¥…°è!•…±=ÕÑ½µ•€…ÉÉ¥•Ì‰½Ñ )Ù•É¥™å}™…¥±•‘€…¹Á½ÍÑ½¹‘¥Ñ¥½¹}™…¥±•‘€°Ñ¡”‘É¥Ù•Èµ…ÁÁ•½¹±äÑ¡”)™¥ÉÍÐ°…¹Í¼Á½ÍÑ½¹‘¥Ñ¥½¹}™…¥±•‘€ƒŠPÑ¡”Ù•É‘¥ÐÑ¡”‘…Ñ„µÉ•‰Õ¥±Á±…å‰½½¬)ÝÉ¥Ñ•ÌÝ¡•¸¥ÑÌÉ•½Éµ½Õ¹ÐÁ½ÍÑ½¹‘¥Ñ¥½¸‘½•Ì€©¹½Ð¨¡½±°…‘‘•ÁÉ•¥Í•±äÑ¼)µ…­”„¹¼µ½À‘…Ñ„¡•…°Ù¥Í¥‰±”ƒŠPÍ½É•…ÌÑ¡”•¹•É¥Œ¡•…±}…ÑÑ•µÁÑ•‘€¸)Q¡”¡•¬Ñ¡…Ð•á¥ÍÑÌÑ¼•áÁ½Í”Ù…Õ½ÕÌ¡•…±ÌÝ…Ì¥ÑÍ•±˜‰•¥¹œ™±…ÑÑ•¹•¸()Q¡•Í”Ñ•ÍÑÌÁ¥¸•… É½ÍÌµµ½‘Õ±”…É••µ•¹Ð…Ì„Ñ½Ñ…±¥Ñä±…¥´É…Ñ¡•ÈÑ¡…¸…Ì)„±¥ÍÐ½˜•á…µÁ±•Ì°Í¼Ñ¡”¹•áÐ…‘‘•½ÕÑ½µ”°…Ñ¥½¸­¥¹½È‰±½­•È±…ÍÌ)™…¥±Ì¡•É”¥¹ÍÑ•…½˜Í¥±•¹Ñ±ä±…¹‘¥¹œ¥¸„‘•™…Õ±Ð‰Õ­•Ð¸(ˆˆˆ()™É½´}}™ÕÑÕÉ•}|¥µÁ½ÉÐ…¹¹½Ñ…Ñ¥½¹Ì()¥µÁ½ÉÐ¥µÁ½ÉÑ±¥ˆ¹ÕÑ¥°)¥µÁ½ÉÐÍåÌ)¥µÁ½ÉÐÑåÁ¥¹œ)™É½´Á…Ñ¡±¥ˆ¥µÁ½ÉÐA…Ñ )™É½´ÑåÁ¥¹œ¥µÁ½ÉÐ¹ä()¥µÁ½ÉÐÁåÑ•ÍÐ()ÁåÑ•ÍÑµ…É¬€ôÁåÑ•ÍÐ¹µ…É¬¹½¹ÑÉ…Ð()IA=}I==P€ôA…Ñ ¡}}™¥±•}|¤¹É•Í½±Ù” ¤¹Á…É•¹ÑÍlÉt(()‘•˜}‘É¥Ù•È ¤€´ø¹äè(€€€¥˜€‰ÉÕ¹}…ÕÑ½ÑÉ…¥¹}½¹Ñ¥¹Õ½ÕÌˆ¥¸ÍåÌ¹µ½‘Õ±•Ìè(€€€€€€€É•ÑÕÉ¸ÍåÌ¹µ½‘Õ±•Íl‰ÉÕ¹}…ÕÑ½ÑÉ…¥¹}½¹Ñ¥¹Õ½ÕÌ‰t(€€€Á…Ñ €ôIA=}I==P€¼€‰ÍÉ¥ÁÑÌˆ€¼€‰ÉÕ¹}…ÕÑ½ÑÉ…¥¹}½¹Ñ¥¹Õ½ÕÌ¹Áäˆ(€€€ÍÁ•Œ€ô¥µÁ½ÉÑ±¥ˆ¹ÕÑ¥°¹ÍÁ•}™É½µ}™¥±•}±½…Ñ¥½¸ ‰ÉÕ¹}…ÕÑ½ÑÉ…¥¹}½¹Ñ¥¹Õ½ÕÌˆ°Á…Ñ ¤(€€€…ÍÍ•ÉÐÍÁ•Œ…¹ÍÁ•Œ¹±½…‘•È(€€€µ½‘Õ±”€ô¥µÁ½ÉÑ±¥ˆ¹ÕÑ¥°¹µ½‘Õ±•}™É½µ}ÍÁ•Œ¡ÍÁ•Œ¤(€€€ÍåÌ¹µ½‘Õ±•Íl‰ÉÕ¹}…ÕÑ½ÑÉ…¥¹}½¹Ñ¥¹Õ½ÕÌ‰t€ôµ½‘Õ±”(€€€ÍÁ•Œ¹±½…‘•È¹•á•}µ½‘Õ±”¡µ½‘Õ±”¤(€€€É•ÑÕÉ¸µ½‘Õ±”(()‘•˜}¡•…±}½ÕÑ½µ•Ì ¤€´ø™É½é•¹Í•ÑmÍÑÉtè(€€€™É½´Í±µ}ÑÉ…¥¹¥¹œ¹…ÕÑ½É•Í•…É ¹¡•…°¥µÁ½ÉÐÍ¡•µ…Ì((€€€É•ÑÕÉ¸™É½é•¹Í•Ð¡ÑåÁ¥¹œ¹•Ñ}…ÉÌ¡Í¡•µ…Ì¹!•…±=ÕÑ½µ”¤¤(((Œ€´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´(Œ¡•…°É••¥ÁÑÌ€´ø‘É¥Ù•ÈÁ…ÍÌ±…ÍÍ¥™¥…Ñ¥½¸(Œ€´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´(()‘•˜Ñ•ÍÑ}•Ù•Éå}¡•…±}½ÕÑ½µ•}¡…Í}…}‘•±…É•‘}Á…ÍÍ}±…ÍÍ¥™¥…Ñ¥½¸ ¤€´ø9½¹”è(€€€€ˆˆ‰Q½Ñ…±¥Ñä¸µ¥ÍÍ¥¹œ•¹ÑÉä¡¥‘•Ì¥ÑÍ•±˜¥¸Ñ¡”¡•…±}…ÑÑ•µÁÑ•‘€‘•™…Õ±Ð¸ˆˆˆ(€€€µ…ÁÁ•€ôÍ•Ð¡}‘É¥Ù•È ¤¹}AMM}=UQ=5}	e}!1}=UQ=5¤(€€€µ¥ÍÍ¥¹œ€ô}¡•…±}½ÕÑ½µ•Ì ¤€´µ…ÁÁ•((€€€…ÍÍ•ÉÐ¹½Ðµ¥ÍÍ¥¹œ°€ (€€€€€€€˜‰¡•…°½ÕÑ½µ•ÌÝ¥Ñ ¹¼‘•±…É•Á…ÍÌ±…ÍÍ¥™¥…Ñ¥½¸èíÍ½ÉÑ•¡µ¥ÍÍ¥¹œ¥ôƒŠP€ˆ(€€€€€€€€‰•… Ý½Õ±Í½É”…ÌÑ¡”•¹•É¥Œ€¡•…±}…ÑÑ•µÁÑ•œÝ¥Ñ¡½ÕÐ…¹å½¹”€ˆ(€€€€€€€€‰‘•¥‘¥¹œÑ¡…Ð¥ÐÍ¡½Õ±ˆ(€€€€¤(()‘•˜Ñ•ÍÑ}Ñ¡•}Á…ÍÍ}µ…Á}‘•±…É•Í}¹½}½ÕÑ½µ•}Ñ¡•}¡•…±}Á…­…•}…¹¹½Ñ}ÝÉ¥Ñ” ¤€´ø9½¹”è(€€€€ˆˆ‰Q¡”½Ñ¡•È‘¥É•Ñ¥½¸è„ÍÑ…±”­•ä¥Ì„ÉÕ±”Ñ¡…Ð…¸¹•Ù•È™¥É”¸ˆˆˆ(€€€ÍÑ…±”€ôÍ•Ð¡}‘É¥Ù•È ¤¹}AMM}=UQ=5}	e}!1}=UQ=5¤€´}¡•…±}½ÕÑ½µ•Ì ¤((€€€…ÍÍ•ÉÐ¹½ÐÍÑ…±”°˜‰Á…ÍÌµ…À­•åÌÑ¡…Ð…É”¹½Ð!•…±=ÕÑ½µ”µ•µ‰•ÉÌèíÍ½ÉÑ•¡ÍÑ…±”¥ôˆ(()‘•˜Ñ•ÍÑ}‰½Ñ¡}™…¥±•‘}ÁÉ½½™}½‰±¥…Ñ¥½¹Í}Í½É•}…Í}…}™…¥±•‘}Á½ÍÑ½¹‘¥Ñ¥½¸ ¤€´ø9½¹”è(€€€€ˆˆ‰¹¼µ½À¡•…°¥Ì„½Õ¹Ñ•™…¥±ÕÉ”¡½Ý•Ù•ÈÑ¡”Ù•Ë~7¶‰žËkºwµçYœ›ÛHÛWÝ˜Z[š[™Ë˜]]Ü™\ÙX\˜ÚšX[œ^X›ÛÚÜË™]WÜ™XZ[[\Ü^XÝ]B‚ˆ™XÙZ\H^XÝ]JˆßKÝÙ]\Ü]›ÛÝ]\Ü]ÛÜÚYH˜ÛÛ˜XÝ‹ˆØ[\ZYÛ—ÚYH˜ÛÛ˜XÝ‹Üš]WÜ™XÙZ\Q˜[ÙKˆ
+B‚ˆ\ÜÙ\™XÙZ\›Ý]ÛÛYHOHœÜÝÛÛ™][Û—Ù˜Z[Y‚ˆ\ÜÙ\
+ˆÙš]™\Š
+K—ÔTÔ×ÓÕUÓÓQWÐ–WÒPSÓÕUÓÓQVÜ™XÙZ\›Ý]ÛÛYWBˆOHšX[ÜÜÝÛÛ™][Û—Ù˜Z[Y‚ˆ
+B‚‚ˆÈKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKBˆÈX[Û\ÜÚYšXØ][ÛˆOˆ^X›ÛÚÈÛÝ™\˜YÙBˆÈKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKB‚‚™Yˆ\ÝÙ]™\žWØ›ØÚÙ\—ØÛ\Ü×ØWÜ^X›ÛÚ×Ú[™\×Ú\×ØWÜ™X[ØÛ\ÜÊ
+HOˆ›Û™N‚ˆˆˆH^X›ÛÚÈXÛ\š[™ÈHÛ\ÜÈ›Ø›ÙH›ÙXÙ\ÈØ[ˆ™]™\ˆ™HÙ[XÝYˆˆˆ‚ˆœ›ÛHÛWÝ˜Z[š[™Ë˜]]Ü™\ÙX\˜ÚšX[[\Ü\ØÛÝ™\™YÜ^X›ÛÚÜËØÚ[X\Â‚ˆÛ\ÜÙ\ÈHœ›Þ™[œÙ]
+\[™Ë™Ù]Ø\™ÜÊØÚ[X\Ë›ØÚÙ\Û\ÜÊJBˆ›Üˆ^X›ÛÚÈ[ˆ\ØÛÝ™\™YÜ^X›ÛÚÜÊ
+N‚ˆ[šÛ›ÝÛˆHÙ]
+^X›ÛÚËš[™\ÊHHÛ\ÜÙ\Âˆ\ÜÙ\›Ý[šÛ›ÝÛ‹
+ˆˆžÜ^X›ÛÚËœ^X›ÛÚ×ÚYH[™\ÈÜÛÜY
+[šÛ›ÝÛŠ_KÚXÚ‚ˆ˜Û\ÜÚYžWØ›ØÚÙ\ˆ™]™\ˆ™]\›œÈ‚ˆ
+B‚‚™Yˆ\ÝØÛ\ÜÚYšXØ][Û—Ú\×ÝÝ[ÛÝ™\—Ú]×ÛÝÛ—ØÛ\Ü×Ý›ØØX[\žJ
+HOˆ›Û™N‚ˆˆˆ‘]™\žHÛ\ÜÚYšY\ˆ[œÝÙ\ˆ\ÈHXÛ\™YÛ\ÜË›Üˆ[žH[œ]ˆˆˆ‚ˆœ›ÛHÛWÝ˜Z[š[™Ë˜]]Ü™\ÙX\˜ÚšX[[\ÜØÚ[X\Âˆœ›ÛHÛWÝ˜Z[š[™Ë˜]]Ü™\ÙX\˜ÚšX[˜Û\ÜÚYžH[\ÜÛ\ÜÚYžWØ›ØÚÙ\‚‚ˆÛ\ÜÙ\ÈHœ›Þ™[œÙ]
+\[™Ë™Ù]Ø\™ÜÊØÚ[X\Ë›ØÚÙ\Û\ÜÊJBˆ›Ø™\ÈHÂˆ
+œ™\Z\—Ú\›™\ÜÈ‹š\›™\Ü×Ù˜Z[\™N˜ÛÛ›Û™^\š[Y[Ù˜Z[YŠKˆ
+œ™\Z\—Ú\›™\ÜÈ‹›œHÚH]\Ý[ŽˆYÙ[ˆÙÈ\È[˜]˜Z[X›HŠKˆ
+œ™XZ[Ù]H‹œ™XÛÜ™×ØY\ˆOH™XÛÜ™×Ø™Y›Ü™HŠKˆ
+œ™\Z\—Ù›Ü›X[‹›ZÙHZ[˜Z[YŠKˆ
+œÝÜØØ[\ZYÛˆ‹œZYÜH™\]Z\™\È\Ù\ˆ]]Üš]HŠKˆ
+ˆ‹ˆŠKˆ
+››ÛœÙ[œÙKZÚ[™‹››ÛœÙ[œÙH™X\ÛÛˆŠKˆBˆ›ÜˆÚ[™™X\ÛÛˆ[ˆ›Ø™\Î‚ˆ\ÜÙ\Û\ÜÚYžWØ›ØÚÙ\ŠÚ[™™X\ÛÛŠH[ˆÛ\ÜÙ\Ë
+Ú[™™X\ÛÛŠB‚‚ˆÈKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKBˆÈ\šÈXÝ[ÛœÈOˆ\YXÝ[ÛˆØÚ[XBˆÈKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKB‚‚™Yˆ\ÝÝWÜ\š×ÛÛ›WÙ[Z]×ØXÝ[Û—ÚÚ[™×ÝWÜØÚ[XWÙXÛ\™\Ê
+HOˆ›Û™N‚ˆˆˆ•H\šÈÜš]\È[ÈH˜[Y]Y[™Ù™‹ÛÈH˜YÚ[™\ÈHÜ˜\Ú‚‚ˆ[›™Y\™H˜]\ˆ[ˆYÈHÜš]\‰ÜÈ˜[Y][Ûˆ™XØ]\ÙHH\šÂˆ\ÈÛˆHÛÜ	ÜÈ˜Z[\™H]ˆHÜ˜\Ú\™H™\XÙ\ÈH\Y\šÈÚ]Bˆ˜XÙX˜XÚËÚXÚ\ÈHÝ]HH™XÛÝ™\žHØ\È[™Ú[™Ë‚ˆˆˆ‚ˆœ›ÛHÛWÝ˜Z[š[™Ë˜]]Ü™\ÙX\˜ÚœØÚ[X\È[\Ü]]Ý˜Z[XÝ[Û•ŒB‚ˆÚ[™ÈHœ›Þ™[œÙ]
+ˆ\[™Ë™Ù]Ø\™ÜÊ]]Ý˜Z[XÝ[Û•ŒK›[Ù[ÙšY[ÖÈšÚ[™—K˜[››Ý][ÛŠBˆ
+BˆÝÛ™\œÈHœ›Þ™[œÙ]
+ˆ\[™Ë™Ù]Ø\™ÜÊ]]Ý˜Z[XÝ[Û•ŒK›[Ù[ÙšY[ÖÈ›ÝÛ™\ˆ—K˜[››Ý][ÛŠBˆ
+B‚ˆ\ÜÙ\Èœ™XZ[Ù]H‹œ™\Z\—Ú\›™\ÜÈ‹›™^Ù^\š[Y[ŸHHÚ[™Âˆ\ÜÙ\ÈœÞ[\Ú\ËY™YY˜XÚÈ‹š[\›Ý™K[Ü[ZKZ\›™\ÜÙ\È‹˜]]Ý˜Z[ˆŸHHÝÛ™\œÂ
