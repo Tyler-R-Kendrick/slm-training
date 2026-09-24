@@ -62,7 +62,11 @@ def test_real_original_reproducer_controls_acceptance(
         (candidate / "fixture.py").write_text('print("ready")\n')
     (candidate / "tests").mkdir()
     (candidate / "tests/test_added.py").write_text(
-        'def test_added():\n    assert 1 + 1 == 2\nprint("checked")\n'
+        "import subprocess, sys\n"
+        "def test_added():\n"
+        "    result = subprocess.run([sys.executable, 'fixture.py'], capture_output=True, text=True)\n"
+        "    assert result.returncode == 0 and result.stdout == 'ready\\n'\n"
+        "print('checked')\n"
     )
     sha = "a" * 64
     grant = RepairGrant(
@@ -72,7 +76,7 @@ def test_real_original_reproducer_controls_acceptance(
         executable_sha256=sha,
         expires_at=time.time() + 60,
         max_attempts=2,
-        total_seconds=80.0,
+        total_seconds=200.0,
         interrupt_seconds=10,
     )
     recipe = RepairRecipe(
@@ -141,6 +145,7 @@ def test_real_original_reproducer_controls_acceptance(
         recipe.failure_stdout_sha256,
         recipe.failure_stderr_sha256,
         timeout_seconds=10,
+        regression_test_path=proposal.regression_test,
     )
     if restored and not through_seam and source_available is True:
         request = request.model_copy(update={
@@ -160,11 +165,15 @@ def test_real_original_reproducer_controls_acceptance(
         )
 
     monkeypatch.setattr(
-        "slm_training.autoresearch.heal.repair_verifier.run_isolated",
-        real_process_without_isolation,
+        "slm_training.autoresearch.heal.repair_verifier.run_isolated", real_process_without_isolation
+    )
+    monkeypatch.setattr(
+        "slm_training.autoresearch.heal.repair_regression.run_isolated", real_process_without_isolation
     )
     if through_seam:
-        result = _two_lease_dispatch(context, config, candidate, proposal, monkeypatch, source_available)
+        result = _two_lease_dispatch(
+            context, config, candidate, proposal, monkeypatch, source_available, restored
+        )
     else:
         workspace = VerificationWorkspace(source, candidate)
         result = verify_repair(
@@ -174,7 +183,10 @@ def test_real_original_reproducer_controls_acceptance(
             workspace=workspace,
             journal=CampaignStore("campaign", tmp_path / "store"),
             fence_valid=lambda _: True,
-            source_verification=source_gate_fixture(tmp_path, monkeypatch, workspace, complete=source_available is True) if source_available is not False else None,
+            source_verification=source_gate_fixture(
+                tmp_path, monkeypatch, workspace,
+                complete=source_available is True and restored,
+            ) if source_available is not False else None,
         )
     if not source_available:
         assert result.status == "waiting_verification"
@@ -183,6 +195,11 @@ def test_real_original_reproducer_controls_acceptance(
         events = CampaignStore("campaign", tmp_path / "store").verify_event_chain()
         assert any(row["event_type"] == "repair_source_verification_wait" for row in events)
         assert not any(row["event_type"] == "repair_verification_started" for row in events)
+        return
+    if not restored and source_available is True:
+        assert result.status == "waiting_verification"
+        assert result.reason == "source_verification_pending"
+        assert result.verification is None
         return
     assert result.status == ("verified" if restored else "rejected")
     assert result.verification.original_predicate_restored is restored
@@ -195,7 +212,7 @@ def test_real_original_reproducer_controls_acceptance(
     assert combined["candidate_snapshot_digest"] == proposal.tree_digest
 
 
-def _two_lease_dispatch(context, config, candidate, proposal, monkeypatch, source_available):
+def _two_lease_dispatch(context, config, candidate, proposal, monkeypatch, source_available, restored):
     from slm_training.autoresearch.heal.recovery_dispatch import dispatch_hard_pending
 
     calls = []
@@ -272,7 +289,10 @@ def _two_lease_dispatch(context, config, candidate, proposal, monkeypatch, sourc
             return controller_publish(request, verified, path)
 
         workspace = VerificationWorkspace(context.source, context.root / context.campaign_id / "repair_workspaces" / proposal.request_digest / "candidate")
-        gate = source_gate_fixture(context.root.parent, monkeypatch, workspace, complete=source_available is True) if source_available is not False else None
+        gate = source_gate_fixture(
+            context.root.parent, monkeypatch, workspace,
+            complete=source_available is True and restored,
+        ) if source_available is not False else None
         second = dispatch_hard_pending(
             pending,
             next_context,

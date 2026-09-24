@@ -32,8 +32,6 @@ from .isolation_workspace import (
 )
 from .repair_scope import repair_classification
 
-_VALIDATED_RUNTIMES: set[tuple[Path, int, int]] = set()
-
 # Executed with isolated system Python, before candidate imports. Limits are
 # hard limits inherited by descendants. Stdin never inherits a controller pipe.
 _WORKLOAD_BOOTSTRAP = (
@@ -122,7 +120,6 @@ def _runtime_mounts(spec: IsolationSpec) -> list[str]:
     args: list[str] = []
     forbidden = {"/", "/home", "/tmp", "/run", "/var", "/etc", "/root"}
     roots = tuple(root.resolve(strict=True) for root in spec.runtime_roots)
-    validated: set[Path] = set()
     if any(root.is_relative_to(Path("/nix/store")) for root in roots):
         args.extend(("--dir", "/nix", "--dir", "/nix/store"))
     for index, root in enumerate(roots):
@@ -138,11 +135,7 @@ def _runtime_mounts(spec: IsolationSpec) -> list[str]:
         # symlinks may reference the read-only system runtime, never host home.
         if not root.is_dir():
             raise IsolationViolation("runtime root must be a dedicated directory")
-        marker = (root, root.stat().st_ino, root.stat().st_mtime_ns)
-        if marker not in _VALIDATED_RUNTIMES:
-            _validate_runtime(root, roots)
-            _VALIDATED_RUNTIMES.add(marker)
-        validated.add(root)
+        _validate_runtime(root, roots)
         if root.is_relative_to(Path("/runtime")):
             args.extend(("--ro-bind", str(root), str(root)))
         args.extend(("--ro-bind", str(root), f"/runtime/{index}"))
@@ -159,7 +152,8 @@ def _validate_runtime(root: Path, approved: tuple[Path, ...]) -> None:
     for directory, dirs, files in os.walk(root, followlinks=False):
         for name in dirs + files:
             path = Path(directory) / name
-            mode = path.lstat().st_mode
+            info = path.lstat()
+            mode = info.st_mode
             if stat.S_ISLNK(mode):
                 target = path.resolve()
                 if not (
@@ -174,6 +168,8 @@ def _validate_runtime(root: Path, approved: tuple[Path, ...]) -> None:
                     raise IsolationViolation(
                         f"runtime link escapes approved runtime: {path}"
                     )
+            elif stat.S_ISREG(mode) and info.st_nlink != 1:
+                raise IsolationViolation(f"hardlinked runtime file: {path}")
             elif not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
                 raise IsolationViolation(f"special runtime file: {path}")
 

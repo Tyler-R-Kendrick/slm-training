@@ -81,8 +81,11 @@ def test_diagnosis_cannot_ignore_agent_reservations(diagnosed):
 def test_other_explicit_grant_is_not_charged(repair_request, journal, executor):
     from slm_training.autoresearch.heal.dispatch import dispatch_repair
 
+    other = repair_request.grant.model_copy(update={"grant_id": "other-grant"})
     journal.append_event("repair_started", detail={"reserved_seconds": 100,
-        "grant_digest": "b" * 64, "fingerprint": "different-blocker", "attempt_id": "previous"})
+        "grant_digest": "b" * 64, "grant_id": other.grant_id,
+        "grant_accounting_digest": other.accounting_digest(),
+        "fingerprint": "different-blocker", "attempt_id": "previous"})
     result = dispatch_repair(repair_request, executor=executor, journal=journal,
                              fence_valid=lambda _: True)
     assert result.status == "waiting_verification" and executor.runner.calls == 1
@@ -332,4 +335,9 @@ def test_interrupted_diagnosis_retries_next_bounded_attempt_without_budget_reset
     ]
     assert (
         len(starts) == 2 and sum(e["detail"]["reserved_seconds"] for e in starts) == 40
+    )
+    assert all(e["detail"]["grant_id"] == config.grant.grant_id for e in starts)
+    assert all(
+        e["detail"]["grant_accounting_digest"] == config.grant.accounting_digest()
+        for e in starts
     )

@@ -97,6 +97,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Require every newly added repair regression to fail on the baseline overlay and pass on the candidate; preserve the original failure and verifier budgets.",
+          "version": "v19"
+        },
+        {
           "date": "2026-09-22",
           "note": "Make controller-owned repair version reconciliation atomic and interruption-safe, require authenticated overlay provenance, support every live registry version shape, forbid worker grants for the registry, and let immutable retained proposals complete verification after coding authority expires.",
           "version": "v18"
@@ -225,9 +230,15 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py",
         "tests/test_autoresearch/test_heal_harness_crash.py",
-        "tests/test_autoresearch/test_heal_data_rebuild.py"
+        "tests/test_autoresearch/test_heal_data_rebuild.py",
+        "tests/test_autoresearch/test_repair_dispatch.py",
+        "tests/test_autoresearch/test_repair_grant_accounting.py",
+        "tests/test_autoresearch/test_repair_verifier.py",
+        "tests/test_autoresearch/test_repair_acceptance.py",
+        "tests/test_autoresearch/test_operation_recovery.py",
+        "tests/test_autoresearch/test_heal_isolation.py"
       ],
-      "version": "v18"
+      "version": "v19"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -328,6 +339,16 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-24",
+          "note": "Give shards with no duration history a 15-second bootstrap slice so full verifier grants are not consumed by unknown-duration retries.",
+          "version": "v21"
+        },
+        {
+          "date": "2026-09-24",
+          "note": "Cap the first retry slice for shards with missing duration history at 15 seconds, then learn real durations from bounded outcomes instead of spending the full remaining verifier grant.",
+          "version": "v20"
+        },
         {
           "date": "2026-09-24",
           "note": "Use up to 512 initial test shards for the full-suite release verifier and grant each shard only its measured duration estimate within the bounded invocation budget, avoiding repeated 40-second oversize timeouts.",
@@ -466,7 +487,7 @@
         "scripts/merge_verification_controller.py",
         "tests/test_scripts/test_merge_verification_controller.py"
       ],
-      "version": "v19"
+      "version": "v21"
     },
     "config.levers": {
       "history": [
@@ -5433,6 +5454,16 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Recheck source and environment in the trusted parent after child execution and immediately before accepting outputs; discard uncommitted output on drift.",
+          "version": "v297"
+        },
+        {
+          "date": "2026-09-24",
+          "note": "Revalidate parent source and environment identity before accepting an operation result; cancel and discard uncommitted output after drift.",
+          "version": "v297"
+        },
+        {
           "date": "2026-09-23",
           "note": "Rebind legacy retained NLL reports only through the exact locked selection, successful controller attempt, hashed command cursor, committed evaluation stage, checkpoint, source and report identities; preserve fail-closed refusal on any mismatch. Extract the bounded supervisor child dispatcher without changing its protocol.",
           "version": "v296"
@@ -7598,6 +7629,7 @@
         "scripts/autotrain_readiness.py",
         "scripts/autotrain_records.py",
         "scripts/autotrain_supervisor_operations.py",
+        "scripts/autotrain_supervisor_operation_runtime.py",
         "scripts/autotrain_supervision.py",
         "scripts/autotrain_timeout_state.py",
         "scripts/autotrain_verification.py",
@@ -7614,9 +7646,10 @@
         "tests/test_scripts/test_autotrain_search.py",
         "tests/test_scripts/test_autotrain_verification.py",
         "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py",
-        "tests/test_scripts/test_supervisor_interruption.py"
+        "tests/test_scripts/test_supervisor_interruption.py",
+        "tests/test_scripts/test_supervisor_adversary.py"
       ],
-      "version": "v296"
+      "version": "v297"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -7882,6 +7915,11 @@
     "harness.core": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Reject multiply linked host Codex auth and runtime files; validate runtime descendants before each mount to prevent credential aliases.",
+          "version": "v22"
+        },
+        {
           "date": "2026-09-22",
           "note": "Clear automatic wait actions when their predicate wakes and ignore legacy stale auto actions on already-runnable activities, so an obsolete capability wait cannot abort claims for an independent runnable verifier.",
           "version": "v21"
@@ -7989,9 +8027,10 @@
       ],
       "kind": "harness",
       "paths": [
-        "src/slm_training/harness_core/"
+        "src/slm_training/harness_core/",
+        "tests/test_autoresearch/test_codex_subscription.py"
       ],
-      "version": "v21"
+      "version": "v22"
     },
     "harness.distill": {
       "history": [

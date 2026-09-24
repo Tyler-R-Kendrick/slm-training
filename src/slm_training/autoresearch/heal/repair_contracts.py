@@ -83,6 +83,12 @@ class RepairGrant(RepairModel):
             raise ValueError("provider endpoint requires approved_provider_only")
         return self
 
+    def accounting_digest(self) -> str:
+        """Stable grant identity for budget accounting across expiry refreshes."""
+        payload = self.model_dump(mode="json")
+        payload.pop("expires_at")
+        return hashlib.sha256(canonical_json(payload).encode()).hexdigest()
+
     @model_serializer(mode="wrap")
     def omit_absent_endpoint(self, handler):
         value = handler(self)

@@ -60,7 +60,7 @@ def test_subscription_never_falls_back_to_api_auth_or_invalid_token(tmp_path):
             auth.subscription_headers(tmp_path, "codex", time.monotonic() + 60)
 
 
-@pytest.mark.parametrize("unsafe", ["symlink", "permissions", "owner", "fifo"])
+@pytest.mark.parametrize("unsafe", ["symlink", "hardlink", "permissions", "owner", "fifo"])
 def test_subscription_rejects_unsafe_host_auth_files(tmp_path, monkeypatch, unsafe):
     import os
 
@@ -70,6 +70,8 @@ def test_subscription_rejects_unsafe_host_auth_files(tmp_path, monkeypatch, unsa
         target = tmp_path / "private-auth.json"
         path.replace(target)
         path.symlink_to(target)
+    elif unsafe == "hardlink":
+        os.link(path, tmp_path / "auth-alias.json")
     elif unsafe == "permissions":
         path.chmod(0o640)
     elif unsafe == "owner":
@@ -368,4 +370,3 @@ def test_connect_completion_cannot_send_auth_after_grant_revoked(tmp_path, monke
             request(path)
         assert checked.wait(1)
     assert requests == []
-

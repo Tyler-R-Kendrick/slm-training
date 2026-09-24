@@ -15,6 +15,7 @@ from slm_training.autoresearch.heal.isolation import (
     probe_isolation,
     run_isolated,
 )
+from slm_training.autoresearch.heal import isolation as isolation_module
 from slm_training.autoresearch.heal.isolation_workspace import (
     IsolationViolation,
     private_snapshot,
@@ -90,6 +91,21 @@ def test_external_symlink_and_hardlink_rejected(workspace: Path) -> None:
     os.link(workspace / "protected.py", alias)
     with pytest.raises(IsolationViolation, match="hardlink"):
         tree_manifest(workspace)
+
+
+def test_runtime_descendant_hardlink_rejected_even_after_prior_validation(tmp_path):
+    runtime = tmp_path / "runtime"
+    nested = runtime / "lib"
+    nested.mkdir(parents=True)
+    (nested / "module.py").write_text("safe runtime\n")
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    spec = IsolationSpec(workspace, runtime_roots=(runtime,))
+
+    isolation_module._runtime_mounts(spec)
+    os.link(nested / "module.py", tmp_path / "outside.py")
+    with pytest.raises(IsolationViolation, match="hardlinked runtime file"):
+        isolation_module._runtime_mounts(spec)
 
 
 def test_socket_mount_rejected(workspace: Path) -> None:

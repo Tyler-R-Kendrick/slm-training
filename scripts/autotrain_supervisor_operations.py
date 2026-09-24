@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -49,8 +48,13 @@ def _operation_state(runtime, request, sequence, identity):
             else ("local_process",),
             environment_digest=request["environment_digest"],
             input_digest=identity,
-            grant=ResourceGrant.model_validate_json(request["driver_argv"][request["driver_argv"].index("--continuation-grant") + 1])
-            if "--continuation-grant" in request.get("driver_argv", ()) else ResourceGrant(),
+            grant=ResourceGrant.model_validate_json(
+                request["driver_argv"][
+                    request["driver_argv"].index("--continuation-grant") + 1
+                ]
+            )
+            if "--continuation-grant" in request.get("driver_argv", ())
+            else ResourceGrant(),
             output_namespace=f"attempts/{activity_id}",
         )
     )
@@ -118,132 +122,77 @@ def interpret_operation_result(result, output_path: Path, execution_request: dic
     return ActivityOutcome.UNKNOWN_FAILURE, None
 
 
-def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict | None:
-    """Lease, execute and validate one operation; failure is never a model loss."""
-    from scripts.merge_verification_evidence import digest
-    from scripts.autotrain_pending import verification_wait, recover_driver_request
+def _operation_result_state(
+    runtime, lease, request, identity, execution_request, result, output_path
+):
+    from scripts.autotrain_pending import verification_wait
     from slm_training.harness_core.activity_contract import (
         ActivityOutcome,
         WakeCondition,
     )
-    from slm_training.autoresearch.runtime.activity_runtime import StaleLease
 
-    request = recover_driver_request(runtime, request)
-    identity = digest(request)
-    state = _operation_state(runtime, request, sequence, identity)
-    activity_id = state.spec.activity_id
-    if state.status == "succeeded":
-        return _replay_committed_operation(runtime, request, state)
-    lease = runtime.claim_next(
-        capabilities={"local_process", "controller_publication"},
-        activity_id=activity_id,
-    )
-    if lease is None:
-        log_event(
-            {
-                "event": "operation_waiting",
-                "activity_id": activity_id,
-                "state": state.status,
-                "wake": state.wake.model_dump() if state.wake else None,
-            }
-        )
-        return None
-    attempt_dir = runtime.attempt_dir(lease)
-    attempt_dir.mkdir(parents=True, exist_ok=True)
-    request_path, output_path = attempt_dir / "request.json", attempt_dir / "result.json"
-    execution_request = {**request, "lease": lease.model_dump(mode="json"),
-                         "parent_event": runtime.store.verify_event_chain()[-1]["event_id"]}
-    runtime.store._replace_durable(
-        request_path, json.dumps(execution_request, sort_keys=True)
-    )
-    started = time.monotonic()
-    controller = Path(__file__).resolve().parents[1]
-    bootstrap = "import runpy,sys;sys.path[:0]=[sys.argv.pop(1),sys.argv.pop(1)];runpy.run_module('scripts.run_autotrain_supervisor',run_name='__main__')"
-    result = runtime.run(
-        lease,
-        [
-            sys.executable,
-            "-c",
-            bootstrap,
-            str(controller),
-            str(controller / "src"),
-            "--operation-request",
-            str(request_path),
-            "--operation-output",
-            str(output_path),
-        ],
-        cwd=controller,
-    )
     outcome, payload = interpret_operation_result(
         result, output_path, execution_request
     )
-    # Reentry reconciles existing effects under the same grant; no result is inferred.
     if result.timed_out and not result.progress_stalled:
         outcome = ActivityOutcome.RETRY
-    outputs = {"result.json": hashlib.sha256(output_path.read_bytes()).hexdigest()} if payload is not None else {}
     pending_wait = verification_wait(runtime, lease, payload)
     if payload and payload.get("returncode") == 10 and request["operation"] == "driver":
         from scripts.autotrain_pending import validate_pending
 
         pending_wait = validate_pending(payload["pending"])
-    if pending_wait:
-        outcome, wake = pending_wait
-    else:
-        wake = WakeCondition(
+    wake = (
+        pending_wait[1]
+        if pending_wait
+        else WakeCondition(
             predicate="original operation produces valid output",
             source="independent_repair_verification",
             identity_digest=identity,
         )
-    try:
-        if not pending_wait and outcome not in {
-            ActivityOutcome.SUCCEEDED,
-            ActivityOutcome.CANCELLED,
-        }:
-            from slm_training.autoresearch.heal.operation_recovery import (
-                record_operation_failure,
-            )
+    )
+    if pending_wait:
+        outcome = pending_wait[0]
+    return outcome, payload, pending_wait, wake
 
-            record_operation_failure(runtime, lease, request, result,
-                outcome=ActivityOutcome.WALL_BUDGET if outcome == ActivityOutcome.RETRY else outcome)
+
+def _cancel_after_identity_drift(
+    runtime,
+    request,
+    lease,
+    source_identity,
+    output_path,
+    started,
+    activity_id,
+    log_event,
+):
+    from slm_training.harness_core.activity_contract import ActivityOutcome
+
+    try:
+        validate_operation_identity(request, source_identity, "after execution")
+    except ValueError as exc:
+        output_path.unlink(missing_ok=True)
         runtime.finish(
             lease,
-            outcome=outcome,
-            outputs=outputs,
+            outcome=ActivityOutcome.CANCELLED,
+            outputs={},
             spent_seconds=time.monotonic() - started,
-            wake=wake
-            if outcome not in {ActivityOutcome.SUCCEEDED, ActivityOutcome.CANCELLED}
-            else None,
         )
-    except StaleLease:
-        # Uncommitted child output is not evidence. Reconcile adopts only a
-        # previously verified output receipt; all other states retry later.
-        runtime.reconcile()
-        state = runtime.snapshot().get(activity_id)
-        if state is not None and state.status == "succeeded":
-            payload = _replay_committed_operation(runtime, request, state)
-            _record_stale_operation_recovery(
-                runtime, request, lease, state.status, log_event,
-                committed_receipt_replayed=True,
-            )
-            return payload
-        _record_stale_operation_recovery(
-            runtime, request, lease,
-            state.status if state is not None else "missing",
-            log_event,
-            committed_receipt_replayed=False,
+        log_event(
+            {
+                "event": "operation_identity_drift",
+                "activity_id": activity_id,
+                "operation": request["operation"],
+                "error": str(exc),
+            }
         )
-        return None
-    log_event(
-        {
-            "event": "operation_finished",
-            "activity_id": activity_id,
-            "operation": request["operation"],
-            "outcome": outcome.value,
-            "returncode": result.returncode,
-            "spent_seconds": result.duration_seconds,
-        }
-    )
-    return payload
+        return True
+    return False
+
+
+def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict | None:
+    from scripts.autotrain_supervisor_operation_runtime import run_operation as execute
+
+    return execute(runtime, request, sequence=sequence, log_event=log_event)
 
 
 def _replay_committed_operation(runtime, request, state):
@@ -260,10 +209,7 @@ def _replay_committed_operation(runtime, request, state):
     )
     attempt = completed["detail"]["lease"]["attempt_id"]
     path = runtime.store.root / state.spec.output_namespace / attempt / "result.json"
-    if (
-        hashlib.sha256(path.read_bytes()).hexdigest()
-        != state.outputs["result.json"]
-    ):
+    if hashlib.sha256(path.read_bytes()).hexdigest() != state.outputs["result.json"]:
         raise ValueError("committed operation artifact changed")
     return json.loads(path.read_text())["payload"]
 
@@ -287,8 +233,31 @@ def _record_stale_operation_recovery(
         detail=detail,
         idempotency_key="operation-stale-lease:" + lease.token,
     )
-    log_event({"event": "operation_stale_lease_reconciled", **detail,
-               "event_id": event["event_id"]})
+    log_event(
+        {
+            "event": "operation_stale_lease_reconciled",
+            **detail,
+            "event_id": event["event_id"],
+        }
+    )
+
+
+def _reconcile_stale_operation(runtime, request, lease, activity_id, log_event):
+    runtime.reconcile()
+    state = runtime.snapshot().get(activity_id)
+    committed = state is not None and state.status == "succeeded"
+    payload = (
+        _replay_committed_operation(runtime, request, state) if committed else None
+    )
+    _record_stale_operation_recovery(
+        runtime,
+        request,
+        lease,
+        state.status if state is not None else "missing",
+        log_event,
+        committed_receipt_replayed=committed,
+    )
+    return payload
 
 
 def repair_operation(request, *, cwd, root, loop_id, handle_hard_pending):
@@ -328,7 +297,9 @@ def operation_publication_scope(request, root, loop_id):
     lease = ActivityLease.model_validate(request["lease"])
     journal = CampaignStore("runtime", root / "loops" / loop_id)
     publisher = DelegatedPublisher(journal, request["source_digest"])
-    return champion_publication_scope(publisher, lease, loop_dir=root / "loops" / loop_id)
+    return champion_publication_scope(
+        publisher, lease, loop_dir=root / "loops" / loop_id
+    )
 
 
 def validate_operation_identity(request, source_identity, boundary):
@@ -342,8 +313,13 @@ def validate_operation_identity(request, source_identity, boundary):
 
 
 def operation_main(
-    request_path: Path, output_path: Path, *, source_identity,
-    load_continuous, handle_hard_pending, write_family_closures,
+    request_path: Path,
+    output_path: Path,
+    *,
+    source_identity,
+    load_continuous,
+    handle_hard_pending,
+    write_family_closures,
 ) -> int:
     """Run a pinned bounded controller child; untrusted repairs use heal.isolation."""
     from scripts.autotrain_operation_worker import operation_main as run_worker

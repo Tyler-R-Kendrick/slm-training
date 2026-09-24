@@ -332,6 +332,7 @@ def dispatch_hard_pending(
             timeout_seconds=request.grant.interrupt_seconds,
             semantics_preserving_paths=recipe.semantics_preserving_paths,
             equivalence_checks=recipe.equivalence_checks,
+            regression_test_path=result.proposal.regression_test,
         )
         result = verify_repair(
             request,

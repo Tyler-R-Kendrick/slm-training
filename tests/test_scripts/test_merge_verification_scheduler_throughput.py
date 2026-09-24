@@ -29,3 +29,18 @@ def test_shard_allowance_uses_estimate_instead_of_all_available_time(monkeypatch
     allowance = owner._allowance(state, "shard", [node], 80.0)
 
     assert allowance == 16.0
+
+
+def test_unmeasured_shard_gets_small_bounded_bootstrap_slice(monkeypatch):
+    node = "tests/new_test.py::test_one"
+    state = {
+        "binding": {"max_attempts_per_obligation": 3},
+        "nodes": [node],
+        "attempts": [{"kind": "collection", "seconds": 2.0}],
+        "workload_budget_seconds": 100.0,
+        "shard_budget_seconds": 80.0,
+    }
+    monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {})
+
+    assert owner._allowance(state, "shard", [node], 70.0) == 15.0
+    assert owner._allowance(state, "shard", [node], 12.0) == 0.0

@@ -155,7 +155,7 @@ def diagnose_operation(pending, context, config, journal):
     if grant is None or grant.expires_at <= time.time():
         return None, "diagnosis_grant_missing_or_expired", False
     seconds = min(10.0, grant.interrupt_seconds)
-    reserved = reserved_repair_seconds(events, grant.digest())
+    reserved = reserved_repair_seconds(events, grant, journal)
     if (
         len(matches) >= grant.max_attempts
         or reserved + seconds + KILL_GRACE_SECONDS > grant.total_seconds
@@ -167,6 +167,8 @@ def diagnose_operation(pending, context, config, journal):
             "diagnosis_id": identity,
             "attempt_id": context.attempt_id,
             "grant_digest": grant.digest(),
+            "grant_id": grant.grant_id,
+            "grant_accounting_digest": grant.accounting_digest(),
             "reserved_seconds": seconds + KILL_GRACE_SECONDS,
         },
     )

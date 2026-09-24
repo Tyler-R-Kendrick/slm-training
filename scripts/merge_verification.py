@@ -236,7 +236,7 @@ def _shard_estimate_seconds(state, nodes, full):
     if any(
         value is None or not math.isfinite(value) or value <= 0 for value in weights
     ):
-        return state.get("shard_budget_seconds", full)
+        return min(15.0, full)
     collections = [
         row.get("seconds", 0)
         for row in state["attempts"]

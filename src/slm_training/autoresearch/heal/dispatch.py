@@ -6,11 +6,14 @@ action acknowledgment, or activate a source release through this module.
 
 from __future__ import annotations
 
+import json
+import re
 from typing import Callable
 
 from slm_training.autoresearch.heal.agent_executor import AgentCancelled, CodexExecutor
 from slm_training.autoresearch.heal.repair_contracts import (
     RepairDispatchResult,
+    RepairGrant,
     RepairProposal,
     RepairRequest,
     RepairVerification,
@@ -47,19 +50,82 @@ def _history(journal: CampaignStore) -> list[dict]:
     return journal.verify_event_chain()
 
 
-def reserved_repair_seconds(events: list[dict], grant_digest: str) -> float:
+def reserved_repair_seconds(
+    events: list[dict], grant: RepairGrant, journal: CampaignStore
+) -> float:
     """All repair operations spend the same grant, including interrupted ones.
 
-    Historical repair/verification reservations lacked grant identity. Charge
-    those conservatively instead of dropping their cost on upgrade.
+    Expiry refreshes preserve accounting identity. Legacy identities are recovered
+    from stored requests where possible; unknown reservations count against this grant.
     """
-    kinds = {"repair_started", "repair_verification_started", "operation_diagnosis_started"}
+    event_grants, request_grants = _stored_grant_bindings(events, journal)
+    _reject_grant_id_reuse(events, grant, event_grants, request_grants)
     return sum(
-        float(event["detail"]["reserved_seconds"])
+        _event_reservation(event, grant, event_grants, request_grants)
         for event in events
-        if event["event_type"] in kinds
-        and event["detail"].get("grant_digest", grant_digest) == grant_digest
     )
+
+
+def _stored_grant_bindings(events, journal):
+    event_grants, request_grants = {}, {}
+    root = journal.root / "artifacts" / "repair_requests"
+    for event in events:
+        sha = event.get("artifact_sha256")
+        if event["event_type"] != "repair_started" or not isinstance(sha, str):
+            continue
+        if not re.fullmatch(r"[0-9a-f]{64}", sha):
+            continue
+        try:
+            value = json.loads((root / f"{sha}.json").read_text())
+            stored = RepairGrant.model_validate(value["grant"])
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        event_grants[id(event)] = stored
+        request_digest = event.get("detail", {}).get("request_digest")
+        if isinstance(request_digest, str):
+            request_grants[request_digest] = stored
+    return event_grants, request_grants
+
+
+def _stored_event_grant(event, event_grants, request_grants):
+    return event_grants.get(id(event)) or request_grants.get(
+        event.get("detail", {}).get("request_digest")
+    )
+
+
+def _reject_grant_id_reuse(events, grant, event_grants, request_grants):
+    for event in events:
+        detail = event.get("detail", {})
+        stored = _stored_event_grant(event, event_grants, request_grants)
+        grant_id = stored.grant_id if stored else detail.get("grant_id")
+        accounting_digest = (
+            stored.accounting_digest()
+            if stored
+            else detail.get("grant_accounting_digest")
+        )
+        if (
+            grant_id == grant.grant_id
+            and accounting_digest != grant.accounting_digest()
+        ):
+            raise ValueError(
+                "repair grant ID reused with changed or unknown budget scope"
+            )
+
+
+def _event_reservation(event, grant, event_grants, request_grants):
+    kinds = {
+        "repair_started",
+        "repair_verification_started",
+        "operation_diagnosis_started",
+    }
+    if event["event_type"] not in kinds:
+        return 0.0
+    detail = event.get("detail", {})
+    stored = _stored_event_grant(event, event_grants, request_grants)
+    grant_id = detail.get("grant_id") or (stored.grant_id if stored else None)
+    if grant_id is None or grant_id == grant.grant_id:
+        return float(detail["reserved_seconds"])
+    return 0.0
 
 
 def _prior_result(
@@ -148,7 +214,7 @@ def dispatch_repair(
             ),
         )
     assert request.grant is not None and executor is not None
-    reserved = reserved_repair_seconds(events, request.grant.digest())
+    reserved = reserved_repair_seconds(events, request.grant, journal)
     allocation = request.grant.interrupt_seconds + KILL_GRACE_SECONDS
     if (
         len(starts) >= request.grant.max_attempts
@@ -172,6 +238,8 @@ def dispatch_repair(
             "request_digest": request.digest(),
             "fence": request.fence,
             "grant_digest": request.grant.digest(),
+            "grant_id": request.grant.grant_id,
+            "grant_accounting_digest": request.grant.accounting_digest(),
             "reserved_seconds": allocation,
         },
     )

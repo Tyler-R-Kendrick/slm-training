@@ -187,7 +187,8 @@ print('NATIVE_PATCH_AND_SCOPE_OK')
     spec = VerificationRequest(request.digest(), request.blocker.fingerprint(), request.blocker.source_digest,
         proposal.tree_digest, request.blocker.environment_digest, "a" * 64, request.grant.digest(), "fixture-fence",
         request.allowed_paths, check, (regression,), 1, hashlib.sha256(b"broken\n").hexdigest(),
-        hashlib.sha256(b"").hexdigest(), timeout_seconds=20)
+        hashlib.sha256(b"").hexdigest(), timeout_seconds=20,
+        regression_test_path=proposal.regression_test)
     evidence = verify_candidate(spec, readonly_source, candidate)
     assert evidence.accepted, evidence
     assert evidence.changed_paths == ("broken.py", "tests/test_added.py")

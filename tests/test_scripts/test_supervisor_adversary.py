@@ -242,3 +242,77 @@ def test_operation_rejects_measured_environment_drift(tmp_path, monkeypatch, bou
             write_family_closures=closeout)
     assert effects == ([] if boundary == "before launch" else ["closeout"])
     assert not output_path.exists(), "drifted execution must not publish a success envelope"
+
+
+@pytest.mark.parametrize("drift", ["source", "environment"])
+def test_parent_discards_child_result_when_identity_drifts_before_commit(
+    tmp_path, monkeypatch, drift,
+):
+    from pathlib import Path
+    from slm_training.harness_core.bounded_process import (
+        BoundedProcessResult,
+        ProcessOutcome,
+    )
+
+    from scripts import run_autotrain_supervisor as supervisor
+    from scripts.merge_verification_evidence import digest
+
+    identity = {"source": "a" * 64}
+    environment = {"fixture_environment": True}
+    monkeypatch.setattr(supervisor, "_source_identity", lambda _: identity["source"])
+    monkeypatch.setattr(
+        "scripts.merge_verification_evidence.environment_identity",
+        lambda: dict(environment),
+    )
+    request = {
+        "operation": "closeout",
+        "loop_id": "parent-race",
+        "root": str(tmp_path),
+        "cwd": str(tmp_path),
+        "source_digest": "a" * 64,
+        "environment_digest": digest(environment),
+    }
+    outputs = []
+
+    def child_finishes_then_source_drifts(runtime, lease, argv, *, cwd, **kwargs):
+        request_path = Path(argv[argv.index("--operation-request") + 1])
+        output_path = Path(argv[argv.index("--operation-output") + 1])
+        executed = json.loads(request_path.read_text())
+        output_path.write_text(json.dumps({
+            "schema_version": "supervisor_operation/v1",
+            "operation": "closeout",
+            "request_digest": digest(executed),
+            "payload": {"report": {"completed": True}},
+        }))
+        outputs.append(output_path)
+        if drift == "source":
+            identity["source"] = "b" * 64
+        else:
+            environment["fixture_environment"] = False
+        return BoundedProcessResult(
+            command=tuple(argv),
+            outcome=ProcessOutcome.COMPLETED,
+            returncode=0,
+            stdout="",
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+    monkeypatch.setattr(ActivityRuntime, "run", child_finishes_then_source_drifts)
+    events = []
+    store = CampaignStore("supervisor-parent-race", tmp_path / "store")
+    with ActivityRuntime(store) as runtime:
+        assert supervisor._run_operation(
+            runtime, request, sequence=0, log_event=events.append,
+        ) is None
+        states = runtime.snapshot()
+
+    assert len(outputs) == 1 and not outputs[0].exists()
+    state, = states.values()
+    assert state.status == "cancelled"
+    assert not state.outputs
+    assert any(event["event"] == "operation_identity_drift" for event in events)
+    assert not any(
+        row["event_type"] == "activity_outputs_verified"
+        for row in store.verify_event_chain()
+    )

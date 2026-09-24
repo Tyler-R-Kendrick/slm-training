@@ -8,6 +8,9 @@ import pytest
 
 from scripts import autotrain_cycle_execution as execution
 from scripts import autotrain_supervisor_operations as operations
+from scripts import autotrain_supervisor_operation_runtime as operation_runtime
+from scripts import merge_verification_evidence as verification_evidence
+from scripts import run_autotrain_supervisor as supervisor
 from scripts.autotrain_pending import recover_driver_request
 from slm_training.autoresearch.heal.operation_recovery import record_operation_failure
 from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
@@ -22,8 +25,14 @@ def _request(tmp_path, grant=None):
                                    total_seconds=4, max_attempts=2)
     return dict(operation="driver", loop_id="test-loop", cwd=str(tmp_path),
                 root=str(tmp_path / "campaigns"), source_digest="a" * 64,
-                environment_digest="b" * 64, predecessor_campaign_id="before",
+                environment_digest=digest({}), predecessor_campaign_id="before",
                 driver_argv=["--continuation-grant", grant.model_dump_json()])
+
+
+@pytest.fixture(autouse=True)
+def stable_operation_identity(monkeypatch):
+    monkeypatch.setattr(supervisor, "_source_identity", lambda _: "a" * 64)
+    monkeypatch.setattr(verification_evidence, "environment_identity", lambda: {})
 
 
 def _timeout(*, stalled=False):
@@ -38,6 +47,7 @@ def test_timeout_retries_same_operation_but_stall_requires_diagnosis(tmp_path, m
     store = CampaignStore("runtime", tmp_path / "runtime")
     clock = [100.0]
     monkeypatch.setattr(operations, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(operation_runtime, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     logs = []
     with ActivityRuntime(store, controller_clock=lambda: clock[0]) as runtime:
         def run(*args, **kwargs):
@@ -65,6 +75,7 @@ def test_restart_and_new_predecessor_cannot_reset_exhausted_grant(tmp_path, monk
     store = CampaignStore("runtime", tmp_path / "runtime")
     clock, calls, charges = [100.0], [], []
     monkeypatch.setattr(operations, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(operation_runtime, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     for invocation in range(4):
         clock[0] += 10  # Retry backoff advances without sleeping.
         with ActivityRuntime(store, controller_clock=lambda: clock[0]) as runtime:

@@ -37,6 +37,7 @@ def _cached(home):
             info = os.fstat(descriptor)
             if (
                 not stat.S_ISREG(info.st_mode)
+                or info.st_nlink != 1
                 or info.st_uid != os.geteuid()
                 or info.st_mode & 0o077
                 or info.st_size > _MAX_AUTH_FILE_BYTES

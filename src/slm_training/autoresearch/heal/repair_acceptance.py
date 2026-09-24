@@ -194,9 +194,10 @@ def _reserve_verification(
         for event in starts
     ):
         return "verification_attempt_requires_reconciliation"
-    count = 2 + len(spec.checks) + 2 * len(spec.equivalence_checks)
+    count = 4 + len(spec.checks) + 2 * len(spec.equivalence_checks)
     reserve = min(MAX_RUN_SECONDS, count * (spec.timeout_seconds + KILL_GRACE_SECONDS))
-    spent = reserved_repair_seconds(journal.verify_event_chain(), request.grant.digest())
+    events = journal.verify_event_chain()
+    spent = reserved_repair_seconds(events, request.grant, journal)
     if spent + reserve > request.grant.total_seconds:
         return "verification_grant_exhausted"
     journal.append_event(
@@ -207,6 +208,8 @@ def _reserve_verification(
             "request_digest": request.digest(),
             "fence": spec.fencing_token,
             "grant_digest": request.grant.digest(),
+            "grant_id": request.grant.grant_id,
+            "grant_accounting_digest": request.grant.accounting_digest(),
             "authority_binding_digest": binding.digest() if binding else None,
             "reserved_seconds": reserve,
         },
@@ -264,6 +267,7 @@ def verify_repair(
         failure_stderr_sha256=request.failure_stderr_sha256,
         semantics_preserving_paths=request.semantics_preserving_paths,
         equivalence_checks=verification_request.equivalence_checks,
+        regression_test_path=proposal.regression_test,
         timeout_seconds=request.grant.interrupt_seconds,
     )
     if verification_request != expected:
