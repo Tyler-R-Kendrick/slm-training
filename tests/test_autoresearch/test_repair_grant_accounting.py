@@ -174,3 +174,85 @@ def test_unidentified_legacy_grant_reservation_is_charged(repair_request, journa
         )
         == 19
     )
+
+
+def test_successor_carries_predecessor_reservations_and_adds_only_its_budget(
+    repair_request, journal, executor
+):
+    first = dispatch_repair(
+        repair_request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
+    predecessor = repair_request.grant
+    successor = predecessor.model_copy(
+        update={
+            "grant_id": "local-test-successor",
+            "successor_of": predecessor.grant_id,
+            "max_attempts": 1,
+            "total_seconds": 20.0,
+        }
+    )
+    events = journal.verify_event_chain()
+    assert reserved_repair_seconds(events, successor, journal) == 20
+    next_request = repair_request.model_copy(
+        update={"attempt_id": "attempt-2", "grant": successor}
+    )
+    second = dispatch_repair(
+        next_request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
+    assert first.status == second.status == "waiting_verification"
+    assert executor.runner.calls == 2
+    assert reserved_repair_seconds(journal.verify_event_chain(), successor, journal) == 40
+
+
+def test_new_grant_cannot_reset_blocker_budget_without_successor_link(
+    repair_request, journal, executor
+):
+    dispatch_repair(
+        repair_request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
+    unrelated = repair_request.grant.model_copy(update={"grant_id": "unlinked"})
+    request = repair_request.model_copy(
+        update={"attempt_id": "attempt-2", "grant": unrelated}
+    )
+    with pytest.raises(ValueError, match="must extend the latest blocker grant"):
+        dispatch_repair(
+            request, executor=executor, journal=journal, fence_valid=lambda _: True
+        )
+    assert executor.runner.calls == 1
+
+
+def test_successor_budget_and_attempts_are_cumulative(
+    repair_request, journal, executor
+):
+    dispatch_repair(
+        repair_request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
+    predecessor = repair_request.grant
+    successor = predecessor.model_copy(
+        update={
+            "grant_id": "local-test-successor",
+            "successor_of": predecessor.grant_id,
+            "max_attempts": 1,
+            "total_seconds": 20.0,
+        }
+    )
+    successor_request = repair_request.model_copy(
+        update={"attempt_id": "attempt-2", "grant": successor}
+    )
+    dispatch_repair(
+        successor_request,
+        executor=executor,
+        journal=journal,
+        fence_valid=lambda _: True,
+    )
+    fork = predecessor.model_copy(
+        update={"grant_id": "fork", "successor_of": predecessor.grant_id}
+    )
+    fork_request = repair_request.model_copy(
+        update={"attempt_id": "attempt-3", "grant": fork}
+    )
+    with pytest.raises(ValueError, match="latest blocker grant"):
+        dispatch_repair(
+            fork_request, executor=executor, journal=journal, fence_valid=lambda _: True
+        )
+    assert executor.runner.calls == 2

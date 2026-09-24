@@ -64,6 +64,7 @@ class ProviderEndpoint(RepairModel):
 
 class RepairGrant(RepairModel):
     grant_id: Name
+    successor_of: Name | None = None
     provider: Name
     executable: Name
     executable_sha256: Digest
@@ -84,7 +85,7 @@ class RepairGrant(RepairModel):
         return self
 
     def accounting_digest(self) -> str:
-        """Stable grant identity for budget accounting across expiry refreshes."""
+        """Stable identity across expiry refreshes; successors add a separate budget."""
         payload = self.model_dump(mode="json")
         payload.pop("expires_at")
         return hashlib.sha256(canonical_json(payload).encode()).hexdigest()
