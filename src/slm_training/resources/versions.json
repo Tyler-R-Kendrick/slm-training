@@ -329,6 +329,11 @@
     "ci.local_merge_gate": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Use up to 512 initial test shards for the full-suite release verifier and grant each shard only its measured duration estimate within the bounded invocation budget, avoiding repeated 40-second oversize timeouts.",
+          "version": "v19"
+        },
+        {
           "date": "2026-09-23",
           "note": "Bind full-suite selection to the target base (origin/main by default) and select the repository test target when a clean comparison has no changed paths; docs-only deltas remain eligible for explicit zero-test coverage.",
           "version": "v18"
@@ -460,7 +465,7 @@
         "scripts/merge_verification_controller.py",
         "tests/test_scripts/test_merge_verification_controller.py"
       ],
-      "version": "v18"
+      "version": "v19"
     },
     "config.levers": {
       "history": [

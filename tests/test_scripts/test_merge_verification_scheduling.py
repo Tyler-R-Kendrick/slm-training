@@ -96,8 +96,33 @@ def test_initial_shards_are_bounded_for_resumable_controller_grants(monkeypatch)
     monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {})
     nodes = [f"tests/a.py::test_{n}" for n in range(1000)]
     shards = owner.plan_shards(nodes, 10)
-    assert len(shards) == owner.MAX_INITIAL_SHARDS == 128
+    assert len(shards) == owner.MAX_INITIAL_SHARDS == 512
     assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+
+
+def test_large_source_suite_is_split_into_bounded_initial_shards(monkeypatch):
+    monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {})
+    nodes = [f"tests/test_{n % 300}.py::test_{n}" for n in range(11_979)]
+
+    shards = owner.plan_shards(nodes, 170)
+
+    assert len(shards) == 512
+    assert max(map(len, shards)) <= 24
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+
+
+def test_shard_allowance_uses_estimate_instead_of_all_available_time(monkeypatch):
+    node = "tests/test_slow.py::test_one"
+    state = state_for(node)
+    state["workload_budget_seconds"] = 100.0
+    state["attempts"] = [{"kind": "collection", "seconds": 2.0}]
+    monkeypatch.setattr(
+        owner.check_changed, "_test_file_durations", lambda: {"tests/test_slow.py": 7.0}
+    )
+
+    allowance = owner._allowance(state, "shard", [node], 80.0)
+
+    assert allowance == 16.0
 
 
 def test_runtime_identity_includes_potentially_executable_cache_content(tmp_path):
@@ -246,7 +271,7 @@ def test_estimated_long_shard_gets_a_slice_before_the_next_shard(monkeypatch):
 
     monkeypatch.setattr(owner, "run_workload", execute)
     owner._run_shards(state, Path("."), Path("."), lambda: 50, lambda: None)
-    assert calls == [([slow], 50), ([fast], 50)]
+    assert calls == [([slow], 50), ([fast], 3.0)]
     assert state["passed_nodes"] == [fast]
 
 

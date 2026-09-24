@@ -36,7 +36,7 @@ PYTEST_OPTIONS = [
 FINALIZATION_SECONDS = 10.0
 # Keep a complete source gate fundable by the controller grant. Timeouts split
 # only the slow shards, instead of charging hundreds of process startups first.
-MAX_INITIAL_SHARDS = 128
+MAX_INITIAL_SHARDS = 512
 
 def changed_paths(root: Path, base_ref: str) -> tuple[str, list[str]]:
     def git(*argv: str) -> str:
@@ -225,7 +225,7 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
         }
         return 0.0
     state.setdefault("waiting", {}).pop(wait_key, None)
-    return available
+    return required
 def _shard_seconds(state, nodes, full):
     return min(full, _shard_estimate_seconds(state, nodes, full))
 
