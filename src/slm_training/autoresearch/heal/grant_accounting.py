@@ -61,6 +61,8 @@ def validate_blocker_grant_successor(
     events, grant, fingerprint, known, event_grants, request_grants
 ):
     used = _used_blocker_grants(events, fingerprint, event_grants, request_grants)
+    if not used and grant.successor_of:
+        used = _latest_grant_use(events, event_grants, request_grants)
     if not used:
         if grant.successor_of:
             raise ValueError("repair grant successor has no blocker predecessor")
@@ -88,6 +90,25 @@ def _used_blocker_grants(events, fingerprint, event_grants, request_grants):
         if grant_id is None:
             raise ValueError("repair grant predecessor identity is missing")
         if not used or used[-1] != grant_id:
+            used.append(grant_id)
+    return used
+
+
+def _latest_grant_use(events, event_grants, request_grants):
+    kinds = {
+        "repair_started",
+        "operation_diagnosis_started",
+        "repair_verification_started",
+    }
+    used = []
+    for event in events:
+        if event["event_type"] not in kinds:
+            continue
+        stored = _stored_event_grant(event, event_grants, request_grants)
+        grant_id = event.get("detail", {}).get("grant_id") or (
+            stored.grant_id if stored else None
+        )
+        if grant_id and (not used or used[-1] != grant_id):
             used.append(grant_id)
     return used
 

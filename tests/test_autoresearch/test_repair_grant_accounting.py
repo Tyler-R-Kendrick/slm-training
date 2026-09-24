@@ -233,6 +233,37 @@ def test_new_grant_cannot_reset_blocker_budget_without_successor_link(
     assert executor.runner.calls == 1
 
 
+def test_successor_can_continue_after_diagnosis_without_prior_repair_start(
+    repair_request, journal, executor
+):
+    predecessor = repair_request.grant
+    journal.append_event(
+        "operation_diagnosis_started",
+        detail={
+            "grant_id": predecessor.grant_id,
+            "grant_accounting_digest": predecessor.accounting_digest(),
+            "grant_record": predecessor.model_dump(mode="json"),
+            "reserved_seconds": 10,
+        },
+    )
+    successor = predecessor.model_copy(
+        update={
+            "grant_id": "after-diagnosis",
+            "successor_of": predecessor.grant_id,
+            "max_attempts": 1,
+            "total_seconds": 20.0,
+        }
+    )
+    request = repair_request.model_copy(
+        update={"attempt_id": "after-diagnosis", "grant": successor}
+    )
+    result = dispatch_repair(
+        request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
+    assert result.status == "waiting_verification"
+    assert executor.runner.calls == 1
+
+
 def test_successor_budget_and_attempts_are_cumulative(
     repair_request, journal, executor
 ):
