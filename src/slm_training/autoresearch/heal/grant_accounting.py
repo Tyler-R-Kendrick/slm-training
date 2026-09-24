@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 
-from slm_training.autoresearch.heal.repair_contracts import RepairGrant
+from slm_training.autoresearch.heal.repair_contracts import RepairGrant, RepairRequest
+from slm_training.lineage.records import canonical_json
 
 
 def repair_grant_budget(events, grant, journal):
@@ -44,13 +46,16 @@ def repair_grant_budget(events, grant, journal):
     )
 
 
-def diagnosis_budget_exhausted(events, grant, journal, request_digest, allocation):
+def diagnosis_budget_exhausted(
+    events, grant, journal, activity_id, blocker_code, allocation
+):
     reserved, seconds, attempts, _, _, _, grant_ids = repair_grant_budget(
         events, grant, journal
     )
     charged = sum(
         event.get("detail", {}).get("grant_id") in grant_ids
-        and event.get("detail", {}).get("original_request_digest") == request_digest
+        and event.get("detail", {}).get("affected_activity_id") == activity_id
+        and event.get("detail", {}).get("blocker_code") == blocker_code
         for event in events
         if event["event_type"] == "operation_diagnosis_started"
     )
@@ -58,11 +63,20 @@ def diagnosis_budget_exhausted(events, grant, journal, request_digest, allocatio
 
 
 def validate_blocker_grant_successor(
-    events, grant, fingerprint, known, event_grants, request_grants
+    events,
+    grant,
+    fingerprint,
+    known,
+    event_grants,
+    request_grants,
+    activity_id,
+    blocker_code,
 ):
     used = _used_blocker_grants(events, fingerprint, event_grants, request_grants)
-    if not used and grant.successor_of:
-        used = _latest_grant_use(events, event_grants, request_grants)
+    if not used:
+        used = _latest_grant_use(
+            events, event_grants, request_grants, fingerprint, activity_id, blocker_code
+        )
     if not used:
         if grant.successor_of:
             raise ValueError("repair grant successor has no blocker predecessor")
@@ -94,20 +108,28 @@ def _used_blocker_grants(events, fingerprint, event_grants, request_grants):
     return used
 
 
-def _latest_grant_use(events, event_grants, request_grants):
-    kinds = {
-        "repair_started",
-        "operation_diagnosis_started",
-        "repair_verification_started",
-    }
+def _latest_grant_use(
+    events, event_grants, request_grants, fingerprint, activity_id, blocker_code
+):
     used = []
     for event in events:
-        if event["event_type"] not in kinds:
+        detail = event.get("detail", {})
+        repair_use = (
+            event["event_type"]
+            in {
+                "repair_started",
+                "repair_verification_started",
+            }
+            and detail.get("fingerprint") == fingerprint
+        )
+        diagnosis_use = event["event_type"] == "operation_diagnosis_started" and (
+            detail.get("affected_activity_id") == activity_id
+            and detail.get("blocker_code") == blocker_code
+        )
+        if not (repair_use or diagnosis_use):
             continue
         stored = _stored_event_grant(event, event_grants, request_grants)
-        grant_id = event.get("detail", {}).get("grant_id") or (
-            stored.grant_id if stored else None
-        )
+        grant_id = detail.get("grant_id") or (stored.grant_id if stored else None)
         if grant_id and (not used or used[-1] != grant_id):
             used.append(grant_id)
     return used
@@ -137,19 +159,61 @@ def _stored_grant_bindings(events, journal):
         detail = event.get("detail", {})
         stored = _inline_grant(detail)
         sha = event.get("artifact_sha256")
-        if event["event_type"] == "repair_started" and isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha):
-            try:
-                value = json.loads((root / f"{sha}.json").read_text())
-                stored = RepairGrant.model_validate_json(json.dumps(value["grant"]))
-            except (OSError, ValueError, KeyError, TypeError):
-                pass
+        if (
+            event["event_type"] == "repair_started"
+            and isinstance(sha, str)
+            and re.fullmatch(r"[0-9a-f]{64}", sha)
+        ):
+            stored = _artifact_grant(root, sha) or stored
         if stored is None:
             continue
+        if detail.get("grant_id") and detail["grant_id"] != stored.grant_id:
+            raise ValueError("repair event grant ID disagrees with its artifact")
+        if detail.get("grant_accounting_digest") and (
+            detail["grant_accounting_digest"] != stored.accounting_digest()
+        ):
+            raise ValueError("repair event grant digest disagrees with its artifact")
         event_grants[id(event)] = stored
         request_digest = detail.get("request_digest")
         if isinstance(request_digest, str):
             request_grants[request_digest] = stored
     return event_grants, request_grants
+
+
+def _artifact_grant(root, sha):
+    try:
+        raw = (root / f"{sha}.json").read_text()
+    except FileNotFoundError:
+        return None
+    try:
+        value = json.loads(raw)
+        if hashlib.sha256(canonical_json(value).encode()).hexdigest() != sha:
+            raise ValueError("repair request artifact content digest mismatch")
+        request = RepairRequest.model_validate_json(raw)
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise ValueError("invalid stored repair request artifact") from exc
+    if request.digest() != sha or request.grant is None:
+        raise ValueError("repair request artifact identity mismatch")
+    return request.grant
+
+
+def append_budget_reservation(
+    journal, events, event_type, *, detail, experiment_id=None, artifact_sha256=None
+):
+    """Append only against the history snapshot used for the budget check."""
+    try:
+        journal.append_event(
+            event_type,
+            experiment_id=experiment_id,
+            artifact_sha256=artifact_sha256,
+            expected_parent=events[-1]["event_id"] if events else "",
+            detail=detail,
+        )
+    except ValueError as exc:
+        if "stale campaign event parent" not in str(exc):
+            raise
+        return False
+    return True
 
 
 def _inline_grant(detail):
@@ -178,8 +242,13 @@ def _reject_grant_id_reuse(events, grant, event_grants, request_grants):
             if stored
             else detail.get("grant_accounting_digest")
         )
-        if grant_id == grant.grant_id and accounting_digest != grant.accounting_digest():
-            raise ValueError("repair grant ID reused with changed or unknown budget scope")
+        if (
+            grant_id == grant.grant_id
+            and accounting_digest != grant.accounting_digest()
+        ):
+            raise ValueError(
+                "repair grant ID reused with changed or unknown budget scope"
+            )
 
 
 def _event_reservation(event, grant_ids, event_grants, request_grants):
@@ -192,4 +261,8 @@ def _event_reservation(event, grant_ids, event_grants, request_grants):
     detail = event.get("detail", {})
     stored = _stored_event_grant(event, event_grants, request_grants)
     grant_id = detail.get("grant_id") or (stored.grant_id if stored else None)
-    return float(detail["reserved_seconds"]) if grant_id is None or grant_id in grant_ids else 0.0
+    return (
+        float(detail["reserved_seconds"])
+        if grant_id is None or grant_id in grant_ids
+        else 0.0
+    )

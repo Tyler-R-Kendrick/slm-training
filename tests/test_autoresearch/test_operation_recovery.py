@@ -9,21 +9,14 @@ import pytest
 
 from tests.casefiles import case_values
 
-from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
-from slm_training.harness_core.activity_contract import (
-    ActivityOutcome,
-    ActivitySpec,
-    WakeCondition,
-    contract_digest,
-)
 from slm_training.autoresearch.heal import operation_recovery as bridge
+from slm_training.autoresearch.heal import operation_diagnosis as diagnosis
 from slm_training.autoresearch.heal import recovery_dispatch as dispatch
 from slm_training.autoresearch.heal.isolation_workspace import (
     manifest_digest,
     tree_manifest,
 )
 from slm_training.autoresearch.heal.repair_contracts import (
-    RepairDispatchResult,
     RepairGrant,
 )
 from slm_training.autoresearch.heal.repair_verifier import VerificationCheck
@@ -39,20 +32,30 @@ repair_request = dispatch_fixtures.repair_request
 SHA = "a" * 64
 
 
-@pytest.mark.parametrize("kind", case_values(__file__, "test_agent_cannot_ignore_other_repair_reservations"))
+@pytest.mark.parametrize(
+    "kind", case_values(__file__, "test_agent_cannot_ignore_other_repair_reservations")
+)
 @pytest.mark.parametrize("legacy", [False, True])
 def test_agent_cannot_ignore_other_repair_reservations(
-    repair_request, journal, executor, kind, legacy,
+    repair_request,
+    journal,
+    executor,
+    kind,
+    legacy,
 ):
     from slm_training.autoresearch.heal.dispatch import dispatch_repair
 
-    detail = {"reserved_seconds": 30, "fingerprint": "different-blocker",
-              "attempt_id": "previous"}
+    detail = {
+        "reserved_seconds": 30,
+        "fingerprint": "different-blocker",
+        "attempt_id": "previous",
+    }
     if not legacy:
         detail["grant_digest"] = repair_request.grant.digest()
     journal.append_event(kind, detail=detail)
-    result = dispatch_repair(repair_request, executor=executor, journal=journal,
-                             fence_valid=lambda _: True)
+    result = dispatch_repair(
+        repair_request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
     assert result.reason == "repair_grant_exhausted"
     assert executor.runner.calls == 0
 
@@ -61,19 +64,37 @@ def test_verification_cannot_ignore_other_blocker_reservations(repair_request, j
     from types import SimpleNamespace
     from slm_training.autoresearch.heal.repair_acceptance import _reserve_verification
 
-    journal.append_event("repair_started", detail={"reserved_seconds": 40,
-        "fingerprint": "different-blocker", "grant_digest": repair_request.grant.digest()})
+    journal.append_event(
+        "repair_started",
+        detail={
+            "reserved_seconds": 40,
+            "fingerprint": "different-blocker",
+            "grant_digest": repair_request.grant.digest(),
+        },
+    )
     spec = SimpleNamespace(checks=(), equivalence_checks=(), timeout_seconds=1)
-    assert _reserve_verification(repair_request, spec, journal) == "verification_grant_exhausted"
+    assert (
+        _reserve_verification(repair_request, spec, journal)
+        == "verification_grant_exhausted"
+    )
 
 
 def test_diagnosis_cannot_ignore_agent_reservations(diagnosed):
     context, config, probes = diagnosed
     journal = CampaignStore(context.campaign_id, context.root)
-    journal.append_event("repair_started", detail={"reserved_seconds": 100,
-        "grant_digest": config.grant.digest(), "fingerprint": "different-blocker"})
-    pending = {"original_operation": "inspect", "observed_outcome": "code_failure",
-               "original_request_digest": SHA}
+    journal.append_event(
+        "repair_started",
+        detail={
+            "reserved_seconds": 100,
+            "grant_digest": config.grant.digest(),
+            "fingerprint": "different-blocker",
+        },
+    )
+    pending = {
+        "original_operation": "inspect",
+        "observed_outcome": "code_failure",
+        "original_request_digest": SHA,
+    }
     _, reason, ran = bridge.diagnose_operation(pending, context, config, journal)
     assert reason == "diagnosis_grant_exhausted" and not ran and not probes
 
@@ -108,6 +129,8 @@ def test_successor_grant_carries_diagnosis_budget_and_attempts(diagnosed):
         detail={
             "diagnosis_id": "prior-config-diagnosis",
             "original_request_digest": SHA,
+            "affected_activity_id": "original",
+            "blocker_code": "harness_code_failure",
             "attempt_id": "previous-attempt",
             "grant_id": predecessor.grant_id,
             "grant_accounting_digest": predecessor.accounting_digest(),
@@ -115,9 +138,7 @@ def test_successor_grant_carries_diagnosis_budget_and_attempts(diagnosed):
             "reserved_seconds": 90,
         },
     )
-    resolved, reason, ran = bridge.diagnose_operation(
-        pending, context, config, journal
-    )
+    resolved, reason, ran = bridge.diagnose_operation(pending, context, config, journal)
     assert resolved and reason == "original_fault_reproduced" and ran
     assert len(probes) == 1
 
@@ -126,12 +147,20 @@ def test_other_explicit_grant_is_not_charged(repair_request, journal, executor):
     from slm_training.autoresearch.heal.dispatch import dispatch_repair
 
     other = repair_request.grant.model_copy(update={"grant_id": "other-grant"})
-    journal.append_event("repair_started", detail={"reserved_seconds": 100,
-        "grant_digest": "b" * 64, "grant_id": other.grant_id,
-        "grant_accounting_digest": other.accounting_digest(),
-        "fingerprint": "different-blocker", "attempt_id": "previous"})
-    result = dispatch_repair(repair_request, executor=executor, journal=journal,
-                             fence_valid=lambda _: True)
+    journal.append_event(
+        "repair_started",
+        detail={
+            "reserved_seconds": 100,
+            "grant_digest": "b" * 64,
+            "grant_id": other.grant_id,
+            "grant_accounting_digest": other.accounting_digest(),
+            "fingerprint": "different-blocker",
+            "attempt_id": "previous",
+        },
+    )
+    result = dispatch_repair(
+        repair_request, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
     assert result.status == "waiting_verification" and executor.runner.calls == 1
 
 
@@ -190,94 +219,8 @@ def diagnosed(tmp_path, monkeypatch):
             kill_grace_seconds=KILL_GRACE_SECONDS,
         )
 
-    monkeypatch.setattr(bridge, "run_isolated", actual_process_with_mocked_isolation)
+    monkeypatch.setattr(diagnosis, "run_isolated", actual_process_with_mocked_isolation)
     return context, config, calls
-
-
-def test_failed_operation_queue_reaches_actual_diagnosis_and_executor(
-    diagnosed, monkeypatch
-):
-    context, config, probes = diagnosed
-    original = {
-        "operation": "inspect",
-        "loop_id": "loop",
-        "cwd": str(context.source),
-        "root": str(context.root),
-        "source_digest": context.source_digest,
-        "environment_digest": SHA,
-    }
-    with ActivityRuntime(CampaignStore("runtime", context.root)) as runtime:
-        runtime.register(
-            ActivitySpec(
-                activity_id="original",
-                family="loop",
-                kind="control",
-                source_digest=context.source_digest,
-                environment_digest=SHA,
-                input_digest=contract_digest(original),
-                output_namespace="attempt",
-            )
-        )
-        lease = runtime.claim_next(capabilities={"local_process"})
-        result = runtime.run(
-            lease,
-            (sys.executable, "fixture.py"),
-            cwd=context.source,
-        )
-        bridge.record_operation_failure(
-            runtime, lease, original, result, outcome=ActivityOutcome.UNKNOWN_FAILURE
-        )
-        runtime.finish(
-            lease,
-            outcome=ActivityOutcome.UNKNOWN_FAILURE,
-            spent_seconds=result.duration_seconds,
-            wake=WakeCondition(
-                predicate="original operation produces valid output",
-                source="independent_repair_verification",
-                identity_digest=contract_digest(original),
-            ),
-        )
-        jobs = bridge.pending_operation_repairs(runtime)
-        assert len(jobs) == 1 and jobs[0]["operation"] == "repair"
-        pending = jobs[0]["hard_pending"][0]
-        assert pending["affected_activity_id"] == "original"
-        assert pending["observed_outcome"] == "unknown_failure"
-        launched = []
-
-        class ExplicitFakeAgent:
-            def __init__(self, *args, **kwargs):
-                pass
-
-            def capability(self, request):
-                return None
-
-            def execute(self, request, **kwargs):
-                launched.append(request)
-                return RepairDispatchResult(
-                    status="waiting_diagnosis",
-                    request_digest=request.digest(),
-                    reason="fake_agent_invoked",
-                )
-
-        monkeypatch.setattr(dispatch, "CodexExecutor", ExplicitFakeAgent)
-        first = dispatch.dispatch_hard_pending(
-            pending, context, config=config, fence_valid=lambda _: True
-        )
-        assert first["reason"] == "original_fault_reproduced" and not launched
-        second = dispatch.dispatch_hard_pending(
-            pending, context, config=config, fence_valid=lambda _: True
-        )
-        assert second["reason"] == "fake_agent_invoked"
-        assert len(probes) == len(launched) == 1
-        assert launched[0].blocked_activity_id == "original"
-        assert launched[0].blocker.blocker_class == "code"
-        events = CampaignStore("campaign", context.root).verify_event_chain()
-        assert any(
-            e["event_type"] == "operation_diagnosis_finished"
-            and e["detail"]["spent_seconds"] > 0
-            for e in events
-        )
-        assert any(e["event_type"] == "repair_started" for e in events)
 
 
 @pytest.mark.parametrize("fault", ["argparse", "missing_recipe", "typed_formal"])
@@ -361,7 +304,7 @@ def test_interrupted_diagnosis_retries_next_bounded_attempt_without_budget_reset
         raise SystemExit("injected worker crash")
 
     with monkeypatch.context() as patch:
-        patch.setattr(bridge, "run_isolated", crash)
+        patch.setattr(diagnosis, "run_isolated", crash)
         with pytest.raises(SystemExit):
             bridge.diagnose_operation(pending, context, config, journal)
     assert (

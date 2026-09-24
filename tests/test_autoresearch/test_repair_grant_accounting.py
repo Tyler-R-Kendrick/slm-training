@@ -2,11 +2,17 @@
 
 import hashlib
 import json
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from tests.test_autoresearch.test_repair_dispatch import CHECK_MANIFEST, SHA, FakeSandbox
+from tests.test_autoresearch.test_repair_dispatch import (
+    CHECK_MANIFEST,
+    SHA,
+    FakeSandbox,
+)
 from slm_training.autoresearch.heal.agent_executor import CodexExecutor
 from slm_training.autoresearch.heal.dispatch import (
     dispatch_repair,
@@ -120,6 +126,43 @@ def test_expiry_refresh_keeps_consumed_grant_reservation(
     assert executor.runner.calls == 1
 
 
+def test_concurrent_reservations_cannot_both_spend_one_attempt(
+    repair_request, journal, executor, monkeypatch
+):
+    grant = repair_request.grant.model_copy(update={"max_attempts": 1})
+    requests = [
+        repair_request.model_copy(
+            update={"attempt_id": f"concurrent-{index}", "grant": grant}
+        )
+        for index in range(2)
+    ]
+    barrier = threading.Barrier(2)
+    append = CampaignStore.append_event
+
+    def synchronized_append(store, event_type, **kwargs):
+        if event_type == "repair_started":
+            barrier.wait(timeout=5)
+        return append(store, event_type, **kwargs)
+
+    monkeypatch.setattr(CampaignStore, "append_event", synchronized_append)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(
+            pool.map(
+                lambda request: dispatch_repair(
+                    request,
+                    executor=executor,
+                    journal=journal,
+                    fence_valid=lambda _: True,
+                ),
+                requests,
+            )
+        )
+    events = journal.verify_event_chain()
+    assert sum(e["event_type"] == "repair_started" for e in events) == 1
+    assert executor.runner.calls == 1
+    assert {result.reason for result in results} & {"repair_reservation_raced"}
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [("total_seconds", 41.0), ("repair_classes", ("code", "data"))],
@@ -213,7 +256,9 @@ def test_successor_carries_predecessor_reservations_and_adds_only_its_budget(
     )
     assert first.status == second.status == "waiting_verification"
     assert executor.runner.calls == 2
-    assert reserved_repair_seconds(journal.verify_event_chain(), successor, journal) == 40
+    assert (
+        reserved_repair_seconds(journal.verify_event_chain(), successor, journal) == 40
+    )
 
 
 def test_new_grant_cannot_reset_blocker_budget_without_successor_link(
@@ -243,6 +288,8 @@ def test_successor_can_continue_after_diagnosis_without_prior_repair_start(
             "grant_id": predecessor.grant_id,
             "grant_accounting_digest": predecessor.accounting_digest(),
             "grant_record": predecessor.model_dump(mode="json"),
+            "affected_activity_id": "activity-1",
+            "blocker_code": "eval_missing_rows",
             "reserved_seconds": 10,
         },
     )
@@ -255,7 +302,11 @@ def test_successor_can_continue_after_diagnosis_without_prior_repair_start(
         }
     )
     request = repair_request.model_copy(
-        update={"attempt_id": "after-diagnosis", "grant": successor}
+        update={
+            "attempt_id": "after-diagnosis",
+            "blocked_activity_id": "activity-1",
+            "grant": successor,
+        }
     )
     result = dispatch_repair(
         request, executor=executor, journal=journal, fence_valid=lambda _: True
@@ -301,9 +352,7 @@ def test_successor_budget_and_attempts_are_cumulative(
     assert executor.runner.calls == 2
 
 
-def test_successor_budget_covers_independent_verification(
-    repair_request, journal
-):
+def test_successor_budget_covers_independent_verification(repair_request, journal):
     from types import SimpleNamespace
 
     from slm_training.autoresearch.heal.repair_acceptance import _reserve_verification

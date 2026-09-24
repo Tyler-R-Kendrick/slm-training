@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import Callable
 
 from slm_training.autoresearch.heal.dispatch import accept_verification
-from slm_training.autoresearch.heal.grant_accounting import repair_grant_budget
+from slm_training.autoresearch.heal.grant_accounting import (
+    append_budget_reservation,
+    repair_grant_budget,
+)
 from slm_training.autoresearch.heal.isolation_workspace import (
     manifest_digest,
     owner_write_preparation,
@@ -44,10 +47,12 @@ from slm_training.lineage.records import canonical_json
 
 def source_verification_activity_id(identity: str, grant: ResourceGrant | dict) -> str:
     grant = ResourceGrant.model_validate(grant)
-    bound = contract_digest({
-        "verification_identity": identity,
-        "grant": grant.model_dump(mode="json"),
-    })
+    bound = contract_digest(
+        {
+            "verification_identity": identity,
+            "grant": grant.model_dump(mode="json"),
+        }
+    )
     return "source-verification-" + bound
 
 
@@ -82,16 +87,20 @@ class SourceVerificationGate:
 
     def __post_init__(self) -> None:
         if (
-            not isinstance(self.identity, str) or len(self.identity) != 64
+            not isinstance(self.identity, str)
+            or len(self.identity) != 64
             or any(char not in "0123456789abcdef" for char in self.identity)
-            or not isinstance(self.base_ref, str) or not self.base_ref.strip()
+            or not isinstance(self.base_ref, str)
+            or not self.base_ref.strip()
         ):
             raise ValueError("source verification requires a locked identity and base")
 
     def read(self, workspace: VerificationWorkspace) -> dict | None:
         from scripts.merge_verification import _summary, verification_binding
         from scripts.merge_verification_evidence import (
-            ReceiptCache, digest, validate_cached_state,
+            ReceiptCache,
+            digest,
+            validate_cached_state,
         )
         from scripts.verify_merge_ready import merge_gate_steps
 
@@ -113,8 +122,11 @@ class SourceVerificationGate:
         if not summary["verification_complete"]:
             return None
         binding = verification_binding(
-            self.root, self.base_ref, merge_gate_steps(),
-            isolated=True, runtimes=runtimes,
+            self.root,
+            self.base_ref,
+            merge_gate_steps(),
+            isolated=True,
+            runtimes=runtimes,
         )
         if digest(binding) != self.identity:
             raise ValueError("source_verification_binding_changed")
@@ -128,7 +140,8 @@ class SourceVerificationGate:
         if before != tree_manifest(workspace.base):
             raise ValueError("source_verification_base_mismatch")
         changed = {
-            path for path in before.keys() | after.keys()
+            path
+            for path in before.keys() | after.keys()
             if before.get(path) != after.get(path)
             and not ((self.root / path).is_dir() and path not in before)
             and not owner_write_preparation(before.get(path), after.get(path))
@@ -147,10 +160,12 @@ class SourceVerificationGate:
             "evidence_sha256": digest(summary),
             "scope_passed": evidence.accepted,
             "original_reproducer_passed": evidence.accepted,
-            "isolation_enforced": evidence.evidence_class == "independent_isolated_process",
+            "isolation_enforced": evidence.evidence_class
+            == "independent_isolated_process",
         }
         return authorize_release(
-            summary, expected_identity=self.identity,
+            summary,
+            expected_identity=self.identity,
             independent_verification=independent,
         )
 
@@ -203,7 +218,9 @@ def _reserve_verification(
     )
     if spent + reserve > total_budget:
         return "verification_grant_exhausted"
-    journal.append_event(
+    appended = append_budget_reservation(
+        journal,
+        events,
         "repair_verification_started",
         experiment_id=request.activity_id,
         detail={
@@ -217,6 +234,8 @@ def _reserve_verification(
             "reserved_seconds": reserve,
         },
     )
+    if not appended:
+        return "verification_reservation_raced"
     return None
 
 
@@ -237,7 +256,11 @@ def verify_repair(
     is no API taking a worker-supplied verification file. Isolation's verifier
     computes actual candidate content/scope and observes check outcomes itself.
     """
-    deadline = time.monotonic() + INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
+    deadline = (
+        time.monotonic()
+        + INTERRUPT_AFTER_SECONDS
+        - HARNESS_FINALIZATION_RESERVE_SECONDS
+    )
     current_fence = binding.fence if binding else request.fence
     if request.grant is None or not fence_valid(current_fence):
         raise ValueError("verification requires the original grant and a current fence")
@@ -275,21 +298,30 @@ def verify_repair(
     )
     if verification_request != expected:
         raise ValueError("independent verifier identity mismatch")
-    source_evidence = source_verification.read(workspace) if source_verification else None
+    source_evidence = (
+        source_verification.read(workspace) if source_verification else None
+    )
     if source_evidence is None:
         waiting = RepairDispatchResult(
-            status="waiting_verification", request_digest=request.digest(),
-            reason="source_verification_pending" if source_verification else "source_verification_not_configured",
+            status="waiting_verification",
+            request_digest=request.digest(),
+            reason="source_verification_pending"
+            if source_verification
+            else "source_verification_not_configured",
             proposal=proposal,
         )
         artifact = journal.write_artifact("repair_source_verification_wait", waiting)
         journal.append_event(
-            "repair_source_verification_wait", artifact_sha256=artifact.stem,
+            "repair_source_verification_wait",
+            artifact_sha256=artifact.stem,
             idempotency_key="source-verification-wait:" + artifact.stem,
-            detail={"request_digest": request.digest(), "proposal_digest": proposal.digest(),
-                    "unmet_predicate": "complete_current_source_verification",
-                    "wake_source": "source_verification_completed",
-                    "required_capability": "isolated_source_verifier"},
+            detail={
+                "request_digest": request.digest(),
+                "proposal_digest": proposal.digest(),
+                "unmet_predicate": "complete_current_source_verification",
+                "wake_source": "source_verification_completed",
+                "required_capability": "isolated_source_verifier",
+            },
         )
         return waiting
     pending = _reserve_verification(request, verification_request, journal, binding)
@@ -311,14 +343,19 @@ def verify_repair(
     if source_verification.read(workspace) != source_evidence:
         raise ValueError("source_verification_changed_during_independent_checks")
     accepted = source_verification.authorize(source_evidence, evidence)
-    artifact = journal.write_artifact("repair_verification", {
-        "schema_version": "source_and_predicate_verification/v1",
-        "independent_verification": asdict(evidence),
-        "source_verification": source_evidence,
-        "source_snapshot_digest": manifest_digest(tree_manifest(workspace.base)),
-        "candidate_snapshot_digest": manifest_digest(tree_manifest(workspace.candidate)),
-        "source_release_authorized": accepted,
-    })
+    artifact = journal.write_artifact(
+        "repair_verification",
+        {
+            "schema_version": "source_and_predicate_verification/v1",
+            "independent_verification": asdict(evidence),
+            "source_verification": source_evidence,
+            "source_snapshot_digest": manifest_digest(tree_manifest(workspace.base)),
+            "candidate_snapshot_digest": manifest_digest(
+                tree_manifest(workspace.candidate)
+            ),
+            "source_release_authorized": accepted,
+        },
+    )
     receipt = RepairVerification(
         request_digest=request.digest(),
         proposal_digest=proposal.digest(),
@@ -330,8 +367,8 @@ def verify_repair(
         grant_id=request.grant.grant_id,
         fence=current_fence,
         authority_binding_digest=binding.digest() if binding else None,
-        original_failure_reproduced=bool(evidence.observations) and evidence.reason
-        != "original_failure_not_reproduced",
+        original_failure_reproduced=bool(evidence.observations)
+        and evidence.reason != "original_failure_not_reproduced",
         original_predicate_restored=evidence.accepted,
         required_checks_passed=accepted,
         protected_surfaces_unchanged=evidence.accepted,
