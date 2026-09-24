@@ -330,13 +330,16 @@ def drain_release(runtime, plan, *, deadline):
 def verify_release(args):
     source = args.source.resolve()
     roots = args.runtime_root or [Path(sys.prefix)]
+    runtime_digest = runtime_identity(tuple(roots))
     plan = {
         "schema": "release_verification_plan/v1",
         "activity_id": args.activity_id,
         "identity": args.identity,
         "source": str(source),
         "source_digest": source_identity(source),
-        "environment_digest": digest(environment_identity()),
+        "environment_digest": digest(
+            environment_identity(runtime_identity_value=runtime_digest)
+        ),
         "state_dir": str(args.state_dir.resolve()),
         "base_ref": args.base_ref,
         "step_seconds": args.max_step_seconds,
@@ -345,7 +348,7 @@ def verify_release(args):
         "local_feedback": args.local_feedback,
         "require_js_runtime": args.require_js_runtime,
         "runtime_roots": [str(root.resolve()) for root in roots],
-        "runtime_digest": runtime_identity(tuple(roots)),
+        "runtime_digest": runtime_digest,
     }
     started = time.monotonic()
     store = CampaignStore(args.job_id, args.root.resolve())
