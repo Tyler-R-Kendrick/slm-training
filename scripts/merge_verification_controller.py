@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 from scripts.merge_verification import _summary
+from scripts.merge_verification_successor import release_successor_plan
 from scripts.merge_verification_evidence import (
     ReceiptCache,
     digest,
@@ -353,6 +354,8 @@ def verify_release(args):
     started = time.monotonic()
     store = CampaignStore(args.job_id, args.root.resolve())
     with ActivityRuntime(store) as runtime:
+        if args.successor_of:
+            plan = release_successor_plan(runtime, plan, args.successor_of, release_grant)
         summary = drain_release(
             runtime, plan, deadline=started + INTERRUPT_AFTER_SECONDS - 10
         )
