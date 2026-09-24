@@ -270,14 +270,8 @@ def verified_loss_producer(store, receipt, path):
         if event["experiment_id"] != receipt["arm_id"]:
             continue
         kind, detail = event["event_type"], event["detail"]
-        if kind == "experiment_attempt_started":
-            active = detail["attempt_id"]
-        elif (
-            kind == "experiment_attempt_returned"
-            and detail.get("attempt_id") == active
-        ):
-            active = None
-        elif kind == "command_cursor_started":
+        active = _active_attempt_after_event(kind, detail, active)
+        if kind == "command_cursor_started":
             attempts[(detail["input_digest"], detail["attempt"])] = active
         elif kind == "command_cursor_committed":
             payload = _read(store.root / "artifacts/command_cursors" / f"{event['artifact_sha256']}.json")
@@ -293,6 +287,14 @@ def verified_loss_producer(store, receipt, path):
                         "cursor_artifact_sha256": event["artifact_sha256"],
                         "cursor_input_digest": key[0]}
     raise ValueError("loss report lacks a successful digest-bound producer stage")
+
+
+def _active_attempt_after_event(kind, detail, active):
+    if kind == "experiment_attempt_started":
+        return detail["attempt_id"]
+    if kind == "experiment_attempt_returned" and detail.get("attempt_id") == active:
+        return None
+    return active
 
 
 def _verify_loss_cursor_inputs(store, digest, receipt):
