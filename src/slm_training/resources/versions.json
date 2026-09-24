@@ -341,6 +341,11 @@
       "history": [
         {
           "date": "2026-09-24",
+          "note": "Bind AgentV and bridge installed JavaScript runtime trees, package locks, and entrypoints into merge-verification environment identity so dependency mounts cannot drift under a stable binding.",
+          "version": "v22"
+        },
+        {
+          "date": "2026-09-24",
           "note": "Give shards with no duration history a 15-second bootstrap slice so full verifier grants are not consumed by unknown-duration retries.",
           "version": "v21"
         },
@@ -487,7 +492,7 @@
         "scripts/merge_verification_controller.py",
         "tests/test_scripts/test_merge_verification_controller.py"
       ],
-      "version": "v21"
+      "version": "v22"
     },
     "config.levers": {
       "history": [

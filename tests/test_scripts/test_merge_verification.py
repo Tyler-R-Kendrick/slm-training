@@ -317,6 +317,30 @@ def test_dependency_edit_invalidates_environment_without_metadata_change(
     assert before["command_files"] != after["command_files"]
 
 
+def test_javascript_dependency_tree_is_bound_to_environment(tmp_path, monkeypatch):
+    from scripts import merge_verification_identity as identity
+
+    monkeypatch.setattr(identity.importlib.metadata, "distributions", lambda **_: [])
+    modules = tmp_path / "node_modules"
+    lock = tmp_path / "package-lock.json"
+    lock.write_text('{"lockfileVersion": 3}\n')
+    package = modules / "@agentv" / "core"
+    package.mkdir(parents=True)
+    module = package / "index.js"
+    module.write_text("export const version = 1;\n")
+    monkeypatch.setenv("AGENTV_NODE_MODULES", str(modules))
+
+    before = identity.environment_identity()
+    binding = before["javascript_runtime_dependencies"]
+    assert str(modules) in binding["trees"]
+    assert binding["package_locks"][str(lock)] == identity.file_digest(lock)
+    lock.write_text('{"lockfileVersion": 3, "version": "changed"}\n')
+    assert identity.environment_identity() != before
+    before = identity.environment_identity()
+    module.write_text("export const version = 2;\n")
+    assert identity.environment_identity() != before
+
+
 def test_shards_are_nonempty_and_exact() -> None:
     nodes = [f"tests/test_case.py::test_{n}" for n in range(100)]
     shards = plan_shards(nodes, 10)

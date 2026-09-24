@@ -17,7 +17,9 @@ from pathlib import Path
 
 def digest(value: object) -> str:
     return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        json.dumps(
+            value, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
     ).hexdigest()
 
 
@@ -62,7 +64,7 @@ def environment_identity() -> dict:
         pass
     installed = list(importlib.metadata.distributions(path=package_paths))
     commands = {name: shutil.which(name) for name in ("node", "npm", "npx")}
-    for key in "OPENUI_BRIDGE_CLI DESIGN_MD_BRIDGE_CLI AGENTV_RUNNER".split():
+    for key in "OPENUI_BRIDGE_CLI DESIGN_MD_BRIDGE_CLI AGENTV_RUNNER AGENTV_NODE_MODULES".split():
         commands[key] = os.environ.get(key)
     distributions = sorted(
         (
@@ -82,7 +84,9 @@ def environment_identity() -> dict:
         "command_files": {
             key: [path, file_digest(Path(path))] if path else None
             for key, path in commands.items()
+            if key != "AGENTV_NODE_MODULES"
         },
+        "javascript_runtime_dependencies": _javascript_runtime_dependencies(commands),
         "execution_environment_sha256": digest(
             {
                 key: os.pathsep.join(map(os.path.abspath, value.split(os.pathsep)))
@@ -95,6 +99,37 @@ def environment_identity() -> dict:
                 )
             }
         ),
+    }
+
+
+def _javascript_runtime_dependencies(commands: dict[str, str | None]) -> dict:
+    roots = set()
+    locks = {}
+    if modules := commands.get("AGENTV_NODE_MODULES"):
+        modules_root = Path(modules)
+        roots.add(modules_root)
+        lock = modules_root.parent / "package-lock.json"
+        if lock.is_file():
+            locks[str(lock)] = file_digest(lock)
+    for key in ("OPENUI_BRIDGE_CLI", "DESIGN_MD_BRIDGE_CLI", "AGENTV_RUNNER"):
+        entrypoint = commands.get(key)
+        if not entrypoint:
+            continue
+        parent = Path(entrypoint).resolve().parent
+        lock = parent / "package-lock.json"
+        if lock.is_file():
+            locks[str(lock)] = file_digest(lock)
+        for directory in (parent, *parent.parents):
+            modules = directory / "node_modules"
+            if modules.is_dir():
+                roots.add(modules)
+    return {
+        "trees": {
+            str(root.resolve()): runtime_identity((root,))
+            for root in sorted(roots, key=str)
+            if root.is_dir()
+        },
+        "package_locks": locks,
     }
 
 
