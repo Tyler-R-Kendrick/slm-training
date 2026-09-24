@@ -341,6 +341,11 @@
       "history": [
         {
           "date": "2026-09-24",
+          "note": "Reuse the controller-bound runtime identity during source-verification binding instead of walking the same JavaScript dependency tree again on every resume.",
+          "version": "v23"
+        },
+        {
+          "date": "2026-09-24",
           "note": "Bind AgentV and bridge installed JavaScript runtime trees, package locks, and entrypoints into merge-verification environment identity so dependency mounts cannot drift under a stable binding.",
           "version": "v22"
         },
@@ -490,9 +495,10 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_scheduler_throughput.py",
         "scripts/merge_verification_controller.py",
+        "tests/test_scripts/test_merge_verification_identity.py",
         "tests/test_scripts/test_merge_verification_controller.py"
       ],
-      "version": "v22"
+      "version": "v23"
     },
     "config.levers": {
       "history": [
