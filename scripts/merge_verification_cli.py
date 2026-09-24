@@ -13,6 +13,10 @@ def add_release_parser(sub: argparse._SubParsersAction) -> None:
     command.add_argument("--source", type=Path, default=Path.cwd())
     command.add_argument("--identity", help="locked independent verifier identity")
     command.add_argument("--activity-id", default="release-verification")
+    command.add_argument(
+        "--successor-of",
+        help="Create a new activity carrying only a predecessor's unused grant",
+    )
     command.add_argument("--state-dir", type=Path, required=True)
     command.add_argument("--job-id", default="release-verification")
     command.add_argument("--base-ref", default="origin/main")
