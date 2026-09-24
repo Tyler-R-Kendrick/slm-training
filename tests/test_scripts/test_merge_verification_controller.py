@@ -334,7 +334,7 @@ def test_controller_runtime_identity_avoids_duplicate_runtime_walk(tmp_path, mon
         merge_owner.check_changed, "select_tests", lambda *args, **kwargs: ["tests"]
     )
     monkeypatch.setattr(merge_owner, "source_identity", lambda *_: "a" * 64)
-    monkeypatch.setattr(merge_owner, "environment_identity", lambda: {"fixture": True})
+    monkeypatch.setattr(merge_owner, "environment_identity", lambda **_: {"fixture": True})
     monkeypatch.setattr(
         merge_owner,
         "runtime_identity",
@@ -355,7 +355,7 @@ def test_controller_deadline_starts_after_runtime_scan():
     import inspect
 
     source = inspect.getsource(owner.verify_release)
-    assert source.index('"runtime_digest": runtime_identity(tuple(roots))') < source.index(
+    assert source.index("runtime_digest = runtime_identity(tuple(roots))") < source.index(
         "started = time.monotonic()"
     )
 
@@ -364,4 +364,4 @@ def test_controller_budget_starts_after_runtime_scan():
     import inspect
 
     body = inspect.getsource(owner.verify_release)
-    assert body.index("runtime_identity(tuple(roots))") < body.index("started =")
+    assert body.index("runtime_digest = runtime_identity(tuple(roots))") < body.index("started =")
