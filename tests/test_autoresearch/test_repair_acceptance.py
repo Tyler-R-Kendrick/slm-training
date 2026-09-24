@@ -335,7 +335,9 @@ def source_gate_fixture(tmp_path, monkeypatch, workspace, *, complete=True):
             "candidate_tree_sha256": manifest_digest(tree_manifest(root)),
             "changed_paths": sorted(tree_manifest(root)),
             "targets": ["tests"], "static_commands": [],
-            "environment": {}, "runtime_roots": [], "runtime_identity": "fixture",
+            "environment": {}, "runtime_roots": [],
+            "runtime_identity": kwargs.get("runtime_digest_value")
+            or merge.runtime_identity(kwargs.get("runtimes", ())),
             "isolation_enforced": True, "max_attempts_per_obligation": 3,
         }
 

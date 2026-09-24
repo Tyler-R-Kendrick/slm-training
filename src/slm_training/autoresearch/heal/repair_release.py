@@ -47,11 +47,17 @@ def source_verification_callback(context, config):
     the source verifier never borrows the agent's repair allowance. The resulting
     dependency supplies the finite verifier's root/cache/base/identity and grant.
     """
-    from .repair_source_workspace import prepare_source_verification
+    from .repair_source_workspace import (
+        prepare_source_verification,
+        reuse_completed_source_verification,
+    )
 
     def resolve(request, proposal, workspace):
         if config.source_verification_grant is None:
             return None
+        completed = reuse_completed_source_verification(context, request, proposal, workspace)
+        if completed is not None:
+            return completed
         return prepare_source_verification(context, config, request, proposal, workspace)
 
     return resolve

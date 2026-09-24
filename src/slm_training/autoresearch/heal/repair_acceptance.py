@@ -77,6 +77,7 @@ class SourceVerificationGate:
     state_dir: Path
     base_ref: str
     identity: str
+    runtime_identity: str | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -107,6 +108,9 @@ class SourceVerificationGate:
         state = ReceiptCache(self.state_dir, self.root).load(self.identity)
         if state is None:
             return None
+        summary = _summary(state)
+        if not summary["verification_complete"]:
+            return None
         binding = verification_binding(
             self.root, self.base_ref, merge_gate_steps(),
             isolated=True, runtimes=runtimes,
@@ -114,9 +118,6 @@ class SourceVerificationGate:
         if digest(binding) != self.identity:
             raise ValueError("source_verification_binding_changed")
         validate_cached_state(state, binding)
-        summary = _summary(state)
-        if not summary["verification_complete"]:
-            return None
         with tempfile.TemporaryDirectory(prefix="slm-source-binding-") as temporary:
             source = private_snapshot(self.root, Path(temporary) / "source")
             if tree_manifest(source) != tree_manifest(workspace.candidate):

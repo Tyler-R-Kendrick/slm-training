@@ -79,7 +79,8 @@ def _source_gate(journal, inputs, evidence, workspace, historical):
     if contract_digest(inputs["binding"]) != inputs["verification_identity"]:
         raise ValueError("repair_delivery_source_binding_changed")
     gate = SourceVerificationGate(directory / "root", directory / "cache",
-                                  inputs["base_ref"], inputs["verification_identity"])
+                                  inputs["base_ref"], inputs["verification_identity"],
+                                  inputs["binding"]["runtime_identity"])
     summary = _historical_gate(gate, inputs) if historical else gate.read(workspace)
     if summary is None or summary != evidence["source_verification"]:
         raise ValueError("repair_delivery_source_verification_changed")

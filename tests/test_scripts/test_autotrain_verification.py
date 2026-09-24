@@ -39,6 +39,11 @@ def fixture_dependency(tmp_path, monkeypatch):
         "activity_id": source_verification_activity_id(identity, grant),
         "root": str(root),
         "state_dir": str(tmp_path / "private-cache"),
+        "runtime_roots": [str(tmp_path / "runtime")],
+        "runtime_identity": "b" * 64,
+        "request_digest": "c" * 64,
+        "proposal_digest": "d" * 64,
+        "candidate_snapshot_digest": "e" * 64,
         "base_ref": "frozen-base",
         "verification_identity": identity,
         "grant": grant,
@@ -90,6 +95,46 @@ def test_dependency_uses_exact_identity_and_explicit_grant(tmp_path, monkeypatch
         assert state.spec.activity_id == dependency["activity_id"]
         assert state.spec.grant.total_seconds == 200
         assert state.spec.grant.max_attempts == 3
+
+
+def test_pending_dependency_uses_its_pinned_runtime_identity(tmp_path, monkeypatch):
+    dependency = fixture_dependency(tmp_path, monkeypatch)
+    observed = {}
+    binding_value = {
+        "candidate_tree_sha256": "a" * 64, "environment": {},
+        "runtime_identity": "b" * 64, "static_commands": [], "targets": ["tests"],
+        "isolation_enforced": True,
+    }
+
+    def binding(*args, **kwargs):
+        observed.update(kwargs)
+        return binding_value
+
+    dependency["runtime_identity"] = "b" * 64
+    monkeypatch.setattr(owner, "verification_binding", binding)
+    owner.dependency_plan(dependency)
+    assert observed["runtime_digest_value"] == "b" * 64
+
+
+def test_legacy_dependency_reads_runtime_identity_from_bound_manifest(tmp_path, monkeypatch):
+    dependency = fixture_dependency(tmp_path, monkeypatch)
+    dependency.pop("runtime_identity")
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps({
+        "verification_identity": dependency["verification_identity"],
+        "binding": owner.verification_binding(),
+    }))
+    dependency["manifest_path"] = str(path)
+    observed = {}
+    binding_value = owner.verification_binding()
+
+    def binding(*args, **kwargs):
+        observed.update(kwargs)
+        return binding_value
+
+    monkeypatch.setattr(owner, "verification_binding", binding)
+    owner.dependency_plan(dependency)
+    assert observed["runtime_digest_value"] == "b" * 64
 
 
 @pytest.mark.parametrize("key", ["grant", "root", "state_dir", "verification_identity"])

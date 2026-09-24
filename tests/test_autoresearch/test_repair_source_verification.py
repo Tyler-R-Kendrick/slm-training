@@ -79,6 +79,21 @@ def test_pending_materialization_is_not_synchronous_work(source_gate, tmp_path, 
     assert not waiting.root.exists() and not waiting.state_dir.exists()
 
 
+@pytest.mark.parametrize("source_gate", [False], indirect=True)
+def test_incomplete_receipt_skips_expensive_runtime_tree_hash(source_gate, monkeypatch):
+    workspace, gate = source_gate
+    monkeypatch.setattr(merge, "runtime_identity",
+                        lambda _: pytest.fail("incomplete receipt walked runtime roots"))
+    assert gate.read(workspace) is None
+
+
+def test_completed_receipt_rechecks_runtime_identity(source_gate, monkeypatch):
+    workspace, gate = source_gate
+    monkeypatch.setattr(merge, "runtime_identity", lambda _: "f" * 64)
+    with pytest.raises(ValueError, match="binding_changed"):
+        gate.read(workspace)
+
+
 def test_wrong_candidate_cannot_borrow_successful_test_evidence(source_gate, tmp_path):
     workspace, gate = source_gate
     other = tmp_path / "other-candidate"

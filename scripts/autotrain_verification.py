@@ -93,8 +93,10 @@ def dependency_plan(dependency):
     for exposed in (root, *roots):
         if state_dir.is_relative_to(exposed) or exposed.is_relative_to(state_dir):
             raise ValueError("source_verification_issuer_exposed_to_workload")
+    runtime_digest = _runtime_digest(dependency)
     binding = verification_binding(
-        root, dependency["base_ref"], merge_gate_steps(), isolated=True, runtimes=roots
+        root, dependency["base_ref"], merge_gate_steps(), isolated=True, runtimes=roots,
+        runtime_digest_value=runtime_digest,
     )
     if digest(binding) != identity:
         raise ValueError("source_verification_binding_changed")
@@ -115,6 +117,25 @@ def dependency_plan(dependency):
     }
 
 
+def _runtime_digest(dependency):
+    pinned = dependency.get("runtime_identity")
+    if pinned is not None:
+        return pinned
+    path = Path(dependency.get("manifest_path", ""))
+    if not path.is_file() or path.is_symlink() or path.stat().st_size > 1_048_576:
+        return None
+    manifest = json.loads(path.read_text())
+    binding = manifest.get("binding")
+    identity = dependency["verification_identity"]
+    if (
+        manifest.get("verification_identity") != identity
+        or not isinstance(binding, dict)
+        or digest(binding) != identity
+    ):
+        raise ValueError("source_verification_manifest_identity_mismatch")
+    return binding.get("runtime_identity")
+
+
 def authenticated_completion(plan):
     """Recheck the exact signed journal, including on controller crash replay."""
     directory = Path(plan["state_dir"])
@@ -122,6 +143,9 @@ def authenticated_completion(plan):
         return False
     state = ReceiptCache(directory, Path(plan["source"])).load(plan["identity"])
     if state is None:
+        return False
+    validate_cached_state(state, plan["binding"])
+    if not _summary(state)["verification_complete"]:
         return False
     current = verification_binding(
         Path(plan["source"]),
@@ -132,8 +156,7 @@ def authenticated_completion(plan):
     )
     if digest(current) != plan["identity"]:
         raise ValueError("source_verification_binding_changed_before_wake")
-    validate_cached_state(state, plan["binding"])
-    return _summary(state)["verification_complete"]
+    return True
 
 
 def register_dependency(runtime, plan):
@@ -158,15 +181,13 @@ def wake_repair(runtime, event, dependency, plan):
     # Dependency persistence deliberately precedes finish. Never interrupt a
     # still-running repair, or consume a wake belonging to a successor request.
     evidence = WakeCondition.model_validate(dependency["wake"])
-    if (
-        repair is None
-        or repair.status != "waiting_dependency"
-        or repair.wake != evidence
-    ):
+    if repair is None or repair.status != "waiting_dependency":
+        return False
+    if repair.wake != evidence and not _activated_successor(runtime, event, dependency, repair):
         return False
     if not authenticated_completion(plan):
         return False
-    runtime.wake(repair_id, evidence=evidence)
+    runtime.wake(repair_id, evidence=repair.wake)
     runtime.store.append_event(
         "source_verification_completed",
         experiment_id=repair_id,
@@ -178,9 +199,28 @@ def wake_repair(runtime, event, dependency, plan):
     return True
 
 
+def _activated_successor(runtime, event, dependency, repair):
+    if repair.wake is None:
+        return False
+    for row in reversed(runtime.store.verify_event_chain()):
+        detail = row.get("detail", {})
+        if (
+            row["event_type"] == "source_verification_successor_activated"
+            and row["experiment_id"] == event["experiment_id"]
+            and detail.get("successor_dependency_digest")
+            == event["detail"].get("dependency_digest")
+            and detail.get("predecessor_identity") == repair.wake.identity_digest
+            and detail.get("successor_identity") == dependency["verification_identity"]
+            and detail.get("successor_activity_id") == dependency["activity_id"]
+            and detail.get("request_digest") == dependency["request_digest"]
+            and detail.get("proposal_digest") == dependency["proposal_digest"]
+        ):
+            return True
+    return False
+
+
 def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
     """Parent pre-cycle hook; at most one actual bounded pass, no busy retry loop."""
-    del common  # All load-bearing inputs belong to the immutable dependency.
     events = [
         event
         for event in runtime.store.verify_event_chain()
@@ -201,57 +241,85 @@ def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
         repair = runtime.snapshot().get(event["experiment_id"])
         if repair is None or repair.status != "waiting_dependency":
             continue
-        try:
-            dependency = load_dependency(runtime.store, event)
-            if repair.wake != WakeCondition.model_validate(dependency["wake"]):
-                continue
-            plan = dependency_plan(dependency)
-            if wake_repair(runtime, event, dependency, plan):
-                continue
-            register_dependency(runtime, plan)
-            from slm_training.autoresearch.heal.isolation import probe_isolation
-
-            capabilities = {"local_process"}
-            if probe_isolation().available:
-                capabilities.add("isolated_verifier")
-            lease = runtime.claim_next(
-                capabilities=capabilities, activity_id=plan["activity_id"]
-            )
-            if lease is None:
-                continue
-            summary = execute_release_attempt(runtime, plan, lease)
-            woke = wake_repair(runtime, event, dependency, plan)
-            log_event(
-                {
-                    "event": "source_verification_pass",
-                    "activity_id": plan["activity_id"],
-                    "status": summary["status"],
-                    "repair_woken": woke,
-                    "phase_progress": summary.get("phase_progress"),
-                    "next_action": summary.get("next_action"),
-                }
-            )
-            return summary
-        except (OSError, ValueError, KeyError, TypeError) as exc:
-            observation = {
-                "event": "source_verification_wait",
-                "repair_activity_id": event["experiment_id"],
-                "status": "waiting_capability"
-                if isinstance(exc, VerificationCapabilityUnavailable)
-                else "waiting_verification_evidence",
-                "reason": str(exc),
-                "wake_source": "controller_policy"
-                if isinstance(exc, VerificationCapabilityUnavailable)
-                else "source_verification_dependency_reconciled",
-            }
-            runtime.store.append_event(
-                "source_verification_wait",
-                experiment_id=event["experiment_id"],
-                idempotency_key="verification-wait:" + digest(observation),
-                detail=observation,
-            )
-            log_event(observation)
+        result = _run_source_verification(runtime, event, common, log_event, repair)
+        if result is not None:
+            return result
     return None
+
+
+def _run_source_verification(runtime, event, common, log_event, repair):
+    dependency = None
+    try:
+        dependency = load_dependency(runtime.store, event)
+        expected_wake = WakeCondition.model_validate(dependency["wake"])
+        if repair.wake != expected_wake and not _activated_successor(
+            runtime, event, dependency, repair
+        ):
+            return None
+        plan = dependency_plan(dependency)
+        if wake_repair(runtime, event, dependency, plan):
+            return None
+        register_dependency(runtime, plan)
+        from slm_training.autoresearch.heal.isolation import probe_isolation
+
+        capabilities = {"local_process"}
+        if probe_isolation().available:
+            capabilities.add("isolated_verifier")
+        lease = runtime.claim_next(capabilities=capabilities, activity_id=plan["activity_id"])
+        if lease is None:
+            return None
+        summary = execute_release_attempt(runtime, plan, lease)
+        woke = wake_repair(runtime, event, dependency, plan)
+        log_event({"event": "source_verification_pass", "activity_id": plan["activity_id"],
+                   "status": summary["status"], "repair_woken": woke,
+                   "phase_progress": summary.get("phase_progress"),
+                   "next_action": summary.get("next_action")})
+        return summary
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        successor, observation_error = _successor_after_drift(
+            runtime, event, dependency, common, exc
+        )
+        if successor is not None:
+            log_event({"event": "source_verification_successor", **successor})
+            return successor
+        _record_source_verification_wait(runtime, event, observation_error, log_event)
+        return None
+
+
+def _record_source_verification_wait(runtime, event, error, log_event):
+    unavailable = isinstance(error, VerificationCapabilityUnavailable)
+    observation = {
+        "event": "source_verification_wait",
+        "repair_activity_id": event["experiment_id"],
+        "status": "waiting_capability" if unavailable else "waiting_verification_evidence",
+        "reason": str(error),
+        "wake_source": "controller_policy" if unavailable
+        else "source_verification_dependency_reconciled",
+    }
+    runtime.store.append_event(
+        "source_verification_wait",
+        experiment_id=event["experiment_id"],
+        idempotency_key="verification-wait:" + digest(observation),
+        detail=observation,
+    )
+    log_event(observation)
+
+
+def _successor_after_drift(runtime, event, dependency, common, error):
+    if (
+        str(error) != "source_verification_binding_changed"
+        or dependency is None
+        or not common.get("repair_config")
+        or not common.get("repair_config_digest")
+        or not common.get("loop_id")
+    ):
+        return None, error
+    from scripts.autotrain_verification_successor import plan_successor
+
+    try:
+        return plan_successor(runtime, event, dependency, common), error
+    except (OSError, ValueError, KeyError, TypeError) as successor_error:
+        return None, successor_error
 
 
 def _attempt_count(store, states, event):

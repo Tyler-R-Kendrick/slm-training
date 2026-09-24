@@ -74,6 +74,8 @@ def main() -> int:
     argv = [
         "-o",
         "addopts=",
+        "--rootdir",
+        str(root),
         "-m",
         "not training and not slow",
         "-q",

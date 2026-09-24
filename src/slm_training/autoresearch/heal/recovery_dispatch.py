@@ -384,6 +384,7 @@ def _verification_dependency(request, proposal, gate: SourceVerificationGate | N
         "root": str(gate.root.resolve()) if gate else None,
         "state_dir": str(gate.state_dir.resolve()) if gate else None,
         "runtime_roots": list(runtime_roots),
+        "runtime_identity": gate.runtime_identity if gate else None,
         "base_ref": gate.base_ref if gate else None,
         "manifest_path": str(gate.root.parent / "manifest.json") if gate else None,
         "grant": grant.model_dump(mode="json") if grant is not None else None,

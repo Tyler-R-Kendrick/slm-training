@@ -31,6 +31,54 @@ from .repair_acceptance import SourceVerificationGate, proposal_patch_digest
 from .repair_scope import require_routine_scope
 
 
+def reuse_completed_source_verification(context, request, proposal, workspace):
+    """Reuse only a completed authenticated receipt for this exact proposal."""
+    from scripts import autotrain_verification as owner
+
+    store = CampaignStore("runtime", context.root / "loops" / context.loop_id)
+    events = store.verify_event_chain()
+    completed = [row for row in events if row["event_type"] == "source_verification_completed"]
+    requested = [row for row in events if row["event_type"] == "source_verification_requested"]
+    requested.extend(_completed_request_events(completed))
+    for event in reversed(requested):
+        gate = _completed_gate(store, owner, completed, event, request, proposal, workspace)
+        if gate is not None:
+            return gate
+    return None
+
+
+def _completed_request_events(completed):
+    return [
+        {"experiment_id": row["experiment_id"],
+         "detail": {"dependency_digest": row["detail"]["dependency_digest"],
+                    "repair_activity_id": row["experiment_id"]}}
+        for row in completed if row.get("detail", {}).get("dependency_digest")
+    ]
+
+
+def _completed_gate(store, owner, completed, event, request, proposal, workspace):
+    try:
+        dependency = owner.load_dependency(store, event)
+        if (dependency["request_digest"] != request.digest()
+                or dependency["proposal_digest"] != proposal.digest()):
+            return None
+        identity = dependency["verification_identity"]
+        if not any(
+            row["experiment_id"] == event["experiment_id"]
+            and row.get("detail", {}).get("verification_identity", identity) == identity
+            for row in completed
+        ):
+            return None
+        owner.dependency_plan(dependency)
+        gate = SourceVerificationGate(
+            Path(dependency["root"]), Path(dependency["state_dir"]),
+            dependency["base_ref"], identity, dependency.get("runtime_identity"),
+        )
+        return gate if gate.read(workspace) is not None else None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def _validate(context, config, request, proposal, workspace):
     if config.source_verification_grant is None:
         raise ValueError("source_verification_grant_missing")
@@ -242,4 +290,5 @@ def prepare_source_verification(context, config, request, proposal, workspace):
     journal.append_event("repair_source_verification_prepared", artifact_sha256=artifact.stem,
                          idempotency_key="source-verification-input:" + artifact.stem)
     return SourceVerificationGate(destination / "root", destination / "cache",
-                                  manifest["base_ref"], manifest["verification_identity"])
+                                  manifest["base_ref"], manifest["verification_identity"],
+                                  manifest["binding"]["runtime_identity"])

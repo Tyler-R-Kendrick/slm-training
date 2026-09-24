@@ -61,3 +61,23 @@ and resumption suites passed **50 tests**; scoped Ruff and `git diff --check`
 passed. The source-bound full release gate is still pending; these focused
 checks do not authorize a merge. `ci.local_merge_gate` advances to v18 and now
 owns the selector/CLI implementation and regression test paths.
+
+## Frozen-root replay and repair-verifier successors — 2026-09-24
+
+The copied pytest worker pins `--rootdir` to the immutable verifier root. This
+keeps collected node IDs relative to that same tree, so later shard invocations
+can replay them after running from a different controller directory. A
+collection receipt containing parent-temp-directory paths is not replayable and
+must remain pending.
+
+If a saved verification binding becomes stale, the controller preserves the
+original repair request and proposal, rematerializes verifier inputs for the
+current binding, and registers a successor using only the predecessor's
+unspent seconds and attempts. It records the predecessor/successor identity
+link before cancelling the stale verifier. A repair wakes from that successor
+only after authenticated completion for the same request and proposal. A later
+repair invocation may reuse that completed receipt only after rechecking the
+current source binding and candidate tree; no new verifier allowance is minted.
+Focused regression evidence (21 passed) covers these transitions. The full
+source-bound merge gate and live subscription-backed repair replay remain
+separate acceptance requirements.
