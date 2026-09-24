@@ -272,6 +272,11 @@ def verified_loss_producer(store, receipt, path):
         kind, detail = event["event_type"], event["detail"]
         if kind == "experiment_attempt_started":
             active = detail["attempt_id"]
+        elif (
+            kind == "experiment_attempt_returned"
+            and detail.get("attempt_id") == active
+        ):
+            active = None
         elif kind == "command_cursor_started":
             attempts[(detail["input_digest"], detail["attempt"])] = active
         elif kind == "command_cursor_committed":
