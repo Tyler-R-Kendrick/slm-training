@@ -462,6 +462,7 @@
         "tests/test_scripts/test_merge_verification_resumption.py",
         "tests/test_scripts/test_merge_verification_runtime.py",
         "tests/test_scripts/test_merge_verification_scheduling.py",
+        "tests/test_scripts/test_merge_verification_scheduler_throughput.py",
         "scripts/merge_verification_controller.py",
         "tests/test_scripts/test_merge_verification_controller.py"
       ],
