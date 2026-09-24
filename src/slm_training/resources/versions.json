@@ -341,6 +341,11 @@
       "history": [
         {
           "date": "2026-09-24",
+          "note": "Allow source/config changes to continue in an explicit verifier successor carrying only the predecessor's unspent attempts and seconds.",
+          "version": "v24"
+        },
+        {
+          "date": "2026-09-24",
           "note": "Reuse the controller-bound runtime identity during source-verification binding instead of walking the same JavaScript dependency tree again on every resume.",
           "version": "v23"
         },
@@ -496,9 +501,11 @@
         "tests/test_scripts/test_merge_verification_scheduler_throughput.py",
         "scripts/merge_verification_controller.py",
         "tests/test_scripts/test_merge_verification_identity.py",
+        "scripts/merge_verification_successor.py",
+        "tests/test_scripts/test_merge_verification_successor.py",
         "tests/test_scripts/test_merge_verification_controller.py"
       ],
-      "version": "v23"
+      "version": "v24"
     },
     "config.levers": {
       "history": [
