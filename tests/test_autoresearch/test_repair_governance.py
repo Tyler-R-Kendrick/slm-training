@@ -8,6 +8,7 @@ import pytest
 
 from tests.casefiles import case_values
 from pydantic import ValidationError
+from tests.test_autoresearch.test_repair_source_workspace import repair_inputs
 
 from slm_training.autoresearch.heal.isolation_workspace import manifest_digest, tree_manifest
 from slm_training.autoresearch.heal.recovery_dispatch import RepairRecipe
@@ -19,7 +20,7 @@ from slm_training.autoresearch.heal.repair_release import source_verification_ca
 from slm_training.autoresearch.heal.repair_scope import _next_version, apply_version_overlay
 from slm_training.autoresearch.storage import CampaignStore
 
-pytest_plugins = ("tests.test_autoresearch.test_repair_source_workspace",)
+__all__ = ["repair_inputs"]
 
 
 def _registry(workspace):

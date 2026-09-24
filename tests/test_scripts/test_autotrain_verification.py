@@ -1,6 +1,7 @@
 """Exact repair dependency plumbing on real event chains and activity leases."""
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -97,7 +98,7 @@ def test_dependency_uses_exact_identity_and_explicit_grant(tmp_path, monkeypatch
         assert state.spec.grant.max_attempts == 3
 
 
-def test_pending_dependency_uses_its_pinned_runtime_identity(tmp_path, monkeypatch):
+def test_pending_dependency_rebuilds_identity_from_pinned_runtime_roots(tmp_path, monkeypatch):
     dependency = fixture_dependency(tmp_path, monkeypatch)
     observed = {}
     binding_value = {
@@ -107,16 +108,21 @@ def test_pending_dependency_uses_its_pinned_runtime_identity(tmp_path, monkeypat
     }
 
     def binding(*args, **kwargs):
+        observed["args"] = args
+        observed["kwargs"] = kwargs
         observed.update(kwargs)
         return binding_value
 
     dependency["runtime_identity"] = "b" * 64
     monkeypatch.setattr(owner, "verification_binding", binding)
     owner.dependency_plan(dependency)
-    assert observed["runtime_digest_value"] == "b" * 64
+    assert observed.get("runtime_digest_value") is None
+    assert observed["kwargs"]["runtimes"] == tuple(
+        Path(path) for path in dependency["runtime_roots"]
+    )
 
 
-def test_legacy_dependency_reads_runtime_identity_from_bound_manifest(tmp_path, monkeypatch):
+def test_legacy_dependency_rebuilds_identity_without_environment_override(tmp_path, monkeypatch):
     dependency = fixture_dependency(tmp_path, monkeypatch)
     dependency.pop("runtime_identity")
     path = tmp_path / "manifest.json"
@@ -129,12 +135,16 @@ def test_legacy_dependency_reads_runtime_identity_from_bound_manifest(tmp_path, 
     binding_value = owner.verification_binding()
 
     def binding(*args, **kwargs):
+        observed["kwargs"] = kwargs
         observed.update(kwargs)
         return binding_value
 
     monkeypatch.setattr(owner, "verification_binding", binding)
     owner.dependency_plan(dependency)
-    assert observed["runtime_digest_value"] == "b" * 64
+    assert observed.get("runtime_digest_value") is None
+    assert observed["kwargs"]["runtimes"] == tuple(
+        Path(path) for path in dependency["runtime_roots"]
+    )
 
 
 @pytest.mark.parametrize("key", ["grant", "root", "state_dir", "verification_identity"])
@@ -301,6 +311,7 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
     from scripts import (
         merge_verification as gate,
         merge_verification_evidence as evidence,
+        merge_verification_identity as identity_module,
     )
     from scripts.verify_merge_ready import Step, run_step
 
@@ -314,6 +325,7 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
     # Only source enumeration/base/selection are synthetic; gate, isolated
     # subprocesses, collection, test reports, MAC and runtime wake are real.
     monkeypatch.setattr(evidence, "source_paths", lambda _: ["test_case.py"])
+    monkeypatch.setattr(identity_module, "source_paths", lambda _: ["test_case.py"])
     monkeypatch.setattr(gate, "changed_paths", lambda *_: ("d" * 40, ["test_case.py"]))
     monkeypatch.setattr(
         gate.check_changed, "select_tests", lambda *a, **kw: ["test_case.py"]
@@ -333,6 +345,7 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
     dependency.update(
         verification_identity=identity,
         activity_id=source_verification_activity_id(identity, dependency["grant"]),
+        runtime_roots=[str(Path(sys.prefix))],
     )
     dependency["wake"]["identity_digest"] = identity
     invocation = dict(
@@ -377,4 +390,4 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
                 ]
             )
             == 1
-        )
+        
