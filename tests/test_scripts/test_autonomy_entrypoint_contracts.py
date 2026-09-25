@@ -96,6 +96,48 @@ def test_delivery_classifies_frozen_source_without_git_and_rejects_drift(tmp_pat
         continuous._phase_a_delivery(**arguments)
 
 
+def test_frozen_cycle_uses_pinned_refs_without_git_and_rejects_drift(tmp_path, monkeypatch):
+    from scripts import run_autotrain_continuous as continuous
+    from slm_training.harness_core import execution_release
+
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "source.py").write_text("value = 1\n")
+    (source / "docs/design").mkdir(parents=True)
+    (source / "docs/design/previous.md").write_text("published\n")
+    upstream, integration = "a" * 40, "b" * 40
+    provenance = {"upstream_commit": upstream, "integration_commit": integration,
+                  "code_dirty": False}
+    monkeypatch.setattr(execution_release, "_checkout_provenance", lambda _source: provenance)
+    execution = tmp_path / "execution"
+    root = tmp_path / "outputs"
+    execution_release.prepare_release(source, tmp_path / "release", execution, root)
+    monkeypatch.setattr(continuous, "_git", lambda *a, **k: pytest.fail("marker queried Git"))
+    monkeypatch.setattr(continuous, "_stage_command",
+                        lambda *a, **k: pytest.fail("marker queried git show"))
+    monkeypatch.setattr(continuous, "_check_regime_parked",
+                        lambda **k: continuous._REGIME_PARKED_STATUS)
+    args = dict(cwd=execution, root=root, loop_id="loop", train_version="wf_smoke_v2",
+                steps=1, objective="objective", primary_metric="smoke.eval_nll",
+                sync_git=False, require_action_receipts=False)
+    assert execution_release.runtime_git_provenance(execution) == provenance
+    assert continuous.run_cycle(**args) == continuous._REGIME_PARKED_STATUS
+    assert continuous._workspace_status(cwd=execution) == ""
+    continuous.self_heal_unblock_loop(cwd=execution, root=root, loop_id="loop")
+    assert continuous._committed_document_bundle(
+        execution, {"docs/design/previous.md": "published\n"})
+    assert not continuous._committed_document_bundle(
+        execution, {"docs/design/new.md": "staged\n"})
+    provenance["code_dirty"] = True
+    dirty = tmp_path / "dirty"
+    execution_release.prepare_release(source, tmp_path / "dirty-release", dirty, root)
+    with pytest.raises(RuntimeError, match="clean tree"):
+        continuous.run_cycle(**{**args, "cwd": dirty})
+    (execution / "source.py").write_text("value = 2\n")
+    with pytest.raises(ValueError, match="execution_source_drift"):
+        continuous.run_cycle(**args)
+
+
 def test_delivery_config_drift_rejects_before_dispatch(tmp_path):
     from scripts.autotrain_supervision import register_delivery_waits
 

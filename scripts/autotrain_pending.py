@@ -226,7 +226,7 @@ def next_driver_pending(runtime):
     return jobs
 
 
-def drain_driver_pending(runtime, common, cycle, log_event, run_operation):
+def drain_driver_pending(runtime, common, cycle, log_event, run_operation, *, locked_diagnostic=False):
     """Parent pre_cycle seam: dispatch one scoped remedy, then independently verify.
 
     Repair answers never wake a driver. A fresh bounded controller probe must
@@ -235,10 +235,16 @@ def drain_driver_pending(runtime, common, cycle, log_event, run_operation):
     for job in next_driver_pending(runtime):
         payload = job["payload"]
         blocker = payload.get("blocker") or payload.get("readiness", {}).get("blocker")
-        if blocker and blocker.get("required_capability") == "driver_continuation_reconciliation":
+        continuation = (blocker and blocker.get("required_capability")
+                        == "driver_continuation_reconciliation")
+        if locked_diagnostic and blocker and not continuation:
+            from scripts.autotrain_locked_diagnostic import require_locked_repair
+            require_locked_repair({**blocker, "affected_activity_id": job["activity_id"]})
+        if continuation:
             blocker = bind_continuation_probe(common, job, blocker)
         repaired = None
-        if blocker and blocker.get("kind") in {"rebuild_data", "repair_harness"}:
+        if blocker and not continuation and (blocker.get("kind") in {"rebuild_data", "repair_harness"}
+                                            or locked_diagnostic):
             blocker = {**blocker, "affected_activity_id": job["activity_id"],
                 "unmet_predicate": blocker.get("unmet_predicate") or payload["wake"]["predicate"],
                 "reason": blocker.get("reason") or payload["reason"],

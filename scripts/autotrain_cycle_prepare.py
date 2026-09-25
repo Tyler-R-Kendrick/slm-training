@@ -206,6 +206,16 @@ def prepare_cycle(cwd, root, continuous, value, *, spent_seconds):
         value["files"].update(
             {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
         )
+    expected = value.get("expected_commands")
+    if expected is not None and (
+        set(expected) != set(value["arms"])
+        or any(value["arms"][eid]["commands"] != expected[eid] for eid in expected)
+    ):
+        raise ValueError("compiled train/eval commands differ from locked preregistration")
+    if value.get("preregistration_path"):
+        path = Path(value["preregistration_path"])
+        value["files"][str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        value["files"].update(value.get("preregistered_inputs") or {})
     value["initial_spent_seconds"] = spent_seconds + time.monotonic() - started
     with writer(root, value["loop_id"]) as runtime:
         register(store, runtime, value)
@@ -235,6 +245,11 @@ class RecordedCycleSelection:
     candidate_ids: tuple[str, ...]
     manifest_paths: dict[str, Path]
     arm_wall_seconds: float
+    preregistration_path: Path | None = None
+    expected_commands: dict | None = None
+    expected_experiments: dict | None = None
+    preregistered_inputs: dict | None = None
+    expected_design_sha256: str | None = None
 
 
 def prepare_recorded_cycle(cwd, root, continuous, selection, *, spent_seconds=0):
@@ -270,6 +285,14 @@ def prepare_recorded_cycle(cwd, root, continuous, selection, *, spent_seconds=0)
     experiments = {h.experiment.experiment_id: h.experiment for h in matrix.hypotheses}
     if set(order) - experiments.keys() or set(manifest_paths) != set(order):
         raise ValueError("recorded pair lacks exact matrix/manifest coverage")
+    if selection.expected_experiments is not None and (
+        set(experiments) != set(selection.expected_experiments)
+        or any(experiments[eid].model_dump(mode="json") != selection.expected_experiments[eid]
+               for eid in experiments)
+    ):
+        raise ValueError("formed matrix differs from locked preregistration experiments")
+    for eid in order:
+        _write_manifest(Path(manifest_paths[eid]), store.load_experiment_campaign(eid).manifest)
     manifests = {
         eid: ExperimentCampaignV1.model_validate_json(
             Path(manifest_paths[eid]).read_text()
@@ -287,6 +310,10 @@ def prepare_recorded_cycle(cwd, root, continuous, selection, *, spent_seconds=0)
             raise ValueError("recorded applicable manifest differs from original lock")
     primary = next(e for e in manifests[candidates[0]].endpoints if e.role == "primary")
     pair = _recorded_pair(store, control_id, candidates[0])
+    if selection.expected_design_sha256 is not None:
+        from slm_training.autoresearch.storage import _sha
+        if _sha(pair) != selection.expected_design_sha256:
+            raise ValueError("paired design differs from locked preregistration")
     value = {name: None for name in _FIELDS}
     value.update(
         campaign_id=campaign_id,
@@ -319,7 +346,34 @@ def prepare_recorded_cycle(cwd, root, continuous, selection, *, spent_seconds=0)
         claim_for_role=manifests[candidates[0]].claim_class,
         ar=[sys.executable, "-m", "scripts.autoresearch", "--root", str(root)],
         locked_designs={candidates[0]: pair},
+        preregistration_path=str(selection.preregistration_path) if selection.preregistration_path else None,
+        expected_commands=selection.expected_commands,
+        preregistered_inputs=selection.preregistered_inputs,
         skip_slugs=[],
         replay=None,
     )
     return prepare_cycle(cwd, root, continuous, value, spent_seconds=spent_seconds)
+
+def _driver_argv(args):
+    cmd = ["--loop-id", args.loop_id, "--root", str(args.root),
+           "--supervised", "--max-cycles", "1", "--train-version", args.train_version,
+           "--steps", str(args.steps), "--primary-metric", args.primary_metric]
+    if getattr(args, "continuation_grant", None):
+        cmd.extend(["--continuation-grant", args.continuation_grant])
+    if getattr(args, "locked_preregistration", None):
+        cmd.extend(["--locked-preregistration", str(args.locked_preregistration),
+                    "--locked-prereg-sha256", args.locked_prereg_sha256])
+    return cmd
+
+
+def pin_locked_preregistration(args, cwd, root):
+    if not args.locked_preregistration:
+        return
+    from scripts.autotrain_cycle_context import locked_preregistration_selection
+
+    args.locked_preregistration = args.locked_preregistration.resolve()
+    args.locked_prereg_sha256 = hashlib.sha256(args.locked_preregistration.read_bytes()).hexdigest()
+    locked_preregistration_selection(
+        args.locked_preregistration, cwd, root, args.loop_id, args.locked_prereg_sha256,
+        options=vars(args),
+    )

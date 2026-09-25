@@ -190,6 +190,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train-version", default="wf_smoke_v2")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--continuation-grant", help="Explicit ResourceGrant JSON shared by the driver and locked campaign")
+    parser.add_argument("--locked-preregistration", type=Path,
+                        help="Run only the two arms and manifest digests in this PR-head diagnostic plan")
     parser.add_argument(
         "--primary-metric",
         default=_default_primary_metric(),
@@ -293,6 +295,8 @@ def main(argv: list[str] | None = None) -> int:
     root = args.root.resolve()
     if Path(args.loop_id).name != args.loop_id or args.loop_id in {".", ".."}:
         raise ValueError("loop-id must be a single path component")
+    from scripts.autotrain_cycle_prepare import pin_locked_preregistration
+    pin_locked_preregistration(args, cwd, root)
     store = CampaignStore("runtime", root / "loops" / args.loop_id)
     try:
         # Lease ownership is acquired before importing or invoking the driver/heal.
@@ -304,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
                 "cwd": str(cwd),
                 "root": str(root),
                 "loop_id": args.loop_id,
+                "locked_diagnostic": bool(args.locked_preregistration),
                 "source_digest": _source_identity(cwd),
                 "environment_digest": digest(environment_identity()),
                 "repair_config": str(args.repair_config.resolve())

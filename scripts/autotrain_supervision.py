@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+
 import time
 from pathlib import Path
-
+from scripts.autotrain_cycle_prepare import _driver_argv
 _MAX_HARD_RETRY_SECONDS = 60.0
 _NO_CAMPAIGN_THRESHOLD = 5
 _STALL_KIND = "loop_stalled_no_campaign"
@@ -62,10 +63,10 @@ def watchdog_no_campaign(
 
 def handle_pending(args, runtime, common, inspection, cycle, log_event, run_operation):
     report = inspection["report"]
-    register_delivery_waits(
-        runtime, common, report.get("delivery_waits", []), log_event
-    )
+    register_delivery_waits(runtime, common, report.get("delivery_waits", []), log_event)
     if inspection.get("promotion_pending"):
+        if getattr(args, "locked_preregistration", None):
+            raise ValueError("locked diagnostic cannot enter promotion evaluation")
         run_operation(
             runtime,
             {
@@ -92,14 +93,18 @@ def handle_pending(args, runtime, common, inspection, cycle, log_event, run_oper
         # Park waits for its existing unblock/identity predicate.
         runtime.cancel_event.wait(max(1.0, float(args.park_backoff_seconds)))
         return "wait"
-    if report.get("hard_pending"):
+    rows = report.get("hard_pending") or []
+    if getattr(args, "locked_preregistration", None):
+        from scripts.autotrain_locked_diagnostic import locked_repair_rows
+        rows = locked_repair_rows(rows)
+    if rows:
         outcome = (
             run_operation(
                 runtime,
                 {
                     **common,
                     "operation": "repair",
-                    "hard_pending": report["hard_pending"],
+                    "hard_pending": rows,
                     "campaign_id": str(report.get("predecessor_campaign_id") or ""),
                     "max_heal_attempts": int(args.max_heal_attempts),
                     "playbooks_enabled": not args.no_playbooks,
@@ -113,7 +118,7 @@ def handle_pending(args, runtime, common, inspection, cycle, log_event, run_oper
             {
                 "event": "hard_pending_heal",
                 "cycle": cycle,
-                "hard_pending": report["hard_pending"],
+                "hard_pending": rows,
                 **outcome,
             }
         )
@@ -235,7 +240,7 @@ def pre_cycle(runtime, common, cycle, log_event, run_operation):
 
     try:
         drain_source_verification(runtime, common, log_event, cycle=cycle)
-        drain_driver_pending(runtime, common, cycle, log_event, run_operation)
+        drain_driver_pending(runtime, common, cycle, log_event, run_operation, locked_diagnostic=common.get("locked_diagnostic", False))
         for repair_request in pending_operation_repairs(runtime)[:1]:
             runtime.store.append_event("operation_repair_serviced",
                 experiment_id=repair_request["hard_pending"][0]["affected_activity_id"])
@@ -261,17 +266,10 @@ def pre_cycle(runtime, common, cycle, log_event, run_operation):
     except VerifiedRestart:
         raise
     except Exception as exc:  # noqa: BLE001 — retained as a scoped operational failure
+        if common.get("locked_diagnostic"):
+            raise
         log_event({"event": "pre_cycle_unblock_error", "error": repr(exc)})
         return None
-
-
-def _driver_argv(args):
-    cmd = ["--loop-id", args.loop_id, "--root", str(args.root),
-           "--supervised", "--max-cycles", "1", "--train-version", args.train_version,
-           "--steps", str(args.steps), "--primary-metric", args.primary_metric]
-    if getattr(args, "continuation_grant", None):
-        cmd.extend(["--continuation-grant", args.continuation_grant])
-    return cmd
 
 
 def observe_driver_progress(runtime, args, cycle, before, driver, log_event, watchdog):
@@ -381,6 +379,10 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
             runtime.cancel_event.wait(min(60.0, max(0.5, args.soft_backoff_seconds)))
             continue
         after_campaign = driver["campaign_id"]
+        if getattr(args, "locked_preregistration", None):
+            from scripts.autotrain_locked_diagnostic import require_locked_completion
+            require_locked_completion(driver, args.loop_id)
+            return 0
         watchdog_backoff = observe_driver_progress(
             runtime, args, cycle, before_campaign, driver, log_event, watchdog)
         runtime.cancel_event.wait(
@@ -395,4 +397,4 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
                 watchdog_backoff,
             )
         )
-    return 0
+    return 2 if getattr(args, "locked_preregistration", None) else 0

@@ -33,11 +33,14 @@ def operation_main(
     if operation == "inspect":
         with operation_publication_scope(request, root, loop_id):
             report = continuous.self_heal_unblock_loop(
-                cwd=cwd, root=root, loop_id=loop_id
+                cwd=cwd, root=root, loop_id=loop_id,
+                campaign_id=loop_id if request.get("locked_diagnostic") else None,
+                locked_plan=bool(request.get("locked_diagnostic")),
             )
-            campaign_id = continuous._latest_cycle(root, loop_id)[1]
+            campaign_id = (loop_id if request.get("locked_diagnostic") else
+                           continuous._latest_cycle(root, loop_id)[1])
             pending_promotion = False
-            if campaign_id:
+            if campaign_id and not request.get("locked_diagnostic"):
                 from scripts.autotrain_promotion_chunks import load_ledger
                 from scripts.autotrain_promotion_finalize import finalization_pending
 
@@ -55,9 +58,8 @@ def operation_main(
                 )
             payload = {
                 "report": report,
-                "parked": continuous._check_regime_parked(
-                    root=root, loop_id=loop_id, cwd=cwd
-                ),
+                "parked": None if request.get("locked_diagnostic") else continuous._check_regime_parked(
+                    root=root, loop_id=loop_id, cwd=cwd),
                 "campaign_id": campaign_id,
                 "promotion_pending": pending_promotion,
             }

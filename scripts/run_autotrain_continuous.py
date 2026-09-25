@@ -36,6 +36,9 @@ from pathlib import Path
 from typing import Any, NamedTuple
 
 from slm_training.autoresearch.engine import default_eval_version
+# Keep the historical driver API stable while the campaign index lives with
+# its reconciliation owner; callers also use it through this module.
+from scripts.autotrain_cycle_reconcile import _latest_cycle
 from slm_training.autoresearch.hillclimb import (
     assert_warm_start_launch,
     climb_champion_checkpoint_path,
@@ -882,6 +885,17 @@ def _git(
     )
     _raise_for_bounded_result(result)
     return result.stdout.strip()
+
+
+def _workspace_status(*, cwd: Path, **git_kw: Any) -> str:
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if frozen is not None:
+        if frozen["code_dirty"]:
+            raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+        return ""
+    return _git("status", "--porcelain", cwd=cwd, **git_kw)
 
 
 def _run(
@@ -3312,9 +3326,7 @@ def _self_heal_cycle_error(
         if owned_kind:
             return owned_kind
         try:
-            porcelain = _git(
-                "status",
-                "--porcelain",
+            porcelain = _workspace_status(
                 cwd=work_cwd,
                 root=root,
                 loop_id=loop_id,
@@ -4047,6 +4059,14 @@ def _committed_document_bundle(cwd, files):
     """Read-only verification; a staged/uncommitted document is not publication."""
     if not files:
         return False
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if frozen is not None:
+        return not frozen["code_dirty"] and all(
+            (cwd / name).is_file() and (cwd / name).read_text() == content
+            for name, content in files.items()
+        )
     for name, content in files.items():
         try:
             if (cwd / name).read_text() != content:
@@ -4055,7 +4075,7 @@ def _committed_document_bundle(cwd, files):
             _raise_for_bounded_result(result)
             if result.stdout != content:
                 return False
-        except (OSError, RuntimeError):
+        except (OSError, RuntimeError, subprocess.SubprocessError):
             return False
     return True
 
@@ -4076,7 +4096,7 @@ def _self_heal_continuous_dirty_tree(
     kw = dict(cwd=cwd)
     if root is not None and loop_id is not None:
         kw.update(root=root, loop_id=loop_id, stage="workspace-status")
-    paths = _porcelain_paths(_git("status", "--porcelain", **kw))
+    paths = _porcelain_paths(_workspace_status(**kw))
     if paths:
         preserve_workspace(
             cwd=cwd, root=root, loop_id=loop_id, reason="workspace_changes", paths=paths
@@ -4128,6 +4148,7 @@ def self_heal_unblock_loop(
     loop_id: str,
     integration_commit: str | None = None,
     campaign_id: str | None = None,
+    locked_plan: bool = False,
 ) -> dict[str, Any]:
     """Single owner for continuous soft-unblock (never chat-prompt thrash).
 
@@ -4143,12 +4164,14 @@ def self_heal_unblock_loop(
     Code/data remedies require restored predicates. Source and delivery changes
     require a verified successor; the running worktree is never rewritten.
     """
+    if locked_plan:
+        from scripts.autotrain_locked_diagnostic import locked_prerequisite_report
+        return locked_prerequisite_report(root, loop_id, campaign_id or loop_id)
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
     delivery_waits: list[dict[str, Any]] = []
     pred = campaign_id or _latest_cycle(root, loop_id)[1]
     parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
-
     # 0) Incomplete merge (UU) from landing origin/main into the thrash worktree.
     try:
         merge_kind = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
@@ -4177,9 +4200,7 @@ def self_heal_unblock_loop(
 
     # Foreign dirt is hard (tree still dirty after continuous-only attempt).
     try:
-        porcelain = _git(
-            "status",
-            "--porcelain",
+        porcelain = _workspace_status(
             cwd=cwd,
             root=root,
             loop_id=loop_id,
@@ -4201,9 +4222,7 @@ def self_heal_unblock_loop(
         )
         if serena_kind:
             soft_healed.append(serena_kind)
-            porcelain = _git(
-                "status",
-                "--porcelain",
+            porcelain = _workspace_status(
                 cwd=cwd,
                 root=root,
                 loop_id=loop_id,
@@ -8863,33 +8882,6 @@ def _refresh_incomplete_replay_handoff(
     return True
 
 
-def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
-    campaigns = sorted(root.glob("*/campaign.json"))
-    best_idx = 0
-    best_id: str | None = None
-    completed_idx = 0
-    completed_id: str | None = None
-    for path in campaigns:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        if data.get("loop_id") != loop_id:
-            continue
-        idx = int(data.get("cycle_index") or 0)
-        if idx >= best_idx:
-            best_idx = idx
-            best_id = str(data.get("campaign_id"))
-        campaign_id = str(data.get("campaign_id"))
-        if (
-            idx >= completed_idx
-            and (root / campaign_id / "cycle_handoff.json").is_file()
-        ):
-            completed_idx = idx
-            completed_id = campaign_id
-    return best_idx, completed_id or best_id
-
-
 _VACUOUS_PASS_LIMIT = 3
 #: Driver exit code for the typed loop-stalled park (2 = hard pending).
 _STALL_EXIT_CODE = 3
@@ -10614,9 +10606,20 @@ def run_cycle(
     require_action_receipts: bool = True,
     extra_skip_slugs: frozenset[str] = frozenset(),
     continuation_grant: str | None = None,
+    locked_preregistration: Path | None = None,
+    locked_prereg_sha256: str | None = None,
 ) -> str | dict[str, Any]:
     from scripts.autotrain_cycle_execution import continuous_owner, resume_cycle
     from slm_training.harness_core.checkpoint_publication import controller_work_deadline
+
+    if locked_preregistration is not None:
+        from scripts.autotrain_cycle_reconcile import resume_locked_recorded_cycle
+        return resume_locked_recorded_cycle(
+            cwd, root, loop_id, locked_preregistration, locked_prereg_sha256,
+            {"train_version": train_version, "steps": steps,
+             "primary_metric": primary_metric, "continuation_grant": continuation_grant},
+            continuous_owner(globals()),
+        )
 
     resumed = resume_cycle(cwd, root, loop_id, continuous_owner(globals()))
     if resumed is not None:
@@ -10637,81 +10640,38 @@ def run_cycle(
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
 
-    _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
-    if sync_git and startup_commit is not None:
-        integrated = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-integration-head",
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if frozen is not None:
+        if frozen["code_dirty"]:
+            raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+        upstream, integration = frozen["upstream_commit"], frozen["integration_commit"]
+    else:
+        _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
+        git_kw = dict(cwd=cwd, deadline=deadline, root=root, loop_id=loop_id)
+        if sync_git and startup_commit is not None:
+            integrated = _git("rev-parse", "HEAD", stage="sync-integration-head", **git_kw)
+            if integrated != startup_commit:
+                raise _CodeUpdated(
+                    f"integrated {integrated}; restart stale process from {startup_commit}"
+                )
+        dirty = _git("status", "--porcelain", stage="sync-clean-status", **git_kw)
+        if dirty:
+            # Continuous-only closeout dirt is driver-owned; foreign WIP still fails.
+            _self_heal_continuous_dirty_tree(cwd=cwd, root=root, loop_id=loop_id)
+            dirty = _git("status", "--porcelain", stage="sync-clean-status-recheck", **git_kw)
+        if dirty:
+            raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+        try:
+            upstream = _git("rev-parse", "origin/main", stage="sync-upstream-head", **git_kw)
+        except Exception:  # noqa: BLE001 — missing origin/main: continue on HEAD
+            upstream = _git("rev-parse", "HEAD", stage="sync-upstream-head-fallback", **git_kw)
+        integration = _git("rev-parse", "HEAD", stage="sync-current-head", **git_kw)
+        upstream = _upstream_commit_for_init(
+            cwd=cwd, root=root, loop_id=loop_id, upstream=upstream,
+            integration=integration, deadline=deadline,
         )
-        if integrated != startup_commit:
-            raise _CodeUpdated(
-                f"integrated {integrated}; restart stale process from {startup_commit}"
-            )
-    dirty = _git(
-        "status",
-        "--porcelain",
-        cwd=cwd,
-        deadline=deadline,
-        root=root,
-        loop_id=loop_id,
-        stage="sync-clean-status",
-    )
-    if dirty:
-        # Continuous-only closeout dirt is driver-owned; foreign WIP still fails.
-        _self_heal_continuous_dirty_tree(cwd=cwd, root=root, loop_id=loop_id)
-        dirty = _git(
-            "status",
-            "--porcelain",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-clean-status-recheck",
-        )
-    if dirty:
-        raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
-    try:
-        upstream = _git(
-            "rev-parse",
-            "origin/main",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-upstream-head",
-        )
-    except Exception:  # noqa: BLE001 — missing origin/main: continue on HEAD
-        upstream = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-upstream-head-fallback",
-        )
-    integration = _git(
-        "rev-parse",
-        "HEAD",
-        cwd=cwd,
-        deadline=deadline,
-        root=root,
-        loop_id=loop_id,
-        stage="sync-current-head",
-    )
-    upstream = _upstream_commit_for_init(
-        cwd=cwd,
-        root=root,
-        loop_id=loop_id,
-        upstream=upstream,
-        integration=integration,
-        deadline=deadline,
-    )
 
     # Terminal governance: a parked regime verdict short-circuits the cycle
     # until its deterministic resume predicate (bank-identity change) holds.
@@ -11970,6 +11930,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--train-version", default="wf_smoke_v2")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--continuation-grant", help="Explicit logical ResourceGrant JSON; bounded invocations remain capped")
+    parser.add_argument("--locked-preregistration", type=Path,
+                        help="Execute only the previously locked two-arm diagnostic")
+    parser.add_argument("--locked-prereg-sha256", help=argparse.SUPPRESS)
     parser.add_argument(
         "--objective",
         default=(
@@ -11989,35 +11952,38 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     args = parser.parse_args(argv)
+    if args.locked_preregistration and (not args.supervised or not args.locked_prereg_sha256):
+        parser.error("locked preregistration requires supervised invocation and its pinned digest")
     extra_skip_slugs = _parse_skip_slugs(args.skip_slugs)
     cwd = Path.cwd()
     root = args.root if args.root.is_absolute() else cwd / args.root
     root.mkdir(parents=True, exist_ok=True)
-    try:
-        code_sha = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            root=root,
-            loop_id=args.loop_id,
-            stage="driver-startup-git",
-        )
-    except (subprocess.CalledProcessError, OSError):
-        code_sha = None
+    from scripts.autotrain_locked_diagnostic import locked_startup_commit
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if args.locked_preregistration:
+        code_sha = locked_startup_commit(cwd)
+    elif frozen is not None:
+        code_sha = frozen["integration_commit"]
+    else:
+        try:
+            code_sha = _git(
+                "rev-parse", "HEAD", cwd=cwd, root=root,
+                loop_id=args.loop_id, stage="driver-startup-git",
+            )
+        except (subprocess.CalledProcessError, OSError):
+            code_sha = None
     try:
         lock_fh = acquire_driver_lock(root, args.loop_id, code_sha=code_sha)
     except RuntimeError as exc:
         print(str(exc), flush=True)
         return 2
-    # Startup self-heal: single unblock owner — never chat-prompt for soft thrash.
     try:
         report = self_heal_unblock_loop(
-            cwd=cwd,
-            root=root,
-            loop_id=args.loop_id,
-            integration_commit=code_sha,
-        )
-        if report.get("hard_pending"):
+            cwd=cwd, root=root, loop_id=args.loop_id, integration_commit=code_sha,
+            campaign_id=args.loop_id if args.locked_preregistration else None, locked_plan=bool(args.locked_preregistration))
+        if report and report.get("hard_pending"):
             print(
                 f"SELF_HEAL_STARTUP hard_pending={report['hard_pending']}",
                 flush=True,
@@ -12051,6 +12017,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 cycle_result = run_cycle(
                     continuation_grant=args.continuation_grant,
+                    locked_preregistration=args.locked_preregistration,
+                    locked_prereg_sha256=args.locked_prereg_sha256,
                     cwd=cwd,
                     root=root,
                     loop_id=args.loop_id,
@@ -12068,6 +12036,10 @@ def main(argv: list[str] | None = None) -> int:
                     publish_pending(root, args.loop_id, cycle_result)
                     yielded = True
                     return 10
+                if args.locked_preregistration:
+                    if cycle_result != args.loop_id:
+                        raise ValueError("locked diagnostic completed a different campaign")
+                    return 0
                 pass_outcome = _record_pass_outcome(
                     root=root,
                     loop_id=args.loop_id,
@@ -12093,6 +12065,8 @@ def main(argv: list[str] | None = None) -> int:
                 os.execv(sys.executable, [sys.executable, *sys.argv])
                 raise RuntimeError("driver re-exec unexpectedly returned")
             except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
+                if args.locked_preregistration:
+                    raise
                 print(f"CYCLE_ERROR {exc!r}", flush=True)
                 cycle_index, _ = _latest_cycle(root, args.loop_id)
                 # Single unblock owner — soft thrash never needs a human prompt.
@@ -12204,7 +12178,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
         return 0
     finally:
-        if not yielded:
+        if not yielded and not args.locked_preregistration:
             closeout_driver(continuous_owner(globals()), cwd, root, args.loop_id)
         try:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)

@@ -5560,6 +5560,11 @@
       "history": [
         {
           "date": "2026-09-25",
+          "note": "Bind a general immutable locked diagnostic pair through supervisor repair, command cursor, and canonical paired comparison while retaining receipt-checked prerequisites and disabling promotion.",
+          "version": "v302"
+        },
+        {
+          "date": "2026-09-25",
           "note": "Pass this checkout's src path to compiled Python CLI children so ordinary supervised train and eval stages import the pinned package.",
           "version": "v301"
         },
@@ -7715,9 +7720,15 @@
         "tests/test_autoresearch/test_climb_policy.py",
         "tests/test_autoresearch/test_credit_engine.py",
         "tests/test_autoresearch/test_harness.py",
+        "tests/test_autoresearch/test_locked_prereg_supervisor.py",
+        "tests/test_autoresearch/test_locked_supervisor_control.py",
         "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_run_autotrain_continuous.py",
         "scripts/run_autotrain_continuous.py",
+        "scripts/autotrain_cycle_context.py",
+        "scripts/autotrain_cycle_prepare.py",
+        "scripts/autotrain_cycle_finalize.py",
+        "scripts/autotrain_locked_diagnostic.py",
         "scripts/run_autotrain_supervisor.py",
         "scripts/report_autotrain_continuous.sh",
         "scripts/mine_continuous_residuals.py",
@@ -7774,7 +7785,7 @@
         "tests/test_scripts/test_supervisor_interruption.py",
         "tests/test_scripts/test_supervisor_adversary.py"
       ],
-      "version": "v301"
+      "version": "v302"
     },
     "harness.autoresearch.formal": {
       "history": [

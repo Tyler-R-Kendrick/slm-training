@@ -1,5 +1,8 @@
 """Reconcile committed driver effects, never infer completion from loose files."""
 
+import json
+from pathlib import Path
+
 from scripts.autoresearch_continuation import is_continuation_pending
 from scripts.autotrain_cycle_context import read_artifact
 from scripts.autotrain_cycle_finalize import stages, skipped
@@ -305,3 +308,51 @@ def reconcile_inflight(journal, continuous):
     journal.state.update(inflight=None, settled_attempt=True)
     journal.save()
     return True
+
+def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
+    campaigns = sorted(root.glob("*/campaign.json"))
+    best_idx = 0
+    best_id: str | None = None
+    completed_idx = 0
+    completed_id: str | None = None
+    for path in campaigns:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if data.get("loop_id") != loop_id:
+            continue
+        idx = int(data.get("cycle_index") or 0)
+        if idx >= best_idx:
+            best_idx = idx
+            best_id = str(data.get("campaign_id"))
+        campaign_id = str(data.get("campaign_id"))
+        if (
+            idx >= completed_idx
+            and (root / campaign_id / "cycle_handoff.json").is_file()
+        ):
+            completed_idx = idx
+            completed_id = campaign_id
+    return best_idx, completed_id or best_id
+
+
+def resume_locked_recorded_cycle(cwd, root, loop_id, path, sha256, options, continuous):
+    """Adopt and resume only the preregistered pair through the ordinary cursor."""
+    from scripts.autotrain_cycle_context import active_reference, locked_preregistration_selection, writer
+    from scripts.autotrain_cycle_execution import resume_cycle
+    from scripts.autotrain_cycle_prepare import prepare_recorded_cycle
+
+    selection = locked_preregistration_selection(
+        path, cwd, root, loop_id, sha256, options=options,
+    )
+    with writer(root, loop_id) as runtime:
+        active = active_reference(runtime)
+    if active is not None and active["campaign_id"] != selection.campaign_id:
+        raise ValueError("active driver campaign differs from locked preregistration")
+    if active is None:
+        prepare_recorded_cycle(cwd, root, continuous, selection)
+    result = resume_cycle(cwd, root, loop_id, continuous)
+    # A marker-backed execution copy has no Git metadata. Revalidate the same
+    # immutable source and preregistration after the ordinary command cursor.
+    locked_preregistration_selection(path, cwd, root, loop_id, sha256, options=options)
+    return result

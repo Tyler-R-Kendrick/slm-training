@@ -21,6 +21,8 @@ def common(journal):
 
 
 def stages(value):
+    if value.get("preregistration_path"):
+        return ("diagnostic",)
     if (
         value["promotion_chunk_plan"] is not None
         and value["promoting_champion"] is not None
@@ -327,6 +329,9 @@ def promotion(journal, continuous, cwd, deadline):
 
 
 def execute_stage(name, journal, continuous, cwd, deadline):
+    if name == "diagnostic":
+        from scripts.autotrain_locked_diagnostic import finalize_diagnostic
+        return finalize_diagnostic(journal, continuous)
     functions = {
         "chunks": chunks,
         "delivery": delivery,
