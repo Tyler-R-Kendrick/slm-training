@@ -326,8 +326,7 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
         pytest.skip("isolated verifier required: " + capability.reason)
     isolated = True
     (root / "test_case.py").write_text("def test_case(): pass\n")
-    # Only source enumeration/base/selection are synthetic; gate, isolated
-    # subprocesses, collection, test reports, MAC and runtime wake are real.
+    # Only source enumeration/base/selection are synthetic; the rest is real.
     monkeypatch.setattr(evidence, "source_paths", lambda _: ["test_case.py"])
     monkeypatch.setattr(identity_module, "source_paths", lambda _: ["test_case.py"])
     monkeypatch.setattr(gate, "changed_paths", lambda *_: ("d" * 40, ["test_case.py"]))
@@ -338,6 +337,7 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
     steps = (Step("probe", (sys.executable, "-c", "pass")),)
     monkeypatch.setattr(owner, "merge_gate_steps", lambda: steps)
     runtime_digest = owner.runtime_identity((Path(sys.prefix),))
+    monkeypatch.setenv("MERGE_VERIFICATION_RUNTIME_IDENTITY", runtime_digest)
     dependency["runtime_identity"] = runtime_digest
     identity = digest(
         gate.verification_binding(
@@ -360,12 +360,12 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
         root=root,
         base_ref="frozen-base",
         state_dir=Path(dependency["state_dir"]),
-        # Workloads only start with more than 2*KILL_GRACE_SECONDS available;
-        # 15 seconds parks every obligation on a scoped wait.
+        # 25 seconds leaves reserve and parks every obligation on a scoped wait.
         step_seconds=25,
         run_step=run_step,
         local_feedback=False,
         runtime_roots=(Path(sys.prefix),),
+        runtime_digest=runtime_digest,
     )
     with pytest.raises(ValueError, match="locked_verification_identity_mismatch"):
         gate.run_locked_release_gate("e" * 64, invocation)

@@ -350,8 +350,10 @@ def test_verifier_rule_change_gets_fresh_materialization(repair_inputs, monkeypa
     assert first.root.is_dir() and second.root.is_dir()
 
 
-def test_real_private_source_gate_executes_bounded_pending_work_without_false_release(repair_inputs):
-    from scripts.merge_verification import run_locked_release_gate
+def test_real_private_source_gate_executes_bounded_pending_work_without_false_release(
+    repair_inputs, monkeypatch
+):
+    from scripts.merge_verification import run_locked_release_gate, runtime_identity
     from slm_training.autoresearch.heal.isolation import probe_isolation
 
     capability = probe_isolation()
@@ -361,10 +363,14 @@ def test_real_private_source_gate_executes_bounded_pending_work_without_false_re
         pytest.skip(capability.reason)
     context, config, _, request, proposal, workspace = repair_inputs
     gate = source_verification_callback(context, config)(request, proposal, workspace)
+    runtimes = (Path(sys.prefix),)
+    runtime_digest = runtime_identity(runtimes)
+    monkeypatch.setenv("MERGE_VERIFICATION_RUNTIME_IDENTITY", runtime_digest)
     summary = run_locked_release_gate(
         gate.identity, dict(steps=merge_gate_steps(), root=gate.root, base_ref=gate.base_ref,
                             state_dir=gate.state_dir, step_seconds=2, run_step=None,
-                            runtime_roots=(Path(sys.prefix),), local_feedback=False),
+                            runtime_roots=runtimes, runtime_digest=runtime_digest,
+                            local_feedback=False),
     )
     # This tiny source intentionally lacks the full repository's static modules.
     # Actual failed/pending work must remain incomplete, not a release canary.
