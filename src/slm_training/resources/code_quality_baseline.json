@@ -491,7 +491,7 @@
     "scripts/replay_harness_failures.py": 409,
     "scripts/repo_policy.py": 594,
     "scripts/run_abstract_plan_functional_evidence.py": 789,
-    "scripts/run_autotrain_continuous.py": 12221,
+    "scripts/run_autotrain_continuous.py": 12220,
     "scripts/run_dsh3_28_typed_operator_policy.py": 774,
     "scripts/run_flow_power_protocol.py": 718,
     "scripts/run_grammar_matrix.py": 1003,

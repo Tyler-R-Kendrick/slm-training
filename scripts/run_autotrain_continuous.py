@@ -8524,16 +8524,15 @@ def _write_cycle_handoff(
     elif harness_failure:
         family = _primary_harness_family(camp_dir)
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-            if manifest_path.is_file()
-            else None
-        )
+        manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest() if manifest_path.is_file() else None
         actions[0:0] = [
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
                 reason="repair the canonical owner and replay the frozen arm",
+                blocker_code="harness_code_failure",
+                unmet_predicate="frozen_arm_measurement_complete",
+                required_capability="source_repair",
                 evidence_ids=(evidence_id,),
                 harness_family=family,  # type: ignore[arg-type]
                 frozen_manifest_sha256=manifest_sha,

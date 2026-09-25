@@ -114,8 +114,7 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
         identity_error = None
     try:
         if (
-            not isinstance(identity_error, ValueError)
-            and not pending_wait
+            (not pending_wait or _source_repair_pending(payload))
             and outcome
             not in {
                 ActivityOutcome.SUCCEEDED,
@@ -171,3 +170,18 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
         }
     )
     return payload
+
+
+def _source_repair_pending(payload):
+    """Keep the original request for verified source succession, not repair authority."""
+    from slm_training.autoresearch.heal.classify import classify_blocker
+
+    pending = (payload or {}).get("pending") or {}
+    blocker = pending.get("blocker") or pending.get("readiness", {}).get("blocker") or {}
+    return (
+        blocker.get("kind") == "repair_harness"
+        and blocker.get("required_capability") in {
+            "source_repair", "configured_source_repair", "bounded_measurement_repair",
+        }
+        and classify_blocker("repair_harness", "", code=blocker.get("blocker_code") or "") == "code"
+    )

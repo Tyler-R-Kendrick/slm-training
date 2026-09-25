@@ -259,3 +259,31 @@ evidence, not complete source verification, model evaluation, or release
 authorization. The R14 timer was observed active, last fired at 06:40 CDT,
 with its older immutable source at 9/18 static obligations and no tests
 collected. Its receipts are not current-PR acceptance evidence.
+
+## Source-blocked handoff and operation continuation — 2026-09-25
+
+An ordinary harness-failure handoff omitted the blocker code, unmet predicate,
+and source-repair capability required by typed dispatch. It therefore stopped
+at `waiting_diagnosis` before the configured repair executor. The producer now
+provides `harness_code_failure`, `frozen_arm_measurement_complete`, and
+`source_repair`, retaining the frozen manifest digest. An approved reproduction
+recipe and grant remain prerequisites; descriptive error text grants nothing.
+
+Typed source-blocked driver yields also skipped the original-request journal
+event required by verified successor activation. The operation owner now
+records that request only for a recognized code blocker with an explicit
+source-repair capability. Publication and independent verification still govern
+activation. The regression follows the original logical request into its
+successor, preserves unused seconds and attempts, retains the scientific
+replicate, and verifies idempotent replay. Quality-gate, external-tool-host,
+data-volume, and missing-environment controls cannot request source repair.
+
+Tests use real producer, inspection, dispatch, journal, publication, and
+successor owners with simulated process/agent boundaries. They do not prove
+a live production repair or authorize model promotion. The code-quality
+ratchet records the one-line reduction in the continuous-driver module; no
+ceiling increases. The independently discovered corrupt published baseline
+was restored in commit `3036f32703a3fcb98d4f10090beebfb49b144941`; its GitHub
+content was fetched back and matched the preserved valid JSON exactly.
+
+Parent validation on the integrated source: seven-file recovery suite **84 passed in 51.53s**; handoff-focused selection **23 passed, 348 deselected in 7.66s**. These checks use simulated process/agent boundaries and do not discharge live autonomous repair acceptance.
