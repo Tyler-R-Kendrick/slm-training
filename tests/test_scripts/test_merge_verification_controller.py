@@ -1,6 +1,7 @@
 """Finite controller wiring: real leases/processes plus explicit injected yields."""
 
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -23,9 +24,10 @@ from slm_training.autoresearch.storage import CampaignStore
 def fixture_plan(tmp_path):
     root = tmp_path / "candidate"
     root.mkdir()
+    (root / ".gitignore").write_text("__pycache__/\n.pytest_cache/\n.ruff_cache/\n")
     (root / "test_case.py").write_text("def test_case(): pass\n")
-    # Source enumeration is exercised elsewhere against actual Git. This fixture
-    # has only one enumerated input so no repository Git mutation is necessary.
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
     return {
         "schema": "release_verification_plan/v1",
         "source": str(root),
@@ -200,7 +202,9 @@ def test_finite_controller_resumes_actual_gate_after_yield(
     monkeypatch.setattr(evidence, "source_paths", lambda _: ["test_case.py"])
     plan.update(
         source_digest=source_identity(root),
-        environment_digest=digest(environment_identity()),
+        environment_digest=digest(
+            environment_identity(runtime_identity_value=plan["runtime_digest"])
+        ),
         runtime_roots=[sys.prefix],
         runtime_digest="b" * 64,
         # Workloads only start with more than 2*KILL_GRACE_SECONDS available;
@@ -241,6 +245,8 @@ sys.exit(0 if summary['verification_complete'] else 10)
             "verify-release",
             "--source",
             str(root),
+            "--base-ref",
+            "HEAD",
             "--state-dir",
             plan["state_dir"],
             "--job-id",

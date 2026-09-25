@@ -1,12 +1,14 @@
 """Real reducer/journal boundaries; the repair process result is simulated."""
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from scripts.autotrain_supervisor_operations import run_operation
-from scripts.merge_verification_evidence import digest
+from scripts.merge_verification_evidence import digest, environment_identity
+from scripts.merge_verification_identity import source_identity
 from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.autoresearch.heal.repair_acceptance import source_verification_activity_id
@@ -27,8 +29,14 @@ def test_verifier_dependency_is_not_a_failed_repair_attempt(tmp_path, monkeypatc
                  "source": "source_verification_completed" if configured else "controller_policy",
                  "identity_digest": identity},
     }
-    request = {"cwd": str(tmp_path), "root": str(tmp_path / "data"), "loop_id": "fixture",
-               "operation": "repair", "source_digest": "a" * 64, "environment_digest": "b" * 64}
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "fixture.py").write_text("value = 1\n")
+    subprocess.run(["git", "init", "-q"], cwd=source, check=True)
+    subprocess.run(["git", "add", "fixture.py"], cwd=source, check=True)
+    request = {"cwd": str(source), "root": str(tmp_path / "data"), "loop_id": "fixture",
+               "operation": "repair", "source_digest": source_identity(source),
+               "environment_digest": digest(environment_identity())}
     journal = CampaignStore("runtime", tmp_path / "events")
     with ActivityRuntime(journal) as runtime:
         launches = []

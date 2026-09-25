@@ -22,10 +22,13 @@ from slm_training.harness_core.activity_contract import (
 def fixture_dependency(tmp_path, monkeypatch):
     root = tmp_path / "candidate"
     root.mkdir(exist_ok=True)
+    runtime = tmp_path / "runtime"
+    runtime.mkdir(exist_ok=True)
+    runtime_digest = owner.runtime_identity((runtime,))
     binding = {
         "candidate_tree_sha256": "a" * 64,
         "environment": {},
-        "runtime_identity": "b" * 64,
+        "runtime_identity": runtime_digest,
         "static_commands": [],
         "targets": ["tests"],
         "isolation_enforced": True,
@@ -41,7 +44,7 @@ def fixture_dependency(tmp_path, monkeypatch):
         "root": str(root),
         "state_dir": str(tmp_path / "private-cache"),
         "runtime_roots": [str(tmp_path / "runtime")],
-        "runtime_identity": "b" * 64,
+        "runtime_identity": runtime_digest,
         "request_digest": "c" * 64,
         "proposal_digest": "d" * 64,
         "candidate_snapshot_digest": "e" * 64,
@@ -102,24 +105,24 @@ def test_pending_dependency_rebuilds_identity_from_pinned_runtime_roots(tmp_path
     dependency = fixture_dependency(tmp_path, monkeypatch)
     observed = {}
     binding_value = {
-        "candidate_tree_sha256": "a" * 64, "environment": {},
-        "runtime_identity": "b" * 64, "static_commands": [], "targets": ["tests"],
+        "candidate_tree_sha256": "a" * 64, "environment": {}, "runtime_identity": "b" * 64,
+        "static_commands": [], "targets": ["tests"],
         "isolation_enforced": True,
     }
 
     def binding(*args, **kwargs):
-        observed["args"] = args
-        observed["kwargs"] = kwargs
         observed.update(kwargs)
         return binding_value
-
     dependency["runtime_identity"] = "b" * 64
+    identity = digest(binding_value)
+    dependency["verification_identity"] = identity
+    dependency["activity_id"] = source_verification_activity_id(identity, dependency["grant"])
+    dependency["wake"]["identity_digest"] = identity
     monkeypatch.setattr(owner, "verification_binding", binding)
+    monkeypatch.setattr(owner, "runtime_identity", lambda _: "b" * 64)
     owner.dependency_plan(dependency)
-    assert observed.get("runtime_digest_value") is None
-    assert observed["kwargs"]["runtimes"] == tuple(
-        Path(path) for path in dependency["runtime_roots"]
-    )
+    assert observed["runtime_digest_value"] == "b" * 64
+    assert observed["runtimes"] == tuple(Path(path) for path in dependency["runtime_roots"])
 
 
 def test_legacy_dependency_rebuilds_identity_without_environment_override(tmp_path, monkeypatch):
@@ -133,6 +136,7 @@ def test_legacy_dependency_rebuilds_identity_without_environment_override(tmp_pa
     dependency["manifest_path"] = str(path)
     observed = {}
     binding_value = owner.verification_binding()
+    monkeypatch.setattr(owner, "runtime_identity", lambda _: binding_value["runtime_identity"])
 
     def binding(*args, **kwargs):
         observed["kwargs"] = kwargs
@@ -141,7 +145,7 @@ def test_legacy_dependency_rebuilds_identity_without_environment_override(tmp_pa
 
     monkeypatch.setattr(owner, "verification_binding", binding)
     owner.dependency_plan(dependency)
-    assert observed.get("runtime_digest_value") is None
+    assert observed.get("runtime_digest_value") == binding_value["runtime_identity"]
     assert observed["kwargs"]["runtimes"] == tuple(
         Path(path) for path in dependency["runtime_roots"]
     )
@@ -333,6 +337,8 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
     monkeypatch.setattr(owner, "verification_binding", gate.verification_binding)
     steps = (Step("probe", (sys.executable, "-c", "pass")),)
     monkeypatch.setattr(owner, "merge_gate_steps", lambda: steps)
+    runtime_digest = owner.runtime_identity((Path(sys.prefix),))
+    dependency["runtime_identity"] = runtime_digest
     identity = digest(
         gate.verification_binding(
             root,
@@ -340,6 +346,7 @@ def test_actual_isolated_journal_wakes_only_exact_repair(tmp_path, monkeypatch):
             steps,
             isolated=isolated,
             runtimes=(Path(sys.prefix),),
+            runtime_digest_value=runtime_digest,
         )
     )
     dependency.update(

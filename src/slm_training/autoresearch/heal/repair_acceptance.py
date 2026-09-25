@@ -20,6 +20,7 @@ from slm_training.autoresearch.heal.isolation_workspace import (
     owner_write_preparation,
     patch_manifest_digest,
     private_snapshot,
+    private_snapshot_manifest,
     tree_manifest,
 )
 from slm_training.autoresearch.heal.repair_contracts import (
@@ -96,7 +97,7 @@ class SourceVerificationGate:
             raise ValueError("source verification requires a locked identity and base")
 
     def read(self, workspace: VerificationWorkspace) -> dict | None:
-        from scripts.merge_verification import _summary, verification_binding
+        from scripts.merge_verification import _summary, runtime_identity, verification_binding
         from scripts.merge_verification_evidence import (
             ReceiptCache,
             digest,
@@ -105,6 +106,7 @@ class SourceVerificationGate:
         from scripts.verify_merge_ready import merge_gate_steps
 
         runtimes = workspace.runtime_roots or (Path(sys.prefix),)
+        runtime_digest = runtime_identity(runtimes)
         protected = self.state_dir.resolve()
         for exposed in (self.root, workspace.base, workspace.candidate, *runtimes):
             exposed = exposed.resolve()
@@ -127,6 +129,7 @@ class SourceVerificationGate:
             merge_gate_steps(),
             isolated=True,
             runtimes=runtimes,
+            runtime_digest_value=runtime_digest,
         )
         if digest(binding) != self.identity:
             raise ValueError("source_verification_binding_changed")
@@ -136,9 +139,10 @@ class SourceVerificationGate:
             if tree_manifest(source) != tree_manifest(workspace.candidate):
                 raise ValueError("source_verification_candidate_mismatch")
         frozen_base = self.root.parent / "base"
-        before, after = tree_manifest(frozen_base), tree_manifest(self.root)
-        if before != tree_manifest(workspace.base):
+        if tree_manifest(frozen_base) != tree_manifest(workspace.base):
             raise ValueError("source_verification_base_mismatch")
+        before = private_snapshot_manifest(frozen_base)
+        after = private_snapshot_manifest(self.root)
         changed = {
             path
             for path in before.keys() | after.keys()

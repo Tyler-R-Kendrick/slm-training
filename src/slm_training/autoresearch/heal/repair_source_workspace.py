@@ -163,10 +163,13 @@ def _durable(root):
                 os.close(fd)
 
 
-def _reuse_source_verification(namespace, identity_base, steps, runtimes):
-    from scripts.merge_verification import verification_binding
+def _reuse_source_verification(
+    namespace, identity_base, steps, runtimes, *, runtime_digest=None
+):
+    from scripts.merge_verification import runtime_identity, verification_binding
     from scripts.merge_verification_evidence import digest
 
+    runtime_digest = runtime_digest or runtime_identity(runtimes)
     for path in sorted(namespace.glob("*/manifest.json")):
         prior = json.loads(path.read_text())
         if any(prior.get(key) != value for key, value in identity_base.items()):
@@ -175,7 +178,7 @@ def _reuse_source_verification(namespace, identity_base, steps, runtimes):
             continue
         binding = verification_binding(
             path.parent / "root", prior["base_ref"], steps,
-            isolated=True, runtimes=runtimes,
+            isolated=True, runtimes=runtimes, runtime_digest_value=runtime_digest,
         )
         identity_inputs = {**identity_base, "verification_identity": digest(binding)}
         if (
@@ -187,7 +190,7 @@ def _reuse_source_verification(namespace, identity_base, steps, runtimes):
 
 
 def _materialize_source_verification(context, config, request, proposal, workspace):
-    from scripts.merge_verification import verification_binding
+    from scripts.merge_verification import runtime_identity, verification_binding
     from scripts.merge_verification_evidence import digest
     from scripts.verify_merge_ready import merge_gate_steps
 
@@ -209,7 +212,9 @@ def _materialize_source_verification(context, config, request, proposal, workspa
         "config_digest": config.digest(),
     }
     steps = merge_gate_steps()
-    reused = _reuse_source_verification(namespace, identity_base, steps, runtimes)
+    runtime_digest = runtime_identity(runtimes)
+    reused = _reuse_source_verification(namespace, identity_base, steps, runtimes,
+                                        runtime_digest=runtime_digest)
     if reused is not None:
         destination, identity_inputs, binding = reused
         return journal, destination, changed, identity_inputs, runtimes, binding
@@ -228,6 +233,7 @@ def _materialize_source_verification(context, config, request, proposal, workspa
         )
         binding = verification_binding(
             stage / "root", base_ref, steps, isolated=True, runtimes=runtimes,
+            runtime_digest_value=runtime_digest,
         )
         identity_inputs = {**identity_base, "verification_identity": digest(binding)}
         destination = namespace / digest(identity_inputs)

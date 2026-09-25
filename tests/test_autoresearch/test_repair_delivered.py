@@ -204,7 +204,6 @@ def test_signed_historical_gate_survives_relocation_but_not_tampering(tmp_path, 
     from scripts import merge_verification as merge
     from slm_training.autoresearch.heal.repair_acceptance import VerificationWorkspace
     from slm_training.autoresearch.heal.repair_delivery import _historical_gate
-    from slm_training.autoresearch.heal.isolation_workspace import manifest_digest, tree_manifest
     from tests.test_autoresearch.test_repair_acceptance import source_gate_fixture
 
     source = tmp_path / "source"
@@ -214,7 +213,6 @@ def test_signed_historical_gate_survives_relocation_but_not_tampering(tmp_path, 
     gate = source_gate_fixture(tmp_path, monkeypatch, VerificationWorkspace(source, source))
     state = evidence.ReceiptCache(gate.state_dir, gate.root).load(gate.identity)
     inputs = {"binding": state["binding"]}
-    monkeypatch.setattr(evidence, "source_identity", lambda path: manifest_digest(tree_manifest(path)))
     expected = _historical_gate(gate, inputs)
     monkeypatch.setenv("PYTHONPATH", str(tmp_path / "delivered/src"))
     monkeypatch.setattr(merge, "environment_identity", lambda: pytest.fail("historical environment relabelled"))

@@ -398,4 +398,3 @@ def test_controller_overhead_is_charged_and_new_boot_clock_not_compared(
             1.75
         )  # lock/start/work/commit, before accounting append.
         assert cursor.remaining == pytest.approx(58.25)
-

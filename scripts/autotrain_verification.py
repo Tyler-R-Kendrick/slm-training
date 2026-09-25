@@ -12,7 +12,7 @@ import sys
 import time
 from pathlib import Path
 
-from scripts.merge_verification import _summary, verification_binding
+from scripts.merge_verification import _summary, runtime_identity, verification_binding
 from scripts.merge_verification_controller import execute_release_attempt
 from scripts.merge_verification_evidence import (
     ReceiptCache,
@@ -32,6 +32,25 @@ from slm_training.levers import KILL_GRACE_SECONDS
 
 class VerificationCapabilityUnavailable(ValueError):
     """A scoped missing controller grant/configuration, not a code failure."""
+
+
+def _runtime_digest(dependency):
+    pinned = dependency.get("runtime_identity")
+    if pinned is not None:
+        return pinned
+    path = Path(dependency.get("manifest_path", ""))
+    if not path.is_file() or path.is_symlink() or path.stat().st_size > 1_048_576:
+        return None
+    manifest = json.loads(path.read_text())
+    binding = manifest.get("binding")
+    identity = dependency["verification_identity"]
+    if (
+        manifest.get("verification_identity") != identity
+        or not isinstance(binding, dict)
+        or digest(binding) != identity
+    ):
+        raise ValueError("source_verification_manifest_identity_mismatch")
+    return binding.get("runtime_identity")
 
 
 def load_dependency(store, event):
@@ -93,11 +112,14 @@ def dependency_plan(dependency):
     for exposed in (root, *roots):
         if state_dir.is_relative_to(exposed) or exposed.is_relative_to(state_dir):
             raise ValueError("source_verification_issuer_exposed_to_workload")
-    runtime_digest = _runtime_digest(dependency)
+    pinned_runtime = _runtime_digest(dependency)
+    current_runtime = runtime_identity(roots)
     binding = verification_binding(
         root, dependency["base_ref"], merge_gate_steps(), isolated=True, runtimes=roots,
-        runtime_digest_value=runtime_digest,
+        runtime_digest_value=current_runtime,
     )
+    if pinned_runtime is not None and pinned_runtime != current_runtime:
+        raise ValueError("source_verification_binding_changed")
     if digest(binding) != identity:
         raise ValueError("source_verification_binding_changed")
     return {
@@ -117,25 +139,6 @@ def dependency_plan(dependency):
     }
 
 
-def _runtime_digest(dependency):
-    pinned = dependency.get("runtime_identity")
-    if pinned is not None:
-        return pinned
-    path = Path(dependency.get("manifest_path", ""))
-    if not path.is_file() or path.is_symlink() or path.stat().st_size > 1_048_576:
-        return None
-    manifest = json.loads(path.read_text())
-    binding = manifest.get("binding")
-    identity = dependency["verification_identity"]
-    if (
-        manifest.get("verification_identity") != identity
-        or not isinstance(binding, dict)
-        or digest(binding) != identity
-    ):
-        raise ValueError("source_verification_manifest_identity_mismatch")
-    return binding.get("runtime_identity")
-
-
 def authenticated_completion(plan):
     """Recheck the exact signed journal, including on controller crash replay."""
     directory = Path(plan["state_dir"])
@@ -147,12 +150,15 @@ def authenticated_completion(plan):
     validate_cached_state(state, plan["binding"])
     if not _summary(state)["verification_complete"]:
         return False
+    roots = tuple(Path(path) for path in plan["runtime_roots"])
+    runtime_digest = runtime_identity(roots)
     current = verification_binding(
         Path(plan["source"]),
         plan["base_ref"],
         merge_gate_steps(),
         isolated=True,
-        runtimes=tuple(Path(path) for path in plan["runtime_roots"]),
+        runtimes=roots,
+        runtime_digest_value=runtime_digest,
     )
     if digest(current) != plan["identity"]:
         raise ValueError("source_verification_binding_changed_before_wake")

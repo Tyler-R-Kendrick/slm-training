@@ -78,7 +78,11 @@ def accepted_source(tmp_path, monkeypatch, request):
     journal = CampaignStore(request.campaign_id, kwargs["destinations"][1])
     identity_inputs = {"request_digest": request.digest(), "proposal_digest": proposal.digest(),
                        "config_digest": "d" * 64}
-    binding = {"runtime_roots": [], "changed_paths": sorted(after)}
+    binding = {
+        "runtime_roots": [],
+        "runtime_identity": "f" * 64,
+        "changed_paths": sorted(after),
+    }
     summary = {"identity": contract_digest(binding), "verification_complete": True}
     inputs = {"schema_version": "repair_source_verification_input/v1", **identity_inputs,
               "source_snapshot_digest": manifest_digest(before),

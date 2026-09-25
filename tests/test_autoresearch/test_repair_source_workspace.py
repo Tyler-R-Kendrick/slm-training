@@ -80,7 +80,8 @@ def test_actual_factory_binds_full_source_coverage_private_git_and_separate_gran
     assert all(path.stat().st_nlink == 1 for path in (gate.root / ".git").rglob("*") if path.is_file())
     manifest = json.loads((gate.root.parent / "manifest.json").read_text())
     binding = verification_binding(gate.root, gate.base_ref, merge_gate_steps(),
-                                   isolated=True, runtimes=(Path(sys.prefix),))
+                                   isolated=True, runtimes=(Path(sys.prefix),),
+                                   runtime_digest_value=gate.runtime_identity)
     assert digest(binding) == gate.identity
     assert binding == manifest["binding"]
     assert binding["changed_paths"] == ["fixture.py", "tests/test_added.py"]

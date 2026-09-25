@@ -180,9 +180,10 @@ def source_gate_fixture(tmp_path, monkeypatch, workspace, *, complete=True):
         }
 
     monkeypatch.setattr(merge, "verification_binding", fixture_binding)
+    monkeypatch.setattr(merge, "environment_identity", lambda **_: {})
     monkeypatch.setattr(identity, "environment_identity", lambda **_: {})
-    monkeypatch.setattr(identity, "runtime_identity", lambda _: "fixture")
-    monkeypatch.setattr(merge, "runtime_identity", lambda _: "fixture")
+    monkeypatch.setattr(identity, "runtime_identity", lambda _: "f" * 64)
+    monkeypatch.setattr(merge, "runtime_identity", lambda _: "f" * 64)
     monkeypatch.setattr(verify_merge_ready, "merge_gate_steps", lambda: ())
     monkeypatch.setattr(
         "slm_training.autoresearch.heal.isolation.probe_isolation",
