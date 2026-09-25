@@ -5571,6 +5571,11 @@
       "history": [
         {
           "date": "2026-09-25",
+          "note": "Replay the locked partial-evaluation command unchanged; evaluator already resumes records from its run directory, while injected bare --resume-run caused argparse exit 2 after the first chunk.",
+          "version": "v305"
+        },
+        {
+          "date": "2026-09-25",
           "note": "Materialize first locked diagnostic documentation and register typed delivery wait before supervisor success.",
           "version": "v304"
         },
@@ -7792,6 +7797,7 @@
         "scripts/autotrain_verification.py",
         "scripts/github_source_verification.py",
         "scripts/autotrain_nll.py",
+        "scripts/autoresearch_continuation.py",
         "src/slm_training/autoresearch/preflight/loss_binding.py",
         "scripts/autotrain_search.py",
         "tests/test_scripts/test_autonomy_entrypoint_contracts.py",
@@ -7804,9 +7810,12 @@
         "tests/test_scripts/test_autotrain_verification.py",
         "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py",
         "tests/test_scripts/test_supervisor_interruption.py",
-        "tests/test_scripts/test_supervisor_adversary.py"
+        "tests/test_scripts/test_supervisor_adversary.py",
+        "tests/test_autoresearch/test_evaluation_continuation.py",
+        "tests/test_autoresearch/test_evaluation_budget_boundary.py",
+        "tests/test_autoresearch/test_driver_partial_cursor_recovery.py"
       ],
-      "version": "v304"
+      "version": "v305"
     },
     "harness.autoresearch.formal": {
       "history": [

@@ -36,7 +36,14 @@ def test_cursor_yields_short_remainder_then_resumes_same_command(tmp_path, monke
     assert is_continuation_pending(first) and len(calls) == 1
     second = run([EVAL], execute, tmp_path, store=CampaignStore(spec.campaign_id, root=tmp_path), grant=grant, spec=spec)
     assert second.status == "completed" and len(calls) == 2
-    assert calls[1] == [[*EVAL, "--resume-run"]]
+    assert calls[1] == [EVAL]
+
+
+def test_resume_command_preserves_locked_run_directory(tmp_path):
+    command = [*EVAL, "--run-root", str(tmp_path), "--run-id", "control"]
+    resumed = continuation._resume_commands([command], 0, pending(command))
+    assert resumed == [command]
+    assert command[-1] == "control"
 
 
 def test_logical_remainder_cannot_yield_forever_without_charging(tmp_path, monkeypatch):
@@ -114,17 +121,19 @@ def test_interrupted_evaluation_retries_without_repeating_completed_prefix(tmp_p
             killed=False, outcome=ProcessOutcome.COMPLETED, stdout="", stderr="", duration_seconds=1)
     monkeypatch.setattr(engine, "run_bounded_process", bounded)
     prefix = ["python", "-c", "pass"]
+    eval_command = [*EVAL, "--run-root", str(tmp_path), "--run-id", "control"]
     grant = ContinuationGrant("release", 300)
     settings = dict(spec=spec, grant=grant, wall_seconds=100)
-    first = run([prefix, EVAL], execute_commands, tmp_path,
+    first = run([prefix, eval_command], execute_commands, tmp_path,
                 store=CampaignStore(spec.campaign_id, root=tmp_path), **settings)
     assert is_continuation_pending(first) and first.status == "stopped"
     assert first.stage_telemetry[-1]["timed_out"] is True
     assert first.stage_telemetry[-1]["measurement_complete"] is False
-    second = run([prefix, EVAL], execute_commands, tmp_path,
+    second = run([prefix, eval_command], execute_commands, tmp_path,
                  store=CampaignStore(spec.campaign_id, root=tmp_path), **settings)
     assert second.status == "completed" and len(calls) == 4
-    assert calls[0] == prefix and "--resume-run" in calls[-1]
+    assert calls[0] == prefix
+    assert "--resume-run" not in calls[-1]
     # Non-resumable or unvalidated interrupted stages still cannot authorize a retry.
     raw = dict(first.stage_telemetry[-1])
     raw.pop("resume_validation")

@@ -63,7 +63,8 @@ def test_interrupted_partial_cursor_resumes_same_campaign_without_repeating_pref
 
     def crash_resume(spec, commands, **kwargs):
         assert spec.experiment_id == candidate
-        assert "--resume-run" in commands[0]
+        assert "scripts.evaluate_model" in commands[0]
+        assert "--resume-run" not in commands[0]
         raise SystemExit("resumed start interruption")
 
     assert _resume(f)["outcome"] == "yielded"
@@ -98,7 +99,7 @@ def test_interrupted_partial_cursor_resumes_same_campaign_without_repeating_pref
     assert after["spent_seconds"] >= before["spent_seconds"]
     assert _candidate_cursor(f) == inputs
     assert manifests == {eid: f.store.load_experiment_campaign(eid).manifest_sha256 for eid in f.ids}
-    assert resumed and "--resume-run" in resumed[0]
+    assert resumed and resumed[0] == inputs["commands"][1]
     assert all((tmp_path / f"{eid}-trained").read_text() == "x" for eid in f.ids)
     assert (tmp_path / "candidate-tail").exists()
     assert f.final_calls == ["delivery", "handoff"]

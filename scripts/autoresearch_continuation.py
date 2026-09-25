@@ -218,8 +218,6 @@ def _resume_commands(commands, position, stage):
         ):
             raise ValueError("invalid controller-validated resume command")
         suffix[0] = list(override)
-    elif "--resume-run" not in suffix[0]:
-        suffix[0].append("--resume-run")
     return suffix
 
 def continue_pending_evaluation(
@@ -367,11 +365,9 @@ def _execute_cursor(cursor, execute_commands, cwd, deadline, wall_seconds, reser
         # Reserve unaccounted invocation time, including finalization and overhead.
         cursor.start(min(cursor.remaining, wall_seconds - cursor.observed_seconds))
         previous, offset = outcome, position
-
         def stage_callback(partial):
             observed = _merged(previous, partial) if previous is not None else partial
             cursor.checkpoint(observed, offset + _position(partial, suffix))
-
         options = {"stage_callback": stage_callback} if cursor.store is not None else {}
         current = execute_commands(
             cursor.experiment,

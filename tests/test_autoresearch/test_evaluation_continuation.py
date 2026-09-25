@@ -117,7 +117,7 @@ def test_remaining_suffix_survives_yield_and_original_argv_is_immutable(tmp_path
 
     result = run(plan, execute, tmp_path)
     assert result.status == "completed"
-    assert calls[1] == [[*EVAL, "--resume-run"], FINAL]
+    assert calls[1] == [EVAL, FINAL]
     assert plan == [TRAIN, EVAL, FINAL]
 
 
@@ -195,7 +195,7 @@ def test_new_store_instance_resumes_without_retraining(tmp_path, monkeypatch):
     fresh = CampaignStore(spec.campaign_id, root=tmp_path)
     result = run([TRAIN, EVAL, FINAL], execute, tmp_path, store=fresh, **arguments)
     assert result.status == "completed"
-    assert calls[1] == [[*EVAL, "--resume-run"], FINAL]
+    assert calls[1] == [EVAL, FINAL]
     events = fresh.verify_event_chain()
     assert sum(e["event_type"] == "command_cursor_started" for e in events) == 2
     assert (
