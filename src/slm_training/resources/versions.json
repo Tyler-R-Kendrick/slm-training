@@ -387,6 +387,11 @@
     "ci.local_merge_gate": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Give isolated pytest collection attempts a 20-second startup slice after measuring 11.5 seconds of hermetic setup, while retaining retry caps.",
+          "version": "v26"
+        },
+        {
           "date": "2026-09-25",
           "note": "no-bump: remove stale test paths and use hermetic Git fixtures; production verifier behavior is unchanged.",
           "version": "v25"
@@ -562,7 +567,7 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_successor.py"
       ],
-      "version": "v25"
+      "version": "v26"
     },
     "config.levers": {
       "history": [

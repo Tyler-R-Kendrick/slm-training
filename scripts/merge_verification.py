@@ -21,6 +21,7 @@ from scripts.merge_verification_evidence import (
     validate_cached_state,
 )
 from scripts.merge_verification_isolation import run_isolated_phase, run_workload
+from scripts.merge_verification_collection import COLLECTION_MIN_ATTEMPT_SECONDS
 from scripts.merge_verification_shards import attempts_exhausted as _attempts_exhausted
 from scripts.merge_verification_summary import summarize as _summary
 from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
@@ -198,7 +199,7 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
         state.get("shard_budget_seconds", available) if kind == "shard" else available
     )
     full = state.get("workload_budget_seconds", fallback)
-    required = min(full, 10.0) if kind == "collection" and not prior else (available if kind == "static" and not prior else full)
+    required = min(full, COLLECTION_MIN_ATTEMPT_SECONDS) if kind == "collection" and not prior else (available if kind == "static" and not prior else full)
     if kind == "static" and not prior and available <= 0:
         required = max(1.0, full)
     if prior:

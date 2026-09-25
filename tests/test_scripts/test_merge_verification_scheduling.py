@@ -152,7 +152,7 @@ def test_collection_batch_wait_is_admissible_on_next_invocation(tmp_path):
         plan_shards=lambda nodes, budget: [],
     )
     waiting = next(iter(state["waiting"].values()))
-    assert waiting["required_seconds"] == 10.0
+    assert waiting["required_seconds"] == 20.0
 
 
 def test_timed_out_collection_batch_is_split_for_resume(tmp_path):

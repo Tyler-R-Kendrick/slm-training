@@ -81,3 +81,16 @@ current source binding and candidate tree; no new verifier allowance is minted.
 Focused regression evidence (21 passed) covers these transitions. The full
 source-bound merge gate and live subscription-backed repair replay remain
 separate acceptance requirements.
+
+## Isolated test-collection startup allowance — 2026-09-24
+
+The resumable verifier's first collection slice was capped at 10 seconds. In
+the isolated candidate runtime, collection of one test module took 11.5 seconds
+including Bubblewrap and candidate snapshot preparation; the same module
+collected in 2.2 seconds without isolation. This caused repeated timeout,
+split, and retry-exhaustion even though the test itself was collectable.
+Collection admission and the next-invocation journal now use a 20-second
+minimum slice, still bounded by the workload grant and existing per-obligation
+attempt cap. A focused regression checks both the admitted slice and the
+advertised resume requirement. The full source-bound verifier must still
+complete before release is authorized.

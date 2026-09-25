@@ -139,6 +139,14 @@ def test_split_collection_inherits_retry_charge_and_reports_exact_wait():
     assert gate._summary(state)["status"] == "waiting_repair"
 
 
+def test_fresh_collection_gets_isolated_startup_allowance():
+    state = state_for()
+    state["binding"]["targets"] = ["tests"]
+    state["workload_budget_seconds"] = 40.0
+
+    assert gate._allowance(state, "collection", ["tests/test_one.py"], 40.0) == 20.0
+
+
 def test_directory_collection_includes_both_pytest_default_filename_patterns(tmp_path):
     from scripts.merge_verification_collection import collect
 

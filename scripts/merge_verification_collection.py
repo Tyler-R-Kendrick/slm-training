@@ -8,6 +8,8 @@ from pathlib import Path
 from scripts.merge_verification_evidence import digest
 
 COLLECTION_BATCH_SIZE = 64
+# Isolated pytest startup alone measured 11.5s; keep admission above that cost.
+COLLECTION_MIN_ATTEMPT_SECONDS = 20.0
 
 def _finish_if_ready(state, batches, plan_shards) -> bool:
     if state.setdefault("collection_batch_index", 0) < len(batches):
@@ -102,7 +104,8 @@ def collect(
                 # advertising the whole remaining collection makes a
                 # resumable collection appear permanently unaffordable.
                 "required_seconds": min(
-                    10.0, state.get("workload_budget_seconds", 10.0)
+                    COLLECTION_MIN_ATTEMPT_SECONDS,
+                    state.get("workload_budget_seconds", COLLECTION_MIN_ATTEMPT_SECONDS),
                 ),
                 "available_seconds": 0.0,
                 "wake_source": "fresh_bounded_invocation",
