@@ -94,3 +94,16 @@ minimum slice, still bounded by the workload grant and existing per-obligation
 attempt cap. A focused regression checks both the admitted slice and the
 advertised resume requirement. The full source-bound verifier must still
 complete before release is authorized.
+
+## Approved package runtime mount — 2026-09-24
+
+The full isolated run exposed that an approved OpenUI bridge `node_modules`
+runtime was accepted into the identity but not mounted: immutable candidate
+snapshots intentionally omit ignored dependency directories, while the mount
+builder required that target directory to already exist. Tests therefore
+failed with “Install bridge deps” despite the dependency tree being available
+and approved. The isolation owner now matches runtime and candidate package
+names, creates the empty mountpoint only in the disposable snapshot, and mounts
+the dependency tree read-only. A focused regression covers the bridge mapping.
+The affected test shard must pass under the complete source and runtime binding
+before this defect can be considered closed.

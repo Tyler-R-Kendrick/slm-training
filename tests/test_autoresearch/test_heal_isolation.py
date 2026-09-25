@@ -108,6 +108,26 @@ def test_runtime_descendant_hardlink_rejected_even_after_prior_validation(tmp_pa
         isolation_module._runtime_mounts(spec)
 
 
+def test_node_modules_runtime_mount_targets_matching_immutable_candidate(tmp_path):
+    from slm_training.autoresearch.heal.isolation import _node_module_mounts
+
+    runtime = tmp_path / "runtime/src/apps/openui_bridge/node_modules"
+    runtime.mkdir(parents=True)
+    (runtime.parent / "package.json").write_text('{"name":"openui-bridge"}')
+    candidate_app = tmp_path / "workspace/candidate/src/apps/openui_bridge"
+    candidate_app.mkdir(parents=True)
+    (candidate_app / "package.json").write_text('{"name":"openui-bridge"}')
+
+    mounts = _node_module_mounts(tmp_path / "workspace", (runtime,))
+
+    assert mounts == [
+        "--ro-bind",
+        str(runtime),
+        "/workspace/candidate/src/apps/openui_bridge/node_modules",
+    ]
+    assert (candidate_app / "node_modules").is_dir()
+
+
 def test_socket_mount_rejected(workspace: Path) -> None:
     with socket.socket(socket.AF_UNIX) as server:
         try:

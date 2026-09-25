@@ -97,6 +97,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Bind approved node_modules runtimes into immutable candidate mounts by matching package identity, including mountpoints omitted from source snapshots.",
+          "version": "v28"
+        },
+        {
           "date": "2026-09-25",
           "note": "Install GraphQL bridge dependencies in the bounded environment-repair playbook so isolated verification receives every declared JavaScript runtime.",
           "version": "v27"
@@ -285,7 +290,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v27"
+      "version": "v28"
     },
     "autoresearch.power_preflight": {
       "history": [

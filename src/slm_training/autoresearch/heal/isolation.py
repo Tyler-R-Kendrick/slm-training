@@ -6,6 +6,7 @@ mounted. Missing isolation is an explicit capability failure, never a fallback.
 
 from __future__ import annotations
 
+import json
 import math
 import shutil
 import threading
@@ -260,12 +261,34 @@ def _writable_mounts(spec: IsolationSpec, workspace: Path) -> list[str]:
     return command
 
 def _node_module_mounts(workspace: Path, runtimes: tuple[Path, ...]) -> list[str]:
-    roots = [root for root in runtimes if root.name == "node_modules" and root.is_dir()]
     mounts: list[str] = []
-    if (workspace / "candidate/node_modules").is_dir() and roots:
-        mounts.extend(("--ro-bind", str(roots.pop(0)), "/workspace/candidate/node_modules"))
-    if (workspace / "candidate/src/apps/openui_bridge/node_modules").is_dir() and roots:
-        mounts.extend(("--ro-bind", str(roots.pop(0)), "/workspace/candidate/src/apps/openui_bridge/node_modules"))
+    for root in (path for path in runtimes if path.name == "node_modules" and path.is_dir()):
+        manifest = root.parent / "package.json"
+        try:
+            package_name = json.loads(manifest.read_text()).get("name")
+        except (OSError, ValueError):
+            continue
+        candidates = (
+            workspace / "candidate",
+            workspace / "candidate/src/apps/openui_bridge",
+        )
+        target = next(
+            (
+                path
+                for path in candidates
+                if (path / "package.json").is_file()
+                and json.loads((path / "package.json").read_text()).get("name")
+                == package_name
+            ),
+            None,
+        )
+        if target is None:
+            continue
+        destination = target / "node_modules"
+        if destination.is_symlink():
+            raise IsolationViolation("node_modules mountpoint cannot be a symlink")
+        destination.mkdir(exist_ok=True)
+        mounts.extend(("--ro-bind", str(root), f"/workspace/{destination.relative_to(workspace)}"))
     return mounts
 
 def run_isolated(
