@@ -3,7 +3,9 @@
 Child fixtures test plumbing, not training quality or AgentV publication.
 """
 
+import subprocess
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -21,6 +23,18 @@ from tests.test_autoresearch.test_harness import (
     hypothesis_matrix,
 )
 from tests.test_autoresearch.test_trial_execution import _trial
+
+
+@pytest.mark.parametrize("module", ["scripts.train_model", "scripts.evaluate_model"])
+def test_repo_cli_child_imports_current_source_without_training(monkeypatch, module):
+    monkeypatch.delenv("PYTHONPATH", raising=False)
+    command = [sys.executable, "-m", module, "--help"]
+    result = subprocess.run(
+        command, cwd=Path.cwd(), env=engine._stage_environment(experiment(), command),
+        capture_output=True, text=True, timeout=20, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout
 
 
 @pytest.mark.parametrize("seconds", [float("nan"), float("inf"), -1, 0])

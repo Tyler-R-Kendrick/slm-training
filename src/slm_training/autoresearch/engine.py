@@ -93,14 +93,14 @@ def is_latency_probe_command(command: list[str]) -> bool:
 def _stage_environment(
     experiment: ExperimentSpec, command: list[str]
 ) -> dict[str, str] | None:
-    """Keep tiny scratch CPU arms from oversubscribing a shared host."""
-
-    if experiment.knobs.context_backend != "scratch" or not any(
-        module in command
-        for module in ("scripts.train_model", "scripts.evaluate_model")
-    ):
+    """Run repo CLIs from this checkout and bound scratch CPU threads."""
+    if len(command) < 3 or command[1] != "-m" or not command[2].startswith("scripts."):
         return None
-    return {**os.environ, "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
+    env = {**os.environ}
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, (str(Path(__file__).resolve().parents[2]), env.get("PYTHONPATH"))))
+    if experiment.knobs.context_backend == "scratch" and command[2] in {"scripts.train_model", "scripts.evaluate_model"}:
+        env.update(OMP_NUM_THREADS="1", MKL_NUM_THREADS="1")
+    return env
 TRACE_EVIDENCE_KINDS = {"run_insight", "telemetry", "agentv", "feedback"}
 RESULT_EVIDENCE_KINDS = {
     "prior_run",

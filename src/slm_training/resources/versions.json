@@ -5560,6 +5560,11 @@
       "history": [
         {
           "date": "2026-09-25",
+          "note": "Pass this checkout's src path to compiled Python CLI children so ordinary supervised train and eval stages import the pinned package.",
+          "version": "v301"
+        },
+        {
+          "date": "2026-09-25",
           "note": "Rebuild repair verification identity from pinned runtime roots using the producer binding contract without a mismatched runtime override.",
           "version": "v300"
         },
@@ -7769,7 +7774,7 @@
         "tests/test_scripts/test_supervisor_interruption.py",
         "tests/test_scripts/test_supervisor_adversary.py"
       ],
-      "version": "v300"
+      "version": "v301"
     },
     "harness.autoresearch.formal": {
       "history": [

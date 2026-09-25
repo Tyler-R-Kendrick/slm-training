@@ -4636,7 +4636,7 @@ def test_execute_limits_threads_for_scratch_cpu_stages(monkeypatch) -> None:
     assert eval_env and eval_env["OMP_NUM_THREADS"] == "1"
     assert engine._stage_environment(
         scratch, ["python", "-m", "scripts.build_train_data"]
-    ) is None
+    )["PYTHONPATH"].split(":")[0].endswith("/src")
 
 
 def test_execute_passes_inner_wall_to_evaluation(monkeypatch) -> None:
