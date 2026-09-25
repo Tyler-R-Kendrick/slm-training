@@ -48,6 +48,42 @@ def test_new_clean_release_requires_exact_remote_commit_and_tree(accepted_execut
     assert core.validate_source_refs(destinations[1], sha, sha, git=lambda *a, **kw: pytest.fail("Git queried"))["code_dirty"] is False
 
 
+def test_clean_head_materialization_includes_committed_templates_and_serena(tmp_path):
+    source = tmp_path / "source"
+    (source / ".serena").mkdir(parents=True)
+    (source / ".env.example").write_text("EXAMPLE=value\n")
+    (source / ".env.local").write_text("SECRET=private\n")
+    (source / ".serena" / ".gitignore").write_text("cache/\n")
+    (source / ".serena" / "project.yml").write_text("name: fixture\n")
+    (source / ".serena" / "cache").mkdir()
+    (source / ".serena" / "cache" / "private").write_text("local only\n")
+    initial = tmp_path / "initial"
+    core.prepare_release(source, tmp_path / "initial-release", initial, tmp_path / "initial-outputs")
+    with pytest.raises(ValueError, match="release_git_provenance_unavailable"):
+        core.runtime_git_provenance(initial)
+    assert {".env.example", ".serena/.gitignore", ".serena/project.yml"} <= core._files(initial).keys()
+    assert ".env.local" not in core._files(initial)
+    assert ".serena/cache/private" not in core._files(initial)
+
+    raw, sha = _commit(initial)
+    clean = tmp_path / "clean"
+    core.prepare_delivered_release((initial, core.runtime_source_identity(initial)),
+        (tmp_path / "clean-release", clean, tmp_path / "clean-outputs"), (raw, sha))
+    assert core.runtime_git_provenance(clean) == {
+        "integration_commit": sha, "upstream_commit": sha, "code_dirty": False}
+
+    other = tmp_path / "other"
+    (other / ".serena").mkdir(parents=True)
+    (other / ".env.example").write_text("EXAMPLE=changed\n")
+    (other / ".serena" / ".gitignore").write_text("cache/\n")
+    (other / ".serena" / "project.yml").write_text("name: fixture\n")
+    altered = tmp_path / "altered"
+    core.prepare_release(other, tmp_path / "altered-release", altered, tmp_path / "altered-outputs")
+    with pytest.raises(ValueError, match="delivered_commit_tree_mismatch"):
+        core.prepare_delivered_release((altered, core.runtime_source_identity(altered)),
+            (tmp_path / "rejected-release", tmp_path / "rejected", tmp_path / "rejected-outputs"), (raw, sha))
+
+
 @pytest.mark.parametrize("fault", ["sha", "tree", "identity", "copy_drift", "mode", "link"])
 def test_delivered_materializer_rejects_unproved_or_changed_source(accepted_execution, tmp_path, monkeypatch, fault):
     source, accepted, _ = accepted_execution

@@ -9,6 +9,7 @@ import os
 import subprocess
 import zlib
 from datetime import datetime
+from itertools import product
 
 from .github_connector import DeliveryWaiting
 from .github_delivery_tree import git_object, source_entries, tree_sha
@@ -19,24 +20,28 @@ def commit_object(commit, expected):
     payload, signature = proof.get("payload"), proof.get("signature")
     if payload and signature:
         headers, message = payload.split("\n\n", 1)
-        content = headers + "\ngpgsig " + signature.rstrip("\n").replace("\n", "\n ") + "\n\n" + message
+        contents = [headers + "\ngpgsig " + signature.rstrip("\n").replace("\n", "\n ") + "\n\n" + message]
     else:
         headers = ["tree " + commit["tree"]["sha"]]
         headers.extend("parent " + parent["sha"] for parent in commit["parents"])
-        for role in ("author", "committer"):
-            person = commit[role]
-            timestamp = int(datetime.fromisoformat(person["date"].replace("Z", "+00:00")).timestamp())
-            headers.append(f"{role} {person['name']} <{person['email']}> {timestamp} +0000")
-        content = "\n".join(headers) + "\n\n" + commit["message"]
+        people = [(commit[role], int(datetime.fromisoformat(commit[role]["date"].replace("Z", "+00:00")).timestamp()))
+                  for role in ("author", "committer")]
+        # GitHub normalizes dates to UTC; the original commit object retains each offset.
+        zones = ["+0000", *(f"{'+' if minutes >= 0 else '-'}{abs(minutes) // 60:02d}{abs(minutes) % 60:02d}"
+                            for minutes in range(-12 * 60, 14 * 60 + 1, 15) if minutes)]
+        contents = ("\n".join([*headers, *(f"{role} {person['name']} <{person['email']}> {timestamp} {zone}"
+                     for role, (person, timestamp), zone in zip(("author", "committer"), people, pair))])
+                    + "\n\n" + commit["message"] for pair in product(zones, repeat=2))
     # GitHub metadata sometimes omits the final newline from its message. Only
     # an exact cryptographic match is accepted; neither form is assumed correct.
-    for candidate in (content, content + "\n"):
-        if git_object("commit", candidate.encode()) == expected:
-            lines = candidate.split("\n\n", 1)[0].splitlines()
-            if ([line for line in lines if line.startswith("tree ")] != ["tree " + commit["tree"]["sha"]]
-                    or [line for line in lines if line.startswith("parent ")] != ["parent " + row["sha"] for row in commit["parents"]]):
-                raise ValueError("remote_commit_payload_metadata_mismatch")
-            return candidate
+    for content in contents:
+        for candidate in (content, content + "\n"):
+            if git_object("commit", candidate.encode()) == expected:
+                lines = candidate.split("\n\n", 1)[0].splitlines()
+                if ([line for line in lines if line.startswith("tree ")] != ["tree " + commit["tree"]["sha"]]
+                        or [line for line in lines if line.startswith("parent ")] != ["parent " + row["sha"] for row in commit["parents"]]):
+                    raise ValueError("remote_commit_payload_metadata_mismatch")
+                return candidate
     raise DeliveryWaiting("exact_remote_git_commit_representation_required")
 
 

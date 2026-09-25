@@ -40,7 +40,6 @@ _SKIP = {
     "__pycache__",
     ".pytest_cache",
     ".ruff_cache",
-    ".serena",
     # Keep the committed hook policy in the immutable execution tree so the
     # parity verifier sees every configured harness. Private credentials and
     # local overrides remain excluded by their explicit names below.
@@ -52,13 +51,17 @@ _SKIP = {
 def _files(root: Path) -> dict:
     entries = {}
     for directory, dirs, files in os.walk(root, followlinks=False):
+        if Path(directory) == root / ".serena":
+            dirs[:] = []
+            files = [name for name in files if name in {".gitignore", "project.yml"}]
         dirs[:] = sorted(name for name in dirs if name not in _SKIP)
         for name in sorted(
             files + [name for name in dirs if (Path(directory) / name).is_symlink()]
         ):
             path = Path(directory) / name
             relative = path.relative_to(root).as_posix()
-            if name in _SKIP or relative == MARKER or name.startswith(".env."):
+            if (name in _SKIP or relative == MARKER
+                    or name.startswith(".env.") and name != ".env.example"):
                 continue
             info = path.lstat()
             if path.is_symlink():

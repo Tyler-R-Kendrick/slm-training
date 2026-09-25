@@ -30,6 +30,12 @@ def test_remote_commit_reconstruction_requires_exact_git_hash(signed):
         commit_object(value, sha)
 
 
+def test_remote_commit_reconstructs_original_timezone_from_utc_metadata():
+    value, raw, _ = commit("b" * 40)
+    raw = raw.replace("+0000", "-0500")
+    assert commit_object(value, git_object("commit", raw.encode())) == raw
+
+
 def test_observed_merge_can_be_next_gate_base_without_checkout_refresh(tmp_path):
     import time
     base, candidate = tmp_path / "base", tmp_path / "candidate"
