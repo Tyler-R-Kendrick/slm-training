@@ -4548,6 +4548,11 @@
     "governance.code_quality": {
       "history": [
         {
+          "date": "2026-09-24",
+          "note": "Record the module-line ratchet reduction after removing a redundant stale test from the oversized model-build evaluation test module.",
+          "version": "v2"
+        },
+        {
           "date": "2026-09-25",
           "note": "Restore the complete code-quality baseline and record measured ratchet reductions after the integration cleanup.",
           "version": "v3"
@@ -4606,7 +4611,7 @@
         "src/slm_training/resources/code_quality_baseline.json",
         "tests/test_quality/"
       ],
-      "version": "v3"
+      "version": "v2"
     },
     "governance.ownership_map": {
       "history": [
@@ -17238,6 +17243,11 @@
     },
     "harness.model_build.eval": {
       "history": [
+        {
+          "date": "2026-09-24",
+          "note": "no-bump: remove a redundant stale cacheability test; the complete measurement-contract regression remains in test_measurement_contract and production behavior is unchanged.",
+          "version": "v107"
+        },
         {
           "date": "2026-09-21",
           "note": "Bind evaluator continuation to locked measurement identity and complete scoreboards.",
