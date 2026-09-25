@@ -287,3 +287,5 @@ was restored in commit `3036f32703a3fcb98d4f10090beebfb49b144941`; its GitHub
 content was fetched back and matched the preserved valid JSON exactly.
 
 Parent validation on the integrated source: seven-file recovery suite **84 passed in 51.53s**; handoff-focused selection **23 passed, 348 deselected in 7.66s**. These checks use simulated process/agent boundaries and do not discharge live autonomous repair acceptance.
+
+R17 canonical verifier found `extract_test_cases` failed because the new negative-control parameter table remained inline. The existing casefile extractor moved it to `src/slm_training/resources/test_cases/test_scripts/test_self_healing_handoffs.json`; the source test now uses `case_values`. On this successor source, `extract_test_cases` passes, 11 handoff tests pass, Ruff passes, code quality passes, and version stamps pass. R17 remains a preserved failed snapshot; current-source release verification must use a successor.

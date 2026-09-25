@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.casefiles import case_values
+
 from scripts import run_autotrain_continuous as driver
 from scripts import autotrain_supervisor_operations as operations
 from slm_training.autoresearch.heal import operation_recovery as recovery
@@ -211,7 +213,7 @@ def test_source_yield_journals_original_and_resumes_verified_successor(publicati
     _resume_successor(runtime, successor, monkeypatch)
 
 
-@pytest.mark.parametrize("code", [None, "model_quality_gate", "external_tool_host_failure", "npm_bridge_unavailable", "screening_suite_volume"])
+@pytest.mark.parametrize("code", case_values(__file__, "test_non_source_yields_do_not_request_operation_repair"))
 def test_non_source_yields_do_not_request_operation_repair(publication, tmp_path, monkeypatch, code):
     runtime = publication[2]["runtime"]
     runtime.capacity = ResourceCapacity(cpu_slots=2, memory_mb=4096)
