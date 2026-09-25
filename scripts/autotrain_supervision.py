@@ -293,7 +293,6 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
     log_dir = root / "loops" / args.loop_id
     log_dir.mkdir(parents=True, exist_ok=True)
     supervisor_log = log_dir / "supervisor.jsonl"
-
     def log_event(event: dict) -> None:
         event = {
             **event,
@@ -303,7 +302,6 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
         with supervisor_log.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(event, sort_keys=True) + "\n")
         print(json.dumps(event, sort_keys=True), flush=True)
-
     # Invocation count is operational only; it never changes a training recipe.
     prior = [
         row
@@ -373,6 +371,8 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
                     "wake": wake.model_dump(mode="json"),
                 }
             )
+            if getattr(args, "locked_preregistration", None):
+                return 10
             # A bounded continuation is not a finished campaign. Its activity
             # retains the original grant; neither closeout nor a new receipt
             # resets scientific stagnation or authorizes another trial.

@@ -80,7 +80,14 @@ def controller_work_deadline(max_seconds: float, reserve_seconds: float) -> floa
             raise ValueError("controller_publication:foreign_process")
         remaining = scope.lease.expires_at - time.time()
         max_seconds = min(max_seconds, remaining - reserve_seconds)
-    return time.monotonic() + max(0.0, max_seconds)
+    deadline = time.monotonic() + max(0.0, max_seconds)
+    outer = os.getenv("AUTOTRAIN_SUPERVISOR_WORK_DEADLINE")
+    if outer is not None:
+        outer_deadline = float(outer)
+        if not math.isfinite(outer_deadline):
+            raise ValueError("invalid supervisor work deadline")
+        deadline = min(deadline, outer_deadline)
+    return deadline
 
 
 @contextmanager

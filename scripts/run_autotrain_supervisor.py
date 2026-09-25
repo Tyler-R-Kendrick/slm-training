@@ -22,9 +22,11 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from scripts.autotrain_supervisor_operations import (
@@ -265,18 +267,30 @@ def _operation_main(request_path: Path, output_path: Path) -> int:
 
 def _supervise(args, runtime, common: dict) -> int:
     from scripts.autotrain_supervision import supervise
+    locked = bool(getattr(args, "locked_preregistration", None))
+    previous = os.environ.get("AUTOTRAIN_SUPERVISOR_WORK_DEADLINE")
+    if locked:
+        from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
 
-    return supervise(
-        args,
-        runtime,
-        common,
-        run_operation=_run_operation,
-        watchdog=_watchdog_no_campaign,
-    )
+        # Leave shutdown and journal settlement room inside the outer run cap.
+        os.environ["AUTOTRAIN_SUPERVISOR_WORK_DEADLINE"] = str(
+            getattr(args, "_supervisor_started", time.monotonic())
+            + INTERRUPT_AFTER_SECONDS - 3 * KILL_GRACE_SECONDS
+        )
+    try:
+        return supervise(args, runtime, common, run_operation=_run_operation,
+                         watchdog=_watchdog_no_campaign)
+    finally:
+        if locked:
+            if previous is None:
+                os.environ.pop("AUTOTRAIN_SUPERVISOR_WORK_DEADLINE", None)
+            else:
+                os.environ["AUTOTRAIN_SUPERVISOR_WORK_DEADLINE"] = previous
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
+    args._supervisor_started = time.monotonic()
     if args.operation_request or args.operation_output:
         if not args.operation_request or not args.operation_output:
             raise ValueError("operation requires both request and output")

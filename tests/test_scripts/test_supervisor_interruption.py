@@ -20,6 +20,66 @@ from slm_training.harness_core.bounded_process import BoundedProcessResult, Proc
 from scripts.merge_verification_evidence import digest
 
 
+def test_supervisor_deadline_bounds_child_work(monkeypatch):
+    from scripts.merge_verification_identity import environment_identity
+    from slm_training.harness_core.checkpoint_publication import controller_work_deadline
+
+    identity = environment_identity()["execution_environment_sha256"]
+    monkeypatch.setenv("AUTOTRAIN_SUPERVISOR_WORK_DEADLINE", "100")
+    assert controller_work_deadline(170, 11) == 100
+    assert environment_identity()["execution_environment_sha256"] == identity
+    monkeypatch.setenv("AUTOTRAIN_SUPERVISOR_WORK_DEADLINE", "nan")
+    with pytest.raises(ValueError, match="invalid supervisor work deadline"):
+        controller_work_deadline(170, 11)
+
+
+def test_locked_supervisor_scopes_outer_deadline(monkeypatch):
+    import os
+    from scripts import autotrain_supervision as supervision
+
+    monkeypatch.delenv("AUTOTRAIN_SUPERVISOR_WORK_DEADLINE", raising=False)
+    monkeypatch.setattr(supervisor.time, "monotonic", lambda: 1000)
+    observed = []
+    monkeypatch.setattr(supervision, "supervise", lambda *a, **k:
+        observed.append(os.environ["AUTOTRAIN_SUPERVISOR_WORK_DEADLINE"]) or 10)
+    args = SimpleNamespace(locked_preregistration=Path("locked.json"))
+    assert supervisor._supervise(args, None, {}) == 10
+    assert len(observed) == 1 and float(observed[0]) == 1140
+    assert "AUTOTRAIN_SUPERVISOR_WORK_DEADLINE" not in os.environ
+
+
+def test_locked_supervisor_returns_on_pending_driver(tmp_path, monkeypatch):
+    from scripts import autotrain_supervision as supervision
+
+    class Store:
+        def __init__(self):
+            self.events = []
+
+        def verify_event_chain(self):
+            return self.events
+
+        def append_event(self, event_type, **kwargs):
+            self.events.append({"event_type": event_type, "detail": kwargs.get("detail", {})})
+
+    runtime = SimpleNamespace(store=Store(), cancel_event=SimpleNamespace(is_set=lambda: False))
+    args = SimpleNamespace(root=tmp_path, loop_id="locked", max_cycles=14,
+        stop_after_pass=None, train_version="fixture", steps=1,
+        primary_metric="fixture", continuation_grant=None,
+        locked_preregistration=tmp_path / "preregistration.json",
+        locked_prereg_sha256="a" * 64)
+    monkeypatch.setattr(supervision, "pre_cycle", lambda *a: {"campaign_id": "locked"})
+    monkeypatch.setattr(supervision, "handle_pending", lambda *a: "run")
+    pending = {"schema_version": "driver_pending/v1", "outcome": "yielded",
+        "reason": "bounded continuation", "measurement_complete": False,
+        "wake": {"predicate": "resume cursor", "source": "driver_cycle_checkpoint",
+                 "identity_digest": "a" * 64}}
+    calls = []
+    result = supervision.supervise(args, runtime, {"root": str(tmp_path)},
+        run_operation=lambda *a, **k: calls.append(k) or {"returncode": 10, "pending": pending},
+        watchdog=lambda **k: None)
+    assert result == 10 and len(calls) == 1
+
+
 def _request(tmp_path, grant=None):
     grant = grant or ResourceGrant(interrupt_seconds=1, kill_grace_seconds=0,
                                    total_seconds=4, max_attempts=2)
