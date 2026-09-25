@@ -41,7 +41,9 @@ def locked_prerequisite_report(root, loop_id, campaign_id):
     from slm_training.autoresearch.action_dependencies import campaign_prerequisites
     from slm_training.autoresearch.heal.classify import classify_blocker
     from slm_training.autoresearch.schemas import AutotrainCycleHandoffV1
-    from slm_training.autoresearch.storage import autotrain_action_sha256
+    from slm_training.autoresearch.storage import (
+        autotrain_action_sha256, pending_autotrain_execution_actions,
+    )
 
     path = Path(root) / campaign_id / "cycle_handoff.json"
     pending, waits = (), []
@@ -50,6 +52,10 @@ def locked_prerequisite_report(root, loop_id, campaign_id):
         if (handoff.loop_id, handoff.campaign_id) != (loop_id, campaign_id):
             raise ValueError("locked handoff identity differs from campaign")
         pending, waits = campaign_prerequisites(root, handoff)
+        pending = tuple(sorted(
+            (*pending, *pending_autotrain_execution_actions(root, handoff)),
+            key=lambda item: item[0],
+        ))
     blockers = []
     for index, action in pending:
         row = {"campaign_id": campaign_id, "index": index,
@@ -66,7 +72,7 @@ def locked_prerequisite_report(root, loop_id, campaign_id):
         blockers.append(row)
     return {"hard_pending": blockers, "soft_healed": [], "delivery_waits": waits,
             "predecessor_campaign_id": campaign_id,
-            "blocker_cleared": not blockers}
+            "blocker_cleared": not blockers and not waits}
 
 
 def require_locked_repair(blocker):
@@ -94,11 +100,71 @@ def locked_repair_rows(blockers):
     return rows
 
 
+def locked_idle_disposition(args, runtime, common, inspection, cycle, log_event):
+    """Keep document delivery pending; replay terminal proof before another driver."""
+    from scripts.autotrain_cycle_reconcile import completed_locked_cycle
+
+    report = inspection["report"]
+    documents = [row for row in report.get("hard_pending", [])
+                 if row.get("kind") == "document"]
+    if documents:
+        from scripts.run_autotrain_continuous import _self_heal_document_actions
+
+        _self_heal_document_actions(
+            cwd=Path(common["cwd"]), root=Path(common["root"]),
+            loop_id=args.loop_id, campaign_id=inspection["campaign_id"],
+        )
+        log_event({"event": "locked_document_pending", "cycle": cycle,
+                   "hard_pending": documents})
+    if documents or any(wait.get("kind") == "document"
+                        for wait in report.get("delivery_waits", [])):
+        runtime.cancel_event.wait(max(1.0, float(args.hard_backoff_seconds)))
+        return "wait"
+    if completed_locked_cycle(
+        common["cwd"], common["root"], args.loop_id,
+        args.locked_preregistration, args.locked_prereg_sha256,
+    ):
+        log_event({"event": "locked_pair_already_completed", "cycle": cycle})
+        return "stop"
+    return "run"
+
+
 def require_locked_completion(driver, campaign_id):
     if driver["returncode"] != 0:
         raise ValueError("locked diagnostic driver did not exit successfully")
     if driver["campaign_id"] != campaign_id or not driver.get("completion"):
         raise ValueError("locked diagnostic lacks same-campaign completion proof")
+
+
+def locked_first_run_closeout(args, runtime, common, cycle, log_event):
+    """Materialize first-run documentation before reporting terminal success."""
+    from scripts.autotrain_cycle_reconcile import completed_locked_cycle
+    from scripts.autotrain_supervision import register_delivery_waits
+    from scripts.run_autotrain_continuous import _self_heal_document_actions
+
+    if not completed_locked_cycle(
+        common["cwd"], common["root"], args.loop_id,
+        args.locked_preregistration, args.locked_prereg_sha256,
+    ):
+        raise ValueError("locked diagnostic lacks retired pair proof")
+    report = locked_prerequisite_report(common["root"], args.loop_id, args.loop_id)
+    if any(row["kind"] == "document" for row in report["hard_pending"]):
+        _self_heal_document_actions(
+            cwd=Path(common["cwd"]), root=Path(common["root"]),
+            loop_id=args.loop_id, campaign_id=args.loop_id,
+        )
+        report = locked_prerequisite_report(common["root"], args.loop_id, args.loop_id)
+    locked_repair_rows(report["hard_pending"])
+    if report["hard_pending"]:
+        raise ValueError("locked diagnostic documentation lacks typed delivery wait")
+    if report["delivery_waits"]:
+        register_delivery_waits(runtime, common, report["delivery_waits"], log_event)
+        report = locked_prerequisite_report(common["root"], args.loop_id, args.loop_id)
+    if report["hard_pending"] or report["delivery_waits"]:
+        log_event({"event": "locked_document_delivery_wait", "cycle": cycle,
+                   "delivery_waits": report["delivery_waits"]})
+        return 2
+    return 0
 
 
 def require_locked_eval_selection(store, arm_ids, inputs):
@@ -186,6 +252,7 @@ def finalize_diagnostic(journal, continuous):
             kind="document", owner="documenting-experiment-results",
             reason="Document locked diagnostic results without promotion or shipment claims",
             evidence_ids=(f"campaign:{store.campaign_id}",),
+            dependency_scope="delivery",
         ),), checkpoint_paths=checkpoints,
         checkpoint_documentation_required=bool(checkpoints),
     )

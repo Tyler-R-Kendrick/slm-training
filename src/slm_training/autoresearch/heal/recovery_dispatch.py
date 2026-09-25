@@ -13,6 +13,7 @@ from slm_training.autoresearch.heal.agent_executor import CodexExecutor
 from slm_training.autoresearch.heal.classify import classify_blocker
 from slm_training.autoresearch.heal.dispatch import dispatch_repair
 from slm_training.autoresearch.heal.isolated_agent import BubblewrapAgentRunner
+from .operation_failure_signature import OperationFailureSignature
 from slm_training.autoresearch.heal.repair_acceptance import (
     SourceVerificationGate,
     VerificationWorkspace,
@@ -28,15 +29,9 @@ from slm_training.autoresearch.heal.repair_contracts import (
     RepairProposal,
     RepairRequest,
 )
-from slm_training.autoresearch.heal.repair_jobs import (
-    bind_verification,
-    resumable_proposal,
-)
+from slm_training.autoresearch.heal.repair_jobs import bind_verification, resumable_proposal
 from slm_training.autoresearch.heal.repair_governance import reconcile_version_overlay
-from slm_training.autoresearch.heal.repair_verifier import (
-    VerificationCheck,
-    VerificationRequest,
-)
+from .repair_verifier import VerificationCheck, VerificationRequest
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harness_core.activity_contract import ResourceGrant
 from slm_training.lineage.records import canonical_json
@@ -53,6 +48,9 @@ class RepairRecipe(RepairModel):
     failure_returncode: int = Field(gt=0, lt=256)
     failure_stdout_sha256: Digest
     failure_stderr_sha256: Digest
+    original_failure_signature: OperationFailureSignature | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     semantics_preserving_paths: tuple[str, ...] = ()
     equivalence_checks: tuple[VerificationCheck, ...] = ()
 

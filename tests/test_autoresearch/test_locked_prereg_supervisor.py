@@ -320,6 +320,33 @@ def test_locked_report_uses_canonical_receipt_checked_actions(tmp_path, monkeypa
     )["hard_pending"] == report["hard_pending"]
 
 
+def test_locked_report_keeps_real_execution_handoff_pending(tmp_path, monkeypatch):
+    plan, _path, root, store, _ = _fixture(tmp_path, monkeypatch)
+    from slm_training.autoresearch.campaign_events import publish_cycle_handoff
+
+    actions = tuple(AutotrainActionV1(
+        kind=kind, owner="autotrain", reason=f"Pending {kind}",
+        evidence_ids=(f"campaign:{plan['campaign_id']}",),
+    ) for kind in ("retry_measurement", "next_experiment"))
+    publish_cycle_handoff(store, AutotrainCycleHandoffV1(
+        loop_id=plan["campaign_id"], campaign_id=plan["campaign_id"],
+        cycle_index=1, upstream_commit=plan["source_commit"],
+        integration_commit=plan["source_commit"], cycle_role="screening",
+        cycle_intent="locked_pair_diagnostic", evidence_class="scratch",
+        climb_state="inconclusive", ship_state="blocked",
+        primary_metric="smoke.eval_nll", actions=actions,
+    ))
+    report = diagnostic.locked_prerequisite_report(root, plan["campaign_id"], plan["campaign_id"])
+    assert [row["kind"] for row in report["hard_pending"]] == [
+        "retry_measurement", "next_experiment"]
+    assert [row["index"] for row in report["hard_pending"]] == [0, 1]
+    assert [row["action_sha256"] for row in report["hard_pending"]] == [
+        autotrain_action_sha256(action) for action in actions]
+    assert report["blocker_cleared"] is False
+    with pytest.raises(ValueError, match="scientific plan"):
+        diagnostic.locked_repair_rows(report["hard_pending"])
+
+
 def test_run_cycle_locked_copy_never_enters_git_integration(tmp_path, monkeypatch):
     plan, path, root, store, _ = _fixture(tmp_path, monkeypatch)
     from scripts import run_autotrain_continuous as continuous

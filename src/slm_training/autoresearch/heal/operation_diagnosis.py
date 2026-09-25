@@ -14,6 +14,10 @@ from slm_training.levers import KILL_GRACE_SECONDS
 from .grant_accounting import append_budget_reservation, diagnosis_budget_exhausted
 from .isolation import IsolationSpec, IsolationUnavailable, run_isolated
 from .isolation_workspace import manifest_digest, private_snapshot, tree_manifest
+from .operation_failure_signature import (
+    OperationFailureSignature,
+    capture_failure_signature,
+)
 
 
 def diagnose_operation(pending, context, config, journal):
@@ -43,6 +47,7 @@ def diagnose_operation(pending, context, config, journal):
             "source": context.source_digest,
             "environment": context.environment_digest,
             "config": config.digest(),
+            "failure_observation": pending.get("failure_observation"),
         }
     )
     events = journal.verify_event_chain()
@@ -109,6 +114,7 @@ def diagnose_operation(pending, context, config, journal):
 
 def _probe(pending, context, config, recipe, code, seconds):
     started = time.monotonic()
+    expected_signature = recipe.original_failure_signature
     with tempfile.TemporaryDirectory(
         prefix="operation-diagnose-", dir=context.source.parent
     ) as directory:
@@ -126,6 +132,13 @@ def _probe(pending, context, config, recipe, code, seconds):
             )
         except IsolationUnavailable:
             return None, "diagnosis_isolation_unavailable", time.monotonic() - started
+        probe_signature = None
+        if expected_signature is not None:
+            # Bubblewrap exposes snapshot at /workspace. Test/host adapters
+            # may report physical snapshot path instead.
+            probe_signature = capture_failure_signature(result, Path("/workspace"))
+            if probe_signature is None:
+                probe_signature = capture_failure_signature(result, snapshot)
     matches = (
         result.outcome == ProcessOutcome.COMPLETED
         and result.returncode == recipe.failure_returncode
@@ -134,15 +147,40 @@ def _probe(pending, context, config, recipe, code, seconds):
         == recipe.failure_stdout_sha256
         and hashlib.sha256(result.stderr.encode()).hexdigest()
         == recipe.failure_stderr_sha256
+        and (expected_signature is None or probe_signature == expected_signature)
     )
     if not matches:
         return None, "original_fault_not_reproduced", result.duration_seconds
     observed = pending.get("failure_observation", {})
+    signature = recipe.original_failure_signature
+    try:
+        signature_matches = (
+            OperationFailureSignature.model_validate(
+                observed.get("failure_signature"), strict=True
+            )
+            == signature
+            if signature is not None
+            else observed.get("stdout_sha256") == recipe.failure_stdout_sha256
+            and observed.get("stderr_sha256") == recipe.failure_stderr_sha256
+        )
+    except ValueError:
+        signature_matches = False
     if (
-        observed.get("returncode") != recipe.failure_returncode
-        or observed.get("stdout_sha256") != recipe.failure_stdout_sha256
-        or observed.get("stderr_sha256") != recipe.failure_stderr_sha256
+        observed.get("returncode")
+        != (
+            signature.returncode if signature is not None else recipe.failure_returncode
+        )
+        or not signature_matches
         or observed.get("truncated", True)
+        or observed.get("launch_error", False)
+        or observed.get("process_outcome", ProcessOutcome.COMPLETED.value)
+        != ProcessOutcome.COMPLETED.value
+        or not all(
+            isinstance(observed.get(key), str)
+            and len(observed[key]) == 64
+            and all(c in "0123456789abcdef" for c in observed[key])
+            for key in ("stdout_sha256", "stderr_sha256")
+        )
     ):
         return (
             None,

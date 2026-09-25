@@ -1,20 +1,93 @@
 """Operational locked-pair repair and completion regressions; no train/eval."""
 
+import hashlib
 import threading
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from scripts import autotrain_supervision, autotrain_locked_diagnostic as diagnostic
-from slm_training.autoresearch.storage import CampaignStore
-from tests.test_autoresearch.test_locked_prereg_supervisor import _fixture
+from scripts import autotrain_cycle_context as context, autotrain_cycle_prepare as prepare
+from scripts import autotrain_cycle_execution as execution, autotrain_cycle_reconcile as reconcile
+from scripts.autoresearch_command_cursor import ContinuationGrant
+from scripts.autotrain_ledgers import publish_cycle_delivery
+from slm_training.autoresearch.campaign_events import publish_cycle_handoff
+from slm_training.autoresearch.schemas import (
+    AutotrainActionReceiptV1, AutotrainActionV1, AutotrainCycleHandoffV1,
+)
+from slm_training.autoresearch.storage import (
+    CampaignStore, append_autotrain_action_receipt, autotrain_action_sha256,
+    bind_autotrain_action_evidence,
+)
+from tests.test_autoresearch.test_locked_prereg_supervisor import _fixture, _selection
+
+
+def _started_pair(tmp_path, monkeypatch):
+    plan, path, root, store, _ = _fixture(tmp_path, monkeypatch)
+    selection = _selection(plan, path, root, store)
+    monkeypatch.setattr(prepare, "resolved_continuation_grant",
+                        lambda *_: ContinuationGrant("fixture", 300))
+    monkeypatch.setattr(context, "resolved_continuation_grant",
+                        lambda *_: ContinuationGrant("fixture", 300))
+    value = prepare.prepare_recorded_cycle(Path(plan["source_path"]), root,
+                                           SimpleNamespace(), selection)
+    return plan, path, root, store, value
+
+
+def _finish_pair(plan, root, store, value, *, document):
+    publish_cycle_delivery(root, {
+        "schema": "autotrain_sdlc_delivery/v1", "positive": False,
+        "measurement_complete": True, "campaign_id": plan["campaign_id"],
+        "loop_id": plan["campaign_id"], "arm_order": value["order"],
+        "paired_test": {"diagnostic_complete": True, "n_pairs": 6},
+    })
+    action = (AutotrainActionV1(
+        kind="document", owner="documenting-experiment-results",
+        reason="Document locked diagnostic", dependency_scope="delivery",
+        evidence_ids=(f"campaign:{plan['campaign_id']}",),
+    ) if document else AutotrainActionV1(
+        kind="stop_campaign", owner="autotrain", reason="Completed fixture",
+        evidence_ids=(f"campaign:{plan['campaign_id']}",),
+    ))
+    handoff = AutotrainCycleHandoffV1(
+        loop_id=plan["campaign_id"], campaign_id=plan["campaign_id"],
+        cycle_index=1, upstream_commit=plan["source_commit"],
+        integration_commit=plan["source_commit"], cycle_role="screening",
+        cycle_intent="locked_pair_diagnostic", evidence_class="scratch",
+        climb_state="inconclusive", ship_state="blocked",
+        primary_metric="smoke.eval_nll", actions=(action,),
+    )
+    publish_cycle_handoff(store, handoff)
+    if not document:
+        uri = "campaign.json"
+        append_autotrain_action_receipt(root, AutotrainActionReceiptV1(
+            loop_id=plan["campaign_id"], campaign_id=plan["campaign_id"],
+            action_index=0, action_sha256=autotrain_action_sha256(action),
+            action_kind=action.kind, status="completed", evidence_uris=(uri,),
+            evidence=bind_autotrain_action_evidence(root, handoff, action, (uri,)),
+        ))
+    journal = context.CycleJournal(store, value)
+    journal.state.update(phase="completed", index=2, seen=value["order"],
+                         arm_exits={eid: 0 for eid in value["order"]},
+                         final_index=1, outputs=execution._outputs(store))
+    journal.save()
+    with context.writer(root, plan["campaign_id"]) as runtime:
+        context.retire(runtime, journal.digest)
+
+
+def _completed_pair(tmp_path, monkeypatch, *, document):
+    plan, path, root, store, value = _started_pair(tmp_path, monkeypatch)
+    _finish_pair(plan, root, store, value, document=document)
+    return plan, path, root, store
 
 
 def test_locked_supervisor_rejects_nonzero_driver_with_stale_completion(tmp_path, monkeypatch):
     plan, path, root, _store, _commands = _fixture(tmp_path, monkeypatch)
     args = SimpleNamespace(loop_id=plan["campaign_id"], root=root, max_cycles=1,
-                           stop_after_pass=None, locked_preregistration=path)
+                           stop_after_pass=None, locked_preregistration=path,
+                           locked_prereg_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
     runtime = SimpleNamespace(
         store=CampaignStore("runtime", root / "loops" / plan["campaign_id"]),
         cancel_event=threading.Event())
@@ -27,7 +100,8 @@ def test_locked_supervisor_rejects_nonzero_driver_with_stale_completion(tmp_path
         return {"returncode": 1, "campaign_id": plan["campaign_id"],
                 "completion": {"campaign_id": plan["campaign_id"]}}
     with pytest.raises(ValueError, match="did not exit successfully"):
-        autotrain_supervision.supervise(args, runtime, {"root": str(root)},
+        autotrain_supervision.supervise(args, runtime, {"root": str(root),
+                                                     "cwd": plan["source_path"]},
             run_operation=operation, watchdog=lambda **_: None)
 
 
@@ -44,6 +118,120 @@ def test_locked_pre_cycle_propagates_source_blocker(tmp_path, monkeypatch):
 
 def test_document_handoff_is_not_dispatched_as_repair():
     assert diagnostic.locked_repair_rows([{"kind": "document"}]) == []
+
+
+def test_completed_pair_restart_replays_proof_without_driver(tmp_path, monkeypatch):
+    plan, path, root, store = _completed_pair(tmp_path, monkeypatch, document=False)
+    plan_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    proof = reconcile.completed_locked_cycle(
+        Path(plan["source_path"]), root, plan["campaign_id"], path, plan_sha)
+    assert proof["outputs"]["sdlc_delivery.json"]
+    args = SimpleNamespace(loop_id=plan["campaign_id"], root=root, max_cycles=1,
+                           stop_after_pass=None, locked_preregistration=path,
+                           locked_prereg_sha256=plan_sha)
+    runtime = SimpleNamespace(
+        store=CampaignStore("runtime", root / "loops" / plan["campaign_id"]),
+        cancel_event=threading.Event())
+    monkeypatch.setattr(autotrain_supervision, "pre_cycle", lambda *_: {
+        "campaign_id": plan["campaign_id"], "report": diagnostic.locked_prerequisite_report(
+            root, plan["campaign_id"], plan["campaign_id"]),
+        "promotion_pending": False, "parked": None,
+    })
+    monkeypatch.setattr(autotrain_supervision, "_driver_argv",
+                        lambda *_: pytest.fail("completed pair restarted driver"))
+    assert autotrain_supervision.supervise(
+        args, runtime, {"root": str(root), "cwd": plan["source_path"]},
+        run_operation=lambda *_a, **_k: pytest.fail("completed pair dispatched operation"),
+        watchdog=lambda **_: None,
+    ) == 0
+    assert reconcile.completed_locked_cycle(
+        Path(plan["source_path"]), root, plan["campaign_id"], path, plan_sha) == proof
+    with pytest.raises(ValueError, match="already completed"):
+        reconcile.resume_locked_recorded_cycle(
+            Path(plan["source_path"]), root, plan["campaign_id"], path, plan_sha,
+            options={"train_version": "fixture-train", "steps": 6,
+                     "primary_metric": "smoke.eval_nll",
+                     "continuation_grant": store.load_campaign().budget.continuation_grant.model_dump_json()},
+            continuous=SimpleNamespace(),
+        )
+    (store.root / "sdlc_delivery.json").write_text("{}")
+    with pytest.raises(ValueError, match="current outputs"):
+        reconcile.completed_locked_cycle(
+            Path(plan["source_path"]), root, plan["campaign_id"], path, plan_sha)
+
+
+def test_completed_pair_keeps_document_duty_pending(tmp_path, monkeypatch):
+    plan, path, root, _ = _completed_pair(tmp_path, monkeypatch, document=True)
+    report = diagnostic.locked_prerequisite_report(root, plan["campaign_id"], plan["campaign_id"])
+    assert [row["kind"] for row in report["hard_pending"]] == ["document"]
+    assert report["blocker_cleared"] is False
+    from scripts import run_autotrain_continuous as continuous
+    materialized = []
+    monkeypatch.setattr(continuous, "_self_heal_document_actions",
+                        lambda **kw: materialized.append(kw))
+    args = SimpleNamespace(loop_id=plan["campaign_id"], root=root, max_cycles=1,
+                           stop_after_pass=None, locked_preregistration=path,
+                           locked_prereg_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                           hard_backoff_seconds=0)
+    runtime = SimpleNamespace(
+        store=CampaignStore("runtime", root / "loops" / plan["campaign_id"]),
+        cancel_event=SimpleNamespace(is_set=lambda: False, wait=lambda *_: None))
+    monkeypatch.setattr(autotrain_supervision, "pre_cycle", lambda *_: {
+        "campaign_id": plan["campaign_id"], "report": report,
+        "promotion_pending": False, "parked": None,
+    })
+    assert autotrain_supervision.supervise(
+        args, runtime, {"root": str(root), "cwd": plan["source_path"]},
+        run_operation=lambda *_a, **_k: pytest.fail("document duty skipped for driver"),
+        watchdog=lambda **_: None,
+    ) == 2
+    assert materialized == [{"cwd": Path(plan["source_path"]), "root": root,
+                             "loop_id": plan["campaign_id"],
+                             "campaign_id": plan["campaign_id"]}]
+
+
+def test_first_successful_pair_materializes_typed_wait_before_return(tmp_path, monkeypatch):
+    plan, path, root, store, value = _started_pair(tmp_path, monkeypatch)
+    args = SimpleNamespace(
+        loop_id=plan["campaign_id"], root=root, max_cycles=1,
+        stop_after_pass=None, locked_preregistration=path,
+        locked_prereg_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+        hard_backoff_seconds=0,
+    )
+    runtime = SimpleNamespace(
+        store=CampaignStore("runtime", root / "loops" / plan["campaign_id"]),
+        cancel_event=threading.Event(),
+    )
+    monkeypatch.setattr(autotrain_supervision, "pre_cycle", lambda *_: {
+        "campaign_id": plan["campaign_id"],
+        "report": diagnostic.locked_prerequisite_report(
+            root, plan["campaign_id"], plan["campaign_id"]),
+        "promotion_pending": False, "parked": None,
+    })
+    monkeypatch.setattr(autotrain_supervision, "_driver_argv", lambda *_: ["fixture-driver"])
+    waits = []
+    monkeypatch.setattr(autotrain_supervision, "register_delivery_waits",
+                        lambda _runtime, _common, rows, _log: waits.extend(rows))
+    calls = []
+
+    def operation(_runtime, request, **_kwargs):
+        calls.append(request["operation"])
+        assert request["operation"] == "driver"
+        _finish_pair(plan, root, store, value, document=True)
+        return {"returncode": 0, "campaign_id": plan["campaign_id"],
+                "completion": {"campaign_id": plan["campaign_id"]}}
+
+    assert autotrain_supervision.supervise(
+        args, runtime, {"root": str(root), "cwd": plan["source_path"]},
+        run_operation=operation, watchdog=lambda **_: None,
+    ) == 2
+    assert calls == ["driver"]
+    assert len(waits) == 1 and waits[0]["kind"] == "document"
+    assert waits[0]["required_capability"] == "authorized_github_connector_delivery"
+    assert list((store.root / "artifacts" / "delivery_documents").glob("*.json"))
+    report = diagnostic.locked_prerequisite_report(root, plan["campaign_id"], plan["campaign_id"])
+    assert report["hard_pending"] == [] and report["delivery_waits"] == waits
+    assert report["blocker_cleared"] is False
 
 
 @pytest.mark.parametrize("kind", ["next_experiment", "retry_measurement", "rebuild_data"])

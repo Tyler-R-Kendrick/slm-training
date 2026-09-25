@@ -16,6 +16,7 @@ from slm_training.harness_core.activity_contract import (
     contract_digest,
 )
 
+from .operation_failure_signature import capture_failure_signature
 from .operation_diagnosis import diagnose_operation as diagnose_operation
 from .repair_release import verified_activation_handoff
 
@@ -43,6 +44,10 @@ def record_operation_failure(runtime, lease, request, result, *, outcome):
         "truncated": result.stdout_truncated or result.stderr_truncated,
         "launch_error": bool(result.launch_error),
     }
+    source = request.get("cwd")
+    signature = capture_failure_signature(result, Path(source)) if source else None
+    if signature is not None:
+        observation["failure_signature"] = signature.model_dump(mode="json")
     pending = {
         "kind": "repair_harness",
         "blocker_code": "controller_operation_failure",

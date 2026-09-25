@@ -98,6 +98,16 @@
       "history": [
         {
           "date": "2026-09-25",
+          "version": "v31",
+          "note": "Require the independent operation reproducer to emit the same typed source-relative failure signature as the original operation, in addition to its approved byte-exact returncode and stream hashes."
+        },
+        {
+          "date": "2026-09-25",
+          "version": "v30",
+          "note": "Capture a typed Python traceback signature with original operation stream hashes; diagnosis binds the exact original fault to an approved independent reproducer while preserving byte-exact verifier checks."
+        },
+        {
+          "date": "2026-09-25",
           "version": "v29",
           "note": "Run live Codex repair under the outer Bubblewrap boundary and require the sole granted regression path in the proposal schema."
         },
@@ -281,6 +291,7 @@
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_isolation.py",
         "tests/test_autoresearch/test_heal_playbooks.py",
+        "tests/test_autoresearch/test_operation_failure_signature.py",
         "tests/test_autoresearch/test_operation_recovery.py",
         "tests/test_autoresearch/test_repair_acceptance.py",
         "tests/test_autoresearch/test_repair_delivered.py",
@@ -295,7 +306,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v29"
+      "version": "v31"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5560,6 +5571,16 @@
       "history": [
         {
           "date": "2026-09-25",
+          "note": "Materialize first locked diagnostic documentation and register typed delivery wait before supervisor success.",
+          "version": "v304"
+        },
+        {
+          "date": "2026-09-25",
+          "note": "Retain receipt-checked locked handoff duties and replay completed pair proof before driver restart.",
+          "version": "v303"
+        },
+        {
+          "date": "2026-09-25",
           "note": "Bind a general immutable locked diagnostic pair through supervisor repair, command cursor, and canonical paired comparison while retaining receipt-checked prerequisites and disabling promotion.",
           "version": "v302"
         },
@@ -7785,7 +7806,7 @@
         "tests/test_scripts/test_supervisor_interruption.py",
         "tests/test_scripts/test_supervisor_adversary.py"
       ],
-      "version": "v302"
+      "version": "v304"
     },
     "harness.autoresearch.formal": {
       "history": [

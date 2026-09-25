@@ -350,9 +350,30 @@ def resume_locked_recorded_cycle(cwd, root, loop_id, path, sha256, options, cont
     if active is not None and active["campaign_id"] != selection.campaign_id:
         raise ValueError("active driver campaign differs from locked preregistration")
     if active is None:
+        if completed_locked_cycle(cwd, root, loop_id, path, sha256):
+            raise ValueError("locked diagnostic pair already completed")
         prepare_recorded_cycle(cwd, root, continuous, selection)
     result = resume_cycle(cwd, root, loop_id, continuous)
     # A marker-backed execution copy has no Git metadata. Revalidate the same
     # immutable source and preregistration after the ordinary command cursor.
     locked_preregistration_selection(path, cwd, root, loop_id, sha256, options=options)
     return result
+
+
+def completed_locked_cycle(cwd, root, loop_id, path, sha256):
+    """Replay the one retired pair's terminal proof before starting another driver."""
+    from scripts.autotrain_cycle_context import load_context
+    from scripts.autotrain_cycle_execution import completed_cycle_since
+    from slm_training.autoresearch.storage import CampaignStore
+
+    runtime = CampaignStore("runtime", Path(root) / "loops" / loop_id)
+    if not any(event["event_type"] == "driver_cycle_retired"
+               for event in runtime.verify_event_chain()):
+        return None
+    proof = completed_cycle_since(cwd, root, loop_id, loop_id, frozenset())
+    value = load_context(CampaignStore(loop_id, root), proof["input_digest"])
+    plan_path = str(Path(path).resolve())
+    if (value.get("preregistration_path") != plan_path
+        or value["files"].get(plan_path) != sha256):
+        raise ValueError("completed locked pair differs from pinned preregistration")
+    return proof

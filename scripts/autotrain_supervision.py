@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-
 import time
 from pathlib import Path
 from scripts.autotrain_cycle_prepare import _driver_argv
@@ -95,7 +94,7 @@ def handle_pending(args, runtime, common, inspection, cycle, log_event, run_oper
         return "wait"
     rows = report.get("hard_pending") or []
     if getattr(args, "locked_preregistration", None):
-        from scripts.autotrain_locked_diagnostic import locked_repair_rows
+        from scripts.autotrain_locked_diagnostic import locked_idle_disposition, locked_repair_rows
         rows = locked_repair_rows(rows)
     if rows:
         outcome = (
@@ -137,7 +136,8 @@ def handle_pending(args, runtime, common, inspection, cycle, log_event, run_oper
         )
         return "wait"
 
-    return "run"
+    return (locked_idle_disposition(args, runtime, common, inspection, cycle, log_event)
+            if getattr(args, "locked_preregistration", None) else "run")
 
 
 def register_delivery_waits(runtime, common, waits, log_event):
@@ -380,9 +380,9 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
             continue
         after_campaign = driver["campaign_id"]
         if getattr(args, "locked_preregistration", None):
-            from scripts.autotrain_locked_diagnostic import require_locked_completion
+            from scripts.autotrain_locked_diagnostic import locked_first_run_closeout, require_locked_completion
             require_locked_completion(driver, args.loop_id)
-            return 0
+            return locked_first_run_closeout(args, runtime, common, cycle, log_event)
         watchdog_backoff = observe_driver_progress(
             runtime, args, cycle, before_campaign, driver, log_event, watchdog)
         runtime.cancel_event.wait(
