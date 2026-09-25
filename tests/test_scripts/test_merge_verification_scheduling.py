@@ -246,7 +246,7 @@ def test_estimated_long_shard_gets_a_slice_before_the_next_shard(monkeypatch):
 
     monkeypatch.setattr(owner, "run_workload", execute)
     owner._run_shards(state, Path("."), Path("."), lambda: 50, lambda: None)
-    assert calls == [([slow], 50), ([fast], 3.0)]
+    assert calls == [([slow], 50), ([fast], 11.0)]
     assert state["passed_nodes"] == [fast]
 
 

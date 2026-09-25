@@ -236,3 +236,26 @@ and were not emitted or mounted into the worker.
 No service was installed/started/restarted. No live training, scientific
 comparison, promotion, shipment, cloud job, remote Git write or paid inference
 was performed. Finite fault tests do not establish perpetual reliability.
+
+## Exact PR source reconciliation — 2026-09-25
+
+The disposable validation checkout was compared against PR #1785 commit
+`36264b992dabf5f857b5a631a52e38d5f8403c54`; six local files differed.
+Their local versions were preserved before restoring the remote blob contents.
+`git diff 36264b9 --stat` then returned no differences. Testing that exact
+source found two unpublished regression updates: the environment-identity
+stub did not accept the runtime identity keyword, and the short-shard test
+still expected three seconds despite the five-second per-node estimate floor
+(one second startup plus twice that floor gives eleven seconds). Both test
+expectations now match the existing production contracts; no gate changed.
+
+Validation: the autonomy-integration, verifier-scheduling, verifier-runtime,
+and verifier-isolation modules passed **68 tests in 21.15 seconds**, using
+the runtime-r11 Python environment, Node 22, the existing explicitly declared
+OpenUI/Design MD/GraphQL bridge dependency roots, and real host Bubblewrap.
+The initial restricted-shell run could not create network namespaces; the
+host rerun established isolation behavior. This is focused regression
+evidence, not complete source verification, model evaluation, or release
+authorization. The R14 timer was observed active, last fired at 06:40 CDT,
+with its older immutable source at 9/18 static obligations and no tests
+collected. Its receipts are not current-PR acceptance evidence.

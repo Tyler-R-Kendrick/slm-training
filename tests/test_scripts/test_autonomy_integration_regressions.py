@@ -54,7 +54,7 @@ def test_clean_candidate_selects_full_suite(monkeypatch, tmp_path):
 
     monkeypatch.setattr(verifier, "changed_paths", lambda *_: ("base-tree", []))
     monkeypatch.setattr(verifier, "source_identity", lambda *_: "source")
-    monkeypatch.setattr(verifier, "environment_identity", lambda: {})
+    monkeypatch.setattr(verifier, "environment_identity", lambda **_: {})
     monkeypatch.setattr(verifier, "runtime_identity", lambda _roots: "runtime")
 
     binding = verifier.verification_binding(
