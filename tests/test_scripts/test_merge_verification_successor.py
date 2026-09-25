@@ -3,7 +3,6 @@
 import pytest
 
 from scripts.merge_verification_controller import register_release, release_grant
-from scripts.merge_verification_evidence import digest
 from scripts.merge_verification_successor import release_successor_plan
 from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
 from slm_training.autoresearch.storage import CampaignStore
