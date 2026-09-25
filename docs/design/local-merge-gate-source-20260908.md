@@ -107,3 +107,22 @@ names, creates the empty mountpoint only in the disposable snapshot, and mounts
 the dependency tree read-only. A focused regression covers the bridge mapping.
 The affected test shard must pass under the complete source and runtime binding
 before this defect can be considered closed.
+
+## Adaptive shard budgets for unmeasured tests — 2026-09-25
+
+The source-bound run collected 12,036 test nodes, but 908 of the 1,046 test
+files had no recorded duration. The old fallback gave every shard containing
+one such file a 15-second slice; repeated timeouts split shards while completed
+test nodes stayed at 52. Shard estimates now apply the existing five-seconds-per
+node planning floor to each missing duration and include measured isolated
+collection startup. When an exact shard still times out, its next bounded slice
+doubles the previous duration, capped by the current invocation grant. This
+lets a slow singleton receive a useful retry without exceeding the canonical
+run cap or converting a timeout into passing evidence.
+
+The scheduler-throughput, scheduling, and resumption tests passed **43 tests**;
+Ruff passed for the changed verifier and throughput test. These focused checks
+do not replace the full source-bound gate. The preserved old-source journal
+still needs to remain explicitly incomplete; changing the scheduler changes
+source identity, so final acceptance requires a new journal for the corrected
+candidate.

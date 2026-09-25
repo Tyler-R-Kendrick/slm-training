@@ -31,10 +31,25 @@ def test_shard_allowance_uses_estimate_instead_of_all_available_time(monkeypatch
     assert allowance == 16.0
 
 
-def test_unmeasured_shard_gets_small_bounded_bootstrap_slice(monkeypatch):
-    node = "tests/new_test.py::test_one"
+def test_unmeasured_shard_uses_per_node_floor_and_collection_startup(monkeypatch):
+    nodes = ["tests/new_test.py::test_one", "tests/new_test.py::test_two"]
     state = {
         "binding": {"max_attempts_per_obligation": 3},
+        "nodes": nodes,
+        "attempts": [{"kind": "collection", "seconds": 2.0}],
+        "workload_budget_seconds": 100.0,
+        "shard_budget_seconds": 80.0,
+    }
+    monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {})
+
+    assert owner._allowance(state, "shard", nodes, 70.0) == 22.0
+    assert owner._allowance(state, "shard", nodes, 12.0) == 0.0
+
+
+def test_timed_out_singleton_shard_receives_a_larger_retry_slice(monkeypatch):
+    node = "tests/new_test.py::test_one"
+    state = {
+        "binding": {"max_attempts_per_obligation": 8},
         "nodes": [node],
         "attempts": [{"kind": "collection", "seconds": 2.0}],
         "workload_budget_seconds": 100.0,
@@ -42,5 +57,12 @@ def test_unmeasured_shard_gets_small_bounded_bootstrap_slice(monkeypatch):
     }
     monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {})
 
-    assert owner._allowance(state, "shard", [node], 70.0) == 15.0
-    assert owner._allowance(state, "shard", [node], 12.0) == 0.0
+    assert owner._allowance(state, "shard", [node], 70.0) == 12.0
+    state["attempts"].append(
+        {"kind": "shard", "nodes": [node], "status": "timeout", "seconds": 12.0}
+    )
+    assert owner._allowance(state, "shard", [node], 70.0) == 24.0
+    state["attempts"].append(
+        {"kind": "shard", "nodes": [node], "status": "timeout", "seconds": 24.0}
+    )
+    assert owner._allowance(state, "shard", [node], 70.0) == 48.0

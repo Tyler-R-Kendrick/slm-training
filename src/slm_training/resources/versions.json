@@ -392,6 +392,11 @@
     "ci.local_merge_gate": {
       "history": [
         {
+          "date": "2026-09-25",
+          "note": "Estimate unmeasured test shards using the five-seconds-per-node floor plus isolated collection startup, and double a timed-out exact shard's next bounded allowance.",
+          "version": "v27"
+        },
+        {
           "date": "2026-09-24",
           "note": "Give isolated pytest collection attempts a 20-second startup slice after measuring 11.5 seconds of hermetic setup, while retaining retry caps.",
           "version": "v26"
@@ -572,7 +577,7 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_successor.py"
       ],
-      "version": "v26"
+      "version": "v27"
     },
     "config.levers": {
       "history": [

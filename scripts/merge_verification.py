@@ -22,7 +22,10 @@ from scripts.merge_verification_evidence import (
 )
 from scripts.merge_verification_isolation import run_isolated_phase, run_workload
 from scripts.merge_verification_collection import COLLECTION_MIN_ATTEMPT_SECONDS
-from scripts.merge_verification_shards import attempts_exhausted as _attempts_exhausted
+from scripts.merge_verification_shards import (
+    attempts_exhausted as _attempts_exhausted,
+    shard_estimate_seconds as _shard_estimate_seconds,
+)
 from scripts.merge_verification_summary import summarize as _summary
 from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
 PYTEST_OPTIONS = [
@@ -195,6 +198,15 @@ def _execute_pending(
 def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
     if kind != "static":
         exhausted = _attempts_exhausted(state, kind, targets)
+    if kind == "shard" and prior is None:
+        prior = next(
+            (
+                row
+                for row in reversed(state.get("attempts", []))
+                if row.get("kind") == "shard" and row.get("nodes") == targets
+            ),
+            None,
+        )
     fallback = (
         state.get("shard_budget_seconds", available) if kind == "shard" else available
     )
@@ -205,9 +217,11 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
     if prior:
         required = min(full, max(1.0, prior.get("seconds", full) * 2))
     if kind == "shard":
-        # Estimates guide initial packing, but are not an admission floor:
-        # run a bounded slice and split the shard if that slice times out.
-        required = min(_shard_estimate_seconds(state, targets, full), available)
+        # Grow exact timed-out shards so slow singletons escape repeated 15s slices.
+        estimate = _shard_estimate_seconds(state, targets, full)
+        if prior and isinstance(prior.get("seconds"), (int, float)):
+            estimate = min(full, max(1.0, prior["seconds"] * 2))
+        required = min(estimate, available)
     wait_key = digest([kind, targets])
     # A remaining tail at-or-under two kill-graces is never spent on workload
     # obligations; static first-runs are exempt (their requirement is the
@@ -235,25 +249,6 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
     return required
 def _shard_seconds(state, nodes, full):
     return min(full, _shard_estimate_seconds(state, nodes, full))
-
-def _shard_estimate_seconds(state, nodes, full):
-    table = check_changed._test_file_durations()
-    counts = Counter(node.split("::", 1)[0] for node in state.get("nodes", nodes))
-    weights = [table.get(node.split("::", 1)[0]) for node in nodes]
-    if any(
-        value is None or not math.isfinite(value) or value <= 0 for value in weights
-    ):
-        return min(15.0, full)
-    collections = [
-        row.get("seconds", 0)
-        for row in state["attempts"]
-        if row.get("kind") == "collection"
-    ]
-    startup = max(collections, default=1.0)
-    estimate = startup + 2 * sum(
-        value / counts[node.split("::", 1)[0]] for node, value in zip(nodes, weights)
-    )
-    return estimate
 
 def _run_statics(state, steps, run_step, root, budget, persist) -> bool:
     for step in steps:

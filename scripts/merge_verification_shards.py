@@ -1,8 +1,33 @@
 """Fair resumable shard scheduling with inherited finite retry charges."""
 
+import math
+from collections import Counter
 from pathlib import Path
 
+from scripts import check_changed
 from slm_training.levers import KILL_GRACE_SECONDS
+
+
+def shard_estimate_seconds(state, nodes, full):
+    """Use measured durations where present and the scheduler floor otherwise."""
+    table = check_changed._test_file_durations()
+    counts = Counter(node.split("::", 1)[0] for node in state.get("nodes", nodes))
+    collections = [
+        row.get("seconds", 0)
+        for row in state["attempts"]
+        if row.get("kind") == "collection"
+    ]
+    startup = max(collections, default=1.0)
+    estimate = startup + 2 * sum(
+        max(
+            5.0,
+            table[path] / counts[path]
+            if path in table and math.isfinite(table[path]) and table[path] > 0
+            else 5.0,
+        )
+        for path in (node.split("::", 1)[0] for node in nodes)
+    )
+    return min(full, estimate)
 
 
 def run_shards(state, root, directory, budget, persist, *, allowance, run_workload) -> None:
