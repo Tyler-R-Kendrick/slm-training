@@ -94,7 +94,13 @@ async def _refresh(home, executable, seconds, cancel_event=None):
            if name in os.environ}
     env["CODEX_HOME"] = str(home)
     process = await asyncio.create_subprocess_exec(
-        executable, "app-server", "--stdio", "-c", 'model_provider="openai"',
+        executable,
+        "app-server",
+        "--stdio",
+        "-c",
+        'model_provider="openai"',
+        "-c",
+        "mcp_servers={}",
         cwd=home, env=env, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.DEVNULL, start_new_session=True, limit=65536,
     )
@@ -102,6 +108,8 @@ async def _refresh(home, executable, seconds, cancel_event=None):
         async with asyncio.timeout(seconds):
             await _rpc(process, {"id": 1, "method": "initialize", "params": {
                 "clientInfo": {"name": "slm_repair_host", "version": "1"}}}, cancel_event)
+            process.stdin.write(json.dumps({"method": "notifications/initialized"}).encode() + b"\n")
+            await process.stdin.drain()
             result = await _rpc(process, {"id": 2, "method": "account/read",
                                          "params": {"refreshToken": True}}, cancel_event)
             if (result.get("account") or {}).get("type") != "chatgpt":

@@ -83,7 +83,10 @@ def repair_request(tmp_path):
         parent_event="event-1",
         blocker=blocker,
         grant=grant,
-        allowed_paths=("src/slm_training/harnesses/model_build/eval_runner.py",),
+        allowed_paths=(
+            "src/slm_training/harnesses/model_build/eval_runner.py",
+            "tests/test_rows.py",
+        ),
         verification_manifest_digest=hashlib.sha256(canonical_json(CHECK_MANIFEST).encode()).hexdigest(),
         project_instructions="AGENTS.md",
         owner_contract="docs/design/decode-invariants.md",
@@ -121,13 +124,14 @@ class FakeSandbox:
     def run(self, repair_request, argv, *, inputs, progress, cancelled):
         self.calls += 1
         assert "--dangerously-bypass-approvals-and-sandbox" not in argv
-        assert "workspace-write" in argv
+        assert argv[argv.index("--sandbox") + 1] == "danger-full-access"
         assert "--skip-git-repo-check" in argv
         assert "failure_evidence_untrusted" in inputs["repair-instructions.json"]
         assert inputs["repair-instructions.json"]["request_digest"] == repair_request.digest()
         schema = inputs["proposal-schema.json"]
         assert set(schema["required"]) == set(schema["properties"])
         assert "schema_version" in schema["required"]
+        assert schema["properties"]["regression_test"]["enum"] == ["tests/test_rows.py"]
         progress()
         return AgentRun(
             "completed",
@@ -166,6 +170,7 @@ def test_dispatch_reaches_executor_once_and_requires_independent_verification(
     )
     assert executor.runner.calls == 1
     assert not list(journal.root.rglob("*action_receipt*"))
+
 
 @pytest.mark.parametrize("fault", ["missing", "expired", "isolation", "executable"])
 def test_capability_absence_never_launches(repair_request, journal, executor, fault):

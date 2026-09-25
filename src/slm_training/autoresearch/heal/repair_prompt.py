@@ -6,6 +6,16 @@ from slm_training.autoresearch.heal.repair_contracts import RepairRequest
 from slm_training.lineage.records import canonical_json
 
 
+def required_regression_path(request: RepairRequest) -> str:
+    paths = tuple(
+        path for path in request.allowed_paths
+        if path.startswith("tests/") and path.endswith(".py")
+    )
+    if len(paths) != 1:
+        raise ValueError("repair requires exactly one scoped regression module")
+    return paths[0]
+
+
 def repair_prompt(request: RepairRequest, *, instructions: str, contract: str,
                   verification_manifest: dict) -> dict:
     if not instructions.strip() or not contract.strip():
@@ -18,6 +28,7 @@ def repair_prompt(request: RepairRequest, *, instructions: str, contract: str,
         raise ValueError("verification manifest differs from canonical repair request")
     if tuple(verification_manifest["original"]["argv"]) != request.blocker.reproducer:
         raise ValueError("original reproducer differs from canonical repair request")
+    regression_path = required_regression_path(request)
     return {
         "task": (
             "Start with trusted_verification_manifest.original.argv to reproduce the frozen failure. "
@@ -44,6 +55,7 @@ def repair_prompt(request: RepairRequest, *, instructions: str, contract: str,
         ],
         "output": (
             "Write only a source_repair_proposal/v1 response matching the supplied JSON schema. "
+            f"Set regression_test exactly to {regression_path!r}; do not add explanatory text. "
             "Include root cause, patch/tree digests, added regression and reproduction artifacts. "
             "A nonreproducing failure is a diagnosis; do not edit arbitrary code to get green."
         ),

@@ -97,6 +97,11 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-25",
+          "version": "v29",
+          "note": "Run live Codex repair under the outer Bubblewrap boundary and require the sole granted regression path in the proposal schema."
+        },
+        {
           "date": "2026-09-24",
           "note": "Bind approved node_modules runtimes into immutable candidate mounts by matching package identity, including mountpoints omitted from source snapshots.",
           "version": "v28"
@@ -290,7 +295,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v28"
+      "version": "v29"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -8030,6 +8035,11 @@
     "harness.core": {
       "history": [
         {
+          "date": "2026-09-25",
+          "version": "v24",
+          "note": "Disable MCP server startup during account-only Codex subscription refresh."
+        },
+        {
           "date": "2026-09-24",
           "note": "Assign Codex host-subscription bridge tests to the shared harness-core component to keep version ownership unique.",
           "version": "v23"
@@ -8151,7 +8161,7 @@
         "tests/test_autoresearch/test_codex_subscription.py",
         "tests/test_autoresearch/test_codex_subscription_budget.py"
       ],
-      "version": "v23"
+      "version": "v24"
     },
     "harness.distill": {
       "history": [

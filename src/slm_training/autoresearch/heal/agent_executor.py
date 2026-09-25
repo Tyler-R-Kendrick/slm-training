@@ -18,7 +18,10 @@ from slm_training.autoresearch.heal.repair_contracts import (
     RepairProposal,
     RepairRequest,
 )
-from slm_training.autoresearch.heal.repair_prompt import repair_prompt
+from slm_training.autoresearch.heal.repair_prompt import (
+    repair_prompt,
+    required_regression_path,
+)
 from slm_training.harness_core.provider_bridge import SANDBOX_AUTHORITY
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
@@ -110,6 +113,10 @@ class CodexExecutor:
             return "agent_grant_missing" if grant is None else "agent_grant_expired"
         if request.blocker.blocker_class not in grant.repair_classes:
             return "repair_class_not_granted"
+        try:
+            required_regression_path(request)
+        except ValueError:
+            return "repair_regression_path_not_unique"
         if self.runner is None:
             return "isolation_backend_unavailable"
         failure = self.runner.capability(request)
@@ -149,7 +156,11 @@ class CodexExecutor:
             "--ephemeral",
             "--skip-git-repo-check",
             "--sandbox",
-            "workspace-write",
+            # The enclosing Bubblewrap namespace is the security boundary: it
+            # exposes only exact writable files and the granted provider socket.
+            # A second Codex sandbox cannot initialize against that sparse,
+            # read-only workspace (it tries to create /workspace/.agents).
+            "danger-full-access",
             "--json",
             "--cd",
             "/workspace",
@@ -162,6 +173,9 @@ class CodexExecutor:
         schema = RepairProposal.model_json_schema()
         # Native structured output requires every property, including defaults.
         schema["required"] = list(schema["properties"])
+        schema["properties"]["regression_test"]["enum"] = [
+            required_regression_path(request)
+        ]
         result = self.runner.run(
             request,
             argv,

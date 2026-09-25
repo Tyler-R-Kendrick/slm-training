@@ -141,9 +141,16 @@ def test_native_refresh_protocol_requests_no_exported_token(tmp_path):
     executable = tmp_path / "codex"
     executable.write_text(
         "#!/usr/bin/python3\nimport json,os,sys\nfrom pathlib import Path\n"
+        "assert sys.argv[1:3]==['app-server','--stdio']\n"
+        "assert sys.argv[sys.argv.index('-c')+1]=='model_provider=\"openai\"'\n"
+        "assert 'mcp_servers={}' in sys.argv\n"
         "for line in sys.stdin:\n"
         " request=json.loads(line)\n"
+        " if request['method']=='notifications/initialized':\n"
+        "  Path(os.environ['CODEX_HOME'],'initialized').write_text('yes')\n"
+        "  continue\n"
         " if request['method']=='account/read':\n"
+        "  assert Path(os.environ['CODEX_HOME'],'initialized').read_text()=='yes'\n"
         "  assert request['params']=={'refreshToken':True}\n"
         "  Path(os.environ['CODEX_HOME'],'refreshed').write_text('account/read')\n"
         " result={} if request['id']==1 else {'account':{'type':'chatgpt'}}\n"
@@ -151,6 +158,7 @@ def test_native_refresh_protocol_requests_no_exported_token(tmp_path):
     )
     executable.chmod(0o700)
     asyncio.run(auth._refresh(tmp_path, str(executable), 2))
+    assert (tmp_path / "initialized").read_text() == "yes"
     assert (tmp_path / "refreshed").read_text() == "account/read"
 
 

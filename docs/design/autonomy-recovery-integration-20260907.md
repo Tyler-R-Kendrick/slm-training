@@ -209,6 +209,30 @@ reuse incompatible measurements. The parent owns passing this callback and
 consuming the handoff to resume the exact blocked activity. This sidecar's
 tests do not establish that supervisor restart integration.
 
+## Live host-Codex repair seam — 2026-09-25
+
+A real host Codex subscription call now traverses `CodexExecutor`, the fixed
+provider bridge, and the outer Bubblewrap runner on a disposable failing
+fixture. The first proposal diagnosed that Codex's nested `workspace-write`
+sandbox could not create `/workspace/.agents` inside the outer runner's
+read-only workspace. Codex therefore runs with `danger-full-access` **inside**
+the mandatory outer Bubblewrap namespace; that outer namespace remains the
+authority and exposes only the exact granted files, read-only runtimes, and one
+filtered provider socket. The fixture candidate changed only `answer.py` and
+its one granted new regression module. The regression-test output field is now
+constrained in both the trusted prompt and JSON schema to the one exact new
+test path required by the independent verifier.
+
+The host-authenticated subscription request produced a patch whose controller-recomputed
+digest matched. Independent isolated checks reproduced the original failure on
+the frozen baseline, observed the new test fail on baseline and pass on the
+candidate, and passed the locked original plus existing regression checks on
+the candidate (**5/5 expected observations; journal chain valid**). The worker
+returned `waiting_verification`, as required; this disposable fixture did not
+run source-verification authorization, publication, or supervisor replay, so it
+does not close production release acceptance. Credentials remained host-side
+and were not emitted or mounted into the worker.
+
 No service was installed/started/restarted. No live training, scientific
 comparison, promotion, shipment, cloud job, remote Git write or paid inference
 was performed. Finite fault tests do not establish perpetual reliability.
