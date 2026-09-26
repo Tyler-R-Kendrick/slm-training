@@ -16,6 +16,14 @@ from scripts.autotrain_cycle_reconcile import new_outcome
 from tests.test_autoresearch.test_driver_cycle_continuation import _fixture, _resume
 
 
+@pytest.fixture(autouse=True)
+def fixture_publication_source(monkeypatch):
+    from scripts import autotrain_source_publication as publication
+
+    monkeypatch.setattr(publication, "capture_publication_source", lambda cwd, commit: {
+        "source_digest": "a" * 64, "commit": commit, "repository": None})
+
+
 def test_timed_out_driver_does_not_accept_terminal_before_postprocessing():
     class Store:
         def verify_event_chain(self):
@@ -252,27 +260,61 @@ def test_scoped_deadline_is_readonly_nonextending_and_driver_yields_before_expir
     assert CycleJournal(f.store, f.value).state["inflight"] is None
 
 
-def test_completed_prefix_checkpoint_resumes_first_explicit_eval_without_replay(tmp_path, monkeypatch):
+def _compiled_eval_fixture(tmp_path, monkeypatch, explicit):
     """Native NLL-before-decode boundary, using real protocol-fixture children."""
     from scripts import autotrain_cycle_prepare as prepare
+    from slm_training.autoresearch import engine
 
     prepare_cycle = prepare.prepare_cycle
 
     def prepare_explicit(*args, **kwargs):
         compile_commands = autoresearch.compile_commands
 
-        def compile_resume(*compile_args, **compile_kwargs):
-            commands = compile_commands(*compile_args, **compile_kwargs)
-            for command in commands:
-                if "scripts.evaluate_model" in command:
-                    command.append("--resume-run")
+        def compile_resume(campaign, experiment, **options):
+            commands = compile_commands(campaign, experiment, **options)
+            if any("scripts.evaluate_model" in c for c in commands):
+                knobs = experiment.knobs.model_copy(update={
+                    "eval_partial_scoreboard": True, "eval_max_records_this_run": 2})
+                generated = engine.compile_commands(campaign, experiment.model_copy(update={"knobs": knobs}), **options)
+                evaluation = next(c for c in generated if "scripts.evaluate_model" in c)
+                if explicit:
+                    evaluation.extend(["--resume-run", str(engine._stage_artifact_path(evaluation, cwd=tmp_path).parent)])
+                commands[1] = evaluation
             return commands
 
         monkeypatch.setattr(autoresearch, "compile_commands", compile_resume)
         return prepare_cycle(*args, **kwargs)
 
     monkeypatch.setattr(prepare, "prepare_cycle", prepare_explicit)
-    f = _fixture(tmp_path, monkeypatch, arms=2)
+    return _fixture(tmp_path, monkeypatch, arms=2)
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_completed_prefix_checkpoint_resumes_first_explicit_eval_without_replay(tmp_path, monkeypatch, explicit):
+    from slm_training.autoresearch import engine
+    import sys
+
+    f = _compiled_eval_fixture(tmp_path, monkeypatch, explicit)
+    run = engine.run_bounded_process
+    evaluations = []
+
+    def protocol_child(command, **options):
+        if "scripts.evaluate_model" in command:
+            evaluations.append(command)
+            assert "--resume-run" in command
+            directory = engine._stage_artifact_path(command, cwd=tmp_path).parent
+            assert command[command.index("--resume-run") + 1] == str(directory)
+            # Real child appends only missing fixture rows; existing row is immutable.
+            program = ("import json,sys; from pathlib import Path; "
+                       "p=Path(sys.argv[1]); before=p.read_text(); "
+                       "assert before.startswith('preserved\\n'); "
+                       "p.open('a').write('new\\n') if before == 'preserved\\n' else None; "
+                       "print(json.dumps({}));")
+            command = [sys.executable, "-c", program, str(tmp_path / "eval-rows")]
+        return run(command, **options)
+
+    monkeypatch.setattr(engine, "run_bounded_process", protocol_child)
+    (tmp_path / "eval-rows").write_text("preserved\n")
     execute = autoresearch.execute_commands
 
     def crash_after_prefix(spec, commands, **kwargs):
@@ -293,10 +335,41 @@ def test_completed_prefix_checkpoint_resumes_first_explicit_eval_without_replay(
     inputs = _candidate_cursor(f)
     assert not (tmp_path / "partial").exists()
     with _fenced(f):
-        pending = _resume(f)
-        assert pending["outcome"] == "yielded"
         assert _resume(f) == f.store.campaign_id
+    assert evaluations
+    assert ("--resume-run" in inputs["commands"][1]) == explicit
+    assert (tmp_path / "eval-rows").read_text() == "preserved\nnew\n"
     assert CycleJournal(f.store, f.value).state["spent_seconds"] >= before["spent_seconds"]
     assert _candidate_cursor(f) == inputs
     assert all((tmp_path / f"{eid}-trained").read_text() == "x" for eid in f.ids)
     assert (tmp_path / "candidate-tail").exists()
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_first_eval_recovery_verifies_resumed_training_prefix(tmp_path, changed):
+    from scripts.autotrain_cycle_reconcile import _resumable_cursor_outcome
+    from slm_training.autoresearch.engine import compile_commands
+    from slm_training.autoresearch.schemas import ExperimentOutcome
+    from tests.test_autoresearch.test_harness import campaign, experiment
+
+    spec = experiment()
+    spec = spec.model_copy(update={"knobs": spec.knobs.model_copy(update={
+        "eval_partial_scoreboard": True, "eval_max_records_this_run": 2})})
+    commands = compile_commands(campaign(), spec, output_root=tmp_path)
+    position = next(i for i, c in enumerate(commands) if "scripts.evaluate_model" in c)
+    assert position == 1
+    resumed = [*commands[0], "--resume-from", str(tmp_path / "locked-state.pt")]
+    pending = {"command": commands[0], "exit_code": 0, "resume_pending": True,
+               "resume_kind": "training", "resume_command": resumed,
+               "resume_validation": "required_by_trainer_before_updates"}
+    completed = {"command": [*resumed, *( ["--seed", "999"] if changed else [])], "exit_code": 0}
+    outcome = ExperimentOutcome(experiment_id=spec.experiment_id, campaign_id=spec.campaign_id,
+        status="running", stage_telemetry=(pending, completed))
+    cursor = SimpleNamespace(outcome=outcome, position=position, unresolved=True,
+                             inputs={"commands": commands, "cwd": str(tmp_path)})
+    result = _resumable_cursor_outcome(cursor)
+    if changed:
+        assert result is None
+    else:
+        assert result.stage_telemetry[:-1] == outcome.stage_telemetry
+        assert result.stage_telemetry[-1]["resume_command"][:-2] == commands[position]

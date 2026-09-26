@@ -181,6 +181,7 @@ def _arm(store, cwd, continuous, value, eid):
 def prepare_cycle(cwd, root, continuous, value, *, spent_seconds):
     import time
     from slm_training.autoresearch.climb_policy import load_climb_policy
+    from scripts.autotrain_source_publication import capture_publication_source
 
     started = time.monotonic()
     store = CampaignStore(value["campaign_id"], root)
@@ -189,6 +190,7 @@ def prepare_cycle(cwd, root, continuous, value, *, spent_seconds):
         **value,
         "schema_version": "driver_cycle/v1",
         "root_arg": str(root),
+        "publication_source": capture_publication_source(cwd, value["integration"]),
         "cwd": str(Path(cwd).resolve()),
         "total_seconds": total_seconds,
         "policy_sha256": load_climb_policy().sha256,

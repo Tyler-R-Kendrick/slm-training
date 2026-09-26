@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 import json
 import time
 from pathlib import Path
@@ -72,7 +73,7 @@ def _operation_payload(output_path: Path, request: dict):
     ):
         raise ValueError("operation output identity mismatch")
     payload = envelope["payload"]
-    if request["operation"] == "driver":
+    if request["operation"] == "driver" or (request["operation"] == "promotion_eval" and payload.get("pending") is not None):
         if type(payload.get("returncode")) is not int or payload["returncode"] not in {
             0,
             10,
@@ -110,8 +111,8 @@ def interpret_operation_result(result, output_path: Path, execution_request: dic
                 else ActivityOutcome.SUCCEEDED
             )
             if (
-                execution_request["operation"] == "driver"
-                and payload["returncode"] == 10
+                execution_request["operation"] in {"driver", "promotion_eval"}
+                and payload.get("returncode") == 10
             ):
                 from scripts.autotrain_pending import validate_pending
 
@@ -137,7 +138,7 @@ def _operation_result_state(
     if result.timed_out and not result.progress_stalled:
         outcome = ActivityOutcome.RETRY
     pending_wait = verification_wait(runtime, lease, payload)
-    if payload and payload.get("returncode") == 10 and request["operation"] == "driver":
+    if payload and payload.get("returncode") == 10 and request["operation"] in {"driver", "promotion_eval"}:
         from scripts.autotrain_pending import validate_pending
 
         pending_wait = validate_pending(payload["pending"])
@@ -284,6 +285,7 @@ def repair_operation(request, *, cwd, root, loop_id, handle_hard_pending):
     return payload
 
 
+@contextmanager
 def operation_publication_scope(request, root, loop_id):
     from slm_training.autoresearch.runtime.activity_publication import (
         DelegatedPublisher,
@@ -297,9 +299,12 @@ def operation_publication_scope(request, root, loop_id):
     lease = ActivityLease.model_validate(request["lease"])
     journal = CampaignStore("runtime", root / "loops" / loop_id)
     publisher = DelegatedPublisher(journal, request["source_digest"])
-    return champion_publication_scope(
+    from scripts.autotrain_source_publication import publication_repository_scope
+
+    with publication_repository_scope(request), champion_publication_scope(
         publisher, lease, loop_dir=root / "loops" / loop_id
-    )
+    ):
+        yield
 
 
 def validate_operation_identity(request, source_identity, boundary):

@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
 
 from tests.casefiles import case_values
+from tests.test_harness_core.test_source_authority import initial as initial, _claim, _finish
 
 from tests.test_scripts.test_run_autotrain_continuous_chunked_promotion import (
     SUITE_N,
@@ -39,15 +41,15 @@ def test_completed_chunk_proof_is_current_and_cannot_hide_training_failure(tmp_p
 
 
 @pytest.mark.parametrize("real_process", [False, True])
-def test_finalizer_uses_original_consumers_and_preserves_retry_identity(tmp_path, monkeypatch, real_process):
+def test_finalizer_uses_original_consumers_and_preserves_retry_identity(tmp_path, monkeypatch, real_process, initial):
     import scripts.autotrain_promotion_finalize as finalize
     from slm_training.autoresearch.storage import CampaignStore
 
     # Chunk subprocesses are simulated; one variant runs the real bounded
     # supervisor operation with real source/environment probes and lease fencing.
-    cwd = Path.cwd() if real_process else tmp_path
+    host, _, connector, _ = initial
+    cwd = Path.cwd() if real_process else _fixture_main_source(host, connector, tmp_path / "ar")
     if not real_process:
-        monkeypatch.setattr(finalize, "source_identity", lambda cwd: "a" * 64)
         monkeypatch.setattr(finalize, "environment_identity", lambda: {"fixture": True})
     monkeypatch.setattr(_mod, "_git", lambda *args, **kwargs: "")
     store = CampaignStore("camp1", tmp_path / "ar")
@@ -62,12 +64,12 @@ def test_finalizer_uses_original_consumers_and_preserves_retry_identity(tmp_path
     for arm in arms:
         (store.root / "manifests" / f"{arm}.json").write_text(json.dumps({"seeds": [7]}))
     payload = {"campaign_id": "camp1", "loop_id": "loop-p11", "cycle_index": 1,
-        "upstream_commit": "a" * 40, "integration_commit": "a" * 40, "role": "promotion",
+        "upstream_commit": host.base_ref, "integration_commit": host.base_ref, "role": "promotion",
         "cycle_intent": "promote", "primary_metric": "held_out.structural_similarity",
         "matrix": matrix, "entry": entry, "control_id": arms[0], "candidate_id": arms[1],
         "arm_order": arms, "arm_seed": 7, "arm_exits": {arm: 10 for arm in arms},
         "arm_skipped": {}, "formal_status": "timed_out", "skip_slugs": []}
-    locked = finalize.lock_finalization(store, cwd, payload)
+    locked = _lock_with_repository(finalize, store, cwd, payload, host, tmp_path)
     runner = _StubChunkRunner(store.root, total_n=SUITE_N, per_run=SUITE_N)
     ledger = _run_chunks(tmp_path, monkeypatch, plan=_fake_plan(per_run=SUITE_N, run_n=1), runner=runner, arms=arms)
     assert finalize.finalization_pending(store, ledger)
@@ -90,9 +92,15 @@ def test_finalizer_uses_original_consumers_and_preserves_retry_identity(tmp_path
                 "source_digest": locked["source_sha256"], "environment_digest": locked["environment_sha256"]},
                 sequence=1, log_event=lambda _: None)
             assert result is not None, processes[-1].stderr
-            assert all(state.status == "succeeded" for state in runtime.snapshot().values())
+            assert result["returncode"] == 10
+            assert result["pending"]["reason"] == "source_publication_required"
+            assert result["pending"]["diagnostic_measurement_complete"] is True
+            assert all(state.status == "waiting_dependency" for state in runtime.snapshot().values())
         queue = _mod._load_champion_queue(_mod._champion_queue_path(store.root.parent, "loop-p11"))
-        assert queue[0]["status"] == "promotion_inconclusive"
+        assert queue[0]["status"] == "promoting"
+        assert not (store.root / "cycle_handoff.json").exists()
+        assert finalize.finalization_pending(store, ledger)
+        return
     else:
         result = finalize.finalize_promotion(store, cwd, _mod, ledger)
         assert result["resolution"]["status"] == "promotion_inconclusive"
@@ -234,3 +242,26 @@ def test_merged_power_feasibility_uses_final_merged_n(tmp_path: Path) -> None:
         )
     assert missing["measurement_complete"] is False
     assert missing["decisive"] is False
+
+
+def _fixture_main_source(host, connector, root):
+    """Commit the real initial-readback owner; no inferred fixture authority."""
+    import asyncio
+    from scripts.github_source_authority import record_initial_release
+    from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
+    from slm_training.autoresearch.storage import CampaignStore
+
+    with ActivityRuntime(CampaignStore("runtime", root / "loops/loop-p11")) as runtime:
+        lease = _claim(host, runtime)
+        asyncio.run(record_initial_release(runtime, lease, host, connector))
+        _finish(runtime, lease)
+    return Path(host.verification_plan["initial_release"]["execution"])
+
+
+def _lock_with_repository(finalize, store, cwd, payload, host, tmp_path):
+    from scripts.autotrain_source_publication import publication_repository_scope
+    config = tmp_path / "publication-host.json"
+    config.write_text(host.model_dump_json())
+    with publication_repository_scope({"delivery_config": str(config),
+            "delivery_config_digest": hashlib.sha256(config.read_bytes()).hexdigest()}):
+        return finalize.lock_finalization(store, cwd, payload)

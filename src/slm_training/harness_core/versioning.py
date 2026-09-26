@@ -148,7 +148,10 @@ def build_version_stamp(*component_ids: str) -> dict[str, Any]:
         components = {cid: component_version(cid) for cid in component_ids}
     except (OSError, ValueError, json.JSONDecodeError):
         components = {cid: UNKNOWN for cid in component_ids}
+    from .execution_release import source_authority_reference
+    reference = source_authority_reference(Path.cwd())
     return {
+        **({"source_authority": reference} if reference is not None else {}),
         "stamp_schema": STAMP_SCHEMA,
         "code_commit": git_commit(),
         "code_dirty": git_dirty(),

@@ -3,7 +3,7 @@
 import asyncio
 import copy
 import json
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
@@ -46,7 +46,7 @@ class Remote:
                 "ref": self.binding["branch"],
                 "repo": {"full_name": "owner/repo"},
             },
-            "base": {"sha": BASE, "ref": "main", "repo": {"full_name": "owner/repo"}},
+            "base": {"sha": BASE, "ref": getattr(self, "pr_base", self.binding.get("base_branch", "main")), "repo": {"full_name": "owner/repo"}},
             "body": self.binding["marker"],
             "user": {"login": "writer"},
             "draft": False,
@@ -70,15 +70,29 @@ class Remote:
             raise TimeoutError("response lost after remote write")
         return {"structuredContent": data}
 
-    def respond(self, tool, args):
+    def git_read(self, tool, args):
         if tool == "github_fetch":
+            url = urlsplit(args["url"])
+            if url.path.endswith("/pulls"):
+                assert parse_qs(url.query)["base"] == [self.binding.get("base_branch", "main")]
             return {
                 "content": json.dumps(
                     self.fetch(
-                        urlsplit(args["url"]).path.split("/repos/owner/repo/")[1]
+                        url.path.split("/repos/owner/repo/")[1]
                     )
                 )
             }
+        if tool == "github_get_pr_info":
+            return {"merged": self.merged, "base": self.pull()["base"]["ref"],
+                    "head_sha": HEAD, "merge_commit_sha": MERGE}
+        if tool == "github_compare_commits":
+            assert args["head"] == self.binding.get("base_branch", "main")
+            return {"status": "identical", "merge_base_commit": {"sha": MERGE}}
+        raise AssertionError(tool)
+
+    def respond(self, tool, args):
+        if tool in {"github_fetch", "github_get_pr_info", "github_compare_commits"}:
+            return self.git_read(tool, args)
         if tool in WRITE_TOOLS:
             return self.write(tool, args)
         if tool == "github_search_commits":
@@ -127,6 +141,7 @@ class Remote:
             self.branch = True
             return {"ref": "refs/heads/" + self.binding["branch"]}
         if tool == "github_create_pull_request":
+            assert args["base"] == self.binding.get("base_branch", "main")
             self.pr = True
             return {"number": 7}
         assert args["expected_head_sha"] == HEAD and args["merge_method"] == "squash"
@@ -175,7 +190,7 @@ class Remote:
         fixed = {
             "pulls": [self.pull()] if self.pr else [],
             "pulls/7": self.pull(),
-            "git/ref/heads/main": {"object": {"sha": BASE}},
+            "git/ref/heads/" + self.binding.get("base_branch", "main"): {"object": {"sha": BASE}},
             f"commits/{HEAD}/check-runs": {
                 "check_runs": getattr(self, "check_runs", [])
             },

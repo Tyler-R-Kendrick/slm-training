@@ -41,9 +41,9 @@ async def pages(connector, repository, suffix, *, key=None):
         page += 1
 
 
-async def find_pr(connector, repository, branch):
+async def find_pr(connector, repository, branch, *, base_branch="main"):
     owner = repository.split("/")[0]
-    query = urlencode({"state": "all", "head": f"{owner}:{branch}", "base": "main"})
+    query = urlencode({"state": "all", "head": f"{owner}:{branch}", "base": base_branch})
     rows = await pages(connector, repository, "pulls?" + query)
     if len(rows) > 1:
         raise ValueError("ambiguous_delivery_pull_request")
@@ -112,7 +112,7 @@ def verify_pr_identity(pr, binding, head):
         or pr["head"]["ref"] != binding["branch"]
         or pr["head"]["repo"]["full_name"] != binding["repository"]
         or pr["base"]["repo"]["full_name"] != binding["repository"]
-        or pr["base"]["ref"] != "main"
+        or pr["base"]["ref"] != binding.get("base_branch", "main")
         or binding["marker"] not in (pr.get("body") or "")
     ):
         raise ValueError("delivery_pr_identity_mismatch")
@@ -128,8 +128,8 @@ async def ready_to_merge(connector, config, binding, pr):
         or pr.get("mergeable_state") != "clean"
     ):
         raise DeliveryWaiting("remote_base_or_mergeability_not_ready")
-    main = await fetch(connector, repo, "git/ref/heads/main")
-    if main["object"]["sha"] != binding["base_ref"]:
+    base = await fetch(connector, repo, "git/ref/heads/" + binding.get("base_branch", "main"))
+    if base["object"]["sha"] != binding["base_ref"]:
         raise DeliveryWaiting("remote_base_changed_requires_successor")
     await verify_checks_reviews(connector, config, pr)
 

@@ -92,15 +92,16 @@ def prepare_release(
         if verified_predecessor else _checkout_provenance(source.resolve(strict=True)))
 
 
-def prepare_delivered_release(verified_source, destinations, remote_commit) -> dict:
+def prepare_delivered_release(verified_source, destinations, remote_commit, *, source_authority=None) -> dict:
     """New materialization of exact delivered bytes, never edit an old marker.
 
-    Caller authenticates observed main membership through its delivery receipt.
+    Caller authenticates branch membership separately through its journal receipt.
     This primitive independently proves the Git commit object and complete tree;
     no caller-supplied provenance dictionary or clean flag is accepted.
     """
     return _prepare_release(verified_source[0], destinations,
-                            lambda: _delivered_provenance(verified_source, remote_commit))
+                            lambda: _delivered_provenance(verified_source, remote_commit),
+                            source_authority=source_authority)
 
 
 def _delivered_provenance(verified_source, remote_commit):
@@ -118,7 +119,19 @@ def _delivered_provenance(verified_source, remote_commit):
     return {"integration_commit": revision, "upstream_commit": revision, "code_dirty": False}
 
 
-def _prepare_release(source, destinations, provenance_read):
+def _copy_release_files(source, destination, entries, *, readonly):
+    destination.mkdir(parents=True)
+    for name, value in entries.items():
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if value[0] == "link":
+            target.symlink_to(value[1])
+        else:
+            shutil.copyfile(source / name, target)
+            target.chmod(0o555 if value[1] else 0o444 if readonly else 0o644)
+
+
+def _prepare_release(source, destinations, provenance_read, *, source_authority=None):
     source = source.resolve(strict=True)
     release, execution, outputs = (p.resolve() for p in destinations)
     if any(p.exists() for p in (release, execution)):
@@ -143,17 +156,7 @@ def _prepare_release(source, destinations, provenance_read):
     entries = _files(source)
     provenance = provenance_read()
     for destination in (release, execution):
-        destination.mkdir(parents=True)
-        for name, value in entries.items():
-            target = destination / name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if value[0] == "link":
-                target.symlink_to(value[1])
-            else:
-                shutil.copyfile(source / name, target)
-                target.chmod(
-                    0o555 if value[1] else 0o444 if destination == release else 0o644
-                )
+        _copy_release_files(source, destination, entries, readonly=destination == release)
     # Concurrent authoring during preparation never produces an accepted release.
     if (
         _files(source) != entries
@@ -171,6 +174,8 @@ def _prepare_release(source, destinations, provenance_read):
         "outputs": str(outputs),
         "service_started": False,
     }
+    if source_authority is not None:
+        manifest["source_authority"] = dict(source_authority)
     for destination in (release, execution):
         (destination / MARKER).write_text(json.dumps(manifest, sort_keys=True) + "\n")
     (release / MARKER).chmod(0o444)
@@ -332,3 +337,9 @@ def validate_source_refs(root: Path, upstream: str, integration: str, *, git):
             raise ValueError("integration_commit does not contain upstream_commit")
     elif resolved_upstream != current_head:
         raise ValueError("integration_commit does not contain upstream_commit")
+
+
+def source_authority_reference(root: Path) -> dict | None:
+    """Untrusted pointer only; membership requires the controller journal resolver."""
+    manifest = _runtime_manifest(root)
+    return manifest.get("source_authority") if manifest is not None else None

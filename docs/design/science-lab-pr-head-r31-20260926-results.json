@@ -1,0 +1,90 @@
+{
+  "schema_version": "science_lab_acceptance_observation/v1",
+  "campaign_id": "science-lab-r31-43327120eda9-acceptance",
+  "status": "control_trained_reconciliation_required",
+  "source": {
+    "commit": "43327120eda92ef9aff2a7eb89d0777e0849317b",
+    "tree": "0fe678f308b5d99cc06ac107a82f129f82ec71c7",
+    "source_digest": "6a65297fe3418496bd182ef34d5931b0df16397361bb87e235e40f1dcbcbdddc",
+    "claim": "PR-head diagnostic"
+  },
+  "preregistration_sha256": "576a0a4b7fc2bbddfc314e91d7a850a525065220e9f4805a8f801b1b1799f459",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "logical_updates_per_arm": 6,
+    "update_chunk": 3,
+    "seed": 7301,
+    "parameters_per_arm": 65826,
+    "training_records": 8,
+    "planned_eval_cases_per_arm": 6,
+    "control_learning_rate": 0.0003,
+    "candidate_learning_rate": 0.0006,
+    "honesty": "public smoke diagnostic only"
+  },
+  "observations": {
+    "supervisor_attempt_exit_codes": [
+      137,
+      124,
+      137,
+      10
+    ],
+    "completed_training_arms": 1,
+    "completed_evaluation_arms": 0,
+    "new_checkpoint_count": 2,
+    "paired_endpoint_measured": false,
+    "retained_driver_cursor": true,
+    "inspect_operation_seconds": 36.226601679998566,
+    "observation_cutoff": "2026-09-26T21:07:19Z",
+    "scope": "Four bounded supervisor invocations; control training complete; explicit driver reconciliation capability wait.",
+    "second_invocation_stop": "KeyboardInterrupt during _runtime_manifest -> _files(release) -> path.read_bytes before supervisor inspection",
+    "serialized_verifier_during_second_invocation": true,
+    "pending_reason": "driver_attempt_requires_reconciliation",
+    "operation_repair_requested": {
+      "activity_id": "supervisor-1-driver-c27384e5916102e8",
+      "artifact_sha256": "8cddf0b0934ffc8a384e0cdff4557981dee156c234297224bd8c880cbc2d3b44",
+      "timestamp": "2026-09-26T21:07:18.979078Z"
+    }
+  },
+  "promotion_allowed": false,
+  "release_authorized": false,
+  "evidence": {
+    "preregistration": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/preregistration.json",
+    "supervisor_log": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/supervisor.log",
+    "campaign_events": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/events.jsonl"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "43327120eda92ef9aff2a7eb89d0777e0849317b",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v310",
+      "config.levers": "v33"
+    },
+    "stamped_at": "2026-09-26T20:25:26.734026+00:00"
+  },
+  "version_stamp_basis": "Published immutable source and component registry observed at preregistration; no later-source evidence is substituted.",
+  "host_remediation": {
+    "kind": "duplicate_same_project_language_servers",
+    "stopped_servers": 4,
+    "retained_loaded_servers": 1,
+    "verified_old_servers_and_children_gone": true,
+    "mem_available_kib_after": 17450200,
+    "memory_pressure_full_avg60_before": 35.42,
+    "memory_pressure_full_avg300_before": 58.83,
+    "evidence": "outputs/autonomy-integration-20260921/duplicate-serena-cleanup-20260926.json",
+    "source_or_grant_changed": false
+  },
+  "control_checkpoint": {
+    "path": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/checkpoints/trial/bundles/712026b16850c9077bfd5aad0b4ed3db2d92d0d658f4b87865263b9b9e94931f/last.pt",
+    "sha256": "673fce9d06eee0b226d6520c1a8f32c9dacbc924ac8997d15a5e765df2b465b8",
+    "steps": 6,
+    "stopped_on": "steps",
+    "record_count": 8,
+    "parameters": 65826,
+    "device": "cpu",
+    "last_training_loss": 40.56913757324219,
+    "bucket": "local scratch --no-sync-checkpoints",
+    "train_summary": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/train_summary.json"
+  }
+}

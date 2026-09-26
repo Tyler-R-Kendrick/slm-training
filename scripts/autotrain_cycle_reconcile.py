@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from scripts.autoresearch_continuation import is_continuation_pending
+from scripts.autotrain_cursor_reconcile import _resumable_cursor_outcome
 from scripts.autotrain_cycle_context import read_artifact
 from scripts.autotrain_cycle_finalize import stages, skipped
 from scripts.autotrain_ledgers import publish_cycle_delivery, validate_cycle_delivery
@@ -240,28 +241,6 @@ def _recover_pending_cursor(journal, eid, attempts, fresh):
             )
             journal.state["last_yield"] = cursor.outcome.model_dump(mode="json")
     return True
-
-
-def _resumable_cursor_outcome(cursor):
-    from scripts.autoresearch_continuation import _canonical, _pending_stage, _resume_commands, _stage_complete
-    from slm_training.autoresearch.engine import is_resumable_eval_command
-
-    outcome, position, commands = cursor.outcome, cursor.position, cursor.inputs["commands"]
-    if outcome is None or position >= len(commands) or not is_resumable_eval_command(commands[position]):
-        return None
-    pending = _pending_stage(outcome)
-    expected = _resume_commands(commands, position, {})[0]
-    if pending is not None and _canonical(pending["command"]) in (
-        _canonical(commands[position]), _canonical(expected)
-    ):
-        return outcome
-    # A committed prefix may precede the first yield of an idempotent evaluator.
-    # Only its explicit resume entrypoint may reconcile unknown partial rows.
-    if cursor.unresolved and position and outcome.stage_telemetry and "--resume-run" in commands[position]:
-        previous = outcome.stage_telemetry[-1]
-        if _stage_complete(previous) and _canonical(previous["command"]) == _canonical(commands[position - 1]):
-            return outcome.model_copy(update={"status": "stopped", "error": "continuation_budget_pending"})
-    return None
 
 
 def _recover_publication(journal, fresh):

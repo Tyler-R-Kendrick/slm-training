@@ -41,7 +41,7 @@ def accepted(tmp_path, monkeypatch):
     monkeypatch.setattr(repair_delivered, "resolve_delivered_activation", lambda store, ref: ref)
     monkeypatch.setattr(merge_verification_evidence, "source_paths", lambda _: ["module.py"])
     monkeypatch.setattr(tree, "base_entries", lambda *args: {"module.py": ("100644", tree.git_object("blob", b"broken\n"))})
-    host = SimpleNamespace(repository="owner/repo", base_ref="a" * 40, source_digest=new["source_digest"],
+    host = SimpleNamespace(base_branch="main", repository="owner/repo", base_ref="a" * 40, source_digest=new["source_digest"],
         required_checks=(), verification_plan={"source": str(candidate), "execution": subject["successor_execution"],
         "identity": "b" * 64, "state_dir": str(tmp_path / "cache")})
     wait = {"kind": "verified_repair_source", "publication_id": "c" * 64,
@@ -96,7 +96,7 @@ class ReadRemote:
     async def __call__(self, tool, arguments):
         self.calls.append(tool)
         if tool == "github_get_pr_info":
-            value = {"merged": True, "base": "main", "head_sha": self.proposal["verified_head_sha"], "merge_commit_sha": self.proposal["merge_sha"]}
+            value = {"merged": True, "base": "main" if self.failure == "branch" else self.binding.get("base_branch", "main"), "head_sha": self.proposal["verified_head_sha"], "merge_commit_sha": self.proposal["merge_sha"]}
         elif tool == "github_get_commit_combined_status":
             value = {"statuses": []}
         elif tool == "github_list_pull_request_review_threads":
@@ -104,6 +104,7 @@ class ReadRemote:
         elif tool == "github_list_pull_request_reviews":
             value = {"reviews": []}
         elif tool == "github_compare_commits":
+            assert arguments["head"] == self.binding.get("base_branch", "main")
             value = {"status": "identical", "merge_base_commit": {"sha": self.proposal["merge_sha"]}}
         elif tool == "github_fetch_file":
             value = {"encoding": "utf-8", "content": "fixed\n"}
@@ -156,3 +157,24 @@ def test_reader_grants_only_required_immutable_git_gets(suffix):
     assert not owner.reader_url_allowed("owner/repo", {"url": url + "#suffix"})
     assert not owner.reader_url_allowed("owner/repo", {"url": url, "method": "POST"})
     assert not owner.reader_url_allowed("owner/repo", {"url": url.replace("git/", "git/../")})
+
+
+@pytest.mark.parametrize("failure", [None, "branch"])
+def test_acceptance_branch_source_receipt_never_accepts_main(accepted, failure):
+    store, wait, host, _ = accepted
+    host.base_branch = "acceptance-only/agentv-fault"
+    binding = owner.source_binding(store, wait, host)
+    assert binding["base_branch"] == host.base_branch
+    remote = ReadRemote(binding, failure)
+    runtime = SimpleNamespace(store=store, publication=lambda lease: nullcontext())
+    invoke = owner.reconcile_source_delivery(runtime, SimpleNamespace(activity_id="delivery"),
+                                             wait, remote.proposal, host, remote)
+    if failure:
+        with pytest.raises(ValueError, match="remote_merge_identity_mismatch"):
+            asyncio.run(invoke)
+        assert not store.verify_event_chain()
+    else:
+        result = asyncio.run(invoke)
+        proof = owner.source_completion(store, wait, result)
+        assert proof["base_branch"] == host.base_branch
+        assert proof["base_ref"] == host.base_ref

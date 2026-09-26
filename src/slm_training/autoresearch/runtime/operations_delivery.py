@@ -3,7 +3,7 @@
 from __future__ import annotations
 import time
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from .operations_reconciliation import validate_completion
 
 
@@ -14,6 +14,7 @@ class DeliveryHost(BaseModel):
     command: tuple[str, ...] = Field(min_length=1)
     executable_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     repository: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    base_branch: str = Field(default="main", exclude_if=lambda value: value == "main")
     base_ref: str = Field(pattern=r"^[a-f0-9]{40}$")
     source_digest: str = Field(pattern=r"^(?:[a-f0-9]{40}|[a-f0-9]{64})$")
     expires_at: float = Field(gt=0)
@@ -24,6 +25,19 @@ class DeliveryHost(BaseModel):
     # None means policy unknown. An explicit empty tuple permits local-only CI.
     required_checks: tuple[str, ...] | None = None
     verification_plan: dict | None = None
+
+
+    @field_validator("base_branch")
+    @classmethod
+    def valid_base_branch(cls, value):
+        import re
+
+        if (not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_./-]*", value)
+                or ".." in value or value.startswith("refs/")
+                or any(not part or part.startswith(".") or part.endswith((".", ".lock"))
+                       for part in value.split("/"))):
+            raise ValueError("invalid_delivery_base_branch")
+        return value
 
 
 def load_delivery_host(path: Path | None) -> DeliveryHost | None:
@@ -95,8 +109,8 @@ def _publishable(wait):
 
 def _connector_wait(result, path, request):
     import json
-    from slm_training.harness_core.activity_contract import contract_digest
     from slm_training.harness_core.bounded_process import ProcessOutcome
+    from slm_training.harness_core.activity_contract import contract_digest
 
     if result.outcome != ProcessOutcome.COMPLETED or result.returncode not in {10, 20} or path.is_symlink() or not path.is_file():
         return None
@@ -132,6 +146,19 @@ def _document_capable(runtime, wait, host, state):
     return True
 
 
+
+def _require_same_base_branch(runtime, state, host):
+    """A changed host cannot retarget an existing attempt or replay its receipt."""
+    import json
+
+    if host is None:
+        return
+    attempts = runtime.store.root / state.spec.output_namespace
+    for path in attempts.glob("*/request.json"):
+        if json.loads(path.read_text()).get("base_branch", "main") != host.base_branch:
+            raise ValueError("delivery_base_branch_changed_requires_new_activity")
+
+
 def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost | None):
     """Consume a registered wait through a trusted, bounded connector adapter.
 
@@ -148,7 +175,6 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
         WakeCondition,
         contract_digest,
     )
-    from slm_training.harness_core.bounded_process import ProcessOutcome
 
     state = runtime.snapshot()[activity_id]
     if (
@@ -172,6 +198,7 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
             "activity_id": activity_id,
             "reason": "immutable_workspace_successor_and_reconciliation_required",
         }
+    _require_same_base_branch(runtime, state, host)
     if state.status == "succeeded":
         terminal = next(
             e
@@ -227,6 +254,7 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
         "schema_version": "connector_delivery_request/v1",
         "repository": host.repository,
         "base_ref": host.base_ref,
+        **({"base_branch": host.base_branch} if host.base_branch != "main" else {}),
         "source_digest": state.spec.source_digest,
         "idempotency_key": "delivery:"
         + contract_digest(
@@ -235,6 +263,7 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
                 "source": state.spec.source_digest,
                 "repository": host.repository,
                 "base_ref": host.base_ref,
+                **({"base_branch": host.base_branch} if host.base_branch != "main" else {}),
             }
         ),
         "operation": "deliver_and_reconcile_squash_merge",
@@ -257,22 +286,8 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
     )
     waiting = _connector_wait(result, output_path, request)
     outcome = ActivityOutcome.CAPABILITY if waiting else ActivityOutcome.DELIVERY_FAILURE
-    receipt, reconciliation = None, None
-    if (
-        result.outcome == ProcessOutcome.COMPLETED
-        and result.returncode == 0
-        and time.time() < host.expires_at
-    ):
-        try:
-            receipt = _delivery_receipt(output_path, request)
-            from slm_training.autoresearch.runtime.operations_reconciliation import (
-                reconcile_with_host,
-            )
-
-            reconciliation = reconcile_with_host(runtime, lease, wait, receipt, host)
-            outcome = ActivityOutcome.SUCCEEDED
-        except (OSError, ValueError, TypeError, KeyError, TimeoutError):
-            receipt = None
+    receipt, reconciliation, publication_pending, outcome = _reconcile_receipt(
+        runtime, lease, wait, host, result, output_path, request, outcome)
     if result.cancelled:
         outcome = ActivityOutcome.CANCELLED
     outputs = (
@@ -290,13 +305,13 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
         outcome=outcome,
         outputs=outputs,
         spent_seconds=time.monotonic() - started,
-        wake=WakeCondition(
+        wake=WakeCondition.model_validate(publication_pending["wake"]) if publication_pending else (WakeCondition(
             predicate="connector reconciles remote delivery",
             source="authorized_delivery_receipt",
             identity_digest=state.spec.input_digest,
         )
         if outcome in {ActivityOutcome.DELIVERY_FAILURE, ActivityOutcome.CAPABILITY}
-        else None,
+        else None),
     )
     return {
         "state": runtime.snapshot()[activity_id].status,
@@ -304,4 +319,33 @@ def consume_delivery(runtime, activity_id: str, wait: dict, host: DeliveryHost |
         "receipt": receipt,
         "reconciliation": reconciliation,
         **({"reason": waiting["reason"]} if waiting else {}),
+        **({"pending": publication_pending} if publication_pending else {}),
     }
+
+
+def _reconcile_receipt(runtime, lease, wait, host, result, output_path, request, outcome):
+    from slm_training.harness_core.activity_contract import ActivityOutcome
+    from slm_training.harness_core.bounded_process import ProcessOutcome
+    receipt, reconciliation = None, None
+    publication_pending = None
+    from scripts.autotrain_source_publication import SourcePublicationPrerequisite
+    if (
+        result.outcome == ProcessOutcome.COMPLETED
+        and result.returncode == 0
+        and time.time() < host.expires_at
+    ):
+        try:
+            receipt = _delivery_receipt(output_path, request)
+            from slm_training.autoresearch.runtime.operations_reconciliation import (
+                reconcile_with_host,
+            )
+
+            reconciliation = reconcile_with_host(runtime, lease, wait, receipt, host)
+            outcome = ActivityOutcome.SUCCEEDED
+        except SourcePublicationPrerequisite as pending:
+            receipt = None
+            publication_pending = pending.pending
+            outcome = ActivityOutcome.DEPENDENCY
+        except (OSError, ValueError, TypeError, KeyError, TimeoutError):
+            receipt = None
+    return receipt, reconciliation, publication_pending, outcome

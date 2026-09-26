@@ -143,3 +143,36 @@ def test_remote_tree_content_drift_prevents_branch_and_merge(source_writer):
     with pytest.raises(ValueError, match="tree_content_mismatch"):
         asyncio.run(writer().run())
     assert not remote.branch and not remote.merged
+
+
+@pytest.mark.parametrize("mismatch", [False, True])
+def test_non_main_source_transaction_and_independent_readback(source_writer, mismatch):
+    from slm_training.autoresearch.runtime.operations_reconciliation import _remote_delivery
+
+    writer, remote, _ = source_writer
+    remote.binding["base_branch"] = "acceptance-only/agentv-fault"
+    if mismatch:
+        remote.pr_base = "main"
+    receipts = []
+
+    async def verify(proposal):
+        receipts.append(await _remote_delivery(remote, remote.binding["repository"],
+            proposal, remote.binding["files"], remote.binding["required_checks"],
+            base_branch=remote.binding["base_branch"]))
+
+    instance = writer()
+    instance.verify = verify
+    if mismatch:
+        with pytest.raises(ValueError, match="pr_identity_mismatch"):
+            asyncio.run(instance.run())
+        assert not remote.merged and not receipts
+    else:
+        assert asyncio.run(instance.run())["merge_sha"] == MERGE
+        assert receipts[0]["base_branch"] == remote.binding["base_branch"]
+        assert receipts[0]["head_sha"] == HEAD
+        writes = sum(tool in WRITE_TOOLS for tool, _ in remote.calls)
+        asyncio.run(instance.run())
+        assert sum(tool in WRITE_TOOLS for tool, _ in remote.calls) == writes
+        remote.binding["base_branch"] = "main"
+        with pytest.raises(ValueError, match="journal_binding_changed"):
+            writer()

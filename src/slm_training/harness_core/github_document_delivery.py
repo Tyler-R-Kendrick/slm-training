@@ -208,14 +208,15 @@ class DocumentDelivery:
             raise DeliveryWaiting("created_branch_not_observed")
 
     async def _pull_request(self, head):
-        pr = await find_pr(self.connector, self.repository, self.binding["branch"])
+        pr = await find_pr(self.connector, self.repository, self.binding["branch"],
+                               base_branch=self.binding.get("base_branch", "main"))
         if pr is None:
             await self._write(
                 "pr",
                 "github_create_pull_request",
                 {
                     "repository_full_name": self.repository,
-                    "base": "main",
+                    "base": self.binding.get("base_branch", "main"),
                     "head": self.binding["branch"],
                     "title": self.binding.get("title", "Publish measured campaign documents"),
                     "body": self.binding["marker"],
@@ -223,7 +224,8 @@ class DocumentDelivery:
                     "maintainer_can_modify": False,
                 },
             )
-            pr = await find_pr(self.connector, self.repository, self.binding["branch"])
+            pr = await find_pr(self.connector, self.repository, self.binding["branch"],
+                               base_branch=self.binding.get("base_branch", "main"))
         if pr is None:
             raise DeliveryWaiting("created_pr_not_observed")
         verify_pr_identity(pr, self.binding, head)

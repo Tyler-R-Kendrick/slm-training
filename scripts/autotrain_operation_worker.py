@@ -65,10 +65,6 @@ def operation_main(
             }
     elif operation == "promotion_eval":
         from scripts.autotrain_promotion_chunks import resume_chunks
-        from scripts.autotrain_promotion_finalize import (
-            finalize_promotion,
-            finalization_pending,
-        )
 
         with operation_publication_scope(request, root, loop_id):
             ledger = resume_chunks(
@@ -81,10 +77,7 @@ def operation_main(
                 stage_runner=continuous._stage_command,
                 scoreboard=continuous._promotion_scoreboard_state,
             )
-            store = CampaignStore(request["campaign_id"], root)
-            if finalization_pending(store, ledger):
-                finalize_promotion(store, cwd, continuous, ledger)
-        payload = {"campaign_id": request["campaign_id"], "ledger": ledger}
+            payload = _finalize_promotion_payload(request, root, loop_id, cwd, continuous, ledger)
     elif operation == "repair":
         with operation_publication_scope(request, root, loop_id):
             payload = repair_operation(
@@ -120,3 +113,19 @@ def operation_main(
         ),
     )
     return 0
+
+
+def _finalize_promotion_payload(request, root, loop_id, cwd, continuous, ledger):
+    from scripts.autotrain_promotion_finalize import finalize_promotion, finalization_pending
+    from slm_training.autoresearch.storage import CampaignStore
+    store = CampaignStore(request["campaign_id"], root)
+    from scripts.autotrain_source_publication import SourcePublicationPrerequisite
+    payload = {"campaign_id": request["campaign_id"], "ledger": ledger}
+    try:
+        if finalization_pending(store, ledger):
+            finalize_promotion(store, cwd, continuous, ledger)
+    except SourcePublicationPrerequisite as pending:
+        from scripts.autotrain_pending import publish_pending
+        publish_pending(root, loop_id, pending.pending)
+        payload.update(returncode=10, pending=pending.pending)
+    return payload

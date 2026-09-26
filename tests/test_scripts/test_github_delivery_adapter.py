@@ -278,3 +278,40 @@ def test_cli_configuration_error_cannot_echo_secrets(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "do-not-print-secret" not in captured.err and "Traceback" not in captured.err
     assert json.loads(captured.err)["reason"] == "connector_host_or_request_failed"
+
+
+def test_base_branch_preserves_legacy_identity_and_rejects_retargeting(subject):
+    config, request, _ = subject
+    legacy = config.model_dump(mode="json")
+    assert "base_branch" not in legacy["host"]
+    default_digest = contract_digest(config)
+    config.host.base_branch = "main"
+    assert config.model_dump(mode="json") == legacy
+    assert contract_digest(config) == default_digest
+    original = adapter.document_binding(config, request)
+    request["base_branch"] = "acceptance-only/fault"
+    with pytest.raises(ValueError, match="request_binding_mismatch"):
+        adapter.document_binding(config, request)
+    config.host.base_branch = request["base_branch"]
+    assert contract_digest(config) != default_digest
+    with pytest.raises(ValueError, match="request_binding_mismatch"):
+        adapter.document_binding(config, request)  # Old idempotency key cannot migrate.
+    request["idempotency_key"] = "delivery:" + contract_digest({
+        "input": contract_digest(request["wait"]), "source": config.host.source_digest,
+        "repository": config.host.repository, "base_ref": config.host.base_ref,
+        "base_branch": config.host.base_branch})
+    bound = adapter.document_binding(config, request)
+    assert bound["base_branch"] == config.host.base_branch
+    assert bound["marker"] != original["marker"]
+    del request["base_branch"]
+    with pytest.raises(ValueError, match="request_binding_mismatch"):
+        adapter.document_binding(config, request)
+
+
+@pytest.mark.parametrize("branch", case_values(__file__, "test_host_rejects_ambiguous_base_branch"))
+def test_host_rejects_ambiguous_base_branch(subject, branch):
+    config, _, _ = subject
+    payload = config.host.model_dump(mode="json")
+    payload["base_branch"] = branch
+    with pytest.raises(ValueError, match="invalid_delivery_base_branch"):
+        adapter.DeliveryHost.model_validate_json(json.dumps(payload))

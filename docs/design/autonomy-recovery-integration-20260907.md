@@ -434,3 +434,33 @@ A proposed non-main delivery extension is withheld from R31: review found that
 activation discarded branch authority and could relabel acceptance-only delivery
 as unrestricted clean upstream provenance. Its patch is preserved for a separate
 authority fix; default main-only delivery remains unchanged in this source.
+
+## R32 pending corrections and R31 observation
+
+The live R31 canonical gate exposed evidence-ledger drift: the committed scan count was 2,351 while rebuilding the current design documents scanned 2,354. Rebuilding changed only this count; all 401 observations and 29 arm aggregates remained identical. The rebuilt ledger passed its canonical check before adding the R31 observation report; it must be regenerated again after all R32 documents settle. Published R31 evidence remains unchanged.
+
+The collection scheduler also returned a negative `required_seconds` hint when remaining admission time was negative. R32 retains the full positive workload requirement whenever the remaining time cannot pass the existing admission floor. Seven focused budget tests pass, including negative remaining time; no timed-out or pending work becomes successful evidence.
+
+The [R31 measured observation](science-lab-pr-head-r31-20260926-results.md) records the incomplete first supervisor invocation. Operational serialization now prevents the retained verifier launcher and campaign launcher from competing with each other. This does not change source identity, reset the continuation grant, or establish successful scientific measurement.
+
+### Authenticated source authority and interrupted activation
+
+R32 introduces one resolver over two existing controller-owned producers: initial connector readback and accepted repair delivery. An execution manifest carries only an artifact reference. Resolution requires the trusted journal, committed successful activity, matching request and terminal lease, exact repository/commit/source, and validated materialization. Clean source alone does not establish membership in main. An initial main release does not require a fabricated repair receipt.
+
+Independent review exposed an interrupted-activation defect: a new lease reused an old activation without publishing a matching authority output into the terminal attempt. The corrected path binds new requests to new immutable activation/authority records; same-request retry republishes under the live fence. The resolver also checks terminal lease binding. Four focused repair tests and 24 resolver tests pass. The complete repair-delivery module subsequently passed all 21 tests in 28.33 seconds, including real nested Bubblewrap execution under the 170-second interrupt cap. Independent read-only re-review closed this finding; production consumer wiring is still undergoing separate verification. No complete repair acceptance or original-operation continuation is inferred from these component tests.
+
+### Agent runtime memory pressure
+
+Five same-project Serena/Pyright instances consumed roughly 3 GB each. After identity-checked graceful termination of four older duplicate instances, all their language-server children exited and the latest loaded instance remained. Available memory reached 17,450,200 KiB. Memory full-stall pressure averaged 35.42% over 60 seconds before cleanup and 0.06% at the later verification observation. The retained R31 campaign then advanced through both control training chunks and recorded a real repair request for its interrupted evaluation cursor; memory cleanup is not presented as a complete harness fix.
+
+The host and active project Codex configurations now omit eager `--project-from-cwd` activation. R32 carries the same project setting with an explanatory comment. This leaves Serena available and activates its language services only when `activate_project` is requested. Existing active processes are not implicitly restarted by the config edit. Private backups preserve the original host/project configuration. A bounded installed-SDK smoke proved startup exposes semantic tools without starting Pyright and accepts on-demand activation; a subsequent tiny-project semantic smoke completed: startup had no active project or new Pyright process, on-demand activation enabled `find_symbol`, and the known fixture function was found in 0.79 seconds. MCP shutdown reaped the language server. The retained evidence is `outputs/autonomy-integration-20260921/serena-lazy-start-smoke.json`.
+
+Consumer verification passed 42 publication/delivery tests, 26 diagnostic/entrypoint tests, seven focused promotion tests, and 20 readiness tests. Re-review closed repository self-authorization and unresolved-request starvation findings: expected repository comes from trusted configuration or the pre-execution lock, and persisted servicing order rotates pending requests while dispatching at most one per invocation. These are component/integration checks; the full canonical gate and real repaired-operation continuation remain required.
+
+After extracting file materialization from release preparation to remove a complexity regression, the combined authority and complete repair-delivery suites passed all 45 tests in 41.36 seconds with real nested isolation. Copy modes, symlinks, complete-tree checks, and fresh provenance validation remain unchanged. Agent-surface parity, repository policy, version stamps, and whitespace checks also pass on the current working candidate; final full-gate evidence is still outstanding.
+
+### Recovery after training and before the first evaluation
+
+The retained R31 failure exposed a concrete recovery mismatch: initial compiled evaluation argv advertises resumable records but naturally does not yet contain `--resume-run`. The former recovery helper refused this interrupted boundary even after the complete training prefix was committed. R32 verifies that entire prefix, derives the same run directory through the existing artifact-path owner, and requests explicit evaluator resume. The evaluator still validates prior rows before decoding; no interrupted execution becomes a successful measurement and all prior reservations stay charged.
+
+The complete focused cursor-recovery module passes 13 tests in 28.57 seconds. The original R31 helper fails the new compiler-generated-command regression. Coverage includes interruption before the first evaluation, preserved partial rows, no repeated training, exact locked argv, authenticated training-resume prefixes, and rejection of altered commands. The retained real R31 cursor was inspected read-only; the patched helper derives its existing run directory. Actual repaired campaign execution still requires source-bound delivery and is not claimed from this test.

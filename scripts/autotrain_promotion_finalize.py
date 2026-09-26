@@ -41,6 +41,7 @@ class PromotionFinalizationInput(BaseModel):
     arm_skipped: dict[str, dict]
     formal_status: str | None
     skip_slugs: list[str]
+    publication_repository: str | None = Field(default=None, exclude_if=lambda value: value is None)
     source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     environment_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     policy_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -67,8 +68,11 @@ def _manifests(store, arms):
 
 def lock_finalization(store, cwd, payload):
     """Called by the driver before chunk dispatch, never inferred after a restart."""
+    from scripts.autotrain_source_publication import _REPOSITORY
+
     value = PromotionFinalizationInput.model_validate({
         **payload, "source_sha256": source_identity(cwd),
+        "publication_repository": _REPOSITORY.get(),
         "environment_sha256": digest(environment_identity()),
         "policy_sha256": load_climb_policy().sha256,
         "manifests": _manifests(store, payload["arm_order"]),
@@ -149,6 +153,9 @@ def finalize_promotion(store, cwd, continuous, ledger, deadline=None):
     if value is None:
         raise ValueError("legacy promotion lacks locked finalization inputs")
     _verify_inputs(store, cwd, value, ledger)
+    from scripts.autotrain_source_publication import require_source_publication
+    require_source_publication(store, value["loop_id"], measurement_complete=bool(ledger["arms"])
+        and all(arm["status"] == "complete" for arm in ledger["arms"].values()))
     if not finalization_pending(store, ledger):
         return {"campaign_id": store.campaign_id, "already_finalized": True}
     exits = _completion_exits(value, ledger)

@@ -45,8 +45,10 @@ def test_unaccepted_predecessor_cannot_widen_root_source_grant(accepted, tmp_pat
         owner.successor_host(store, wait, host)
 
 
-def test_second_repair_derives_real_merged_base_from_fenced_proof(accepted, tmp_path, monkeypatch):
+@pytest.mark.parametrize("base_branch", ["main", "acceptance-only/agentv-fault"])
+def test_second_repair_derives_real_merged_base_from_fenced_proof(accepted, tmp_path, monkeypatch, base_branch):
     store, wait, host, subject = accepted
+    host.base_branch = base_branch
     first = copy.deepcopy(subject)
     binding = github_source_delivery.source_binding(store, wait, host)
     remote = ReadRemote(binding)
@@ -67,6 +69,11 @@ def test_second_repair_derives_real_merged_base_from_fenced_proof(accepted, tmp_
                         lambda store, given: first if given == wait else successor)
     host = root_host(host, first, tmp_path)
     derived = owner.successor_host(store, next_wait, host)
+    assert derived.base_branch == base_branch
+    host.base_branch = "other-branch"
+    with pytest.raises(ValueError, match="remote_base_lineage_mismatch"):
+        owner.successor_host(store, next_wait, host)
+    host.base_branch = base_branch
     assert derived.base_ref == remote.proposal["merge_sha"]
     assert derived.source_digest == release["source_digest"]
     assert "repository_source" not in derived.verification_plan

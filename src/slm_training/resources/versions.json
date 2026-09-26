@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v38",
+          "note": "Preserve authenticated branch membership across repair delivery activation and interrupted retries; bind committed authority to the terminal lease without resetting grants."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v37",
           "note": "Validate immutable release source and Git provenance together at adjacent controller boundaries, preserving fresh file-content, mode, link and drift checks across worker execution."
         },
@@ -337,7 +342,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v37"
+      "version": "v38"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -438,6 +443,11 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "version": "v31",
+          "note": "Keep pending collection admission requirements positive when remaining invocation time is exhausted; preserve the existing admission floor and timeout rejection."
+        },
         {
           "date": "2026-09-26",
           "version": "v30",
@@ -639,7 +649,7 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_successor.py"
       ],
-      "version": "v30"
+      "version": "v31"
     },
     "config.levers": {
       "history": [
@@ -4615,6 +4625,11 @@
     "governance.code_quality": {
       "history": [
         {
+          "date": "2026-09-26",
+          "version": "v2",
+          "note": "no-bump: Record the measured downward module-size ratchet for run_autotrain_continuous.py from 12194 to 12184 lines; quality policy and measurement implementation are unchanged, and no ceiling increases."
+        },
+        {
           "date": "2026-09-24",
           "note": "Record the module-line ratchet reduction after removing a redundant stale test from the oversized model-build evaluation test module.",
           "version": "v2"
@@ -5615,6 +5630,11 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "version": "v311",
+          "note": "Require evidence-bound authenticated main membership for promotion and document acknowledgment; preserve diagnostic measurement and typed publication prerequisites through operation continuations. Reconcile interrupted first evaluation from its committed training prefix using an explicit same-run evaluator resume; preserve partial rows, locked commands, and charged reservations."
+        },
         {
           "date": "2026-09-26",
           "version": "v310",
@@ -7783,77 +7803,34 @@
       ],
       "kind": "harness",
       "paths": [
-        "src/slm_training/autoresearch/experiment_campaign.py",
-        "src/slm_training/autoresearch/hillclimb.py",
-        "src/slm_training/autoresearch/climb_policy.py",
-        "src/slm_training/autoresearch/credit_engine.py",
-        "src/slm_training/resources/experiments/autotrain_climb/",
-        "src/slm_training/resources/experiments/authoritative_credit/",
-        "src/slm_training/autoresearch/schemas.py",
-        "src/slm_training/autoresearch/storage.py",
-        "src/slm_training/autoresearch/engine.py",
-        "src/slm_training/autoresearch/evidence.py",
-        "src/slm_training/autoresearch/researcher_eval.py",
-        "src/slm_training/autoresearch/hypothesizer_eval.py",
-        "src/slm_training/autoresearch/providers.py",
-        "src/slm_training/autoresearch/rl_gate.py",
-        "src/slm_training/autoresearch/__init__.py",
         ".agents/skills/autotrain/SKILL.md",
         ".agents/skills/autotrain/references/continuous.md",
         ".agents/skills/openui-autoresearch/SKILL.md",
         ".grok/workflows/autotrain.rhai",
-        "docs/design/autoresearch-autotraining.md",
-        "docs/design/experiment-campaign-governance.md",
+        "docs/design/adversarial-review.md",
+        "docs/design/authoritative-credit-one-shot-agent-prompt.md",
         "docs/design/autonomy-recovery-integration-20260907.md",
+        "docs/design/autoresearch-autotraining.md",
         "docs/design/autotrain-climb-policy.md",
         "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.json",
         "docs/design/autotrain-cycle-1729-binder-topology-capacity-audit.md",
-        "docs/design/adversarial-review.md",
-        "docs/design/authoritative-credit-one-shot-agent-prompt.md",
         "docs/design/autotrain-self-heal-pipeline-20260803.md",
-        "docs/design/thrash-residual-steering-20260806.md",
-        "tests/test_autoresearch/test_experiment_campaign.py",
-        "tests/test_autoresearch/test_hillclimb.py",
-        "tests/test_autoresearch/test_climb_policy.py",
-        "tests/test_autoresearch/test_credit_engine.py",
-        "tests/test_autoresearch/test_harness.py",
-        "tests/test_autoresearch/test_locked_prereg_supervisor.py",
-        "tests/test_autoresearch/test_locked_supervisor_control.py",
-        "tests/test_scripts/test_slm_cli.py",
-        "tests/test_scripts/test_run_autotrain_continuous.py",
-        "scripts/run_autotrain_continuous.py",
-        "scripts/autotrain_cycle_context.py",
-        "scripts/autotrain_cycle_prepare.py",
-        "scripts/autotrain_cycle_finalize.py",
-        "scripts/autotrain_locked_diagnostic.py",
-        "scripts/run_autotrain_supervisor.py",
-        "scripts/report_autotrain_continuous.sh",
-        "scripts/mine_continuous_residuals.py",
-        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
-        "src/slm_training/autoresearch/thrash_regime.py",
-        "src/slm_training/autoresearch/thrash_residuals.py",
         "docs/design/dual-regime-thrash-20260804.md",
-        "tests/test_autoresearch/test_thrash_regime.py",
-        "tests/test_autoresearch/test_thrash_residuals.py",
-        "src/slm_training/autoresearch/evidence_ledger.py",
-        "scripts/build_evidence_ledger.py",
-        "tests/test_autoresearch/test_evidence_ledger.py",
-        "src/slm_training/autoresearch/campaign_formal_evidence.py",
-        "tests/test_autoresearch/test_campaign_formal_evidence.py",
+        "docs/design/experiment-campaign-governance.md",
         "docs/design/integ-03-campaign-formal-evidence.md",
-        "src/slm_training/autoresearch/sample_adequacy.py",
-        "src/slm_training/autoresearch/screening_sample_size.py",
-        "tests/test_autoresearch/test_screening_sample_size.py",
         "docs/design/screening-sample-size-bounds.md",
-        "scripts/github_delivery_adapter.py",
-        "scripts/github_source_delivery.py",
-        "scripts/github_source_preparation.py",
-        "scripts/github_source_authority.py",
-        "scripts/autotrain_repair_activation.py",
+        "docs/design/thrash-residual-steering-20260806.md",
+        "scripts/autoresearch_continuation.py",
         "scripts/autotrain_controller_repair.py",
+        "scripts/autotrain_cursor_reconcile.py",
+        "scripts/autotrain_cycle_context.py",
         "scripts/autotrain_cycle_execution.py",
+        "scripts/autotrain_cycle_finalize.py",
+        "scripts/autotrain_cycle_prepare.py",
         "scripts/autotrain_cycle_reconcile.py",
         "scripts/autotrain_docs.py",
+        "scripts/autotrain_locked_diagnostic.py",
+        "scripts/autotrain_nll.py",
         "scripts/autotrain_operation_worker.py",
         "scripts/autotrain_pending.py",
         "scripts/autotrain_promotion.py",
@@ -7861,17 +7838,63 @@
         "scripts/autotrain_promotion_finalize.py",
         "scripts/autotrain_readiness.py",
         "scripts/autotrain_records.py",
-        "scripts/autotrain_supervisor_operations.py",
-        "scripts/autotrain_supervisor_operation_runtime.py",
+        "scripts/autotrain_repair_activation.py",
+        "scripts/autotrain_search.py",
+        "scripts/autotrain_source_publication.py",
         "scripts/autotrain_supervision.py",
+        "scripts/autotrain_supervisor_operation_runtime.py",
+        "scripts/autotrain_supervisor_operations.py",
         "scripts/autotrain_timeout_state.py",
         "scripts/autotrain_verification.py",
+        "scripts/build_evidence_ledger.py",
+        "scripts/github_delivery_adapter.py",
+        "scripts/github_source_authority.py",
+        "scripts/github_source_delivery.py",
+        "scripts/github_source_preparation.py",
         "scripts/github_source_verification.py",
-        "scripts/autotrain_nll.py",
-        "scripts/autoresearch_continuation.py",
-        "src/slm_training/harness_core/checkpoint_publication.py",
+        "scripts/mine_continuous_residuals.py",
+        "scripts/report_autotrain_continuous.sh",
+        "scripts/run_autotrain_continuous.py",
+        "scripts/run_autotrain_supervisor.py",
+        "src/slm_training/autoresearch/__init__.py",
+        "src/slm_training/autoresearch/campaign_formal_evidence.py",
+        "src/slm_training/autoresearch/climb_policy.py",
+        "src/slm_training/autoresearch/credit_engine.py",
+        "src/slm_training/autoresearch/engine.py",
+        "src/slm_training/autoresearch/evidence.py",
+        "src/slm_training/autoresearch/evidence_ledger.py",
+        "src/slm_training/autoresearch/experiment_campaign.py",
+        "src/slm_training/autoresearch/hillclimb.py",
+        "src/slm_training/autoresearch/hypothesizer_eval.py",
         "src/slm_training/autoresearch/preflight/loss_binding.py",
-        "scripts/autotrain_search.py",
+        "src/slm_training/autoresearch/providers.py",
+        "src/slm_training/autoresearch/researcher_eval.py",
+        "src/slm_training/autoresearch/rl_gate.py",
+        "src/slm_training/autoresearch/sample_adequacy.py",
+        "src/slm_training/autoresearch/schemas.py",
+        "src/slm_training/autoresearch/screening_sample_size.py",
+        "src/slm_training/autoresearch/storage.py",
+        "src/slm_training/autoresearch/thrash_regime.py",
+        "src/slm_training/autoresearch/thrash_residuals.py",
+        "src/slm_training/harness_core/checkpoint_publication.py",
+        "src/slm_training/resources/experiments/authoritative_credit/",
+        "src/slm_training/resources/experiments/autotrain_climb/",
+        "src/slm_training/resources/experiments/autotrain_climb/policy.v1.json",
+        "tests/test_autoresearch/test_campaign_formal_evidence.py",
+        "tests/test_autoresearch/test_climb_policy.py",
+        "tests/test_autoresearch/test_credit_engine.py",
+        "tests/test_autoresearch/test_driver_partial_cursor_recovery.py",
+        "tests/test_autoresearch/test_evaluation_budget_boundary.py",
+        "tests/test_autoresearch/test_evaluation_continuation.py",
+        "tests/test_autoresearch/test_evidence_ledger.py",
+        "tests/test_autoresearch/test_experiment_campaign.py",
+        "tests/test_autoresearch/test_harness.py",
+        "tests/test_autoresearch/test_hillclimb.py",
+        "tests/test_autoresearch/test_locked_prereg_supervisor.py",
+        "tests/test_autoresearch/test_locked_supervisor_control.py",
+        "tests/test_autoresearch/test_screening_sample_size.py",
+        "tests/test_autoresearch/test_thrash_regime.py",
+        "tests/test_autoresearch/test_thrash_residuals.py",
         "tests/test_scripts/test_autonomy_entrypoint_contracts.py",
         "tests/test_scripts/test_autotrain_docs.py",
         "tests/test_scripts/test_autotrain_nll_contract.py",
@@ -7879,15 +7902,15 @@
         "tests/test_scripts/test_autotrain_promotion_ledger.py",
         "tests/test_scripts/test_autotrain_readiness.py",
         "tests/test_scripts/test_autotrain_search.py",
+        "tests/test_scripts/test_autotrain_source_publication.py",
         "tests/test_scripts/test_autotrain_verification.py",
+        "tests/test_scripts/test_run_autotrain_continuous.py",
         "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py",
-        "tests/test_scripts/test_supervisor_interruption.py",
+        "tests/test_scripts/test_slm_cli.py",
         "tests/test_scripts/test_supervisor_adversary.py",
-        "tests/test_autoresearch/test_evaluation_continuation.py",
-        "tests/test_autoresearch/test_evaluation_budget_boundary.py",
-        "tests/test_autoresearch/test_driver_partial_cursor_recovery.py"
+        "tests/test_scripts/test_supervisor_interruption.py"
       ],
-      "version": "v310"
+      "version": "v311"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -8154,6 +8177,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v26",
+          "note": "Resolve initial-release and repair-delivery authority from trusted committed controller evidence; preserve exact source, repository, branch, request, lease, and materialization binding."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v25",
           "note": "Combine source/provenance validation at one boundary and avoid per-file relative-path reconstruction, preserving complete fresh release/execution validation and worker-boundary drift detection."
         },
@@ -8284,7 +8312,7 @@
         "tests/test_autoresearch/test_codex_subscription.py",
         "tests/test_autoresearch/test_codex_subscription_budget.py"
       ],
-      "version": "v25"
+      "version": "v26"
     },
     "harness.distill": {
       "history": [

@@ -196,7 +196,7 @@ def unresolved_driver_pending(runtime):
         attempt = finishes[-1]["detail"]["lease"]["attempt_id"]
         directory = runtime.store.root / state.spec.output_namespace / attempt
         request = json.loads((directory / "request.json").read_text())
-        if request.get("operation") != "driver":
+        if request.get("operation") not in {"driver", "promotion_eval"}:
             continue
         path = directory / "result.json"
         if hashlib.sha256(path.read_bytes()).hexdigest() != finishes[-1]["detail"]["outputs"]["result.json"]:
@@ -232,6 +232,8 @@ def drain_driver_pending(runtime, common, cycle, log_event, run_operation, *, lo
     Repair answers never wake a driver. A fresh bounded controller probe must
     restore its frozen predicate; missing recipes remain capability waits.
     """
+    from scripts.autotrain_source_publication import drain_source_publications
+    drain_source_publications(runtime, common, log_event)
     for job in next_driver_pending(runtime):
         payload = job["payload"]
         blocker = payload.get("blocker") or payload.get("readiness", {}).get("blocker")

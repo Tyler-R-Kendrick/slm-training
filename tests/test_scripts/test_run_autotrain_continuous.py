@@ -12,6 +12,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from tests.test_harness_core.test_source_authority import initial as initial
+from tests.test_scripts.test_autotrain_source_publication import lock_campaign_main_source
 
 from slm_training.autoresearch.schemas import HypothesisMatrix
 from tests.casefiles import case_values
@@ -4443,9 +4445,7 @@ def _seed_complete_promotion_pair(
     return control_id, candidate_id, control, candidate
 
 
-def test_resolve_promotion_requires_two_content_bound_seed_pairs(
-    tmp_path: Path,
-) -> None:
+def test_resolve_promotion_requires_two_content_bound_seed_pairs(tmp_path: Path, initial) -> None:
     root = tmp_path / "autoresearch"
     loop_id = "loop-cert"
     path = _mod._champion_queue_path(root, loop_id)
@@ -4463,8 +4463,7 @@ def test_resolve_promotion_requires_two_content_bound_seed_pairs(
         campaign_id = f"c-cert-{cycle_index}"
         camp = root / campaign_id
         control_id, candidate_id, control, candidate = _seed_complete_promotion_pair(
-            camp, prefix=campaign_id, seed=seed
-        )
+            camp, prefix=campaign_id, seed=seed)
         delivery = {
             "positive": True,
             "measurement_complete": True,
@@ -4482,6 +4481,7 @@ def test_resolve_promotion_requires_two_content_bound_seed_pairs(
                 promotion_replicate_index=len(statuses),
             ),
         }
+        lock_campaign_main_source(initial, root, loop_id, campaign_id)
         (camp / "sdlc_delivery.json").write_text(json.dumps(delivery), encoding="utf-8")
         resolved = _mod._resolve_promotion_result(
             root=root,

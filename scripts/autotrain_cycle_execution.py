@@ -179,33 +179,31 @@ def execute_pending(journal, continuous, cwd, deadline):
     if journal.state.get("repair_required"):
         return journal.pending(journal.state["repair_required"], capability=True)
     if not reconcile_inflight(journal, continuous):
-        return journal.pending(
-            "driver_attempt_requires_reconciliation", capability=True
-        )
+        return journal.pending("driver_attempt_requires_reconciliation", capability=True)
     while journal.state["phase"] != "completed":
         pending = _budget_pending(journal, deadline)
         if pending is not None:
             return pending
         available = operation_allowance(journal, deadline)
         journal.start(journal.state["phase"], available)
-        complete = _advance(
-            journal,
-            continuous,
-            cwd,
-            time.monotonic() + available - HARNESS_FINALIZATION_RESERVE_SECONDS,
-        )
+        from scripts.autotrain_source_publication import SourcePublicationPrerequisite
+        publication_pending = None
+        try:
+            complete = _advance(
+                journal, continuous, cwd,
+                time.monotonic() + available - HARNESS_FINALIZATION_RESERVE_SECONDS,
+            )
+        except SourcePublicationPrerequisite as pending:
+            complete, publication_pending = False, pending.pending
         if complete is not None:
             journal.settle()
         if journal.state.get("repair_required"):
             return journal.pending(journal.state["repair_required"], capability=True)
         if not complete:
-            return pending_after_arm(journal, complete)
+            return publication_pending or pending_after_arm(journal, complete)
     continuous._clear_active_stage(journal.store.root.parent, journal.value["loop_id"])
-    print(
-        f"CYCLE_COMPLETE {journal.store.campaign_id} role={journal.value['role']} "
-        f"intent={journal.value['cycle_intent']}",
-        flush=True,
-    )
+    print(f"CYCLE_COMPLETE {journal.store.campaign_id} role={journal.value['role']} "
+          f"intent={journal.value['cycle_intent']}", flush=True)
     return journal.store.campaign_id
 
 

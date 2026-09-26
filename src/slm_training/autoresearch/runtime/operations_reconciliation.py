@@ -42,7 +42,7 @@ def _changes_requested(reviews):
     return "CHANGES_REQUESTED" in latest.values()
 
 
-async def _remote_delivery(connector, repository, proposal, files, required_checks):
+async def _remote_delivery(connector, repository, proposal, files, required_checks, *, base_branch="main"):
     import asyncio
 
     if (
@@ -60,7 +60,7 @@ async def _remote_delivery(connector, repository, proposal, files, required_chec
     )
     if (
         pr.get("merged") is not True
-        or pr.get("base") != "main"
+        or pr.get("base") != base_branch
         or pr.get("head_sha") != proposal.get("verified_head_sha")
         or pr.get("merge_commit_sha") != proposal.get("merge_sha")
     ):
@@ -89,7 +89,7 @@ async def _remote_delivery(connector, repository, proposal, files, required_chec
             "github_compare_commits",
             repo_full_name=repository,
             base=pr["merge_commit_sha"],
-            head="main",
+            head=base_branch,
         ),
     )
     statuses = {row["context"]: row["state"] for row in checks["statuses"]}
@@ -122,6 +122,7 @@ async def _remote_delivery(connector, repository, proposal, files, required_chec
         raise ValueError("remote_document_content_mismatch")
     return {
         "repository": repository,
+        **({"base_branch": base_branch} if base_branch != "main" else {}),
         "pr_number": number,
         "head_sha": pr["head_sha"],
         "merge_sha": pr["merge_commit_sha"],
@@ -176,6 +177,7 @@ async def reconcile_document_delivery(
     required_checks,
     connector,
     publish_context=None,
+    base_branch="main",
 ):
     """Fresh connector reads discharge only the exact current document action.
 
@@ -194,11 +196,15 @@ async def reconcile_document_delivery(
     )
 
     store, handoff, action, materialized = _delivery_subject(root, wait)
+    from scripts.autotrain_source_publication import require_source_publication
+    if base_branch != "main":
+        raise ValueError("main_document_completion_requires_main_branch")
+    source_authority = require_source_publication(store, handoff.loop_id, repository=repository)
     if connector is None:
         raise ValueError("independent_connector_read_capability_unavailable")
     async with asyncio.timeout(INTERRUPT_AFTER_SECONDS):
         remote = await _remote_delivery(
-            connector, repository, proposal, materialized["files"], required_checks
+            connector, repository, proposal, materialized["files"], required_checks, base_branch=base_branch
         )
     _, current, _, current_materialized = _delivery_subject(root, wait)
     if current != handoff or current_materialized != materialized:
@@ -208,6 +214,7 @@ async def reconcile_document_delivery(
     with publish_context() if publish_context is not None else nullcontext():
         proof = {
             "schema": "connector_document_verification/v1",
+            "source_authority": source_authority,
             "wait": wait,
             "action_sha256": autotrain_action_sha256(action),
             "remote": remote,
@@ -276,24 +283,18 @@ def reader_ready(host, *, seconds=30.0):
     return True
 
 
-def reconcile_with_host(runtime, lease, wait, proposal, host):
-    """Reachable bounded read transport; no writer response is a remote read."""
-    import asyncio
+def reader_connector(runtime, lease, host, context):
+    """Pinned read-only transport shared by reconciliation and initial readback."""
     from scripts.github_source_preparation import delivery_environment
     from slm_training.harness_core.activity_contract import contract_digest
     from slm_training.harness_core.bounded_process import ProcessOutcome
 
-    import time
-    from slm_training.levers import KILL_GRACE_SECONDS
-
-    remaining = lease.expires_at - time.time() - KILL_GRACE_SECONDS - 1
-    if (
-        remaining <= 0
-        or wait.get("kind") not in {"document", "verified_repair_source"}
-        or not reader_ready(host, seconds=remaining)
-    ):
+    if host.read_command is None or len(host.read_command) != 1:
         raise ValueError("independent_connector_read_capability_unavailable")
-    root = runtime.store.root.parents[2]
+    reader = Path(host.read_command[0])
+    if (not reader.is_absolute() or reader.is_symlink()
+            or hashlib.sha256(reader.read_bytes()).hexdigest() != host.reader_sha256):
+        raise ValueError("independent_connector_reader_changed")
     attempt = runtime.attempt_dir(lease)
     sequence = 0
 
@@ -307,7 +308,7 @@ def reconcile_with_host(runtime, lease, wait, proposal, host):
             "tool": tool,
             "arguments": arguments,
             "lease": lease.model_dump(mode="json"),
-            "wait": wait,
+            **context,
         }
         input_path, output_path = (
             attempt / f"read-{sequence}-{kind}.json" for kind in ("request", "response")
@@ -339,6 +340,26 @@ def reconcile_with_host(runtime, lease, wait, proposal, host):
             raise ValueError("independent_connector_read_binding_mismatch")
         return response["result"]
 
+    return connector
+
+
+def reconcile_with_host(runtime, lease, wait, proposal, host):
+    """Reachable bounded read transport; no writer response is a remote read."""
+    import asyncio
+    import time
+    from slm_training.levers import KILL_GRACE_SECONDS
+
+    remaining = lease.expires_at - time.time() - KILL_GRACE_SECONDS - 1
+    if (
+        remaining <= 0
+        or wait.get("kind") not in {"document", "verified_repair_source"}
+        or not reader_ready(host, seconds=remaining)
+    ):
+        raise ValueError("independent_connector_read_capability_unavailable")
+    root = runtime.store.root.parents[2]
+    attempt = runtime.attempt_dir(lease)
+    connector = reader_connector(runtime, lease, host, {"wait": wait})
+
     if wait.get("kind") == "verified_repair_source":
         from scripts.github_source_delivery import reconcile_source_delivery
 
@@ -349,6 +370,7 @@ def reconcile_with_host(runtime, lease, wait, proposal, host):
             wait,
             proposal,
             repository=host.repository,
+            base_branch=host.base_branch,
             required_checks=host.required_checks,
             connector=connector,
             publish_context=lambda: runtime.publication(lease),

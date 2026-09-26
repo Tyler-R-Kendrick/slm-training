@@ -141,7 +141,7 @@ def reconciled(accepted_execution, monkeypatch):
         output_namespace="delivery", capabilities=("authorized_github_connector_delivery",)))
     lease = runtime.claim_next(activity_id="delivery", capabilities={"authorized_github_connector_delivery"})
     raw, sha = _commit(source)
-    remote = {"publication_id": wait["publication_id"], "artifact_sha256": wait["artifact_sha256"],
+    remote = {"repository": "owner/repo", "publication_id": wait["publication_id"], "artifact_sha256": wait["artifact_sha256"],
               "source_digest": accepted["source_digest"], "base_ref": "f" * 40, "base_git_tree": "a" * 40,
               "head_sha": "b" * 40, "merge_sha": sha, "candidate_git_tree": tree_sha(source_entries(source, core._files(source))),
               "verification_identity": "c" * 64, "verification_plan_sha256": "d" * 64, "merge_commit_object": raw}
@@ -150,6 +150,11 @@ def reconciled(accepted_execution, monkeypatch):
     runtime.store.append_event("verified_repair_source_delivered", artifact_sha256=artifact.stem,
         experiment_id=lease.activity_id, detail={"publication_id": wait["publication_id"], "request_artifact_sha256": wait["artifact_sha256"]})
     reconciliation = {"verification_artifact": str(artifact), "receipt": proof}
+    request = {"schema_version": "connector_delivery_request/v1", "wait": wait,
+               "lease": lease.model_dump(mode="json"),
+               "operation": "deliver_and_reconcile_squash_merge", "base_ref": remote["base_ref"],
+               "repository": remote["repository"], "source_digest": accepted["source_digest"]}
+    runtime.store._replace_durable(runtime.attempt_dir(lease) / "request.json", json.dumps(request))
     return runtime, lease, wait, reconciliation, accepted
 
 
@@ -157,11 +162,13 @@ def _finish(runtime, lease, reconciliation, reference):
     attempt = runtime.attempt_dir(lease)
     attempt.mkdir(parents=True, exist_ok=True)
     outputs = {}
-    for name, content in {"receipt.json": {"fixture": "transport"},
+    request = json.loads((attempt / "request.json").read_text())
+    for name, content in {"receipt.json": {"provider": "github_connector", "request_digest": contract_digest(request)},
                           "domain-reconciliation.json": {**reconciliation, "delivered_activation": reference}}.items():
         path = attempt / name
         path.write_text(json.dumps(content))
         outputs[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    outputs.update({p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in attempt.glob("*.json")})
     runtime.finish(lease, outcome=ActivityOutcome.SUCCEEDED, spent_seconds=0, outputs=outputs)
     return attempt
 
@@ -264,3 +271,87 @@ def test_signed_historical_gate_survives_relocation_but_not_tampering(tmp_path, 
             _historical_gate(gate, inputs)
     else:
         assert _historical_gate(gate, inputs) == expected
+
+
+@pytest.mark.parametrize("branch", ["main", "acceptance-only/fault"])
+def test_real_activation_preserves_branch_authority(reconciled, branch):
+    from slm_training.harness_core.source_authority import resolve_source_authority, require_main_source_authority
+
+    runtime, lease, wait, reconciliation, accepted = reconciled
+    if branch != "main":
+        # Fixture observations represent a genuine separate branch-specific readback.
+        remote = {**reconciliation["receipt"]["remote"], "base_branch": branch}
+        proof = {**reconciliation["receipt"], "remote": remote}
+        artifact = runtime.store.write_artifact("verified_repair_source_delivery_receipts", proof)
+        runtime.store.append_event("verified_repair_source_delivered", artifact_sha256=artifact.stem,
+            experiment_id=lease.activity_id, detail={"publication_id": wait["publication_id"],
+                                                   "request_artifact_sha256": wait["artifact_sha256"]})
+        reconciliation = {"verification_artifact": str(artifact), "receipt": proof}
+        path = runtime.attempt_dir(lease) / "request.json"
+        path.write_text(json.dumps({**json.loads(path.read_text()), "base_branch": branch}))
+    ref = owner.record_delivered_activation(runtime, lease, wait, reconciliation)
+    _finish(runtime, lease, reconciliation, ref)
+    handoff = owner.resolve_delivered_activation(runtime.store, ref)
+    execution = Path(handoff["successor_execution"])
+    assert core.runtime_git_provenance(execution)["code_dirty"] is False
+    args = dict(execution=execution, expected_repository="owner/repo",
+                expected_commit=reconciliation["receipt"]["remote"]["merge_sha"],
+                expected_source_digest=accepted["source_digest"])
+    pointer = core.source_authority_reference(execution)
+    assert resolve_source_authority(runtime.store, pointer, **args)["ref"] == "refs/heads/" + branch
+    if branch == "main":
+        assert require_main_source_authority(runtime.store, pointer, **args)["commit"] == args["expected_commit"]
+    else:
+        with pytest.raises(ValueError, match="main_membership_required"):
+            require_main_source_authority(runtime.store, pointer, **args)
+
+
+def test_interrupted_activation_rebinds_new_delivery_attempt(reconciled, monkeypatch):
+    from slm_training.harness_core.source_authority import require_main_source_authority
+
+    runtime, lease, wait, reconciliation, accepted = reconciled
+    first_attempt = runtime.attempt_dir(lease)
+    request = json.loads((first_attempt / "request.json").read_text())
+    append = runtime.store.append_event
+    def interrupted(event_type, **kwargs):
+        result = append(event_type, **kwargs)
+        if event_type == "delivered_repair_activation_recorded":
+            raise InterruptedError("after durable activation")
+        return result
+    with monkeypatch.context() as patch:
+        patch.setattr(runtime.store, "append_event", interrupted)
+        with pytest.raises(InterruptedError, match="after durable activation"):
+            owner.record_delivered_activation(runtime, lease, wait, reconciliation)
+    first = next(e for e in runtime.store.verify_event_chain()
+                 if e["event_type"] == "delivered_repair_activation_recorded")
+    prior = owner._validated_payload(runtime.store, {
+        "artifact_sha256": first["artifact_sha256"], "activation_id": first["detail"]["activation_id"]})
+    grant = runtime.snapshot()[lease.activity_id].spec.grant
+    state = runtime.finish(lease, outcome=ActivityOutcome.RETRY, spent_seconds=1)
+    monkeypatch.setattr(runtime, "clock", lambda: state.retry_at + 1)
+    retry = runtime.claim_next(activity_id=lease.activity_id, capabilities={"authorized_github_connector_delivery"})
+    assert retry.attempt_id != lease.attempt_id
+    attempt = runtime.attempt_dir(retry)
+    runtime.store._replace_durable(attempt / "request.json", json.dumps(request))
+    with pytest.raises(ValueError, match="request_lease_mismatch"):
+        owner.record_delivered_activation(runtime, retry, wait, reconciliation)
+    request = {**request, "lease": retry.model_dump(mode="json")}
+    runtime.store._replace_durable(attempt / "request.json", json.dumps(request))
+    ref = owner.record_delivered_activation(runtime, retry, wait, reconciliation)
+    assert ref["artifact_sha256"] != first["artifact_sha256"]
+    assert (attempt / "source-authority.json").read_bytes() != (first_attempt / "source-authority.json").read_bytes()
+    _finish(runtime, retry, reconciliation, ref)
+    handoff = owner.resolve_delivered_activation(runtime.store, ref)
+    execution = Path(handoff["successor_execution"])
+    assert execution != Path(prior["execution"])
+    pointer = core.source_authority_reference(execution)
+    args = dict(execution=execution, expected_repository="owner/repo",
+                expected_commit=reconciliation["receipt"]["remote"]["merge_sha"],
+                expected_source_digest=accepted["source_digest"])
+    assert require_main_source_authority(runtime.store, pointer, **args)["ref"] == "refs/heads/main"
+    assert json.loads((attempt / "receipt.json").read_text())["request_digest"] == contract_digest(request)
+    final = runtime.snapshot()[lease.activity_id]
+    assert final.attempts == 2 and final.charged_seconds == 1 and final.spec.grant == grant
+    with pytest.raises(ValueError, match="terminal_lease_mismatch|committed_output_changed"):
+        require_main_source_authority(runtime.store, core.source_authority_reference(Path(prior["execution"])),
+            **{**args, "execution": prior["execution"]})

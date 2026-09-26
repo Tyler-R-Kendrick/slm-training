@@ -44,6 +44,91 @@
           ]
         }
       ]
+    },
+    "test_host_rejects_ambiguous_base_branch": {
+      "parameters": [
+        "branch"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            ""
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "../main"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "refs/heads/main"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            "x..y"
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            "x//y"
+          ]
+        },
+        {
+          "id": "case-006",
+          "values": [
+            "x.lock"
+          ]
+        },
+        {
+          "id": "case-007",
+          "values": [
+            "x/.y"
+          ]
+        },
+        {
+          "id": "case-008",
+          "values": [
+            "x/y."
+          ]
+        },
+        {
+          "id": "case-009",
+          "values": [
+            "-main"
+          ]
+        },
+        {
+          "id": "case-010",
+          "values": [
+            "x?base=main"
+          ]
+        },
+        {
+          "id": "case-011",
+          "values": [
+            "x#main"
+          ]
+        },
+        {
+          "id": "case-012",
+          "values": [
+            "x\\y"
+          ]
+        },
+        {
+          "id": "case-013",
+          "values": [
+            "x y"
+          ]
+        }
+      ]
     }
   }
 }

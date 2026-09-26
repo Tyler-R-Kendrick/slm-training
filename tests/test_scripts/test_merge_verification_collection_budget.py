@@ -60,7 +60,7 @@ def test_collection_uses_available_budget_and_preserves_timeout(tmp_path, full, 
         assert [len(batch) for batch in state["collection_batches"]] == [1, 1]
 
 
-@pytest.mark.parametrize("available, exhausted", [(0, False), (20, False), (60, True)])
+@pytest.mark.parametrize("available, exhausted", [(-6, False), (0, False), (20, False), (60, True)])
 def test_collection_tail_and_ancestor_exhaustion_cannot_launch(tmp_path, available, exhausted):
     state = _state()
     if exhausted:
@@ -80,3 +80,4 @@ def test_collection_tail_and_ancestor_exhaustion_cannot_launch(tmp_path, availab
     assert state["collection_batch_index"] == 0 and "nodes" not in state
     waiting = next(iter(state["waiting"].values()))
     assert waiting["reason"] == ("retry_exhausted" if exhausted else "insufficient_budget")
+    assert 0 < waiting["required_seconds"] <= state["workload_budget_seconds"]

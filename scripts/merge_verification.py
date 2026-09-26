@@ -218,7 +218,7 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
     if kind == "collection":
         # Sandbox preparation shares this allowance; a fixed startup slice can
         # time out every split before pytest begins.
-        required = min(full, available)
+        required = min(full, available) if available > 2 * KILL_GRACE_SECONDS else full
     if kind == "shard":
         # Grow exact timed-out shards so slow singletons escape repeated 15s slices.
         estimate = _shard_estimate_seconds(state, targets, full)

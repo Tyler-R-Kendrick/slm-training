@@ -202,7 +202,7 @@ def test_actual_pre_cycle_repairs_data_and_wakes_without_starving_behind_capabil
         assert not any(e["event_type"] == "experiment_campaign_locked" for e in activity.verify_event_chain())
 
 
-def test_continuation_capability_producer_dispatches_repair_without_fabricated_wake(tmp_path, monkeypatch):
+def test_continuation_capability_rechecks_cursor_without_fabricated_repair_or_wake(tmp_path, monkeypatch):
     from scripts.autotrain_cycle_context import CycleJournal
 
     root = tmp_path / "campaigns"
@@ -217,12 +217,12 @@ def test_continuation_capability_producer_dispatches_repair_without_fabricated_w
             calls.append(request)
             return {"any_healed": True}
         drain_driver_pending(runtime, common, 1, lambda _: None, dispatch)
-        blocker = calls[0]["hard_pending"][0]
-        assert blocker["blocker_code"] == "driver_pending_no_progress"
-        assert blocker["campaign_id"] == "unfinished"
-        assert blocker["affected_activity_id"] == "driver"
-        assert blocker["unmet_predicate"] == pending["wake"]["predicate"]
-        assert blocker["original_reproducer"]["argv"][2] == "scripts.autotrain_readiness_probe"
+        assert calls == []
+        probes = list((Path(common["root"]) / "unfinished/artifacts/driver_pending_inputs").glob("*.json"))
+        assert len(probes) == 1
+        probe = json.loads(probes[0].read_text())["continuation"]
+        assert probe == {"campaign_id": "unfinished", "input_digest": journal.digest,
+                         "blocked_state_digest": pending["wake"]["identity_digest"]}
         assert runtime.snapshot()["driver"].status == "waiting_capability"
 
 

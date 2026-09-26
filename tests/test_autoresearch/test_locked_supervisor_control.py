@@ -251,14 +251,14 @@ def test_locked_driver_pending_dispatches_environment_repair(tmp_path, monkeypat
     monkeypatch.setattr(autotrain_pending, "next_driver_pending", lambda *_: [job])
     seen = []
     autotrain_pending.drain_driver_pending(
-        SimpleNamespace(), {"loop_id": "fixture-campaign"}, 1, lambda *_: None,
+        SimpleNamespace(store=CampaignStore("runtime", tmp_path)), {"loop_id": "fixture-campaign"}, 1, lambda *_: None,
         lambda _rt, request, **_kw: seen.append(request), locked_diagnostic=True,
     )
     assert [request["operation"] for request in seen] == ["repair"]
     assert seen[0]["hard_pending"][0]["blocker_code"] == "npm_bridge_unavailable"
 
 
-def test_locked_driver_continuation_rechecks_without_repair(monkeypatch):
+def test_locked_driver_continuation_rechecks_without_repair(tmp_path, monkeypatch):
     from scripts import autotrain_pending, autotrain_readiness_wake
     job = {"activity_id": "fixture-activity", "pending_digest": "a" * 64,
            "payload": {"reason": "cursor continuation", "campaign_id": "fixture-campaign",
@@ -275,7 +275,7 @@ def test_locked_driver_continuation_rechecks_without_repair(monkeypatch):
     monkeypatch.setattr(autotrain_readiness_wake, "recheck_driver_pending",
                         lambda *_a, **_k: seen.append("recheck"))
     autotrain_pending.drain_driver_pending(
-        SimpleNamespace(), {"loop_id": "fixture-campaign"}, 1, lambda *_: None,
+        SimpleNamespace(store=CampaignStore("runtime", tmp_path)), {"loop_id": "fixture-campaign"}, 1, lambda *_: None,
         lambda *_a, **_k: seen.append("repair"), locked_diagnostic=True)
     assert seen == ["bind", "recheck"]
 
@@ -342,7 +342,21 @@ def test_diagnostic_requires_complete_pair_and_reports_canonical_verdict(
         assert record["paired_test"]["verdict"] == "win"
     assert record["promotion_allowed"] is False and record["stack_layer"] is False
     assert record["claim_class"] == "diagnostic"
+    _assert_diagnostic_survives_publication_wait(store, plan)
     from slm_training.versioning import component_version
     assert record["version_stamp"]["components"]["harness.autoresearch.experiment_campaign"] == component_version("harness.autoresearch.experiment_campaign")
     assert record["version_stamp"]["code_commit"] == plan["source_commit"]
     assert json.loads((store.root / "cycle_handoff.json").read_text())["ship_state"] == "blocked"
+
+
+def _assert_diagnostic_survives_publication_wait(store, plan):
+    from scripts.autotrain_source_publication import SourcePublicationPrerequisite, require_source_publication
+
+    delivery = (store.root / "sdlc_delivery.json").read_bytes()
+    with pytest.raises(SourcePublicationPrerequisite) as caught:
+        require_source_publication(store, plan["campaign_id"], measurement_complete=True,
+            source={"source_digest": plan["source_digest"], "commit": plan["source_commit"]})
+    assert caught.value.pending["diagnostic_measurement_complete"] is True
+    assert caught.value.pending["publication_complete"] is False
+    assert (store.root / "sdlc_delivery.json").read_bytes() == delivery
+    assert json.loads(delivery)["measurement_complete"] is True

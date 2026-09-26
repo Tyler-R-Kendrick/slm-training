@@ -6,6 +6,7 @@ import hashlib
 import pytest
 
 from tests.casefiles import case_values
+from tests.test_harness_core.test_source_authority import initial as initial, _claim, _finish
 
 from slm_training.autoresearch.action_dependencies import campaign_prerequisites
 from slm_training.autoresearch.runtime.operations_reconciliation import (
@@ -117,15 +118,16 @@ def reconcile(root, wait, read):
                 "merge_sha": "d" * 40,
                 "merged": True,
             },
-            repository="fixture/repo",
+            repository="owner/repo",
             required_checks=("required",),
             connector=read,
         )
     )
 
 
-def test_remote_exact_content_receipt_closes_wait_idempotently(tmp_path):
+def test_remote_exact_content_receipt_closes_wait_idempotently(tmp_path, initial):
     store, handoff, wait, files = document_wait(tmp_path)
+    _publish_document_source(store, initial)
     result = reconcile(tmp_path, wait, connector_fixture(files))
     assert campaign_prerequisites(tmp_path, handoff) == ((), [])
     again = reconcile(tmp_path, wait, connector_fixture(files))
@@ -143,16 +145,18 @@ def test_remote_exact_content_receipt_closes_wait_idempotently(tmp_path):
 
 
 @pytest.mark.parametrize("failure", ["merge", "checks", "threads", "content"])
-def test_worker_success_cannot_discharge_failed_remote_evidence(tmp_path, failure):
-    _, handoff, wait, files = document_wait(tmp_path)
+def test_worker_success_cannot_discharge_failed_remote_evidence(tmp_path, failure, initial):
+    store, handoff, wait, files = document_wait(tmp_path)
+    _publish_document_source(store, initial)
     with pytest.raises(ValueError, match="remote_"):
         reconcile(tmp_path, wait, connector_fixture(files, failure))
     assert not (tmp_path / "loops/lab/action_receipts.jsonl").exists()
     assert len(campaign_prerequisites(tmp_path, handoff)[1]) == 1
 
 
-def test_no_connector_and_unverified_artifacts_cannot_acknowledge(tmp_path):
+def test_no_connector_and_unverified_artifacts_cannot_acknowledge(tmp_path, initial):
     store, handoff, wait, _ = document_wait(tmp_path)
+    _publish_document_source(store, initial)
     with pytest.raises(ValueError, match="read_capability_unavailable"):
         reconcile(tmp_path, wait, None)
     artifact = store.write_artifact(
@@ -169,7 +173,7 @@ def test_no_connector_and_unverified_artifacts_cannot_acknowledge(tmp_path):
 
 @pytest.mark.parametrize("failure", [None, "content", "local_gate"])
 def test_configured_supervisor_consumes_reader_before_success(
-    tmp_path, monkeypatch, failure
+    tmp_path, monkeypatch, failure, initial
 ):
     import sys
     import time
@@ -180,6 +184,7 @@ def test_configured_supervisor_consumes_reader_before_success(
     from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
 
     store, handoff, wait, files = document_wait(tmp_path)
+    _publish_document_source(store, initial)
     preamble = (
         f"#!{sys.executable}\n"
         + """import argparse,hashlib,json
@@ -234,7 +239,7 @@ Path(a.output).write_text(json.dumps({'request_digest':digest,'provider':'github
         executable_sha256=hashlib.sha256(writer.read_bytes()).hexdigest(),
         read_command=(str(reader),),
         reader_sha256=hashlib.sha256(reader.read_bytes()).hexdigest(),
-        repository="fixture/repo",
+        repository="owner/repo",
         base_ref="a" * 40,
         source_digest="b" * 40,
         expires_at=time.time() + 100,
@@ -260,12 +265,17 @@ Path(a.output).write_text(json.dumps({'request_digest':digest,'provider':'github
     logs = []
     with ActivityRuntime(runtime_store(tmp_path, "lab")) as runtime:
         register_delivery_waits(runtime, common, [wait], logs.append)
-        state = next(iter(runtime.snapshot().values()))
+        state = next(s for s in runtime.snapshot().values() if s.spec.kind == "delivery")
         if failure is None:
             assert state.status == "succeeded", logs
             assert campaign_prerequisites(tmp_path, handoff) == ((), [])
             register_delivery_waits(runtime, common, [wait], logs.append)
-            assert next(iter(runtime.snapshot().values())).attempts == 1
+            assert next(s for s in runtime.snapshot().values() if s.spec.kind == "delivery").attempts == 1
+            from slm_training.autoresearch.runtime.operations_delivery import consume_delivery
+            host.base_branch = "acceptance-only/other"
+            with pytest.raises(ValueError, match="base_branch_changed_requires_new_activity"):
+                consume_delivery(runtime, state.spec.activity_id, wait, host)
+            assert next(s for s in runtime.snapshot().values() if s.spec.kind == "delivery").attempts == 1
         else:
             assert state.status == (
                 "waiting_capability" if failure == "local_gate" else "waiting_repair"
@@ -273,6 +283,11 @@ Path(a.output).write_text(json.dumps({'request_digest':digest,'provider':'github
             assert len(campaign_prerequisites(tmp_path, handoff)[1]) == 1
             if failure == "local_gate":
                 assert state.attempts == 0
+            else:
+                from slm_training.autoresearch.runtime.operations_delivery import consume_delivery
+                host.base_branch = "acceptance-only/other"
+                with pytest.raises(ValueError, match="base_branch_changed_requires_new_activity"):
+                    consume_delivery(runtime, state.spec.activity_id, wait, host)
 
 
 def test_local_gate_rejects_unsigned_complete_claim(tmp_path):
@@ -324,3 +339,18 @@ def test_effective_review_ignores_superseded_requests(states, blocked):
     assert _changes_requested(list(reversed(rows))) is blocked
     rows.append({"id": 100, "user": {"login": "other"}, "state": "CHANGES_REQUESTED"})
     assert _changes_requested(rows)
+
+
+def _publish_document_source(store, initial):
+    from scripts.github_source_authority import record_initial_release
+    from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
+
+    host, _, connector, _ = initial
+    lock = store.write_artifact("driver_cycle_inputs", {"campaign_id": store.campaign_id,
+        "publication_source": {"source_digest": host.source_digest, "commit": host.base_ref,
+                               "repository": host.repository}})
+    store.append_event("driver_cycle_locked", artifact_sha256=lock.stem)
+    with ActivityRuntime(CampaignStore("runtime", store.root.parent / "loops/lab")) as runtime:
+        lease = _claim(host, runtime)
+        asyncio.run(record_initial_release(runtime, lease, host, connector))
+        _finish(runtime, lease)

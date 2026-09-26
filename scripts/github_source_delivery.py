@@ -55,6 +55,7 @@ def source_binding(store, wait, host):
     return {**tree, "publication_id": wait["publication_id"],
             "artifact_sha256": wait["artifact_sha256"], "source_digest": host.source_digest,
             "repository": host.repository, "base_ref": host.base_ref,
+            **({"base_branch": host.base_branch} if host.base_branch != "main" else {}),
             "verification_identity": plan["identity"],
             "verification_plan_sha256": contract_digest(plan)}
 
@@ -62,10 +63,11 @@ def source_binding(store, wait, host):
 async def verify_source_remote(connector, binding, proposal, required_checks):
     from slm_training.autoresearch.runtime.operations_reconciliation import _remote_delivery
 
-    # This existing domain predicate binds PR identity, reviews, checks and main
+    # This existing domain predicate binds PR identity, reviews, checks and authorized branch
     # ancestry. Full-tree reads additionally cover links, modes and deletions.
     remote = await _remote_delivery(
-        connector, binding["repository"], proposal, binding["files"], required_checks
+        connector, binding["repository"], proposal, binding["files"], required_checks,
+        base_branch=binding.get("base_branch", "main")
     )
     base = await fetch(connector, binding["repository"], "git/commits/" + sha(binding["base_ref"]))
     if base["tree"]["sha"] != binding["base_git_tree"]:

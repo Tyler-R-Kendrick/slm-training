@@ -4040,7 +4040,7 @@ def _self_heal_document_actions(
         artifact_sha256=artifact.stem,
         idempotency_key=f"documentation:{artifact.stem}",
     )
-    if not _committed_document_bundle(cwd, files):
+    if not _committed_document_bundle(cwd, files, root=root, loop_id=loop_id, campaign_id=campaign_id):
         store.append_event(
             "documentation_waiting_delivery",
             artifact_sha256=artifact.stem,
@@ -4055,29 +4055,9 @@ def _self_heal_document_actions(
     return "document_closeout"
 
 
-def _committed_document_bundle(cwd, files):
-    """Read-only verification; a staged/uncommitted document is not publication."""
-    if not files:
-        return False
-    from slm_training.harness_core.execution_release import runtime_git_provenance
-
-    frozen = runtime_git_provenance(cwd)
-    if frozen is not None:
-        return not frozen["code_dirty"] and all(
-            (cwd / name).is_file() and (cwd / name).read_text() == content
-            for name, content in files.items()
-        )
-    for name, content in files.items():
-        try:
-            if (cwd / name).read_text() != content:
-                return False
-            result = _stage_command(["git", "show", f"HEAD:{name}"], cwd=cwd)
-            _raise_for_bounded_result(result)
-            if result.stdout != content:
-                return False
-        except (OSError, RuntimeError, subprocess.SubprocessError):
-            return False
-    return True
+def _committed_document_bundle(cwd, files, **context):
+    from scripts.autotrain_source_publication import committed_document_bundle
+    return committed_document_bundle(cwd, files, **context)
 
 
 def _self_heal_loop_owned_generated_dirt(
@@ -7034,6 +7014,10 @@ def _resolve_promotion_result(
         )
         status = str(disposition["status"])
         resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
+
+    if status in _PROMOTE_AUTHORITY_STATUSES:
+        from scripts.autotrain_source_publication import require_source_publication
+        require_source_publication(CampaignStore(campaign_id, root), loop_id, measurement_complete=True)
 
     _write_five_lane_successor(
         camp,
@@ -11997,6 +11981,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.max_cycles == 0 and not args.supervised
         else range(1, 2 if args.supervised else max(1, args.max_cycles) + 1)
     )
+    from scripts.autotrain_source_publication import SourcePublicationPrerequisite
     yielded = False
     try:
         for pass_no in passes:
@@ -12060,6 +12045,11 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     time.sleep(1)
                     continue
+            except SourcePublicationPrerequisite as pending:
+                from scripts.autotrain_pending import publish_pending
+                publish_pending(root, args.loop_id, pending.pending)
+                yielded = True
+                return 10
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])

@@ -124,7 +124,7 @@ def test_frozen_cycle_uses_pinned_refs_without_git_and_rejects_drift(tmp_path, m
     assert continuous.run_cycle(**args) == continuous._REGIME_PARKED_STATUS
     assert continuous._workspace_status(cwd=execution) == ""
     continuous.self_heal_unblock_loop(cwd=execution, root=root, loop_id="loop")
-    assert continuous._committed_document_bundle(
+    assert not continuous._committed_document_bundle(
         execution, {"docs/design/previous.md": "published\n"})
     assert not continuous._committed_document_bundle(
         execution, {"docs/design/new.md": "staged\n"})

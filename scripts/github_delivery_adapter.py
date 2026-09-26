@@ -72,13 +72,20 @@ def current_lease(config, request):
         .read()
         .get(lease.activity_id)
     )
+    initial = request.get("source_request")
+    if initial is not None:
+        from scripts.github_source_authority import initial_source_request
+        if initial != initial_source_request(host):
+            raise ValueError("initial_source_host_binding_mismatch")
     if (
         state is None
         or state.lease != lease
         or state.status != "running"
-        or state.spec.kind != "delivery"
+        or state.spec.kind != ("verify" if initial is not None else "delivery")
         or state.spec.source_digest != host.source_digest
-        or "authorized_github_connector_delivery" not in state.spec.capabilities
+        or ("authorized_github_connector_read" if initial is not None else
+            "authorized_github_connector_delivery") not in state.spec.capabilities
+        or initial is not None and state.spec.input_digest != contract_digest(initial)
     ):
         raise ValueError("connector_lease_not_current")
     return state
@@ -95,6 +102,7 @@ def document_binding(config, request):
             "source": host.source_digest,
             "repository": host.repository,
             "base_ref": host.base_ref,
+            **({"base_branch": host.base_branch} if host.base_branch != "main" else {}),
         }
     )
     expected = {
@@ -102,6 +110,7 @@ def document_binding(config, request):
         "operation": "deliver_and_reconcile_squash_merge",
         "repository": host.repository,
         "base_ref": host.base_ref,
+        **({"base_branch": host.base_branch} if host.base_branch != "main" else {}),
         "source_digest": host.source_digest,
         "runtime_root": str(Path(config.runtime_root).resolve()),
         "grant_expires_at": host.expires_at,
@@ -109,12 +118,13 @@ def document_binding(config, request):
     }
     if any(
         request.get(k) != v for k, v in expected.items()
-    ) or state.spec.input_digest != contract_digest(wait):
+    ) or request.get("base_branch", "main") != host.base_branch or state.spec.input_digest != contract_digest(wait):
         raise ValueError("connector_delivery_request_binding_mismatch")
     data = _subject_binding(config, wait)
     marker = "slm-delivery-" + identity.split(":")[1]
     return {
         "repository": host.repository, "base_ref": host.base_ref,
+        **({"base_branch": host.base_branch} if host.base_branch != "main" else {}),
         "source_digest": host.source_digest, "wait": wait, **data,
         "branch": "autotrain/" + marker, "marker": marker,
         "message": data.get("title", "Publish measured campaign documents") + "\n\n" + marker,
@@ -200,7 +210,7 @@ async def write_request(config, request, connector):
                 config.host.repository,
                 proposal,
                 binding["files"],
-                config.host.required_checks,
+                config.host.required_checks, base_branch=config.host.base_branch,
             )
 
         writer = DocumentDelivery(
@@ -244,7 +254,11 @@ async def read_request(config, request, connector):
     if tool == "github_fetch":
         from scripts.github_source_delivery import reader_url_allowed
 
-        if not reader_url_allowed(config.host.repository, arguments):
+        initial = request.get("source_request")
+        from urllib.parse import quote
+        initial_ref = ("https://api.github.com/repos/" + config.host.repository
+                       + "/git/ref/heads/" + quote(config.host.base_branch, safe="/"))
+        if not (initial is not None and arguments == {"url": initial_ref}) and not reader_url_allowed(config.host.repository, arguments):
             raise ValueError("connector_reader_repository_mismatch")
     elif repositories != [config.host.repository]:
         raise ValueError("connector_reader_repository_mismatch")
@@ -335,3 +349,20 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+async def prepare_initial_release(runtime, lease, config):
+    """Controller API using the same configured, schema-pinned read transport."""
+    from scripts.github_source_authority import initial_source_request, record_initial_release
+
+    request = {"lease": lease.model_dump(mode="json"), "source_request": initial_source_request(config.host)}
+    current_lease(config, request)
+    seconds = min(INTERRUPT_AFTER_SECONDS, config.host.expires_at - time.time(),
+                  lease.expires_at - time.time() - KILL_GRACE_SECONDS - 1)
+    async with host_connector(config.transport, allowed_tools={"github_fetch"}, timeout_seconds=seconds) as connector:
+        async def read(tool, arguments):
+            current_lease(config, request)
+            response = await read_request(config, {**request, "schema_version": "connector_read_request/v1",
+                                                  "tool": tool, "arguments": arguments}, connector)
+            return response["result"]
+        return await record_initial_release(runtime, lease, config.host, read)

@@ -51,7 +51,7 @@ def _lineage_base(store, subject, host):
         subject = predecessor
     base, prior = host.base_ref, None
     for proof in reversed(chain):
-        if proof["base_ref"] != base:
+        if proof["base_ref"] != base or proof.get("base_branch", "main") != host.base_branch:
             raise ValueError("source_delivery_grant_remote_base_lineage_mismatch")
         base, prior = proof["merge_sha"], proof
     return base, prior
@@ -73,3 +73,88 @@ def _delivery_proof(store, wait, repository):
     if len(proofs) != 1:
         raise ValueError("source_delivery_predecessor_receipt_missing_or_ambiguous")
     return next(iter(proofs.values()))
+
+
+def initial_source_request(host):
+    """Pin an initial release independently of repair or PR existence."""
+    plan = (host.verification_plan or {})["initial_release"]
+    return {"schema_version": "initial_source_request/v1", "repository": host.repository,
+            "base_branch": host.base_branch, "commit": host.base_ref, "tree": plan["tree"],
+            "source_digest": host.source_digest,
+            **{name: str(Path(plan[name]).resolve()) for name in ("source", "release", "execution", "outputs")}}
+
+
+async def record_initial_release(runtime, lease, host, connector):
+    """Trusted readback producer; caller commits returned outputs under same lease.
+
+    connector is the configured host capability, not worker-supplied data.
+    No repair events, writes to GitHub, or inferred main membership are involved.
+    """
+    import asyncio
+    import time
+    from slm_training.harness_core.activity_contract import contract_digest
+    from urllib.parse import quote
+    from slm_training.harness_core.execution_release import runtime_source_identity
+    from slm_training.harness_core.github_delivery_remote import fetch, verify_tree
+    from slm_training.harness_core.github_git_snapshot import commit_object
+    from slm_training.harness_core.source_authority import authority_record, authority_reference, publish_source_authority
+    from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
+
+    request = initial_source_request(host)
+    if not host.authorized or host.expires_at <= time.time():
+        raise ValueError("initial_source_grant_expired_or_unauthorized")
+    with runtime.publication(lease) as state:
+        if (state.spec.kind != "verify" or state.spec.input_digest != contract_digest(request)
+                or state.spec.source_digest != host.source_digest
+                or "authorized_github_connector_read" not in state.spec.capabilities):
+            raise ValueError("initial_source_request_lease_mismatch")
+    seconds = min(INTERRUPT_AFTER_SECONDS, host.expires_at - time.time(),
+                  lease.expires_at - time.time() - KILL_GRACE_SECONDS - 1)
+    if seconds <= 0:
+        raise ValueError("initial_source_deadline_exhausted")
+    suffix = "git/ref/heads/" + quote(host.base_branch, safe="/")
+    async with asyncio.timeout(seconds):
+        first = await fetch(connector, host.repository, suffix)
+        commit = await fetch(connector, host.repository, "git/commits/" + host.base_ref)
+        raw = commit_object(commit, host.base_ref)
+        if commit["tree"]["sha"] != request["tree"]:
+            raise ValueError("initial_source_tree_mismatch")
+        await verify_tree(connector, host.repository, request["tree"])
+        last = await fetch(connector, host.repository, suffix)
+    def ref(value):
+        return {"ref": value["ref"], "object": {name: value["object"][name] for name in ("type", "sha")}}
+    remote = {"repository": host.repository, "base_branch": host.base_branch,
+              "source_digest": host.source_digest, "merge_sha": host.base_ref,
+              "candidate_git_tree": request["tree"], "merge_commit_object": raw,
+              "ref_before": ref(first), "ref_after": ref(last)}
+    if runtime_source_identity(Path(request["source"])) != host.source_digest:
+        raise ValueError("initial_source_snapshot_changed")
+    payload = authority_record(runtime, lease, kind="initial_release", request=request,
+                               remote=remote, execution=request["execution"])
+    reference = authority_reference(payload)
+    _materialize_initial(request, raw, reference)
+    from slm_training.autoresearch.heal.repair_release import _durable_tree, _sync
+    for name in ("release", "execution"):
+        _durable_tree(Path(request[name]))
+        _sync(Path(request[name]).parent)
+    if host.expires_at <= time.time():
+        raise ValueError("initial_source_grant_expired_or_unauthorized")
+    return publish_source_authority(runtime, lease, payload)
+
+
+def _materialize_initial(request, raw, reference):
+    from slm_training.harness_core.execution_release import _delivered_provenance, _runtime_manifest, prepare_delivered_release
+
+    source = (Path(request["source"]), request["source_digest"])
+    commit = (raw, request["commit"])
+    destinations = tuple(Path(request[key]) for key in ("release", "execution", "outputs"))
+    if not any(path.exists() for path in destinations[:2]):
+        prepare_delivered_release(source, destinations, commit, source_authority=reference)
+        return
+    # Retry may reuse only exact completed materialization; never repair partial bytes.
+    manifest = _runtime_manifest(destinations[1])
+    if (manifest is None or manifest.get("source_authority") != reference
+            or manifest["release"] != request["release"] or manifest["outputs"] != request["outputs"]
+            or manifest["source_digest"] != request["source_digest"]
+            or manifest["git_provenance"] != _delivered_provenance(source, commit)):
+        raise ValueError("initial_source_existing_materialization_mismatch")
