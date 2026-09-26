@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -115,7 +114,7 @@ def test_real_static_failure_cannot_write_control_store(tmp_path):
             f"from pathlib import Path; Path({str(control / 'secret')!r}).write_text('forged')",
         ),
     )
-    if os.environ.get("SLM_REQUIRE_ISOLATION") == "1":
+    if Path("/workspace/candidate").exists():
         # Already inside the verifier sandbox: no nested namespace exists, so
         # isolation must fail closed (never a silent fallback) before any
         # candidate code runs, and the control store stays intact.

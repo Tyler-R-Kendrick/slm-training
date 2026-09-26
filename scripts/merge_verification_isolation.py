@@ -197,14 +197,15 @@ def isolated_workload(
         atomic_json(
             control / "request.json", {**request, "request_digest": request_digest}
         )
-        output = workspace / "workload-result.json"
+        output = workspace / "workload-output" / "result.json"
+        output.parent.mkdir()
         output.write_text("{}")
         argv = runtime_command(
             (
                 sys.executable,
                 "/workspace/control/worker.py",
                 "/workspace/control/request.json",
-                "/workspace/workload-result.json",
+                "/workspace/workload-output/result.json",
             ),
             runtimes,
         )
@@ -249,7 +250,7 @@ def isolated_workload(
         result = run_isolated(
             IsolationSpec(
                 workspace,
-                writable_paths=("workload-result.json",),
+                writable_paths=("workload-output/result.json",),
                 writable_dirs=("candidate/outputs",),
                 runtime_roots=runtimes,
                 timeout_seconds=_remaining(seconds, started),

@@ -142,6 +142,8 @@ class CodexHypothesisExecutor:
         )
         input_dir.mkdir()
         output_dir.mkdir()
+        output = output_dir / "matrix.json"
+        output.touch()
         (input_dir / "instructions.json").write_text(json.dumps(inputs, sort_keys=True))
         (input_dir / "schema.json").write_text(json.dumps(self.output_schema))
         executable = self._mapped_executable()
@@ -167,7 +169,7 @@ class CodexHypothesisExecutor:
         result = run_isolated(
             IsolationSpec(
                 workspace,
-                writable_paths=("proposal-output",),
+                writable_paths=("proposal-output/matrix.json",),
                 runtime_roots=self.runtime_roots,
                 timeout_seconds=self.grant.resources.interrupt_seconds,
             ),
@@ -185,7 +187,6 @@ class CodexHypothesisExecutor:
             )
         if result.outcome.value != "completed" or result.returncode != 0:
             raise RuntimeError("proposal_execution_incomplete")
-        output = output_dir / "matrix.json"
         if (
             output.is_symlink()
             or not output.is_file()
@@ -200,4 +201,3 @@ class CodexHypothesisExecutor:
             if executable.is_relative_to(root.resolve()):
                 return f"/runtime/{index}/{executable.relative_to(root.resolve()).as_posix()}"
         raise ProposalCapabilityUnavailable("executable_outside_approved_runtime")
-

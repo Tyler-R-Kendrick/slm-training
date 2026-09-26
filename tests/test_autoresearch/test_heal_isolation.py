@@ -259,7 +259,7 @@ def test_real_atomic_replacement_of_readonly_grant_and_sibling_rejection(
 
     (source / "sibling.py").write_text("protected\n")
     script = "from pathlib import Path; Path('src/new-sibling.py').write_text('ungranted\\n')"
-    with pytest.raises(IsolationViolation, match="snapshot scope changed"): 
+    with pytest.raises(IsolationViolation, match="snapshot scope changed"):
         run_isolated(
             IsolationSpec(workspace, ("src/editable.py",)),
             ("/usr/bin/python3", "-c", script),

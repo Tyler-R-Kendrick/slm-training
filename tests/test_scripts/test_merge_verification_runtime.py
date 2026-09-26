@@ -67,7 +67,8 @@ def test_collection_terminal_is_compact_but_protocol_keeps_all_nodes(tmp_path):
     assert json.loads(record["output_tail"])["collected"] == 1200
 
 
-def test_isolated_workload_has_disposable_output_scratch(tmp_path):
+@pytest.mark.parametrize("collect_only", [False, True])
+def test_isolated_workload_has_disposable_output_scratch(tmp_path, collect_only):
     root = tmp_path / "candidate"
     (root / "tests").mkdir(parents=True)
     (root / "tests/test_case.py").write_text(
@@ -80,8 +81,8 @@ def test_isolated_workload_has_disposable_output_scratch(tmp_path):
     # (NETLINK_ROUTE). Still prove disposable output; isolate only on the host.
     result = run_workload(
         root,
-        ["tests/test_case.py::test_writes_disposable_output"],
-        collect_only=False,
+        ["tests/test_case.py"] if collect_only else ["tests/test_case.py::test_writes_disposable_output"],
+        collect_only=collect_only,
         seconds=15,
         directory=tmp_path,
         isolated=not Path("/workspace/candidate").exists(),

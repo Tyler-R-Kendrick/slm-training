@@ -27,15 +27,18 @@ def repair_request(tmp_path):
 
 
 @pytest.mark.parametrize("cancel", [False, True])
-def test_runner_mounts_only_result_file_and_cancels_independently(
+def test_runner_mounts_exact_grants_for_atomic_replace_and_cancels_independently(
     tmp_path, repair_request, monkeypatch, cancel
 ):
     source = tmp_path / "source"
-    source.mkdir()
-    (source / "module.py").write_text("answer = 0\n")
+    (source / "src/package").mkdir(parents=True)
+    (source / "src/package/module.py").write_text("answer = 0\n")
+    (source / "src/package/sibling.py").write_text("protected = True\n")
+    (source / "tests").mkdir()
+    (source / "tests/test_original.py").write_text("assert True\n")
     request = repair_request.model_copy(
         update={
-            "allowed_paths": ("module.py", "tests/test_added.py"),
+            "allowed_paths": ("src/package/module.py", "tests/test_added.py"),
             "blocker": repair_request.blocker.model_copy(
                 update={"source_digest": manifest_digest(tree_manifest(source))}
             ),
@@ -60,11 +63,22 @@ def test_runner_mounts_only_result_file_and_cancels_independently(
         mounts = [
             command[i + 1 : i + 3] for i, arg in enumerate(command) if arg == "--bind"
         ]
-        assert [
-            str(spec.workspace / "repair-output/proposal.json"),
-            "/workspace/repair-output/proposal.json",
-        ] in mounts
-        assert all(pair[1] != "/workspace/repair-output" for pair in mounts)
+        assert spec.writable_paths == (
+            "src/package/module.py", "tests/test_added.py", "repair-output/proposal.json"
+        )
+        assert spec.writable_dirs == ()
+        assert mounts == [
+            [str(spec.workspace / relative), f"/workspace/{relative}"]
+            for relative in ("repair-output", "src/package", "tests")
+        ]
+        for relative in ("src/package/sibling.py", "tests/test_original.py"):
+            overlay = ["--ro-bind", str(spec.workspace / relative), f"/workspace/{relative}"]
+            parent_bind = [
+                "--bind", str(spec.workspace / Path(relative).parent),
+                f"/workspace/{Path(relative).parent.as_posix()}",
+            ]
+            assert any(command[i:i + 3] == overlay for i in range(len(command)))
+            assert command.index(overlay[1]) > command.index(parent_bind[1])
         assert "--unshare-all" in command and "--clearenv" in command
         if cancel:
             cancelled.set()
@@ -72,9 +86,15 @@ def test_runner_mounts_only_result_file_and_cancels_independently(
                 "cancellation must not depend on heartbeat"
             )
         else:
-            (spec.workspace / "repair-output/proposal.json").write_text(
-                '{"fixture":true}'
-            )
+            for relative, content in (
+                ("src/package/module.py", "answer = 1\n"),
+                ("tests/test_added.py", "assert True\n"),
+                ("repair-output/proposal.json", '{"fixture":true}'),
+            ):
+                target = spec.workspace / relative
+                temporary = target.with_suffix(".tmp")
+                temporary.write_text(content)
+                temporary.replace(target)
         return SimpleNamespace(
             outcome=SimpleNamespace(value="cancelled" if cancel else "completed"),
             returncode=-2 if cancel else 0,
@@ -97,6 +117,8 @@ def test_runner_mounts_only_result_file_and_cancels_independently(
         cancelled=cancelled.is_set,
     )
     assert result.outcome == ("cancelled" if cancel else "completed")
+    if not cancel:
+        assert result.final_json == '{"fixture":true}'
     attempt = runner.attempt_root / request.digest()
     assert (attempt / "output/proposal.json").is_file()
     assert not (attempt / "candidate/repair-output").exists()

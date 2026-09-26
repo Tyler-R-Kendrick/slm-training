@@ -293,3 +293,37 @@ R17 canonical verifier found `extract_test_cases` failed because the new negativ
 The ordinary two-arm command cursor exposed a child-process import failure: a compiled `python -m scripts.train_model` child could not import `slm_training` when the parent lacked `PYTHONPATH`. The shared `engine._stage_environment` now passes this checkout's `src` path to repository CLI children and keeps scratch CPU thread limits. With the parent `PYTHONPATH` removed, real trainer and evaluator `--help` children both exit zero; 16 focused command-cursor/thread tests pass, and Ruff, code quality, test-case extraction, and version stamps pass. This proves CLI startup, not a completed train/eval campaign or AgentV publication. The `harness.autoresearch.experiment_campaign` version was bumped to v301. R18 remains an immutable prior-source verifier snapshot; current-source validation requires R19.
 
 A clean ordinary-supervisor execution copy requires an authenticated head commit marker. The existing materializer omitted committed `.env.example` and `.serena` policy files from its tree identity and could not reconstruct an unsigned GitHub commit whose original timezone was normalized to UTC by the API. The source owner now includes the committed template and two Serena files while excluding private overrides/cache, then accepts an offset candidate only when the exact Git commit hash matches the connector-confirmed head and tree. Altered source bytes still fail the delivered-tree check. Focused materialization tests: 23 passed; Ruff, code quality, and version stamps pass. A current-head proof execution copy and fresh preregistered campaign remain required after publication.
+
+
+### 2026-09-26: persistent output grants at shared isolation boundaries
+
+R28 completed all 18 static obligations but could not start pytest collection:
+its worker requested a writable root-level `workload-result.json`, which the
+new narrow-parent mount policy correctly rejected. The collection and test
+execution owner now precreates `workload-output/result.json` and grants that
+exact file. Real Bubblewrap collection, execution, malformed-result rejection,
+and protected controller/source tests exercise the same producer and consumer.
+
+The hypothesis executor had a related directory-as-file grant. A proposed
+disposable tmpfs mount also failed because its result disappeared before the
+controller read it. The corrected owner precreates and grants
+`proposal-output/matrix.json`. A real isolated worker regression fails on the
+tmpfs implementation and passes when the controller receives the persisted
+result. This check uses a deterministic executable, not a live model provider.
+
+The five affected isolation test modules pass together: **74 passed in 17.37s**,
+using the dedicated `runtime-r25-python` environment, installed AgentV runtime,
+and host Bubblewrap with `SLM_REQUIRE_ISOLATION=1`. Updated agent-runner fixtures
+retain cancellation and protected-sibling checks with narrow parent mounts.
+These focused results do not authorize release, live repair acceptance, model
+promotion, or shipment. Full current-source verification and the paired
+ordinary-supervisor campaign remain required.
+
+Operational correction: R28's user timer was live on `/run/user/1000/bus`; a
+missing bus environment caused a false stopped-runner report. A duplicate shell
+loop was removed. R29 initially shared hardlinks with R28 and a version-file
+edit changed R28's source identity. The original R28 version file was restored
+from its preserved R27 predecessor, all R29 source hardlinks were separated,
+and all prior journals were retained. Evidence from different identities is
+not combined. The successor verifier must use R29's immutable source and its
+own authenticated state.

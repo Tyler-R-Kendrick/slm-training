@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v35",
+          "note": "Persist hypothesis worker output through an exact regular-file grant in a narrow output directory."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v34",
           "note": "Keep sibling entries read-only under narrow writable parent mounts and reject granted paths that become symlinks or non-regular files."
         },
@@ -305,6 +310,7 @@
         "tests/test_autoresearch/test_heal_escalation.py",
         "tests/test_autoresearch/test_heal_harness_crash.py",
         "tests/test_autoresearch/test_heal_isolation.py",
+        "tests/test_autoresearch/test_hypothesis_executor.py",
         "tests/test_autoresearch/test_heal_playbooks.py",
         "tests/test_autoresearch/test_operation_failure_signature.py",
         "tests/test_autoresearch/test_operation_recovery.py",
@@ -321,7 +327,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v34"
+      "version": "v35"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -422,6 +428,11 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "version": "v28",
+          "note": "Place pytest collection and execution result in a narrow writable output directory so exact-file grants preserve the workspace-root boundary."
+        },
         {
           "date": "2026-09-25",
           "note": "Estimate unmeasured test shards using the five-seconds-per-node floor plus isolated collection startup, and double a timed-out exact shard's next bounded allowance.",
@@ -608,7 +619,7 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_successor.py"
       ],
-      "version": "v27"
+      "version": "v28"
     },
     "config.levers": {
       "history": [
