@@ -12,7 +12,27 @@ import pytest
 from scripts import autoresearch
 from scripts.autoresearch_command_cursor import CommandCursor
 from scripts.autotrain_cycle_context import CycleJournal
+from scripts.autotrain_cycle_reconcile import new_outcome
 from tests.test_autoresearch.test_driver_cycle_continuation import _fixture, _resume
+
+
+def test_timed_out_driver_does_not_accept_terminal_before_postprocessing():
+    class Store:
+        def verify_event_chain(self):
+            return [
+                {
+                    "event_type": "experiment_finished",
+                    "experiment_id": "candidate",
+                    "event_id": "finished-before-diagnosis",
+                }
+            ]
+
+    assert (
+        new_outcome(
+            Store(), set(), "candidate", "manifest", timed_out=True
+        )
+        is None
+    )
 
 
 def test_timed_out_driver_with_reserved_eval_cursor_waits_for_fenced_recovery(

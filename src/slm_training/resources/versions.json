@@ -5575,6 +5575,11 @@
     "harness.autoresearch.experiment_campaign": {
       "history": [
         {
+          "date": "2026-09-26",
+          "version": "v308",
+          "note": "Keep every timed-out locked arm inflight until fenced recovery confirms terminal outcome and required diagnosis/feedback events; never advance from partially postprocessed completion."
+        },
+        {
           "date": "2026-09-25",
           "version": "v307",
           "note": "Keep a timed-out driver arm without a terminal outcome inflight for fenced cursor reconciliation, and queue its typed source-bound repair request without fabricating completion or process failure."
@@ -7831,7 +7836,7 @@
         "tests/test_autoresearch/test_evaluation_budget_boundary.py",
         "tests/test_autoresearch/test_driver_partial_cursor_recovery.py"
       ],
-      "version": "v307"
+      "version": "v308"
     },
     "harness.autoresearch.formal": {
       "history": [

@@ -20,8 +20,9 @@ def new_outcome(store, before, eid, manifest, *, timed_out=False):
         and row["experiment_id"] == eid
         and row["event_id"] not in before
     ]
-    if not rows and timed_out:
-        # Preserve the parent reservation; a killed child may own a cursor.
+    if timed_out:
+        # A terminal event may precede required diagnosis and feedback events.
+        # Keep the parent reservation for fenced reconciliation after any timeout.
         return None
     if len(rows) != 1:
         raise ValueError("driver arm lacks one current terminal outcome")

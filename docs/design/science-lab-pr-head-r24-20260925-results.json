@@ -19,7 +19,17 @@
     "train": {
       "steps": 6,
       "stopped_on": "steps",
-      "summary": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-candidate/train_summary.json"
+      "summary": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-candidate/train_summary.json",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+        "code_dirty": false,
+        "components": {
+          "harness.model_build.train": "v44",
+          "harness.experiment_feature_flags": "v4"
+        },
+        "stamped_at": "2026-09-25T19:03:48.755380+00:00"
+      }
     }
   },
   "comparison": {
@@ -103,5 +113,20 @@
     "allowed": false,
     "checkpoint_promoted": false,
     "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v33",
+      "harness.model_build.eval": "v107",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.14.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v27",
+      "model.twotower": "v332"
+    },
+    "stamped_at": "2026-09-25T19:00:46.883543+00:00"
   }
 }

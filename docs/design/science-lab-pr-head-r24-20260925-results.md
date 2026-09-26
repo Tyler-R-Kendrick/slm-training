@@ -16,4 +16,4 @@ The controller later reconciled the partial control evaluation through its fence
 
 Evidence: `outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/preregistration.json`; campaign events at `outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/events.jsonl`; supervisor log at `outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/loops/science-lab-pr1785-e9a6de-r24-20260925/supervisor.jsonl`; control scoreboard, AgentEvals, and AgentV bundle under the control run directory. Candidate checkpoint and `train_summary.json` remain under the candidate run directory.
 
-Control result `version_stamp/v1` binds code commit `e9a6de0c6c52e4326252e2c6c76d1abad423d690`, `code_dirty=false`, `harness.model_build.eval=v107`, and `evals.meaningful_program=2.14.0`. The paired endpoint remains unmeasured.
+The machine-readable result carries the canonical control `version_stamp/v1`; the candidate training stamp is recorded separately. Both bind code commit `e9a6de0c6c52e4326252e2c6c76d1abad423d690` with `code_dirty=false`. The paired endpoint remains unmeasured.
