@@ -154,13 +154,21 @@ def owner_write_preparation(before, after) -> bool:
             and before[1] == after[1] and after[0] == before[0] | stat.S_IWUSR)
 
 
-def scope_changes(before: dict, after: dict, allowed: tuple[str, ...]) -> tuple[str, ...]:
-    """Detect repeat edits to already-dirty files, deletion and mode changes."""
+def scope_changes(
+    before: dict,
+    after: dict,
+    allowed: tuple[str, ...],
+    *,
+    recursive: tuple[str, ...] = (),
+) -> tuple[str, ...]:
+    """Detect edits outside exact grants, including content, mode and link changes."""
     permitted = tuple(relative_path(path) for path in allowed)
+    recursive_paths = tuple(relative_path(path) for path in recursive)
     return tuple(sorted(
         path for path in before.keys() | after.keys()
         if before.get(path) != after.get(path)
-        and not any(path == p or path.startswith(p + "/") for p in permitted)
+        and path not in permitted
+        and not any(path == p or path.startswith(p + "/") for p in recursive_paths)
     ))
 
 

@@ -97,6 +97,16 @@
     "autoresearch.heal": {
       "history": [
         {
+          "date": "2026-09-26",
+          "version": "v34",
+          "note": "Keep sibling entries read-only under narrow writable parent mounts and reject granted paths that become symlinks or non-regular files."
+        },
+        {
+          "date": "2026-09-26",
+          "version": "v33",
+          "note": "Use narrow writable parent mounts so atomic replacement works in private repair snapshots; reject every out-of-grant content, mode, link, addition, or deletion after worker exit."
+        },
+        {
           "date": "2026-09-25",
           "version": "v32",
           "note": "Queue exact unresolved driver cursor as a typed source-bound repair request; require matching frozen driver input before approved repair dispatch, without inventing process failure evidence."
@@ -311,7 +321,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v32"
+      "version": "v34"
     },
     "autoresearch.power_preflight": {
       "history": [

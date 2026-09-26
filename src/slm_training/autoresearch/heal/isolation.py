@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import math
 import shutil
+import stat
 import threading
 import time
 from collections.abc import Callable, Sequence
@@ -242,17 +243,35 @@ def _provider_mounts(path: Path) -> list[str]:
             "--ro-bind", str(Path(provider_bridge.__file__)), "/provider/bridge.py"]
 
 
+def _mount_readonly_siblings(
+    command: list[str], parent: Path, workspace: Path, allowed: set[str]
+) -> None:
+    for sibling in sorted(parent.iterdir()):
+        sibling_relative = sibling.relative_to(workspace).as_posix()
+        if sibling_relative not in allowed:
+            command.extend(("--ro-bind", str(sibling), f"/workspace/{sibling_relative}"))
+
+
 def _writable_mounts(spec: IsolationSpec, workspace: Path) -> list[str]:
     command: list[str] = []
+    parents: dict[str, set[str]] = {}
     for relative in spec.writable_paths:
         path = checked_path(workspace, relative)
         if relative.split("/", 1)[0].startswith("."):
             raise IsolationViolation("metadata cannot be a writable source mount")
         if path.is_dir():
-            raise IsolationViolation("source repair needs exact file mounts")
+            raise IsolationViolation("source repair needs exact file grants")
         if repair_classification((relative,)) == "trust_policy_change":
             raise IsolationViolation("protected surface cannot be a writable mount")
-        command.extend(("--bind", str(path), f"/workspace/{relative}"))
+        parent = path.parent
+        parent_relative = parent.relative_to(workspace).as_posix()
+        if parent == workspace:
+            raise IsolationViolation("writable source parent cannot be workspace root")
+        parents.setdefault(parent_relative, set()).add(relative)
+    for relative in sorted(parents):
+        parent = checked_path(workspace, relative)
+        command.extend(("--bind", str(parent), f"/workspace/{relative}"))
+        _mount_readonly_siblings(command, parent, workspace, parents[relative])
     for relative in spec.writable_dirs:
         path = checked_path(workspace, relative)
         if not path.is_dir() or relative.split("/", 1)[0].startswith("."):
@@ -350,10 +369,21 @@ def _run_checked(spec, command, started, callbacks):
             cancel_event=cancel_event,
         )
     finally:
+        after = tree_manifest(spec.workspace)
+        for relative in spec.writable_paths:
+            path = spec.workspace / relative
+            if path.is_symlink():
+                raise IsolationViolation("exact writable source path must remain a regular file")
+            path = checked_path(spec.workspace, relative, must_exist=False)
+            if path.exists():
+                info = path.lstat()
+                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                    raise IsolationViolation("exact writable source path must remain a private regular file")
         changed = scope_changes(
             before,
-            tree_manifest(spec.workspace),
-            (*spec.writable_paths, *spec.writable_dirs),
+            after,
+            spec.writable_paths,
+            recursive=spec.writable_dirs,
         )
         if changed:
             raise IsolationViolation(f"snapshot scope changed: {changed}")
