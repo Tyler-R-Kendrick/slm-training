@@ -113,7 +113,15 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
     else:
         identity_error = None
     try:
-        if (
+        if (pending_wait and request["operation"] == "driver"
+                and (payload or {}).get("pending", {}).get("reason")
+                == "driver_attempt_requires_reconciliation"):
+            from slm_training.autoresearch.heal.operation_recovery import (
+                record_driver_reconciliation,
+            )
+
+            record_driver_reconciliation(runtime, lease, request, payload["pending"])
+        elif (
             (not pending_wait or _source_repair_pending(payload))
             and outcome
             not in {

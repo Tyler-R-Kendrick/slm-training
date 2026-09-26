@@ -228,3 +228,62 @@ def test_source_code_without_source_capability_is_not_repair_authority(publicati
     runtime.capacity = ResourceCapacity(cpu_slots=2, memory_mb=4096)
     _run_yield(runtime, tmp_path, monkeypatch, _pending(capability="external_tool_host"))
     assert not any(e["event_type"] == "operation_repair_requested" for e in runtime.store.verify_event_chain())
+
+
+def test_unknown_started_cursor_queues_source_bound_repair_without_fake_failure(
+    publication, tmp_path, monkeypatch,
+):
+    runtime = publication[2]["runtime"]
+    runtime.capacity = ResourceCapacity(cpu_slots=2, memory_mb=4096)
+    pending = _pending("driver_attempt_requires_reconciliation", "driver_continuation_reconciliation")
+    pending.update(outcome="capability", reason="driver_attempt_requires_reconciliation",
+                   campaign_id="locked-cycle", input_digest=SHA)
+    pending["blocker"]["input_digest"] = SHA
+    pending["wake"].update(source="driver_cycle_checkpoint")
+    original, activity, grant = _run_yield(runtime, tmp_path, monkeypatch, pending)
+    rows = [e for e in runtime.store.verify_event_chain()
+            if e["event_type"] == "operation_repair_requested"]
+    assert len(rows) == 1
+    detail = rows[0]["detail"]
+    assert detail["request"] == original
+    assert detail["pending"]["original_request_digest"] == contract_digest(original)
+    assert detail["pending"]["input_digest"] == SHA
+    assert detail["pending"]["pending_digest"] == contract_digest(pending)
+    assert "failure_observation" not in detail["pending"]
+    jobs = recovery.pending_operation_repairs(runtime)
+    assert len(jobs) == 1
+    assert jobs[0]["hard_pending"] == [detail["pending"]]
+    assert jobs[0]["driver_argv"][-1] == grant.model_dump_json()
+    assert runtime.snapshot()[activity].status == "waiting_capability"
+
+
+def test_unknown_cursor_requires_exact_input_recipe(tmp_path, repair_request):
+    row = {"kind": "repair_harness", "blocker_code": "driver_attempt_requires_reconciliation",
+           "required_capability": "driver_continuation_reconciliation",
+           "unmet_predicate": "driver_command_cursor_reconciled", "input_digest": SHA,
+           "reason": "driver_attempt_requires_reconciliation"}
+    source = tmp_path / "source"
+    (source / "docs/design").mkdir(parents=True)
+    for path in ("AGENTS.md", "RTK.md", "docs/design/decode-invariants.md"):
+        (source / path).write_text("I6 fail closed\n")
+    recipe = dispatch.RepairRecipe(
+        allowed_paths=repair_request.allowed_paths, input_digest="b" * 64,
+        original=VerificationCheck("original", ("python", "probe.py"), "ready\n"),
+        checks=(VerificationCheck("regression", ("python", "regression.py"), "passed\n"),),
+        owner_contract_path="AGENTS.md", failure_returncode=1,
+        failure_stdout_sha256=SHA, failure_stderr_sha256=SHA,
+    )
+    config = dispatch.RecoveryConfig(grant=repair_request.grant, verifier_release=SHA,
+        recipes={"driver_attempt_requires_reconciliation": recipe})
+    context = dispatch.RecoveryContext(tmp_path / "campaigns", "fixture", "locked-cycle",
+        source, SHA, SHA, "fence", "parent")
+    with pytest.raises(ValueError, match="driver_reconciliation_recipe_input_mismatch"):
+        dispatch.build_repair_request(row, context, config)
+    request = dispatch.build_repair_request(
+        row, context,
+        config.model_copy(update={"recipes": {"driver_attempt_requires_reconciliation":
+                                      recipe.model_copy(update={"input_digest": SHA})}}),
+    )
+    assert request.blocker.blocker_class == "code"
+    assert request.blocker.source_digest == SHA
+    assert request.blocker.input_digest == SHA

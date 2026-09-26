@@ -167,6 +167,9 @@ def build_repair_request(
     recipe = config.recipes.get(code)
     if recipe is None:
         raise ValueError("original_reproducer_not_configured")
+    if (code == "driver_attempt_requires_reconciliation"
+            and recipe.input_digest != pending.get("input_digest")):
+        raise ValueError("driver_reconciliation_recipe_input_mismatch")
     instructions = "\n\n".join(
         _read_instruction(context.source, path)
         for path in ("AGENTS.md", "RTK.md", "docs/design/decode-invariants.md")

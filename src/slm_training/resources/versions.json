@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-25",
+          "version": "v32",
+          "note": "Queue exact unresolved driver cursor as a typed source-bound repair request; require matching frozen driver input before approved repair dispatch, without inventing process failure evidence."
+        },
+        {
+          "date": "2026-09-25",
           "version": "v31",
           "note": "Require the independent operation reproducer to emit the same typed source-relative failure signature as the original operation, in addition to its approved byte-exact returncode and stream hashes."
         },
@@ -306,7 +311,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v31"
+      "version": "v32"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -5571,6 +5576,11 @@
       "history": [
         {
           "date": "2026-09-25",
+          "version": "v307",
+          "note": "Keep a timed-out driver arm without a terminal outcome inflight for fenced cursor reconciliation, and queue its typed source-bound repair request without fabricating completion or process failure."
+        },
+        {
+          "date": "2026-09-25",
           "note": "Reserve parent-supervisor time before starting locked driver work and return typed bounded pending immediately; prevent outer SIGKILL from stranding a newly reserved command cursor.",
           "version": "v306"
         },
@@ -7821,7 +7831,7 @@
         "tests/test_autoresearch/test_evaluation_budget_boundary.py",
         "tests/test_autoresearch/test_driver_partial_cursor_recovery.py"
       ],
-      "version": "v306"
+      "version": "v307"
     },
     "harness.autoresearch.formal": {
       "history": [

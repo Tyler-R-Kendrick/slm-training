@@ -12,7 +12,7 @@ from slm_training.autoresearch.campaign_events import publish_cycle_handoff
 from slm_training.autoresearch.schemas import AutotrainCycleHandoffV1, ExperimentOutcome
 
 
-def new_outcome(store, before, eid, manifest):
+def new_outcome(store, before, eid, manifest, *, timed_out=False):
     rows = [
         row
         for row in store.verify_event_chain()
@@ -20,6 +20,9 @@ def new_outcome(store, before, eid, manifest):
         and row["experiment_id"] == eid
         and row["event_id"] not in before
     ]
+    if not rows and timed_out:
+        # Preserve the parent reservation; a killed child may own a cursor.
+        return None
     if len(rows) != 1:
         raise ValueError("driver arm lacks one current terminal outcome")
     result = ExperimentOutcome.model_validate(
@@ -64,6 +67,8 @@ def return_attempts(store, eid, attempts, code, *, reconciled=False):
 
 
 def accept_arm(journal, continuous, eid, outcome, code):
+    if outcome is None:
+        return None
     repair = next(
         (
             signal.code
@@ -94,6 +99,14 @@ def accept_arm(journal, continuous, eid, outcome, code):
     state["index"] += 1
     state.pop("last_yield", None)
     return True
+
+
+def pending_after_arm(journal, complete):
+    return journal.pending(
+        "driver_attempt_requires_reconciliation"
+        if complete is None else "locked_arm_or_evaluation_yielded",
+        capability=complete is None,
+    )
 
 
 def _after_inflight(journal):

@@ -5,6 +5,7 @@ Fixture children speak the evaluation protocol; no model-quality claim is made.
 
 import json
 from contextlib import contextmanager
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,6 +13,42 @@ from scripts import autoresearch
 from scripts.autoresearch_command_cursor import CommandCursor
 from scripts.autotrain_cycle_context import CycleJournal
 from tests.test_autoresearch.test_driver_cycle_continuation import _fixture, _resume
+
+
+def test_timed_out_driver_with_reserved_eval_cursor_waits_for_fenced_recovery(
+    tmp_path, monkeypatch
+):
+    f = _fixture(tmp_path, monkeypatch, arms=2)
+    candidate = f.ids[1]
+    assert _resume(f)["outcome"] == "yielded"
+
+    def interrupted(*_args, **_kwargs):
+        raise SystemExit("child killed after cursor reservation")
+
+    def timed_out(cmd, **_kwargs):
+        with pytest.raises(SystemExit, match="cursor reservation"):
+            autoresearch.main(cmd[3:])
+        return SimpleNamespace(returncode=-2, timed_out=True, stdout="", stderr="")
+
+    with monkeypatch.context() as scoped:
+        scoped.setattr(autoresearch, "execute_commands", interrupted)
+        scoped.setattr(autoresearch, "ROOT", f.cwd)
+        from scripts import run_autotrain_continuous as driver
+        scoped.setattr(driver, "_stage_command", timed_out)
+        result = _resume(f)
+
+    assert result["outcome"] == "capability"
+    assert result["reason"] == "driver_attempt_requires_reconciliation"
+    state = CycleJournal(f.store, f.value).state
+    assert state["inflight"] is not None and state["index"] == 1
+    assert not any(e["event_type"] == "experiment_finished" and e["experiment_id"] == candidate
+                   for e in f.store.verify_event_chain())
+    launches = len(f.calls)
+    assert _resume(f)["reason"] == "driver_attempt_requires_reconciliation"
+    assert len(f.calls) == launches
+    with _fenced(f):
+        assert _resume(f) == f.store.campaign_id
+    assert CycleJournal(f.store, f.value).state["phase"] == "completed"
 
 
 def _candidate_cursor(fixture):

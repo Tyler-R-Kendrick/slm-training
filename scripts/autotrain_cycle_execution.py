@@ -27,6 +27,7 @@ from scripts.autotrain_cycle_finalize import execute_stage, stages
 from scripts.autotrain_cycle_reconcile import (
     accept_arm,
     new_outcome as _new_outcome,
+    pending_after_arm,
     reconcile_inflight,
     return_attempts,
     start_attempts,
@@ -104,7 +105,7 @@ def _run_arm(journal, continuous, cwd, deadline):
                 state["repair_required"] = "driver_pending_no_progress"
         state["last_yield"] = outcome.model_dump(mode="json")
         return False
-    outcome = _new_outcome(store, before, eid, arm["manifest_digest"])
+    outcome = _new_outcome(store, before, eid, arm["manifest_digest"], timed_out=result.timed_out)
     return accept_arm(journal, continuous, eid, outcome, code)
 
 
@@ -193,11 +194,12 @@ def execute_pending(journal, continuous, cwd, deadline):
             cwd,
             time.monotonic() + available - HARNESS_FINALIZATION_RESERVE_SECONDS,
         )
-        journal.settle()
+        if complete is not None:
+            journal.settle()
         if journal.state.get("repair_required"):
             return journal.pending(journal.state["repair_required"], capability=True)
         if not complete:
-            return journal.pending("locked_arm_or_evaluation_yielded")
+            return pending_after_arm(journal, complete)
     continuous._clear_active_stage(journal.store.root.parent, journal.value["loop_id"])
     print(
         f"CYCLE_COMPLETE {journal.store.campaign_id} role={journal.value['role']} "

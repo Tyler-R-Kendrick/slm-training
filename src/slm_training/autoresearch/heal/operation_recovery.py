@@ -71,6 +71,49 @@ def record_operation_failure(runtime, lease, request, result, *, outcome):
     return pending
 
 
+def record_driver_reconciliation(runtime, lease, request, driver_pending):
+    """Queue an exact unresolved cursor without inventing a process failure."""
+    from scripts.autotrain_pending import validate_pending
+
+    outcome, wake = validate_pending(driver_pending)
+    blocker = driver_pending.get("blocker") or {}
+    if (
+        request.get("operation") != "driver"
+        or outcome != ActivityOutcome.CAPABILITY
+        or driver_pending.get("reason") != "driver_attempt_requires_reconciliation"
+        or blocker.get("kind") != "repair_harness"
+        or blocker.get("blocker_code") != driver_pending["reason"]
+        or blocker.get("required_capability") != "driver_continuation_reconciliation"
+        or blocker.get("input_digest") != driver_pending.get("input_digest")
+        or wake.source != "driver_cycle_checkpoint"
+    ):
+        raise ValueError("untrusted driver reconciliation pending")
+    pending = {
+        "kind": "repair_harness",
+        "blocker_code": blocker["blocker_code"],
+        "required_capability": blocker["required_capability"],
+        "unmet_predicate": "driver_command_cursor_reconciled",
+        "input_digest": blocker["input_digest"],
+        "pending_digest": contract_digest(driver_pending),
+        "affected_activity_id": lease.activity_id,
+        "original_operation": "driver",
+        "original_request_digest": contract_digest(request),
+        "reason": driver_pending["reason"],
+        "observed_outcome": outcome.value,
+    }
+    artifact = runtime.store.write_artifact(
+        "operation_failures", {"request": request, "pending": pending, "driver_pending": driver_pending}
+    )
+    runtime.store.append_event(
+        "operation_repair_requested",
+        experiment_id=lease.activity_id,
+        artifact_sha256=artifact.stem,
+        idempotency_key="driver-reconciliation:" + lease.token,
+        detail={"request": request, "pending": pending, "fence": lease.token},
+    )
+    return pending
+
+
 def pending_operation_repairs(runtime) -> list[dict]:
     """Recover the repair queue from the canonical events, including after crash."""
     states = runtime.snapshot()
@@ -83,9 +126,12 @@ def pending_operation_repairs(runtime) -> list[dict]:
     for activity, detail in latest.items():
         state = states.get(activity)
         if state is None or state.status not in {
-            "waiting_repair",
-            "waiting_dependency",
+            "waiting_repair", "waiting_dependency", "waiting_capability",
         }:
+            continue
+        if (state.status == "waiting_capability"
+                and detail["pending"].get("blocker_code")
+                != "driver_attempt_requires_reconciliation"):
             continue
         original = detail["request"]
         if (
