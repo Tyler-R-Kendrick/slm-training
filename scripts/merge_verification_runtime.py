@@ -143,6 +143,8 @@ def runtime_argv(source, runtimes, argv, *, workspace=None, required=False):
         "PYTHONPATH=" + ":".join(pythonpath),
         "PATH=" + ":".join([*bins, "/usr/bin", "/bin"]),
     ]
+    if grants["node_index"] is not None:
+        settings.append(f"SLM_TEST_NODE=/runtime/{grants['node_index']}/bin/node")
     library_paths = [
         f"/runtime/{index}/lib"
         for index, root in enumerate(runtimes)

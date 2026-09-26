@@ -327,3 +327,49 @@ from its preserved R27 predecessor, all R29 source hardlinks were separated,
 and all prior journals were retained. Evidence from different identities is
 not combined. The successor verifier must use R29's immutable source and its
 own authenticated state.
+
+
+R30 extends the same regression set through the canonical isolated merge worker,
+using exact collected node IDs and explicit approved Python, Node, bridge, and
+AgentV runtime roots. This exposed a stale test assumption that nested namespaces
+always fail, and two real runtime-composition defects: the SDK's Node wrapper
+was selected as the native runtime, and inherited `/runtime/N` aliases overwrote
+explicit slots after a nested worker reordered grants. The worker now exports
+its approved native Node path through the existing test override, and runtime
+mounts install aliases before explicit slots. Controller protection is tested
+by the actual denied write, without assuming namespace creation is unavailable.
+
+All **74 exact test nodes pass through canonical isolated execution**: pytest
+13.02 seconds, complete worker 25.35 seconds, no skipped or deselected nodes.
+The retained result is `outputs/autonomy-integration-20260921/r30-focused-worker-runtime-order.json`,
+with validated workload digest
+`3fb2e7de36d1faba2d76b74c7b2bdf4cabdb20f6b7416ba0d4f0069f90e28166`.
+Earlier failed observations remain alongside it. This is stronger integration
+evidence than host-only tests but still covers only these 74 nodes; it does not
+replace the full merge gate or the live repair and scientific campaign obligations.
+
+The retained September 23 Codex-subscription attempt did produce a proposal
+(`480c08fa6d47bf3a270904b6c867f4a769c343dc0beec8b1149d6a281678aab9`).
+Its controller remained parked on the original source-verification dependency
+after multiple authenticated successors were activated. The previous resolver
+followed only one link, so subsequent invocations never reached the runnable
+verifier. The controller now resolves the complete activation chain, preserves
+the proposal and remaining resource grant, and checks every identity and grant
+transition before claiming work or waking repair. Activation ancestry separates
+a valid return to an earlier runtime identity from ambiguous or cyclic links.
+
+This preserves successful provider work without calling the provider again.
+The retained proposal is not an accepted repair: independent verification and
+publication remain incomplete, and the historical controlled attempt lacks an
+original leased operation needed to prove end-to-end operation continuation.
+The older September 22 editor failure remains valid historical evidence but
+does not describe the later successful proposal.
+
+The integrated successor and verifier modules pass **30 tests in 17.23 seconds**
+with `SLM_REQUIRE_ISOLATION=1`, the dedicated Python runtime, and real host
+Bubblewrap; no tests were skipped. The rollback regression fails before the
+ancestry fix. Negative controls cover altered identities, cyclic or ambiguous
+links, and residual-grant mismatches; repeated invocations retain retry timing
+and charged resource usage. Independent review found the rollback case, then
+verified the corrected root selection. A sandbox-only run skipped the real
+isolation test and is not counted as isolation evidence.

@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v36",
+          "note": "Apply inherited runtime aliases before explicit numbered grants so nested workers cannot overwrite the requested Node, Python, or bridge runtime slots."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v35",
           "note": "Persist hypothesis worker output through an exact regular-file grant in a narrow output directory."
         },
@@ -327,7 +332,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v35"
+      "version": "v36"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -428,6 +433,11 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "version": "v29",
+          "note": "Pass the approved native Node path through SDK wrappers and verify controller protection with working nested namespaces; preserve exact-node isolated execution evidence."
+        },
         {
           "date": "2026-09-26",
           "version": "v28",
@@ -619,7 +629,7 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_successor.py"
       ],
-      "version": "v28"
+      "version": "v29"
     },
     "config.levers": {
       "history": [
@@ -5597,6 +5607,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v309",
+          "note": "Resolve authenticated verifier successors transitively from the parked repair wake, rejecting ambiguous/cyclic links, changed proposal/source identity, and remaining-grant mismatches without consuming new agent inference."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v308",
           "note": "Keep every timed-out locked arm inflight until fenced recovery confirms terminal outcome and required diagnosis/feedback events; never advance from partially postprocessed completion."
         },
@@ -7857,7 +7872,7 @@
         "tests/test_autoresearch/test_evaluation_budget_boundary.py",
         "tests/test_autoresearch/test_driver_partial_cursor_recovery.py"
       ],
-      "version": "v308"
+      "version": "v309"
     },
     "harness.autoresearch.formal": {
       "history": [

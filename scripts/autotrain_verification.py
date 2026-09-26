@@ -186,10 +186,12 @@ def wake_repair(runtime, event, dependency, plan):
     repair = runtime.snapshot().get(repair_id)
     # Dependency persistence deliberately precedes finish. Never interrupt a
     # still-running repair, or consume a wake belonging to a successor request.
-    evidence = WakeCondition.model_validate(dependency["wake"])
     if repair is None or repair.status != "waiting_dependency":
         return False
-    if repair.wake != evidence and not _activated_successor(runtime, event, dependency, repair):
+    try:
+        if _active_dependency(runtime, event, repair) != (event, dependency):
+            return False
+    except (OSError, ValueError, KeyError, TypeError):
         return False
     if not authenticated_completion(plan):
         return False
@@ -205,24 +207,60 @@ def wake_repair(runtime, event, dependency, plan):
     return True
 
 
-def _activated_successor(runtime, event, dependency, repair):
-    if repair.wake is None:
-        return False
-    for row in reversed(runtime.store.verify_event_chain()):
-        detail = row.get("detail", {})
-        if (
-            row["event_type"] == "source_verification_successor_activated"
-            and row["experiment_id"] == event["experiment_id"]
-            and detail.get("successor_dependency_digest")
-            == event["detail"].get("dependency_digest")
-            and detail.get("predecessor_identity") == repair.wake.identity_digest
-            and detail.get("successor_identity") == dependency["verification_identity"]
-            and detail.get("successor_activity_id") == dependency["activity_id"]
-            and detail.get("request_digest") == dependency["request_digest"]
-            and detail.get("proposal_digest") == dependency["proposal_digest"]
-        ):
-            return True
-    return False
+def _active_dependency(runtime, event, repair):
+    """Follow authenticated activations from the parked wake, never mint authority."""
+    from scripts.autotrain_verification_successor import _remaining_grant
+
+    rows = [row for row in runtime.store.verify_event_chain()
+            if row["experiment_id"] == event["experiment_id"]]
+    requests = {row["detail"]["dependency_digest"]: row for row in rows
+                if row["event_type"] == "source_verification_requested"}
+    dependencies = {key: load_dependency(runtime.store, row) for key, row in requests.items()}
+    roots = [key for key, value in dependencies.items()
+             if WakeCondition.model_validate(value["wake"]) == repair.wake]
+    if not roots:
+        return None
+    links = [row["detail"] for row in rows
+             if row["event_type"] == "source_verification_successor_activated"]
+    # Runtime rollback can repeat a wake identity with a smaller residual grant.
+    # Anchor at activation ancestry; dependency digests distinguish those jobs.
+    activated = {link["successor_dependency_digest"] for link in links}
+    roots = [key for key in roots if key not in activated]
+    if len(roots) != 1:
+        raise ValueError("source_verification_successor_ambiguous_root")
+    key, seen = roots[0], set()
+    while key not in seen:
+        seen.add(key)
+        current = dependencies[key]
+        outgoing = [link for link in links if link["predecessor_dependency_digest"] == key]
+        if not outgoing:
+            return requests[key], current
+        if len(outgoing) != 1:
+            raise ValueError("source_verification_successor_ambiguous_link")
+        link = outgoing[0]
+        target = link["successor_dependency_digest"]
+        if target in seen:
+            raise ValueError("source_verification_successor_cycle")
+        successor = dependencies[target]
+        if sum(item["successor_dependency_digest"] == target for item in links) != 1:
+            raise ValueError("source_verification_successor_divergent_link")
+        expected = {"predecessor_identity": current["verification_identity"],
+                    "successor_identity": successor["verification_identity"],
+                    "successor_activity_id": successor["activity_id"],
+                    "request_digest": current["request_digest"],
+                    "proposal_digest": current["proposal_digest"]}
+        stable = ("request_digest", "proposal_digest", "candidate_snapshot_digest",
+                  "source_snapshot_digest", "campaign_id", "blocked_activity_id")
+        if (any(link.get(name) != value for name, value in expected.items())
+                or any(current.get(name) != successor.get(name) for name in stable)):
+            raise ValueError("source_verification_successor_identity_mismatch")
+        state = runtime.snapshot().get(current["activity_id"])
+        if (state is None or state.status == "running"
+                or state.spec.grant != ResourceGrant.model_validate(current["grant"])
+                or _remaining_grant(state) != ResourceGrant.model_validate(successor["grant"])):
+            raise ValueError("source_verification_successor_grant_mismatch")
+        key = target
+    raise ValueError("source_verification_successor_cycle")
 
 
 def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
@@ -256,12 +294,10 @@ def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
 def _run_source_verification(runtime, event, common, log_event, repair):
     dependency = None
     try:
-        dependency = load_dependency(runtime.store, event)
-        expected_wake = WakeCondition.model_validate(dependency["wake"])
-        if repair.wake != expected_wake and not _activated_successor(
-            runtime, event, dependency, repair
-        ):
+        resolved = _active_dependency(runtime, event, repair)
+        if resolved is None:
             return None
+        event, dependency = resolved
         plan = dependency_plan(dependency)
         if wake_repair(runtime, event, dependency, plan):
             return None

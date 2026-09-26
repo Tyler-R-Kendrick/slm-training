@@ -120,6 +120,7 @@ def probe_isolation() -> IsolationCapability:
 
 def _runtime_mounts(spec: IsolationSpec) -> list[str]:
     args: list[str] = []
+    aliases: list[str] = []
     forbidden = {"/", "/home", "/tmp", "/run", "/var", "/etc", "/root"}
     roots = tuple(root.resolve(strict=True) for root in spec.runtime_roots)
     if any(root.is_relative_to(Path("/nix/store")) for root in roots):
@@ -139,11 +140,12 @@ def _runtime_mounts(spec: IsolationSpec) -> list[str]:
             raise IsolationViolation("runtime root must be a dedicated directory")
         _validate_runtime(root, roots)
         if root.is_relative_to(Path("/runtime")):
-            args.extend(("--ro-bind", str(root), str(root)))
+            aliases.extend(("--ro-bind", str(root), str(root)))
         args.extend(("--ro-bind", str(root), f"/runtime/{index}"))
         if root.is_relative_to(Path("/nix/store")):
             args.extend(("--ro-bind", str(root), str(root)))
-    return args
+    # Explicit slots win when a nested worker reorders inherited runtime roots.
+    return aliases + args
 
 def _validate_runtime(root: Path, approved: tuple[Path, ...]) -> None:
     import os
