@@ -1,0 +1,46 @@
+{
+  "source": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution",
+  "cap": 170,
+  "measurements": [
+    {
+      "name": "before_adjacent_source_provenance",
+      "seconds": 11.827544936997583,
+      "result": [
+        "a99bfac07e5405102e66d6e838385fdbc35eb74025c0c7797d90600b1762291d",
+        {
+          "code_dirty": false,
+          "integration_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+          "upstream_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed"
+        }
+      ],
+      "status": "complete"
+    },
+    {
+      "name": "after_combined_source_provenance",
+      "seconds": 1.3457273910025833,
+      "result": [
+        "a99bfac07e5405102e66d6e838385fdbc35eb74025c0c7797d90600b1762291d",
+        {
+          "code_dirty": false,
+          "integration_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+          "upstream_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed"
+        }
+      ],
+      "status": "complete"
+    }
+  ],
+  "schema": "source_check_optimization_profile/v1",
+  "limitations": "Sequential bounded observation; filesystem cache and contention differ between arms. This is not an independently confirmed speedup or scientific result.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+    "code_dirty": true,
+    "components": {
+      "autoresearch.heal": "v37",
+      "harness.autoresearch.experiment_campaign": "v310"
+    },
+    "stamped_at": "2026-09-26T19:33:42.245338+00:00"
+  },
+  "implementation": "Unpublished R31 source-check patch applied by the profiling harness; R30 target source/provenance remained unchanged.",
+  "version_stamp_basis": "Unpublished source-check patch over the published R30 tree; component versions are declared with the integrated R31 change. The profiled target release is separate and unchanged."
+}

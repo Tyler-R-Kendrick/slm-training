@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -11,7 +12,16 @@ from scripts.merge_verification import run_release_gate, run_workload
 from scripts.merge_verification_evidence import ReceiptCache, validate_cached_state
 from scripts.merge_verification_isolation import isolated_static, runtime_command
 from scripts.verify_merge_ready import Step
-from slm_training.autoresearch.heal.isolation import IsolationUnavailable
+from slm_training.autoresearch.heal.isolation import IsolationUnavailable, probe_isolation
+
+
+@pytest.fixture
+def real_isolation():
+    capability = probe_isolation()
+    if not capability.available:
+        if os.environ.get("SLM_REQUIRE_ISOLATION"):
+            raise IsolationUnavailable(capability.reason)
+        pytest.skip("real isolation unavailable: " + capability.reason)
 
 
 def _candidate(tmp_path, code):
@@ -48,7 +58,7 @@ def test_missing_boundary_refuses_before_candidate_or_cache_access(
     assert not (tmp_path / "cache").exists()
 
 
-def test_real_isolated_manifest_cache_and_source_are_protected(tmp_path):
+def test_real_isolated_manifest_cache_and_source_are_protected(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "")
     code = f"""from pathlib import Path
 import pytest
@@ -61,25 +71,22 @@ def test_boundary():
     assert not Path('/workspace/candidate/.git').exists()
 """
     (root / "test_case.py").write_text(code)
-    nested = Path("/workspace/candidate").exists()
     result = run_workload(
         root,
         ["test_case.py::test_boundary"],
         collect_only=False,
         seconds=15,
         directory=control,
-        isolated=not nested,
+        isolated=True,
         runtimes=(Path(sys.prefix),),
     )
-    if nested:
-        return
     assert result["status"] == "ok", result
     assert result["evidence_class"] == "isolated_process"
     assert (control / "secret").read_text() == "controller-only"
     assert (root / "test_case.py").read_text() == code
 
 
-def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path):
+def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "import os\nos._exit(0)\n")
     result = run_workload(
         root,
@@ -87,7 +94,7 @@ def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path):
         collect_only=True,
         seconds=15,
         directory=control,
-        isolated=not Path("/workspace/candidate").exists(),
+        isolated=True,
         runtimes=(Path(sys.prefix),),
     )
     assert result["status"] == "failed"
@@ -104,7 +111,7 @@ def test_granted_bridge_requires_matching_candidate_sources(tmp_path):
         _workload_argv(tmp_path / "candidate", (runtime,), ["python"])
 
 
-def test_real_static_failure_cannot_write_control_store(tmp_path):
+def test_real_static_failure_cannot_write_control_store(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "")
     step = Step(
         "attack",
@@ -246,14 +253,14 @@ def test_snapshot_excludes_ignored_unbound_inputs(tmp_path, monkeypatch):
     assert (source / ".env").read_text() == "PRIVATE=not-for-worker"
 
 
-def test_real_extra_runtime_and_failed_collection_preserve_evidence(tmp_path):
+def test_real_extra_runtime_and_failed_collection_preserve_evidence(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "import approved_extra\nassert False, 'original-collection-fault'\n")
     runtime = tmp_path / "dependencies"
     runtime.mkdir()
     (runtime / "approved_extra.py").write_text("VALUE = 1\n")
     result = run_workload(
         root, ["test_case.py"], collect_only=True, seconds=15,
-        directory=control, isolated=not Path("/workspace/candidate").exists(), runtimes=(Path(sys.prefix), runtime),
+        directory=control, isolated=True, runtimes=(Path(sys.prefix), runtime),
     )
     assert result["status"] == "failed"
     assert "original-collection-fault" in result["output_tail"]

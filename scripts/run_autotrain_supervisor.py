@@ -310,11 +310,11 @@ def main(argv: list[str] | None = None) -> int:
     if Path(args.loop_id).name != args.loop_id or args.loop_id in {".", ".."}:
         raise ValueError("loop-id must be a single path component")
     from scripts.autotrain_cycle_prepare import pin_locked_preregistration
-    pin_locked_preregistration(args, cwd, root)
     store = CampaignStore("runtime", root / "loops" / args.loop_id)
     try:
         # Lease ownership is acquired before importing or invoking the driver/heal.
         with ActivityRuntime(store) as runtime:
+            pinned_source = pin_locked_preregistration(args, cwd, root)
             passes = sum(e["event_type"] == "supervisor_pass" for e in store.verify_event_chain())
             if args.max_cycles and args.stop_after_pass is None:
                 args.stop_after_pass = passes + args.max_cycles
@@ -323,7 +323,7 @@ def main(argv: list[str] | None = None) -> int:
                 "root": str(root),
                 "loop_id": args.loop_id,
                 "locked_diagnostic": bool(args.locked_preregistration),
-                "source_digest": _source_identity(cwd),
+                "source_digest": pinned_source or _source_identity(cwd),
                 "environment_digest": digest(environment_identity()),
                 "repair_config": str(args.repair_config.resolve())
                 if args.repair_config

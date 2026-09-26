@@ -21,7 +21,6 @@ from scripts.merge_verification_evidence import (
     validate_cached_state,
 )
 from scripts.merge_verification_isolation import run_isolated_phase, run_workload
-from scripts.merge_verification_collection import COLLECTION_MIN_ATTEMPT_SECONDS
 from scripts.merge_verification_shards import (
     attempts_exhausted as _attempts_exhausted,
     shard_estimate_seconds as _shard_estimate_seconds,
@@ -211,11 +210,15 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
         state.get("shard_budget_seconds", available) if kind == "shard" else available
     )
     full = state.get("workload_budget_seconds", fallback)
-    required = min(full, COLLECTION_MIN_ATTEMPT_SECONDS) if kind == "collection" and not prior else (available if kind == "static" and not prior else full)
+    required = available if kind == "static" and not prior else full
     if kind == "static" and not prior and available <= 0:
         required = max(1.0, full)
     if prior:
         required = min(full, max(1.0, prior.get("seconds", full) * 2))
+    if kind == "collection":
+        # Sandbox preparation shares this allowance; a fixed startup slice can
+        # time out every split before pytest begins.
+        required = min(full, available)
     if kind == "shard":
         # Grow exact timed-out shards so slow singletons escape repeated 15s slices.
         estimate = _shard_estimate_seconds(state, targets, full)

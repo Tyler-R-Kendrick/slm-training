@@ -373,3 +373,64 @@ links, and residual-grant mismatches; repeated invocations retain retry timing
 and charged resource usage. Independent review found the rollback case, then
 verified the corrected root selection. A sandbox-only run skipped the real
 isolation test and is not counted as isolation evidence.
+
+R31 addresses an observed collection scheduling failure after all 18 R30 static
+checks passed. Every fresh or split batch received only 20 seconds including
+sandbox preparation, even when a larger bounded allowance was available. The
+worker could finish collection but still time out before the controller received
+a valid result. Collection now receives the admitted remaining workload budget;
+kill/finalization reserves, retry charges, and timeout rejection remain intact.
+A real isolated first batch completed **1,034 collected nodes across 64 test
+files in 71.37 seconds**, with workload digest
+`b304155b57b8bdef1595c15fca6e6326e5a326ec8bca5b14422723c769561db4`.
+This is focused collection evidence, not a passing full test suite. The retained
+artifact is `outputs/autonomy-integration-20260921/r31-focused-collection.json`.
+R30's failed attempts and signed journal remain preserved; their scheduling was
+stopped while preparing the corrected immutable successor.
+
+The current-source scientific attempt and its two interrupted invocations are
+recorded in [the R30 measured-results report](science-lab-pr-head-r30-20260926-results.md).
+No training/evaluation completion or model improvement is inferred from startup
+operations or command-cursor persistence.
+
+Integrated collection scheduling, resumption, and throughput checks pass
+**51 tests in 85.41 seconds**. The existing fresh-collection assertion now checks
+the full admitted allowance instead of the obsolete 20-second slice. The real
+receipt-resumption fixture uses a 60-second workload allowance because the
+retained failing journal showed 25.69 seconds of startup before its previous
+25-second allowance could admit collection. Its explicit shard pause, duplicate
+counts, changed-source rejection, and completion assertions remain unchanged;
+typed pending is never accepted as successful execution.
+
+The integrated startup/source-binding tests pass **31 tests in 16.25 seconds**.
+Related operation and repaired-release tests also pass; the isolated delivery
+receipt module passes **3 tests in 20.30 seconds** on real host Bubblewrap after
+removing its obsolete assumption that required isolation means nested namespaces
+must fail. All signature, source-drift, receipt and release-mapping assertions
+remain. Independent review found no content/link/mode checks removed and no
+cross-boundary identity cache introduced by the startup consolidation.
+
+A further evidence review found that several tests in the earlier 74-node run
+used local-feedback fallbacks or returned before protection assertions when
+inside the outer sandbox. That run proved outer-worker execution but did not
+prove every inner isolation boundary. Those shortcuts are removed. The exact
+**34 isolation nodes now pass inside the canonical outer worker**, with actual
+inner isolation and all protection assertions: worker 40.23 seconds, pytest
+20.67 seconds, workload digest
+`ccdb34a9854c3e7417d8d4939086e925b8c1c932cc315f583f5f703b084aa294`.
+The **3 signed delivery-verification nodes also pass** through the same nested
+worker: worker 59.29 seconds, pytest 33.38 seconds, workload digest
+`a320f52b529a1c744e23334b8c9d9ca36fdf073fc5dfb0e835a6302d93aafc63`.
+Their exact-node receipts remain in `r31-nested-core-verified.json` and
+`r31-nested-delivery-verified.json` under the retained output directory.
+
+The initial combined 37-node workload timed out and is not passing evidence.
+A separate preparation attempt timed out listing source files; after an actual
+successful listing and reduced observed host pressure, the exact delivery shard
+completed. Both failed observations remain retained. The successful bounded
+shards cover the full 37-node set without skipping or disabling nested isolation.
+
+A proposed non-main delivery extension is withheld from R31: review found that
+activation discarded branch authority and could relabel acceptance-only delivery
+as unrestricted clean upstream provenance. Its patch is preserved for a separate
+authority fix; default main-only delivery remains unchanged in this source.

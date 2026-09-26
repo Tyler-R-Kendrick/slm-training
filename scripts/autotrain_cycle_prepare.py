@@ -250,6 +250,7 @@ class RecordedCycleSelection:
     expected_experiments: dict | None = None
     preregistered_inputs: dict | None = None
     expected_design_sha256: str | None = None
+    validated_source_digest: str | None = None
 
 
 def prepare_recorded_cycle(cwd, root, continuous, selection, *, spent_seconds=0):
@@ -373,7 +374,8 @@ def pin_locked_preregistration(args, cwd, root):
 
     args.locked_preregistration = args.locked_preregistration.resolve()
     args.locked_prereg_sha256 = hashlib.sha256(args.locked_preregistration.read_bytes()).hexdigest()
-    locked_preregistration_selection(
+    selection = locked_preregistration_selection(
         args.locked_preregistration, cwd, root, args.loop_id, args.locked_prereg_sha256,
         options=vars(args),
     )
+    return selection.validated_source_digest

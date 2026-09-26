@@ -8,7 +8,7 @@ from pathlib import Path
 from scripts.merge_verification_evidence import digest
 
 COLLECTION_BATCH_SIZE = 64
-# Isolated pytest startup alone measured 11.5s; keep admission above that cost.
+# Minimum next-invocation hint, not a cap on preparation plus collection.
 COLLECTION_MIN_ATTEMPT_SECONDS = 20.0
 
 def _finish_if_ready(state, batches, plan_shards) -> bool:

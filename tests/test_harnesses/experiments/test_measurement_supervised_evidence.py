@@ -345,3 +345,37 @@ def test_frozen_provenance_metadata_tamper_and_missing_refs_fail_closed(tmp_path
     marker.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="immutable_release_changed"):
         release.runtime_git_provenance(execution)
+
+
+@pytest.mark.parametrize("mutation", ["bytes", "added", "deleted", "executable", "hardlink", "external_link"])
+def test_combined_source_provenance_rechecks_drift(tmp_path, monkeypatch, mutation):
+    import os
+    from slm_training.harness_core import execution_release as release
+
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "fixture.py").write_text("original bytes\n")
+    (source / "alias").symlink_to("fixture.py")
+    provenance = {"integration_commit": "b" * 40, "upstream_commit": "a" * 40, "code_dirty": False}
+    monkeypatch.setattr(release, "_checkout_provenance", lambda _: provenance)
+    execution = tmp_path / "execution"
+    manifest = release.prepare_release(source, tmp_path / "release", execution, tmp_path / "outputs")
+    assert release.runtime_source_provenance(execution) == (manifest["source_digest"], provenance)
+    target = execution / "fixture.py"
+    info = target.stat()
+    if mutation == "bytes":
+        target.write_text("modified bytes\n")
+        os.utime(target, ns=(info.st_atime_ns, info.st_mtime_ns))
+    elif mutation == "added":
+        (execution / "new.py").write_text("new file")
+    elif mutation == "deleted":
+        target.unlink()
+    elif mutation == "executable":
+        target.chmod(0o755)
+    elif mutation == "hardlink":
+        os.link(target, tmp_path / "outside-hardlink")
+    else:
+        (execution / "alias").unlink()
+        (execution / "alias").symlink_to(source / "fixture.py")
+    with pytest.raises(ValueError, match="execution_source_drift|unsupported_source_file|external_source_link"):
+        release.runtime_source_provenance(execution)

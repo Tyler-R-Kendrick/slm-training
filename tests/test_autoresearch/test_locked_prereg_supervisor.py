@@ -35,8 +35,16 @@ def _fixture(tmp_path, monkeypatch):
     campaign_id = "fixture-pr-head-diagnostic"
     ids = ["fixture-control", "fixture-candidate"]
     source = tmp_path / "execution"
-    source.mkdir()
-    (source / ".autonomy-release.json").write_text(json.dumps({"files": []}))
+    from slm_training.harness_core import execution_release
+    original = tmp_path / "original"
+    original.mkdir()
+    (original / "fixture.py").write_text("original bytes\n")
+    monkeypatch.setattr(execution_release, "_checkout_provenance", lambda _: {
+        "integration_commit": "c" * 40, "upstream_commit": "c" * 40, "code_dirty": False,
+    })
+    release_manifest = execution_release.prepare_release(
+        original, tmp_path / "release", source, tmp_path / "outputs",
+    )
     root = tmp_path / "campaigns"
     commit = "c" * 40
     ancestor = tmp_path / "ancestor.pt"
@@ -116,8 +124,8 @@ def _fixture(tmp_path, monkeypatch):
         "training_executed": False, "evaluation_executed": False,
         "campaign_id": campaign_id, "campaign_root": str(root),
         "source_path": str(source), "source_commit": commit,
-        "source_digest": "a" * 64,
-        "source_tree": tree_sha(source_entries(source, [])),
+        "source_digest": release_manifest["source_digest"],
+        "source_tree": tree_sha(source_entries(source, release_manifest["files"])),
         "logical_updates": 6, "seed": 7301,
         "primary": {"metric": endpoint.metric, "direction": endpoint.direction,
                     "minimum_effect": endpoint.minimum_effect},
@@ -143,13 +151,8 @@ def _fixture(tmp_path, monkeypatch):
     locked = store.write_artifact("science_lab_preregistration", plan)
     store.append_event("science_lab_preregistered", artifact_sha256=locked.stem)
     from slm_training.autoresearch import engine
-    from slm_training.harness_core import execution_release
     monkeypatch.setattr(context, "__file__", str(source / "scripts/autotrain_cycle_context.py"))
     monkeypatch.setattr(engine, "__file__", str(source / "src/slm_training/autoresearch/engine.py"))
-    monkeypatch.setattr(execution_release, "runtime_source_identity", lambda *_: plan["source_digest"])
-    monkeypatch.setattr(execution_release, "runtime_git_provenance", lambda *_: {
-        "integration_commit": commit, "upstream_commit": commit, "code_dirty": False,
-    })
     return plan, path, root, store, commands
 
 

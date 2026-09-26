@@ -1,0 +1,54 @@
+{
+  "schema_version": "science_lab_acceptance_observation/v1",
+  "campaign_id": "science-lab-r30-dadeb857f97c-acceptance",
+  "status": "incomplete_before_first_arm",
+  "source": {
+    "commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+    "tree": "f76924affe93ae45b189cf81564476a8a2a9cfe3",
+    "source_digest": "a99bfac07e5405102e66d6e838385fdbc35eb74025c0c7797d90600b1762291d",
+    "claim": "PR-head diagnostic"
+  },
+  "preregistration_sha256": "dd1e8c7cd6d8976ac0bdc5bd817df24b37e3185d43af3067ac61a3cd0b86e3dc",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "logical_updates_per_arm": 6,
+    "update_chunk": 3,
+    "seed": 7301,
+    "parameters_per_arm": 65826,
+    "training_records": 8,
+    "planned_eval_cases_per_arm": 6,
+    "control_learning_rate": 0.0003,
+    "candidate_learning_rate": 0.0006,
+    "honesty": "public smoke diagnostic only"
+  },
+  "observations": {
+    "supervisor_attempt_exit_codes": [
+      137,
+      137
+    ],
+    "completed_training_arms": 0,
+    "completed_evaluation_arms": 0,
+    "new_checkpoint_count": 0,
+    "paired_endpoint_measured": false,
+    "retained_driver_cursor": true
+  },
+  "promotion_allowed": false,
+  "release_authorized": false,
+  "evidence": {
+    "preregistration": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/preregistration.json",
+    "supervisor_log": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/supervisor.log",
+    "campaign_events": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/campaigns/science-lab-r30-dadeb857f97c-acceptance/events.jsonl"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v309",
+      "config.levers": "v33"
+    },
+    "stamped_at": "2026-09-26T19:33:42.245338+00:00"
+  },
+  "version_stamp_basis": "Published immutable source and component registry observed at preregistration; no later-source evidence is substituted."
+}

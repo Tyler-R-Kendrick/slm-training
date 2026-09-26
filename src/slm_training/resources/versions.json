@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v37",
+          "note": "Validate immutable release source and Git provenance together at adjacent controller boundaries, preserving fresh file-content, mode, link and drift checks across worker execution."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v36",
           "note": "Apply inherited runtime aliases before explicit numbered grants so nested workers cannot overwrite the requested Node, Python, or bridge runtime slots."
         },
@@ -332,7 +337,7 @@
         "tests/test_scripts/test_env_repair_rewrite.py",
         "tests/test_scripts/test_run_autotrain_supervisor.py"
       ],
-      "version": "v36"
+      "version": "v37"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -433,6 +438,11 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "version": "v30",
+          "note": "Give isolated collection its admitted remaining workload allowance so sandbox preparation cannot strand every batch behind a fixed 20-second slice; preserve retry charges, timeouts, and receipt validation."
+        },
         {
           "date": "2026-09-26",
           "version": "v29",
@@ -629,7 +639,7 @@
         "tests/test_scripts/test_merge_verification_scheduling.py",
         "tests/test_scripts/test_merge_verification_successor.py"
       ],
-      "version": "v29"
+      "version": "v30"
     },
     "config.levers": {
       "history": [
@@ -5607,6 +5617,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "version": "v310",
+          "note": "Reuse the fully validated locked-preregistration source identity during the same supervisor startup boundary, avoiding repeated complete tree scans before bounded work can begin."
+        },
+        {
+          "date": "2026-09-26",
           "version": "v309",
           "note": "Resolve authenticated verifier successors transitively from the parked repair wake, rejecting ambiguous/cyclic links, changed proposal/source identity, and remaining-grant mismatches without consuming new agent inference."
         },
@@ -7872,7 +7887,7 @@
         "tests/test_autoresearch/test_evaluation_budget_boundary.py",
         "tests/test_autoresearch/test_driver_partial_cursor_recovery.py"
       ],
-      "version": "v309"
+      "version": "v310"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -8138,6 +8153,11 @@
     "harness.core": {
       "history": [
         {
+          "date": "2026-09-26",
+          "version": "v25",
+          "note": "Combine source/provenance validation at one boundary and avoid per-file relative-path reconstruction, preserving complete fresh release/execution validation and worker-boundary drift detection."
+        },
+        {
           "date": "2026-09-25",
           "version": "v24",
           "note": "Disable MCP server startup during account-only Codex subscription refresh."
@@ -8264,7 +8284,7 @@
         "tests/test_autoresearch/test_codex_subscription.py",
         "tests/test_autoresearch/test_codex_subscription_budget.py"
       ],
-      "version": "v24"
+      "version": "v25"
     },
     "harness.distill": {
       "history": [

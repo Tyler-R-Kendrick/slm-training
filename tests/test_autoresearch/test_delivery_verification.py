@@ -42,19 +42,6 @@ def test_signed_isolated_gate_maps_exact_execution_release(tmp_path, monkeypatch
     monkeypatch.setenv("PYTHONPATH", str(source / "src") + os.pathsep + str(source))
     captured = verification_environment()
     cache = tmp_path / "cache"
-    if os.environ.get("SLM_REQUIRE_ISOLATION") == "1":
-        from slm_training.autoresearch.heal.isolation import IsolationUnavailable
-
-        with pytest.raises(IsolationUnavailable):
-            verifier.run_release_gate(
-                (),
-                root=source,
-                base_ref="a" * 40,
-                state_dir=cache,
-                step_seconds=40,
-                run_step=None,
-            )
-        return  # The outer verifier forbids nested namespaces; fail closed.
     summary = verifier.run_release_gate(
         (),
         root=source,

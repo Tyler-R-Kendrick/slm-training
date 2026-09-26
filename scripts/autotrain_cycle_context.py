@@ -295,7 +295,7 @@ def locked_preregistration_selection(
 ):
     """Resolve only the exact preregistered pair on its authenticated source."""
     from scripts.autotrain_cycle_prepare import RecordedCycleSelection
-    from slm_training.harness_core.execution_release import runtime_git_provenance, runtime_source_identity
+    from slm_training.harness_core.execution_release import runtime_source_provenance
     from slm_training.harness_core.github_delivery_tree import source_entries, tree_sha
     from slm_training.levers import MAX_HARNESS_WALL_SECONDS
 
@@ -320,9 +320,10 @@ def locked_preregistration_selection(
     ):
         raise ValueError("locked preregistration identity or diagnostic policy mismatch")
     marker = json.loads((cwd / ".autonomy-release.json").read_text())
+    source_digest, provenance = runtime_source_provenance(cwd)
     if (
-        runtime_source_identity(cwd) != plan["source_digest"]
-        or runtime_git_provenance(cwd) != {
+        source_digest != plan["source_digest"]
+        or provenance != {
             "integration_commit": plan["source_commit"],
             "upstream_commit": plan["source_commit"], "code_dirty": False,
         }
@@ -389,7 +390,7 @@ def locked_preregistration_selection(
         preregistration_path=path, expected_commands=commands,
         expected_experiments=experiments,
         preregistered_inputs=input_hashes,
-        expected_design_sha256=plan["design_sha256"],
+        expected_design_sha256=plan["design_sha256"], validated_source_digest=source_digest,
     )
 
 

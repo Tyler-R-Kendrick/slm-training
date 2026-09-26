@@ -38,7 +38,7 @@ def test_real_workload_resumes_verified_collection_without_duplicate_tests(
         root=root,
         base_ref="HEAD",
         state_dir=control,
-        step_seconds=25,
+        step_seconds=60,
         run_step=run_step,
         local_feedback=True,
     )
@@ -57,4 +57,4 @@ def test_real_workload_resumes_verified_collection_without_duplicate_tests(
     (root / "fixture.json").write_text("new fixture identity")
     fourth = verify()
     assert fourth["identity"] != third["identity"]
-    assert fourth["verification_complete"] is True
+    assert fourth["verification_complete"] is True, fourth

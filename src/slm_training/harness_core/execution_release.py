@@ -55,11 +55,13 @@ def _files(root: Path) -> dict:
             dirs[:] = []
             files = [name for name in files if name in {".gitignore", "project.yml"}]
         dirs[:] = sorted(name for name in dirs if name not in _SKIP)
+        prefix = Path(directory).relative_to(root).as_posix()
+        prefix = "" if prefix == "." else prefix + "/"
         for name in sorted(
             files + [name for name in dirs if (Path(directory) / name).is_symlink()]
         ):
             path = Path(directory) / name
-            relative = path.relative_to(root).as_posix()
+            relative = prefix + name
             if (name in _SKIP or relative == MARKER
                     or name.startswith(".env.") and name != ".env.example"):
                 continue
@@ -180,9 +182,9 @@ def _prepare_release(source, destinations, provenance_read):
 def _predecessor_provenance(predecessor: tuple[Path, str]) -> dict:
     """Controller-pinned ancestry; candidate bytes never supply Git metadata."""
     execution, expected_digest = predecessor
-    if runtime_source_identity(execution) != expected_digest or expected_digest is None:
+    identity, provenance = runtime_source_provenance(execution)
+    if identity != expected_digest or expected_digest is None:
         raise ValueError("repair_predecessor_source_mismatch")
-    provenance = runtime_git_provenance(execution)
     if provenance is None:
         raise ValueError("repair_requires_pinned_execution_release")
     return {**provenance, "code_dirty": True}
@@ -190,6 +192,12 @@ def _predecessor_provenance(predecessor: tuple[Path, str]) -> dict:
 
 def runtime_source_identity(root: Path) -> str | None:
     """Validate immutable original + execution source; legacy checkout => None."""
+    manifest = _runtime_manifest(root)
+    return manifest["source_digest"] if manifest is not None else None
+
+
+def _runtime_manifest(root: Path) -> dict | None:
+    """Fresh complete validation; callers may consume both identities together."""
     marker = root / MARKER
     if not marker.exists():
         return None
@@ -216,7 +224,7 @@ def runtime_source_identity(root: Path) -> str | None:
         raise ValueError("execution_source_drift")
     if (root / "outputs").resolve() != Path(manifest["outputs"]).resolve():
         raise ValueError("output_destination_changed")
-    return manifest["source_digest"]
+    return manifest
 
 
 def document_successor_manifest(entries: dict, documents: dict) -> dict:
@@ -262,15 +270,21 @@ def _checkout_provenance(source: Path) -> dict | None:
 
 def runtime_git_provenance(root: Path) -> dict | None:
     """Verified historical Git metadata; source_digest remains the runtime identity."""
-    if runtime_source_identity(root) is None:
-        return None
-    value = json.loads((root / MARKER).read_text()).get("git_provenance")
+    return runtime_source_provenance(root)[1]
+
+
+def runtime_source_provenance(root: Path) -> tuple[str | None, dict | None]:
+    """Read source and provenance at one boundary, never reuse across work."""
+    manifest = _runtime_manifest(root)
+    if manifest is None:
+        return None, None
+    value = manifest.get("git_provenance")
     if (not isinstance(value, dict) or type(value.get("code_dirty")) is not bool
             or any(not isinstance(value.get(key), str) or len(value[key]) != 40
                    or any(c not in "0123456789abcdef" for c in value[key])
                    for key in ("integration_commit", "upstream_commit"))):
         raise ValueError("release_git_provenance_unavailable")
-    return value
+    return manifest["source_digest"], value
 
 
 def validate_source_refs(root: Path, upstream: str, integration: str, *, git):
