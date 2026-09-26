@@ -12513,6 +12513,11 @@
     "harness.experiments.slm228_spectral_disposition": {
       "history": [
         {
+          "date": "2026-09-26",
+          "version": "v3",
+          "note": "no-bump: record R24 incomplete-pair checkpoint evidence in README and MODEL_CARD; SLM-228 implementation, experiment definition, and metrics remain unchanged."
+        },
+        {
           "date": "2026-09-22",
           "note": "no-bump: README and MODEL_CARD record the separate CPU SCI-LAB continuation checkpoints; SLM-228 spectral-disposition implementation, experiment definition and existing results are unchanged.",
           "version": "v3"
