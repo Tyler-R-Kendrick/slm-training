@@ -1,0 +1,57 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_scripts/test_readiness_pending_dispatch.py",
+  "case_sets": {
+    "test_unknown_zero_and_wall_selection_never_runnable": {
+      "parameters": [
+        "n",
+        "report",
+        "actual",
+        "binding"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            0,
+            null,
+            0,
+            "unknown"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            6,
+            null,
+            null,
+            "unknown"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            6,
+            null,
+            0,
+            "suite_volume"
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            0,
+            {
+              "n_min": 6,
+              "binding_constraints": [
+                "wall_budget"
+              ]
+            },
+            96,
+            "wall_budget"
+          ]
+        }
+      ]
+    }
+  }
+}

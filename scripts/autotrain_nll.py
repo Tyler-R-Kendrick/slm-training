@@ -22,6 +22,21 @@ from slm_training.evals.loss_suites import per_record_nll_map
 from slm_training.evals.measurement_identity import content_digest
 
 
+def campaign_attempt_id(store, arm_id):
+    """Require an open attempt from the verified controller event chain."""
+    attempt = None
+    for event in store.verify_event_chain():
+        if event["experiment_id"] != arm_id:
+            continue
+        if event["event_type"] == "experiment_attempt_started":
+            attempt = event["detail"].get("attempt_id")
+        elif event["event_type"] == "experiment_attempt_returned":
+            attempt = None
+    if not isinstance(attempt, str) or not attempt:
+        raise ValueError("loss report requires an active campaign attempt")
+    return attempt
+
+
 def compute_nll(test_dir, checkpoint, model, nll_config):
     from slm_training.evals.denoising_nll import DenoisingNLLConfig
     from slm_training.evals.loss_suites import (
@@ -152,6 +167,7 @@ def run_arm_eval_nll(run_dir: Path, inputs: dict[str, Any]) -> dict[str, Any]:
                     "selection": dict(selection) if selection is not None else None,
                     "row_evidence": row_evidence,
                     "attempt_id": attempt_id,
+                    "producer_evidence": inputs.get("producer_evidence"),
                     "estimator_id": estimator_id,
                     "units": "nats_per_masked_token",
                     "selection_locked": selection is not None,

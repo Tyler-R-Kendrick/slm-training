@@ -7,8 +7,6 @@ An approved operation-specific reproducer must independently reproduce the fault
 from __future__ import annotations
 
 import hashlib
-import tempfile
-import time
 from pathlib import Path
 
 from slm_training.harness_core.activity_contract import (
@@ -17,11 +15,9 @@ from slm_training.harness_core.activity_contract import (
     ResourceGrant,
     contract_digest,
 )
-from slm_training.harness_core.bounded_process import ProcessOutcome
-from slm_training.levers import KILL_GRACE_SECONDS
 
-from .isolation import IsolationSpec, IsolationUnavailable, run_isolated
-from .isolation_workspace import manifest_digest, private_snapshot, tree_manifest
+from .operation_failure_signature import capture_failure_signature
+from .operation_diagnosis import diagnose_operation as diagnose_operation
 from .repair_release import verified_activation_handoff
 
 
@@ -48,6 +44,10 @@ def record_operation_failure(runtime, lease, request, result, *, outcome):
         "truncated": result.stdout_truncated or result.stderr_truncated,
         "launch_error": bool(result.launch_error),
     }
+    source = request.get("cwd")
+    signature = capture_failure_signature(result, Path(source)) if source else None
+    if signature is not None:
+        observation["failure_signature"] = signature.model_dump(mode="json")
     pending = {
         "kind": "repair_harness",
         "blocker_code": "controller_operation_failure",
@@ -71,22 +71,74 @@ def record_operation_failure(runtime, lease, request, result, *, outcome):
     return pending
 
 
+def record_driver_reconciliation(runtime, lease, request, driver_pending):
+    """Queue an exact unresolved cursor without inventing a process failure."""
+    from scripts.autotrain_pending import validate_pending
+
+    outcome, wake = validate_pending(driver_pending)
+    blocker = driver_pending.get("blocker") or {}
+    if (
+        request.get("operation") != "driver"
+        or outcome != ActivityOutcome.CAPABILITY
+        or driver_pending.get("reason") != "driver_attempt_requires_reconciliation"
+        or blocker.get("kind") != "repair_harness"
+        or blocker.get("blocker_code") != driver_pending["reason"]
+        or blocker.get("required_capability") != "driver_continuation_reconciliation"
+        or blocker.get("input_digest") != driver_pending.get("input_digest")
+        or wake.source != "driver_cycle_checkpoint"
+    ):
+        raise ValueError("untrusted driver reconciliation pending")
+    pending = {
+        "kind": "repair_harness",
+        "blocker_code": blocker["blocker_code"],
+        "required_capability": blocker["required_capability"],
+        "unmet_predicate": "driver_command_cursor_reconciled",
+        "input_digest": blocker["input_digest"],
+        "pending_digest": contract_digest(driver_pending),
+        "affected_activity_id": lease.activity_id,
+        "original_operation": "driver",
+        "original_request_digest": contract_digest(request),
+        "reason": driver_pending["reason"],
+        "observed_outcome": outcome.value,
+    }
+    artifact = runtime.store.write_artifact(
+        "operation_failures", {"request": request, "pending": pending, "driver_pending": driver_pending}
+    )
+    runtime.store.append_event(
+        "operation_repair_requested",
+        experiment_id=lease.activity_id,
+        artifact_sha256=artifact.stem,
+        idempotency_key="driver-reconciliation:" + lease.token,
+        detail={"request": request, "pending": pending, "fence": lease.token},
+    )
+    return pending
+
+
 def pending_operation_repairs(runtime) -> list[dict]:
     """Recover the repair queue from the canonical events, including after crash."""
     states = runtime.snapshot()
     latest = {}
-    for event in runtime.store.verify_event_chain():
+    events = runtime.store.verify_event_chain()
+    for event in events:
         if event["event_type"] == "operation_repair_requested":
             latest[event["experiment_id"]] = event["detail"]
     jobs = []
     for activity, detail in latest.items():
         state = states.get(activity)
         if state is None or state.status not in {
-            "waiting_repair",
-            "waiting_dependency",
+            "waiting_repair", "waiting_dependency", "waiting_capability",
         }:
             continue
+        if (state.status == "waiting_capability"
+                and detail["pending"].get("blocker_code")
+                != "driver_attempt_requires_reconciliation"):
+            continue
         original = detail["request"]
+        if (
+            detail["pending"].get("observed_outcome")
+            == ActivityOutcome.WALL_BUDGET.value
+        ):
+            continue  # Remaining grant/cursor reconciliation belongs to the driver.
         # Do not spawn recursive repair-of-repair chains. The original durable
         # job remains visible and capability/diagnosis receipts explain its wait.
         if original["operation"] == "repair":
@@ -102,135 +154,17 @@ def pending_operation_repairs(runtime) -> list[dict]:
                 "playbooks_enabled": original.get("playbooks_enabled", False),
             }
         )
-    return jobs
-
-
-def diagnose_operation(pending, context, config, journal):
-    """One bounded independent probe, then reuse its identity-bound disposition.
-
-    Returns (resolved pending or None, reason, probe_ran). Probe and agent launch
-    occupy different invocations. No recipe means an explicit capability wait.
-    """
-    operation = pending["original_operation"]
-    code = config.operation_recipes.get(operation)
-    recipe = config.recipes.get(code)
-    unavailable = None
-    if pending.get("observed_outcome") not in {
-        ActivityOutcome.UNKNOWN_FAILURE.value,
-        ActivityOutcome.CODE_FAILURE.value,
-    }:
-        unavailable = (
-            "typed_outcome_requires_original_owner:" + pending["observed_outcome"]
-        )
-    elif recipe is None:
-        unavailable = "operation_reproducer_not_configured:" + operation
-    if unavailable:
-        return None, unavailable, False
-    identity = contract_digest(
-        {
-            "request": pending["original_request_digest"],
-            "source": context.source_digest,
-            "environment": context.environment_digest,
-            "config": config.digest(),
-        }
-    )
-    events = journal.verify_event_chain()
-    matches = [e for e in events if e["detail"].get("diagnosis_id") == identity]
-    completed = [
-        e for e in matches if e["event_type"] == "operation_diagnosis_finished"
-    ]
-    if completed:
-        detail = completed[-1]["detail"]
-        return detail["resolved"], detail["reason"], False
-    if any(e["detail"].get("attempt_id") == context.attempt_id for e in matches):
-        return None, "interrupted_diagnosis_requires_reconciliation", False
-    grant = config.grant
-    if grant is None or grant.expires_at <= time.time():
-        return None, "diagnosis_grant_missing_or_expired", False
-    seconds = min(10.0, grant.interrupt_seconds)
-    reserved = sum(
-        e["detail"]["reserved_seconds"]
-        for e in events
-        if e["event_type"] == "operation_diagnosis_started"
-        and e["detail"]["grant_digest"] == grant.digest()
-    )
-    if (
-        len(matches) >= grant.max_attempts
-        or reserved + seconds + KILL_GRACE_SECONDS > grant.total_seconds
-    ):
-        return None, "diagnosis_grant_exhausted", False
-    journal.append_event(
-        "operation_diagnosis_started",
-        detail={
-            "diagnosis_id": identity,
-            "attempt_id": context.attempt_id,
-            "grant_digest": grant.digest(),
-            "reserved_seconds": seconds + KILL_GRACE_SECONDS,
-        },
-    )
-    resolved, reason, spent = _probe(pending, context, config, recipe, code, seconds)
-    journal.append_event(
-        "operation_diagnosis_finished",
-        detail={
-            "diagnosis_id": identity,
-            "resolved": resolved,
-            "reason": reason,
-            "spent_seconds": spent,
-            "scientific_outcome": False,
-        },
-    )
-    return resolved, reason, True
-
-
-def _probe(pending, context, config, recipe, code, seconds):
-    started = time.monotonic()
-    with tempfile.TemporaryDirectory(
-        prefix="operation-diagnose-", dir=context.source.parent
-    ) as directory:
-        snapshot = private_snapshot(context.source, Path(directory) / "source")
-        if manifest_digest(tree_manifest(snapshot)) != context.source_digest:
-            return None, "diagnosis_source_identity_changed", time.monotonic() - started
-        try:
-            result = run_isolated(
-                IsolationSpec(
-                    snapshot,
-                    runtime_roots=tuple(Path(p) for p in config.runtime_roots),
-                    timeout_seconds=seconds,
-                ),
-                recipe.original.argv,
-            )
-        except IsolationUnavailable:
-            return None, "diagnosis_isolation_unavailable", time.monotonic() - started
-    matches = (
-        result.outcome == ProcessOutcome.COMPLETED
-        and result.returncode == recipe.failure_returncode
-        and not (result.stdout_truncated or result.stderr_truncated)
-        and hashlib.sha256(result.stdout.encode()).hexdigest()
-        == recipe.failure_stdout_sha256
-        and hashlib.sha256(result.stderr.encode()).hexdigest()
-        == recipe.failure_stderr_sha256
-    )
-    if not matches:
-        return None, "original_fault_not_reproduced", result.duration_seconds
-    observed = pending.get("failure_observation", {})
-    if (
-        observed.get("returncode") != recipe.failure_returncode
-        or observed.get("stdout_sha256") != recipe.failure_stdout_sha256
-        or observed.get("stderr_sha256") != recipe.failure_stderr_sha256
-        or observed.get("truncated", True)
-    ):
-        return (
-            None,
-            "operation_observation_not_covered_by_recipe",
-            result.duration_seconds,
-        )
-    resolved = {
-        **pending,
-        "blocker_code": code,
-        "unmet_predicate": recipe.original.check_id,
-        "required_capability": "source_repair",
+    serviced = {
+        event["experiment_id"]: index
+        for index, event in enumerate(events)
+        if event["event_type"] == "operation_repair_serviced"
     }
-    return resolved, "original_fault_reproduced", result.duration_seconds
+    return sorted(
+        jobs,
+        key=lambda job: serviced.get(
+            job["hard_pending"][0]["affected_activity_id"], -1
+        ),
+    )
 
 
 def wake_verified_operation(runtime, handoff, *, cwd):
@@ -246,6 +180,7 @@ def wake_verified_operation(runtime, handoff, *, cwd):
     )
 
     checked = verified_activation_handoff(runtime.store, handoff)
+    activation = checked.get("activation_id", checked["publication_id"])
     if (
         Path(cwd).resolve() != Path(checked["successor_execution"]).resolve()
         or runtime_source_identity(Path(cwd)) != checked["source_digest"]
@@ -265,19 +200,17 @@ def wake_verified_operation(runtime, handoff, *, cwd):
     runtime.store.append_event(
         "operation_successor_planned",
         experiment_id=activity,
-        idempotency_key="operation-plan:" + checked["publication_id"],
+        idempotency_key="operation-plan:" + activation,
         detail=plan,
     )
     # Cancel before register: crash recovery replays the plan without allowing
     # old/new executions to overlap or losing the remainder of the logical grant.
-    runtime.cancel(
-        activity, reason="replaced_by_verified_release:" + checked["publication_id"]
-    )
+    runtime.cancel(activity, reason="replaced_by_verified_release:" + activation)
     runtime.register(ActivitySpec.model_validate(plan["spec"]))
     runtime.store.append_event(
         "operation_successor_activated",
         experiment_id=activity,
-        idempotency_key="operation-activation:" + checked["publication_id"],
+        idempotency_key="operation-activation:" + activation,
         detail={
             "handoff": checked,
             "successor_request_digest": contract_digest(plan["request"]),
@@ -323,16 +256,17 @@ def _successor_plan(runtime, checked, events):
         }
     )
     prior = original.get("logical_continuation", {})
+    activation = checked.get("activation_id", checked["publication_id"])
+    environment = _successor_environment(state.spec.environment_digest, checked)
     successor_id = (
         "successor-"
-        + contract_digest(
-            {"activity": activity, "publication": checked["publication_id"]}
-        )[:24]
+        + contract_digest({"activity": activity, "publication": activation})[:24]
     )
     request = {
         **original,
         "cwd": checked["successor_execution"],
         "source_digest": checked["source_digest"],
+        "environment_digest": environment,
         "successor_activity_id": successor_id,
         "resource_grant": remaining.model_dump(mode="json"),
         "logical_continuation": {
@@ -350,6 +284,7 @@ def _successor_plan(runtime, checked, events):
             + state.charged_seconds,
             "prior_attempts": prior.get("prior_attempts", 0) + state.attempts,
             "publication_id": checked["publication_id"],
+            "activation_id": activation,
             "scientific_replicate_increment": 0,
         },
     }
@@ -358,6 +293,7 @@ def _successor_plan(runtime, checked, events):
             **state.spec.model_dump(mode="json"),
             "activity_id": successor_id,
             "source_digest": checked["source_digest"],
+            "environment_digest": environment,
             "input_digest": contract_digest(request),
             "output_namespace": "attempts/" + successor_id,
             "grant": remaining.model_dump(mode="json"),
@@ -368,3 +304,19 @@ def _successor_plan(runtime, checked, events):
         "request": request,
         "spec": spec.model_dump(mode="json"),
     }
+
+
+def _successor_environment(original, checked):
+    """Only the recorded path relocation may change an operation environment."""
+    from scripts.merge_verification_evidence import digest, environment_identity
+
+    transition = checked.get("environment_transition")
+    if transition is None:
+        return original
+    current = digest(environment_identity())
+    if (
+        transition["predecessor_digest"] != original
+        or transition["successor_digest"] != current
+    ):
+        raise ValueError("successor_environment_transition_mismatch")
+    return current

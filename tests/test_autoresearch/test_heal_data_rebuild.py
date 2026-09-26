@@ -1,132 +1,107 @@
-"""data_rebuild playbook: the rebuild seam is healed only when records grow."""
-
+"""Regression: only the exact current data predicate authorizes healing."""
 from __future__ import annotations
 
 import json
-from pathlib import Path
+
+import pytest
 
 from slm_training.autoresearch import heal
-from slm_training.autoresearch.heal.classify import classify_blocker
 from slm_training.autoresearch.heal.playbooks import data_rebuild
-from slm_training.autoresearch.heal.playbooks.data_rebuild import (
-    PLAYBOOK,
-    count_data_records,
-)
+from slm_training.autoresearch.heal.escalation import blocker_fingerprint
+from slm_training.harnesses.train_data.repair import publish_repair
+from tests.test_harnesses.train_data.readiness_fixtures import record, request_fixture, stage_rows
 
-LOOP = "continuous-openui-local"
-CAMPAIGN = "continuous-loop-c9"
-
-
-def _blocker(reason: str = "rebuild_data: train records below unique_root_target") -> dict:
-    return {"campaign_id": CAMPAIGN, "index": 1, "kind": "rebuild_data", "reason": reason}
+LOOP = "test-loop"
+CAMPAIGN = "campaign"
 
 
-def _write_records(cwd: Path, version: str, n: int) -> None:
-    train = cwd / "outputs" / "data" / "train" / version
-    train.mkdir(parents=True, exist_ok=True)
-    (train / "records.jsonl").write_text(
-        "".join(json.dumps({"id": f"{version}-{i}"}) + "\n" for i in range(n)),
-        encoding="utf-8",
-    )
+def _blocker(request=None):
+    result = {"campaign_id": CAMPAIGN, "index": 1, "kind": "rebuild_data", "reason": "role-safety"}
+    if request:
+        result["data_readiness_request"] = request.model_dump()
+    return result
 
 
-class TestCount:
-    def test_counts_train_test_and_seed_records(self, tmp_path: Path) -> None:
-        assert count_data_records(tmp_path, tmp_path, CAMPAIGN) == 0
-        _write_records(tmp_path, "v1", 3)
-        seed = tmp_path / "src" / "slm_training" / "resources" / "test_seeds.jsonl"
-        seed.parent.mkdir(parents=True)
-        seed.write_text('{"id": "s1"}\n\n{"id": "s2"}\n', encoding="utf-8")
-        assert count_data_records(tmp_path, tmp_path, CAMPAIGN) == 5
+def _execute(root, request, seam):
+    return data_rebuild.execute(_blocker(request), cwd=root, root=root, loop_id=LOOP,
+                                campaign_id=CAMPAIGN, seam=seam)
 
 
-class TestExecute:
-    def test_stub_seam_adding_zero_records_is_postcondition_failure(
-        self, tmp_path: Path
-    ) -> None:
-        _write_records(tmp_path, "v1", 4)
-        calls: list[dict] = []
-
-        def seam(**kwargs):
-            calls.append(kwargs)
-            return "rebuild_data_noop"
-
-        blocker = _blocker()
-        assert classify_blocker(blocker["kind"], blocker["reason"]) == "data"
-        assert PLAYBOOK.matches(blocker)
-        receipt = data_rebuild.execute(
-            blocker, cwd=tmp_path, root=tmp_path, loop_id=LOOP, campaign_id=CAMPAIGN,
-            seam=seam,
-        )
-        assert calls == [
-            {"cwd": tmp_path, "root": tmp_path, "loop_id": LOOP, "campaign_id": CAMPAIGN}
-        ]
-        assert receipt.outcome == "postcondition_failed"
-        assert receipt.note.startswith("heal_postcondition_failed:")
-        assert "records_before=4 records_after=4" in receipt.note
-        assert receipt.verify_result is not None
-        assert receipt.verify_result.returncode == 1
-        rows = heal.load_heal_receipts(tmp_path, LOOP)
-        assert [r.outcome for r in rows] == ["postcondition_failed"]
-
-    def test_seam_growing_records_is_healed(self, tmp_path: Path) -> None:
-        _write_records(tmp_path, "v1", 4)
-
-        def seam(**kwargs):
-            _write_records(kwargs["cwd"], "v2", 6)
-            return "rebuild_data_local"
-
-        receipt = data_rebuild.execute(
-            _blocker(), cwd=tmp_path, root=tmp_path, loop_id=LOOP, campaign_id=CAMPAIGN,
-            seam=seam,
-        )
-        assert receipt.outcome == "healed"
-        assert receipt.verify_result is not None
-        assert receipt.verify_result.returncode == 0
-        assert "records_before=4 records_after=10" in receipt.note
-
-    def test_seam_crash_is_step_failed_never_healed(self, tmp_path: Path) -> None:
-        def seam(**kwargs):
-            raise RuntimeError("build_train_data exploded")
-
-        receipt = data_rebuild.execute(
-            _blocker(), cwd=tmp_path, root=tmp_path, loop_id=LOOP, campaign_id=CAMPAIGN,
-            seam=seam,
-        )
-        assert receipt.outcome == "step_failed"
-        assert "build_train_data exploded" in receipt.note
-
-    def test_custom_counter_drives_postcondition(self, tmp_path: Path) -> None:
-        counts = iter([10, 10])
-        receipt = data_rebuild.execute(
-            _blocker(), cwd=tmp_path, root=tmp_path, loop_id=LOOP, campaign_id=CAMPAIGN,
-            seam=lambda **_: None,
-            count_records=lambda *_: next(counts),
-            write_receipt=False,
-        )
-        assert receipt.outcome == "postcondition_failed"
-        assert heal.load_heal_receipts(tmp_path, LOOP) == ()
+def test_legacy_growth_counter_cannot_heal_or_invoke_unspecified_builder(tmp_path):
+    calls = []
+    receipt = data_rebuild.execute(_blocker(), cwd=tmp_path, root=tmp_path, loop_id=LOOP,
+                                  campaign_id=CAMPAIGN, seam=lambda **kw: calls.append(kw),
+                                  count_records=lambda *_: 100000)
+    assert receipt.outcome == "postcondition_failed"
+    assert "missing_data_readiness_contract" in receipt.note
+    assert calls == []
 
 
-class TestRunnerCompatibility:
-    def test_discovered_and_plan_shape(self, tmp_path: Path) -> None:
-        ids = {p.playbook_id for p in heal.discovered_playbooks()}
-        assert "data_rebuild/v1" in ids
-        blocker = {**_blocker(), "_root": tmp_path / "outputs", "_loop_id": LOOP}
-        plan = PLAYBOOK.plan(blocker, cwd=tmp_path)
-        assert plan is not None
-        assert plan.blocker_class == "data"
-        assert plan.steps[0].step_id == "rebuild_data_seam"
-        assert "--verify-state" in plan.verify.argv
-        assert PLAYBOOK.plan(_blocker(), cwd=tmp_path) is None
+@pytest.mark.parametrize("effect", ["unrelated", "malformed", "copy", "assert_fixed"])
+def test_unrelated_growth_or_claimed_success_is_not_healing(tmp_path, effect):
+    request = request_fixture(tmp_path)
+    def seam(**_):
+        unrelated = tmp_path / "outputs/data/train/unrelated"
+        unrelated.mkdir()
+        original = tmp_path / request.original.directory / "records.jsonl"
+        (unrelated / "records.jsonl").write_text(
+            original.read_text() if effect == "copy" else "{garbage\n" * 30)
+        return {"healed": True, "records_after": 9999, "effect": effect}
+    receipt = _execute(tmp_path, request, seam)
+    assert receipt.outcome != "healed"
+    assert receipt.verify_result.returncode != 0
 
-    def test_verify_state_cli_decides_on_growth(self, tmp_path: Path) -> None:
-        state = tmp_path / "state.json"
-        state.write_text(
-            json.dumps({"records_before": 4, "records_after": 4}), encoding="utf-8"
-        )
-        assert data_rebuild._main(["--verify-state", str(state)]) == 1
-        state.write_text(
-            json.dumps({"records_before": 4, "records_after": 9}), encoding="utf-8"
-        )
-        assert data_rebuild._main(["--verify-state", str(state)]) == 0
+
+def test_same_count_actual_repair_and_current_state_reverification(tmp_path):
+    request = request_fixture(tmp_path)
+    def seam(**kw):
+        return publish_repair(kw["request"], root=kw["cwd"],
+                              staged=stage_rows(tmp_path, request, [record()]))
+    receipt = _execute(tmp_path, request, seam)
+    assert receipt.outcome == "healed", receipt
+    assert receipt.verify_result.step_id == "original_data_predicate"
+    fingerprint = blocker_fingerprint("rebuild_data", "role-safety", data_request=request)
+    assert receipt.blocker_fingerprint == fingerprint
+    state = data_rebuild.state_path(tmp_path, LOOP, fingerprint)
+    assert data_rebuild._verify_state(state, cwd=tmp_path, request_sha=request.sha256) == 0
+    assert data_rebuild._verify_state(state, cwd=tmp_path, request_sha="0" * 64) == 1
+    destination = tmp_path / "outputs/data/train/successor/records.jsonl"
+    destination.write_text("{}\n")
+    assert data_rebuild._verify_state(state, cwd=tmp_path, request_sha=request.sha256) == 1
+    # Saved 'healed' is historical, not a current acknowledgment.
+    assert json.loads(state.read_text())["outcome"] == "healed"
+    assert len(heal.load_heal_receipts(tmp_path, LOOP)) == 1
+
+
+def test_seam_crash_remains_failed(tmp_path):
+    request = request_fixture(tmp_path)
+    def seam(**_):
+        raise RuntimeError("build_train_data exploded")
+    receipt = _execute(tmp_path, request, seam)
+    assert receipt.outcome == "step_failed"
+    assert "exploded" in receipt.note
+
+
+def test_plan_binds_original_request_and_legacy_has_no_guessed_plan(tmp_path):
+    request = request_fixture(tmp_path)
+    blocker = {**_blocker(request), "_root": tmp_path, "_loop_id": LOOP}
+    plan = data_rebuild.PLAYBOOK.plan(blocker, cwd=tmp_path)
+    assert plan is not None
+    assert plan.steps[0].step_id == "rebuild_data_seam"
+    assert request.sha256 in plan.verify.argv
+    assert "--request-payload" in plan.steps[0].argv
+    assert data_rebuild.PLAYBOOK.plan(_blocker(), cwd=tmp_path) is None
+    assert "data_rebuild/v1" in {p.playbook_id for p in heal.discovered_playbooks()}
+
+
+def test_old_count_state_never_verifies(tmp_path):
+    state = tmp_path / "state.json"
+    state.write_text(json.dumps({"records_before": 4, "records_after": 9999}))
+    assert data_rebuild._main(["--verify-state", str(state), "--cwd", str(tmp_path)]) == 1
+
+
+def test_wrong_campaign_contract_never_executes(tmp_path):
+    request = request_fixture(tmp_path).model_copy(update={"campaign_id": "wrong"})
+    calls = []
+    receipt = _execute(tmp_path, request, lambda **kw: calls.append(kw))
+    assert receipt.outcome != "healed" and not calls

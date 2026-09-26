@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+import time
 
 import pytest
 from pydantic import ValidationError
@@ -90,6 +91,20 @@ def test_scoped_waits_fairness_and_no_retry_budget_reset(tmp_path):
             runtime.wake("remote", evidence=state.wake)
         assert runtime.claim_next(capabilities={"paid_unavailable"}) is None
         assert runtime.register(spec("remote", capabilities=("paid_unavailable",))).attempts == 3
+
+
+def test_auto_capability_wake_is_not_replayed_after_state_is_runnable(tmp_path):
+    store = CampaignStore("capability-wake", tmp_path)
+    with ActivityRuntime(store) as runtime:
+        runtime.register(spec("remote", capabilities=("paid",)))
+        assert runtime.claim_next(capabilities={"local_process"}) is None
+        lease = runtime.claim_next(capabilities={"local_process", "paid"})
+        assert lease.activity_id == "remote"
+        runtime.finish(lease, outcome=ActivityOutcome.RETRY, spent_seconds=.1)
+
+    with ActivityRuntime(store, controller_clock=lambda: time.time() + 120) as runtime:
+        replacement = runtime.claim_next(capabilities={"local_process", "paid"})
+        assert replacement.activity_id == "remote"
 
 
 @pytest.mark.parametrize("outcome,action", [
@@ -290,3 +305,47 @@ def test_model_copy_cannot_forge_negative_charges():
     event = ActivityEvent(operation="register", spec=spec(), activity_id="test", sequence=0, at=1)
     with pytest.raises(ValidationError):
         reduce_activity(None, event.model_copy(update={"spent_seconds": -1}))
+
+
+def test_dead_controller_worker_is_stopped_before_retry(tmp_path):
+    import subprocess
+    import textwrap
+    import time
+    from slm_training.harness_core.process_tree import identity
+
+    item = spec().model_dump(mode="json")
+    survivor = tmp_path / "worker-survived-controller"
+    worker = f"import time,pathlib; time.sleep(3); pathlib.Path({str(survivor)!r}).touch()"
+    code = textwrap.dedent(f"""
+        import json, os, sys, threading, time
+        from pathlib import Path
+        from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
+        from slm_training.harness_core.activity_contract import ActivitySpec
+        from slm_training.autoresearch.storage import CampaignStore
+        runtime = ActivityRuntime(CampaignStore('worker-crash', {str(tmp_path)!r}))
+        runtime.__enter__()
+        runtime.register(ActivitySpec.model_validate(json.loads({json.dumps(item)!r})))
+        lease = runtime.claim_next(capabilities={{'local_process'}})
+        thread = threading.Thread(target=runtime.run, args=(lease, [sys.executable, '-c', {worker!r}]),
+                                  kwargs={{'cwd': Path({str(tmp_path)!r})}}, daemon=True)
+        thread.start()
+        deadline = time.monotonic() + 2
+        while not runtime.snapshot()['test'].worker_identity:
+            if time.monotonic() >= deadline:
+                raise RuntimeError('worker registration timed out')
+            time.sleep(.005)
+        os._exit(17)
+    """)
+    result = subprocess.run([sys.executable, "-c", code], timeout=5, check=False)
+    assert result.returncode == 17
+    store = CampaignStore("worker-crash", tmp_path)
+    with ActivityRuntime(store) as runtime:
+        state = runtime.snapshot()["test"]
+        pid = int(state.worker_identity.split(":")[1])
+        deadline = time.monotonic() + 1
+        while identity(pid) is not None and time.monotonic() < deadline:
+            time.sleep(.01)
+        assert identity(pid) is None
+        assert state.status == "waiting_retry" and state.attempts == 1
+        assert state.charged_seconds == pytest.approx(1.1)
+    assert not survivor.exists()

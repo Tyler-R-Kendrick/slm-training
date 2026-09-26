@@ -318,8 +318,10 @@ def project_paths(value):
 def write_result_docs(campaign_id, result):
     """One content-bound closeout per explicitly named finite fixture run."""
     from slm_training.autoresearch.storage import CampaignStore
+    from slm_training.harness_core.execution_release import runtime_source_identity
 
-    prefix = Path("docs/design") / f"autonomy-measurement-{campaign_id}"
+    root = Path("outputs") if runtime_source_identity(Path.cwd()) is not None else Path(".")
+    prefix = root / "docs/design" / f"autonomy-measurement-{campaign_id}"
     json_path = prefix.with_suffix(".json")
     result = project_paths(result)
     if json_path.exists() and project_paths(_read(json_path)) != result:

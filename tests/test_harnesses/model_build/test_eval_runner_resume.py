@@ -397,7 +397,7 @@ def test_timeouts_persist_as_incomplete_and_replay_as_timeouts(
         max_records_this_run=SUITE_N,
         **_identity(suite),
     )
-    assert second["measurement_complete"] is True
+    assert second["measurement_complete"] is False and second["resume"]["pending_record_n"] == 0
     assert second["decode_timeout_count"] == 1
     assert second["decode_timeout_document_count"] == 1
     assert second["completed_document_n"] == SUITE_N - 1

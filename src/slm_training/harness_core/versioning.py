@@ -93,10 +93,22 @@ def component_version(component_id: str) -> str:
 
 
 def _git_output(args: list[str]) -> str | None:
+    from .execution_release import MARKER, runtime_git_provenance
+
     # Prefer the caller's worktree so isolated experiment runs do not inherit
     # another checkout's HEAD or dirty state. Packaged/non-repo callers retain
     # the source-tree fallback below.
     for cwd in dict.fromkeys((Path.cwd(), _REPO_ROOT)):
+        if (cwd / MARKER).exists():
+            try:
+                frozen = runtime_git_provenance(cwd)
+                if args == ["rev-parse", "HEAD"]:
+                    return frozen["integration_commit"]
+                if args == ["status", "--porcelain"]:
+                    return "frozen source dirty" if frozen["code_dirty"] else ""
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+            return None  # Invalid release metadata never falls back to outer Git.
         try:
             return subprocess.check_output(
                 ["git", *args],
@@ -136,7 +148,10 @@ def build_version_stamp(*component_ids: str) -> dict[str, Any]:
         components = {cid: component_version(cid) for cid in component_ids}
     except (OSError, ValueError, json.JSONDecodeError):
         components = {cid: UNKNOWN for cid in component_ids}
+    from .execution_release import source_authority_reference
+    reference = source_authority_reference(Path.cwd())
     return {
+        **({"source_authority": reference} if reference is not None else {}),
         "stamp_schema": STAMP_SCHEMA,
         "code_commit": git_commit(),
         "code_dirty": git_dirty(),

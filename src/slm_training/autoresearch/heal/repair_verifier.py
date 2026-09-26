@@ -46,8 +46,10 @@ class VerificationCheck:
 
     def __post_init__(self) -> None:
         if (
-            not isinstance(self.check_id, str) or not self.check_id.strip()
-            or not isinstance(self.argv, tuple) or not self.argv
+            not isinstance(self.check_id, str)
+            or not self.check_id.strip()
+            or not isinstance(self.argv, tuple)
+            or not self.argv
             or any(not isinstance(arg, str) or "\0" in arg for arg in self.argv)
             or not self.argv[0]
             or not isinstance(self.expected_stdout, str)
@@ -77,6 +79,7 @@ class VerificationRequest:
     timeout_seconds: float = INTERRUPT_AFTER_SECONDS
     semantics_preserving_paths: tuple[str, ...] = ()
     equivalence_checks: tuple[VerificationCheck, ...] = ()
+    regression_test_path: str = ""
 
     def __post_init__(self) -> None:
         identities = (
@@ -89,19 +92,25 @@ class VerificationRequest:
             self.authority_digest,
             self.fencing_token,
         )
-        if not all(identities) or not self.checks:
+        if not all(identities) or not self.checks or not self.regression_test_path:
             raise ValueError(
-                "verification requires complete identity and independent checks"
+                "verification requires complete identity, checks and regression test"
             )
         for identity in identities[:-1]:
             _require_digest(identity)
-        ids = [self.original.check_id, *(check.check_id for check in self.checks),
-               *(check.check_id for check in self.equivalence_checks)]
+        ids = [
+            self.original.check_id,
+            *(check.check_id for check in self.checks),
+            *(check.check_id for check in self.equivalence_checks),
+        ]
         if len(ids) != len(set(ids)):
             raise ValueError("verification check identities must be unique")
         if self.semantics_preserving_paths and not self.equivalence_checks:
             raise ValueError("wiring equivalence requires pinned differential checks")
-        if type(self.failure_returncode) is not int or not 0 < self.failure_returncode < 256:
+        if (
+            type(self.failure_returncode) is not int
+            or not 0 < self.failure_returncode < 256
+        ):
             raise ValueError("original failure must have an ordinary nonzero exit")
         if (
             isinstance(self.timeout_seconds, bool)
@@ -158,8 +167,14 @@ def _observe(
         if remaining <= 0:
             empty = hashlib.sha256(b"").hexdigest()
             return CheckObservation(
-                check.check_id, phase, False, None, ProcessOutcome.TIMED_OUT.value,
-                empty, empty, time.monotonic() - started,
+                check.check_id,
+                phase,
+                False,
+                None,
+                ProcessOutcome.TIMED_OUT.value,
+                empty,
+                empty,
+                time.monotonic() - started,
             )
         result = run_isolated(
             IsolationSpec(copy, runtime_roots=runtimes, timeout_seconds=remaining),
@@ -206,8 +221,14 @@ def verify_candidate(
     approved immutable source. A serialized copy of this result is not trusted
     input to this function and cannot itself grant a release.
     """
-    cap = time.monotonic() + INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
-    if deadline is not None and (not math.isfinite(deadline) or isinstance(deadline, bool)):
+    cap = (
+        time.monotonic()
+        + INTERRUPT_AFTER_SECONDS
+        - HARNESS_FINALIZATION_RESERVE_SECONDS
+    )
+    if deadline is not None and (
+        not math.isfinite(deadline) or isinstance(deadline, bool)
+    ):
         raise ValueError("invalid verification deadline")
     deadline = cap if deadline is None else min(cap, deadline)
     before, after = tree_manifest(base), tree_manifest(candidate)
@@ -224,10 +245,27 @@ def verify_candidate(
             and not ((candidate / path).is_dir() and path not in before)
         )
     )
-    require_routine_scope(base, candidate, changed, request.allowed_paths,
-                          request.semantics_preserving_paths)
+    require_routine_scope(
+        base,
+        candidate,
+        changed,
+        request.allowed_paths,
+        request.semantics_preserving_paths,
+        request_digest=request.request_digest,
+    )
+    new_tests = tuple(
+        path
+        for path in changed
+        if path.startswith("tests/")
+        and path.endswith(".py")
+        and not (base / path).exists()
+    )
+    if new_tests != (request.regression_test_path,):
+        raise IsolationViolation("repair must identify its sole new regression module")
     try:
-        return _verify_observations(request, base, candidate, changed, runtime_roots, deadline)
+        return _verify_observations(
+            request, base, candidate, changed, runtime_roots, deadline
+        )
     finally:
         if tree_manifest(base) != before or tree_manifest(candidate) != after:
             raise IsolationViolation("source changed during independent verification")
@@ -242,48 +280,78 @@ def _verify_observations(
     deadline: float,
 ) -> VerificationEvidence:
     manifest = verification_manifest_digest(request)
+    observations = []
+    reason = None
     remaining = deadline - time.monotonic() - KILL_GRACE_SECONDS
     if remaining <= 0:
-        return VerificationEvidence(request, False, "verification_budget_exhausted", manifest, (), changed)
-    observations = [
-        _observe(
-            request.original,
-            base,
-            "original_reproduction",
-            runtime_roots,
-            min(request.timeout_seconds, remaining),
+        reason = "verification_budget_exhausted"
+    else:
+        observations.append(
+            _observe(
+                request.original,
+                base,
+                "original_reproduction",
+                runtime_roots,
+                min(request.timeout_seconds, remaining),
+            )
         )
+        first = observations[0]
+        reproduced = (
+            not first.passed
+            and first.outcome == ProcessOutcome.COMPLETED
+            and first.returncode == request.failure_returncode
+            and first.stdout_sha256 == request.failure_stdout_sha256
+            and first.stderr_sha256 == request.failure_stderr_sha256
+        )
+        if not reproduced:
+            reason = "original_failure_not_reproduced"
+        else:
+            reason = _verify_regression_stages(
+                request, base, candidate, runtime_roots, deadline, observations
+            )
+    accepted = reason is None and all(item.passed for item in observations[1:])
+    if reason is None and not accepted:
+        reason = "verification_failed"
+    return VerificationEvidence(
+        request,
+        accepted,
+        "restored_predicate" if accepted else reason,
+        manifest,
+        tuple(observations),
+        changed,
+    )
+
+
+def _verify_regression_stages(
+    request, base, candidate, runtime_roots, deadline, observations
+):
+    from .repair_regression import observe_regression
+
+    remaining = deadline - time.monotonic() - KILL_GRACE_SECONDS
+    if remaining <= 0:
+        return "verification_budget_exhausted"
+    baseline = observe_regression(
+        request.regression_test_path,
+        base,
+        candidate,
+        "baseline_regression",
+        runtime_roots,
+        min(request.timeout_seconds, remaining),
+    )
+    observations.append(baseline)
+    if not baseline.passed:
+        return "regression_not_reproduced"
+    tasks = [
+        (check, base, "baseline_equivalence") for check in request.equivalence_checks
     ]
-    first = observations[0]
-    if (
-        first.passed
-        or first.outcome != ProcessOutcome.COMPLETED
-        or first.returncode != request.failure_returncode
-        or first.stdout_sha256 != request.failure_stdout_sha256
-        or first.stderr_sha256 != request.failure_stderr_sha256
-    ):
-        return VerificationEvidence(
-            request,
-            False,
-            "original_failure_not_reproduced",
-            manifest,
-            tuple(observations),
-            changed,
-        )
-    tasks = [(check, base, "baseline_equivalence") for check in request.equivalence_checks]
-    tasks += [(check, candidate, "candidate_verification")
-              for check in (request.original, *request.checks, *request.equivalence_checks)]
+    tasks += [
+        (check, candidate, "candidate_verification")
+        for check in (request.original, *request.checks, *request.equivalence_checks)
+    ]
     for check, source, phase in tasks:
         remaining = deadline - time.monotonic() - KILL_GRACE_SECONDS
         if remaining <= 0:
-            return VerificationEvidence(
-                request,
-                False,
-                "verification_budget_exhausted",
-                manifest,
-                tuple(observations),
-                changed,
-            )
+            return "verification_budget_exhausted"
         observations.append(
             _observe(
                 check,
@@ -293,12 +361,17 @@ def _verify_observations(
                 min(request.timeout_seconds, remaining),
             )
         )
-    accepted = all(item.passed for item in observations[1:])
-    return VerificationEvidence(
-        request,
-        accepted,
-        "restored_predicate" if accepted else "verification_failed",
-        manifest,
-        tuple(observations),
-        changed,
+    remaining = deadline - time.monotonic() - KILL_GRACE_SECONDS
+    if remaining <= 0:
+        return "verification_budget_exhausted"
+    observations.append(
+        observe_regression(
+            request.regression_test_path,
+            candidate,
+            candidate,
+            "candidate_regression",
+            runtime_roots,
+            min(request.timeout_seconds, remaining),
+        )
     )
+    return None

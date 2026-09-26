@@ -761,6 +761,7 @@ class Readers:
                     "raw_gate_pass": raw_gate_pass,
                     "claim_class": claim_class,
                     "suites": record["suites"],
+                    "agentv": payload.get("agentv") or evaluation.get("agentv"),
                     "source_schema": record["source_schema"],
                     "eval_criteria": eval_criteria,
                     "trace_id": train_result.get("trace_id") or train.get("trace_id"),
@@ -779,7 +780,6 @@ class Readers:
             )
 
         return sorted(results, key=order, reverse=True)
-
     def scoreboard(self, kind: str) -> dict[str, Any]:
         if kind not in (*SCOREBOARD_FILES, RESEARCH_SCOREBOARD_KIND):
             return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
@@ -1213,6 +1213,7 @@ class Readers:
                         or _stem_date(path.stem),
                         "pass": gate_pass,
                         "suites": normalized_suites,
+                        "agentv": matched.get("agentv") or payload.get("agentv"),
                         "eval_criteria": (
                             matched_criteria
                             if isinstance(matched_criteria, dict)
@@ -1224,7 +1225,6 @@ class Readers:
                     }
                 )
         return rows
-
     def _committed_training(self, run_id: str) -> dict[str, Any] | None:
         """Recover a cold-start train summary from committed experiment evidence."""
         for path in sorted(self.docs_design.glob("iter-*.json")):

@@ -12,6 +12,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from tests.test_harness_core.test_source_authority import initial as initial
+from tests.test_scripts.test_autotrain_source_publication import lock_campaign_main_source
 
 from slm_training.autoresearch.schemas import HypothesisMatrix
 from tests.casefiles import case_values
@@ -4443,9 +4445,7 @@ def _seed_complete_promotion_pair(
     return control_id, candidate_id, control, candidate
 
 
-def test_resolve_promotion_requires_two_content_bound_seed_pairs(
-    tmp_path: Path,
-) -> None:
+def test_resolve_promotion_requires_two_content_bound_seed_pairs(tmp_path: Path, initial) -> None:
     root = tmp_path / "autoresearch"
     loop_id = "loop-cert"
     path = _mod._champion_queue_path(root, loop_id)
@@ -4463,8 +4463,7 @@ def test_resolve_promotion_requires_two_content_bound_seed_pairs(
         campaign_id = f"c-cert-{cycle_index}"
         camp = root / campaign_id
         control_id, candidate_id, control, candidate = _seed_complete_promotion_pair(
-            camp, prefix=campaign_id, seed=seed
-        )
+            camp, prefix=campaign_id, seed=seed)
         delivery = {
             "positive": True,
             "measurement_complete": True,
@@ -4482,6 +4481,7 @@ def test_resolve_promotion_requires_two_content_bound_seed_pairs(
                 promotion_replicate_index=len(statuses),
             ),
         }
+        lock_campaign_main_source(initial, root, loop_id, campaign_id)
         (camp / "sdlc_delivery.json").write_text(json.dumps(delivery), encoding="utf-8")
         resolved = _mod._resolve_promotion_result(
             root=root,
@@ -9156,7 +9156,7 @@ def test_finalized_decode_timeout_routes_directly_to_runtime_repair(
     assert any(action.kind == "document" for action in handoff.actions)
 
 
-def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
+def test_replayed_finalized_decode_timeout_retires_incomplete_arm(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "autoresearch"
@@ -9209,8 +9209,8 @@ def test_replayed_finalized_decode_timeout_rejects_runtime_arm(
         formal_status=None,
     )
 
-    assert handoff.climb_state == "rejected"
-    assert any("candidate_runtime_rejected" in reason for reason in handoff.reasons)
+    assert handoff.climb_state == "inconclusive"
+    assert all("candidate_runtime_rejected" not in reason for reason in handoff.reasons)
     assert all(action.kind != "repair_harness" for action in handoff.actions)
     assert all(action.kind != "retry_measurement" for action in handoff.actions)
     assert any(action.kind == "next_experiment" for action in handoff.actions)
@@ -10378,170 +10378,169 @@ def _document_handoff_campaign(
     )
 
 
-def test_self_heal_document_actions_writes_commits_acks(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.fixture
+def document_closeout(tmp_path, monkeypatch):
+    import slm_training.autoresearch.storage as storage
+
     repo = tmp_path / "repo"
     repo.mkdir()
     _init_git_repo(repo)
-    root = repo / "outputs" / "autoresearch"
-    loop_id = "continuous-openui-local"
-    campaign_id = "continuous-loop-test-continuous-openui-local-c1"
-    _document_handoff_campaign(
-        root,
-        loop_id=loop_id,
-        campaign_id=campaign_id,
-        actions=[
-            {
-                "kind": "document",
-                "owner": "documenting-experiment-results",
-                "reason": "persist this cycle's JSON and markdown under docs/design",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-            },
-            {
-                "kind": "next_experiment",
-                "owner": "autotrain",
-                "reason": "consume the ranked successor priorities",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-            },
-        ],
-    )
-    import slm_training.autoresearch.storage as storage
-
+    root, loop_id, campaign_id = repo / "outputs/autoresearch", "loop-1", "continuous-loop-test-c1"
+    _document_handoff_campaign(root, loop_id=loop_id, campaign_id=campaign_id, actions=[
+        {"kind": "document", "owner": "documenting-experiment-results",
+         "dependency_scope": "delivery", "reason": "persist docs",
+         "evidence_ids": [f"campaign:{campaign_id}"]},
+        {"kind": "next_experiment", "owner": "autotrain", "reason": "continue",
+         "evidence_ids": [f"campaign:{campaign_id}"]},
+    ])
+    camp = root / campaign_id
+    (camp / "campaign.json").write_text(json.dumps({
+        "schema_version": "CampaignSpec", "campaign_id": campaign_id,
+        "loop_id": loop_id, "cycle_index": 1, "objective": "t",
+        "primary_metric": "smoke.structural_similarity",
+        "upstream_commit": "a" * 40, "integration_commit": "b" * 40,
+    }))
+    delivery_path = camp / "sdlc_delivery.json"
+    delivery = json.loads(delivery_path.read_text())
+    delivery.update(candidate_id=f"{campaign_id}-lr-x2", arm_seed=7, cycle_index=1)
+    delivery_path.write_text(json.dumps(delivery))
     monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+    return repo, root, loop_id, campaign_id
+
+
+def _assert_document_delivery_pending(repo, root, loop_id, campaign_id):
+    from slm_training.autoresearch.evidence_ledger import DEFAULT_LEDGER_PATH
+
+    store = _mod.CampaignStore(campaign_id, root)
+    events = store.verify_event_chain()
+    materialized, = [e for e in events if e["event_type"] == "documentation_materialized"]
+    waiting, = [e for e in events if e["event_type"] == "documentation_waiting_delivery"]
+    assert waiting["artifact_sha256"] == materialized["artifact_sha256"]
+    assert waiting["detail"]["wake_source"] == "authorized_delivery_receipt"
+    artifact = store.root / "artifacts/delivery_documents" / f"{materialized['artifact_sha256']}.json"
+    payload = json.loads(artifact.read_text())
+    assert payload["campaign_id"] == campaign_id
+    handoff_path = store.root / "cycle_handoff.json"
+    assert payload["handoff_sha256"] == hashlib.sha256(handoff_path.read_bytes()).hexdigest()
+    assert payload["required_capability"] == "authorized_github_connector_delivery"
+    files = payload["files"]
+    for suffix in ("md", "json"):
+        name = f"docs/design/{campaign_id}-results.{suffix}"
+        assert (store.root / "delivery_workspace" / name).read_text() == files[name]
+        assert not (repo / name).exists()
+    result = json.loads(files[f"docs/design/{campaign_id}-results.json"])
+    assert result["measurement_complete"] is True and result["positive"] is False
+    assert result["honesty"] == "fixture_screening_only_not_ship"
+    ledger_name = DEFAULT_LEDGER_PATH.relative_to(_SCRIPT.parents[1]).as_posix()
+    ledger = json.loads(files[ledger_name])
+    assert ledger["file_counts"] == {"scanned": 1, "unreadable": 0, "observations": 1}
+    arm = ledger["arms"]["lr-x2"]
+    assert (arm["n_obs"], arm["n_complete"], arm["n_null"], arm["n_positive"]) == (1, 1, 1, 0)
+    assert not (repo / ledger_name).exists()
+    assert not (root / "loops" / loop_id / "action_receipts.jsonl").exists()
+    handoff = _mod.AutotrainCycleHandoffV1.model_validate_json(handoff_path.read_text())
+    assert any(a.kind == "document" for _, a in _mod.pending_autotrain_actions(root, handoff))
+    assert subprocess.check_output(["git", "rev-list", "--count", "HEAD"], cwd=repo, text=True).strip() == "1"
+    assert subprocess.check_output(["git", "diff", "HEAD"], cwd=repo) == b""
+
+
+@pytest.mark.parametrize("scope", [None, "delivery"], ids=["legacy-campaign", "delivery"])
+def test_self_heal_document_actions_materializes_without_commit_or_ack(document_closeout, scope, monkeypatch):
+    from scripts import autotrain_docs
+    from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
+
+    real_stamp = autotrain_docs.build_version_stamp
+    times = iter(("2026-09-21T00:00:00+00:00", "2026-09-21T00:01:00+00:00"))
+    monkeypatch.setattr(autotrain_docs, "build_version_stamp",
+                        lambda *ids: {**real_stamp(*ids), "stamped_at": next(times)})
+    repo, root, loop_id, campaign_id = document_closeout
+    path = root / campaign_id / "cycle_handoff.json"
+    handoff = json.loads(path.read_text())
+    handoff["created_at"] = "2026-09-20T23:00:00+00:00"
+    handoff["actions"][0]["dependency_scope"] = scope
+    path.write_text(json.dumps(handoff))
+    before = path.read_bytes()
     with pytest.raises(RuntimeError, match="unacknowledged actions"):
         _mod._require_predecessor_actions(root, loop_id, campaign_id)
-    kind = _mod._self_heal_document_actions(
+    assert _mod._self_heal_document_actions(
         cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
-    )
-    assert kind == "document_closeout"
-    md = repo / "docs" / "design" / f"{campaign_id}-results.md"
-    js = repo / "docs" / "design" / f"{campaign_id}-results.json"
-    assert md.is_file() and js.is_file()
-    tracked = subprocess.check_output(
-        ["git", "ls-files", "--error-unmatch", str(md.relative_to(repo))],
-        cwd=repo,
-        text=True,
-    )
-    assert tracked.strip()
-    _mod._require_predecessor_actions(root, loop_id, campaign_id)
-
-
-def test_self_heal_does_not_ack_repair_harness(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _init_git_repo(repo)
-    root = repo / "outputs" / "autoresearch"
-    loop_id = "loop-1"
-    campaign_id = "continuous-loop-test-c1"
-    _document_handoff_campaign(
-        root,
-        loop_id=loop_id,
-        campaign_id=campaign_id,
-        actions=[
-            {
-                "kind": "repair_harness",
-                "owner": "improve-openui-harnesses",
-                "reason": "repair the canonical owner",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-                "harness_family": "model_build",
-            },
-            {
-                "kind": "document",
-                "owner": "documenting-experiment-results",
-                "reason": "persist docs",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-            },
-        ],
-    )
-    import slm_training.autoresearch.storage as storage
-
-    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
-    kind = _mod._self_heal_document_actions(
+    ) is None
+    store = _mod.CampaignStore(campaign_id, root)
+    events = store.verify_event_chain()
+    artifacts = store.root / "artifacts/delivery_documents"
+    published = {p.name: p.read_bytes() for p in artifacts.glob("*.json")}
+    materialization = json.loads(next(iter(published.values())))
+    result = json.loads(materialization["files"][f"docs/design/{campaign_id}-results.json"])
+    assert result["version_stamp"] == {**real_stamp(*EVAL_KEY_COMPONENTS), "stamped_at": handoff["created_at"]}
+    assert _mod._self_heal_document_actions(
         cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
-    )
-    assert kind == "document_closeout"
-    with pytest.raises(RuntimeError, match="repair_harness"):
+    ) is None
+    assert {p.name: p.read_bytes() for p in artifacts.glob("*.json")} == published
+    assert store.verify_event_chain() == events
+    _assert_document_delivery_pending(*document_closeout)
+    assert path.read_bytes() == before
+    if scope is None:
+        with pytest.raises(RuntimeError, match="0:document"):
+            _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    else:
         _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
-def test_self_heal_dirty_tree_continuous_docs_only(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _init_git_repo(repo)
-    allowed = repo / "docs" / "design" / "continuous-openui-local-c9-results.md"
-    allowed.write_text("# auto\n", encoding="utf-8")
-    kind = _mod._self_heal_continuous_dirty_tree(cwd=repo, loop_id="loop-1")
-    assert kind == "dirty_tree_closeout"
-    status = subprocess.check_output(
+def test_self_heal_does_not_ack_repair_harness(document_closeout):
+    repo, root, loop_id, campaign_id = document_closeout
+    path = root / campaign_id / "cycle_handoff.json"
+    handoff = json.loads(path.read_text())
+    handoff["actions"].append({
+        "kind": "repair_harness", "owner": "improve-openui-harnesses",
+        "reason": "repair the canonical owner", "harness_family": "model_build",
+        "evidence_ids": [f"campaign:{campaign_id}"],
+    })
+    path.write_text(json.dumps(handoff))
+    before = path.read_bytes()
+    assert _mod._self_heal_document_actions(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    ) is None
+    _assert_document_delivery_pending(*document_closeout)
+    assert path.read_bytes() == before
+    model = _mod.AutotrainCycleHandoffV1.model_validate(handoff)
+    assert {a.kind for _, a in _mod.pending_autotrain_actions(root, model)} == {"document", "repair_harness"}
+    with pytest.raises(RuntimeError, match="2:repair_harness"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+
+
+def test_self_heal_dirty_tree_continuous_docs_only(document_closeout):
+    repo, root, loop_id, _ = document_closeout
+    allowed = repo / "docs/design/continuous-openui-local-c9-results.md"
+    allowed.write_text("# auto\n")
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo)
+    assert _mod._self_heal_continuous_dirty_tree(cwd=repo, root=root, loop_id=loop_id) is None
+    assert allowed.read_text() == "# auto\n"
+    assert "continuous-openui-local-c9-results.md" in subprocess.check_output(
         ["git", "status", "--porcelain"], cwd=repo, text=True
     )
-    assert status.strip() == ""
+    foreign = repo / "src_extra.py"
+    foreign.write_text("x=1\n")
+    assert _mod._self_heal_continuous_dirty_tree(cwd=repo, root=root, loop_id=loop_id) is None
+    assert foreign.read_text() == "x=1\n" and allowed.read_text() == "# auto\n"
+    assert subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo) == head
+    store = _mod.CampaignStore("runtime", root / "loops" / loop_id)
+    events = [e for e in store.verify_event_chain() if e["event_type"] == "workspace_delivery_wait"]
+    assert len(events) == 2
+    request = events[-1]["detail"]
+    assert {allowed.relative_to(repo).as_posix(), "src_extra.py"} <= set(request["paths"])
+    assert request["source_modified"] is False
+    assert request["required_capability"] == "authorized_github_connector_delivery"
 
-    # Foreign WIP must not be auto-committed.
-    (repo / "src_extra.py").write_text("x=1\n", encoding="utf-8")
-    kind2 = _mod._self_heal_continuous_dirty_tree(cwd=repo, loop_id="loop-1")
-    assert kind2 is None
-    status2 = subprocess.check_output(
-        ["git", "status", "--porcelain"], cwd=repo, text=True
-    )
-    assert "src_extra.py" in status2
 
-
-def test_self_heal_cycle_error_document_message(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _init_git_repo(repo)
-    root = repo / "outputs" / "autoresearch"
-    loop_id = "continuous-openui-local"
-    campaign_id = "continuous-loop-20260805-continuous-openui-local-c74"
-    # Lineage discovery uses campaign.json cycle_index + loop_id.
-    camp = root / campaign_id
-    camp.mkdir(parents=True)
-    (camp / "campaign.json").write_text(
-        json.dumps(
-            {
-                "schema_version": "CampaignSpec",
-                "campaign_id": campaign_id,
-                "loop_id": loop_id,
-                "cycle_index": 74,
-                "objective": "t",
-                "primary_metric": "smoke.structural_similarity",
-                "upstream_commit": "a" * 40,
-                "integration_commit": "b" * 40,
-            }
-        ),
-        encoding="utf-8",
-    )
-    _document_handoff_campaign(
-        root,
-        loop_id=loop_id,
-        campaign_id=campaign_id,
-        actions=[
-            {
-                "kind": "document",
-                "owner": "documenting-experiment-results",
-                "reason": "persist docs",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-            }
-        ],
-    )
-    import slm_training.autoresearch.storage as storage
-
-    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
-    kind = _mod._self_heal_cycle_error(
-        root=root,
-        loop_id=loop_id,
-        cwd=repo,
-        exc=RuntimeError(
-            f"predecessor {campaign_id} has unacknowledged actions: 0:document"
-        ),
-    )
-    assert kind == "document_closeout"
+def test_self_heal_cycle_error_document_message(document_closeout):
+    repo, root, loop_id, campaign_id = document_closeout
+    before = (root / campaign_id / "cycle_handoff.json").read_bytes()
+    assert _mod._self_heal_cycle_error(
+        root=root, loop_id=loop_id, cwd=repo,
+        exc=RuntimeError(f"predecessor {campaign_id} has unacknowledged actions: 0:document"),
+    ) is None
+    _assert_document_delivery_pending(*document_closeout)
+    assert (root / campaign_id / "cycle_handoff.json").read_bytes() == before
     _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
@@ -10908,46 +10907,31 @@ def test_delivery_is_thrash_timeout_residual_detects_wall_exits() -> None:
     )
 
 
-def test_self_heal_unblock_loop_soft_document(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _init_git_repo(repo)
-    root = repo / "outputs" / "autoresearch"
-    loop_id = "continuous-openui-local"
-    campaign_id = "continuous-loop-unblock-doc-c1"
-    _document_handoff_campaign(
-        root,
-        loop_id=loop_id,
-        campaign_id=campaign_id,
-        actions=[
-            {
-                "kind": "document",
-                "owner": "documenting-experiment-results",
-                "reason": "persist docs",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-            },
-            {
-                "kind": "next_experiment",
-                "owner": "autotrain",
-                "reason": "continue",
-                "evidence_ids": [f"campaign:{campaign_id}"],
-            },
-        ],
-    )
-    (root / campaign_id / "campaign.json").write_text(
-        json.dumps({"campaign_id": campaign_id, "loop_id": loop_id, "cycle_index": 1})
-    )
-    import slm_training.autoresearch.storage as storage
-
-    monkeypatch.setattr(storage, "_REPO_ROOT", repo)
+@pytest.mark.parametrize("scope", [None, "delivery"], ids=["legacy-campaign", "delivery"])
+def test_self_heal_unblock_loop_soft_document(document_closeout, scope):
+    repo, root, loop_id, campaign_id = document_closeout
+    path = root / campaign_id / "cycle_handoff.json"
+    handoff = json.loads(path.read_text())
+    handoff["actions"][0]["dependency_scope"] = scope
+    path.write_text(json.dumps(handoff))
+    before = path.read_bytes()
     report = _mod.self_heal_unblock_loop(
         cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
     )
-    assert report["blocker_cleared"] is True
-    assert not report["hard_pending"]
-    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    _assert_document_delivery_pending(*document_closeout)
+    assert path.read_bytes() == before
+    assert "document_closeout" not in report["soft_healed"]
+    assert report["blocker_cleared"] is (scope == "delivery")
+    if scope == "delivery":
+        assert not report["hard_pending"]
+        wait, = [w for w in report["delivery_waits"] if w["kind"] == "document"]
+        assert wait["state"] == "waiting_capability" and wait["action_index"] == 0
+        assert wait["wake_source"] == "authorized_delivery_receipt"
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    else:
+        assert [p["kind"] for p in report["hard_pending"]] == ["document"]
+        with pytest.raises(RuntimeError, match="0:document"):
+            _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
 def test_self_heal_unblock_loop_hard_agentv_repair(
@@ -11011,19 +10995,23 @@ def test_self_heal_unblock_loop_hard_agentv_repair(
         _mod._require_predecessor_actions(root, loop_id, campaign_id)
 
 
-def test_soft_document_failures_never_block(tmp_path: Path) -> None:
-    root = tmp_path / "ar"
+def test_soft_document_failures_never_block(document_closeout):
+    repo, root, loop_id, campaign_id = document_closeout
+    before = (root / campaign_id / "cycle_handoff.json").read_bytes()
+    assert _mod._self_heal_document_actions(
+        cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
+    ) is None
     for i in range(5):
-        count = _mod._record_cycle_failure(
-            root=root,
-            loop_id="loop-1",
-            exc=RuntimeError("predecessor c1 has unacknowledged actions: 0:document"),
-            cycle_index=i,
-        )
-        assert count == 0
-    state = json.loads((root / "loops" / "loop-1" / "state.json").read_text())
-    assert state["state"] == "IDLE"
-    assert state["blocker_count"] == 0
+        assert _mod._record_cycle_failure(
+            root=root, loop_id=loop_id, cycle_index=i,
+            exc=RuntimeError(f"predecessor {campaign_id} has unacknowledged actions: 0:document"),
+        ) == 0
+    state = json.loads((root / "loops" / loop_id / "state.json").read_text())
+    assert state["state"] == "IDLE" and state["blocker_count"] == 0
+    rows = [json.loads(row) for row in (root / "loops" / loop_id / "cycle_failures.jsonl").read_text().splitlines()]
+    assert len(rows) == 5 and all(row["soft"] and not row["blocking"] for row in rows)
+    assert (root / campaign_id / "cycle_handoff.json").read_bytes() == before
+    _assert_document_delivery_pending(*document_closeout)
 
 
 def test_last_cycle_failure_message_reads_tail(tmp_path: Path) -> None:
@@ -12778,8 +12766,8 @@ def test_attach_screening_eval_nll_runs_on_failed_quality_eval(
     )
     calls: list[tuple[Path, str]] = []
 
-    def fake_run(run_dir: Path, *, test_dir: Path, checkpoint: Path, eval_version: str):
-        calls.append((Path(test_dir), eval_version))
+    def fake_run(run_dir: Path, **kwargs):
+        calls.append((Path(kwargs["test_dir"]), kwargs["eval_version"]))
         return {"eval_nll": 1.25, "records": {"a": 1.0, "b": 1.5}}
 
     monkeypatch.setattr(_mod, "_run_arm_eval_nll", fake_run)
@@ -12796,12 +12784,11 @@ def test_attach_screening_eval_nll_runs_on_failed_quality_eval(
     _mod._run_arm_eval_nll(run, eval_nll=1.25, records={"a": 1.0, "b": 1.5})
     assert _mod._attach_screening_eval_nll(run, exit_code=124) is None
     # Driver arm loop no longer gates NLL on exit code 0.
-    source = _SCRIPT.read_text(encoding="utf-8")
-    assert "if int(code) == 0:\n            _attach_screening_eval_nll" not in source
-    assert (
-        '_attach_screening_eval_nll(camp_dir / "runs" / eid, exit_code=int(code))'
-        in source
-    )
+    source = Path(__file__).resolve().parents[2] / "scripts"
+    assert "if int(code) == 0:\n            _attach_screening_eval_nll" not in _SCRIPT.read_text(encoding="utf-8")
+    assert 'continuous._attach_screening_eval_nll(' in (
+        source / "autotrain_cycle_reconcile.py"
+    ).read_text(encoding="utf-8")
 
 
 def test_run_arm_eval_nll_scores_whole_smoke_suite_per_record(tmp_path: Path) -> None:

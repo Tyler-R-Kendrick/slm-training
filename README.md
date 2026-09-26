@@ -49,6 +49,11 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 
 | Local checkpoint evidence | Result | Scope |
 | --- | --- | --- |
+| `science-lab-r31-43327120eda9-acceptance-control` | 65,826-parameter CPU scratch checkpoint; six updates complete | **R31 pair incomplete**: evaluation and candidate pending at observation cutoff. No promotion or ship claim. [Measured continuation](docs/design/science-lab-pr-head-r31-20260926-results.md). |
+| `science-lab-pr1785-e9a6de-r24-20260925-{control,candidate}` | Two 65,826-parameter CPU scratch checkpoints; control smoke 6/6 and AgentV complete; candidate trained six steps | **R24 pair incomplete**: candidate smoke evaluation timed out with exit 124; no paired NLL or verdict. Control ship gates fail (11); no promotion or ship claim. [Measured partial attempt](docs/design/science-lab-pr-head-r24-20260925-results.md). |
+| `science-lab-pr1785-cf5432-r23-20260925-control` | 65,826-parameter CPU scratch checkpoint; control smoke 6/6 and AgentV complete | **R23 pair incomplete**: candidate cursor started, no candidate run/checkpoint; control ship gates fail (11); no paired NLL, promotion, or ship claim. [Measured partial attempt](docs/design/science-lab-pr-head-r23-20260925-results.md). |
+| `science-lab-pr1785-0ea5ba4-r22b-20260925-{control,candidate}` | Two 65,826-parameter CPU scratch checkpoints, six steps each; control smoke 2/6, candidate 0/6 | **Incomplete R22b PR-head diagnostic**: control eval continuation exit 2 (`--resume-run` missing value); no paired NLL, promotion, or ship claim. [Measured failure](docs/design/science-lab-pr-head-r22b-20260925-results.md). |
+| `science-lab-training-20260921` | Matched 65,826-parameter CPU arms; exact 3→6 resume; six-case ordinary-supervisor comparison | Local exploratory diagnostic; ship gates fail, no promotion. [Measured result](docs/design/science-lab-training-20260921.md). |
 | `autonomy-a12-fixture-20260909b` | Two matched CPU arms completed; AgentV ran with zero execution errors; paired NLL diagnostic inconclusive (n=2) | Conditional fixture diagnostic only; ship gates failed, no promotion/champion/ship claim. [Measured result](docs/design/autonomy-learning-comparison-20260909.md). |
 
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this

@@ -204,6 +204,11 @@ def evaluation_measurement_incomplete(metrics: dict[str, float]) -> bool:
 DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
+        "d_model",
+        "n_heads",
+        "context_layers",
+        "denoiser_layers",
+        "max_updates_this_invocation",
         "generate_batch_size",
         "allow_unconstrained_fallback",
         "asap_decode",
@@ -534,12 +539,8 @@ class ResearcherRun(StrictModel):
 
 class ExperimentKnobs(StrictModel):
     allow_unconstrained_fallback: bool | None = None
-    eval_version: str | None = Field(
-        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
-    )
-    train_version: str | None = Field(
-        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
-    )
+    eval_version: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    train_version: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     data_source: (
         Literal[
             "rico",
@@ -580,6 +581,11 @@ class ExperimentKnobs(StrictModel):
     mixture_per_template_cap: int | None = Field(default=None, ge=1)
     mixture_max_importance_weight: float | None = Field(default=None, ge=1.0)
     steps: int | None = Field(default=None, ge=1, le=100_000)
+    d_model: int | None = Field(default=None, ge=1, strict=True)
+    n_heads: int | None = Field(default=None, ge=1, strict=True)
+    context_layers: int | None = Field(default=None, ge=1, strict=True)
+    denoiser_layers: int | None = Field(default=None, ge=1, strict=True)
+    max_updates_this_invocation: int | None = Field(default=None, ge=1, strict=True)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     # Screening thrash: force 1 so fair-share decode timeouts apply per doc.
     generate_batch_size: int | None = Field(default=None, ge=1, le=1024)
@@ -603,12 +609,8 @@ class ExperimentKnobs(StrictModel):
     ) = None
     component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
-    component_edge_token_loss_weight: float | None = Field(
-        default=None, ge=0, le=20
-    )
-    compiler_decision_token_loss_weight: float | None = Field(
-        default=None, ge=0, le=20
-    )
+    component_edge_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    compiler_decision_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structure_token_loss_weight: float | None = Field(default=None, ge=0, le=20)
     typed_family_balance_loss_weight: float | None = Field(default=None, ge=0, le=20)
     structural_aux_head_profile: (
@@ -636,9 +638,7 @@ class ExperimentKnobs(StrictModel):
     slot_component_loss_weight: float | None = Field(default=None, ge=0, le=20)
     slot_component_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_loss_weight: float | None = Field(default=None, ge=0, le=20)
-    component_edge_alignment_loss_weight: float | None = Field(
-        default=None, ge=0, le=20
-    )
+    component_edge_alignment_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
@@ -1216,9 +1216,7 @@ class NextRunPriorityV1(StrictModel):
         "experiment_next",
         "monitor",
     ]
-    proposed_experiment_id: str | None = Field(
-        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
-    )
+    proposed_experiment_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
     @model_validator(mode="after")
     def validate_authority(self) -> NextRunPriorityV1:
@@ -1478,9 +1476,7 @@ class ExperimentOutcome(StrictModel):
     harness_signals: tuple[HarnessSignalV1, ...] = ()
     started_at: str | None = None
     finished_at: str | None = None
-    campaign_manifest_sha256: str | None = Field(
-        default=None, pattern=r"^[0-9a-f]{64}$"
-    )
+    campaign_manifest_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @model_validator(mode="after")
     def validate_harness_signals(self) -> ExperimentOutcome:

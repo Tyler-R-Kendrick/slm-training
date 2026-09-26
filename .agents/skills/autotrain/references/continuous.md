@@ -209,6 +209,7 @@ cycles 4/6/7, [results](../../../../docs/design/continuous-openui-20260730-c7-re
 ```bash
 cd src/apps/openui_bridge && npm ci && cd ../../..
 cd src/apps/design_md_bridge && npm ci && cd ../../..
+cd src/apps/graphql_bridge && npm ci && cd ../../..
 NODE_OPTIONS= npm ci   # repo root: AgentV SDK ship-gate eval needs this too
 ```
 

@@ -58,8 +58,6 @@ def test_top_level_allowlist_rejects_sprawl() -> None:
     assert validate_top_level(["src/slm_training/app.py", "scratch/note.py"]) == [
         "unapproved top-level path: scratch"
     ]
-
-
 def test_workflows_require_and_sync_canonical_timeout(tmp_path: Path) -> None:
     levers = tmp_path / "src/slm_training/levers.py"
     levers.parent.mkdir(parents=True)

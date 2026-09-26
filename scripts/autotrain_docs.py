@@ -34,6 +34,17 @@ FIVE_LANES = (
 )
 
 
+def with_evidence_ledger(cwd: Path, files: dict[str, str]) -> dict[str, str]:
+    """Bind the derived ledger required by the same documentation successor gate."""
+    from slm_training.autoresearch.evidence_ledger import DEFAULT_LEDGER_PATH, build_ledger
+
+    replacements = {cwd / name: text for name, text in files.items()
+                    if name.startswith("docs/design/") and name.endswith(".json")}
+    ledger = build_ledger(cwd / "docs/design", replacements=replacements)
+    relative = DEFAULT_LEDGER_PATH.relative_to(Path(__file__).resolve().parents[1])
+    return {**files, relative.as_posix(): json.dumps(ledger, indent=2, sort_keys=True) + "\n"}
+
+
 def render_continuous_cycle_docs(
     *,
     campaign_id: str,
@@ -52,6 +63,8 @@ def render_continuous_cycle_docs(
         from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
 
         version_stamp: dict[str, Any] | None = build_version_stamp(*EVAL_KEY_COMPONENTS)
+        # Closeout describes the frozen handoff, not the wall clock of a retry.
+        version_stamp["stamped_at"] = handoff.created_at
     except Exception:
         version_stamp = None
     payload: dict[str, Any] = {

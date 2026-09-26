@@ -12,6 +12,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from typing import NamedTuple
 
 from slm_training.harness_core.activity_contract import contract_digest
 from slm_training.autoresearch.heal.isolation_workspace import (
@@ -29,6 +30,13 @@ from slm_training.harness_core.execution_release import (
     runtime_source_identity,
 )
 from slm_training.harness_core.lineage.store import _atomic_write
+from .repair_delivery import delivery_inputs, publish_delivery
+
+
+class ReleaseDestinations(NamedTuple):
+    root: Path
+    outputs: Path
+    verified_predecessor: tuple[Path, str] | None = None
 
 
 def source_verification_callback(context, config):
@@ -39,11 +47,17 @@ def source_verification_callback(context, config):
     the source verifier never borrows the agent's repair allowance. The resulting
     dependency supplies the finite verifier's root/cache/base/identity and grant.
     """
-    from .repair_source_workspace import prepare_source_verification
+    from .repair_source_workspace import (
+        prepare_source_verification,
+        reuse_completed_source_verification,
+    )
 
     def resolve(request, proposal, workspace):
         if config.source_verification_grant is None:
             return None
+        completed = reuse_completed_source_verification(context, request, proposal, workspace)
+        if completed is not None:
+            return completed
         return prepare_source_verification(context, config, request, proposal, workspace)
 
     return resolve
@@ -82,7 +96,6 @@ def _authorize(request, result, lease, authenticated):
         receipt.original_predicate_restored,
         receipt.required_checks_passed,
         receipt.protected_surfaces_unchanged,
-        request.grant.expires_at > time.time(),
         lease.expires_at > time.time(),
     )
     if not all(predicates) or any(actual != expected for actual, expected in pairs):
@@ -106,7 +119,8 @@ def _durable_tree(root: Path):
         _sync(Path(directory))
 
 
-def _materialize(candidate, outputs, publication_id, releases, verified_digest):
+def _materialize(candidate, destinations, publication_id, verified_digest):
+    releases, outputs, predecessor = destinations
     releases = releases.resolve()
     if releases == outputs.resolve() or releases.is_relative_to(outputs.resolve()):
         raise ValueError("release_root_must_be_outside_run_outputs")
@@ -116,7 +130,8 @@ def _materialize(candidate, outputs, publication_id, releases, verified_digest):
     frozen = private_snapshot(candidate, stage / "verified")
     if manifest_digest(tree_manifest(frozen)) != verified_digest:
         raise ValueError("verified_candidate_changed_during_materialization")
-    manifest = prepare_release(frozen, stage / "release", stage / "execution", outputs)
+    manifest = prepare_release(frozen, stage / "release", stage / "execution", outputs,
+                               verified_predecessor=predecessor)
     if manifest_digest(tree_manifest(frozen)) != verified_digest:
         raise ValueError("verified_candidate_changed_during_materialization")
     if manifest_digest(tree_manifest(candidate)) != verified_digest:
@@ -127,6 +142,7 @@ def _materialize(candidate, outputs, publication_id, releases, verified_digest):
         "schema_version": "verified_local_release_pointer/v1",
         "publication_id": publication_id,
         "runtime_source_digest": manifest["source_digest"],
+        "verified_source": str(frozen),
         "release": str(stage / "release"),
         "execution": str(stage / "execution"),
         "outputs": str(outputs.resolve()),
@@ -140,7 +156,7 @@ def publish_verified_repair(
     runtime,
     lease,
     candidate: Path,
-    destinations: tuple[Path, Path],
+    destinations: tuple[Path, Path] | ReleaseDestinations,
     expected_previous: str | None,
     authenticated,
 ) -> dict:
@@ -150,10 +166,11 @@ def publish_verified_repair(
     patch worker. ``expected_previous`` is the observed prior publication ID.
     Crash after intent or after pointer is reconciled under the same logical ID.
     A different lease needs a newly verified receipt, not an edited old receipt.
-    ``destinations`` is (controller-owned release root, shared run outputs).
+    ``destinations`` binds controller-owned roots and optional pinned predecessor.
     """
     _authorize(request, result, lease, authenticated)
-    release_root, outputs = destinations
+    destinations = ReleaseDestinations(*destinations)
+    _, outputs, verified_predecessor = destinations
     assert result.proposal is not None and result.verification is not None
     if manifest_digest(tree_manifest(candidate)) != result.proposal.tree_digest:
         raise ValueError("verified_candidate_changed")
@@ -162,10 +179,17 @@ def publish_verified_repair(
     )
     pointer = runtime.store.root / "source_release_pointer.json"
     with runtime.publication(lease):
+        inputs = None
+        if verified_predecessor is not None:
+            from slm_training.autoresearch.storage import CampaignStore
+
+            inputs = delivery_inputs(request, result, CampaignStore(request.campaign_id, outputs),
+                                     verified_predecessor, candidate)
         current = json.loads(pointer.read_text()) if pointer.exists() else None
         if current and current["publication_id"] == publication_id:
             selected = _intent_or_stage(
-                runtime, result, candidate, outputs, publication_id, release_root
+                runtime, result, candidate, publication_id, destinations,
+                expected_previous
             )
             if selected != current:
                 raise ValueError(
@@ -174,8 +198,12 @@ def publish_verified_repair(
         else:
             if (current["publication_id"] if current else None) != expected_previous:
                 raise ValueError("source_release_CAS_conflict")
+            if (current is not None and verified_predecessor is not None
+                    and current["runtime_source_digest"] != verified_predecessor[1]):
+                raise ValueError("repair_delivery_predecessor_publication_mismatch")
             selected = _intent_or_stage(
-                runtime, result, candidate, outputs, publication_id, release_root
+                runtime, result, candidate, publication_id, destinations,
+                expected_previous
             )
             if (
                 runtime_source_identity(Path(selected["execution"]))
@@ -191,6 +219,8 @@ def publish_verified_repair(
         ):
             raise ValueError("published_release_changed")
         handoff = _handoff(request, selected)
+        if inputs is not None:
+            handoff["source_delivery"] = publish_delivery(runtime.store, selected, inputs)
         runtime.store.append_event(
             "repair_release_accepted",
             idempotency_key="release-accepted:" + publication_id,
@@ -243,7 +273,7 @@ def pinned_repair_source(cwd: Path, expected_digest: str) -> tuple[Path, str]:
     return source, digest
 
 
-def verified_release_callback(publisher, lease, *, destinations):
+def verified_release_callback(publisher, lease, *, destinations, verified_predecessor=None):
     """Trusted dispatch callback; authority and stores never enter the workload.
 
     At most one successor is published per invocation. Remaining repairs must
@@ -268,7 +298,7 @@ def verified_release_callback(publisher, lease, *, destinations):
             runtime=publisher,
             lease=lease,
             candidate=candidate,
-            destinations=destinations,
+            destinations=ReleaseDestinations(*destinations, verified_predecessor),
             expected_previous=previous,
             authenticated=lambda supplied: supplied is accepted_result,
         )
@@ -285,6 +315,13 @@ def verified_activation_handoff(store, handoff: dict) -> dict:
     controller ownership, not worker authentication. Legacy acceptance events
     lacking a handoff cannot authorize activation under this contract.
     """
+    if "delivered_source" in handoff:
+        from .repair_delivered import resolve_delivered_activation
+
+        checked = resolve_delivered_activation(store, handoff["delivered_source"])
+        if checked != handoff:
+            raise ValueError("delivered_activation_handoff_changed")
+        return checked
     pointer = json.loads((store.root / "source_release_pointer.json").read_text())
     events = store.verify_event_chain()
     identity = pointer["publication_id"]
@@ -313,7 +350,8 @@ def verified_activation_handoff(store, handoff: dict) -> dict:
     return dict(handoff)
 
 
-def _intent_or_stage(runtime, result, candidate, outputs, publication_id, release_root):
+def _intent_or_stage(runtime, result, candidate, publication_id, destinations, previous):
+    release_root, outputs, predecessor = destinations
     events = runtime.store.verify_event_chain()
     prior = [
         event
@@ -325,6 +363,9 @@ def _intent_or_stage(runtime, result, candidate, outputs, publication_id, releas
         selected = prior[-1]["detail"]["pointer"]
         if (
             selected["verified_tree_digest"] != result.proposal.tree_digest
+            or selected["verification_digest"] != result.verification.digest()
+            or selected.get("predecessor_runtime_source_digest") != (predecessor[1] if predecessor else None)
+            or selected.get("predecessor_execution") != (str(predecessor[0].resolve()) if predecessor else None)
             or Path(selected["outputs"]).resolve() != outputs.resolve()
             or not Path(selected["release"])
             .resolve()
@@ -333,8 +374,11 @@ def _intent_or_stage(runtime, result, candidate, outputs, publication_id, releas
             raise ValueError("publication_intent_identity_conflict")
         return selected
     selected = _materialize(
-        candidate, outputs, publication_id, release_root, result.proposal.tree_digest
+        candidate, destinations, publication_id, result.proposal.tree_digest
     )
+    selected["predecessor_publication_id"] = previous
+    selected["predecessor_runtime_source_digest"] = predecessor[1] if predecessor else None
+    selected["predecessor_execution"] = str(predecessor[0].resolve()) if predecessor else None
     selected["verified_tree_digest"] = result.proposal.tree_digest
     selected["verification_digest"] = result.verification.digest()
     runtime.store.append_event(

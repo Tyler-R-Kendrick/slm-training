@@ -12,7 +12,16 @@ from scripts.merge_verification import run_release_gate, run_workload
 from scripts.merge_verification_evidence import ReceiptCache, validate_cached_state
 from scripts.merge_verification_isolation import isolated_static, runtime_command
 from scripts.verify_merge_ready import Step
-from slm_training.autoresearch.heal.isolation import IsolationUnavailable
+from slm_training.autoresearch.heal.isolation import IsolationUnavailable, probe_isolation
+
+
+@pytest.fixture
+def real_isolation():
+    capability = probe_isolation()
+    if not capability.available:
+        if os.environ.get("SLM_REQUIRE_ISOLATION"):
+            raise IsolationUnavailable(capability.reason)
+        pytest.skip("real isolation unavailable: " + capability.reason)
 
 
 def _candidate(tmp_path, code):
@@ -49,7 +58,7 @@ def test_missing_boundary_refuses_before_candidate_or_cache_access(
     assert not (tmp_path / "cache").exists()
 
 
-def test_real_isolated_manifest_cache_and_source_are_protected(tmp_path):
+def test_real_isolated_manifest_cache_and_source_are_protected(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "")
     code = f"""from pathlib import Path
 import pytest
@@ -62,25 +71,22 @@ def test_boundary():
     assert not Path('/workspace/candidate/.git').exists()
 """
     (root / "test_case.py").write_text(code)
-    nested = Path("/workspace/candidate").exists()
     result = run_workload(
         root,
         ["test_case.py::test_boundary"],
         collect_only=False,
         seconds=15,
         directory=control,
-        isolated=not nested,
+        isolated=True,
         runtimes=(Path(sys.prefix),),
     )
-    if nested:
-        return
     assert result["status"] == "ok", result
     assert result["evidence_class"] == "isolated_process"
     assert (control / "secret").read_text() == "controller-only"
     assert (root / "test_case.py").read_text() == code
 
 
-def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path):
+def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "import os\nos._exit(0)\n")
     result = run_workload(
         root,
@@ -88,7 +94,7 @@ def test_real_isolated_zero_exit_without_result_is_not_success(tmp_path):
         collect_only=True,
         seconds=15,
         directory=control,
-        isolated=not Path("/workspace/candidate").exists(),
+        isolated=True,
         runtimes=(Path(sys.prefix),),
     )
     assert result["status"] == "failed"
@@ -105,7 +111,7 @@ def test_granted_bridge_requires_matching_candidate_sources(tmp_path):
         _workload_argv(tmp_path / "candidate", (runtime,), ["python"])
 
 
-def test_real_static_failure_cannot_write_control_store(tmp_path):
+def test_real_static_failure_cannot_write_control_store(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "")
     step = Step(
         "attack",
@@ -115,19 +121,10 @@ def test_real_static_failure_cannot_write_control_store(tmp_path):
             f"from pathlib import Path; Path({str(control / 'secret')!r}).write_text('forged')",
         ),
     )
-    if os.environ.get("SLM_REQUIRE_ISOLATION") == "1":
-        # Already inside the verifier sandbox: no nested namespace exists, so
-        # isolation must fail closed (never a silent fallback) before any
-        # candidate code runs, and the control store stays intact.
-        with pytest.raises(IsolationUnavailable):
-            isolated_static(
-                step, budget_seconds=10, root=root, runtimes=(Path(sys.prefix),)
-            )
-    else:
-        result = isolated_static(
-            step, budget_seconds=10, root=root, runtimes=(Path(sys.prefix),)
-        )
-        assert result["status"] == "failed"
+    result = isolated_static(
+        step, budget_seconds=10, root=root, runtimes=(Path(sys.prefix),)
+    )
+    assert result["status"] == "failed"
     assert (control / "secret").read_text() == "controller-only"
 
 
@@ -256,14 +253,14 @@ def test_snapshot_excludes_ignored_unbound_inputs(tmp_path, monkeypatch):
     assert (source / ".env").read_text() == "PRIVATE=not-for-worker"
 
 
-def test_real_extra_runtime_and_failed_collection_preserve_evidence(tmp_path):
+def test_real_extra_runtime_and_failed_collection_preserve_evidence(tmp_path, real_isolation):
     root, control = _candidate(tmp_path, "import approved_extra\nassert False, 'original-collection-fault'\n")
     runtime = tmp_path / "dependencies"
     runtime.mkdir()
     (runtime / "approved_extra.py").write_text("VALUE = 1\n")
     result = run_workload(
         root, ["test_case.py"], collect_only=True, seconds=15,
-        directory=control, isolated=not Path("/workspace/candidate").exists(), runtimes=(Path(sys.prefix), runtime),
+        directory=control, isolated=True, runtimes=(Path(sys.prefix), runtime),
     )
     assert result["status"] == "failed"
     assert "original-collection-fault" in result["output_tail"]
@@ -286,9 +283,9 @@ def test_real_collection_plans_fresh_invocations_not_remaining_tail(tmp_path, mo
     assert "nodes" not in state
     assert owner._collect(state, root, control, lambda: 30, lambda: None)
     assert len(state["nodes"]) == 60
-    # With no duration history, the planner reserves five seconds per node so
-    # a fresh bounded invocation cannot pack an unmeasured oversized shard.
-    assert len(state["shards"]) == 10
+    # With no duration history, the planner applies its four-times safety
+    # factor to five seconds per node, keeping each initial shard small.
+    assert len(state["shards"]) == 20
     assert sorted(node for shard in state["shards"] for node in shard) == sorted(state["nodes"])
 
 

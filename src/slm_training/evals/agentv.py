@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Sequence
 
-from slm_training.bridge_utils import checkout_roots, sanitized_node_env
+from slm_training.bridge_utils import agentv_node_modules, checkout_roots, sanitized_node_env
 
 
 def _bootstrap_agentv_sdk(root: Path) -> tuple[bool, str]:
@@ -36,12 +36,45 @@ def _bootstrap_agentv_sdk(root: Path) -> tuple[bool, str]:
     return result.returncode == 0, detail
 
 
+def _sdk_installed(root: Path) -> bool:
+    # `@agentv/core/package.json` alone is not proof the SDK actually
+    # works: a stale or partially-provisioned `node_modules` (e.g. an
+    # image layer copied without a matching install) can have that one
+    # package.json present while a transitive dependency's build output
+    # is missing, so real imports fail with ERR_MODULE_NOT_FOUND. npm
+    # writes `node_modules/.package-lock.json` mirroring the resolved
+    # tree only when an install actually completed, so cross-check every
+    # required (non-optional) package the checked-in lockfile names
+    # against it to catch a drifted/broken install. Optional entries are
+    # excluded because npm legitimately skips platform-mismatched
+    # optional deps (e.g. darwin/win32 binaries on a linux-x64 install).
+    if not (agentv_node_modules(root) / "@agentv/core/package.json").is_file():
+        return False
+    lockfile = root / "package-lock.json"
+    marker = agentv_node_modules(root) / ".package-lock.json"
+    if not lockfile.is_file() or not marker.is_file():
+        return False
+    try:
+        lock_packages = json.loads(lockfile.read_text()).get("packages", {})
+        marker_packages = json.loads(marker.read_text()).get("packages", {})
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError):
+        return False
+    for name, entry in lock_packages.items():
+        if not name or not isinstance(entry, dict) or entry.get("optional"):
+            continue
+        marker_entry = marker_packages.get(name)
+        if not isinstance(marker_entry, dict) or marker_entry.get(
+            "version"
+        ) != entry.get("version"):
+            return False
+    return True
+
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     """Resolve the pinned SDK from this checkout or its Git common checkout."""
     override = os.getenv("AGENTV_RUNNER")
     if override:
         runner = Path(override).resolve()
-        return runner, runner.parents[1]
+        return runner, agentv_node_modules(runner.parents[1]).parent
 
     checkout_runner = repo_root / "scripts" / "run_agentv_eval.mjs"
     roots = checkout_roots(repo_root)
@@ -53,42 +86,6 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
             else root / "scripts" / "run_agentv_eval.mjs"
         )
 
-    def _sdk_for(root: Path) -> Path:
-        return root / "node_modules" / "@agentv" / "core" / "package.json"
-
-    def _sdk_installed(root: Path) -> bool:
-        # `@agentv/core/package.json` alone is not proof the SDK actually
-        # works: a stale or partially-provisioned `node_modules` (e.g. an
-        # image layer copied without a matching install) can have that one
-        # package.json present while a transitive dependency's build output
-        # is missing, so real imports fail with ERR_MODULE_NOT_FOUND. npm
-        # writes `node_modules/.package-lock.json` mirroring the resolved
-        # tree only when an install actually completed, so cross-check every
-        # required (non-optional) package the checked-in lockfile names
-        # against it to catch a drifted/broken install. Optional entries are
-        # excluded because npm legitimately skips platform-mismatched
-        # optional deps (e.g. darwin/win32 binaries on a linux-x64 install).
-        if not _sdk_for(root).is_file():
-            return False
-        lockfile = root / "package-lock.json"
-        marker = root / "node_modules" / ".package-lock.json"
-        if not lockfile.is_file() or not marker.is_file():
-            return False
-        try:
-            lock_packages = json.loads(lockfile.read_text()).get("packages", {})
-            marker_packages = json.loads(marker.read_text()).get("packages", {})
-        except (OSError, json.JSONDecodeError, AttributeError, TypeError):
-            return False
-        for name, entry in lock_packages.items():
-            if not name or not isinstance(entry, dict) or entry.get("optional"):
-                continue
-            marker_entry = marker_packages.get(name)
-            if not isinstance(marker_entry, dict) or marker_entry.get(
-                "version"
-            ) != entry.get("version"):
-                return False
-        return True
-
     # First pass: reuse an already-installed SDK from any root before
     # installing anything, so a worktree never re-bootstraps a copy the
     # Git common checkout already has.
@@ -96,6 +93,9 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         runner = _runner_for(root)
         if runner.is_file() and _sdk_installed(root):
             return runner, root
+
+    if os.getenv("AGENTV_NODE_MODULES"):
+        raise RuntimeError("Explicit AgentV modules do not match the pinned SDK installation")
 
     # No root has the SDK installed. Bootstrap starting from the last root
     # (the Git common checkout, when this is a worktree) so the install is

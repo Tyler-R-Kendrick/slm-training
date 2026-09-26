@@ -15,11 +15,16 @@ from pathlib import Path
 from scripts.repo_policy import validate_repository
 from scripts.verify_agent_surfaces import OBLIGATIONS
 
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 CHANGED_TEST_WORKERS: int | None = None
+# Extracted tests still use these original modules' fixture helpers.
+TEST_HELPER_DEPENDENTS = {
+    "tests/test_autoresearch/test_harness.py": ("tests/test_autoresearch/test_campaign_event_transactions.py",),
+    "tests/test_scripts/test_run_autotrain_continuous.py": ("tests/test_scripts/test_autotrain_nll_integration.py",),
+    "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py": ("tests/test_scripts/test_autotrain_promotion_ledger.py",),
+}
 # Read as a plain repo-relative path rather than importlib.resources so the
 # table resolves in worktrees and uninstalled checkouts too.
 TEST_DURATIONS_PATH = (
@@ -194,7 +199,7 @@ SUITES_BY_PREFIX = (
     ),
     (
         "scripts/check_changed.py",
-        ("tests/test_scripts/test_check_changed.py",),
+        ("tests/test_scripts/test_check_changed.py", "tests/test_scripts/test_merge_verification.py"),
     ),
     (
         "scripts/audit_regular_layer_gap.py",
@@ -351,19 +356,6 @@ SUITES_BY_PREFIX = (
     ("src/apps/dashboard/", ("tests/test_web",)),
     ("src/apps/openui_preview/", ("tests/test_web",)),
 )
-CODE_SUFFIXES = {
-    ".c",
-    ".css",
-    ".html",
-    ".js",
-    ".json",
-    ".mjs",
-    ".py",
-    ".ts",
-    ".tsx",
-    ".yaml",
-    ".yml",
-}
 HOOK_TEST_FILE_LIMIT = 100
 
 
@@ -376,6 +368,7 @@ def changed_files(*, staged: bool, base_ref: str | None = None) -> list[str]:
                     "git",
                     "diff",
                     "--name-only",
+                    "--no-renames",
                     "--diff-filter=ACMRD",
                     f"{base_ref}...HEAD",
                     "--",
@@ -385,7 +378,7 @@ def changed_files(*, staged: bool, base_ref: str | None = None) -> list[str]:
         )
     diff = ["git", "diff"]
     diff += ["--cached"] if staged else ["HEAD"]
-    diff += ["--name-only", "--diff-filter=ACMRD", "--"]
+    diff += ["--name-only", "--no-renames", "--diff-filter=ACMRD", "--"]
     paths = set(_git(diff).splitlines())
     if not staged:
         paths.update(
@@ -394,26 +387,38 @@ def changed_files(*, staged: bool, base_ref: str | None = None) -> list[str]:
     return sorted(path for path in paths if path)
 
 
-def select_tests(paths: list[str]) -> list[str]:
+def select_tests(paths: list[str], *, root: Path | None = None) -> list[str]:
     """Return conservative pytest targets for repo-relative changed paths."""
+    root = ROOT if root is None else root
     targets: set[str] = set()
     unknown_code = False
     for path in paths:
         if path in GLOBAL_TEST_FILES:
             return ["tests"]
-        if path in NON_PYTHON_LOCKFILES:
-            # The CI install step validates lockfile integrity. Do not spend the
-            # bounded Python-test budget on an unrelated full suite.
-            continue
+        if (
+            path in NON_PYTHON_LOCKFILES
+            or path == "package.json"
+            or Path(path).name.startswith("requirements")
+        ):
+            return ["tests"]
         if path.startswith("tests/") and path.endswith(".py"):
-            if (ROOT / path).is_file():
+            targets.update(TEST_HELPER_DEPENDENTS.get(path, ()))
+            if Path(path).name == "conftest.py" or not (root / path).is_file():
+                parent = Path(path).parent
+                while parent != Path("tests") and not (root / parent).is_dir():
+                    parent = parent.parent
+                targets.add(parent.as_posix())
+            else:
                 targets.add(path)
             continue
         if path.startswith(CASE_RESOURCE_PREFIX) and path.endswith(".json"):
             relative = Path(path.removeprefix(CASE_RESOURCE_PREFIX)).with_suffix(".py")
             test_path = Path("tests") / relative
-            if (ROOT / test_path).is_file():
+            targets.update(TEST_HELPER_DEPENDENTS.get(test_path.as_posix(), ()))
+            if (root / test_path).is_file():
                 targets.add(test_path.as_posix())
+            else:
+                unknown_code = True
             continue
         if path in {
             f"{EVAL_RESOURCE_PREFIX}openui_ship_gates_v5.json",
@@ -447,44 +452,22 @@ def select_tests(paths: list[str]) -> list[str]:
         if matches:
             targets.update(suite for suites in matches for suite in suites)
             continue
-        if path.startswith("docs/") or Path(path).suffix in {
+        if Path(path).suffix in {
             ".md",
             ".rst",
             ".txt",
         }:
             continue
-        if path.startswith(".github/workflows/"):
-            continue
-        if path.startswith(".claude/"):
-            continue
-        if Path(path).suffix in CODE_SUFFIXES:
-            unknown_code = True
-    if targets:
-        return _remove_nested_targets(targets)
+        unknown_code = True
     if unknown_code:
         return ["tests"]
     return _remove_nested_targets(targets)
 
 
 def select_changed_tests(paths: list[str]) -> list[str]:
-    """Prefer explicit regression files for latency-bounded local hooks.
+    """Fast feedback only; global fixtures retain full scope.
 
-    One exception: a changed *global* test file (``tests/conftest.py``,
-    ``tests/casefiles.py``, ``pyproject.toml``) means every suite is in scope,
-    and the changed-file shortcut must not suppress that. It did -- editing
-    ``tests/casefiles.py``, which every snapshot test loads through, alongside
-    one test file ran only that one file.
-
-    The broader inversion is deliberately *not* fixed here: for ordinary source
-    files this still returns the changed test files alone, so a diff touching
-    a source file and a test file selects strictly less than the same diff
-    without the test file. Making it monotone (a union with ``select_tests``)
-    is correct; the objection is cost, not correctness. On a representative
-    diff the union selects seven targets instead of four files -- several
-    minutes of pre-commit wall time on an ordinary source edit -- and CI runs
-    the same selection under a disabled-for-cost budget. No single suite busts
-    the cap, so the trade belongs to the owner. Measured in
-    ``docs/design/autotrain-recovery-2-20260902.md``.
+    Release checks use select_tests and verify_merge_ready collected-node receipts.
     """
     if any(path in GLOBAL_TEST_FILES for path in paths):
         return select_tests(paths)
@@ -500,7 +483,7 @@ def select_changed_tests(paths: list[str]) -> list[str]:
 
 
 def hook_test_targets(paths: list[str]) -> list[str]:
-    """Keep local hooks bounded; CI owns broad validation for large diffs."""
+    """Fast feedback only; verify_merge_ready owns release coverage."""
     if len(paths) > HOOK_TEST_FILE_LIMIT:
         return []
     return select_changed_tests(paths)
@@ -553,7 +536,9 @@ def check(
         if _run([sys.executable, "-m", "scripts.verify_agent_surfaces"]):
             return 1
     if any(path in OWNERSHIP_MAP_FILES for path in paths):
-        if _run([sys.executable, "-m", "scripts.render_repository_ownership_map", "--check"]):
+        if _run(
+            [sys.executable, "-m", "scripts.render_repository_ownership_map", "--check"]
+        ):
             return 1
         if _run([sys.executable, "-m", "scripts.verify_ownership_map"]):
             return 1
@@ -564,7 +549,9 @@ def check(
         if _run([sys.executable, "-m", "scripts.verify_research_citation_catalog"]):
             return 1
     if any(path in RESEARCH_EXPERIMENT_PREREGISTRY_FILES for path in paths):
-        if _run([sys.executable, "-m", "scripts.verify_research_experiment_preregistry"]):
+        if _run(
+            [sys.executable, "-m", "scripts.verify_research_experiment_preregistry"]
+        ):
             return 1
     if any(path in REVMATH_HARNESS_PARITY_FILES for path in paths):
         if _run([sys.executable, "-m", "scripts.verify_revmath_harness_parity"]):
@@ -625,7 +612,7 @@ def _run(command: list[str]) -> int:
 
 def _pytest_worker_env() -> dict[str, str]:
     """Keep parallel pytest workers from oversubscribing CI CPU threads."""
-    env = os.environ.copy()
+    env = {**os.environ, "ORT_DISABLE_TELEMETRY": "1"}
     for variable in (
         "OMP_NUM_THREADS",
         "MKL_NUM_THREADS",

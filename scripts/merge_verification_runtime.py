@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import sys
 from pathlib import Path
 
 from scripts.merge_verification_evidence import file_digest
@@ -28,6 +30,19 @@ BRIDGES = {
         ("cli.mjs", "package.json", "package-lock.json"),
     ),
 }
+
+
+def approved_runtime_roots(source: Path, requested: list[Path]) -> tuple[Path, ...]:
+    roots = list(requested) or [Path(sys.prefix)]
+    bridge = source.resolve() / "src/apps/openui_bridge/node_modules"
+    if bridge.is_dir() and bridge not in roots:
+        roots.append(bridge)
+    node = shutil.which("node")
+    if node:
+        node_root = Path(node).resolve().parent.parent
+        if node_root.is_dir() and node_root not in roots:
+            roots.append(node_root)
+    return tuple(roots)
 
 # This runs inside the existing namespace, without network/host home/store.
 # The entrypoint remains byte-identical; Node resolves all transitive imports
@@ -128,6 +143,8 @@ def runtime_argv(source, runtimes, argv, *, workspace=None, required=False):
         "PYTHONPATH=" + ":".join(pythonpath),
         "PATH=" + ":".join([*bins, "/usr/bin", "/bin"]),
     ]
+    if grants["node_index"] is not None:
+        settings.append(f"SLM_TEST_NODE=/runtime/{grants['node_index']}/bin/node")
     library_paths = [
         f"/runtime/{index}/lib"
         for index, root in enumerate(runtimes)

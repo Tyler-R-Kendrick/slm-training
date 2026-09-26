@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import time
 from collections.abc import Sequence
@@ -26,6 +27,7 @@ from slm_training.autoresearch.schemas import (
     utc_now,
 )
 from slm_training.autoresearch.storage import (
+    CampaignStore,
     autotrain_loop_state_lock,
 )
 
@@ -63,7 +65,10 @@ def record_observed_paired_sd(
     """
     from datetime import datetime, timezone
 
+    _validate_sd(sd, n)
     path = Path(path)
+    if path.resolve().is_relative_to(Path(__file__).resolve().parents[1] / "src"):
+        raise PermissionError("runtime calibration cannot modify source resources")
     data = read_json(path)
     if not data:
         raise ValueError(f"screening expectations missing or invalid: {path}")
@@ -107,7 +112,30 @@ def record_observed_paired_sd(
         "date": stamp,
         "history": history,
     }
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    CampaignStore._replace_durable(path, json.dumps(data, indent=2) + "\n")
+    return True
+
+
+def _validate_sd(sd, n):
+    if (type(sd) not in (int, float) or not math.isfinite(sd) or sd < 0
+            or type(n) is not int or n < 2):
+        raise ValueError("paired SD requires finite nonnegative SD and >=2 pairs")
+
+
+def record_screening_paired_sd(path, *, campaign_dir, **observation):
+    """Persist observations without changing this release's locked calibration."""
+    if path is not None:
+        return record_observed_paired_sd(path, **observation)
+    _validate_sd(observation["sd"], observation["n"])
+    if campaign_dir.name != observation["campaign_id"]:
+        raise ValueError("paired SD evidence requires its campaign directory")
+    store = CampaignStore(campaign_dir.name, campaign_dir.parent)
+    artifact = store.write_artifact("observed_paired_sd", {
+        "schema": OBSERVED_PAIRED_SD_SCHEMA, **observation,
+        "source": OBSERVED_PAIRED_SD_SOURCE,
+    })
+    store.append_event("paired_sd_observed", artifact_sha256=artifact.stem,
+                       idempotency_key=f"paired-sd:{artifact.stem}")
     return True
 
 

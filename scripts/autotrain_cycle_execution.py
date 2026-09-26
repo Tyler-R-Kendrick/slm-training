@@ -10,7 +10,9 @@ from types import SimpleNamespace
 from scripts.autoresearch_command_cursor import yielded_outcome_since
 from scripts.autoresearch_continuation import (
     _pending_stage,
+    _interrupted_resume,
     _progress,
+    _wall_yield,
     is_continuation_pending,
 )
 from scripts.autotrain_cycle_context import (
@@ -25,6 +27,7 @@ from scripts.autotrain_cycle_finalize import execute_stage, stages
 from scripts.autotrain_cycle_reconcile import (
     accept_arm,
     new_outcome as _new_outcome,
+    pending_after_arm,
     reconcile_inflight,
     return_attempts,
     start_attempts,
@@ -34,6 +37,7 @@ from slm_training.autoresearch.storage import CampaignStore
 from slm_training.levers import (
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
 )
 
 
@@ -97,11 +101,11 @@ def _run_arm(journal, continuous, cwd, deadline):
         if previous is not None:
             old = _pending_stage(ExperimentOutcome.model_validate(previous)) or {}
             new = _pending_stage(outcome) or {}
-            if _progress(old) == _progress(new):
+            if _progress(old) == _progress(new) and not _wall_yield(new) and not _interrupted_resume(new):
                 state["repair_required"] = "driver_pending_no_progress"
         state["last_yield"] = outcome.model_dump(mode="json")
         return False
-    outcome = _new_outcome(store, before, eid, arm["manifest_digest"])
+    outcome = _new_outcome(store, before, eid, arm["manifest_digest"], timed_out=result.timed_out)
     return accept_arm(journal, continuous, eid, outcome, code)
 
 
@@ -158,6 +162,11 @@ def _outputs(store):
             handoff = AutotrainCycleHandoffV1.model_validate(payload)
             if handoff.loop_id != value["loop_id"]:
                 raise ValueError("driver handoff differs from locked loop")
+            if (
+                handoff.upstream_commit != value["upstream"]
+                or handoff.integration_commit != value["integration"]
+            ):
+                raise ValueError("driver handoff source differs from locked context")
         else:
             validate_cycle_delivery(
                 payload, campaign_id=store.campaign_id, loop_id=value["loop_id"]
@@ -170,32 +179,31 @@ def execute_pending(journal, continuous, cwd, deadline):
     if journal.state.get("repair_required"):
         return journal.pending(journal.state["repair_required"], capability=True)
     if not reconcile_inflight(journal, continuous):
-        return journal.pending(
-            "driver_attempt_requires_reconciliation", capability=True
-        )
+        return journal.pending("driver_attempt_requires_reconciliation", capability=True)
     while journal.state["phase"] != "completed":
         pending = _budget_pending(journal, deadline)
         if pending is not None:
             return pending
         available = operation_allowance(journal, deadline)
         journal.start(journal.state["phase"], available)
-        complete = _advance(
-            journal,
-            continuous,
-            cwd,
-            time.monotonic() + available - HARNESS_FINALIZATION_RESERVE_SECONDS,
-        )
-        journal.settle()
+        from scripts.autotrain_source_publication import SourcePublicationPrerequisite
+        publication_pending = None
+        try:
+            complete = _advance(
+                journal, continuous, cwd,
+                time.monotonic() + available - HARNESS_FINALIZATION_RESERVE_SECONDS,
+            )
+        except SourcePublicationPrerequisite as pending:
+            complete, publication_pending = False, pending.pending
+        if complete is not None:
+            journal.settle()
         if journal.state.get("repair_required"):
             return journal.pending(journal.state["repair_required"], capability=True)
         if not complete:
-            return journal.pending("locked_arm_or_evaluation_yielded")
+            return publication_pending or pending_after_arm(journal, complete)
     continuous._clear_active_stage(journal.store.root.parent, journal.value["loop_id"])
-    print(
-        f"CYCLE_COMPLETE {journal.store.campaign_id} role={journal.value['role']} "
-        f"intent={journal.value['cycle_intent']}",
-        flush=True,
-    )
+    print(f"CYCLE_COMPLETE {journal.store.campaign_id} role={journal.value['role']} "
+          f"intent={journal.value['cycle_intent']}", flush=True)
     return journal.store.campaign_id
 
 
@@ -219,9 +227,11 @@ def operation_allowance(journal, deadline):
 def resume_cycle(cwd, root, loop_id, continuous, deadline=None):
     """Call before campaign-init/research/matrix; None alone means no saved work."""
     started = time.monotonic()
+    from slm_training.harness_core.checkpoint_publication import controller_work_deadline
     deadline = min(
         deadline if deadline is not None else float("inf"),
         started + INTERRUPT_AFTER_SECONDS,
+        controller_work_deadline(INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS + HARNESS_FINALIZATION_RESERVE_SECONDS),
     )
     with writer(root, loop_id) as runtime:
         reference = active_reference(runtime)
@@ -313,6 +323,9 @@ def driver_operation(request, continuous, cwd, root, loop_id):
     journal = CampaignStore("runtime", root / "loops" / loop_id)
     prior_events = {row["event_id"] for row in journal.verify_event_chain()}
     previous_campaign_id = continuous._latest_cycle(root, loop_id)[1]
+    reconciled = reconcile_interrupted_operation(request, journal, cwd, root, loop_id, previous_campaign_id)
+    if reconciled is not None:
+        return reconciled
     with operation_publication_scope(request, root, loop_id):
         returncode = continuous.main(request["driver_argv"])
     if type(returncode) is int and returncode == 10:
@@ -344,3 +357,42 @@ def driver_operation(request, continuous, cwd, root, loop_id):
         if handoff.is_file()
         else None,
     }
+
+
+def reconcile_interrupted_operation(request, journal, cwd, root, loop_id, campaign_id):
+    """A killed wrapper cannot authorize another campaign or erase saved work."""
+    from scripts.autotrain_pending import publish_pending
+    from slm_training.harness_core.activity_contract import contract_digest
+
+    events = journal.verify_event_chain()
+    interrupted = [e for e in events if e["event_type"] == "operation_repair_requested"
+        and e["experiment_id"] == request["lease"]["activity_id"]
+        and e["detail"]["pending"]["observed_outcome"] == "wall_budget"]
+    if not interrupted:
+        return None
+    reference = active_reference(journal)
+    if reference is not None:
+        store = CampaignStore(reference["campaign_id"], root)
+        value = load_context(store, reference["input_digest"])
+        if value["loop_id"] != loop_id or value["cwd"] != str(Path(cwd).resolve()):
+            raise ValueError("interrupted driver context workspace/loop mismatch")
+        verify_inputs(store, cwd, value)
+        return None  # Ordinary main reentry owns cursor reconciliation, before setup.
+    claims = [i for i, e in enumerate(events) if e["event_type"] == "activity_transition"
+        and e["detail"].get("operation") == "claim"
+        and e["experiment_id"] == request["lease"]["activity_id"]]
+    if claims and campaign_id:
+        try:
+            completion = completed_cycle_since(cwd, root, loop_id, campaign_id,
+                {e["event_id"] for e in events[:claims[0] + 1]})
+        except ValueError:
+            pass
+        else:
+            return {"returncode": 0, "campaign_id": campaign_id, "completion": completion,
+                    "handoff_digest": completion["outputs"]["cycle_handoff.json"]}
+    pending = {"schema_version": "driver_pending/v1", "measurement_complete": False,
+        "outcome": "capability", "reason": "interrupted_driver_has_no_reconcilable_cycle",
+        "wake": {"predicate": "interrupted driver cursor independently reconciled",
+                 "source": "controller_cursor_reconciliation", "identity_digest": contract_digest(interrupted[-1]["detail"])}}
+    publish_pending(root, loop_id, pending)
+    return {"returncode": 10, "campaign_id": campaign_id, "pending": pending}

@@ -6,16 +6,21 @@ action acknowledgment, or activate a source release through this module.
 
 from __future__ import annotations
 
-import time
 from typing import Callable
 
 from slm_training.autoresearch.heal.agent_executor import AgentCancelled, CodexExecutor
 from slm_training.autoresearch.heal.repair_contracts import (
     RepairDispatchResult,
+    RepairGrant,
     RepairProposal,
     RepairRequest,
     RepairVerification,
     VerificationBinding,
+)
+from slm_training.autoresearch.heal.grant_accounting import (
+    append_budget_reservation,
+    repair_grant_budget,
+    validate_blocker_grant_successor,
 )
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.levers import KILL_GRACE_SECONDS
@@ -46,6 +51,13 @@ def _record(
 
 def _history(journal: CampaignStore) -> list[dict]:
     return journal.verify_event_chain()
+
+
+def reserved_repair_seconds(
+    events: list[dict], grant: RepairGrant, journal: CampaignStore
+) -> float:
+    """Reservations in this grant's predecessor chain, including interrupted work."""
+    return repair_grant_budget(events, grant, journal)[0]
 
 
 def _prior_result(
@@ -95,24 +107,22 @@ def dispatch_repair(
     if previous and previous.status != "waiting_capability":
         return previous
     fields = {"request_digest": request.digest()}
-    if request.blocker.blocker_class not in {
-        "code",
-        "environment",
-        "data",
-        "formal_infra",
-    }:
-        result = RepairDispatchResult(
-            status="waiting_capability",
-            reason=f"owner_required:{request.blocker.blocker_class}",
-            **fields,
-        )
-        return _record(journal, request, result) if result != previous else result
     reason = (
         "agent_adapter_not_configured"
         if executor is None
         else executor.capability(request)
     )
-    if reason:
+    if (
+        request.blocker.blocker_class
+        not in {
+            "code",
+            "environment",
+            "data",
+            "formal_infra",
+        }
+        or reason
+    ):
+        reason = reason or f"owner_required:{request.blocker.blocker_class}"
         result = RepairDispatchResult(
             status="waiting_capability", reason=reason, **fields
         )
@@ -134,38 +144,19 @@ def dispatch_repair(
             ),
         )
     assert request.grant is not None and executor is not None
-    reserved = sum(float(event["detail"]["reserved_seconds"]) for event in starts)
-    reserved += sum(
-        float(event["detail"]["reserved_seconds"])
-        for event in events
-        if event["event_type"] == "operation_diagnosis_started"
-        and event["detail"]["grant_digest"] == request.grant.digest()
-    )
-    allocation = request.grant.interrupt_seconds + KILL_GRACE_SECONDS
-    if (
-        len(starts) >= request.grant.max_attempts
-        or reserved + allocation > request.grant.total_seconds
-    ):
+    reservation = _reserve_repair_attempt(request, journal, events, starts)
+    if reservation:
         return _record(
             journal,
             request,
             RepairDispatchResult(
-                status="waiting_capability", reason="repair_grant_exhausted", **fields
+                status="waiting_capability"
+                if reservation == "repair_grant_exhausted"
+                else "waiting_diagnosis",
+                reason=reservation,
+                **fields,
             ),
         )
-    artifact = journal.write_artifact("repair_requests", request)
-    journal.append_event(
-        "repair_started",
-        experiment_id=request.activity_id,
-        artifact_sha256=artifact.stem,
-        detail={
-            "fingerprint": request.blocker.fingerprint(),
-            "attempt_id": request.attempt_id,
-            "request_digest": request.digest(),
-            "fence": request.fence,
-            "reserved_seconds": allocation,
-        },
-    )
     try:
         result = executor.execute(request, progress=progress, cancelled=cancelled)
     except AgentCancelled:
@@ -182,6 +173,44 @@ def dispatch_repair(
     if not fence_valid(request.fence):
         raise ValueError("stale repair output quarantined; lease revoked")
     return _record(journal, request, result)
+
+
+def _reserve_repair_attempt(request, journal, events, starts):
+    (reserved, total_budget, attempt_budget, known, event_grants, request_grants, _) = (
+        repair_grant_budget(events, request.grant, journal)
+    )
+    validate_blocker_grant_successor(
+        events,
+        request.grant,
+        request.blocker.fingerprint(),
+        known,
+        event_grants,
+        request_grants,
+        request.blocked_activity_id or "",
+        request.blocker.code,
+    )
+    allocation = request.grant.interrupt_seconds + KILL_GRACE_SECONDS
+    if len(starts) >= attempt_budget or reserved + allocation > total_budget:
+        return "repair_grant_exhausted"
+    artifact = journal.write_artifact("repair_requests", request)
+    appended = append_budget_reservation(
+        journal,
+        events,
+        "repair_started",
+        experiment_id=request.activity_id,
+        artifact_sha256=artifact.stem,
+        detail={
+            "fingerprint": request.blocker.fingerprint(),
+            "attempt_id": request.attempt_id,
+            "request_digest": request.digest(),
+            "fence": request.fence,
+            "grant_digest": request.grant.digest(),
+            "grant_id": request.grant.grant_id,
+            "grant_accounting_digest": request.grant.accounting_digest(),
+            "reserved_seconds": allocation,
+        },
+    )
+    return None if appended else "repair_reservation_raced"
 
 
 def accept_verification(
@@ -217,7 +246,6 @@ def accept_verification(
         and binding_valid
         and grant is not None
         and verification.grant_id == grant.grant_id
-        and grant.expires_at > time.time()
     )
     restored = all(
         (

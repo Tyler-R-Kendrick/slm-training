@@ -1,0 +1,100 @@
+{
+  "schema": "test_cases/v1",
+  "module": "tests/test_autoresearch/test_experiment_identity.py",
+  "case_sets": {
+    "test_matrix_role_needs_no_monitor_padding": {
+      "parameters": [
+        "role",
+        "count",
+        "valid"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "search",
+            5,
+            true
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "search",
+            2,
+            false
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "confirm",
+            2,
+            true
+          ]
+        },
+        {
+          "id": "case-004",
+          "values": [
+            "confirm",
+            5,
+            false
+          ]
+        },
+        {
+          "id": "case-005",
+          "values": [
+            "promotion",
+            2,
+            true
+          ]
+        },
+        {
+          "id": "case-006",
+          "values": [
+            "screen",
+            2,
+            true
+          ]
+        }
+      ]
+    },
+    "test_ignored_or_wrong_endpoint_knob_blocks_design": {
+      "parameters": [
+        "key",
+        "value",
+        "endpoint",
+        "error"
+      ],
+      "cases": [
+        {
+          "id": "case-001",
+          "values": [
+            "lr",
+            0.001,
+            "denoising_loss",
+            "unchanged"
+          ]
+        },
+        {
+          "id": "case-002",
+          "values": [
+            "fake_loss_weight",
+            1,
+            "denoising_loss",
+            "unregistered"
+          ]
+        },
+        {
+          "id": "case-003",
+          "values": [
+            "grammar_draft_window",
+            2,
+            "denoising_loss",
+            "cannot affect"
+          ]
+        }
+      ]
+    }
+  }
+}

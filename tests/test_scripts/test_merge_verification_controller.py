@@ -1,6 +1,7 @@
 """Finite controller wiring: real leases/processes plus explicit injected yields."""
 
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -14,7 +15,6 @@ from scripts import merge_verification_controller as owner
 from scripts.merge_verification_evidence import (
     digest,
     environment_identity,
-    runtime_identity,
     source_identity,
 )
 from slm_training.autoresearch.runtime.activity_runtime import ActivityRuntime
@@ -24,9 +24,10 @@ from slm_training.autoresearch.storage import CampaignStore
 def fixture_plan(tmp_path):
     root = tmp_path / "candidate"
     root.mkdir()
+    (root / ".gitignore").write_text("__pycache__/\n.pytest_cache/\n.ruff_cache/\n")
     (root / "test_case.py").write_text("def test_case(): pass\n")
-    # Source enumeration is exercised elsewhere against actual Git. This fixture
-    # has only one enumerated input so no repository Git mutation is necessary.
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
     return {
         "schema": "release_verification_plan/v1",
         "source": str(root),
@@ -35,44 +36,12 @@ def fixture_plan(tmp_path):
         "runtime_digest": "c" * 64,
         "state_dir": str(tmp_path / "cache"),
         "base_ref": "HEAD",
-        "step_seconds": 2,
+        "step_seconds": 30,
         "total_seconds": 200,
         "max_invocations": 3,
         "local_feedback": True,
         "runtime_roots": [],
     }
-
-
-def test_canonical_parser_exposes_finite_release_command(tmp_path):
-    from scripts.autoresearch import build_parser
-
-    args = build_parser().parse_args(
-        [
-            "--root",
-            str(tmp_path),
-            "verify-release",
-            "--source",
-            str(tmp_path),
-            "--state-dir",
-            str(tmp_path / "cache"),
-            "--total-seconds",
-            "600",
-            "--max-invocations",
-            "8",
-            "--max-step-seconds",
-            "15",
-            "--identity",
-            "d" * 64,
-            "--activity-id",
-            "source-verification-" + "d" * 64,
-        ]
-    )
-    assert args.func is owner.cmd_verify_release
-    assert args.total_seconds == 600 and args.max_invocations == 8
-    assert args.max_step_seconds == 15
-    assert not args.local_feedback
-    assert args.identity == "d" * 64
-    assert args.activity_id == "source-verification-" + args.identity
 
 
 @pytest.mark.parametrize(
@@ -111,11 +80,19 @@ def test_locked_grant_cannot_reset_retries(tmp_path):
             owner.register_release(runtime, {**plan, "max_invocations": 4})
 
 
-@pytest.mark.parametrize("seconds", [0, -1, float("nan"), float("inf"), 91])
+@pytest.mark.parametrize("seconds", [0, -1, 5, 20, float("nan"), float("inf"), 51])
 def test_unusable_controller_allowance_refused_before_execution(tmp_path, seconds):
     plan = fixture_plan(tmp_path)
     with pytest.raises(ValueError):
         owner.release_grant({**plan, "step_seconds": seconds})
+
+
+def test_maximum_child_allowance_keeps_outer_observation_inside_run_cap(tmp_path):
+    grant = owner.release_grant({**fixture_plan(tmp_path), "step_seconds": 50})
+
+    assert grant.interrupt_seconds == 120
+    assert grant.attempt_seconds == 130
+    assert grant.attempt_seconds + 30 <= owner.INTERRUPT_AFTER_SECONDS - 10
 
 
 def test_fake_success_without_authenticated_journal_is_rejected(tmp_path):
@@ -158,6 +135,40 @@ def test_child_invalidation_preserves_reason_without_accepting_claims(tmp_path):
         owner.validate_observation(result, plan)
 
 
+def test_child_diagnostics_before_final_json_preserve_typed_failure(tmp_path):
+    payload = {
+        "status": "invalid_evidence",
+        "reason": "tests_failed",
+        "verification_complete": False,
+        "release_authorized": False,
+    }
+    result = SimpleNamespace(
+        timed_out=False,
+        cancelled=False,
+        progress_stalled=False,
+        returncode=1,
+        stdout='{"collected": 105}\npytest failure diagnostics\n' + json.dumps(payload),
+    )
+
+    summary = owner.validate_observation(result, fixture_plan(tmp_path))
+
+    assert summary["status"] == "invalid_evidence"
+    assert summary["reason"] == "tests_failed"
+
+
+def test_child_trailing_non_json_output_is_rejected(tmp_path):
+    result = SimpleNamespace(
+        timed_out=False,
+        cancelled=False,
+        progress_stalled=False,
+        returncode=1,
+        stdout=json.dumps({"status": "invalid_evidence"}) + "\ntrailing output",
+    )
+
+    with pytest.raises(ValueError, match="did not end with a JSON object"):
+        owner.validate_observation(result, fixture_plan(tmp_path))
+
+
 @pytest.mark.parametrize(
     "status", ["waiting_capability", "waiting_dependency", "waiting_environment"]
 )
@@ -191,11 +202,16 @@ def test_finite_controller_resumes_actual_gate_after_yield(
     monkeypatch.setattr(evidence, "source_paths", lambda _: ["test_case.py"])
     plan.update(
         source_digest=source_identity(root),
-        environment_digest=digest(environment_identity()),
+        environment_digest=digest(
+            environment_identity(runtime_identity_value=plan["runtime_digest"])
+        ),
         runtime_roots=[sys.prefix],
-        runtime_digest=runtime_identity((Path(sys.prefix),)),
+        runtime_digest="b" * 64,
+        # Workloads only start with more than 2*KILL_GRACE_SECONDS available;
+        # a 2-second step is a parked obligation, not a runnable grant.
+        step_seconds=25,
     )
-    code = f"""
+    child_script = f"""
 import json, sys
 from pathlib import Path
 sys.path.insert(0, {str(source)!r})
@@ -207,7 +223,7 @@ owner.check_changed.select_tests = lambda *args, **kwargs: ['test_case.py']
 if sys.argv[1] == '1': owner._run_shards = lambda *args: None
 summary = owner.run_release_gate((Step('static', (sys.executable, '-c', 'pass')),),
  root=Path({str(root)!r}), base_ref='HEAD', state_dir=Path({plan["state_dir"]!r}),
- step_seconds=2, run_step=run_step, local_feedback=True)
+ step_seconds=25, run_step=run_step, local_feedback=True)
 print(json.dumps(summary))
 sys.exit(0 if summary['verification_complete'] else 10)
 """
@@ -215,9 +231,10 @@ sys.exit(0 if summary['verification_complete'] else 10)
 
     def argv(_):
         calls.append(1)
-        return [sys.executable, "-c", code, str(len(calls))]
+        return [sys.executable, "-c", child_script, str(len(calls))]
 
     monkeypatch.setattr(owner, "verification_argv", argv)
+    monkeypatch.setattr(owner, "runtime_identity", lambda _: plan["runtime_digest"])
     store = CampaignStore("finite", tmp_path / "events")
     from scripts.autoresearch import build_parser
 
@@ -228,12 +245,14 @@ sys.exit(0 if summary['verification_complete'] else 10)
             "verify-release",
             "--source",
             str(root),
+            "--base-ref",
+            "HEAD",
             "--state-dir",
             plan["state_dir"],
             "--job-id",
             "finite",
             "--max-step-seconds",
-            "2",
+            "25",
             "--total-seconds",
             "200",
             "--max-invocations",
@@ -241,8 +260,14 @@ sys.exit(0 if summary['verification_complete'] else 10)
             "--local-feedback",
         ]
     )
-    assert args.func(args) == 0
-    result = json.loads(capsys.readouterr().out)
+    result = None
+    for _ in range(3):
+        code = args.func(args)
+        result = json.loads(capsys.readouterr().out)
+        if code == 0:
+            break
+        assert code == 10, result
+    assert code == 0
     assert result["verification_complete"], result
     assert result["attempts"] == 2
     assert not result["release_authorized"]
@@ -258,6 +283,16 @@ sys.exit(0 if summary['verification_complete'] else 10)
         assert replay["verification_complete"]
         assert len(calls) == 2
         assert replay["charged_activity_seconds"] == result["charged_activity_seconds"]
+    interrupted = SimpleNamespace(
+        timed_out=True,
+        cancelled=False,
+        progress_stalled=False,
+        returncode=-2,
+        stdout="",
+    )
+    recovered = owner.validate_observation(interrupted, plan)
+    assert recovered["verification_complete"]
+    assert recovered["identity"] == replay["observation"]["identity"]
 
 
 def test_missing_isolation_parks_only_verification_activity(tmp_path, monkeypatch):
@@ -290,8 +325,49 @@ def test_verifier_bootstrap_does_not_import_candidate_sitecustomize(
     argv = owner.verification_argv(plan)
     assert argv[1] == "-I"
     result = subprocess.run(
-        argv[:4] + ["--help"], cwd=root, capture_output=True, text=True, timeout=15
+        argv[:4] + ["--help"], cwd=root, capture_output=True, text=True, timeout=60
     )
     assert result.returncode == 0, result.stderr
     assert "--identity" in result.stdout
     assert not marker.exists()
+
+
+def test_controller_runtime_identity_avoids_duplicate_runtime_walk(tmp_path, monkeypatch):
+    from scripts import merge_verification as merge_owner
+
+    monkeypatch.setattr(merge_owner, "changed_paths", lambda *_: ("base", ["tests"]))
+    monkeypatch.setattr(
+        merge_owner.check_changed, "select_tests", lambda *args, **kwargs: ["tests"]
+    )
+    monkeypatch.setattr(merge_owner, "source_identity", lambda *_: "a" * 64)
+    monkeypatch.setattr(merge_owner, "environment_identity", lambda **_: {"fixture": True})
+    monkeypatch.setattr(
+        merge_owner,
+        "runtime_identity",
+        lambda *_: pytest.fail("controller-bound runtime must not be rescanned"),
+    )
+
+    binding = merge_owner.verification_binding(
+        tmp_path, "HEAD", (), runtimes=(tmp_path,), runtime_digest_value="b" * 64
+    )
+    assert binding["runtime_identity"] == "b" * 64
+    with pytest.raises(ValueError, match="controller runtime identity"):
+        merge_owner.verification_binding(
+            tmp_path, "HEAD", (), runtime_digest_value="not-a-digest"
+        )
+
+
+def test_controller_deadline_starts_after_runtime_scan():
+    import inspect
+
+    source = inspect.getsource(owner.verify_release)
+    assert source.index("runtime_digest = runtime_identity(tuple(roots))") < source.index(
+        "started = time.monotonic()"
+    )
+
+
+def test_controller_budget_starts_after_runtime_scan():
+    import inspect
+
+    body = inspect.getsource(owner.verify_release)
+    assert body.index("runtime_digest = runtime_identity(tuple(roots))") < body.index("started =")

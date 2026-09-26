@@ -1,6 +1,10 @@
 """Reconcile committed driver effects, never infer completion from loose files."""
 
+import json
+from pathlib import Path
+
 from scripts.autoresearch_continuation import is_continuation_pending
+from scripts.autotrain_cursor_reconcile import _resumable_cursor_outcome
 from scripts.autotrain_cycle_context import read_artifact
 from scripts.autotrain_cycle_finalize import stages, skipped
 from scripts.autotrain_ledgers import publish_cycle_delivery, validate_cycle_delivery
@@ -9,7 +13,7 @@ from slm_training.autoresearch.campaign_events import publish_cycle_handoff
 from slm_training.autoresearch.schemas import AutotrainCycleHandoffV1, ExperimentOutcome
 
 
-def new_outcome(store, before, eid, manifest):
+def new_outcome(store, before, eid, manifest, *, timed_out=False):
     rows = [
         row
         for row in store.verify_event_chain()
@@ -17,6 +21,10 @@ def new_outcome(store, before, eid, manifest):
         and row["experiment_id"] == eid
         and row["event_id"] not in before
     ]
+    if timed_out:
+        # A terminal event may precede required diagnosis and feedback events.
+        # Keep the parent reservation for fenced reconciliation after any timeout.
+        return None
     if len(rows) != 1:
         raise ValueError("driver arm lacks one current terminal outcome")
     result = ExperimentOutcome.model_validate(
@@ -61,6 +69,8 @@ def return_attempts(store, eid, attempts, code, *, reconciled=False):
 
 
 def accept_arm(journal, continuous, eid, outcome, code):
+    if outcome is None:
+        return None
     repair = next(
         (
             signal.code
@@ -91,6 +101,14 @@ def accept_arm(journal, continuous, eid, outcome, code):
     state["index"] += 1
     state.pop("last_yield", None)
     return True
+
+
+def pending_after_arm(journal, complete):
+    return journal.pending(
+        "driver_attempt_requires_reconciliation"
+        if complete is None else "locked_arm_or_evaluation_yielded",
+        capability=complete is None,
+    )
 
 
 def _after_inflight(journal):
@@ -131,7 +149,7 @@ def _recover_arm(journal, continuous, fresh):
         if e["event_type"] == "experiment_attempt_started" and e["experiment_id"] == eid
     ]
     if not terminal or not attempts:
-        return False
+        return _recover_pending_cursor(journal, eid, attempts, fresh) if attempts else False
     postprocessing = {
         event["event_type"] for event in fresh if event["experiment_id"] == eid
     }
@@ -169,6 +187,60 @@ def _recover_arm(journal, continuous, fresh):
     else:
         code = returns[0]["exit_code"]
     return accept_arm(journal, continuous, eid, result, code)
+
+
+def _recover_pending_cursor(journal, eid, attempts, fresh):
+    """Resume a previously certified eval yield, retaining all lost reservations."""
+    from scripts.autoresearch_command_cursor import CommandCursor
+    from slm_training.autoresearch.schemas import ExperimentSpec
+    from slm_training.harness_core.checkpoint_publication import controller_artifact_publication
+
+    store, value = journal.store, journal.value
+    arm = value["arms"][eid]
+    expected = {p["design_digest"] for p in value["locked_designs"].values() if eid in p["arm_ids"]}
+    if {p["design_digest"] for p in attempts} != expected:
+        return False
+    locks = [e for e in store.verify_event_chain() if e["event_type"] == "command_cursor_locked"
+             and e["experiment_id"] == eid]
+    if len(locks) != 1:
+        return False
+    inputs = read_artifact(store, "command_cursor_inputs", locks[0]["artifact_sha256"])
+    experiment = ExperimentSpec.model_validate(inputs["experiment"])
+    if experiment.experiment_id != eid:
+        raise ValueError("interrupted cursor belongs to a different arm")
+    grant = store.load_campaign().budget.continuation_grant
+    with controller_artifact_publication(store.root) as fence:
+        if fence is None:
+            return False  # A file lock alone cannot fence a surviving old worker.
+        with CommandCursor(
+            store, experiment, arm["commands"], arm["manifest_digest"],
+            value["execution_identity"], value["total_seconds"], cwd=value["cwd"],
+            max_attempts=grant.max_attempts if grant else None,
+        ) as cursor:
+            pending = _resumable_cursor_outcome(cursor)
+            if pending is None:
+                return False
+            returned = {e["detail"]["attempt_id"] for e in fresh
+                        if e["event_type"] == "experiment_attempt_returned"
+                        and e["experiment_id"] == eid}
+            if returned and returned != {a["attempt_id"] for a in attempts}:
+                return False
+            if cursor.unresolved:
+                # This is an operational settlement, not an observed completion.
+                # The existing evaluator must verify and resume its partial rows.
+                cursor.commit(pending, cursor.position, cursor.reserved)
+            if not returned:
+                return_attempts(store, eid, attempts, 10, reconciled=True)
+            store.append_event(
+                "driver_interrupted_eval_reconciled", experiment_id=eid,
+                detail={"cursor_digest": cursor.digest, "attempt": cursor.attempt,
+                        "position": cursor.position, "spent_seconds": cursor.spent,
+                        "process_exit_code": None, "scientific_completion": False,
+                        "fence": fence},
+                idempotency_key=f"interrupted-eval:{cursor.digest}:{cursor.attempt}:{fence}",
+            )
+            journal.state["last_yield"] = cursor.outcome.model_dump(mode="json")
+    return True
 
 
 def _recover_publication(journal, fresh):
@@ -229,3 +301,72 @@ def reconcile_inflight(journal, continuous):
     journal.state.update(inflight=None, settled_attempt=True)
     journal.save()
     return True
+
+def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
+    campaigns = sorted(root.glob("*/campaign.json"))
+    best_idx = 0
+    best_id: str | None = None
+    completed_idx = 0
+    completed_id: str | None = None
+    for path in campaigns:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if data.get("loop_id") != loop_id:
+            continue
+        idx = int(data.get("cycle_index") or 0)
+        if idx >= best_idx:
+            best_idx = idx
+            best_id = str(data.get("campaign_id"))
+        campaign_id = str(data.get("campaign_id"))
+        if (
+            idx >= completed_idx
+            and (root / campaign_id / "cycle_handoff.json").is_file()
+        ):
+            completed_idx = idx
+            completed_id = campaign_id
+    return best_idx, completed_id or best_id
+
+
+def resume_locked_recorded_cycle(cwd, root, loop_id, path, sha256, options, continuous):
+    """Adopt and resume only the preregistered pair through the ordinary cursor."""
+    from scripts.autotrain_cycle_context import active_reference, locked_preregistration_selection, writer
+    from scripts.autotrain_cycle_execution import resume_cycle
+    from scripts.autotrain_cycle_prepare import prepare_recorded_cycle
+
+    selection = locked_preregistration_selection(
+        path, cwd, root, loop_id, sha256, options=options,
+    )
+    with writer(root, loop_id) as runtime:
+        active = active_reference(runtime)
+    if active is not None and active["campaign_id"] != selection.campaign_id:
+        raise ValueError("active driver campaign differs from locked preregistration")
+    if active is None:
+        if completed_locked_cycle(cwd, root, loop_id, path, sha256):
+            raise ValueError("locked diagnostic pair already completed")
+        prepare_recorded_cycle(cwd, root, continuous, selection)
+    result = resume_cycle(cwd, root, loop_id, continuous)
+    # A marker-backed execution copy has no Git metadata. Revalidate the same
+    # immutable source and preregistration after the ordinary command cursor.
+    locked_preregistration_selection(path, cwd, root, loop_id, sha256, options=options)
+    return result
+
+
+def completed_locked_cycle(cwd, root, loop_id, path, sha256):
+    """Replay the one retired pair's terminal proof before starting another driver."""
+    from scripts.autotrain_cycle_context import load_context
+    from scripts.autotrain_cycle_execution import completed_cycle_since
+    from slm_training.autoresearch.storage import CampaignStore
+
+    runtime = CampaignStore("runtime", Path(root) / "loops" / loop_id)
+    if not any(event["event_type"] == "driver_cycle_retired"
+               for event in runtime.verify_event_chain()):
+        return None
+    proof = completed_cycle_since(cwd, root, loop_id, loop_id, frozenset())
+    value = load_context(CampaignStore(loop_id, root), proof["input_digest"])
+    plan_path = str(Path(path).resolve())
+    if (value.get("preregistration_path") != plan_path
+        or value["files"].get(plan_path) != sha256):
+        raise ValueError("completed locked pair differs from pinned preregistration")
+    return proof

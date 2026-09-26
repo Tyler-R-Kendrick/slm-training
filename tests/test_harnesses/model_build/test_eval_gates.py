@@ -27,7 +27,6 @@ from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
     _record_langsmith_evaluation,
-    _suite_result_cacheable,
     component_type_recall,
     evaluate,
     evaluate_grammar_leakage_audit,
@@ -949,15 +948,6 @@ def test_evaluate_suites_scoreboard(
         config, ["smoke", "held_out"], checkpoint=checkpoint, cache=cache
     )
     assert len(build_calls) == 2
-
-
-def test_suite_cache_rejects_incomplete_measurements() -> None:
-    assert _suite_result_cacheable(
-        {"decode_timeout_count": 0, "incomplete_document_n": 0}
-    )
-    assert not _suite_result_cacheable(
-        {"decode_timeout_count": 1, "incomplete_document_n": 1}
-    )
 
 
 def test_preloaded_model_never_replays_checkpointless_eval_cache(

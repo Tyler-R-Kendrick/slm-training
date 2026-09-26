@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
+from slm_training.harness_core.bounded_process import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
 
 
 class Contract(BaseModel):
@@ -276,7 +276,7 @@ def _queued(state: ActivityState, event: ActivityEvent) -> dict:
             raise ValueError("activity cannot wake without successor contract")
         if event.wake != state.wake:
             raise ValueError("wrong wake predicate identity")
-        return {"status": "runnable", "wake": None}
+        return {"status": "runnable", "wake": None, "action": ""}
     if state.status not in ("runnable", "waiting_retry") or event.wake is None:
         raise ValueError("only queued work can park with an explicit wake predicate")
     statuses = {

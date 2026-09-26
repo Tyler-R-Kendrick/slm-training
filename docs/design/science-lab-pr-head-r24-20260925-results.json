@@ -1,0 +1,132 @@
+{
+  "campaign_id": "science-lab-pr1785-e9a6de-r24-20260925",
+  "candidate": {
+    "checkpoint": {
+      "parameter_count": 65826,
+      "path": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-candidate/checkpoints/trial/bundles/6433336c896562ee62f667c2ea4a344847006ab56de0cd880299637257356840/last.pt",
+      "sha256": "0a125ff5e1ebcf4b456e8f0d432ca03a187eb298f045b77b8a13c81e62d27313",
+      "sync": "local_no_sync"
+    },
+    "eval": {
+      "attempt_exit_code": 124,
+      "agent_evals_present": false,
+      "agentv_bundle_present": false,
+      "measurement_complete": false,
+      "partial_scoreboard_present": false,
+      "terminal_outcome_recorded": false
+    },
+    "run_id": "science-lab-pr1785-e9a6de-r24-20260925-candidate",
+    "train": {
+      "steps": 6,
+      "stopped_on": "steps",
+      "summary": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-candidate/train_summary.json",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+        "code_dirty": false,
+        "components": {
+          "harness.model_build.train": "v44",
+          "harness.experiment_feature_flags": "v4"
+        },
+        "stamped_at": "2026-09-25T19:03:48.755380+00:00"
+      }
+    }
+  },
+  "comparison": {
+    "endpoint": "smoke.eval_nll",
+    "paired_n": 0,
+    "status": "incomplete",
+    "verdict": null
+  },
+  "control": {
+    "checkpoint": {
+      "parameter_count": 65826,
+      "path": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-control/checkpoints/trial/bundles/44d6c66a708115b38828204b58d38a3e0d5db0ca74da280e13d805a0b4804c32/last.pt",
+      "sha256": "673fce9d06eee0b226d6520c1a8f32c9dacbc924ac8997d15a5e765df2b465b8",
+      "sync": "local_no_sync"
+    },
+    "eval": {
+      "agent_evals": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-control/eval_smoke.json",
+      "agent_evals_jsonl": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-control/agentv/openui-model-ship-gates-2026-09-25t19-00-46-861536-00-00.eval.jsonl",
+      "agentv_bundle": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-control/agentv/openui-model-ship-gates-2026-09-25t19-00-46-861536-00-00",
+      "decoded_n": 6,
+      "measurement_complete": true,
+      "metrics": {
+        "ast_beq_rate": 0.0,
+        "binder_reference_f1": 0.9444444444444445,
+        "canonical_beq_rate": 0.0,
+        "component_type_recall": 0.125,
+        "latency_ms_p50": 767.89,
+        "meaningful_program_rate": 0.16666666666666666,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 0.9166666666666666,
+        "reward_score": 0.0,
+        "structural_similarity": 0.24445000000000003
+      },
+      "ship_gates": {
+        "failure_count": 11,
+        "pass": false,
+        "path": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/runs/science-lab-pr1785-e9a6de-r24-20260925-control/gates.json"
+      }
+    },
+    "run_id": "science-lab-pr1785-e9a6de-r24-20260925-control",
+    "train": {
+      "last_loss": 40.56913757324219,
+      "steps": 6,
+      "stopped_on": "steps",
+      "summary": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925-control/train_summary.json"
+    }
+  },
+  "evidence": {
+    "campaign_events": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925/events.jsonl",
+    "campaign_root": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/science-lab-pr1785-e9a6de-r24-20260925",
+    "preregistration": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/preregistration.json",
+    "supervisor_log": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/campaigns/loops/science-lab-pr1785-e9a6de-r24-20260925/supervisor.jsonl"
+  },
+  "preregistration": {
+    "label": "PR-head diagnostic",
+    "manifest_sha256s": {
+      "candidate": "cfac6769d833b86d063367ec55fcc4a963a069b0150f62ce089dd11def271be9",
+      "control": "250de7f88c822e525df46e58f412982f6b4c30e3b7875a87ede4feb7d60f42da"
+    },
+    "path": "outputs/autonomy-integration-20260921/science-lab-r24-e9a6de-prereg/preregistration.json",
+    "promotion_allowed": false,
+    "sha256": "3f051cd4559451a3e7a68b9ebd0412cb2b2126f71b61fcf9bcee4f62971c7d01"
+  },
+  "recipe": {
+    "batch_size": 2,
+    "device": "cpu",
+    "logical_updates": 6,
+    "parameters_per_arm": 65826,
+    "seed": 7301,
+    "steps_per_invocation": 3,
+    "train_version": "autonomy-mea-train-admitted-v1"
+  },
+  "schema_version": "science_lab_pr_head_results/v1",
+  "source": {
+    "commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+    "execution_marker_digest": "4bfc1dc871e043f08e547d44f9ee6d3adbbc1b6a8916f180291cccd63b57d458",
+    "tree": "03e99f302ed5ad440f2d740b3c0a03d7664ce6b2"
+  },
+  "status": "incomplete_pair_candidate_evaluation_timed_out",
+  "promotion": {
+    "allowed": false,
+    "checkpoint_promoted": false,
+    "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v33",
+      "harness.model_build.eval": "v107",
+      "harness.experiment_feature_flags": "v4",
+      "evals.meaningful_program": "2.14.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v27",
+      "model.twotower": "v332"
+    },
+    "stamped_at": "2026-09-25T19:00:46.883543+00:00"
+  }
+}

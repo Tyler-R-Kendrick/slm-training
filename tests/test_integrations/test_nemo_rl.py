@@ -225,5 +225,11 @@ def test_metadata_revisions_are_immutable_and_hardware_smoke_cannot_promote(
                 "validated-smoke",
                 "--report",
                 "missing",
+                "--metric-evidence",
+                "missing",
+                "--metric-certificate",
+                "missing",
+                "--metric-expectations-sha256",
+                "0" * 64,
             ]
         )

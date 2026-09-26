@@ -94,6 +94,20 @@ def test_denoising_nll_is_deterministic() -> None:
     assert r1["bits_per_char"] is not None
 
 
+def test_evidence_successor_preserves_mask_and_corruption_draws():
+    from slm_training.evals.loss_suites import _repair_rng
+
+    for seed in (0, 7301):
+        for record in ("h1", "h2"):
+            for rate in (0.15, 0.3, 0.5, 0.7, 0.85):
+                draws = [fixed_mask_positions(record, rate, suite_version=version,
+                         mask_seed=seed, eligible=range(40)) for version in ("v1", "v2")]
+                assert draws[0] == draws[1]
+            draws = [_repair_rng(record, 2, suite_version=version, seed=seed).getstate()
+                     for version in ("v1", "v2")]
+            assert draws[0] == draws[1]
+
+
 def test_denoising_nll_emits_reconcilable_family_and_task_slices() -> None:
     records = _records()
     records[0].meta = {"source_family": "programspec_generated", "task": "generation"}

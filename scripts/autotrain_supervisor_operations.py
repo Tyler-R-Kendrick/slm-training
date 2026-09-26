@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 import json
-import sys
 import time
 from pathlib import Path
-
-from scripts.autotrain_cycle_execution import driver_operation as driver_operation
 
 
 def _operation_state(runtime, request, sequence, identity):
@@ -51,8 +49,13 @@ def _operation_state(runtime, request, sequence, identity):
             else ("local_process",),
             environment_digest=request["environment_digest"],
             input_digest=identity,
-            grant=ResourceGrant.model_validate_json(request["driver_argv"][request["driver_argv"].index("--continuation-grant") + 1])
-            if "--continuation-grant" in request.get("driver_argv", ()) else ResourceGrant(),
+            grant=ResourceGrant.model_validate_json(
+                request["driver_argv"][
+                    request["driver_argv"].index("--continuation-grant") + 1
+                ]
+            )
+            if "--continuation-grant" in request.get("driver_argv", ())
+            else ResourceGrant(),
             output_namespace=f"attempts/{activity_id}",
         )
     )
@@ -70,7 +73,7 @@ def _operation_payload(output_path: Path, request: dict):
     ):
         raise ValueError("operation output identity mismatch")
     payload = envelope["payload"]
-    if request["operation"] == "driver":
+    if request["operation"] == "driver" or (request["operation"] == "promotion_eval" and payload.get("pending") is not None):
         if type(payload.get("returncode")) is not int or payload["returncode"] not in {
             0,
             10,
@@ -93,7 +96,9 @@ def interpret_operation_result(result, output_path: Path, execution_request: dic
 
     if result.cancelled:
         return ActivityOutcome.CANCELLED, None
-    if result.timed_out or result.progress_stalled:
+    if result.progress_stalled:
+        return ActivityOutcome.UNKNOWN_FAILURE, None
+    if result.timed_out:
         return ActivityOutcome.WALL_BUDGET, None
     if result.outcome != ProcessOutcome.COMPLETED:
         return ActivityOutcome.UNKNOWN_FAILURE, None
@@ -106,8 +111,8 @@ def interpret_operation_result(result, output_path: Path, execution_request: dic
                 else ActivityOutcome.SUCCEEDED
             )
             if (
-                execution_request["operation"] == "driver"
-                and payload["returncode"] == 10
+                execution_request["operation"] in {"driver", "promotion_eval"}
+                and payload.get("returncode") == 10
             ):
                 from scripts.autotrain_pending import validate_pending
 
@@ -118,127 +123,140 @@ def interpret_operation_result(result, output_path: Path, execution_request: dic
     return ActivityOutcome.UNKNOWN_FAILURE, None
 
 
-def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict | None:
-    """Lease, execute and validate one operation; failure is never a model loss."""
-    from scripts.merge_verification_evidence import digest
+def _operation_result_state(
+    runtime, lease, request, identity, execution_request, result, output_path
+):
     from scripts.autotrain_pending import verification_wait
     from slm_training.harness_core.activity_contract import (
         ActivityOutcome,
         WakeCondition,
     )
 
-    identity = digest(request)
-    state = _operation_state(runtime, request, sequence, identity)
-    activity_id = state.spec.activity_id
-    if state.status == "succeeded":
-        # Reconcile a committed effect without executing it again.
-        completed = next(
-            row
-            for row in reversed(runtime.store.verify_event_chain())
-            if row["event_type"] == "activity_transition"
-            and row["experiment_id"] == activity_id
-            and row["detail"]["operation"] in {"finish", "reconcile_finish"}
-        )
-        attempt = completed["detail"]["lease"]["attempt_id"]
-        path = (
-            runtime.store.root / state.spec.output_namespace / attempt / "result.json"
-        )
-        if (
-            hashlib.sha256(path.read_bytes()).hexdigest()
-            != state.outputs["result.json"]
-        ):
-            raise ValueError("committed operation artifact changed")
-        return json.loads(path.read_text())["payload"]
-    lease = runtime.claim_next(
-        capabilities={"local_process", "controller_publication"},
-        activity_id=activity_id,
-    )
-    if lease is None:
-        log_event(
-            {
-                "event": "operation_waiting",
-                "activity_id": activity_id,
-                "state": state.status,
-                "wake": state.wake.model_dump() if state.wake else None,
-            }
-        )
-        return None
-    attempt_dir = runtime.attempt_dir(lease)
-    attempt_dir.mkdir(parents=True, exist_ok=True)
-    request_path, output_path = (
-        attempt_dir / "request.json",
-        attempt_dir / "result.json",
-    )
-    execution_request = {
-        **request,
-        "lease": lease.model_dump(mode="json"),
-        "parent_event": runtime.store.verify_event_chain()[-1]["event_id"],
-    }
-    runtime.store._replace_durable(
-        request_path, json.dumps(execution_request, sort_keys=True)
-    )
-    started = time.monotonic()
-    result = runtime.run(
-        lease,
-        [
-            sys.executable,
-            "-m",
-            "scripts.run_autotrain_supervisor",
-            "--operation-request",
-            str(request_path),
-            "--operation-output",
-            str(output_path),
-        ],
-        cwd=Path(request["cwd"]),
-    )
     outcome, payload = interpret_operation_result(
         result, output_path, execution_request
     )
-    outputs = (
-        {"result.json": hashlib.sha256(output_path.read_bytes()).hexdigest()}
-        if payload is not None
-        else {}
-    )
+    if result.timed_out and not result.progress_stalled:
+        outcome = ActivityOutcome.RETRY
     pending_wait = verification_wait(runtime, lease, payload)
-    if payload and payload.get("returncode") == 10 and request["operation"] == "driver":
+    if payload and payload.get("returncode") == 10 and request["operation"] in {"driver", "promotion_eval"}:
         from scripts.autotrain_pending import validate_pending
 
         pending_wait = validate_pending(payload["pending"])
-    if pending_wait:
-        outcome, wake = pending_wait
-    else:
-        wake = WakeCondition(
+    wake = (
+        pending_wait[1]
+        if pending_wait
+        else WakeCondition(
             predicate="original operation produces valid output",
             source="independent_repair_verification",
             identity_digest=identity,
         )
-    if not pending_wait and outcome not in {
-        ActivityOutcome.SUCCEEDED,
-        ActivityOutcome.CANCELLED,
-    }:
-        from slm_training.autoresearch.heal.operation_recovery import (
-            record_operation_failure,
-        )
+    )
+    if pending_wait:
+        outcome = pending_wait[0]
+    return outcome, payload, pending_wait, wake
 
-        record_operation_failure(runtime, lease, request, result, outcome=outcome)
-    runtime.finish(
-        lease,
-        outcome=outcome,
-        outputs=outputs,
-        spent_seconds=time.monotonic() - started,
-        wake=wake
-        if outcome not in {ActivityOutcome.SUCCEEDED, ActivityOutcome.CANCELLED}
-        else None,
+
+def _cancel_after_identity_drift(
+    runtime,
+    request,
+    lease,
+    source_identity,
+    output_path,
+    started,
+    activity_id,
+    log_event,
+):
+    from slm_training.harness_core.activity_contract import ActivityOutcome
+
+    try:
+        validate_operation_identity(request, source_identity, "after execution")
+    except ValueError as exc:
+        output_path.unlink(missing_ok=True)
+        runtime.finish(
+            lease,
+            outcome=ActivityOutcome.CANCELLED,
+            outputs={},
+            spent_seconds=time.monotonic() - started,
+        )
+        log_event(
+            {
+                "event": "operation_identity_drift",
+                "activity_id": activity_id,
+                "operation": request["operation"],
+                "error": str(exc),
+            }
+        )
+        return True
+    return False
+
+
+def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict | None:
+    from scripts.autotrain_supervisor_operation_runtime import run_operation as execute
+
+    return execute(runtime, request, sequence=sequence, log_event=log_event)
+
+
+def _replay_committed_operation(runtime, request, state):
+    """Return only the exact, already-committed receipt for this operation."""
+    from scripts.run_autotrain_supervisor import _source_identity
+
+    validate_operation_identity(request, _source_identity, "before replay")
+    completed = next(
+        row
+        for row in reversed(runtime.store.verify_event_chain())
+        if row["event_type"] == "activity_transition"
+        and row["experiment_id"] == state.spec.activity_id
+        and row["detail"]["operation"] in {"finish", "reconcile_finish"}
+    )
+    attempt = completed["detail"]["lease"]["attempt_id"]
+    path = runtime.store.root / state.spec.output_namespace / attempt / "result.json"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != state.outputs["result.json"]:
+        raise ValueError("committed operation artifact changed")
+    return json.loads(path.read_text())["payload"]
+
+
+def _record_stale_operation_recovery(
+    runtime, request, lease, status, log_event, *, committed_receipt_replayed
+):
+    from scripts.merge_verification_evidence import digest
+
+    detail = {
+        "activity_id": lease.activity_id,
+        "attempt_id": lease.attempt_id,
+        "request_digest": digest(request),
+        "lease_expires_at": lease.expires_at,
+        "reconciled_status": status,
+        "committed_receipt_replayed": committed_receipt_replayed,
+    }
+    event = runtime.store.append_event(
+        "operation_stale_lease_reconciled",
+        experiment_id=lease.activity_id,
+        detail=detail,
+        idempotency_key="operation-stale-lease:" + lease.token,
     )
     log_event(
         {
-            "event": "operation_finished",
-            "activity_id": activity_id,
-            "operation": request["operation"],
-            "outcome": outcome.value,
-            "returncode": result.returncode,
-            "spent_seconds": result.duration_seconds,
+            "event": "operation_stale_lease_reconciled",
+            **detail,
+            "event_id": event["event_id"],
         }
+    )
+
+
+def _reconcile_stale_operation(runtime, request, lease, activity_id, log_event):
+    runtime.reconcile()
+    state = runtime.snapshot().get(activity_id)
+    committed = state is not None and state.status == "succeeded"
+    payload = (
+        _replay_committed_operation(runtime, request, state) if committed else None
+    )
+    _record_stale_operation_recovery(
+        runtime,
+        request,
+        lease,
+        state.status if state is not None else "missing",
+        log_event,
+        committed_receipt_replayed=committed,
     )
     return payload
 
@@ -267,6 +285,7 @@ def repair_operation(request, *, cwd, root, loop_id, handle_hard_pending):
     return payload
 
 
+@contextmanager
 def operation_publication_scope(request, root, loop_id):
     from slm_training.autoresearch.runtime.activity_publication import (
         DelegatedPublisher,
@@ -280,9 +299,22 @@ def operation_publication_scope(request, root, loop_id):
     lease = ActivityLease.model_validate(request["lease"])
     journal = CampaignStore("runtime", root / "loops" / loop_id)
     publisher = DelegatedPublisher(journal, request["source_digest"])
-    return champion_publication_scope(
+    from scripts.autotrain_source_publication import publication_repository_scope
+
+    with publication_repository_scope(request), champion_publication_scope(
         publisher, lease, loop_dir=root / "loops" / loop_id
-    )
+    ):
+        yield
+
+
+def validate_operation_identity(request, source_identity, boundary):
+    """Bind execution/replay to current source and the measured runtime environment."""
+    from scripts.merge_verification_evidence import digest, environment_identity
+
+    if source_identity(Path(request["cwd"])) != request["source_digest"]:
+        raise ValueError("operation source changed " + boundary)
+    if digest(environment_identity()) != request["environment_digest"]:
+        raise ValueError("operation environment changed " + boundary)
 
 
 def operation_main(
@@ -294,105 +326,14 @@ def operation_main(
     handle_hard_pending,
     write_family_closures,
 ) -> int:
-    """Run one pinned trusted-controller operation in a bounded child.
+    """Run a pinned bounded controller child; untrusted repairs use heal.isolation."""
+    from scripts.autotrain_operation_worker import operation_main as run_worker
 
-    This is not the untrusted repair sandbox. Repair code uses heal.isolation.
-    Heavy imports, playbooks and their failure paths stay outside the parent.
-    """
-    from scripts.merge_verification_evidence import digest
-    from slm_training.autoresearch.storage import CampaignStore
-
-    request = json.loads(request_path.read_text())
-    cwd, root = Path(request["cwd"]), Path(request["root"])
-    if source_identity(cwd) != request["source_digest"]:
-        raise ValueError("operation source changed before launch")
-    continuous = load_continuous()
-    operation = request["operation"]
-    loop_id = request["loop_id"]
-    if operation == "inspect":
-        with operation_publication_scope(request, root, loop_id):
-            report = continuous.self_heal_unblock_loop(
-                cwd=cwd, root=root, loop_id=loop_id
-            )
-            campaign_id = continuous._latest_cycle(root, loop_id)[1]
-            pending_promotion = False
-            if campaign_id:
-                from scripts.autotrain_promotion_chunks import load_ledger
-                from scripts.autotrain_promotion_finalize import finalization_pending
-
-                store = CampaignStore(campaign_id, root)
-                ledger = load_ledger(store)
-                pending_promotion = bool(
-                    ledger
-                    and (
-                        finalization_pending(store, ledger)
-                        or any(
-                            arm["status"] in {"pending", "running", "invocation_yield"}
-                            for arm in ledger["arms"].values()
-                        )
-                    )
-                )
-            payload = {
-                "report": report,
-                "parked": continuous._check_regime_parked(
-                    root=root, loop_id=loop_id, cwd=cwd
-                ),
-                "campaign_id": campaign_id,
-                "promotion_pending": pending_promotion,
-            }
-    elif operation == "promotion_eval":
-        from scripts.autotrain_promotion_chunks import resume_chunks
-        from scripts.autotrain_promotion_finalize import (
-            finalize_promotion,
-            finalization_pending,
-        )
-
-        with operation_publication_scope(request, root, loop_id):
-            ledger = resume_chunks(
-                {
-                    "cwd": cwd,
-                    "root": root,
-                    "loop_id": loop_id,
-                    "campaign_id": request["campaign_id"],
-                },
-                stage_runner=continuous._stage_command,
-                scoreboard=continuous._promotion_scoreboard_state,
-            )
-            store = CampaignStore(request["campaign_id"], root)
-            if finalization_pending(store, ledger):
-                finalize_promotion(store, cwd, continuous, ledger)
-        payload = {"campaign_id": request["campaign_id"], "ledger": ledger}
-    elif operation == "repair":
-        with operation_publication_scope(request, root, loop_id):
-            payload = repair_operation(
-                request,
-                cwd=cwd,
-                root=root,
-                loop_id=loop_id,
-                handle_hard_pending=handle_hard_pending,
-            )
-    elif operation == "driver":
-        payload = driver_operation(request, continuous, cwd, root, loop_id)
-    elif operation == "closeout":
-        events = []
-        with operation_publication_scope(request, root, loop_id):
-            write_family_closures(events.append)
-        payload = {"events": events}
-    else:
-        raise ValueError("unsupported supervisor operation")
-    if source_identity(cwd) != request["source_digest"]:
-        raise ValueError("operation source changed while running")
-    CampaignStore._replace_durable(
+    return run_worker(
+        request_path,
         output_path,
-        json.dumps(
-            {
-                "schema_version": "supervisor_operation/v1",
-                "request_digest": digest(request),
-                "operation": operation,
-                "payload": payload,
-            },
-            sort_keys=True,
-            allow_nan=False,
-        ),
+        source_identity=source_identity,
+        load_continuous=load_continuous,
+        handle_hard_pending=handle_hard_pending,
+        write_family_closures=write_family_closures,
     )
-    return 0

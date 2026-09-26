@@ -7,16 +7,14 @@
 [features]
 hooks = true
 
-# Serena MCP (semantic code navigation). Prefer its symbol tools over raw grep
-# when navigating src/ and scripts/. Older Codex builds only read MCP servers
-# from ~/.codex/config.toml — copy .codex/serena.config.toml.example there (or
-# run `serena setup codex`) if this project-local block is ignored.
+# Serena MCP (semantic code navigation). Starts without indexing; call
+# `activate_project` when semantic tools are needed. Older Codex builds only
+# read MCP servers from ~/.codex/config.toml — parent owns that host setting.
 [mcp_servers.serena]
 startup_timeout_sec = 15
 command = "serena"
 args = [
   "start-mcp-server",
-  "--project-from-cwd",
   "--context=codex",
   "--open-web-dashboard=false",
 ]

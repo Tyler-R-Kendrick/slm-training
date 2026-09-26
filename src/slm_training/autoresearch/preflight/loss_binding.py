@@ -26,7 +26,12 @@ def bind_endpoint(arms, endpoint, search_slug):
     if search_slug is not None:
         if not isinstance(search_slug, str) or not search_slug.strip():
             raise ValueError("treatment_design:explicit_search_slug_required")
-        losses = [screening_loss_binding(arm["commands"]) for arm in arms]
+        probe = endpoint.get("loss_probe")
+        if probe is None:
+            probe = {}
+        if not isinstance(probe, dict) or set(probe) - {"limit", "mask_seed"}:
+            raise ValueError("treatment_design:invalid_explicit_loss_probe")
+        losses = [screening_loss_binding(arm["commands"], **probe) for arm in arms]
         if losses[0] != losses[1]:
             raise ValueError("treatment_design:unmatched_loss_selection")
         endpoint["loss_measurement"] = dict(
@@ -72,15 +77,19 @@ def evaluation_selection(commands):
     return selection
 
 
-def screening_loss_binding(commands):
-    """Mirror the existing driver's fixed specification, never training seeds."""
+def screening_loss_binding(commands, *, limit=None, mask_seed=None):
+    """Default to the full driver probe; explicit diagnostic probes stay distinct."""
     root, _ = evaluation_inputs(commands)
-    selection = selected_identity(load_suite_records(root, "smoke"))
+    if limit is not None and (type(limit) is not int or limit <= 0):
+        raise ValueError("treatment_design:invalid_loss_limit")
+    if mask_seed is not None and (type(mask_seed) is not int or mask_seed < 0):
+        raise ValueError("treatment_design:invalid_loss_seed")
+    selection = selected_identity(load_suite_records(root, "smoke")[:limit])
     spec = load_suite_spec(denoising_nll.LOSS_SUITE_VERSION)
     cfg = denoising_nll.DenoisingNLLConfig(
         suite_version=denoising_nll.LOSS_SUITE_VERSION,
         mask_rates=tuple(float(rate) for rate in spec["mask_rates"]),
-        mask_seed=spec["mask_seed"],
+        mask_seed=spec["mask_seed"] if mask_seed is None else mask_seed,
         compute_legal_support=False,
     )
     if type(cfg.mask_seed) is not int or cfg.mask_seed < 0:

@@ -3,7 +3,8 @@
 ``.agents/skills/autotrain/references/continuous.md`` documents the exact
 bounded local fix for the most common true harness crash (missing AgentV SDK
 / JS bridge deps on a fresh checkout or container): ``npm ci`` in
-``src/apps/openui_bridge``, ``src/apps/design_md_bridge``, and the repo root
+``src/apps/openui_bridge``, ``src/apps/design_md_bridge``,
+``src/apps/graphql_bridge``, and the repo root
 with ``NODE_OPTIONS`` cleared. Until this playbook existed the fix was
 documented but never attempted without a human-opened agent session (FP2).
 
@@ -32,6 +33,7 @@ PLAYBOOK_ID = "npm_bridges/v1"
 _INSTALL_ROOTS: tuple[str, ...] = (
     "src/apps/openui_bridge",
     "src/apps/design_md_bridge",
+    "src/apps/graphql_bridge",
     "",  # repo root — AgentV SDK ship-gate eval dependency tree
 )
 

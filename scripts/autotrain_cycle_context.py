@@ -289,3 +289,112 @@ class CycleJournal:
                 "original_outcome": self.state.get("last_yield"),
             }
         return result
+
+def locked_preregistration_selection(
+    path, cwd, root, loop_id, expected_sha256, *, options,
+):
+    """Resolve only the exact preregistered pair on its authenticated source."""
+    from scripts.autotrain_cycle_prepare import RecordedCycleSelection
+    from slm_training.harness_core.execution_release import runtime_source_provenance
+    from slm_training.harness_core.github_delivery_tree import source_entries, tree_sha
+    from slm_training.levers import MAX_HARNESS_WALL_SECONDS
+
+    path, cwd, root = Path(path).resolve(), Path(cwd).resolve(), Path(root).resolve()
+    _assert_locked_code_root(cwd)
+    if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
+        raise ValueError("locked preregistration digest changed")
+    plan = json.loads(path.read_text())
+    if (
+        plan.get("schema") not in {
+            "locked_pair_preregistration/v1",
+            "science_lab_pr_head_diagnostic_preregistration/v1",
+        }
+        or plan.get("promotion_allowed") is not False
+        or plan.get("training_executed") is not False
+        or plan.get("evaluation_executed") is not False
+        or plan.get("campaign_id") != loop_id
+        or Path(plan.get("campaign_root", "")).resolve() != root
+        or Path(plan.get("source_path", "")).resolve() != cwd
+        or set(plan.get("arms", {})) != {"control", "candidate"}
+        or set(plan.get("manifest_sha256s", {})) != {"control", "candidate"}
+    ):
+        raise ValueError("locked preregistration identity or diagnostic policy mismatch")
+    marker = json.loads((cwd / ".autonomy-release.json").read_text())
+    source_digest, provenance = runtime_source_provenance(cwd)
+    if (
+        source_digest != plan["source_digest"]
+        or provenance != {
+            "integration_commit": plan["source_commit"],
+            "upstream_commit": plan["source_commit"], "code_dirty": False,
+        }
+        or tree_sha(source_entries(cwd, marker["files"])) != plan["source_tree"]
+    ):
+        raise ValueError("locked preregistration source differs from execution copy")
+    store = CampaignStore(loop_id, root)
+    from scripts.autotrain_locked_diagnostic import require_preregistered_plan
+    require_preregistered_plan(store, plan)
+    campaign = store.load_campaign()
+    from slm_training.harness_core.activity_contract import ResourceGrant
+
+    if (
+        campaign.loop_id != loop_id
+        or campaign.integration_commit != plan["source_commit"]
+        or campaign.upstream_commit != plan["source_commit"]
+        or campaign.budget.max_experiments != 2
+        or options["train_version"] != plan["arms"]["control"]["experiment"]["knobs"]["train_version"]
+        or options["steps"] != plan["logical_updates"]
+        or options["primary_metric"] != plan["primary"]["metric"]
+        or options["continuation_grant"] is None
+        or ResourceGrant.model_validate_json(options["continuation_grant"]) != campaign.budget.continuation_grant
+    ):
+        raise ValueError("locked preregistration campaign source mismatch")
+    ids = []
+    commands = {}
+    experiments = {}
+    manifests = {}
+    for role in ("control", "candidate"):
+        arm = plan["arms"][role]
+        eid = arm["run_id"]
+        lock = store.load_experiment_campaign(eid)
+        manifest = lock.manifest
+        primary = next(endpoint for endpoint in manifest.endpoints if endpoint.role == "primary")
+        if (
+            lock.manifest_sha256 != plan["manifest_sha256s"][role]
+            or manifest.experiment_id != eid
+            or manifest.campaign_id != loop_id
+            or manifest.source_commit != plan["source_commit"]
+            or manifest.source_dirty
+            or manifest.claim_class != "diagnostic"
+            or manifest.budget != campaign.budget
+            or manifest.locked_eval_manifest_sha256 != plan["inputs"]["locked_eval_manifest_sha256"]
+            or manifest.seeds != (plan["seed"],)
+            or (primary.metric, primary.direction, primary.minimum_effect) != (
+                plan["primary"]["metric"], plan["primary"]["direction"], plan["primary"]["minimum_effect"]
+            )
+        ):
+            raise ValueError("locked preregistration arm manifest mismatch")
+        ids.append(eid)
+        commands[eid] = arm["commands"]
+        experiments[eid] = arm["experiment"]
+        manifests[eid] = store.root / "manifests" / f"{eid}.json"
+    if len(set(ids)) != 2:
+        raise ValueError("locked preregistration arm IDs must be distinct")
+    inputs = plan["inputs"]
+    input_hashes = {inputs["ancestor"]: inputs["ancestor_sha256"], **inputs["data_manifests"]}
+    for filename, expected in input_hashes.items():
+        if hashlib.sha256(Path(filename).read_bytes()).hexdigest() != expected:
+            raise ValueError(f"locked preregistration input changed: {filename}")
+    return RecordedCycleSelection(
+        loop_id, loop_id, ids[0], (ids[1],), manifests,
+        min(MAX_HARNESS_WALL_SECONDS, campaign.budget.max_wall_minutes * 60),
+        preregistration_path=path, expected_commands=commands,
+        expected_experiments=experiments,
+        preregistered_inputs=input_hashes,
+        expected_design_sha256=plan["design_sha256"], validated_source_digest=source_digest,
+    )
+
+
+def _assert_locked_code_root(cwd):
+    from slm_training.autoresearch import engine
+    if Path(__file__).resolve().parents[1] != cwd or Path(engine.__file__).resolve().parents[3] != cwd:
+        raise ValueError("locked preregistration imports differ from execution copy")

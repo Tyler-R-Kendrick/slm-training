@@ -152,7 +152,7 @@ def test_posterior_nulls_sink_below_unseen() -> None:
     assert null_arm.ucb(1.0) < unseen.ucb(1.0)
 
 
-def test_rank_arms_orders_by_evidence() -> None:
+def test_legacy_aggregates_do_not_supply_compatible_comparisons() -> None:
     ledger = {
         "dead-arm": {"n_delta": 12, "mean_delta": -0.02, "m2_delta": 0.002},
         "weak-arm": {"n_delta": 6, "mean_delta": 0.04, "m2_delta": 0.001},
@@ -161,19 +161,16 @@ def test_rank_arms_orders_by_evidence() -> None:
     ranked = ev.rank_arms_by_evidence(
         ["dead-arm", "fresh-arm", "weak-arm", "good-arm"], ledger, exploration_c=1.0
     )
-    # Strong measured evidence exploits; an unexplored arm outranks a weak
-    # win (prior-width optimism = exploration); repeated nulls sink last.
-    assert ranked[0] == "good-arm"
-    assert ranked.index("fresh-arm") < ranked.index("weak-arm")
-    assert ranked[-1] == "dead-arm"
-    # Residual boosts stay lexicographically dominant, mirroring soft rank.
+    # Unbound aggregates remain historical; they cannot counterfeit a current
+    # comparison or override the deterministic exploration order.
+    assert ranked == ["dead-arm", "fresh-arm", "weak-arm", "good-arm"]
     boosted = ev.rank_arms_by_evidence(
         ["dead-arm", "fresh-arm", "good-arm"],
         ledger,
         exploration_c=1.0,
-        residual_boosts={"dead-arm": 2.0},
+        residual_boosts={"good-arm": 2.0},
     )
-    assert boosted[0] == "dead-arm"
+    assert boosted == ["dead-arm", "fresh-arm", "good-arm"]
 
 
 def test_rank_arms_deterministic_and_live_stats_fold() -> None:

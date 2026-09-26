@@ -36,6 +36,9 @@ from pathlib import Path
 from typing import Any, NamedTuple
 
 from slm_training.autoresearch.engine import default_eval_version
+# Keep the historical driver API stable while the campaign index lives with
+# its reconciliation owner; callers also use it through this module.
+from scripts.autotrain_cycle_reconcile import _latest_cycle
 from slm_training.autoresearch.hillclimb import (
     assert_warm_start_launch,
     climb_champion_checkpoint_path,
@@ -493,6 +496,7 @@ from scripts.autotrain_timeout_state import (  # noqa: F401
 from scripts.autotrain_timeout_state import (  # noqa: F401
     require_predecessor_actions as _require_predecessor_actions,
 )
+from scripts.autotrain_timeout_state import route_timeout_actions as _route_timeout_actions
 from scripts.autotrain_records import (  # noqa: F401
     OBSERVED_PAIRED_SD_SCHEMA as _OBSERVED_PAIRED_SD_SCHEMA,
 )
@@ -716,18 +720,11 @@ from scripts.autotrain_formal_preflight import (  # noqa: F401
 )
 from scripts.autotrain_docs import (  # noqa: F401
     FIVE_LANES as _FIVE_LANES,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     render_continuous_cycle_docs as _render_continuous_cycle_docs,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     replay_successor_manifest as _replay_successor_manifest,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     write_five_lane_successor as _write_five_lane_successor,
-)
-from scripts.autotrain_docs import (  # noqa: F401
     build_five_lane_successor_matrix as build_five_lane_successor_matrix,
+    with_evidence_ledger as _with_evidence_ledger,
 )
 from scripts.autotrain_heal_actions import (  # noqa: F401
     ack_document_action as _ack_document_action,
@@ -888,6 +885,17 @@ def _git(
     )
     _raise_for_bounded_result(result)
     return result.stdout.strip()
+
+
+def _workspace_status(*, cwd: Path, **git_kw: Any) -> str:
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if frozen is not None:
+        if frozen["code_dirty"]:
+            raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+        return ""
+    return _git("status", "--porcelain", cwd=cwd, **git_kw)
 
 
 def _run(
@@ -3318,9 +3326,7 @@ def _self_heal_cycle_error(
         if owned_kind:
             return owned_kind
         try:
-            porcelain = _git(
-                "status",
-                "--porcelain",
+            porcelain = _workspace_status(
                 cwd=work_cwd,
                 root=root,
                 loop_id=loop_id,
@@ -4017,6 +4023,7 @@ def _self_heal_document_actions(
     files = {
         path.relative_to(workspace).as_posix(): path.read_text() for path in touched
     }
+    files = _with_evidence_ledger(cwd, files)
     artifact = store.write_artifact(
         "delivery_documents",
         {
@@ -4033,7 +4040,7 @@ def _self_heal_document_actions(
         artifact_sha256=artifact.stem,
         idempotency_key=f"documentation:{artifact.stem}",
     )
-    if not _committed_document_bundle(cwd, files):
+    if not _committed_document_bundle(cwd, files, root=root, loop_id=loop_id, campaign_id=campaign_id):
         store.append_event(
             "documentation_waiting_delivery",
             artifact_sha256=artifact.stem,
@@ -4048,21 +4055,9 @@ def _self_heal_document_actions(
     return "document_closeout"
 
 
-def _committed_document_bundle(cwd, files):
-    """Read-only verification; a staged/uncommitted document is not publication."""
-    if not files:
-        return False
-    for name, content in files.items():
-        try:
-            if (cwd / name).read_text() != content:
-                return False
-            result = _stage_command(["git", "show", f"HEAD:{name}"], cwd=cwd)
-            _raise_for_bounded_result(result)
-            if result.stdout != content:
-                return False
-        except (OSError, RuntimeError):
-            return False
-    return True
+def _committed_document_bundle(cwd, files, **context):
+    from scripts.autotrain_source_publication import committed_document_bundle
+    return committed_document_bundle(cwd, files, **context)
 
 
 def _self_heal_loop_owned_generated_dirt(
@@ -4081,7 +4076,7 @@ def _self_heal_continuous_dirty_tree(
     kw = dict(cwd=cwd)
     if root is not None and loop_id is not None:
         kw.update(root=root, loop_id=loop_id, stage="workspace-status")
-    paths = _porcelain_paths(_git("status", "--porcelain", **kw))
+    paths = _porcelain_paths(_workspace_status(**kw))
     if paths:
         preserve_workspace(
             cwd=cwd, root=root, loop_id=loop_id, reason="workspace_changes", paths=paths
@@ -4133,6 +4128,7 @@ def self_heal_unblock_loop(
     loop_id: str,
     integration_commit: str | None = None,
     campaign_id: str | None = None,
+    locked_plan: bool = False,
 ) -> dict[str, Any]:
     """Single owner for continuous soft-unblock (never chat-prompt thrash).
 
@@ -4148,12 +4144,14 @@ def self_heal_unblock_loop(
     Code/data remedies require restored predicates. Source and delivery changes
     require a verified successor; the running worktree is never rewritten.
     """
+    if locked_plan:
+        from scripts.autotrain_locked_diagnostic import locked_prerequisite_report
+        return locked_prerequisite_report(root, loop_id, campaign_id or loop_id)
     soft_healed: list[str] = []
     hard_pending: list[dict[str, Any]] = []
     delivery_waits: list[dict[str, Any]] = []
     pred = campaign_id or _latest_cycle(root, loop_id)[1]
     parked = _check_regime_parked(root=root, loop_id=loop_id, cwd=cwd) is not None
-
     # 0) Incomplete merge (UU) from landing origin/main into the thrash worktree.
     try:
         merge_kind = _self_heal_incomplete_merge(cwd=cwd, root=root, loop_id=loop_id)
@@ -4182,9 +4180,7 @@ def self_heal_unblock_loop(
 
     # Foreign dirt is hard (tree still dirty after continuous-only attempt).
     try:
-        porcelain = _git(
-            "status",
-            "--porcelain",
+        porcelain = _workspace_status(
             cwd=cwd,
             root=root,
             loop_id=loop_id,
@@ -4206,9 +4202,7 @@ def self_heal_unblock_loop(
         )
         if serena_kind:
             soft_healed.append(serena_kind)
-            porcelain = _git(
-                "status",
-                "--porcelain",
+            porcelain = _workspace_status(
                 cwd=cwd,
                 root=root,
                 loop_id=loop_id,
@@ -7021,6 +7015,10 @@ def _resolve_promotion_result(
         status = str(disposition["status"])
         resolve_reasons = list(disposition.get("reasons") or []) + reasons_in
 
+    if status in _PROMOTE_AUTHORITY_STATUSES:
+        from scripts.autotrain_source_publication import require_source_publication
+        require_source_publication(CampaignStore(campaign_id, root), loop_id, measurement_complete=True)
+
     _write_five_lane_successor(
         camp,
         campaign_id=campaign_id,
@@ -7596,6 +7594,7 @@ def _phase_a_delivery(
     arm_skipped: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Record SDLC Phase A decision; never open stacked PR for non-positive."""
+    from slm_training.harness_core.execution_release import runtime_source_identity
     from slm_training.autoresearch.climb_policy import (
         cycle_role_for_index,
         load_climb_policy,
@@ -7603,9 +7602,7 @@ def _phase_a_delivery(
 
     policy = load_climb_policy()
     camp_dir = root / campaign_id
-    # Prefer the exact matrix identities supplied by the driver.  Filename
-    # heuristics are retained only for legacy callers and must never relabel a
-    # dynamic successor arm.
+    # Preserve exact matrix identities; filename heuristics serve legacy callers.
     man_dir = camp_dir / "manifests"
     control_run = control_id
     candidate_run = candidate_id
@@ -7695,7 +7692,7 @@ def _phase_a_delivery(
             loop_id=loop_id,
             stage="phase-a-git-status",
         )
-        if cwd
+        if cwd and runtime_source_identity(cwd) is None
         else ""
     )
     has_tracked_delta = bool(porcelain.strip())
@@ -7707,10 +7704,10 @@ def _phase_a_delivery(
         )
     elif stack_layer:
         stack_action = "open_or_update_stacked_pr"
-        agent_required = "gh stack add/submit --open for this positive layer"
+        agent_required = "publish this positive layer through the authorized GitHub connector"
     else:
         stack_action = "no_stack_layer_non_positive"
-        agent_required = "continue loop; local commits/docs only"
+        agent_required = "continue loop; retain docs for authorized connector delivery"
 
     record = {
         "schema": "autotrain_sdlc_delivery/v1",
@@ -7811,8 +7808,7 @@ def _phase_a_delivery(
     for reason in record.get("reasons") or []:
         print(f"SDLC_PHASE_A reason={reason}", flush=True)
 
-    # Optional design-doc closeout for the cycle (iron law); keep under campaign
-    # root so the git worktree stays clean for the next fetch/merge.
+    # Required cycle notes stay in the campaign output namespace.
     hill = _persist_hillclimb_cycle_outputs(
         root=root,
         loop_id=loop_id,
@@ -8485,9 +8481,6 @@ def _write_cycle_handoff(
     ]
     theorem_stop = any("theorem_backed_band_miss" in item for item in reasons)
     assumption_miss = any("assumption_backed_band_miss" in item for item in reasons)
-    # A finalized AgentV timeout is more specific than the evaluate process's
-    # generic non-zero exit. Preserve both repair and content-bound retry actions
-    # so acknowledging the repair cannot make the required replay unreachable.
     harness_failure = (
         climb_state == "harness_failure"
         or any(item.startswith("harness_failure:") for item in reasons)
@@ -8527,23 +8520,22 @@ def _write_cycle_handoff(
                 evidence_ids=(evidence_id,),
             ),
         )
-    elif harness_failure or finalized_decode_timeout or control_only_model_timeout:
-        family = (
-            "model_build"
-            if (finalized_decode_timeout or control_only_model_timeout)
-            else _primary_harness_family(camp_dir)
-        )
+    elif _route_timeout_actions(
+        actions, camp_dir, candidate_id, evidence_id, cycle_intent, delivery,
+        finalized_decode_timeout, control_only_model_timeout):
+        pass
+    elif harness_failure:
+        family = _primary_harness_family(camp_dir)
         manifest_path = camp_dir / "manifests" / f"{candidate_id}.json"
-        manifest_sha = (
-            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-            if manifest_path.is_file()
-            else None
-        )
+        manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest() if manifest_path.is_file() else None
         actions[0:0] = [
             AutotrainActionV1(
                 kind="repair_harness",
                 owner="improve-openui-harnesses",
                 reason="repair the canonical owner and replay the frozen arm",
+                blocker_code="harness_code_failure",
+                unmet_predicate="frozen_arm_measurement_complete",
+                required_capability="source_repair",
                 evidence_ids=(evidence_id,),
                 harness_family=family,  # type: ignore[arg-type]
                 frozen_manifest_sha256=manifest_sha,
@@ -8872,33 +8864,6 @@ def _refresh_incomplete_replay_handoff(
         flush=True,
     )
     return True
-
-
-def _latest_cycle(root: Path, loop_id: str) -> tuple[int, str | None]:
-    campaigns = sorted(root.glob("*/campaign.json"))
-    best_idx = 0
-    best_id: str | None = None
-    completed_idx = 0
-    completed_id: str | None = None
-    for path in campaigns:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        if data.get("loop_id") != loop_id:
-            continue
-        idx = int(data.get("cycle_index") or 0)
-        if idx >= best_idx:
-            best_idx = idx
-            best_id = str(data.get("campaign_id"))
-        campaign_id = str(data.get("campaign_id"))
-        if (
-            idx >= completed_idx
-            and (root / campaign_id / "cycle_handoff.json").is_file()
-        ):
-            completed_idx = idx
-            completed_id = campaign_id
-    return best_idx, completed_id or best_id
 
 
 _VACUOUS_PASS_LIMIT = 3
@@ -10564,7 +10529,8 @@ def _manifest(
             continuation_grant=continuation_grant,
         ),
         stopping_rules=(
-            "Stop after the declared seeds finish or the wall cap is hit.",
+            "Stop after the declared seeds finish or the locked logical grant is exhausted; bounded invocation yields do not reset it."
+            if continuation_grant is not None else "Stop after the declared seeds finish or the wall cap is hit.",
         ),
         controls=controls,
         negative_controls=negative_controls,
@@ -10624,8 +10590,20 @@ def run_cycle(
     require_action_receipts: bool = True,
     extra_skip_slugs: frozenset[str] = frozenset(),
     continuation_grant: str | None = None,
+    locked_preregistration: Path | None = None,
+    locked_prereg_sha256: str | None = None,
 ) -> str | dict[str, Any]:
     from scripts.autotrain_cycle_execution import continuous_owner, resume_cycle
+    from slm_training.harness_core.checkpoint_publication import controller_work_deadline
+
+    if locked_preregistration is not None:
+        from scripts.autotrain_cycle_reconcile import resume_locked_recorded_cycle
+        return resume_locked_recorded_cycle(
+            cwd, root, loop_id, locked_preregistration, locked_prereg_sha256,
+            {"train_version": train_version, "steps": steps,
+             "primary_metric": primary_metric, "continuation_grant": continuation_grant},
+            continuous_owner(globals()),
+        )
 
     resumed = resume_cycle(cwd, root, loop_id, continuous_owner(globals()))
     if resumed is not None:
@@ -10640,87 +10618,44 @@ def run_cycle(
         stage_wall_minutes_for_role,
     )
 
-    deadline = time.monotonic() + MAX_RUN_SECONDS
+    deadline = controller_work_deadline(MAX_RUN_SECONDS, KILL_GRACE_SECONDS + HARNESS_FINALIZATION_RESERVE_SECONDS)
     policy = load_climb_policy()
     # Defaults from external policy when caller still uses legacy pins.
     if train_version == "wf_smoke_v2":
         train_version = str(policy.defaults.get("train_version") or train_version)
 
-    _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
-    if sync_git and startup_commit is not None:
-        integrated = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-integration-head",
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if frozen is not None:
+        if frozen["code_dirty"]:
+            raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+        upstream, integration = frozen["upstream_commit"], frozen["integration_commit"]
+    else:
+        _integrate_origin_main(cwd=cwd, root=root, loop_id=loop_id, deadline=deadline)
+        git_kw = dict(cwd=cwd, deadline=deadline, root=root, loop_id=loop_id)
+        if sync_git and startup_commit is not None:
+            integrated = _git("rev-parse", "HEAD", stage="sync-integration-head", **git_kw)
+            if integrated != startup_commit:
+                raise _CodeUpdated(
+                    f"integrated {integrated}; restart stale process from {startup_commit}"
+                )
+        dirty = _git("status", "--porcelain", stage="sync-clean-status", **git_kw)
+        if dirty:
+            # Continuous-only closeout dirt is driver-owned; foreign WIP still fails.
+            _self_heal_continuous_dirty_tree(cwd=cwd, root=root, loop_id=loop_id)
+            dirty = _git("status", "--porcelain", stage="sync-clean-status-recheck", **git_kw)
+        if dirty:
+            raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
+        try:
+            upstream = _git("rev-parse", "origin/main", stage="sync-upstream-head", **git_kw)
+        except Exception:  # noqa: BLE001 — missing origin/main: continue on HEAD
+            upstream = _git("rev-parse", "HEAD", stage="sync-upstream-head-fallback", **git_kw)
+        integration = _git("rev-parse", "HEAD", stage="sync-current-head", **git_kw)
+        upstream = _upstream_commit_for_init(
+            cwd=cwd, root=root, loop_id=loop_id, upstream=upstream,
+            integration=integration, deadline=deadline,
         )
-        if integrated != startup_commit:
-            raise _CodeUpdated(
-                f"integrated {integrated}; restart stale process from {startup_commit}"
-            )
-    dirty = _git(
-        "status",
-        "--porcelain",
-        cwd=cwd,
-        deadline=deadline,
-        root=root,
-        loop_id=loop_id,
-        stage="sync-clean-status",
-    )
-    if dirty:
-        # Continuous-only closeout dirt is driver-owned; foreign WIP still fails.
-        _self_heal_continuous_dirty_tree(cwd=cwd, root=root, loop_id=loop_id)
-        dirty = _git(
-            "status",
-            "--porcelain",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-clean-status-recheck",
-        )
-    if dirty:
-        raise RuntimeError("loop worktree is dirty; continuous requires a clean tree")
-    try:
-        upstream = _git(
-            "rev-parse",
-            "origin/main",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-upstream-head",
-        )
-    except Exception:  # noqa: BLE001 — missing origin/main: continue on HEAD
-        upstream = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            deadline=deadline,
-            root=root,
-            loop_id=loop_id,
-            stage="sync-upstream-head-fallback",
-        )
-    integration = _git(
-        "rev-parse",
-        "HEAD",
-        cwd=cwd,
-        deadline=deadline,
-        root=root,
-        loop_id=loop_id,
-        stage="sync-current-head",
-    )
-    upstream = _upstream_commit_for_init(
-        cwd=cwd,
-        root=root,
-        loop_id=loop_id,
-        upstream=upstream,
-        integration=integration,
-        deadline=deadline,
-    )
 
     # Terminal governance: a parked regime verdict short-circuits the cycle
     # until its deterministic resume predicate (bank-identity change) holds.
@@ -10949,22 +10884,6 @@ def run_cycle(
                     f"streak={saturation_state['tie_streak']}",
                     flush=True,
                 )
-    screening_deficit = None
-    if cycle_intent == "screening" and replay is None:
-        from scripts.autotrain_pending import screening_deficit_report
-        smoke_n, ss_report = _screening_n_report(
-            policy, eval_version=current_eval_version
-        )
-        screening_deficit = screening_deficit_report(
-            smoke_n, ss_report, _screening_suite_records(current_eval_version),
-            automatic=policy.measurement.get("screening_smoke_n_mode") == "auto")
-        if screening_deficit is not None:
-            print(
-                "SCREENING_N_DEFICIT "
-                f"smoke_n={smoke_n} n_min={screening_deficit.get('n_min')} "
-                f"binding={screening_deficit.get('binding_constraints')}",
-                flush=True,
-            )
     # When multi-seed thrash bank is empty but a retryable promote head still
     # exists (confirmed / promotion_inconclusive / harness_failure), do not hard
     # block the loop — spend a promote slot. Observed: scaffold-prefix was the
@@ -11601,15 +11520,6 @@ def run_cycle(
         chunk_plan=promotion_chunk_plan,
     )
     matrix = _matrix(**matrix_inputs)
-    if screening_deficit is not None:
-        from scripts.autotrain_pending import resolve_screening_matrix
-        matrix, pending = resolve_screening_matrix(matrix, matrix_inputs, screening_deficit,
-            context={"cwd": cwd, "root": root, "loop_id": loop_id, "policy": policy,
-                "resolved_data": resolved_data, "fitted_candidates": fitted_candidate_count
-                if confirm_levers is None and promote_levers is None else 1})
-        if pending is not None:
-            return pending
-        eval_version = current_eval_version = resolved_data["eval_version"]
     if saturation_state is not None:
         regime_payload = matrix.setdefault("thrash_regime", {})
         if isinstance(regime_payload, dict):
@@ -11661,6 +11571,19 @@ def run_cycle(
         matrix = choose_matrix(matrix, continuous_owner(globals()), root=root,
             loop_id=loop_id, integration=integration, policy=policy)
         rec_slug = _slug_from_candidate_id(matrix["recommended_experiment_id"]) or rec_slug
+    if cycle_intent == "screening" and replay is None:
+        from scripts.autotrain_pending import resolve_screening_matrix, screening_deficit_report
+        smoke_n, report = _screening_n_report(policy, eval_version=eval_version)
+        deficit = screening_deficit_report(smoke_n, report, _screening_suite_records(eval_version),
+            automatic=policy.measurement.get("screening_smoke_n_mode") == "auto")
+        matrix, pending = resolve_screening_matrix(matrix,
+            {**matrix_inputs, "recommended_slug": rec_slug}, deficit,
+            context={"cwd": cwd, "root": root, "loop_id": loop_id, "policy": policy,
+                "resolved_data": resolved_data, "minimum": (report or {}).get("n_min", smoke_n),
+                "fitted_candidates": fitted_candidate_count})
+        if pending is not None:
+            return pending
+        eval_version = current_eval_version = resolved_data["eval_version"]
     HypothesisMatrix.model_validate(matrix)
     matrix_path = camp_dir / "matrix-proposal.json"
     matrix_path.write_text(json.dumps(matrix, indent=2) + "\n", encoding="utf-8")
@@ -11991,6 +11914,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--train-version", default="wf_smoke_v2")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--continuation-grant", help="Explicit logical ResourceGrant JSON; bounded invocations remain capped")
+    parser.add_argument("--locked-preregistration", type=Path,
+                        help="Execute only the previously locked two-arm diagnostic")
+    parser.add_argument("--locked-prereg-sha256", help=argparse.SUPPRESS)
     parser.add_argument(
         "--objective",
         default=(
@@ -12010,35 +11936,38 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     args = parser.parse_args(argv)
+    if args.locked_preregistration and (not args.supervised or not args.locked_prereg_sha256):
+        parser.error("locked preregistration requires supervised invocation and its pinned digest")
     extra_skip_slugs = _parse_skip_slugs(args.skip_slugs)
     cwd = Path.cwd()
     root = args.root if args.root.is_absolute() else cwd / args.root
     root.mkdir(parents=True, exist_ok=True)
-    try:
-        code_sha = _git(
-            "rev-parse",
-            "HEAD",
-            cwd=cwd,
-            root=root,
-            loop_id=args.loop_id,
-            stage="driver-startup-git",
-        )
-    except (subprocess.CalledProcessError, OSError):
-        code_sha = None
+    from scripts.autotrain_locked_diagnostic import locked_startup_commit
+    from slm_training.harness_core.execution_release import runtime_git_provenance
+
+    frozen = runtime_git_provenance(cwd)
+    if args.locked_preregistration:
+        code_sha = locked_startup_commit(cwd)
+    elif frozen is not None:
+        code_sha = frozen["integration_commit"]
+    else:
+        try:
+            code_sha = _git(
+                "rev-parse", "HEAD", cwd=cwd, root=root,
+                loop_id=args.loop_id, stage="driver-startup-git",
+            )
+        except (subprocess.CalledProcessError, OSError):
+            code_sha = None
     try:
         lock_fh = acquire_driver_lock(root, args.loop_id, code_sha=code_sha)
     except RuntimeError as exc:
         print(str(exc), flush=True)
         return 2
-    # Startup self-heal: single unblock owner — never chat-prompt for soft thrash.
     try:
         report = self_heal_unblock_loop(
-            cwd=cwd,
-            root=root,
-            loop_id=args.loop_id,
-            integration_commit=code_sha,
-        )
-        if report.get("hard_pending"):
+            cwd=cwd, root=root, loop_id=args.loop_id, integration_commit=code_sha,
+            campaign_id=args.loop_id if args.locked_preregistration else None, locked_plan=bool(args.locked_preregistration))
+        if report and report.get("hard_pending"):
             print(
                 f"SELF_HEAL_STARTUP hard_pending={report['hard_pending']}",
                 flush=True,
@@ -12052,6 +11981,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.max_cycles == 0 and not args.supervised
         else range(1, 2 if args.supervised else max(1, args.max_cycles) + 1)
     )
+    from scripts.autotrain_source_publication import SourcePublicationPrerequisite
     yielded = False
     try:
         for pass_no in passes:
@@ -12072,6 +12002,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 cycle_result = run_cycle(
                     continuation_grant=args.continuation_grant,
+                    locked_preregistration=args.locked_preregistration,
+                    locked_prereg_sha256=args.locked_prereg_sha256,
                     cwd=cwd,
                     root=root,
                     loop_id=args.loop_id,
@@ -12089,6 +12021,10 @@ def main(argv: list[str] | None = None) -> int:
                     publish_pending(root, args.loop_id, cycle_result)
                     yielded = True
                     return 10
+                if args.locked_preregistration:
+                    if cycle_result != args.loop_id:
+                        raise ValueError("locked diagnostic completed a different campaign")
+                    return 0
                 pass_outcome = _record_pass_outcome(
                     root=root,
                     loop_id=args.loop_id,
@@ -12109,11 +12045,18 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     time.sleep(1)
                     continue
+            except SourcePublicationPrerequisite as pending:
+                from scripts.autotrain_pending import publish_pending
+                publish_pending(root, args.loop_id, pending.pending)
+                yielded = True
+                return 10
             except _CodeUpdated as exc:
                 print(f"CODE_UPDATED {exc}; re-executing driver", flush=True)
                 os.execv(sys.executable, [sys.executable, *sys.argv])
                 raise RuntimeError("driver re-exec unexpectedly returned")
             except Exception as exc:  # noqa: BLE001 - continuous must self-heal next pass
+                if args.locked_preregistration:
+                    raise
                 print(f"CYCLE_ERROR {exc!r}", flush=True)
                 cycle_index, _ = _latest_cycle(root, args.loop_id)
                 # Single unblock owner — soft thrash never needs a human prompt.
@@ -12225,7 +12168,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
         return 0
     finally:
-        if not yielded:
+        if not yielded and not args.locked_preregistration:
             closeout_driver(continuous_owner(globals()), cwd, root, args.loop_id)
         try:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)

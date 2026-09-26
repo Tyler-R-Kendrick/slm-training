@@ -19,6 +19,7 @@ _INVOCATION_FIELDS = frozenset(
         "resume_from",
         "steps",
         "max_wall_minutes",
+        "max_updates_this_invocation",
         "checkpoint_every_steps",
         "telemetry",
         "telemetry_sample_interval_ms",
@@ -27,6 +28,23 @@ _INVOCATION_FIELDS = frozenset(
         "sync_checkpoints",
     }
 )
+
+
+def invocation_update_limit(config, start_step: int, plugin=None) -> int:
+    """Operational yield at an optimizer boundary; never replace config.steps."""
+    cap = config.max_updates_this_invocation
+    if cap is None:
+        return config.steps
+    if type(cap) is not int or cap <= 0:
+        raise ValueError("max_updates_this_invocation must be a positive integer")
+    if not config.full_state_checkpoint:
+        raise ValueError("max_updates_this_invocation requires full_state_checkpoint")
+    from slm_training.models.grammar_diffusion import GrammarDiffusionModel
+    from slm_training.models.twotower import TwoTowerModel
+
+    if not isinstance(plugin, (TwoTowerModel, GrammarDiffusionModel)):
+        raise ValueError("max_updates_this_invocation requires an exact-resume bundle-capable model")
+    return start_step + cap
 
 
 def resume_identity(config, plugin) -> dict:

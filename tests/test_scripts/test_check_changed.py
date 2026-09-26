@@ -16,22 +16,22 @@ def test_select_tests_is_scoped_and_conservative() -> None:
         "tests/test_dsl/test_parser.py"
     ]
     assert select_tests(["docs/design/note.md"]) == []
-    assert select_tests([".github/workflows/ci.yml"]) == []
+    assert select_tests([".github/workflows/ci.yml"]) == ["tests"]
     assert select_tests(["pyproject.toml"]) == ["tests"]
     assert select_tests(["unknown/tool.ts"]) == ["tests"]
-    assert select_tests(["package-lock.json"]) == []
+    assert select_tests(["package-lock.json"]) == ["tests"]
 
 
-def test_select_tests_skips_a_deleted_test_file() -> None:
-    """A pure test-file deletion must not select a nonexistent pytest target."""
+def test_select_tests_includes_deleted_test_owner() -> None:
+    """Deletion retains the existing owner, without a nonexistent pytest target."""
     deleted = "tests/test_dsl/test_a_file_that_was_deleted_and_never_existed.py"
-    assert select_tests([deleted]) == []
-    assert select_changed_tests([deleted]) == []
+    assert select_tests([deleted]) == ["tests/test_dsl"]
+    assert select_changed_tests([deleted]) == ["tests/test_dsl"]
     # Alongside its now-deleted source module, the source's own suite mapping
     # still resolves -- the deleted test path is dropped, not substituted.
     assert select_tests(
         ["src/slm_training/harnesses/distill/some_removed_module.py", deleted]
-    ) == ["tests/test_harnesses/distill"]
+    ) == ["tests/test_dsl", "tests/test_harnesses/distill"]
 
 
 def test_select_tests_deduplicates_nested_targets() -> None:
@@ -71,6 +71,7 @@ def test_script_changes_include_their_domain_suite() -> None:
     ]
     assert select_tests(["scripts/check_changed.py"]) == [
         "tests/test_scripts/test_check_changed.py",
+        "tests/test_scripts/test_merge_verification.py",
     ]
     assert select_tests(["scripts/verify_checkpoint_references.py"]) == [
         "tests/test_scripts/test_verify_checkpoint_references.py",
@@ -115,16 +116,7 @@ def test_a_changed_global_test_file_is_never_narrowed_to_one_regression() -> Non
 
 
 def test_the_hook_selection_is_still_not_monotone_for_ordinary_sources() -> None:
-    """Recorded, not asserted-as-desirable: adding a test still shrinks scope.
-
-    A diff touching a source file and a test file selects strictly less than
-    the same diff without the test file. Making it monotone (a union with
-    `select_tests`) is the correct semantics; the objection is cost. On a
-    representative diff the union selects seven targets instead of four files,
-    and CI runs this same selection under a disabled-for-cost budget -- so the
-    trade is the owner's. This pins the
-    current behaviour so the decision stays visible rather than forgotten.
-    """
+    """Fast feedback remains narrow; the release gate never uses this selector."""
     source_only = ["src/slm_training/autoresearch/climb_policy.py"]
     with_a_test = source_only + ["tests/test_autoresearch/test_heal_chaos.py"]
 
@@ -213,6 +205,7 @@ def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
             "git",
             "diff",
             "--name-only",
+            "--no-renames",
             "--diff-filter=ACMRD",
             "base-sha...HEAD",
             "--",
@@ -339,10 +332,10 @@ def test_ci_test_shards_are_disjoint_and_complete(monkeypatch) -> None:
 def test_parallel_pytest_workers_limit_native_thread_pools(monkeypatch) -> None:
     monkeypatch.setenv("OMP_NUM_THREADS", "16")
     monkeypatch.setenv("OPENBLAS_NUM_THREADS", "32")
-
+    monkeypatch.setenv("ORT_DISABLE_TELEMETRY", "0")
     env = check_changed._pytest_worker_env()
 
-    assert env["OMP_NUM_THREADS"] == "1"
+    assert env["OMP_NUM_THREADS"] == env["ORT_DISABLE_TELEMETRY"] == "1"
     assert env["MKL_NUM_THREADS"] == "1"
     assert env["OPENBLAS_NUM_THREADS"] == "1"
     assert env["NUMEXPR_NUM_THREADS"] == "1"

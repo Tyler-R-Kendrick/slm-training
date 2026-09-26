@@ -209,6 +209,258 @@ reuse incompatible measurements. The parent owns passing this callback and
 consuming the handoff to resume the exact blocked activity. This sidecar's
 tests do not establish that supervisor restart integration.
 
+## Live host-Codex repair seam — 2026-09-25
+
+A real host Codex subscription call now traverses `CodexExecutor`, the fixed
+provider bridge, and the outer Bubblewrap runner on a disposable failing
+fixture. The first proposal diagnosed that Codex's nested `workspace-write`
+sandbox could not create `/workspace/.agents` inside the outer runner's
+read-only workspace. Codex therefore runs with `danger-full-access` **inside**
+the mandatory outer Bubblewrap namespace; that outer namespace remains the
+authority and exposes only the exact granted files, read-only runtimes, and one
+filtered provider socket. The fixture candidate changed only `answer.py` and
+its one granted new regression module. The regression-test output field is now
+constrained in both the trusted prompt and JSON schema to the one exact new
+test path required by the independent verifier.
+
+The host-authenticated subscription request produced a patch whose controller-recomputed
+digest matched. Independent isolated checks reproduced the original failure on
+the frozen baseline, observed the new test fail on baseline and pass on the
+candidate, and passed the locked original plus existing regression checks on
+the candidate (**5/5 expected observations; journal chain valid**). The worker
+returned `waiting_verification`, as required; this disposable fixture did not
+run source-verification authorization, publication, or supervisor replay, so it
+does not close production release acceptance. Credentials remained host-side
+and were not emitted or mounted into the worker.
+
 No service was installed/started/restarted. No live training, scientific
 comparison, promotion, shipment, cloud job, remote Git write or paid inference
 was performed. Finite fault tests do not establish perpetual reliability.
+
+## Exact PR source reconciliation — 2026-09-25
+
+The disposable validation checkout was compared against PR #1785 commit
+`36264b992dabf5f857b5a631a52e38d5f8403c54`; six local files differed.
+Their local versions were preserved before restoring the remote blob contents.
+`git diff 36264b9 --stat` then returned no differences. Testing that exact
+source found two unpublished regression updates: the environment-identity
+stub did not accept the runtime identity keyword, and the short-shard test
+still expected three seconds despite the five-second per-node estimate floor
+(one second startup plus twice that floor gives eleven seconds). Both test
+expectations now match the existing production contracts; no gate changed.
+
+Validation: the autonomy-integration, verifier-scheduling, verifier-runtime,
+and verifier-isolation modules passed **68 tests in 21.15 seconds**, using
+the runtime-r11 Python environment, Node 22, the existing explicitly declared
+OpenUI/Design MD/GraphQL bridge dependency roots, and real host Bubblewrap.
+The initial restricted-shell run could not create network namespaces; the
+host rerun established isolation behavior. This is focused regression
+evidence, not complete source verification, model evaluation, or release
+authorization. The R14 timer was observed active, last fired at 06:40 CDT,
+with its older immutable source at 9/18 static obligations and no tests
+collected. Its receipts are not current-PR acceptance evidence.
+
+## Source-blocked handoff and operation continuation — 2026-09-25
+
+An ordinary harness-failure handoff omitted the blocker code, unmet predicate,
+and source-repair capability required by typed dispatch. It therefore stopped
+at `waiting_diagnosis` before the configured repair executor. The producer now
+provides `harness_code_failure`, `frozen_arm_measurement_complete`, and
+`source_repair`, retaining the frozen manifest digest. An approved reproduction
+recipe and grant remain prerequisites; descriptive error text grants nothing.
+
+Typed source-blocked driver yields also skipped the original-request journal
+event required by verified successor activation. The operation owner now
+records that request only for a recognized code blocker with an explicit
+source-repair capability. Publication and independent verification still govern
+activation. The regression follows the original logical request into its
+successor, preserves unused seconds and attempts, retains the scientific
+replicate, and verifies idempotent replay. Quality-gate, external-tool-host,
+data-volume, and missing-environment controls cannot request source repair.
+
+Tests use real producer, inspection, dispatch, journal, publication, and
+successor owners with simulated process/agent boundaries. They do not prove
+a live production repair or authorize model promotion. The code-quality
+ratchet records the one-line reduction in the continuous-driver module; no
+ceiling increases. The independently discovered corrupt published baseline
+was restored in commit `3036f32703a3fcb98d4f10090beebfb49b144941`; its GitHub
+content was fetched back and matched the preserved valid JSON exactly.
+
+Parent validation on the integrated source: seven-file recovery suite **84 passed in 51.53s**; handoff-focused selection **23 passed, 348 deselected in 7.66s**. These checks use simulated process/agent boundaries and do not discharge live autonomous repair acceptance.
+
+R17 canonical verifier found `extract_test_cases` failed because the new negative-control parameter table remained inline. The existing casefile extractor moved it to `src/slm_training/resources/test_cases/test_scripts/test_self_healing_handoffs.json`; the source test now uses `case_values`. On this successor source, `extract_test_cases` passes, 11 handoff tests pass, Ruff passes, code quality passes, and version stamps pass. R17 remains a preserved failed snapshot; current-source release verification must use a successor.
+
+The ordinary two-arm command cursor exposed a child-process import failure: a compiled `python -m scripts.train_model` child could not import `slm_training` when the parent lacked `PYTHONPATH`. The shared `engine._stage_environment` now passes this checkout's `src` path to repository CLI children and keeps scratch CPU thread limits. With the parent `PYTHONPATH` removed, real trainer and evaluator `--help` children both exit zero; 16 focused command-cursor/thread tests pass, and Ruff, code quality, test-case extraction, and version stamps pass. This proves CLI startup, not a completed train/eval campaign or AgentV publication. The `harness.autoresearch.experiment_campaign` version was bumped to v301. R18 remains an immutable prior-source verifier snapshot; current-source validation requires R19.
+
+A clean ordinary-supervisor execution copy requires an authenticated head commit marker. The existing materializer omitted committed `.env.example` and `.serena` policy files from its tree identity and could not reconstruct an unsigned GitHub commit whose original timezone was normalized to UTC by the API. The source owner now includes the committed template and two Serena files while excluding private overrides/cache, then accepts an offset candidate only when the exact Git commit hash matches the connector-confirmed head and tree. Altered source bytes still fail the delivered-tree check. Focused materialization tests: 23 passed; Ruff, code quality, and version stamps pass. A current-head proof execution copy and fresh preregistered campaign remain required after publication.
+
+
+### 2026-09-26: persistent output grants at shared isolation boundaries
+
+R28 completed all 18 static obligations but could not start pytest collection:
+its worker requested a writable root-level `workload-result.json`, which the
+new narrow-parent mount policy correctly rejected. The collection and test
+execution owner now precreates `workload-output/result.json` and grants that
+exact file. Real Bubblewrap collection, execution, malformed-result rejection,
+and protected controller/source tests exercise the same producer and consumer.
+
+The hypothesis executor had a related directory-as-file grant. A proposed
+disposable tmpfs mount also failed because its result disappeared before the
+controller read it. The corrected owner precreates and grants
+`proposal-output/matrix.json`. A real isolated worker regression fails on the
+tmpfs implementation and passes when the controller receives the persisted
+result. This check uses a deterministic executable, not a live model provider.
+
+The five affected isolation test modules pass together: **74 passed in 17.37s**,
+using the dedicated `runtime-r25-python` environment, installed AgentV runtime,
+and host Bubblewrap with `SLM_REQUIRE_ISOLATION=1`. Updated agent-runner fixtures
+retain cancellation and protected-sibling checks with narrow parent mounts.
+These focused results do not authorize release, live repair acceptance, model
+promotion, or shipment. Full current-source verification and the paired
+ordinary-supervisor campaign remain required.
+
+Operational correction: R28's user timer was live on `/run/user/1000/bus`; a
+missing bus environment caused a false stopped-runner report. A duplicate shell
+loop was removed. R29 initially shared hardlinks with R28 and a version-file
+edit changed R28's source identity. The original R28 version file was restored
+from its preserved R27 predecessor, all R29 source hardlinks were separated,
+and all prior journals were retained. Evidence from different identities is
+not combined. The successor verifier must use R29's immutable source and its
+own authenticated state.
+
+
+R30 extends the same regression set through the canonical isolated merge worker,
+using exact collected node IDs and explicit approved Python, Node, bridge, and
+AgentV runtime roots. This exposed a stale test assumption that nested namespaces
+always fail, and two real runtime-composition defects: the SDK's Node wrapper
+was selected as the native runtime, and inherited `/runtime/N` aliases overwrote
+explicit slots after a nested worker reordered grants. The worker now exports
+its approved native Node path through the existing test override, and runtime
+mounts install aliases before explicit slots. Controller protection is tested
+by the actual denied write, without assuming namespace creation is unavailable.
+
+All **74 exact test nodes pass through canonical isolated execution**: pytest
+13.02 seconds, complete worker 25.35 seconds, no skipped or deselected nodes.
+The retained result is `outputs/autonomy-integration-20260921/r30-focused-worker-runtime-order.json`,
+with validated workload digest
+`3fb2e7de36d1faba2d76b74c7b2bdf4cabdb20f6b7416ba0d4f0069f90e28166`.
+Earlier failed observations remain alongside it. This is stronger integration
+evidence than host-only tests but still covers only these 74 nodes; it does not
+replace the full merge gate or the live repair and scientific campaign obligations.
+
+The retained September 23 Codex-subscription attempt did produce a proposal
+(`480c08fa6d47bf3a270904b6c867f4a769c343dc0beec8b1149d6a281678aab9`).
+Its controller remained parked on the original source-verification dependency
+after multiple authenticated successors were activated. The previous resolver
+followed only one link, so subsequent invocations never reached the runnable
+verifier. The controller now resolves the complete activation chain, preserves
+the proposal and remaining resource grant, and checks every identity and grant
+transition before claiming work or waking repair. Activation ancestry separates
+a valid return to an earlier runtime identity from ambiguous or cyclic links.
+
+This preserves successful provider work without calling the provider again.
+The retained proposal is not an accepted repair: independent verification and
+publication remain incomplete, and the historical controlled attempt lacks an
+original leased operation needed to prove end-to-end operation continuation.
+The older September 22 editor failure remains valid historical evidence but
+does not describe the later successful proposal.
+
+The integrated successor and verifier modules pass **30 tests in 17.23 seconds**
+with `SLM_REQUIRE_ISOLATION=1`, the dedicated Python runtime, and real host
+Bubblewrap; no tests were skipped. The rollback regression fails before the
+ancestry fix. Negative controls cover altered identities, cyclic or ambiguous
+links, and residual-grant mismatches; repeated invocations retain retry timing
+and charged resource usage. Independent review found the rollback case, then
+verified the corrected root selection. A sandbox-only run skipped the real
+isolation test and is not counted as isolation evidence.
+
+R31 addresses an observed collection scheduling failure after all 18 R30 static
+checks passed. Every fresh or split batch received only 20 seconds including
+sandbox preparation, even when a larger bounded allowance was available. The
+worker could finish collection but still time out before the controller received
+a valid result. Collection now receives the admitted remaining workload budget;
+kill/finalization reserves, retry charges, and timeout rejection remain intact.
+A real isolated first batch completed **1,034 collected nodes across 64 test
+files in 71.37 seconds**, with workload digest
+`b304155b57b8bdef1595c15fca6e6326e5a326ec8bca5b14422723c769561db4`.
+This is focused collection evidence, not a passing full test suite. The retained
+artifact is `outputs/autonomy-integration-20260921/r31-focused-collection.json`.
+R30's failed attempts and signed journal remain preserved; their scheduling was
+stopped while preparing the corrected immutable successor.
+
+The current-source scientific attempt and its two interrupted invocations are
+recorded in [the R30 measured-results report](science-lab-pr-head-r30-20260926-results.md).
+No training/evaluation completion or model improvement is inferred from startup
+operations or command-cursor persistence.
+
+Integrated collection scheduling, resumption, and throughput checks pass
+**51 tests in 85.41 seconds**. The existing fresh-collection assertion now checks
+the full admitted allowance instead of the obsolete 20-second slice. The real
+receipt-resumption fixture uses a 60-second workload allowance because the
+retained failing journal showed 25.69 seconds of startup before its previous
+25-second allowance could admit collection. Its explicit shard pause, duplicate
+counts, changed-source rejection, and completion assertions remain unchanged;
+typed pending is never accepted as successful execution.
+
+The integrated startup/source-binding tests pass **31 tests in 16.25 seconds**.
+Related operation and repaired-release tests also pass; the isolated delivery
+receipt module passes **3 tests in 20.30 seconds** on real host Bubblewrap after
+removing its obsolete assumption that required isolation means nested namespaces
+must fail. All signature, source-drift, receipt and release-mapping assertions
+remain. Independent review found no content/link/mode checks removed and no
+cross-boundary identity cache introduced by the startup consolidation.
+
+A further evidence review found that several tests in the earlier 74-node run
+used local-feedback fallbacks or returned before protection assertions when
+inside the outer sandbox. That run proved outer-worker execution but did not
+prove every inner isolation boundary. Those shortcuts are removed. The exact
+**34 isolation nodes now pass inside the canonical outer worker**, with actual
+inner isolation and all protection assertions: worker 40.23 seconds, pytest
+20.67 seconds, workload digest
+`ccdb34a9854c3e7417d8d4939086e925b8c1c932cc315f583f5f703b084aa294`.
+The **3 signed delivery-verification nodes also pass** through the same nested
+worker: worker 59.29 seconds, pytest 33.38 seconds, workload digest
+`a320f52b529a1c744e23334b8c9d9ca36fdf073fc5dfb0e835a6302d93aafc63`.
+Their exact-node receipts remain in `r31-nested-core-verified.json` and
+`r31-nested-delivery-verified.json` under the retained output directory.
+
+The initial combined 37-node workload timed out and is not passing evidence.
+A separate preparation attempt timed out listing source files; after an actual
+successful listing and reduced observed host pressure, the exact delivery shard
+completed. Both failed observations remain retained. The successful bounded
+shards cover the full 37-node set without skipping or disabling nested isolation.
+
+A proposed non-main delivery extension is withheld from R31: review found that
+activation discarded branch authority and could relabel acceptance-only delivery
+as unrestricted clean upstream provenance. Its patch is preserved for a separate
+authority fix; default main-only delivery remains unchanged in this source.
+
+## R32 pending corrections and R31 observation
+
+The live R31 canonical gate exposed evidence-ledger drift: the committed scan count was 2,351 while rebuilding the current design documents scanned 2,354. Rebuilding changed only this count; all 401 observations and 29 arm aggregates remained identical. The rebuilt ledger passed its canonical check before adding the R31 observation report; it must be regenerated again after all R32 documents settle. Published R31 evidence remains unchanged.
+
+The collection scheduler also returned a negative `required_seconds` hint when remaining admission time was negative. R32 retains the full positive workload requirement whenever the remaining time cannot pass the existing admission floor. Seven focused budget tests pass, including negative remaining time; no timed-out or pending work becomes successful evidence.
+
+The [R31 measured observation](science-lab-pr-head-r31-20260926-results.md) records the incomplete first supervisor invocation. Operational serialization now prevents the retained verifier launcher and campaign launcher from competing with each other. This does not change source identity, reset the continuation grant, or establish successful scientific measurement.
+
+### Authenticated source authority and interrupted activation
+
+R32 introduces one resolver over two existing controller-owned producers: initial connector readback and accepted repair delivery. An execution manifest carries only an artifact reference. Resolution requires the trusted journal, committed successful activity, matching request and terminal lease, exact repository/commit/source, and validated materialization. Clean source alone does not establish membership in main. An initial main release does not require a fabricated repair receipt.
+
+Independent review exposed an interrupted-activation defect: a new lease reused an old activation without publishing a matching authority output into the terminal attempt. The corrected path binds new requests to new immutable activation/authority records; same-request retry republishes under the live fence. The resolver also checks terminal lease binding. Four focused repair tests and 24 resolver tests pass. The complete repair-delivery module subsequently passed all 21 tests in 28.33 seconds, including real nested Bubblewrap execution under the 170-second interrupt cap. Independent read-only re-review closed this finding; production consumer wiring is still undergoing separate verification. No complete repair acceptance or original-operation continuation is inferred from these component tests.
+
+### Agent runtime memory pressure
+
+Five same-project Serena/Pyright instances consumed roughly 3 GB each. After identity-checked graceful termination of four older duplicate instances, all their language-server children exited and the latest loaded instance remained. Available memory reached 17,450,200 KiB. Memory full-stall pressure averaged 35.42% over 60 seconds before cleanup and 0.06% at the later verification observation. The retained R31 campaign then advanced through both control training chunks and recorded a real repair request for its interrupted evaluation cursor; memory cleanup is not presented as a complete harness fix.
+
+The host and active project Codex configurations now omit eager `--project-from-cwd` activation. R32 carries the same project setting with an explanatory comment. This leaves Serena available and activates its language services only when `activate_project` is requested. Existing active processes are not implicitly restarted by the config edit. Private backups preserve the original host/project configuration. A bounded installed-SDK smoke proved startup exposes semantic tools without starting Pyright and accepts on-demand activation; a subsequent tiny-project semantic smoke completed: startup had no active project or new Pyright process, on-demand activation enabled `find_symbol`, and the known fixture function was found in 0.79 seconds. MCP shutdown reaped the language server. The retained evidence is `outputs/autonomy-integration-20260921/serena-lazy-start-smoke.json`.
+
+Consumer verification passed 42 publication/delivery tests, 26 diagnostic/entrypoint tests, seven focused promotion tests, and 20 readiness tests. Re-review closed repository self-authorization and unresolved-request starvation findings: expected repository comes from trusted configuration or the pre-execution lock, and persisted servicing order rotates pending requests while dispatching at most one per invocation. These are component/integration checks; the full canonical gate and real repaired-operation continuation remain required.
+
+After extracting file materialization from release preparation to remove a complexity regression, the combined authority and complete repair-delivery suites passed all 45 tests in 41.36 seconds with real nested isolation. Copy modes, symlinks, complete-tree checks, and fresh provenance validation remain unchanged. Agent-surface parity, repository policy, version stamps, and whitespace checks also pass on the current working candidate; final full-gate evidence is still outstanding.
+
+### Recovery after training and before the first evaluation
+
+The retained R31 failure exposed a concrete recovery mismatch: initial compiled evaluation argv advertises resumable records but naturally does not yet contain `--resume-run`. The former recovery helper refused this interrupted boundary even after the complete training prefix was committed. R32 verifies that entire prefix, derives the same run directory through the existing artifact-path owner, and requests explicit evaluator resume. The evaluator still validates prior rows before decoding; no interrupted execution becomes a successful measurement and all prior reservations stay charged.
+
+The complete focused cursor-recovery module passes 13 tests in 28.57 seconds. The original R31 helper fails the new compiler-generated-command regression. Coverage includes interruption before the first evaluation, preserved partial rows, no repeated training, exact locked argv, authenticated training-resume prefixes, and rejection of altered commands. The retained real R31 cursor was inspected read-only; the patched helper derives its existing run directory. Actual repaired campaign execution still requires source-bound delivery and is not claimed from this test.

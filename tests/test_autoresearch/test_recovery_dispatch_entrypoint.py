@@ -34,7 +34,8 @@ def test_actual_supervisor_seam_missing_config_is_durable_scoped_wait(tmp_path):
 
 
 def test_config_parser_builds_full_request_without_manual_request_file(tmp_path):
-    grant = RepairGrant(grant_id="fixture", provider="fixture", executable="/usr/bin/false",
+    grant = RepairGrant(grant_id="fixture-successor", successor_of="fixture",
+        provider="fixture", executable="/usr/bin/false",
         executable_sha256=SHA, expires_at=time.time() + 600, max_attempts=1,
         total_seconds=30.0, interrupt_seconds=10)
     allowed_paths = ("src/slm_training/harnesses/model_build/eval_runner.py",)
@@ -95,4 +96,4 @@ def test_config_parser_builds_full_request_without_manual_request_file(tmp_path)
     assert built.blocker.reproducer == ("python", "repro.py")
     assert built.blocker.blocker_class == "code"
     assert built.grant == grant
-
+    assert built.grant.successor_of == "fixture"
