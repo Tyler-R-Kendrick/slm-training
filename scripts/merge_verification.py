@@ -228,7 +228,7 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
     if kind == "shard":
         estimate = _shard_estimate_seconds(state, targets, full)
         if prior and isinstance(prior.get("seconds"), (int, float)):
-            estimate = min(full, max(1.0, prior["seconds"] * 2))
+            estimate = min(fallback, max(1.0, prior["seconds"] * 2))
         # Keep estimate independent of this invocation's remaining tail: clipping
         # to available makes the later admission comparison tautological.
         required = estimate
