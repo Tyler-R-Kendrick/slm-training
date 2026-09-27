@@ -144,6 +144,11 @@ def test_fast_skips_only_the_changed_test_execution() -> None:
     assert "--changed-tests-only" not in full[-1].cmd
 
 
+def test_full_gate_passes_selected_base_ref_to_test_selector() -> None:
+    step = merge_gate_steps(base_ref="release-base")[-1]
+    assert step.cmd[-2:] == ("--base-ref", "release-base")
+
+
 def _step(name: str, code: str, *, static: bool = True) -> Step:
     return Step(name, (sys.executable, "-c", code), static=static)
 

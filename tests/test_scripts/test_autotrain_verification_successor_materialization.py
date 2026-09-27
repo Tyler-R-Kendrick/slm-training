@@ -98,7 +98,7 @@ def _make_predecessor(tmp_path, case, monkeypatch):
     private_snapshot(source, stage / "base")
     private_snapshot(candidate, stage / "root")
     base_ref = _private_git(stage, time.monotonic() + 60, ("fixture.py", "tests/test_added.py"))
-    old_binding = real_binding(stage / "root", base_ref, merge_gate_steps(),
+    old_binding = real_binding(stage / "root", base_ref, merge_gate_steps(base_ref=base_ref),
                                isolated=True, runtimes=roots)
     old_binding = {**old_binding, "environment": {"predecessor": "saved"}}
     monkeypatch.setattr(merge_verification, "verification_binding", lambda *a, **kw: old_binding)

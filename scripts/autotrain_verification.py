@@ -115,7 +115,7 @@ def dependency_plan(dependency):
     pinned_runtime = _runtime_digest(dependency)
     current_runtime = runtime_identity(roots)
     binding = verification_binding(
-        root, dependency["base_ref"], merge_gate_steps(), isolated=True, runtimes=roots,
+        root, dependency["base_ref"], merge_gate_steps(base_ref=dependency["base_ref"]), isolated=True, runtimes=roots,
         runtime_digest_value=current_runtime,
     )
     if pinned_runtime is not None and pinned_runtime != current_runtime:
@@ -155,7 +155,7 @@ def authenticated_completion(plan):
     current = verification_binding(
         Path(plan["source"]),
         plan["base_ref"],
-        merge_gate_steps(),
+        merge_gate_steps(base_ref=plan["base_ref"]),
         isolated=True,
         runtimes=roots,
         runtime_digest_value=runtime_digest,

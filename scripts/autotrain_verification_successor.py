@@ -139,7 +139,7 @@ def plan_successor(runtime, event, predecessor, common):
     from scripts import autotrain_verification as owner
 
     binding = owner.verification_binding(
-        Path(predecessor["root"]), predecessor["base_ref"], merge_gate_steps(),
+        Path(predecessor["root"]), predecessor["base_ref"], merge_gate_steps(base_ref=predecessor["base_ref"]),
         isolated=True, runtimes=tuple(Path(path) for path in predecessor["runtime_roots"]),
     )
     if digest(binding) == predecessor["verification_identity"]:

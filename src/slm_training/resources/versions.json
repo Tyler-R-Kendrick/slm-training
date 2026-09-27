@@ -455,6 +455,11 @@
     "ci.local_merge_gate": {
       "history": [
         {
+          "date": "2026-09-27",
+          "note": "Pass the locked base ref into source-owned test selection and cap shard retries to the post-collection workload budget so resumable verifier work cannot wait forever for an impossible allowance.",
+          "version": "v34"
+        },
+        {
           "date": "2026-09-26",
           "note": "Require explicit source-lock-matched Playwright and browser runtime grants for isolated preview tests.",
           "version": "v33"
@@ -676,7 +681,7 @@
         "tests/test_scripts/test_merge_verification_successor.py",
         "tests/test_scripts/test_merge_verification_collection_budget.py"
       ],
-      "version": "v33"
+      "version": "v34"
     },
     "config.levers": {
       "history": [

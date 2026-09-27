@@ -220,7 +220,7 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
     if kind == "static" and not prior and available <= 0:
         required = max(1.0, full)
     if prior:
-        required = min(full, max(1.0, prior.get("seconds", full) * 2))
+        required = min(fallback, max(1.0, prior.get("seconds", full) * 2))
     if kind == "collection":
         # Sandbox preparation shares this allowance; a fixed startup slice can
         # time out every split before pytest begins.

@@ -27,7 +27,7 @@ def shard_estimate_seconds(state, nodes, full):
         )
         for path in (node.split("::", 1)[0] for node in nodes)
     )
-    return min(full, estimate)
+    return min(full, state.get("shard_budget_seconds", full), estimate)
 
 
 def run_shards(state, root, directory, budget, persist, *, allowance, run_workload) -> None:

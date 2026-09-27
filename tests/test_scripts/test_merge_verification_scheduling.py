@@ -100,6 +100,24 @@ def test_initial_shards_are_bounded_for_resumable_controller_grants(monkeypatch)
     assert sorted(node for shard in shards for node in shard) == sorted(nodes)
 
 
+def test_shard_estimate_respects_budget_left_after_collection(monkeypatch):
+    from scripts.merge_verification_shards import shard_estimate_seconds
+
+    node = "tests/slow.py::test_case"
+    monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {"tests/slow.py": 1000.0})
+    state = {"nodes": [node], "attempts": [{"kind": "collection", "seconds": 20.0}], "shard_budget_seconds": 107.0}
+    assert shard_estimate_seconds(state, [node], 119.0) == 107.0
+
+
+def test_shard_retry_budget_respects_post_collection_budget(monkeypatch):
+    node = "tests/slow.py::test_case"
+    state = state_for(node)
+    state.update(workload_budget_seconds=119.0, shard_budget_seconds=107.0)
+    state["attempts"] = [{"kind": "shard", "nodes": [node], "seconds": 60.0}]
+    monkeypatch.setattr(owner, "_shard_estimate_seconds", lambda *_args: 119.0)
+    assert owner._allowance(state, "shard", [node], 108.0) == 107.0
+
+
 def test_runtime_identity_includes_potentially_executable_cache_content(tmp_path):
     from scripts.merge_verification_evidence import runtime_identity
 

@@ -61,7 +61,7 @@ def _ruff_cmd(python: str) -> tuple[str, ...]:
         return (path_ruff, "check", ".")
     return (python, "-m", "ruff", "check", ".")
 
-def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
+def merge_gate_steps(*, fast: bool = False, base_ref: str | None = None) -> tuple[Step, ...]:
     """The gate, in `.github/workflows/ci.yml` ``python-static`` order."""
     python = sys.executable
     steps = [
@@ -137,10 +137,13 @@ def merge_gate_steps(*, fast: bool = False) -> tuple[Step, ...]:
         ),
     ]
     if not fast:
+        changed_tests = (python, "-m", "scripts.check_changed")
+        if base_ref is not None:
+            changed_tests += ("--base-ref", base_ref)
         steps.append(
             Step(
                 "changed_tests",
-                (python, "-m", "scripts.check_changed"),
+                changed_tests,
                 static=False,
             )
         )
@@ -311,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
             summary = run_locked_release_gate(
                 args.identity,
                 dict(
-                    steps=merge_gate_steps(),
+                    steps=merge_gate_steps(base_ref=args.base_ref),
                     root=args.source.resolve(),
                     base_ref=args.base_ref,
                     state_dir=args.state_dir,

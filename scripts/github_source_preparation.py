@@ -95,7 +95,7 @@ def resolve_source_host(store, wait, host):
         plan = saved["plan"]
     else:
         from slm_training.autoresearch.storage import CampaignStore
-        binding = verification_binding(root, host.base_ref, merge_gate_steps(), isolated=True, runtimes=roots)
+        binding = verification_binding(root, host.base_ref, merge_gate_steps(base_ref=host.base_ref), isolated=True, runtimes=roots)
         plan = {**configured, "identity": digest(binding), "environment": verification_environment(),
                 "runtime_roots": [str(path) for path in roots]}
         CampaignStore._replace_durable(record, json.dumps({**expected, "plan": plan}, sort_keys=True))

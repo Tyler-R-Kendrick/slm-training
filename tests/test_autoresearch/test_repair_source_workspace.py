@@ -79,14 +79,14 @@ def test_actual_factory_binds_full_source_coverage_private_git_and_separate_gran
     assert list((gate.root / ".git/hooks").glob("*")) == []
     assert all(path.stat().st_nlink == 1 for path in (gate.root / ".git").rglob("*") if path.is_file())
     manifest = json.loads((gate.root.parent / "manifest.json").read_text())
-    binding = verification_binding(gate.root, gate.base_ref, merge_gate_steps(),
+    binding = verification_binding(gate.root, gate.base_ref, merge_gate_steps(base_ref=gate.base_ref),
                                    isolated=True, runtimes=(Path(sys.prefix),),
                                    runtime_digest_value=gate.runtime_identity)
     assert digest(binding) == gate.identity
     assert binding == manifest["binding"]
     assert binding["changed_paths"] == ["fixture.py", "tests/test_added.py"]
     assert binding["targets"] == ["tests"], "unknown source plus added test must select conservative source coverage"
-    assert len(binding["static_commands"]) == len([step for step in merge_gate_steps() if step.static])
+    assert len(binding["static_commands"]) == len([step for step in merge_gate_steps(base_ref=gate.base_ref) if step.static])
     assert manifest["grant"] == config.source_verification_grant.model_dump(mode="json")
     assert gate.read(workspace) is None
     assert not gate.state_dir.exists(), "preparing a job must not issue a passing cache record"
@@ -367,7 +367,7 @@ def test_real_private_source_gate_executes_bounded_pending_work_without_false_re
     runtime_digest = runtime_identity(runtimes)
     monkeypatch.setenv("MERGE_VERIFICATION_RUNTIME_IDENTITY", runtime_digest)
     summary = run_locked_release_gate(
-        gate.identity, dict(steps=merge_gate_steps(), root=gate.root, base_ref=gate.base_ref,
+        gate.identity, dict(steps=merge_gate_steps(base_ref=gate.base_ref), root=gate.root, base_ref=gate.base_ref,
                             state_dir=gate.state_dir, step_seconds=2, run_step=None,
                             runtime_roots=runtimes, runtime_digest=runtime_digest,
                             local_feedback=False),
