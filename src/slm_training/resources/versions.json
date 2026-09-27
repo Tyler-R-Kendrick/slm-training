@@ -5703,6 +5703,11 @@
       "history": [
         {
           "date": "2026-09-27",
+          "version": "v314",
+          "note": "Resolve duplicate unactivated source-verification roots only through a unique authenticated activation chain; preserve fail-closed ambiguity handling."
+        },
+        {
+          "date": "2026-09-27",
           "version": "v313",
           "note": "no-bump: align obsolete local merge and ancestry expectations with existing immutable-delivery contracts; preserve MERGE_HEAD and conflict contents, record authorized delivery evidence, and do not claim an unverified successor. Runtime and research behavior unchanged."
         },
@@ -8034,7 +8039,7 @@
         "src/slm_training/harness_core/host_process_identity.py",
         "src/slm_training/harness_core/driver_pending.py"
       ],
-      "version": "v313"
+      "version": "v314"
     },
     "harness.autoresearch.formal": {
       "history": [

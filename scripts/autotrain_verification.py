@@ -226,6 +226,13 @@ def _active_dependency(runtime, event, repair):
     # Anchor at activation ancestry; dependency digests distinguish those jobs.
     activated = {link["successor_dependency_digest"] for link in links}
     roots = [key for key in roots if key not in activated]
+    if len(roots) > 1:
+        linked_roots = [
+            key for key in roots
+            if any(link["predecessor_dependency_digest"] == key for link in links)
+        ]
+        if len(linked_roots) == 1:
+            roots = linked_roots
     if len(roots) != 1:
         raise ValueError("source_verification_successor_ambiguous_root")
     key, seen = roots[0], set()

@@ -204,6 +204,26 @@ def test_successor_uses_remaining_grant_and_wakes_with_predecessor_identity(
         assert completed["detail"]["verification_identity"] == successor["verification_identity"]
 
 
+def test_duplicate_unactivated_roots_follow_authenticated_successor(tmp_path, monkeypatch):
+    with ActivityRuntime(CampaignStore("runtime", tmp_path / "loops" / "loop")) as runtime:
+        chain = _chain(runtime, tmp_path, monkeypatch, 1)
+        original_event, original = chain[0]
+        active_event, active = chain[-1]
+        duplicate = {**original, "duplicate_request": True}
+        artifact = runtime.store.write_artifact("source_verification_requests", duplicate)
+        runtime.store.append_event(
+            "source_verification_requested", experiment_id="repair",
+            artifact_sha256=artifact.stem,
+            detail={"dependency_digest": artifact.stem, "repair_activity_id": "repair"},
+        )
+
+        resolved = owner._active_dependency(
+            runtime, active_event, runtime.snapshot()["repair"]
+        )
+
+        assert resolved == (active_event, active)
+
+
 def test_successor_cannot_wake_for_changed_proposal(tmp_path, monkeypatch):
     from scripts import autotrain_verification_successor as successor_owner
     from slm_training.autoresearch.heal import recovery_dispatch
