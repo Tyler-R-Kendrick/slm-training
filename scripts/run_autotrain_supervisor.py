@@ -22,7 +22,6 @@ import argparse
 import importlib.util
 import json
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -181,6 +180,10 @@ def _write_family_closures(log_event) -> None:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--invocation-deadline", type=float,
+                        help="Host monotonic outer deadline, captured before lock/preflight")
+    parser.add_argument("--timeout-recovery", type=Path)
+    parser.add_argument("--timeout-recovery-sha256")
     parser.add_argument("--controller-root", type=Path)
     parser.add_argument("--controller-source-digest")
     parser.add_argument("--controller-runtime-digest")
@@ -275,10 +278,10 @@ def _supervise(args, runtime, common: dict) -> int:
         from slm_training.levers import INTERRUPT_AFTER_SECONDS, KILL_GRACE_SECONDS
 
         # Leave shutdown and journal settlement room inside the outer run cap.
+        deadline = (getattr(args, "_supervisor_started", time.monotonic())
+                    + INTERRUPT_AFTER_SECONDS - 3 * KILL_GRACE_SECONDS)
         os.environ["AUTOTRAIN_SUPERVISOR_WORK_DEADLINE"] = str(
-            getattr(args, "_supervisor_started", time.monotonic())
-            + INTERRUPT_AFTER_SECONDS - 3 * KILL_GRACE_SECONDS
-        )
+            min(deadline, float(previous)) if previous is not None else deadline)
     try:
         return supervise(args, runtime, common, run_operation=_run_operation,
                          watchdog=_watchdog_no_campaign)
@@ -320,6 +323,8 @@ def main(argv: list[str] | None = None) -> int:
 
     from scripts.autotrain_controller_execution import configured_controller, controller_authority_scope, configured_host_configuration
 
+    from scripts.autotrain_invocation import invocation_scope
+
     controller = configured_controller(args)
     host_configuration = configured_host_configuration(args)
     cwd = Path.cwd().resolve()
@@ -329,7 +334,7 @@ def main(argv: list[str] | None = None) -> int:
     store = CampaignStore("runtime", root / "loops" / args.loop_id)
     try:
         # Lease ownership is acquired before importing or invoking the driver/heal.
-        with ActivityRuntime(store) as runtime, controller_authority_scope(runtime, controller, host_configuration=host_configuration) as environment:
+        with ActivityRuntime(store) as runtime, invocation_scope(runtime, args), controller_authority_scope(runtime, controller, host_configuration=host_configuration) as environment:
             passes = sum(e["event_type"] == "supervisor_pass" for e in store.verify_event_chain())
             if args.max_cycles and args.stop_after_pass is None:
                 args.stop_after_pass = passes + args.max_cycles
@@ -342,22 +347,14 @@ def main(argv: list[str] | None = None) -> int:
                 "environment_digest": digest(environment if environment is not None else environment_identity()),
                 **host_configuration,
             }
-            previous = {
-                sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)
-            }
-            for sig in previous:
-                signal.signal(sig, lambda *_: runtime.cancel_event.set())
-            try:
-                recovered = recover_release(
-                    runtime, common, sequence=passes, log_event=lambda e: print(json.dumps(e)),
-                    run_operation=_run_operation,
-                )
-                return _supervise_recovered(args, runtime, common, recovered)
-            finally:
-                if runtime.cancel_event.is_set():
-                    runtime.cancel_all(reason="explicit supervisor stop")
-                for sig, handler in previous.items():
-                    signal.signal(sig, handler)
+            from scripts.autotrain_timeout_recovery import recover_host_timeout
+
+            recover_host_timeout(runtime, args, common, controller)
+            recovered = recover_release(
+                runtime, common, sequence=passes, log_event=lambda e: print(json.dumps(e)),
+                run_operation=_run_operation,
+            )
+            return _supervise_recovered(args, runtime, common, recovered)
     except ControllerBusy:
         print("supervisor already owned by a current controller", file=sys.stderr)
         return 2

@@ -98,6 +98,11 @@
       "history": [
         {
           "date": "2026-09-26",
+          "note": "Recover from authenticated host deadline expiry through a verified successor while preserving explicit cancellation and original grant authority.",
+          "version": "v40"
+        },
+        {
+          "date": "2026-09-26",
           "note": "Preserve authenticated multi-hop operation ancestry and controller/workload separation across accepted source repair without renewing the original scientific grant.",
           "version": "v39"
         },
@@ -348,7 +353,7 @@
         "tests/test_scripts/test_run_autotrain_supervisor.py",
         "tests/test_autoresearch/test_provider_bridge.py"
       ],
-      "version": "v39"
+      "version": "v40"
     },
     "autoresearch.power_preflight": {
       "history": [
@@ -449,6 +454,11 @@
     },
     "ci.local_merge_gate": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "note": "Require explicit source-lock-matched Playwright and browser runtime grants for isolated preview tests.",
+          "version": "v33"
+        },
         {
           "date": "2026-09-26",
           "note": "Map quality-verifier source changes to tests/test_quality, retaining the union with explicitly changed unrelated tests.",
@@ -663,9 +673,10 @@
         "tests/test_scripts/test_merge_verification_runtime.py",
         "tests/test_scripts/test_merge_verification_scheduler_throughput.py",
         "tests/test_scripts/test_merge_verification_scheduling.py",
-        "tests/test_scripts/test_merge_verification_successor.py"
+        "tests/test_scripts/test_merge_verification_successor.py",
+        "tests/test_scripts/test_merge_verification_collection_budget.py"
       ],
-      "version": "v32"
+      "version": "v33"
     },
     "config.levers": {
       "history": [
@@ -4505,6 +4516,11 @@
     "formal.resource_bound_parity": {
       "history": [
         {
+          "date": "2026-09-26",
+          "note": "no-bump: move generated fixture output into tmp_path and patch the fixture path; production resource-bound behavior is unchanged",
+          "version": "v2"
+        },
+        {
           "date": "2026-08-11",
           "note": "KERN-12 (SLM-532): import COMPUTABILITY_LABELS from computability_classification; expand schema enum",
           "version": "v2"
@@ -5680,6 +5696,16 @@
     },
     "harness.autoresearch.experiment_campaign": {
       "history": [
+        {
+          "date": "2026-09-27",
+          "note": "no-bump: extract unchanged host process identity and typed driver pending contracts into harness_core; preserve runtime re-exports and all timeout recovery validation semantics.",
+          "version": "v313"
+        },
+        {
+          "date": "2026-09-26",
+          "note": "Bind host deadline recovery to the original cancelled request, preserve grant accounting across timeout successors, and prevent configuration-only activity renewal.",
+          "version": "v313"
+        },
         {
           "date": "2026-09-26",
           "note": "Attach authenticated host repair/delivery configuration through live launch receipts while preserving original null-config requests and grants; consume the bound delivery configuration only within repository publication scope.",
@@ -7990,9 +8016,15 @@
         "tests/test_autoresearch/test_nested_controller_cli.py",
         "tests/test_autoresearch/test_verified_supervisor_continuation.py",
         "tests/test_autoresearch/test_timeout_retirement_identity.py",
-        "tests/test_scripts/test_continuous_cycle_stamp.py"
+        "tests/test_scripts/test_continuous_cycle_stamp.py",
+        "scripts/autotrain_timeout_recovery.py",
+        "scripts/autotrain_invocation.py",
+        "src/slm_training/autoresearch/runtime/driver_pending.py",
+        "tests/test_scripts/test_supervisor_timeout_recovery.py",
+        "src/slm_training/harness_core/host_process_identity.py",
+        "src/slm_training/harness_core/driver_pending.py"
       ],
-      "version": "v312"
+      "version": "v313"
     },
     "harness.autoresearch.formal": {
       "history": [
@@ -8257,6 +8289,11 @@
     },
     "harness.core": {
       "history": [
+        {
+          "date": "2026-09-27",
+          "note": "no-bump: extract unchanged host process identity and typed driver pending contracts into harness_core; preserve runtime re-exports and all timeout recovery validation semantics.",
+          "version": "v27"
+        },
         {
           "date": "2026-09-26",
           "note": "Add explicitly configured pinned Codex app-server connector transport and distinct controller execution identity; preserve schema fencing, bounded lifecycle, and delivery reconciliation.",
@@ -11328,6 +11365,11 @@
     "harness.experiments.slm159_cross_dsl_replication": {
       "history": [
         {
+          "date": "2026-09-26",
+          "note": "Keep fixture reports in the requested output directory and preserve committed historical measurements.",
+          "version": "v2"
+        },
+        {
           "date": "2026-07-20",
           "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
           "version": "v1"
@@ -11377,7 +11419,7 @@
         "docs/design/iter-slm159-cross-dsl-replication-20260720.json",
         "docs/design/iter-slm159-cross-dsl-replication-20260720.md"
       ],
-      "version": "v1"
+      "version": "v2"
     },
     "harness.experiments.slm160_spv_disposition": {
       "history": [
@@ -19214,6 +19256,11 @@
     "harness.train_data": {
       "history": [
         {
+          "date": "2026-09-26",
+          "note": "Retain source-family roots before exact-duplicate children so deterministic deduplication preserves canonical lineage.",
+          "version": "v36"
+        },
+        {
           "date": "2026-09-21",
           "note": "Restore request-bound readiness repair and learner correction evidence without widening admission gates.",
           "version": "v35"
@@ -19423,7 +19470,7 @@
         "docs/design/dsh1-08-harness-qa-completion-20260725.md",
         "docs/design/dsh1-08-harness-qa-completion-20260725.json"
       ],
-      "version": "v35"
+      "version": "v36"
     },
     "harness_core.evidence_bundle": {
       "history": [
@@ -20246,6 +20293,11 @@
     },
     "model.recursive_denoiser": {
       "history": [
+        {
+          "date": "2026-09-26",
+          "note": "no-bump: exercise the existing fail-closed empty-deferred-arm validation with a valid constructor fixture; model behavior is unchanged",
+          "version": "v19"
+        },
         {
           "date": "2026-07-30",
           "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or model behavior",

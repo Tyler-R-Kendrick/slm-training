@@ -211,7 +211,12 @@ def main(argv: list[str] | None = None) -> int:
     run_json = output_dir / "slm159_cross_dsl_replication_report.json"
     run_json.write_text(report_text, encoding="utf-8")
 
-    if args.mode == "fixture":
+    if args.mode == "fixture" and args.output_dir is not None:
+        (output_dir / "slm159_cross_dsl_replication_report.md").write_text(
+            _build_markdown(payload, f"{command} --output-dir {output_dir}"),
+            encoding="utf-8",
+        )
+    elif args.mode == "fixture":
         root = Path(__file__).resolve().parents[1]
         json_path = root / _DESIGN_JSON
         md_path = root / _DESIGN_MD

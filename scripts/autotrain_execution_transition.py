@@ -10,7 +10,8 @@ def _operation_edge(journal, plan, events, states, *, terminal):
     from slm_training.autoresearch.heal.repair_release import verified_activation_handoff
 
     request, handoff = plan["request"], plan["handoff"]
-    checked = verified_activation_handoff(journal, handoff) if terminal else handoff
+    timeout = handoff.get("schema_version") == "operation_timeout_handoff/v1"
+    checked = verified_activation_handoff(journal, handoff) if terminal and not timeout else handoff
     authority = {"plan_digest": contract_digest(plan),
                  "controller_execution": request.get("controller_execution")}
     if not authority["controller_execution"] or not any(
@@ -27,6 +28,8 @@ def _operation_edge(journal, plan, events, states, *, terminal):
         raise ValueError("execution_transition_original_request_missing")
     original = originals[0]
     before, after = states[previous], states[request["successor_activity_id"]]
+    if timeout:
+        _timeout_binding(journal, handoff, original, before, events)
     activation = checked.get("activation_id", checked["publication_id"])
     expected_event = {"handoff": checked, "successor_request_digest": contract_digest(request)}
     changed = {"cwd", "source_digest", "environment_digest", "successor_activity_id",
@@ -75,6 +78,23 @@ def _operation_edge(journal, plan, events, states, *, terminal):
     return original, request, checked
 
 
+def _timeout_binding(journal, handoff, original, before, events):
+    """Consumed host proof is bound by the live controller activation receipt."""
+    proof = handoff["timeout_authorization"]
+    identity = contract_digest(proof)
+    cancellations = [e for e in events if e["event_id"] == proof["cancel_event_id"]]
+    if (proof["schema_version"] != "host_timeout_recovery/v1"
+            or proof["cause"] != "host_run_timeout"
+            or Path(proof["journal_root"]).resolve() != journal.root.resolve()
+            or proof["state_digest"] != contract_digest(before)
+            or proof["request_digest"] != contract_digest(original)
+            or handoff["activation_id"] != identity or handoff["publication_id"] != identity
+            or len(cancellations) != 1
+            or cancellations[0]["experiment_id"] != before.spec.activity_id
+            or cancellations[0]["detail"].get("sequence") != before.sequence):
+        raise ValueError("execution_transition_timeout_binding_changed")
+
+
 def _unchanged_science(original, request, handoff):
     from slm_training.harness_core.execution_release import _runtime_manifest
     from slm_training.autoresearch.heal.repair_scope import worker_changes_with_valid_overlay, repair_classification
@@ -84,6 +104,13 @@ def _unchanged_science(original, request, handoff):
     if (before is None or after is None or before["source_digest"] != original["source_digest"]
             or after["source_digest"] != request["source_digest"]):
         raise ValueError("execution_transition_materialization_changed")
+    if handoff.get("schema_version") == "operation_timeout_handoff/v1":
+        if (base.resolve() != current.resolve() or before != after
+                or original["source_digest"] != request["source_digest"]
+                or original["environment_digest"] != request["environment_digest"]
+                or handoff.get("environment_transition") is not None):
+            raise ValueError("execution_transition_timeout_source_changed")
+        return
     changed = tuple(sorted(name for name in before["files"].keys() | after["files"].keys()
                            if before["files"].get(name) != after["files"].get(name)))
     worker = worker_changes_with_valid_overlay(base, current, changed, handoff["original_request_digest"])
@@ -141,8 +168,13 @@ def _verify_ancestry(journal, endpoint, plans, events, states, store, locked_inp
             raise ValueError("execution_transition_branch")
         if (original["operation"] != "driver" or original["loop_id"] != locked_inputs["loop_id"]
                 or Path(original["root"]).resolve() != store.root.parent.resolve()
-                or handoff["resume_campaign_id"] != store.campaign_id):
+                or (handoff["pending"]["campaign_id"]
+                    if handoff.get("schema_version") == "operation_timeout_handoff/v1"
+                    else handoff["resume_campaign_id"]) != store.campaign_id):
             raise ValueError("execution_transition_campaign_mismatch")
+        if (handoff.get("schema_version") == "operation_timeout_handoff/v1"
+                and handoff["pending"]["input_digest"] != contract_digest(locked_inputs)):
+            raise ValueError("execution_transition_timeout_driver_lock_changed")
         _unchanged_science(original, request, handoff)
         if not original.get("logical_continuation"):
             source = locked_inputs.get("publication_source")

@@ -132,6 +132,14 @@ def _operation_result_state(
         WakeCondition,
     )
 
+    if result.cancelled and getattr(runtime, "invocation_expired", False):
+        from dataclasses import replace
+
+        from slm_training.harness_core.bounded_process import ProcessOutcome
+
+        completed = result.returncode == 0 and output_path.is_file()
+        result = replace(result, cancelled=False, timed_out=not completed,
+                         outcome=ProcessOutcome.COMPLETED if completed else result.outcome)
     outcome, payload = interpret_operation_result(
         result, output_path, execution_request
     )

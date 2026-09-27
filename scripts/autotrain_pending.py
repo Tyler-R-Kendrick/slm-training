@@ -7,39 +7,34 @@ from slm_training.autoresearch.heal.repair_acceptance import source_verification
 from slm_training.harness_core.activity_contract import ActivityOutcome, WakeCondition
 
 
-def validate_pending(payload):
-    if not isinstance(payload, dict) or payload.get("schema_version") != "driver_pending/v1":
-        raise ValueError("unknown driver pending contract")
-    outcome = ActivityOutcome(payload["outcome"])
-    if outcome not in {ActivityOutcome.CAPABILITY, ActivityOutcome.DEPENDENCY, ActivityOutcome.YIELDED}:
-        raise ValueError("pending driver output cannot authorize a terminal outcome")
-    if not payload.get("reason") or payload.get("measurement_complete") is not False:
-        raise ValueError("driver pending requires an unmet predicate, not a measurement")
-    return outcome, WakeCondition.model_validate(payload["wake"])
+from slm_training.autoresearch.runtime.driver_pending import validate_pending as validate_pending
 
 
 def recover_driver_request(runtime, request):
     """Newly observed campaign IDs cannot refill an interrupted driver's grant."""
     if request["operation"] != "driver":
         return request
+    from scripts.autotrain_timeout_recovery import (
+        retained_timeout_successor, logical_driver_request, retain_driver_configuration,
+    )
+
+    successor = retained_timeout_successor(runtime, request)
+    if successor is not None:
+        return successor
     states = runtime.snapshot()
-    stable = {k: v for k, v in request.items() if k != "predecessor_campaign_id"}
+    stable = logical_driver_request(request)
     for event in reversed(runtime.store.verify_event_chain()):
         if event["event_type"] != "operation_repair_requested":
             continue
         state = states.get(event["experiment_id"])
         original = event["detail"]["request"]
-        if state is None or state.status in {"succeeded", "cancelled"}:
+        if state is None or state.status == "succeeded":
             continue
-        previous = {k: v for k, v in original.items() if k != "predecessor_campaign_id"}
-        if previous == stable:
-            return original
-        from scripts.autotrain_controller_execution import CONFIGURATION_KEYS, authorize_configuration_rebinding
-
-        if ({k: v for k, v in previous.items() if k not in CONFIGURATION_KEYS}
-                == {k: v for k, v in stable.items() if k not in CONFIGURATION_KEYS}):
-            authorize_configuration_rebinding(runtime, request)
-            return original
+        if logical_driver_request(original) != stable:
+            continue
+        if state.status == "cancelled":
+            raise ValueError("cancelled driver requires authorized successor; no fresh grant")
+        return retain_driver_configuration(runtime, request, original)
     return request
 
 

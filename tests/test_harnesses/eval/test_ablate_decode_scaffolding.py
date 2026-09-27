@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from slm_training.harnesses.eval.ablate_decode_scaffolding import (
+    AblateArm,
     ScaffoldFactors,
     build_stage_a_arms,
     resolve_arm_config,
@@ -472,12 +473,6 @@ def test_run_arm_wires_real_eval_path(
     base_config: ModelBuildConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Mock the heavy checkpoint load/eval to verify the wiring path."""
-    from slm_training.harnesses.eval.ablate_decode_scaffolding import (
-        AblateArm,
-        ScaffoldFactors,
-        run_arm,
-    )
-
     checkpoint = tmp_path / "fake.pt"
     checkpoint.write_bytes(b"checkpoint bytes")
 
@@ -503,7 +498,10 @@ def test_run_arm_wires_real_eval_path(
             "suites": suites,
             "write_gates": write_gates,
         }
-        return {"meaningful_program_rate": 0.70, "placeholder_fidelity": 0.85}
+        return {"suites": {"smoke": {
+            "meaningful_program_rate": 0.70,
+            "placeholder_fidelity": 0.85,
+        }}}
 
     monkeypatch.setattr(
         "slm_training.models.twotower.TwoTowerModel.from_checkpoint",

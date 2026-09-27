@@ -167,7 +167,7 @@ def pending_operation_repairs(runtime) -> list[dict]:
     )
 
 
-def wake_verified_operation(runtime, handoff, *, cwd, controller_execution=None):
+def wake_verified_operation(runtime, handoff, *, cwd, controller_execution=None, timeout_authorization=None):
     """Replace failed execution under a verified source, preserving logical work.
 
     Historical name retained for callers; the old immutable activity is cancelled,
@@ -183,7 +183,14 @@ def wake_verified_operation(runtime, handoff, *, cwd, controller_execution=None)
         from slm_training.harness_core.controller_execution import validate_controller
 
         validate_controller(controller_execution)
-    checked = verified_activation_handoff(runtime.store, handoff)
+    if timeout_authorization is None:
+        checked = verified_activation_handoff(runtime.store, handoff)
+    else:
+        from .operation_timeout import verified_timeout_handoff
+
+        checked = verified_timeout_handoff(runtime, timeout_authorization, cwd=cwd)
+        if checked != handoff:
+            raise ValueError("timeout handoff changed")
     activation = checked.get("activation_id", checked["publication_id"])
     if (
         Path(cwd).resolve() != Path(checked["successor_execution"]).resolve()
@@ -247,11 +254,10 @@ def _successor_plan(runtime, checked, events, controller_execution=None):
         raise ValueError("original_operation_request_missing")
     original = rows[-1]["detail"]["request"]
     state = runtime.snapshot()[activity]
+    terminal_timeout = checked.get("schema_version") == "operation_timeout_handoff/v1"
     if state.spec.input_digest != contract_digest(original) or state.status in {
-        "running",
-        "succeeded",
-        "cancelled",
-    }:
+        "running", "succeeded",
+    } or (state.status == "cancelled" and not terminal_timeout):
         raise ValueError("original_operation_identity_changed")
     seconds = state.spec.grant.total_seconds - state.charged_seconds
     attempts = state.spec.grant.max_attempts - state.attempts

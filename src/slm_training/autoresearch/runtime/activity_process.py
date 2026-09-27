@@ -13,6 +13,7 @@ from pathlib import Path
 
 from slm_training.harness_core.bounded_process import run_bounded_process
 from slm_training.harness_core.process_tree import OwnedProcessTree
+from slm_training.harness_core.host_process_identity import process_identity as process_identity
 
 from slm_training.harness_core.activity_contract import ActivityOutcome, contract_digest
 
@@ -141,16 +142,6 @@ def controller_status(store, *, now: float, max_age: float = 60) -> dict:
     }
 
 
-def process_identity(pid: int | None = None) -> str:
-    """Bind a PID to this boot and kernel start ticks (Linux/WSL only)."""
-    pid = os.getpid() if pid is None else pid
-    boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
-    try:
-        fields = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
-    except (FileNotFoundError, ProcessLookupError):
-        return ""
-    return f"{boot}:{pid}:{fields[19]}"
-
 
 def stop_previous_worker(identity: str, grace: float) -> None:
     """Stop only a still-matching owned session after its controller loses lease."""
@@ -197,6 +188,14 @@ def run_activity(
         - state.spec.grant.kill_grace_seconds
         - state.spec.grant.finalization_reserve_seconds
     )
+    if "controller_publication" in state.spec.capabilities:
+        from slm_training.harness_core.checkpoint_publication import controller_work_deadline
+
+        remaining = min(remaining, max(0.0, controller_work_deadline(remaining, 0) - time.monotonic()))
+    if remaining <= 0:
+        from slm_training.harness_core.bounded_process import BoundedProcessResult, ProcessOutcome
+
+        return BoundedProcessResult(tuple(argv), ProcessOutcome.TIMED_OUT, None, "", "", 0, timed_out=True)
     last_heartbeat = [time.monotonic()]
 
     def on_start(pid):

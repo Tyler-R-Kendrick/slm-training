@@ -91,6 +91,10 @@ def _request(tmp_path, grant=None):
 
 @pytest.fixture(autouse=True)
 def stable_operation_identity(monkeypatch):
+    from scripts import autotrain_controller_execution as controller
+
+    monkeypatch.setattr(controller, "_operation_controller_binding", lambda _: None)
+    monkeypatch.setattr(controller, "operation_environment", lambda _: verification_evidence.environment_identity())
     monkeypatch.setattr(supervisor, "_source_identity", lambda _: "a" * 64)
     monkeypatch.setattr(verification_evidence, "environment_identity", lambda: {})
 
@@ -212,11 +216,9 @@ def test_completed_retirement_recovers_lost_envelope_without_reexecution(tmp_pat
             assert second_lease.activity_id == lease.activity_id and second_lease.token != lease.token
             interrupted = _interrupted(runtime, request, second_lease)
         calls, finalized = list(f.calls), list(f.final_calls)
-        def unexpected(*args, **kwargs):
-            pytest.fail("completed interrupted campaign executed driver main again")
-        driver = SimpleNamespace(main=unexpected, _latest_cycle=lambda *_: (1, f.store.campaign_id))
         for _ in range(2):
-            result = execution.driver_operation(interrupted, driver, f.cwd, f.root, "test-loop")
+            result = execution.reconcile_interrupted_operation(
+                interrupted, store, f.cwd, f.root, "test-loop", f.store.campaign_id)
             assert result["returncode"] == 0 and result["campaign_id"] == f.store.campaign_id
             assert result["handoff_digest"] == result["completion"]["outputs"]["cycle_handoff.json"]
         assert f.calls == calls and f.final_calls == finalized
@@ -229,10 +231,7 @@ def test_missing_cursor_parks_instead_of_starting_a_new_campaign(tmp_path, monke
     store = CampaignStore("runtime", root / "loops/test-loop")
     with ActivityRuntime(store) as runtime:
         request = _interrupted(runtime, request, _claim(runtime, request))
-        def unexpected(*args, **kwargs):
-            pytest.fail("missing interrupted cursor started a fresh driver")
-        driver = SimpleNamespace(main=unexpected, _latest_cycle=lambda *_: (0, None))
-        result = execution.driver_operation(request, driver, tmp_path, root, "test-loop")
+        result = execution.reconcile_interrupted_operation(request, store, tmp_path, root, "test-loop", None)
         assert result["returncode"] == 10 and result["campaign_id"] is None
         assert result["pending"]["measurement_complete"] is False
         assert result["pending"]["reason"] == "interrupted_driver_has_no_reconcilable_cycle"

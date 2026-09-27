@@ -1666,10 +1666,7 @@ def build_train_data(
             )
         seeds = selected
 
-    from slm_training.harnesses.train_data.catalog import (
-        LineageIndex,
-        lineage_entry,
-    )
+    from slm_training.harnesses.train_data import catalog
 
     synths = [synthesizer or get_synthesizer(config.synthesizer)]
     if config.include_frontier_artifacts:
@@ -1685,7 +1682,7 @@ def build_train_data(
     seeds.sort(key=lambda r: r.id)
     collected: list[ExampleRecord] = []
     # Lineage over *all* candidates so parent chains survive later filtering.
-    lineage_index: LineageIndex = {}
+    lineage_index: catalog.LineageIndex = {}
     for seed in seeds:
         candidates = [seed]
         if (
@@ -1729,7 +1726,7 @@ def build_train_data(
             candidates.extend(extra)
         for candidate in candidates:
             candidate = _apply_governance_gate(candidate)
-            lineage_index[candidate.id] = lineage_entry(candidate)
+            lineage_index[candidate.id] = catalog.lineage_entry(candidate)
             try:
                 normalized = _normalize_record(candidate, sanitize=sanitize_options)
             except (ParseError, ValueError) as exc:
@@ -1939,7 +1936,10 @@ def build_train_data(
         deduped.append(record)
         return True
 
-    for record in quality_kept:
+    for record in sorted(
+        quality_kept,
+        key=lambda r: catalog.resolve_lineage(r.id, lineage_index)[0] != r.id,
+    ):
         structure_fp = fingerprint_openui_structure(record.openui)
         if structure_fp in reserved_test_structures:
             structure_reserved_rejected.append(
@@ -1969,7 +1969,7 @@ def build_train_data(
         from slm_training.harnesses.quality import synthesize_stress_adversarial_records
 
         for stress in synthesize_stress_adversarial_records():
-            lineage_index[stress.id] = lineage_entry(stress)
+            lineage_index[stress.id] = catalog.lineage_entry(stress)
             try:
                 normalized = _normalize_record(stress, sanitize=sanitize_options)
             except (ParseError, ValueError) as exc:

@@ -12,6 +12,7 @@ from scripts.merge_verification_runtime import (
     approved_runtime_roots,
     javascript_grants,
     runtime_argv,
+    runtime_roots_with_js_modules,
 )
 from scripts.merge_verification_isolation import run_workload
 from slm_training.autoresearch.heal.isolation import (
@@ -29,6 +30,68 @@ def test_missing_js_roots_is_precise_capability_wait(tmp_path):
         IsolationUnavailable, match="explicit_js_runtime_grants_missing"
     ):
         javascript_grants(tmp_path, (), required=True)
+
+
+def test_preview_rejects_runtime_from_different_source_lock(tmp_path):
+    source, runtime = tmp_path / "source", tmp_path / "runtime"
+    source.mkdir()
+    (runtime / "node_modules/@playwright/test").mkdir(parents=True)
+    version = "1.61.1"
+    package = {
+        "name": "candidate",
+        "version": "1.0.0",
+        "devDependencies": {"@playwright/test": version},
+    }
+
+    def lock(lockfile_version):
+        packages = {
+            "": package,
+            "node_modules/@playwright/test": {"version": version, "dev": True},
+        }
+
+        result = {"lockfileVersion": lockfile_version, "packages": packages}
+        if lockfile_version == 2:
+            result["dependencies"] = {
+                "@playwright/test": {"version": version, "dev": True}
+            }
+        return result
+
+    (source / "package.json").write_text(json.dumps(package))
+    (source / "package-lock.json").write_text(json.dumps(lock(3)))
+    (runtime / "package.json").write_text(json.dumps(package))
+    (runtime / "package-lock.json").write_text(json.dumps(lock(2)))
+    (runtime / "node_modules/@playwright/test/package.json").write_text(
+        json.dumps({"name": "@playwright/test", "version": version})
+    )
+    with pytest.raises(ValueError, match="playwright_runtime_source_lock_mismatch"):
+        javascript_grants(
+            source,
+            (runtime,),
+            targets=(
+                "tests/test_data/test_verify.py::test_preview_runtime_and_behavior_seeded_failures",
+            ),
+        )
+
+
+def test_playwright_modules_are_added_as_separate_runtime_root(tmp_path):
+    complete = tmp_path / "complete"
+    modules = complete / "node_modules"
+    modules.mkdir(parents=True)
+    assert runtime_roots_with_js_modules((complete,), {"playwright_index": 0}) == (
+        complete,
+        modules,
+    )
+
+
+def test_playwright_modules_reject_external_symlink(tmp_path):
+    complete = tmp_path / "complete"
+    complete.mkdir()
+    external = tmp_path / "external-node-modules"
+    external.mkdir()
+    (complete / "node_modules").symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="playwright_node_modules_symlink_not_allowed"):
+        runtime_roots_with_js_modules((complete,), {"playwright_index": 0})
 
 
 def test_approved_runtime_roots_include_source_bridge_and_node(tmp_path, monkeypatch):

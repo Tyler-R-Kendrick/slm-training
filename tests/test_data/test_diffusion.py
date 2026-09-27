@@ -87,9 +87,8 @@ def test_macro_substitution_policy_masks_whole_blocks() -> None:
     from slm_training.dsl.canonicalize import canonicalize
 
     tokenizer = DSLNativeTokenizer.build()
-    result = induce_macros([PROGRAM], tokenizer)
-    if not result.expansions:
-        pytest.skip("fixture program mined no macros")
+    result = induce_macros([PROGRAM, PROGRAM], tokenizer)
+    assert result.expansions, "repeated fixture corpus must induce a macro"
     tokenizer.set_macro_expansions(result.expansions)
     ids = tokenizer.encode(canonicalize(PROGRAM))
     macro_positions = [

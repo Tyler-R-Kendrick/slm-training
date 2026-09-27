@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import json
+
 import pytest
 
 from slm_training.dsl import bridge_available
+from slm_training.dsl.canonicalize import canonicalize
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 from slm_training.harnesses.train_data.catalog import (
@@ -15,7 +18,7 @@ from slm_training.harnesses.train_data.catalog import (
     family_stats,
     resolve_lineage,
 )
-from slm_training.harnesses.train_data.synth import get_synthesizer
+from slm_training.harnesses.train_data.synth import NoopSynthesizer, get_synthesizer
 
 pytestmark_bridge = pytest.mark.skipif(
     not bridge_available(),
@@ -89,27 +92,31 @@ def test_apply_parent_cap_prefers_root_and_is_deterministic() -> None:
     records = [
         ExampleRecord(
             id=rid,
-            prompt=f"p {rid}",
+            prompt="p z",
             openui=CTA,
             split="train",
-            meta={"root_parent_id": "a", "source_family": "prompt_paraphrase"},
+            meta={"root_parent_id": "z", "source_family": "prompt_paraphrase"},
         )
-        for rid in ("a_syn_2", "a_syn_0", "a_syn_1")
+        for rid in ("b_syn_2", "a_syn_0", "c_syn_1")
     ] + [
         ExampleRecord(
-            id="a",
-            prompt="p a",
+            id="z",
+            prompt="p z",
             openui=CTA,
             split="train",
-            meta={"root_parent_id": "a", "source_family": "human_curated"},
+            meta={
+                "root_parent_id": "z",
+                "parent_id": "z",
+                "source_family": "human_curated",
+            },
         )
     ]
     kept, dropped = apply_parent_cap(records, 2)
     kept_ids = sorted(r.id for r in kept)
-    assert "a" in kept_ids  # root always kept first
+    assert "z" in kept_ids  # self-parent root beats child whose ID sorts first
     assert len(kept_ids) == 2
-    assert kept_ids == ["a", "a_syn_0"]  # then sorted-id order
-    assert {d["id"] for d in dropped} == {"a_syn_1", "a_syn_2"}
+    assert kept_ids == ["a_syn_0", "z"]  # then sorted-id order
+    assert {d["id"] for d in dropped} == {"b_syn_2", "c_syn_1"}
     # Uncapped passthrough.
     kept_all, dropped_none = apply_parent_cap(records, None)
     assert len(kept_all) == 4 and dropped_none == []
@@ -180,6 +187,13 @@ def test_pipeline_manifest_source_families(tmp_path: Path) -> None:
 @pytestmark_bridge
 def test_pipeline_parent_cap(tmp_path: Path) -> None:
     seeds = tmp_path / "seeds.jsonl"
+    contaminated = ExampleRecord(
+        id="heldout_copy",
+        prompt="An experimental archive catalog for rare mineral samples",
+        openui=CTA,
+        placeholders=[":slot_0"],
+        split="train",
+    )
     write_jsonl(
         seeds,
         [
@@ -190,8 +204,24 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
                 placeholders=[":slot_0", ":slot_1"],
                 split="train",
             ),
+            contaminated,
         ],
     )
+    eval_root = tmp_path / "eval"
+    heldout = ExampleRecord(
+        **{**contaminated.__dict__, "id": "heldout", "openui": canonicalize(CTA)}
+    )
+    assert canonicalize(contaminated.openui) == heldout.openui
+    write_jsonl(
+        eval_root / "v1/suites/controlled/records.jsonl",
+        [heldout],
+    )
+    quality = get_synthesizer("quality")
+
+    class RootQualityOnly:
+        def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+            return quality.expand(record) if record.id == "t1" else []
+
     uncapped = build_train_data(
         TrainDataConfig(
             seed_path=seeds,
@@ -200,7 +230,10 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
             output_root=tmp_path / "out",
             version="vuncapped",
             synthesizer="quality",
-        )
+            decontam_eval_root=eval_root,
+            test_seed_path=None,
+        ),
+        synthesizer=RootQualityOnly(),
     )
     capped = build_train_data(
         TrainDataConfig(
@@ -211,7 +244,10 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
             version="vcapped",
             synthesizer="quality",
             max_records_per_parent=3,
-        )
+            decontam_eval_root=eval_root,
+            test_seed_path=None,
+        ),
+        synthesizer=RootQualityOnly(),
     )
     assert uncapped["stats"]["record_count"] > 3
     assert capped["stats"]["record_count"] == 3
@@ -221,6 +257,59 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
     # The original seed record survives the cap.
     ids = capped["manifest"]["ids"]
     assert "t1" in ids
+    for result in (uncapped, capped):
+        rejected = [
+            json.loads(line)
+            for line in (Path(result["output_dir"]) / "rejected.jsonl")
+            .read_text()
+            .splitlines()
+        ]
+        assert any(
+            row["id"] == "heldout_copy"
+            and row["stage"] == "decontamination"
+            and row["reason"] == "ngram_overlap"
+            for row in rejected
+        )
+        assert "heldout_copy" not in result["manifest"]["ids"]
+
+    duplicate_seeds = tmp_path / "duplicate-seeds.jsonl"
+    write_jsonl(
+        duplicate_seeds,
+        [
+            ExampleRecord(
+                id="a_syn_0",
+                prompt="Same content",
+                openui=HERO,
+                placeholders=[":slot_0", ":slot_1"],
+                split="train",
+                source="fixture+template",
+                meta={"parent_id": "z", "synth": "template"},
+            ),
+            ExampleRecord(
+                id="z",
+                prompt="Same content",
+                openui=HERO,
+                placeholders=[":slot_0", ":slot_1"],
+                split="train",
+                meta={"parent_id": "z"},
+            ),
+        ],
+    )
+    exact_dedup = build_train_data(
+        TrainDataConfig(
+            seed_path=duplicate_seeds,
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "out",
+            version="vselfparent",
+            synthesizer="none",
+            max_records_per_parent=1,
+            decontam_eval_root=eval_root,
+            test_seed_path=None,
+        ),
+        synthesizer=NoopSynthesizer(),
+    )
+    assert exact_dedup["manifest"]["ids"] == ["z"]
 
 
 def test_apply_parent_cap_per_family_groups_by_family() -> None:

@@ -61,7 +61,7 @@ def repair_request(tmp_path):
         parent_event="event-1",
         blocker=blocker,
         grant=grant,
-        allowed_paths=("src/slm_training/harnesses/model_build/eval_runner.py",),
+        allowed_paths=("src/slm_training/harnesses/model_build/eval_runner.py", "tests/test_rows.py"),
         verification_manifest_digest=hashlib.sha256(
             canonical_json(CHECK_MANIFEST).encode()
         ).hexdigest(),
@@ -98,6 +98,15 @@ def test_expiry_refresh_keeps_consumed_grant_reservation(
 ):
     grant = repair_request.grant.model_copy(update={"total_seconds": 30.0})
     request = repair_request.model_copy(update={"grant": grant})
+    missing = request.model_copy(update={"allowed_paths": request.allowed_paths[:1]})
+    denied = dispatch_repair(
+        missing, executor=executor, journal=journal, fence_valid=lambda _: True
+    )
+    assert denied.status == "waiting_capability"
+    assert denied.reason == "repair_regression_path_not_unique"
+    assert executor.runner.calls == 0
+    assert not any(e["event_type"] == "repair_started" for e in journal.verify_event_chain())
+    assert reserved_repair_seconds(journal.verify_event_chain(), grant, journal) == 0
     first = dispatch_repair(
         request, executor=executor, journal=journal, fence_valid=lambda _: True
     )

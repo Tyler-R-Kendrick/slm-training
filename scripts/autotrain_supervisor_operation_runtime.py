@@ -25,6 +25,10 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
     from slm_training.harness_core.activity_contract import ActivityOutcome
     from slm_training.autoresearch.runtime.activity_runtime import StaleLease
 
+    if time.monotonic() >= getattr(runtime, "invocation_work_deadline", float("inf")):
+        runtime.invocation_expired = True
+        runtime.cancel_event.set()
+        return None
     request = recover_driver_request(runtime, request)
     identity = digest(request)
     state = _operation_state(runtime, request, sequence, identity)
@@ -162,26 +166,27 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
         return _reconcile_stale_operation(
             runtime, request, lease, activity_id, log_event
         )
+    return _report_operation_result(log_event, identity_error, payload, {
+        "event": "operation_finished",
+        "activity_id": activity_id,
+        "operation": request["operation"],
+        "outcome": outcome.value,
+        "returncode": result.returncode,
+        "spent_seconds": result.duration_seconds,
+    })
+
+
+def _report_operation_result(log_event, identity_error, payload, event):
+    """Identity drift reports no payload; settled outcomes retain their payload."""
     if isinstance(identity_error, ValueError):
-        log_event(
-            {
-                "event": "operation_identity_drift",
-                "activity_id": activity_id,
-                "operation": request["operation"],
-                "error": str(identity_error),
-            }
-        )
+        log_event({
+            "event": "operation_identity_drift",
+            "activity_id": event["activity_id"],
+            "operation": event["operation"],
+            "error": str(identity_error),
+        })
         return None
-    log_event(
-        {
-            "event": "operation_finished",
-            "activity_id": activity_id,
-            "operation": request["operation"],
-            "outcome": outcome.value,
-            "returncode": result.returncode,
-            "spent_seconds": result.duration_seconds,
-        }
-    )
+    log_event(event)
     return payload
 
 

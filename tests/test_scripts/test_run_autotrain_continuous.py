@@ -968,7 +968,7 @@ def test_matrix_confirm_path_same_levers_new_seed() -> None:
     ids = [h["experiment"]["experiment_id"] for h in matrix["hypotheses"]]
     assert ids[0] == "c20260731-c9-control"
     assert ids[1] == "c20260731-c9-confirm"
-    assert len(ids) >= 5  # schema floor; only control+confirm execute
+    assert len(ids) == 2  # Locked confirm pair; no unexecuted padding arms.
     assert matrix["recommended_experiment_id"] == "c20260731-c9-confirm"
     cand = matrix["hypotheses"][1]["experiment"]["knobs"]
     ctrl = matrix["hypotheses"][0]["experiment"]["knobs"]

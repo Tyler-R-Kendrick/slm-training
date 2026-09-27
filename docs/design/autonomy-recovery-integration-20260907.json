@@ -618,12 +618,18 @@
   "workspace": ".",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "e0eca9f9910244ecc20eb480d363f1852417b599",
+    "code_commit": "421ab751e5b8e2f6bdbd09691c89417be995cdc6",
     "code_dirty": true,
     "components": {
-      "autoresearch.heal": "v8"
+      "autoresearch.heal": "v40",
+      "harness.autoresearch.experiment_campaign": "v313",
+      "harness.core": "v27",
+      "harness.experiments.slm159_cross_dsl_replication": "v2",
+      "harness.train_data": "v36",
+      "ci.local_merge_gate": "v33",
+      "model.twotower": "v333"
     },
-    "stamped_at": "2026-09-07T22:27:08.513517+00:00"
+    "stamped_at": "2026-09-27T02:35:52+00:00"
   },
   "environment": {
     "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
@@ -1936,7 +1942,7 @@
             "trial_hash": "1257dbad2a2ec78482d8634841619e5402bce6ad1f2252dc7b07d9caff956a6b"
           }
         ],
-        "scope_disclaimer": "Fixture-scale EXP-SR-7 evidence for incremental request-independent summary layers on the certified completion artifact. Parity gate uses the fixed hard prefix plus whole-program/empty-prefix samples from STATIC_LALR_CORPUS; every intermediate prefix is owned by tests/test_dsl/test_static_control_domain.py (E1 suite). Measures process launch, tokenizer/pack construction, summary preload, and first completion-domain query \u2014 not model init, first-forward, or full first-verified-program latency. claim_class=fixture; never promotion_candidate/ship_gate. Request-local symbols/binders/placeholders remain overlay.",
+        "scope_disclaimer": "Fixture-scale EXP-SR-7 evidence for incremental request-independent summary layers on the certified completion artifact. Parity gate uses the fixed hard prefix plus whole-program/empty-prefix samples from STATIC_LALR_CORPUS; every intermediate prefix is owned by tests/test_dsl/test_static_control_domain.py (E1 suite). Measures process launch, tokenizer/pack construction, summary preload, and first completion-domain query — not model init, first-forward, or full first-verified-program latency. claim_class=fixture; never promotion_candidate/ship_gate. Request-local symbols/binders/placeholders remain overlay.",
         "version_stamp": {
           "stamp_schema": "version_stamp/v1",
           "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
@@ -2876,7 +2882,7 @@
             "dup_share": 0.7179,
             "candidates": 78
           },
-          "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+          "suggestion": "most output is deduplicated away — reduce expansion count or diversify templates/namespaces for this family"
         }
       ],
       "findings": [],
@@ -3983,5 +3989,932 @@
     "verification_complete": false,
     "release_authorized": false,
     "fast": true
+  },
+  "r33_published_controller": {
+    "schema": "published_controller_materialization/v1",
+    "commit": "421ab751e5b8e2f6bdbd09691c89417be995cdc6",
+    "tree": "c6ad9d386ce53fdcde5ce248169787ee3e89d061",
+    "source_digest": "eb103e74db075e923773ed44737a802aee683df68be827b95511166a2a0177b7",
+    "connector_receipt_sha256": "72be290c0005c8a577a1448498fcceb4b3c48c4190cbb4ee812bba0a616cd948",
+    "snapshot": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/controller-r33-published-421ab751e5b8e2f6bdbd09691c89417be995cdc6/snapshot",
+    "controller_root": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/controller-r33-published-421ab751e5b8e2f6bdbd09691c89417be995cdc6/execution",
+    "controller_source_digest": "eb103e74db075e923773ed44737a802aee683df68be827b95511166a2a0177b7",
+    "controller_runtime_digest_to_revalidate_in_retained_science_environment": "b997e7ce91dfdadd4f807c2a15492bcd3b0fae22bafec28b80893f84991c7762",
+    "git_provenance": {
+      "code_dirty": false,
+      "integration_commit": "421ab751e5b8e2f6bdbd09691c89417be995cdc6",
+      "upstream_commit": "421ab751e5b8e2f6bdbd09691c89417be995cdc6"
+    },
+    "main_membership_asserted": false,
+    "campaign_dispatched": false,
+    "provider_dispatched": false,
+    "verification_progress": {
+      "static_completed": 16,
+      "static_required": 18,
+      "tests_not_yet_collected": true
+    },
+    "release_authorized": false
+  },
+  "r34_initial_fixture_regressions": {
+    "passed": 98,
+    "failed": 2,
+    "seconds": 8.55,
+    "junit": "outputs/autonomy-integration-20260921/r34-first-repair-regressions.xml",
+    "failures": [
+      "test_advance_on_confirm_only",
+      "test_baseline_seed_never_advances_on_screening_win"
+    ],
+    "cause": "Tests read historical champion/last.pt directly instead of resolving the canonical published bundle. Follow-up correction pending.",
+    "scope": [
+      "repair_grant_accounting",
+      "repair_dispatch",
+      "climb_champion",
+      "climb_policy",
+      "matrix_confirm_path_same_levers_new_seed"
+    ],
+    "honesty": "Focused regression validation only; no science, repair-provider, promotion, or release claim."
+  },
+  "r34_final_fixture_regressions": {
+    "passed": 100,
+    "failed": 0,
+    "seconds": 7.72,
+    "junit": "outputs/autonomy-integration-20260921/r34-first-repair-regressions-final.xml",
+    "scope": [
+      "repair_grant_accounting",
+      "repair_dispatch",
+      "climb_champion",
+      "climb_policy",
+      "matrix_confirm_path_same_levers_new_seed"
+    ],
+    "change": "Resolve the canonical published champion path for before/after checkpoint byte assertions. Preserve initial 98-pass/two-failure evidence.",
+    "release_authorized": false,
+    "independent_review": {
+      "reviewers": [
+        "Hooke",
+        "Pascal"
+      ],
+      "findings": [],
+      "checked": [
+        "historical exposure denominator",
+        "v3 missing exposure fails closed",
+        "canonical checkpoint bytes before and after",
+        "missing sidecar preserves complete prior publication",
+        "paired root independence",
+        "invalid grammar rejection",
+        "missing regression path reserves zero budget"
+      ],
+      "canonical_case_extraction": "passed for all four changed test files; no resource refresh required"
+    }
+  },
+  "r33_retained_science_resume_20260927": {
+    "result": {
+      "returncode": 10,
+      "elapsed_seconds": 164.3348627090454,
+      "command": [
+        "/usr/bin/timeout",
+        "--signal=INT",
+        "--kill-after=10s",
+        "170s",
+        "/usr/bin/flock",
+        "-E",
+        "75",
+        "-w",
+        "30",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/host-compute.lock",
+        "/home/codex/repos/slm-training/.venv/bin/python",
+        "-I",
+        "-B",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/run-r33-retained-science.py",
+        "--locked",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-retained-science-run-mqq4r2xj"
+      ],
+      "lock_timeout": false,
+      "preflight_passed": true,
+      "scientific_completion_claimed": false
+    },
+    "controller_commit": "421ab751e5b8e2f6bdbd09691c89417be995cdc6",
+    "evidence_dir": "outputs/autonomy-integration-20260921/r33-retained-science-run-mqq4r2xj",
+    "preflight_sha256": "94ee0a1f53753be0e9a7fcca569664126f4d265fcd40bae0d1db7ecb61e44791",
+    "events": [
+      {
+        "activity_id": "supervisor-1-driver-c27384e5916102e8",
+        "event": "driver_readiness_rechecked",
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "ready": true,
+        "ts": "2026-09-27T01:13:35Z"
+      },
+      {
+        "activity_id": "supervisor-4-inspect-85c30b7782e45277",
+        "event": "operation_finished",
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "operation": "inspect",
+        "outcome": "succeeded",
+        "returncode": 0,
+        "spent_seconds": 16.26237628799572,
+        "ts": "2026-09-27T01:14:07Z"
+      },
+      {
+        "blocker_cleared": true,
+        "cycle": 4,
+        "delivery_waits": [],
+        "event": "pre_cycle_unblock",
+        "hard_pending": [],
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "predecessor_campaign_id": "science-lab-r31-43327120eda9-acceptance",
+        "soft_healed": [],
+        "ts": "2026-09-27T01:14:07Z"
+      },
+      {
+        "cmd": [
+          "--loop-id",
+          "science-lab-r31-43327120eda9-acceptance",
+          "--root",
+          "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns",
+          "--supervised",
+          "--max-cycles",
+          "1",
+          "--train-version",
+          "autonomy-mea-train-admitted-v1",
+          "--steps",
+          "6",
+          "--primary-metric",
+          "smoke.eval_nll",
+          "--continuation-grant",
+          "{\"cpu_slots\":1,\"memory_mb\":2048,\"interrupt_seconds\":170.0,\"kill_grace_seconds\":10.0,\"total_seconds\":2700.0,\"finalization_reserve_seconds\":1.0,\"max_attempts\":14}",
+          "--locked-preregistration",
+          "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/preregistration.json",
+          "--locked-prereg-sha256",
+          "576a0a4b7fc2bbddfc314e91d7a850a525065220e9f4805a8f801b1b1799f459"
+        ],
+        "cycle": 4,
+        "event": "start_driver",
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "ts": "2026-09-27T01:14:09Z"
+      },
+      {
+        "activity_id": "supervisor-1-driver-c27384e5916102e8",
+        "event": "operation_finished",
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "operation": "driver",
+        "outcome": "yielded",
+        "returncode": 0,
+        "spent_seconds": 69.80757793798693,
+        "ts": "2026-09-27T01:15:35Z"
+      },
+      {
+        "cycle": 4,
+        "event": "driver_exit",
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "returncode": 10,
+        "ts": "2026-09-27T01:15:35Z"
+      },
+      {
+        "cycle": 4,
+        "event": "driver_pending",
+        "loop_id": "science-lab-r31-43327120eda9-acceptance",
+        "outcome": "yielded",
+        "ts": "2026-09-27T01:15:35Z",
+        "wake": {
+          "identity_digest": "0e7f1d0d6b3047040cc0f738f9546c10ef3b3a08d2eef188aa44254b05d233a3",
+          "predicate": "resume the locked driver command/finalization cursor",
+          "source": "driver_cycle_checkpoint"
+        }
+      }
+    ],
+    "conclusion": "Original driver activity resumed after readiness reconciliation and yielded at a durable cursor. Same original request/grant; no science completion claim.",
+    "recipe": {
+      "device": "cpu",
+      "parameters_per_arm": 65826,
+      "steps_per_arm": 6,
+      "suite_n": 6,
+      "honesty": "public fixture diagnostics; not held-out confirmation or ship evidence"
+    },
+    "release_authorized": false
+  },
+  "r33_retained_control_completed_20260927": {
+    "result": {
+      "returncode": 10,
+      "elapsed_seconds": 153.3137400150299,
+      "command": [
+        "/usr/bin/timeout",
+        "--signal=INT",
+        "--kill-after=10s",
+        "170s",
+        "/usr/bin/flock",
+        "-E",
+        "75",
+        "-w",
+        "30",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/host-compute.lock",
+        "/home/codex/repos/slm-training/.venv/bin/python",
+        "-I",
+        "-B",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/run-r33-retained-science.py",
+        "--locked",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-retained-science-run-x6uz19m_"
+      ],
+      "lock_timeout": false,
+      "preflight_passed": true,
+      "scientific_completion_claimed": false
+    },
+    "evidence_dir": "outputs/autonomy-integration-20260921/r33-retained-science-run-x6uz19m_",
+    "scoreboard": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/scoreboard.json",
+    "scoreboard_sha256": "2ffa19cc4db23f23d605c2a6e95932261741e47676a52e20a6a13d0a72cf82a1",
+    "measurement_complete": true,
+    "publication_complete": true,
+    "suite_n": 6,
+    "completed_document_n": 6,
+    "pending_document_n": 0,
+    "parse_rate": 1.0,
+    "eval_nll": 23.894707898417668,
+    "agentv": {
+      "format": "AgentEvals JSONL",
+      "authority": "AgentEvals assertions",
+      "sdk": "@agentv/core",
+      "criteria": {
+        "pass": false,
+        "passed": 2,
+        "failed": 7,
+        "total": 9,
+        "failures": [
+          "smoke:insufficient_n",
+          "smoke:meaningful_program_rate",
+          "smoke:structural_similarity",
+          "smoke:component_type_recall",
+          "smoke:ast_beq_rate",
+          "smoke:canonical_beq_rate",
+          "smoke:reward_score"
+        ],
+        "results": [
+          {
+            "id": "smoke:certified_fallback",
+            "pass": true,
+            "criterion_id": "smoke:certified_fallback",
+            "actual": 0,
+            "operator": "eq",
+            "expected": 0
+          },
+          {
+            "id": "smoke:insufficient_n",
+            "pass": false,
+            "criterion_id": "smoke:insufficient_n",
+            "actual": 6,
+            "operator": "gte",
+            "expected": 20
+          },
+          {
+            "id": "smoke:meaningful_program_rate",
+            "pass": false,
+            "criterion_id": "smoke:meaningful_program_rate",
+            "actual": 0.16666666666666666,
+            "operator": "gte",
+            "expected": 0.66
+          },
+          {
+            "id": "smoke:structural_similarity",
+            "pass": false,
+            "criterion_id": "smoke:structural_similarity",
+            "actual": 0.24445000000000003,
+            "operator": "gte",
+            "expected": 0.35
+          },
+          {
+            "id": "smoke:component_type_recall",
+            "pass": false,
+            "criterion_id": "smoke:component_type_recall",
+            "actual": 0.125,
+            "operator": "gte",
+            "expected": 0.35
+          },
+          {
+            "id": "smoke:ast_beq_rate",
+            "pass": false,
+            "criterion_id": "smoke:ast_beq_rate",
+            "actual": 0,
+            "operator": "gte",
+            "expected": 0.2
+          },
+          {
+            "id": "smoke:canonical_beq_rate",
+            "pass": false,
+            "criterion_id": "smoke:canonical_beq_rate",
+            "actual": 0,
+            "operator": "gte",
+            "expected": 0.1
+          },
+          {
+            "id": "smoke:placeholder_fidelity",
+            "pass": true,
+            "criterion_id": "smoke:placeholder_fidelity",
+            "actual": 0.9166666666666666,
+            "operator": "gte",
+            "expected": 0.25
+          },
+          {
+            "id": "smoke:reward_score",
+            "pass": false,
+            "criterion_id": "smoke:reward_score",
+            "actual": 0,
+            "operator": "gte",
+            "expected": 0.3
+          }
+        ]
+      },
+      "runner": {
+        "name": "AgentV",
+        "sdk": "@agentv/core",
+        "execution_errors": 0
+      },
+      "spec": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00.eval.jsonl",
+      "summary": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "executionErrors": 0,
+        "durationMs": 291,
+        "meanScore": 0
+      },
+      "artifacts": {
+        "runDir": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00",
+        "benchmarkPath": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00/benchmark.json",
+        "indexPath": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00/index.jsonl",
+        "timingPath": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00/timing.json"
+      },
+      "suites_run": [
+        "smoke"
+      ]
+    },
+    "candidate_and_paired_completion": false,
+    "release_authorized": false
+  },
+  "r33_candidate_training_retained_20260927": {
+    "invocation": {
+      "returncode": 124,
+      "elapsed_seconds": 170.00961017608643,
+      "command": [
+        "/usr/bin/timeout",
+        "--signal=INT",
+        "--kill-after=10s",
+        "170s",
+        "/usr/bin/flock",
+        "-E",
+        "75",
+        "-w",
+        "30",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/host-compute.lock",
+        "/home/codex/repos/slm-training/.venv/bin/python",
+        "-I",
+        "-B",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/run-r33-retained-science.py",
+        "--locked",
+        "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-retained-science-run-g3pad1ys"
+      ],
+      "lock_timeout": false,
+      "preflight_passed": true,
+      "scientific_completion_claimed": false
+    },
+    "invocation_completed": false,
+    "retained_training_summary": {
+      "run_id": "science-lab-r31-43327120eda9-acceptance-candidate",
+      "steps": 6,
+      "stopped_on": "steps",
+      "invocation_start_step": 3,
+      "last_loss": 37.89326477050781,
+      "checkpoint": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-candidate/checkpoints/trial/bundles/2493d3e3b76228304a9bc66db2943683c0d001e96ac5a82e42074ccbd429c52e/last.pt",
+      "continuation_kind": "exact_same_environment",
+      "record_count": 8,
+      "device": "cpu",
+      "data_manifest_sha": "9d813cd38d22a113c89e9b122a0e6045f8b96033a3abacfda8aa08c246eab3c6",
+      "finished_at": "2026-09-27T01:25:01.723402+00:00",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "43327120eda92ef9aff2a7eb89d0777e0849317b",
+        "code_dirty": false,
+        "components": {
+          "harness.model_build.train": "v44",
+          "harness.experiment_feature_flags": "v4"
+        },
+        "stamped_at": "2026-09-27T01:25:06.543225+00:00"
+      }
+    },
+    "checkpoint_sha256": "0a125ff5e1ebcf4b456e8f0d432ca03a187eb298f045b77b8a13c81e62d27313",
+    "bundles": [
+      "3b9066c27b7828f15d62364b122ace2c03c76971aefe5e79f0dc6608b89b0042",
+      "2493d3e3b76228304a9bc66db2943683c0d001e96ac5a82e42074ccbd429c52e"
+    ],
+    "honesty": "CPU scratch diagnostic, local no-sync. Whole invocation timed out and is not successful acceptance evidence. Immutable committed training chunks remain resumable. Candidate evaluation and paired result pending.",
+    "release_authorized": false,
+    "settlement_defect": {
+      "activity_id": "supervisor-1-driver-c27384e5916102e8",
+      "status": "cancelled",
+      "sequence": 28,
+      "attempts": 6,
+      "charged_seconds": 696.140410078995,
+      "remaining_attempts_arithmetic": 8,
+      "remaining_seconds_arithmetic": 2003.859589921,
+      "runnable": false,
+      "observation": "Worker yielded after both candidate training chunks committed; enclosing host deadline interrupted settlement. Activity became terminal cancelled; no surviving controller or worker.",
+      "remediation": "Fix canonical deadline/cancellation integration and recover this authorized timeout interruption without changing the original request or refunding/resetting charges. Explicit user cancellation must remain respected."
+    }
+  },
+  "r34_export_and_data_regression_findings": {
+    "export_group": {
+      "passed": 57,
+      "failed": 1,
+      "seconds": 9.1,
+      "junit": "outputs/autonomy-integration-20260921/r34-export-fixture-regressions.xml",
+      "finding": "ONNX loader hardcodes legacy OpenUITokenizer for current DSL tokenizer v5; canonical output/context loader repair in progress."
+    },
+    "source_family_group": {
+      "passed": 7,
+      "failed": 1,
+      "seconds": 1.31,
+      "junit": "outputs/autonomy-integration-20260921/r34-source-families.xml",
+      "finding": "Root t1 correctly rejected by active ngram decontamination against e827_target_slots_only_v4/adversarial; root-retention fixture was contaminated. Root-first exact dedup does not repair contamination and gates must remain unchanged.",
+      "quality_observations": {
+        "out/vcapped": {
+          "counts": {
+            "seeds": 1,
+            "candidates": 6,
+            "collected": 6,
+            "admitted": 3,
+            "rejected_total": 3,
+            "source_errors": 0,
+            "by_stage": {
+              "decontamination": 2,
+              "exposure": 1
+            }
+          },
+          "warnings": [
+            {
+              "code": "eval_overlap_flagged",
+              "value": 2,
+              "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+            }
+          ],
+          "feedback": {
+            "schema_version": 2,
+            "version": "vcapped",
+            "profile": "strict",
+            "built_at": "2026-09-27T01:35:38.495209+00:00",
+            "thresholds": {
+              "low_yield": 0.4,
+              "high_dup_share": 0.5,
+              "min_group_candidates": 8
+            },
+            "families": {
+              "human_curated": {
+                "admitted": 0,
+                "rejected": 1,
+                "by_stage": {
+                  "decontamination": 1
+                },
+                "by_reason": {
+                  "ngram_overlap": 1
+                },
+                "candidates": 1,
+                "yield": 0.0
+              },
+              "layout_augment": {
+                "admitted": 1,
+                "rejected": 1,
+                "by_stage": {
+                  "decontamination": 1
+                },
+                "by_reason": {
+                  "ngram_overlap": 1
+                },
+                "candidates": 2,
+                "yield": 0.5
+              },
+              "prompt_paraphrase": {
+                "admitted": 2,
+                "rejected": 1,
+                "by_stage": {
+                  "exposure": 1
+                },
+                "by_reason": {
+                  "max_records_per_parent": 1
+                },
+                "candidates": 3,
+                "yield": 0.6667
+              }
+            },
+            "synthesizers": {
+              "layout_augment": {
+                "admitted": 1,
+                "rejected": 1,
+                "by_stage": {
+                  "decontamination": 1
+                },
+                "by_reason": {
+                  "ngram_overlap": 1
+                },
+                "candidates": 2,
+                "yield": 0.5
+              },
+              "template": {
+                "admitted": 2,
+                "rejected": 1,
+                "by_stage": {
+                  "exposure": 1
+                },
+                "by_reason": {
+                  "max_records_per_parent": 1
+                },
+                "candidates": 3,
+                "yield": 0.6667
+              }
+            },
+            "warnings": [
+              {
+                "code": "eval_overlap_flagged",
+                "value": 2,
+                "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+              }
+            ],
+            "recommendations": [
+              {
+                "code": "eval_leakage_source",
+                "target_kind": "family",
+                "target": "human_curated",
+                "evidence": {
+                  "decontamination_drops": 1
+                },
+                "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+              },
+              {
+                "code": "eval_leakage_source",
+                "target_kind": "family",
+                "target": "layout_augment",
+                "evidence": {
+                  "decontamination_drops": 1
+                },
+                "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+              },
+              {
+                "code": "eval_leakage_source",
+                "target_kind": "synthesizer",
+                "target": "layout_augment",
+                "evidence": {
+                  "decontamination_drops": 1
+                },
+                "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+              }
+            ],
+            "findings": [
+              {
+                "code": "synthetic_anchor_deficit",
+                "severity": "hard_admission_failure",
+                "authority": "blocks_capability_claim",
+                "waiver": "diagnostic_waiver_not_promotion",
+                "closure": "new_immutable_build",
+                "evidence": {
+                  "unique_roots": 1,
+                  "trusted_roots": 0,
+                  "trusted_root_fraction": 0.0,
+                  "promotion_authoritative": false,
+                  "deficit": true
+                }
+              }
+            ],
+            "experiment_candidates": [
+              {
+                "hypothesis": "family:human_curated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+                "rationale": "build vcapped: {'decontamination_drops': 1}",
+                "expected_effect": "decontamination drops reach 0 for this source",
+                "falsification_criteria": "drops persist after source filtering",
+                "knobs": [
+                  "decontam_eval_root"
+                ]
+              },
+              {
+                "hypothesis": "family:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+                "rationale": "build vcapped: {'decontamination_drops': 1}",
+                "expected_effect": "decontamination drops reach 0 for this source",
+                "falsification_criteria": "drops persist after source filtering",
+                "knobs": [
+                  "decontam_eval_root"
+                ]
+              },
+              {
+                "hypothesis": "synthesizer:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+                "rationale": "build vcapped: {'decontamination_drops': 1}",
+                "expected_effect": "decontamination drops reach 0 for this source",
+                "falsification_criteria": "drops persist after source filtering",
+                "knobs": [
+                  "decontam_eval_root"
+                ]
+              },
+              {
+                "hypothesis": "A matched data-only rebuild addressing synthetic_anchor_deficit raises the named metric without changing model knobs",
+                "rationale": "build vcapped: {'unique_roots': 1, 'trusted_roots': 0, 'trusted_root_fraction': 0.0, 'promotion_authoritative': False, 'deficit': True}",
+                "expected_effect": "synthetic_anchor_deficit closes on a new manifest",
+                "falsification_criteria": "finding persists on the rebuilt snapshot at the same policy hash",
+                "knobs": [
+                  "data_generation.retain_trusted_anchors"
+                ],
+                "data_only": true
+              }
+            ],
+            "claim_class": "fixture_wiring",
+            "capability_certificate": false,
+            "version_stamp": {
+              "stamp_schema": "version_stamp/v1",
+              "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+              "code_dirty": true,
+              "components": {
+                "harness.train_data": "v35"
+              },
+              "stamped_at": "2026-09-27T01:35:38.495273+00:00"
+            }
+          },
+          "quality_report_sha256": "c895806cb1d1655d06f4d8f9e90b799f6898bc89908ac8d4e2f343584952d3e9",
+          "rejected_sha256": "2dc075998628a4abfcf1aa036f14acdd60657f0c3f7d73854fcfb101ae0f0849"
+        },
+        "out/vuncapped": {
+          "counts": {
+            "seeds": 1,
+            "candidates": 6,
+            "collected": 6,
+            "admitted": 4,
+            "rejected_total": 2,
+            "source_errors": 0,
+            "by_stage": {
+              "decontamination": 2
+            }
+          },
+          "warnings": [
+            {
+              "code": "eval_overlap_flagged",
+              "value": 2,
+              "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+            }
+          ],
+          "feedback": {
+            "schema_version": 2,
+            "version": "vuncapped",
+            "profile": "strict",
+            "built_at": "2026-09-27T01:35:38.122099+00:00",
+            "thresholds": {
+              "low_yield": 0.4,
+              "high_dup_share": 0.5,
+              "min_group_candidates": 8
+            },
+            "families": {
+              "human_curated": {
+                "admitted": 0,
+                "rejected": 1,
+                "by_stage": {
+                  "decontamination": 1
+                },
+                "by_reason": {
+                  "ngram_overlap": 1
+                },
+                "candidates": 1,
+                "yield": 0.0
+              },
+              "layout_augment": {
+                "admitted": 1,
+                "rejected": 1,
+                "by_stage": {
+                  "decontamination": 1
+                },
+                "by_reason": {
+                  "ngram_overlap": 1
+                },
+                "candidates": 2,
+                "yield": 0.5
+              },
+              "prompt_paraphrase": {
+                "admitted": 3,
+                "rejected": 0,
+                "by_stage": {},
+                "by_reason": {},
+                "candidates": 3,
+                "yield": 1.0
+              }
+            },
+            "synthesizers": {
+              "layout_augment": {
+                "admitted": 1,
+                "rejected": 1,
+                "by_stage": {
+                  "decontamination": 1
+                },
+                "by_reason": {
+                  "ngram_overlap": 1
+                },
+                "candidates": 2,
+                "yield": 0.5
+              },
+              "template": {
+                "admitted": 3,
+                "rejected": 0,
+                "by_stage": {},
+                "by_reason": {},
+                "candidates": 3,
+                "yield": 1.0
+              }
+            },
+            "warnings": [
+              {
+                "code": "eval_overlap_flagged",
+                "value": 2,
+                "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+              }
+            ],
+            "recommendations": [
+              {
+                "code": "eval_leakage_source",
+                "target_kind": "family",
+                "target": "human_curated",
+                "evidence": {
+                  "decontamination_drops": 1
+                },
+                "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+              },
+              {
+                "code": "eval_leakage_source",
+                "target_kind": "family",
+                "target": "layout_augment",
+                "evidence": {
+                  "decontamination_drops": 1
+                },
+                "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+              },
+              {
+                "code": "eval_leakage_source",
+                "target_kind": "synthesizer",
+                "target": "layout_augment",
+                "evidence": {
+                  "decontamination_drops": 1
+                },
+                "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+              }
+            ],
+            "findings": [
+              {
+                "code": "synthetic_anchor_deficit",
+                "severity": "hard_admission_failure",
+                "authority": "blocks_capability_claim",
+                "waiver": "diagnostic_waiver_not_promotion",
+                "closure": "new_immutable_build",
+                "evidence": {
+                  "unique_roots": 1,
+                  "trusted_roots": 0,
+                  "trusted_root_fraction": 0.0,
+                  "promotion_authoritative": false,
+                  "deficit": true
+                }
+              }
+            ],
+            "experiment_candidates": [
+              {
+                "hypothesis": "family:human_curated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+                "rationale": "build vuncapped: {'decontamination_drops': 1}",
+                "expected_effect": "decontamination drops reach 0 for this source",
+                "falsification_criteria": "drops persist after source filtering",
+                "knobs": [
+                  "decontam_eval_root"
+                ]
+              },
+              {
+                "hypothesis": "family:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+                "rationale": "build vuncapped: {'decontamination_drops': 1}",
+                "expected_effect": "decontamination drops reach 0 for this source",
+                "falsification_criteria": "drops persist after source filtering",
+                "knobs": [
+                  "decontam_eval_root"
+                ]
+              },
+              {
+                "hypothesis": "synthesizer:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+                "rationale": "build vuncapped: {'decontamination_drops': 1}",
+                "expected_effect": "decontamination drops reach 0 for this source",
+                "falsification_criteria": "drops persist after source filtering",
+                "knobs": [
+                  "decontam_eval_root"
+                ]
+              },
+              {
+                "hypothesis": "A matched data-only rebuild addressing synthetic_anchor_deficit raises the named metric without changing model knobs",
+                "rationale": "build vuncapped: {'unique_roots': 1, 'trusted_roots': 0, 'trusted_root_fraction': 0.0, 'promotion_authoritative': False, 'deficit': True}",
+                "expected_effect": "synthetic_anchor_deficit closes on a new manifest",
+                "falsification_criteria": "finding persists on the rebuilt snapshot at the same policy hash",
+                "knobs": [
+                  "data_generation.retain_trusted_anchors"
+                ],
+                "data_only": true
+              }
+            ],
+            "claim_class": "fixture_wiring",
+            "capability_certificate": false,
+            "version_stamp": {
+              "stamp_schema": "version_stamp/v1",
+              "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+              "code_dirty": true,
+              "components": {
+                "harness.train_data": "v35"
+              },
+              "stamped_at": "2026-09-27T01:35:38.168832+00:00"
+            }
+          },
+          "quality_report_sha256": "c620deda6f4026d25deda996876b56dcc2e0f0ed6cb5e265400f2be768a833fd",
+          "rejected_sha256": "9479547fc7d8fcb786c3bd858880f80140846c81237344d7f8a9ed5d0a71ff31"
+        }
+      }
+    },
+    "release_authorized": false
+  },
+  "r34_onnx_regressions": {
+    "passed": 6,
+    "failed": 0,
+    "seconds": 3.77,
+    "junit": "outputs/autonomy-integration-20260921/r34-onnx-regressions.xml",
+    "scope": [
+      "current-contract quantized export and load",
+      "context vocabulary routing",
+      "missing context sidecar rejection",
+      "context vocabulary size mismatch rejection",
+      "output vocabulary size mismatch rejection",
+      "constrained decoding"
+    ],
+    "warnings": [
+      "Existing Torch ONNX tracer warnings for Python boolean shape checks at blocks.py:184 and :304; generalization beyond tested export shapes is not established."
+    ],
+    "release_authorized": false
+  },
+  "r34_timeout_recovery_regressions": {
+    "passed": 17,
+    "failed": 0,
+    "seconds": 68.45,
+    "junit": "outputs/autonomy-integration-20260921/r34-timeout-extraction-final.xml",
+    "scope": [
+      "authenticated deadline versus explicit cancellation",
+      "original and repeated timeout successor accounting",
+      "fresh-supervisor continuation without repeating committed training",
+      "cancelled request cannot allocate a new activity when host configuration changes",
+      "unbound configuration changes cannot mint timeout recovery authority"
+    ],
+    "independent_review": "Hooke closed the cancelled-config classification finding against the exact frozen hashes before this parent run.",
+    "service_observation": "The supervisor no longer classifies a pinned outer deadline as an operator cancellation; cancelled activity events and grants remain immutable.",
+    "release_authorized": false,
+    "post_extraction_rerun": true
+  },
+  "r34_preview_runtime_regressions": {
+    "isolated_preview_passed": 1,
+    "isolated_preview_failed": 0,
+    "isolated_preview_seconds": 56.505,
+    "isolated_preview_nodeid": "tests/test_data/test_verify.py::test_preview_runtime_and_behavior_seeded_failures",
+    "runtime_request_digest": "3b46bc638108d4562ac0d7a9d608cb39920f1a569fb5cc9dbfe7f3092bf75cbd",
+    "runtime_workload_sha256": "2ff5562229c42eefcc438485291cf2d403bf80404aaac7481dbd847b430b67a1",
+    "focused_unit_passed": 50,
+    "focused_unit_skipped": 9,
+    "focused_unit_failed": 0,
+    "focused_unit_seconds": 29.49,
+    "focused_unit_junit": "outputs/autonomy-integration-20260921/r34-runtime-authority-final.xml",
+    "root_order_mutation": "The public package consumer fails when root-first exact-dedup ordering is reverted; retained manifest selects child a_syn_0 instead of source root z.",
+    "historical_report_mutation": "Explicit fixture output directory preserves committed historical SLM159 result files.",
+    "environment_limit": "Ordinary sandbox denied Bubblewrap network namespace setup. The same canonical isolated workload passed with authorized host isolation.",
+    "release_authorized": false,
+    "isolated_preview_test_seconds": 45.17,
+    "external_symlink_authority_regression": "The composed runtime-root helper rejects external node_modules symlinks before resolving or granting them; independent review closed the original authority-expansion finding.",
+    "fast_static_result": "outputs/autonomy-integration-20260921/r34-fast-static-final-state",
+    "fast_static_passed": 18
+  },
+  "r34_code_quality": {
+    "ruff": "0.15.22",
+    "baseline_update": "Guarded --update reduced four module-line ceilings and introduced no increases.",
+    "check": "passed with no regressions",
+    "release_authorized": false
+  },
+  "r34_focused_regressions": {
+    "passed": 195,
+    "skipped": 7,
+    "failed": 0,
+    "seconds": 44.57,
+    "junit": "outputs/autonomy-integration-20260921/r34-qa-regressions.xml",
+    "scope": [
+      "lineage and current ONNX export/load",
+      "decode-ablation report consumer",
+      "recursive-denoiser deferred-arm contract",
+      "source-family exact dedup and root ordering",
+      "Playwright grant and lockfile validation",
+      "SLM159 fixture output path"
+    ],
+    "warnings": [
+      "Existing Torch tracer warnings for Python boolean shape checks at blocks.py:184 and :304; arbitrary-shape ONNX equivalence is not established."
+    ],
+    "release_authorized": false
+  },
+  "r34_fast_static": {
+    "passed": 18,
+    "failed": 0,
+    "seconds": null,
+    "command": "python -m scripts.verify_merge_ready --fast --source verification-source-r34 --base-ref e56115002dd3f2872d2d24d1a5ef85ff36ce49cf",
+    "result": "outputs/autonomy-integration-20260921/r34-fast-static-state",
+    "scope": "Fast/static obligations only; full collected-test gate remains required.",
+    "release_authorized": false
   }
 }
