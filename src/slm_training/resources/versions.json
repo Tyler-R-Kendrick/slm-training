@@ -8989,9 +8989,4147 @@
         },
         {
           "date": "2026-07-25",
-          "note": "add SLM-258 LOT4-02 LotusOpenUID
-... 192108 bytes omitted ...
-nchanged.",
+          "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged",
+          "version": "v124"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-257 LOT4-01 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2/LOT3 chain",
+          "version": "v123"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-256 LOT2-03 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain",
+          "version": "v122"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-255 LOT3-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain",
+          "version": "v121"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-254 LOT3-01 in the LOT downstream gate registry; closes not_authorized (causal study not authorized) off the unmet LOT1/LOT2 chain",
+          "version": "v120"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-253 LOT2-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1-02 launch gate",
+          "version": "v119"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add generic LOT2+ downstream launch-gate evaluator (lot_downstream_gate.py) closing SLM-252 LOT2-01 not_authorized off the unmet LOT1-02 launch gate; no campaign code",
+          "version": "v118"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-251 LOT1-02 launch-gate evaluator (lot1_02_activation_gate.py): reuses the LOT1-01 gate plus SLM-249 allowed_lot1_implementation and closes not_authorized in plan-only mode, no training/curriculum code",
+          "version": "v117"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code",
+          "version": "v116"
+        },
+        {
+          "date": "2026-07-26",
+          "note": "no-bump: migrate the CAP2 local-action fixture to TernaryECOCHead.entry_for without changing its action-code lookup.",
+          "version": "v115"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-332 AP-009 binding contrast geometry harness and matched reconstruction control",
+          "version": "v115"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-332 fail-closed program-latent contrast, noise, and interpolation traversal primitives",
+          "version": "v114"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-258 LOT4-02 LotusOpenUIDispositionV1 fail-closed publisher (lotus_openui_disposition.py): aggregates the real upstream gate artifacts; inconclusive_missing_evidence, no adoption, production defaults unchanged",
+          "version": "v117"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-257 LOT4-01 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2/LOT3 chain",
+          "version": "v116"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-256 LOT2-03 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain",
+          "version": "v115"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-255 LOT3-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1/LOT2 chain",
+          "version": "v114"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-254 LOT3-01 in the LOT downstream gate registry; closes not_authorized (causal study not authorized) off the unmet LOT1/LOT2 chain",
+          "version": "v113"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-253 LOT2-02 in the LOT downstream gate registry; closes not_authorized off the unmet LOT1-02 launch gate",
+          "version": "v112"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add generic LOT2+ downstream launch-gate evaluator (lot_downstream_gate.py) closing SLM-252 LOT2-01 not_authorized off the unmet LOT1-02 launch gate; no campaign code",
+          "version": "v111"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-251 LOT1-02 launch-gate evaluator (lot1_02_activation_gate.py): reuses the LOT1-01 gate plus SLM-249 allowed_lot1_implementation and closes not_authorized in plan-only mode, no training/curriculum code",
+          "version": "v110"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-250 LOT1-01 hard-activation-gate evaluator (lot1_01_activation_gate.py): reads SLM-248/SLM-249 real upstream contracts and closes not_authorized in plan-only mode, no K x c model/training code",
+          "version": "v109"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-276 DCA2-03 CausalDispositionBundleV1 fail-closed publisher (dca_causal_disposition.py): aggregates prerequisite dispositions; no_model_ship_ready_measurement_or_data_blocker, no tournament, no promotion",
+          "version": "v121"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-275 DCA2-02 in the DCA activation gate registry; closes blocked/reward_variance_insufficient off unqualified prerequisites",
+          "version": "v120"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-274 DCA2-01 in the DCA activation gate registry; closes not_activated/blocked off unqualified prerequisites",
+          "version": "v119"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-273 DCA1-02 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites",
+          "version": "v118"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-272 DCA1-01 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites",
+          "version": "v117"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "register SLM-271 DCA0-03 in the DCA activation gate registry; closes blocked/inconclusive off unqualified prerequisites",
+          "version": "v116"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add generic DCA-chain activation gate (dca_activation_gate.py) closing SLM-270 DCA0-02 blocked/inconclusive off unqualified SLM-261/268/269 artifacts",
+          "version": "v115"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-269 DCA0-01 fail-closed activation audit (slm269_dca0_activation.py): prerequisite evidence unqualified (SLM-260 fixture-only, SLM-261 missing, SLM-268 blocked) -> inconclusive, no corpus/training launched",
+          "version": "v114"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-328 AP-030 CAP2-06 program-factor latent size/width/codec rate-distortion sweep wiring/fixture harness",
+          "version": "v113"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness",
+          "version": "v112"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-268 fail-closed activation audit for verified-data scaling",
+          "version": "v111"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-325 AP-029 CAP2-05 program-scale SemanticPlanV1 latent-codec bottleneck wiring/fixture harness",
+          "version": "v111"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-300 self-context curriculum: validate manifest inside run_fixture_self_context_curriculum (trust-boundary hardening) and make _arm_label lossless for arbitrary caller-supplied rates (address CodeRabbit review on PR #895)",
+          "version": "v110"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-300 AP-015 self-context exposure-bias curriculum manifest, policy-origin-mixture wiring/fixture harness, and mixture-zero legacy-equivalence invariant",
+          "version": "v109"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-296 bounded verifier-filtered teacher-admission wiring evidence, family-independence, and locked-set decontamination controls",
+          "version": "v108"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-267 bounded uniform-vs-coverage-targeted ProgramSpec sampling wiring evidence and deterministic shard-seed primitive",
+          "version": "v107"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-298 preserve every ExampleRecord output contract field while materializing complexity curriculum views",
+          "version": "v106"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-298 preregistered bounded local capacity x frozen-context x complexity-curriculum factorial",
+          "version": "v105"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: follow the canonical allow_unconstrained_fallback default to False in the e228 recipe fallback; every shipped arm already sets it explicitly",
+          "version": "v104"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "Replace the locked power protocol's emitted raw variants with mandatory constrained native and compiler comparisons while preserving historical evidence",
+          "version": "v104"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 preregister absolute-probability MDE sensitivity in the locked local protocol",
+          "version": "v103"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 replace rejected historical E297 input with the current-contract locked SLM-230 corpus",
+          "version": "v102"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 train one local E297 checkpoint per locked seed/backend cell and require shards to reuse its immutable manifest",
+          "version": "v101"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 isolate every concurrent local shard evaluator workspace",
+          "version": "v100"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 freeze AP-007 campaign manifest bytes across local shard invocations",
+          "version": "v99"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 freeze the bounded local choice decoder at eight tokens",
+          "version": "v98"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 balance deterministic locked shards so every capped shard contains evidence",
+          "version": "v97"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 add deterministic per-cell local shards and fail-closed exact-union merge with cell-scoped telemetry",
+          "version": "v96"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 require cross-backend bit-exact initialization and derive paired cluster CIs plus observed seed and target variance",
+          "version": "v95"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 use the canonical choice codec for bounded local constrained decode",
+          "version": "v94"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 persist interrupted local executions as non-evidence artifacts",
+          "version": "v93"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 use only preregistered raw constrained and repaired evaluation variants",
+          "version": "v92"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 reject any local cell with a decode timeout instead of aggregating empty output",
+          "version": "v91"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 publish AgentEvals and AgentV bundles for every local protocol evaluation",
+          "version": "v90"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 execute the fail-closed local zero-update five-seed by two-config protocol through the canonical evaluator",
+          "version": "v89"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-287 add fail-closed locked five-seed by two-config power protocol",
+          "version": "v88"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-285 persist the governed locked promotion-manifest digest with promoted anchors",
+          "version": "v87"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "bind every SLM-266 raw-attempt event to its generation manifest experiment",
+          "version": "v86"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "record interrupted SLM-266 execution and pass an explicit local generation attention mask",
+          "version": "v85"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "bind SLM-266 teacher execution to a matching preregistered campaign lock",
+          "version": "v84"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "Implement SLM-294 frontier chunked execution and scoring pass in the external-ceiling harness",
+          "version": "v83"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "add pinned offline-only Transformers transport for SLM-266 local teacher generation",
+          "version": "v82"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: correct SLM-262 completed-job test isolation and export history metadata without changing harness behavior",
+          "version": "v81"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: add SLM-262 lazy experiment exports without changing existing experiment behavior",
+          "version": "v81"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "require durable cross-family automatic judge evidence for SLM-266 deep admission",
+          "version": "v81"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "add preflighted provider executor and immutable campaign raw-attempt archive for SLM-266",
+          "version": "v80"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "materialize deep SLM-266 admission into canonical train snapshots with raw archive pointers",
+          "version": "v79"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "remove human-audit gate from SLM-266 hands-off principal admission",
+          "version": "v78"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "add fail-closed SLM-266 teacher-program request and admission harness",
+          "version": "v77"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "add deterministic SLM-207 valid-edit-flow closeout harness",
+          "version": "v76"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add SLM-194 legality-neutral candidate proposal and exact-fallback amortization fixture",
+          "version": "v75"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "integrate SLM-193 FFE3-02 bit-exact flow-cache fixture harness on current main",
+          "version": "v74"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "integrate SLM-192 FFE3-01 flow-pipeline cost-profile fixture harness on current main",
+          "version": "v73"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add SLM-230 bounded recurrence observability and evaluation-only exit contracts",
+          "version": "v72"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "publish SLM-228 SpectralDispositionV1 and guard lineage/promotion from rejected spectral mechanisms",
+          "version": "v71"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add SLM-226 width and finite-size null boundary with fail-closed AbsoluteSpectralTargetGateV1",
+          "version": "v70"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add SLM-220 activation-side causal restriction energy, exact and JVP estimators, null controls, and fail-closed fixture retrospective",
+          "version": "v69"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add SLM-219 deterministic prefix checkpoint trajectory, canonical spectral diagnostics, pinned WeightWatcher comparison, and fail-closed warning retrospective",
+          "version": "v68"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add SLM-218 cross-attention and parent-child subspace retrospective owners",
+          "version": "v67"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add exact-state decision-conditioned functional spectral diagnostics for SLM-217",
+          "version": "v66"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "add the bounded SLM-216 fixed-token spectral regime matrix and fail-closed gate",
+          "version": "v65"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "publish the fail-closed SLM-213 semantic-floor claim authorization gate",
+          "version": "v64"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "repair canonical InsertStatement application for replay-exact SLM-196 bridge corpus construction",
+          "version": "v63"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "Derive promotion decisions from independently verified campaign results and plumb governance through canonical entrypoints",
+          "version": "v62"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "Require campaign-governed promotion, integrity-check legacy frozen manifests, and bridge the power-protocol fixture to ExperimentCampaignV1",
+          "version": "v61"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v60 two-minute fixture budget from the canonical lever registry; emitted behavior is unchanged",
+          "version": "v60"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "hard-cap all experiment fixture wall-budget metadata at two minutes",
+          "version": "v60"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-191 FFE2-03 termination-policy protocol and fixture matrix lazy re-exports",
+          "version": "v59"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-190 FFE2-02 exact CTMC reference fixture harness lazy re-exports",
+          "version": "v58"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-189 FFE2-01 bridge-planner fixture harness lazy re-exports",
+          "version": "v57"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-212 SDE5-05 constraint-debt routing fixture harness lazy re-exports",
+          "version": "v56"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "no-bump: re-export SLM-222 MuonBaselineArm/MuonBaselineReport/run_muon_baseline_fixture from experiments package; existing experiment harnesses unchanged",
+          "version": "v55"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-210 SDE5-03 floor-escape matrix wiring/fixture harness extending SLM-209 debt-targeted curriculum owner",
+          "version": "v55"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-215 NCS0-02 SpectralAtlasV1 wiring/fixture harness for null-calibrated checkpoint atlas and outcome joins",
+          "version": "v54"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-214 NCS0-01 SpectralSnapshotV1 wiring/fixture harness with per-shape randomized-ESD null calibration",
+          "version": "v53"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-188 FFE1-02 edit-algebra reachability, canonical invariance, and transition-certificate wiring/fixture harness",
+          "version": "v52"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "add SLM-187 FFE1-01 topology solver/runtime transition parity wiring/fixture harness",
+          "version": "v51"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "no-bump: add SLM-186 FFE0-04 verified-utility sub-harness; no change to existing experiment harness behavior",
+          "version": "v50"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness",
+          "version": "v50"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: SLM-185 reuses harness.experiments constants (MATRIX_SET/MATRIX_VERSION/EXPERIMENT_ID pattern) only; no harness behavior changed",
+          "version": "v49"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness",
+          "version": "v49"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-183 PQR powered cluster-aware confirmation protocol wiring/fixture harness",
+          "version": "v48"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-176 P14 action-shortlist retrieve-then-rerank wiring/fixture harness",
+          "version": "v47"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-174 SDE2-07 action-alias generalization wiring/fixture harness",
+          "version": "v46"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-172 SDE2-05 render-equivalence wiring/fixture harness",
+          "version": "v45"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness",
+          "version": "v44"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-168 public structured contract-index pointer wiring/fixture harness",
+          "version": "v43"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-167 zero-training sparse-action ceiling wiring/fixture harness",
+          "version": "v42"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-166 semantic connector capacity wiring/fixture harness",
+          "version": "v41"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-165 2x2x2 interaction factorial wiring/fixture harness",
+          "version": "v40"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-164 targeted legal-sibling contrast margin wiring/fixture harness",
+          "version": "v39"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-163 schema-description action-embedding wiring/fixture harness",
+          "version": "v38"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "update SLM-160 SPV4-02 disposition rationale for SLM-157 now that the fixture evidence document exists",
+          "version": "v37"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-157 SPV3-04 flow / consistency / trajectory-imitation wiring/fixture harness",
+          "version": "v36"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-160 SPV4-02 causal architecture disposition docs/spec harness",
+          "version": "v35"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-159 SPV4-01 cross-DSL semantic-plan replication wiring/fixture harness",
+          "version": "v34"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness",
+          "version": "v33"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-156 SPV3-03 shared recursive SemanticPlanV1 refinement wiring/fixture harness",
+          "version": "v32"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness",
+          "version": "v31"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-147 SPV1-04 X22 leakage-safe retrieved-valid-AST prototype seeding harness",
+          "version": "v30"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-140 EFS4-04 causal synthesis manifest, loader, script, and tests",
+          "version": "v29"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-146 SPV1-03 SemanticPlanV1 plan-compiler bridge fixture wiring harness",
+          "version": "v28"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness",
+          "version": "v27"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness",
+          "version": "v26"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: replace randomized string hash with stable action-index mapping in cap2-04 fixture; matrix semantics unchanged",
+          "version": "v25"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "add SLM-144 SPV1-01 archetype + role-set predictor fixture wiring harness",
+          "version": "v25"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness",
+          "version": "v24"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-130 EFS3-05 canonical AST deduplication and valid semantic-mode coverage wiring/fixture harness",
+          "version": "v23"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-127 EFS3-04 contract-grounded candidate selector wiring/fixture harness",
+          "version": "v22"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "lazy-load B3 capacity exports so importing the experiment package and Vercel web entrypoint does not require optional torch",
+          "version": "v21"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-124 EFS3-03 B3 surface-vs-choice capacity-ladder v2 manifest, fixture runner, and CLI wiring",
+          "version": "v20"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-121 LDI1-02 causal PEFT FTPO manifest, fixture runner, and CLI wiring",
+          "version": "v19"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-120 near-solved semantic corruption-curriculum manifest, fixture runner, and CLI wiring",
+          "version": "v18"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-109 E228 exposure-ladder manifest, recipe-freeze hash, and plan/fixture CLI",
+          "version": "v17"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SLM-108 external-ceiling matrix manifest, fixture runner, and report rendering",
+          "version": "v16"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "no-bump: relocate efficiency_gain/scaling_fit to harness_core (old modules are sys.modules alias shims) and delegate promotion checks to harness_core.promotion_engine; HARD_CATEGORIES, the OpenUI ship-gate binding, and all public signatures unchanged",
+          "version": "v15"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "lazy-load torch-backed ladder re-exports so the read-only Vercel web entrypoint remains torch-free",
+          "version": "v15"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "fix(cap3-05): make equal-byte planning honest and reconcile cost ledger",
+          "version": "v14"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support",
+          "version": "v13"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SDE3-03 (SLM-177) proxy-metric calibration activation/budget/feature manifest dataclass, builder/validator, and CLI",
+          "version": "v12"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SDE3-04 constraint-backend benchmark manifest dataclass, builder/validator, and CLI for frozen grammar-backend comparison plan",
+          "version": "v11"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SDE4-01 (SLM-179) scaffold-distillation activation manifest dataclass, builder/validator, and CLI",
+          "version": "v10"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SDE4-04 pretrained-denoiser activation/candidate/budget manifest (wiring slice)",
+          "version": "v9"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add SDE4-03 teacher-paraphrase activation/budget manifest and canonical request renderer (wiring slice)",
+          "version": "v8"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add EFS2-03 conflict-slice repair harness (ConflictSliceV1, repair policies, deterministic fixtures, matched-budget comparison) on top of EFS0-05/CAP5 manifests",
+          "version": "v7"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add EFS0-05 rejected-lever registry (RejectedLeverV1, ReAdjudicationRowV1, paired five-seed classification, autoresearch evidence items) on top of CAP5-02/CAP5-01 manifests",
+          "version": "v6"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add CAP5-02 campaign manifest dataclass, builder/validator, and CLI for preregistered quality/cost arms",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "add GrammarProfile dataclass, manifest builder/validator, and CLI for CAP5-01 grammar/profile family summaries",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-18",
+          "note": "lazy-load Torch-only equal-byte planning dependencies so the web runtime remains import-safe",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-18",
+          "note": "correct equal-byte arm token budgets and fail closed on reference-only low-bit training",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-18",
+          "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm298_capacity_context_curriculum.py",
+        "src/slm_training/harnesses/experiments/",
+        "tests/test_harnesses/experiments/test_slm298_capacity_context_curriculum.py",
+        "tests/test_scripts/test_run_slm298_capacity_context_curriculum.py",
+        "scripts/resume_climb.py",
+        "scripts/run_scaling_ladder.py",
+        "tests/test_harnesses/experiments/test_locked_manifest_digest_threading.py",
+        "src/slm_training/harnesses/rl/trajectory.py",
+        "tests/test_harnesses/rl/test_trajectory.py",
+        "src/slm_training/harnesses/experiments/exp_sr_catalogue.py",
+        "tests/test_harnesses/experiments/test_exp_sr_catalogue.py",
+        "src/slm_training/harnesses/experiments/pct008_artifact_cold_warm.py",
+        "tests/test_harnesses/experiments/test_pct008_artifact_cold_warm.py",
+        "scripts/run_pct008_artifact_cold_warm.py",
+        "tests/test_harnesses/experiments/test_compute_state_controller.py",
+        "src/slm_training/harnesses/experiments/vce009_oracle_contrast_campaign.py",
+        "tests/test_harnesses/experiments/test_vce009_oracle_contrast_campaign.py",
+        "scripts/run_vce009_oracle_contrast_campaign.py",
+        "tests/test_harnesses/experiments/test_symbolic_egraph.py",
+        "scripts/run_exp_sr8_egraph_experiment.py",
+        "tests/test_scripts/test_run_exp_sr8_egraph_experiment.py",
+        "tests/test_harnesses/experiments/test_symbolic_macro_library.py",
+        "scripts/run_exp_sr9_macro_library_experiment.py",
+        "tests/test_scripts/test_run_exp_sr9_macro_library_experiment.py",
+        "tests/test_harnesses/experiments/test_sie006_calibration_campaign.py",
+        "scripts/run_sie006_calibration_campaign.py",
+        "tests/test_scripts/test_run_sie006_calibration_campaign.py",
+        "src/slm_training/harnesses/experiments/goal_support_domain_adequacy.py",
+        "scripts/run_goal_support_domain_adequacy.py",
+        "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py",
+        "tests/test_scripts/test_run_goal_support_domain_adequacy.py",
+        "scripts/evaluate_loss_suites.py"
+      ],
+      "version": "v172"
+    },
+    "harness.experiments.anti_e237_semantic_factor_frontier": {
+      "history": [
+        {
+          "date": "2026-09-26",
+          "note": "Lock canonical best-by-primary-then-smallest selection for multi-candidate SFF campaigns; preserve the rule in manifest-lock regression coverage.",
+          "version": "v12"
+        },
+        {
+          "date": "2026-08-11",
+          "note": "no-bump: route SFF preflight read/write through formal_preflight_payload / migrate_formal_preflight_v1 for EVID-03 digest stability; no SFF campaign semantics change.",
+          "version": "v11"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "Bound SFF Lean proof regeneration and version probes, serialize project builds, and validate committed proof digests fail-closed.",
+          "version": "v11"
+        },
+        {
+          "date": "2026-08-01",
+          "note": "Replace native_decide with kernel-checked decide proofs and regenerate the source-bound SFF formal preflight artifacts",
+          "version": "v10"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "FormalPreflightV1-compliant SFF preflights (lean_version/mathlib_version/build_output_sha256); full AdvisoryResidual #print axioms + #guards; scoreboard formal_preflights summary; fail-closed schema validation.",
+          "version": "v9"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "CodeRabbit follow-ups: non-vacuous role_shuffle membership proof; S column masses derived from goldenB formula; fail-closed formal preflights (no silent proved re-stamp); membership/role golden tests.",
+          "version": "v8"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "Non-vacuous LeverProofLean.AdvisoryResidual scorer/membership/golden incidence cores; SFF campaign formal_obligations + formal_preflight; golden_vectors.v1.json Python↔Lean bridges; hollow residual theorems documented as ADR sketches.",
+          "version": "v7"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "Externalize remaining SFF high-volatility surfaces: claims.v1, suite.v1, projection.v1, math_probes.v1; campaign kill_rules + paired_comparisons; metrics populations/numerics/promotion; wire efficiency/promotion into claim rules; CLI seeds from campaign.",
+          "version": "v6"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "External versioned SFF configs: metrics.v1.json (sff_metrics/v1), scorer_params.v1.json (sff_scorer_params/v1), campaign.v1.json (sff_campaign/v1). Metric inventory/formulas and scorer alphas/role weights live in resources; harness dispatches by formula type only. Scoreboards record config_resources identities.",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "Fail-closed SFF metrics contract (semantic_factor_metrics/v1, scoreboard v3): required wall_ms_*/quality_per_ms fields; campaign must lock wall_ms_mean+quality_per_ms endpoints; validate_scoreboard_metrics before durable write.",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "First-class runtime metrics: per-arm wall_ms mean/p50/p95/total, vs-control ratio, quality_per_ms, delta_accuracy_per_extra_ms; campaign endpoints wall_ms_mean + quality_per_ms; claims C17–C19 efficiency gates.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "Measured SFF suite n_ranked=78 (26×3 seeds): claim validate/invalidate registry, MRR/CI/paired deltas, role-conditioned restart residual; role_ported/direct/exact_typed causal; factor_node inert; role identity claim invalidated; promotion bar fails fixture class.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-31",
+          "note": "Default-off advisory semantic-factor frontier: role-ported factors, HyCE-style restart diffusion, residual scorer with singleton zero-work, anti-E237 fixture campaign SFF-anti-e237-v1 (wiring-only). RL/spectral/topology-authority/recurrent-SHIFT not implemented.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/progspec/semantic_evidence.py",
+        "src/slm_training/models/semantic_factor_propagation.py",
+        "src/slm_training/models/semantic_residual_scorer.py",
+        "src/slm_training/harnesses/experiments/anti_e237_semantic_factor_frontier.py",
+        "scripts/run_semantic_factor_frontier.py",
+        "tests/test_dsl/test_semantic_evidence.py",
+        "tests/test_models/test_semantic_factor_propagation.py",
+        "tests/test_models/test_semantic_residual_scorer.py",
+        "tests/test_harnesses/experiments/test_anti_e237_semantic_factor_frontier.py",
+        "docs/design/semantic-factor-frontier.md",
+        "docs/design/semantic-factor-frontier-results.md",
+        "docs/design/semantic-factor-frontier-results.json",
+        "src/slm_training/harnesses/experiments/semantic_factor_claims.py",
+        "tests/test_harnesses/experiments/test_semantic_factor_claims.py",
+        "src/slm_training/harnesses/experiments/semantic_factor_metrics.py",
+        "tests/test_harnesses/experiments/test_semantic_factor_metrics.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/metrics.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/scorer_params.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/campaign.v1.json",
+        "src/slm_training/harnesses/experiments/semantic_factor_config.py",
+        "src/slm_training/harnesses/experiments/semantic_factor_metric_engine.py",
+        "tests/test_harnesses/experiments/test_semantic_factor_config.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/claims.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/suite.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/projection.v1.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/math_probes.v1.json",
+        "src/slm_training/harnesses/experiments/semantic_factor_formal.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/golden_vectors.v1.json",
+        "tests/test_harnesses/experiments/test_semantic_factor_formal.py",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_advisory-singleton-zero-work.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_advisory-keys-legal.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_factor-membership-roundtrip.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_soft-token-collision.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_golden-incidence-degrees.json",
+        "src/slm_training/resources/experiments/semantic_factor_frontier/formal_preflights/sff_role-shuffle-membership.json"
+      ],
+      "version": "v12"
+    },
+    "harness.experiments.ap027_discrete_plan_pareto": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "ParetoLatencyRow.to_dict() and summarize_pareto's Pareto point ids now canonicalize aliased arm names (e.g. oracle_plan) instead of persisting the raw alias, which previously disagreed with the canonicalized measured_arms field; added a metrics_provenance field so proxy metrics (parse_rate/placeholder_fidelity standing in for meaning-v2/binder-F1 at screening scale) travel with each JSON row instead of only being documented in the generated Markdown caption; deduplicated the version-stamp component pair into a shared STAMP_COMPONENTS constant",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-26",
+          "note": "initial AP-027/SLM-322 discrete-plan Pareto contract: extends AP-022's arm/campaign pattern with a 1/2/4/8 refinement-round axis and the issue's named successor arm (learned_plan_binder_precision), structurally enforcing that AP-022's closed ignored_or_collapsed verdict for learned_abstract_plan can never be marked promotion_eligible",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/discrete_plan_pareto.py",
+        "scripts/run_discrete_plan_pareto.py",
+        "tests/test_harnesses/experiments/test_discrete_plan_pareto.py",
+        "tests/test_scripts/test_run_discrete_plan_pareto.py",
+        "docs/design/discrete-plan-pareto.md",
+        "docs/design/iter-slm322-discrete-plan-pareto-20260726.json"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.ast_sketch_retrieval": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: mock unavailable AgentV SDK in the CLI regression test; production local diagnostic still publishes AgentV evidence",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add an isolated SLM-295 verified-patch-local mode while retaining the SLM-133 fixture interface",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v2 wall budget from the canonical lever registry; emitted behavior is unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "hard-cap AST-sketch retrieval fixture wall-budget metadata at two minutes",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/ast_sketch_retrieval_factorial.py",
+        "scripts/run_ast_sketch_retrieval_factorial.py",
+        "tests/test_harnesses/experiments/test_ast_sketch_retrieval_factorial.py",
+        "tests/test_scripts/test_run_ast_sketch_retrieval_factorial.py"
+      ],
+      "version": "v3"
+    },
+    "harness.experiments.candidate_selector": {
+      "history": [
+        {
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-127 EFS3-04 contract-grounded candidate selector wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/candidate_selector.py",
+        "scripts/run_candidate_selector.py",
+        "tests/test_harnesses/experiments/test_candidate_selector.py",
+        "tests/test_scripts/test_run_candidate_selector.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.canonical_ast_dedup": {
+      "history": [
+        {
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-130 EFS3-05 canonical AST deduplication and valid semantic-mode coverage wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/canonical_ast_dedup.py",
+        "src/slm_training/dsl/grammar/fastpath/lattice_search.py",
+        "scripts/run_canonical_ast_dedup.py",
+        "tests/test_harnesses/experiments/test_canonical_ast_dedup.py",
+        "tests/test_scripts/test_run_canonical_ast_dedup.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.cap2_latent_causal_audit": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "initial registration: CAP2-07 oracle-latent causal-necessity/support/robustness/collapse audit (SLM-330/AP-031), reusing the AP-029/AP-030 codec/decoder and SLM-183 paired-CI stats helpers unchanged",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/cap2_latent_causal_audit.py",
+        "scripts/run_cap2_latent_causal_audit.py",
+        "tests/test_harnesses/experiments/test_cap2_07_latent_causal_audit.py",
+        "docs/design/program-latent-causal-use.md",
+        "docs/design/program-latent-causal-use-20260725.json"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.cap2_selective_hybrid_latent": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "initial registration: CAP2-08 selective-hybrid continuous/discrete program-factor latent audit (SLM-333/AP-033) -- SelectiveLatentConnector (AbstractPlanConnector's gated-additive idiom applied to a continuous soft-factor vector, structurally drop-in-compatible with DenoiserTower.set_plan_connector), the soft/precision-critical factor routing split, and the six-arm (discrete_only/continuous_only/selective_hybrid/all_continuous/random_continuous/oracle_continuous) fixture-scale audit reusing AP-029/030/031's tensorizer, fixture corpus, DISTORTION_THRESHOLD, and SLM-183 paired-CI stats unchanged",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/selective_latent_connector.py",
+        "src/slm_training/harnesses/experiments/cap2_selective_hybrid_latent.py",
+        "scripts/run_cap2_selective_hybrid_latent.py",
+        "tests/test_models/test_selective_latent_connector.py",
+        "tests/test_harnesses/experiments/test_cap2_08_selective_hybrid_latent.py",
+        "docs/design/selective-hybrid-latent-objective.md",
+        "docs/design/selective-hybrid-latent-objective-20260726.json"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.claim_manifest": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "Permit idempotent replay of an identical intact frozen manifest while rejecting mutation and tampering",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "Make frozen claim manifests create-once and verify their canonical content digest before confirmation access",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/claim_manifest.py",
+        "scripts/audit_experiment_firewall.py",
+        "tests/test_harnesses/experiments/test_claim_manifest.py",
+        "tests/test_scripts/test_audit_experiment_firewall.py",
+        "docs/design/iter-slm184-claim-manifest-20260720.json",
+        "docs/design/iter-slm184-claim-manifest-20260720.md"
+      ],
+      "version": "v3"
+    },
+    "harness.experiments.dca_activation_gate": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "re-sequenced against concurrent main registration (union of paths/history during queue merge)",
+          "version": "v7"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-275 DCA2-02 registry entry + blocked iter docs (diffusion-rl-activation-v1)",
+          "version": "v6"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-274 DCA2-01 registry entry + blocked iter docs (block-conversion-activation-v1)",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-273 DCA1-02 registry entry + blocked iter docs (cross-pack-transfer-activation-gate-v1)",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-272 DCA1-01 registry entry + blocked iter docs (program-preference-activation-gate-v1)",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-271 DCA0-03 registry entry + blocked iter docs (mask-curriculum-activation-gate-v1)",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "initial registration; generic DCA activation gate closes SLM-270 DCA0-02 blocked against real prerequisite artifacts",
+          "version": "v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "docs/design/iter-slm270-dca0-02-activation-20260725.json",
+        "docs/design/iter-slm270-dca0-02-activation-20260725.md",
+        "docs/design/iter-slm271-dca0-03-activation-20260725.json",
+        "docs/design/iter-slm271-dca0-03-activation-20260725.md",
+        "docs/design/iter-slm272-dca1-01-activation-20260725.json",
+        "docs/design/iter-slm272-dca1-01-activation-20260725.md",
+        "docs/design/iter-slm273-dca1-02-activation-20260725.json",
+        "docs/design/iter-slm273-dca1-02-activation-20260725.md",
+        "docs/design/iter-slm274-dca2-01-activation-20260725.json",
+        "docs/design/iter-slm274-dca2-01-activation-20260725.md",
+        "docs/design/iter-slm275-dca2-02-activation-20260725.json",
+        "docs/design/iter-slm275-dca2-02-activation-20260725.md",
+        "scripts/audit_dca_activation.py",
+        "src/slm_training/harnesses/experiments/dca_activation_gate.py",
+        "tests/test_harnesses/experiments/test_dca_activation_gate.py",
+        "tests/test_scripts/test_audit_dca_activation.py"
+      ],
+      "version": "v7"
+    },
+    "harness.experiments.dca_causal_disposition": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-276 DCA2-03 disposition bundle publisher aggregates prerequisite gates fail-closed",
+          "version": "v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/dca_causal_disposition.py",
+        "scripts/build_causal_disposition.py",
+        "tests/test_harnesses/experiments/test_dca_causal_disposition.py",
+        "tests/test_scripts/test_build_causal_disposition.py",
+        "docs/design/iter-slm276-dca2-03-disposition-20260725.json",
+        "docs/design/iter-slm276-dca2-03-disposition-20260725.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.efs4_04_causal_synthesis": {
+      "history": [
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: make --write-default-manifest exit after writing the manifest so tests do not overwrite committed design artifacts",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: add regression tests for the campaign manifest, synthesis loader, and CLI; harness behavior unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-140 EFS4-04 Evidence-First Semantic SLM causal synthesis manifest and loader",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/efs4_04_causal_synthesis.py",
+        "scripts/synthesize_efs_campaign.py",
+        "tests/test_harnesses/experiments/test_efs4_04_causal_synthesis.py",
+        "tests/test_scripts/test_synthesize_efs_campaign.py",
+        "docs/design/evidence-first-semantic-slm-campaign-v1.json",
+        "docs/design/iter-efs4-04-causal-synthesis-20260720.json",
+        "docs/design/iter-efs4-04-causal-synthesis-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.external_ceiling": {
+      "history": [
+        {
+          "date": "2026-07-24",
+          "note": "add arm-A tiny-baseline chunk runner, locked-threshold disposition mode with EvidenceBundleV1 plus AgentV, per-arm dtype and max_new_tokens controls",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-294 external-ceiling frontier execution (chunked resume, atomic raw JSONL, Wilson scoreboard) and scorer generate()",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/external_scorer.py",
+        "scripts/run_external_ceiling.py",
+        "src/slm_training/harnesses/experiments/external_ceiling_matrix.py",
+        "tests/test_scripts/test_run_external_ceiling_frontier.py"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.hierarchical_operator_head_baseline": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: import HierarchicalOperator* from hierarchical_head submodule instead of package init (torch-free ops_vocab path)",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-383 (DSH3-15) follow-up to E803: capacity-matched token-baseline vs. weight-zero (frozen no-op) vs. enabled hierarchical-operator-action-head causal experiment over a typed-candidate-group-size fixture corpus, with causal choice-change and compiler-membership evidence",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/hierarchical_operator_head_baseline.py",
+        "scripts/run_hierarchical_operator_head_baseline.py",
+        "tests/test_harnesses/experiments/test_hierarchical_operator_head_baseline.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.lot1_01_activation_gate": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-250 LOT1-01 hard-activation-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts",
+          "version": "v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot1_01_activation_gate.py",
+        "scripts/evaluate_lot1_01_activation_gate.py",
+        "tests/test_harnesses/experiments/test_lot1_01_activation_gate.py",
+        "tests/test_scripts/test_evaluate_lot1_01_activation_gate.py",
+        "docs/design/iter-slm250-lot1-01-not-authorized-20260725.json",
+        "docs/design/iter-slm250-lot1-01-not-authorized-20260725.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.lot1_02_activation_gate": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-251 LOT1-02 launch-gate evaluator closes not_authorized against the real SLM-248/SLM-249 upstream contracts and the LOT1-01 not_authorized disposition",
+          "version": "v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lot1_02_activation_gate.py",
+        "scripts/evaluate_lot1_02_activation_gate.py",
+        "tests/test_harnesses/experiments/test_lot1_02_activation_gate.py",
+        "tests/test_scripts/test_evaluate_lot1_02_activation_gate.py",
+        "docs/design/iter-slm251-lot1-02-not-authorized-20260725.json",
+        "docs/design/iter-slm251-lot1-02-not-authorized-20260725.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.lot_downstream_gate": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "re-sequenced against concurrent main registration (union of paths/history during queue merge)",
+          "version": "v7"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-257 LOT4-01 registry entry + not_authorized iter docs (lotus-openui-compute-frontier-v1)",
+          "version": "v6"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-256 LOT2-03 registry entry + not_authorized iter docs (latent-workspace-capacity-gate-v1)",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-255 LOT3-02 registry entry + not_authorized iter docs (alternative-valid-latent-gate-v1)",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-254 LOT3-01 registry entry + not_authorized iter docs (causal-latent-use-gate-v1)",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "add SLM-253 LOT2-02 registry entry + not_authorized iter docs (structured-latent-readout-gate-v1)",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "initial registration; generic LOT2+ downstream gate closes SLM-252 LOT2-01 not_authorized against the real upstream contracts",
+          "version": "v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.json",
+        "docs/design/iter-slm252-lot2-01-not-authorized-20260725.md",
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.json",
+        "docs/design/iter-slm253-lot2-02-not-authorized-20260725.md",
+        "docs/design/iter-slm254-lot3-01-not-authorized-20260725.json",
+        "docs/design/iter-slm254-lot3-01-not-authorized-20260725.md",
+        "docs/design/iter-slm255-lot3-02-not-authorized-20260725.json",
+        "docs/design/iter-slm255-lot3-02-not-authorized-20260725.md",
+        "docs/design/iter-slm256-lot2-03-not-authorized-20260725.json",
+        "docs/design/iter-slm256-lot2-03-not-authorized-20260725.md",
+        "docs/design/iter-slm257-lot4-01-not-authorized-20260725.json",
+        "docs/design/iter-slm257-lot4-01-not-authorized-20260725.md",
+        "scripts/evaluate_lot_downstream_gate.py",
+        "src/slm_training/harnesses/experiments/lot_downstream_gate.py",
+        "tests/test_harnesses/experiments/test_lot_downstream_gate.py",
+        "tests/test_scripts/test_evaluate_lot_downstream_gate.py"
+      ],
+      "version": "v7"
+    },
+    "harness.experiments.lotus_openui_disposition": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "initial registration; SLM-258 LOT4-02 disposition publisher aggregates upstream gates fail-closed",
+          "version": "v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/lotus_openui_disposition.py",
+        "scripts/publish_lotus_openui_disposition.py",
+        "tests/test_harnesses/experiments/test_lotus_openui_disposition.py",
+        "tests/test_scripts/test_publish_lotus_openui_disposition.py",
+        "docs/design/iter-slm258-lot4-02-disposition-20260725.json",
+        "docs/design/iter-slm258-lot4-02-disposition-20260725.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.one_step_latent_hybrid": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "SLM-336 (AP-035) admission gate: enforce in code that AP-034's oracle-support gate (SLM-335, admission-denied) must clear before the one-step MeanFlow-style prior work can start; no prior or refinement loop is built",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/one_step_latent_hybrid.py",
+        "tests/test_harnesses/experiments/test_one_step_latent_hybrid.py",
+        "docs/design/one-step-latent-hybrid-disposition.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.operator_failure_prediction": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-406 unit tests stub the required AgentV publisher so Python-only CI does not depend on a Node runtime",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-26",
+          "note": "SLM-406: leak-sealed per-record temporal DecodeStats feature rows and shadow-only preflight",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_failure_prediction.py",
+        "scripts/run_dsh3_31_operator_failure_prediction.py",
+        "tests/test_harnesses/experiments/test_operator_failure_prediction.py",
+        "tests/test_scripts/test_run_dsh3_31_operator_failure_prediction.py",
+        "docs/design/dsh3-31-operator-failure-prediction.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.operator_router": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "SLM-417: fail-closed execution-mode router contract with leak-sealed pre-routing features, compiler availability filtering, deterministic fallback, diagnostic-only all-arm oracle labels, and bounded local admission disposition",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_router.py",
+        "scripts/run_dsh5_09_adaptive_router_preflight.py",
+        "tests/test_harnesses/experiments/test_operator_router.py",
+        "docs/design/dsh5-09-adaptive-router-20260726-local/"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.operator_systems_benchmark": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "SLM-407: canonical full-denominator operator serving work contract and local no-claim preflight",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_systems_benchmark.py",
+        "scripts/run_dsh3_32_operator_systems_benchmark.py",
+        "tests/test_harnesses/experiments/test_operator_systems_benchmark.py",
+        "tests/test_scripts/test_run_dsh3_32_operator_systems_benchmark.py",
+        "docs/design/dsh3-32-operator-serving-work.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.operator_transaction_policy": {
+      "history": [
+        {
+          "date": "2026-08-10",
+          "note": "no-bump: test-only fix for test_shuffled_conflict_belief_never_commits_a_real_conflict. The test scored candidate subsets with a freshly-initialized (untrained) scorer and relied on its incidental raw-logit sign to rank the corrupted-safe pair {0,1} above singletons; an unrelated upstream change to something feeding the same fixed torch.manual_seed(11) RNG stream shifted those incidental logits so a singleton (0 conflict_attempts) now ranked first, no longer exercising the intended rejected-attempt path. Deterministically stubs score_transaction_candidates for that one test so the corrupted-belief-ranked pair is always tried first. No production code changed; decode_bounded_transaction_set's safety invariant (a corrupted conflict_belief can waste search but never lets a real conflict commit) is unchanged and now exercised more reliably.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-26",
+          "note": "SLM-414: bounded K=2/K=4 set-valued transaction selection over DSH3-28's independent-set/recurrent-set per-action logits; every ranked subset is re-verified by the real DSH5-05 build_operator_transaction/commit_operator_transaction before it can be selected. Fixture-scale wiring evidence only, no held-out claim yet.",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/operator_transaction_policy.py",
+        "tests/test_harnesses/experiments/test_operator_transaction_policy.py",
+        "docs/design/dsh5-06-operator-transaction-policy.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.reserved_operator_baseline": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial E803 capacity-matched result-only, operator-only, and operator-plus-result hashed-token experiment with causal choice and compiler-membership evidence",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/reserved_operator_baseline.py",
+        "scripts/run_reserved_operator_baseline.py",
+        "tests/test_harnesses/experiments/test_reserved_operator_baseline.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.sde4_02_min_controller_capacity": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v2 wall budget from the canonical lever registry; emitted behavior is unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "hard-cap minimum-controller fixture wall-budget metadata at two minutes",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sde4_02_min_controller_capacity.py",
+        "scripts/run_sde4_02_min_controller_capacity.py",
+        "tests/test_harnesses/experiments/test_sde4_02_min_controller_capacity.py",
+        "tests/test_scripts/test_run_sde4_02_min_controller_capacity.py",
+        "docs/design/iter-sde4-02-min-controller-capacity-20260720.json",
+        "docs/design/iter-sde4-02-min-controller-capacity-20260720.md"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.sde5_floor_escape_matrix": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness",
+          "version": "sde5-03-v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "tests/test_harnesses/experiments/test_sde5_floor_escape_matrix.py",
+        "docs/design/sde5-floor-escape-matrix-results.json",
+        "docs/design/sde5-floor-escape-matrix-results.md"
+      ],
+      "version": "sde5-03-v1"
+    },
+    "harness.experiments.semantic_floor_gate": {
+      "history": [
+        {
+          "date": "2026-09-23",
+          "note": "no-bump: regenerate the inconclusive semantic-floor artifacts after upstream harness component stamps changed; thresholds and gate behavior are unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-16",
+          "note": "no-bump: refresh stale published SemanticFloorGateV1 JSON/Markdown fingerprints so --check matches live closeout (content regeneration only).",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-10",
+          "note": "no-bump: regenerate the committed gate artifact after newly merged harness components changed its embedded component stamp; verdict remains inconclusive and thresholds and gate behavior are unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-10",
+          "note": "no-bump: regenerate the committed gate artifact after harness.autoresearch.experiment_campaign v203 changed its embedded component stamp; verdict remains inconclusive and thresholds and gate behavior are unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-10",
+          "note": "no-bump: regenerate the committed gate artifact (gate_hash, stamped harness.experiments v157) so publish --check passes again after unrelated upstream drift (harness.experiments v148 -> v157); verdict stays inconclusive, thresholds and gate behavior unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-08",
+          "note": "no-bump: regenerate the committed gate artifact (gate_hash, stamped harness.experiments v148) so publish --check passes again after unrelated upstream drift (harness.experiments v147 -> v148); verdict stays inconclusive, thresholds and gate behavior unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-08",
+          "note": "no-bump: regenerate the committed gate artifact (gate_hash, version_stamp.components.harness.experiments=v148) so publish --check passes again after unrelated upstream drift; verdict stays inconclusive, thresholds and gate behavior unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-08",
+          "note": "no-bump: regenerate the committed gate artifact (agentv_owner_sha256, gate_hash) so publish --check passes again after unrelated upstream drift; verdict stays inconclusive, thresholds and gate behavior unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the committed gate artifact after upstream component bumps (evals.scoring v23, harness.experiments v147) so publish --check passes again; verdict stays inconclusive, thresholds and gate behavior unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "no-bump: refresh the committed inconclusive gate narrative and owner hash; thresholds and gate behavior are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "no-bump: regenerate the unchanged inconclusive gate against the current AgentV owner hash; thresholds and gate behavior are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-01",
+          "note": "no-bump: regenerate the unchanged inconclusive gate after updating its embedded harness component identities",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: regenerate the unchanged inconclusive closeout after merging continuous-autotrain and formal-preflight histories",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: republish the unchanged inconclusive gate against current evaluator-owner hashes and registered component identities",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: externalize JSON-shaped pytest parameters without changing cases, assertions, or gate behavior",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "normalize the component version and refresh registered identities while preserving the evidence timestamp",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "initial SLM-213 SemanticFloorGateV1 evidence aggregation and claim authorization",
+          "version": "sde5-06-v1"
+        }
+      ],
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/semantic_floor_gate.py",
+        "scripts/publish_semantic_floor_gate.py",
+        "tests/test_harnesses/experiments/test_semantic_floor_gate.py",
+        "tests/test_scripts/test_publish_semantic_floor_gate.py",
+        "docs/design/semantic-floor-gate-v1.json",
+        "docs/design/semantic-floor-gate-v1.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.semantic_regret": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown and normalize trailing whitespace in fixture runner markdown string; harness behavior, thresholds, and report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v25 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-19",
+          "note": "initial registration of semantic regret decomposition fixture harness (SLM-143)",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/semantic_regret_matrix.py",
+        "scripts/run_semantic_regret_fixture.py",
+        "tests/test_harnesses/experiments/test_semantic_regret_matrix.py",
+        "tests/test_scripts/test_run_semantic_regret_fixture.py",
+        "docs/design/iter-spv0-03-semantic-regret-20260719.json",
+        "docs/design/iter-spv0-03-semantic-regret-20260719.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm135_trailed_assumptions_ablation": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm135_trailed_assumptions_ablation.py",
+        "scripts/run_slm135_trailed_assumptions_fixture.py",
+        "tests/test_harnesses/experiments/test_slm135_trailed_assumptions_ablation.py",
+        "tests/test_scripts/test_run_slm135_trailed_assumptions_fixture.py",
+        "docs/design/iter-slm135-trailed-assumptions-20260720.json",
+        "docs/design/iter-slm135-trailed-assumptions-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm144_plan_predictor": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: extend build_fixture_plan_corpus with optional root/leaf component pools; default behavior, extracted plans, and SLM-144 fixture metrics unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-144 SPV1-01 archetype + role-set predictor fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm144_plan_predictor_matrix.py",
+        "src/slm_training/models/semantic_plan_predictor.py",
+        "src/slm_training/data/semantic_plan/corpus.py",
+        "scripts/run_slm144_plan_predictor_fixture.py",
+        "tests/test_harnesses/experiments/test_slm144_plan_predictor_matrix.py",
+        "tests/test_models/test_semantic_plan_predictor.py",
+        "tests/test_scripts/test_run_slm144_plan_predictor_fixture.py",
+        "docs/design/iter-slm144-plan-predictor-20260720.json",
+        "docs/design/iter-slm144-plan-predictor-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm146_plan_compiler": {
+      "history": [
+        {
+          "date": "2026-08-10",
+          "note": "no-bump: PGS-A01 (SLM-494) publishes AUTHORITY_TIER_VERIFIER_HARD beside existing ownership-map tier constants; no projection behavior change.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-08-08",
+          "note": "SGS-005/SLM-443: add AuthorityProjectionV1/project_authority, a pure re-labeling of already-decided RestrictionResult evidence into the ownership map's authority-tier vocabulary (compiler-hard/oracle-diagnostic/advisory-learned/evaluation-only) with an explicit downgrade_reason on any uncertified, tainted-dependency (nested oracle provenance), or unsafe-diagnostic-control hard removal. Reuses EvidenceKind/certified_restrictions/SemanticPlanV1.to_production_dict; never recomputes hard/soft removal decisions, so the exact candidate domain is unchanged.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refine fixture CLI so plan-only mode no longer overwrites committed design artifacts; refresh fixture design JSON/Markdown",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-146 SPV1-03 SemanticPlanV1 to compiler-choice and X22 tree-edit bridge",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/data/semantic_plan/compiler.py",
+        "src/slm_training/harnesses/experiments/slm146_semantic_plan_compiler.py",
+        "scripts/run_slm146_semantic_plan_compiler_fixture.py",
+        "tests/test_data/test_semantic_plan_extraction/test_compiler.py",
+        "tests/test_harnesses/experiments/test_slm146_semantic_plan_compiler.py",
+        "tests/test_scripts/test_run_slm146_semantic_plan_compiler_fixture.py",
+        "docs/design/iter-slm146-semantic-plan-compiler-20260720.json",
+        "docs/design/iter-slm146-semantic-plan-compiler-20260720.md"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.slm147_x22_retrieval": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamp after harness.experiments v30 bump; report content unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-147 SPV1-04 X22 leakage-safe retrieved-valid-AST prototype seeding harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm147_x22_retrieval.py",
+        "scripts/run_slm147_x22_retrieval.py",
+        "tests/test_harnesses/experiments/test_slm147_x22_retrieval.py",
+        "tests/test_scripts/test_run_slm147_x22_retrieval.py",
+        "docs/design/iter-slm147-x22-retrieval-20260720.json",
+        "docs/design/iter-slm147-x22-retrieval-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm148_x22_conflict_campaign": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 × conflict-slice staged campaign wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm148_x22_conflict_campaign.py",
+        "scripts/run_slm148_x22_conflict_campaign.py",
+        "tests/test_harnesses/experiments/test_slm148_x22_conflict_campaign.py",
+        "tests/test_scripts/test_run_slm148_x22_conflict_campaign.py",
+        "docs/design/iter-slm148-x22-conflict-campaign-20260720.json",
+        "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm155_factorization_comparison": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "SLM-297: retain per-example final programs in FactorizationRecord (AR via _program_from_actions, X22 seed + program_note, hybrid source), add FinalProgramOutcomeV1 unified final-program scoring + transition/paired-table helpers, run_fixture_campaign_with_records, and the run_slm297_unified_rescore CLI; aggregate rows unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-155 SPV3-02 matched AR vs plan-conditioned X22 factorization comparison wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm155_factorization_comparison.py",
+        "scripts/run_slm155_factorization_comparison_fixture.py",
+        "scripts/run_slm297_unified_rescore.py",
+        "tests/test_harnesses/experiments/test_slm155_factorization_comparison.py",
+        "tests/test_scripts/test_run_slm155_factorization_comparison_fixture.py",
+        "tests/test_scripts/test_run_slm297_unified_rescore.py",
+        "docs/design/iter-slm155-factorization-comparison-20260720.json",
+        "docs/design/iter-slm155-factorization-comparison-20260720.md",
+        "docs/design/iter-slm297-unified-rescore-20260724.json",
+        "docs/design/iter-slm297-unified-rescore-20260724.md"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.slm156_plan_refinement": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-156 SPV3-03 shared recursive SemanticPlanV1 refinement wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm156_plan_refinement.py",
+        "scripts/run_slm156_plan_refinement_fixture.py",
+        "tests/test_harnesses/experiments/test_slm156_plan_refinement.py",
+        "tests/test_scripts/test_run_slm156_plan_refinement_fixture.py",
+        "docs/design/iter-slm156-plan-refinement-20260720.json",
+        "docs/design/iter-slm156-plan-refinement-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm157_flow_consistency": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-157 SPV3-04 flow / consistency / trajectory-imitation wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm157_flow_consistency.py",
+        "scripts/run_slm157_flow_consistency_fixture.py",
+        "tests/test_harnesses/experiments/test_slm157_flow_consistency.py",
+        "tests/test_scripts/test_run_slm157_flow_consistency_fixture.py",
+        "docs/design/iter-slm157-flow-consistency-20260720.json",
+        "docs/design/iter-slm157-flow-consistency-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm158_mixer_comparison": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm158_mixer_comparison.py",
+        "scripts/run_slm158_mixer_comparison_fixture.py",
+        "tests/test_harnesses/experiments/test_slm158_mixer_comparison.py",
+        "tests/test_scripts/test_run_slm158_mixer_comparison_fixture.py",
+        "docs/design/iter-slm158-mixer-comparison-20260720.json",
+        "docs/design/iter-slm158-mixer-comparison-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm159_cross_dsl_replication": {
+      "history": [
+        {
+          "date": "2026-09-26",
+          "note": "Keep fixture reports in the requested output directory and preserve committed historical measurements.",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-159 SPV4-01 cross-DSL semantic-plan replication wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm159_cross_dsl_replication.py",
+        "scripts/run_slm159_cross_dsl_replication_fixture.py",
+        "tests/test_harnesses/experiments/test_slm159_cross_dsl_replication.py",
+        "tests/test_scripts/test_run_slm159_cross_dsl_replication_fixture.py",
+        "docs/design/iter-slm159-cross-dsl-replication-20260720.json",
+        "docs/design/iter-slm159-cross-dsl-replication-20260720.md"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.slm160_spv_disposition": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "update SLM-157 flow/consistency disposition rationale now that the fixture evidence document exists",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-160 SPV4-02 causal architecture disposition docs/spec harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm160_spv_disposition.py",
+        "scripts/run_slm160_spv_disposition.py",
+        "tests/test_harnesses/experiments/test_slm160_spv_disposition.py",
+        "tests/test_scripts/test_run_slm160_spv_disposition.py",
+        "docs/design/iter-slm160-spv-disposition-20260720.json",
+        "docs/design/iter-slm160-spv-disposition-20260720.md"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.slm163_schema_action_embedding": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-163 schema-description action-embedding wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm163_schema_action_embedding.py",
+        "scripts/run_slm163_schema_action_embedding_fixture.py",
+        "tests/test_harnesses/experiments/test_slm163_schema_action_embedding.py",
+        "tests/test_scripts/test_run_slm163_schema_action_embedding_fixture.py",
+        "docs/design/iter-slm163-schema-action-embedding-20260720.json",
+        "docs/design/iter-slm163-schema-action-embedding-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm164_targeted_margin": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-164 confusion-targeted legal-sibling contrast margin wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm164_targeted_margin.py",
+        "scripts/run_slm164_targeted_margin_fixture.py",
+        "tests/test_harnesses/experiments/test_slm164_targeted_margin.py",
+        "tests/test_scripts/test_run_slm164_targeted_margin_fixture.py",
+        "docs/design/iter-slm164-targeted-margin-20260720.json",
+        "docs/design/iter-slm164-targeted-margin-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm165_interaction_factorial": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after commit; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-165 2x2x2 interaction factorial wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm165_interaction_factorial.py",
+        "scripts/run_slm165_interaction_factorial_fixture.py",
+        "tests/test_harnesses/experiments/test_slm165_interaction_factorial.py",
+        "tests/test_scripts/test_run_slm165_interaction_factorial_fixture.py",
+        "docs/design/iter-slm165-interaction-factorial-20260720.json",
+        "docs/design/iter-slm165-interaction-factorial-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm166_connector_capacity": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after commit; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v41 bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments bump; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-166 semantic connector capacity wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm166_connector_capacity.py",
+        "scripts/run_slm166_connector_capacity_fixture.py",
+        "tests/test_harnesses/experiments/test_slm166_connector_capacity.py",
+        "tests/test_scripts/test_run_slm166_connector_capacity_fixture.py",
+        "docs/design/iter-slm166-connector-capacity-20260720.json",
+        "docs/design/iter-slm166-connector-capacity-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm167_zero_training_sparse_ceiling": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after commit amend; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-167 zero-training sparse-action ceiling wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm167_zero_training_sparse_ceiling.py",
+        "scripts/run_slm167_zero_training_sparse_ceiling_fixture.py",
+        "tests/test_harnesses/experiments/test_slm167_zero_training_sparse_ceiling.py",
+        "tests/test_scripts/test_run_slm167_zero_training_sparse_ceiling_fixture.py",
+        "docs/design/iter-slm167-zero-training-sparse-ceiling-20260720.json",
+        "docs/design/iter-slm167-zero-training-sparse-ceiling-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm168_public_structured_contract_pointer": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-168 public structured contract-index pointer wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm168_public_structured_contract_pointer.py",
+        "scripts/run_slm168_public_structured_contract_pointer_fixture.py",
+        "tests/test_harnesses/experiments/test_slm168_public_structured_contract_pointer.py",
+        "tests/test_scripts/test_run_slm168_public_structured_contract_pointer_fixture.py",
+        "docs/design/iter-slm168-public-structured-contract-pointer-20260720.json",
+        "docs/design/iter-slm168-public-structured-contract-pointer-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm170_exposure_targeted_rare_action": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm170_exposure_targeted_rare_action.py",
+        "scripts/run_slm170_exposure_targeted_rare_action_fixture.py",
+        "tests/test_harnesses/experiments/test_slm170_exposure_targeted_rare_action.py",
+        "tests/test_scripts/test_run_slm170_exposure_targeted_rare_action_fixture.py",
+        "docs/design/iter-slm170-exposure-targeted-rare-action-20260720.json",
+        "docs/design/iter-slm170-exposure-targeted-rare-action-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm172_render_equivalence": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-172 SDE2-05 render-equivalence wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm172_render_equivalence.py",
+        "scripts/run_slm172_render_equivalence_fixture.py",
+        "tests/test_harnesses/experiments/test_slm172_render_equivalence.py",
+        "tests/test_scripts/test_run_slm172_render_equivalence_fixture.py",
+        "docs/design/iter-slm172-render-equivalence-20260720.json",
+        "docs/design/iter-slm172-render-equivalence-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm174_action_alias_generalization": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-174 SDE2-07 action-alias generalization fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm174_action_alias_generalization.py",
+        "scripts/run_slm174_action_alias_generalization_fixture.py",
+        "tests/test_harnesses/experiments/test_slm174_action_alias_generalization.py",
+        "tests/test_scripts/test_run_slm174_action_alias_generalization_fixture.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm176_action_shortlist_rerank": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-176 P14 action-shortlist retrieve-then-rerank fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm176_action_shortlist_rerank.py",
+        "scripts/run_slm176_action_shortlist_rerank_fixture.py",
+        "tests/test_harnesses/experiments/test_slm176_action_shortlist_rerank.py",
+        "tests/test_scripts/test_run_slm176_action_shortlist_rerank_fixture.py",
+        "docs/design/iter-slm176-action-shortlist-rerank-20260720.json",
+        "docs/design/iter-slm176-action-shortlist-rerank-20260720.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm183_power_protocol": {
+      "history": [
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 lock the current-contract local training corpus before the trained baseline grid",
+          "version": "v13"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 expose the locked local E297 trained-cell protocol through the shared power-protocol CLI",
+          "version": "v12"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 reuse an existing validated campaign spec despite unordered allowed-knob serialization",
+          "version": "v11"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 reuse the same immutable campaign spec for every local shard",
+          "version": "v10"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 bind shard events to the locked AP-007 campaign experiment",
+          "version": "v9"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "SLM-287 expose deterministic local shard and merge modes through the shared power-protocol CLI",
+          "version": "v8"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "Persist SLM-287 timeout outcomes through the shared power-protocol CLI",
+          "version": "v7"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "Render SLM-287 bounded local-grid evidence through the shared CLI",
+          "version": "v6"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "Expose the SLM-287 local executor on the shared power-protocol CLI",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "Make SLM-183 fixture doc writes opt-in while sharing the power-protocol CLI with SLM-287",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "Run exact paired control and candidate arms under a pre-start campaign lock with opt-in canonical doc writes",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "Embed the canonical ExperimentCampaignV1 preregistration with binder-reference fallback and Holm family metadata",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "no-bump: add seed_contrast field to PowerProtocolReport and ruff style fixes; behavior-neutral",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-183 PQR powered cluster-aware confirmation protocol fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
+        "scripts/run_flow_power_protocol.py",
+        "tests/test_harnesses/experiments/test_slm183_power_protocol.py",
+        "tests/test_scripts/test_run_flow_power_protocol_fixture.py",
+        "docs/design/iter-slm183-power-protocol-20260720.json",
+        "docs/design/iter-slm183-power-protocol-20260720.md"
+      ],
+      "version": "v13"
+    },
+    "harness.experiments.slm186_verified_utility": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 FFE0-04 verified-utility ladder and Goodhart canary audit wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm186_verified_utility.py",
+        "scripts/run_verified_utility_audit.py",
+        "tests/test_harnesses/experiments/test_slm186_verified_utility.py",
+        "tests/test_scripts/test_run_verified_utility_audit.py",
+        "docs/design/iter-slm186-verified-utility-20260721.json",
+        "docs/design/iter-slm186-verified-utility-20260721.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm187_topology_parity": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-187 FFE1-01 topology solver/runtime transition parity oracle, TopologyStateV2 carrier, and fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm187_topology_parity.py",
+        "scripts/run_slm187_topology_parity_fixture.py",
+        "tests/test_harnesses/experiments/test_slm187_topology_parity.py",
+        "tests/test_scripts/test_run_slm187_topology_parity_fixture.py",
+        "docs/design/iter-slm187-topology-parity-20260721.json",
+        "docs/design/iter-slm187-topology-parity-20260721.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm188_edit_algebra": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "apply missing-statement insertions with typed leaf or container payloads instead of rejecting them before dispatch",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-188 FFE1-02 edit-algebra reachability, canonical invariance, TransitionCertificateV1, and audit CLI",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm188_edit_algebra.py",
+        "scripts/audit_edit_reachability.py",
+        "tests/test_harnesses/experiments/test_slm188_edit_algebra.py",
+        "tests/test_scripts/test_audit_edit_reachability.py",
+        "docs/design/iter-slm188-edit-algebra-20260721.json",
+        "docs/design/iter-slm188-edit-algebra-20260721.md"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.slm189_bridge_planner": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate test-generated design artifacts under pytest temporary paths; experiment behavior and canonical evidence are unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-189 FFE2-01 bridge planner fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm189_bridge_planner.py",
+        "tests/test_harnesses/experiments/test_slm189_bridge_planner.py",
+        "tests/test_scripts/test_run_bridge_planner_audit.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm190_exact_flow": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: isolate plan-only test artifacts; exact-flow experiment behavior is unchanged",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-190 FFE2-02 exact finite-state CTMC reference fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm190_exact_flow.py",
+        "tests/test_harnesses/experiments/test_slm190_exact_flow.py",
+        "tests/test_scripts/test_run_exact_flow_fixture.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm191_termination_matrix": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-191 FFE2-03 termination-policy fixture matrix, TerminationManifestV1, and calibration instrumentation",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm191_termination_matrix.py",
+        "tests/test_harnesses/experiments/test_slm191_termination_matrix.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm192_profile_flow_pipeline": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 stage-accurate cost profiler for valid-edit bridge, training, decode, closure, and verification",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm192_profile_flow_pipeline.py",
+        "tests/test_harnesses/experiments/test_slm192_profile_flow_pipeline.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm193_flow_caches": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-193 FFE3-02 bit-exact state, candidate, closure, and bridge cache fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm193_flow_caches.py",
+        "src/slm_training/harness_core/flow_cache.py",
+        "tests/test_harnesses/experiments/test_slm193_flow_caches.py",
+        "tests/test_harness_core/test_flow_cache.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm194_candidate_proposals": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-194 FFE3-03 candidate proposal recall, fallback, parity, and wall-cost fixture",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm194_candidate_proposals.py",
+        "tests/test_harnesses/experiments/test_slm194_candidate_proposals.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm197_direct_bridge_policy": {
+      "history": [
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S5/N4 decode-only authority ladder, plus removal of three committed merge-conflict marker lines (from merge 7bdc348) that fenced two additive sibling sections; both sections are kept in full. Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: append-only quality-experiment-matrix.md section for the S6/S12 N2/N3 decode-authority audit (context_ablation arms and the per-step commit-authority histogram). Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S14 appends the N12 LAVE stall-termination section to docs/design/quality-experiment-matrix.md (fixture-demo telemetry audit rows only, append-only). No bridge-policy code, gate, metric or matrix cell for this component changes.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-04",
+          "note": "no-bump: correct a stale fixed-output-vocab figure (296 -> 569) in docs/design/quality-experiment-matrix.md; the registry pins vocab_size 569 and the wrong number had misled an external reviewer. Documentation only.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "no-bump: reconcile the shared E60-E65 status table after their canonical substrates landed; SLM-197 behavior is unchanged.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "no-bump: append c1839 null evidence and its successor objective to the shared quality matrix without changing the SLM-197 scorer or experiment.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-03",
+          "note": "no-bump: append c1838 fixture-confirmation evidence to the shared quality matrix without changing the SLM-197 scorer or experiment.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-08-02",
+          "note": "no-bump: document the quality-matrix process-isolation requirement without changing the SLM-197 scorer or experiment.",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-27",
+          "note": "no-bump: append the SLM-420 (DSH5-12) advanced-operator disposition terminal entry to the shared quality matrix without changing the SLM-197 scorer or matrix behavior",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: append the E76-E88 wired-but-undocumented V7 arms note and the allow_unconstrained_fallback fail-closed fix pointer to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: append retired E1211 topology-dose evidence and E1213 preregistration to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: append SLM-298 bounded local diagnostic evidence to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: append corrected historical E615 fixture evidence to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: append the SLM-236 blocked RSC4 disposition to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: append the SLM-233 gate-bounded matched recursive campaign to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-243 measured recursive-update architecture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-232 measured latent-state disposition to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-231 measured recurrence-dynamics disposition to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-230 measured recurrence disposition to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append the SLM-200 measured fixture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append SLM-199 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: append SLM-198 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-197 exact-candidate direct policy, set-mass loss, matched time encodings, checkpoint migration, free-running decode, and honest D0-D5 fixture matrix",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm197_direct_bridge_policy.py",
+        "src/slm_training/models/legal_edit_scorer.py",
+        "scripts/run_direct_bridge_policy_matrix.py",
+        "tests/test_models/test_legal_edit_scorer.py",
+        "tests/test_harnesses/experiments/test_slm197_direct_bridge_policy.py",
+        "tests/test_scripts/test_run_direct_bridge_policy_matrix.py",
+        "docs/design/iter-slm197-direct-bridge-policy-20260723.json",
+        "docs/design/iter-slm197-direct-bridge-policy-20260723.md",
+        "docs/design/iter-slm197-direct-bridge-policy-agentv-20260723/",
+        "docs/design/quality-experiment-matrix.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm198_bridge_curriculum": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "Deduplicate per-seed manifests, retain decode trace digests instead of repeated traces, and compact deployable evidence without changing measured metrics",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-198 target-first bridge curriculum manifest, deterministic scheduling features, exposure proofs, resumable sampler, and honest fixture matrix",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm198_bridge_curriculum.py",
+        "scripts/run_bridge_curriculum_matrix.py",
+        "tests/test_harnesses/experiments/test_slm198_bridge_curriculum.py",
+        "tests/test_scripts/test_run_bridge_curriculum_matrix.py",
+        "docs/design/iter-slm198-bridge-curriculum-20260723.json",
+        "docs/design/iter-slm198-bridge-curriculum-20260723.md",
+        "docs/design/iter-slm198-bridge-curriculum-agentv-20260723/"
+      ],
+      "version": "v2"
+    },
+    "harness.experiments.slm199_legal_edit_flow": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: exclude test-only external case resources from wheel and Vercel packaging without changing deployed behavior",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "Regenerate the Vercel exclusion block from the restored canonical lever tuple after conflict resolution",
+          "version": "v5"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: route the Vercel slim dependency set through installCommand + src/slm_training/web/requirements-vercel.txt (repo policy bars a top-level requirements.txt) and lock the new exclusions in the bundle policy test",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-25",
+          "note": "no-bump: shrink the Vercel bundle from ~10.4 GB to under half of the first working 247 MB deploy — exclude local build/run artifacts (/outputs, /.venv, /node_modules, /build, /session, /_uv, /tests), published training records.jsonl, sourcemaps, oversized historical docs/design JSON, and the fixture checkpoint; ship a slim requirements.txt without numpy/onnxruntime (generation hands off to the browser path honestly); stop installing the project into the function venv (tool.uv package=false)",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: assert the wheel matches the existing Vercel exclusion for the offline SLM-230 corpus",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: exclude offline experiment harness modules from the Vercel function bundle without changing deployed web behavior",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-24",
+          "note": "no-bump: exclude the offline SLM-233 campaign runner from Vercel source upload without changing deployed web behavior",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "move nested AgentV evidence exclusion to Vercel source-upload policy after live previews proved the function-level glob did not remove those files",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "exclude SLM-243 offline matrix code from the Vercel source upload while retaining its compact dashboard result JSON",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: replace the ineffective SLM-230 function glob with a source-upload ignore for the offline corpus without changing web runtime behavior",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: exclude SLM-230 offline corpus and evidence directories from the Vercel function bundle without changing web runtime behavior",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: generalize the offline Vercel harness exclusion to SLM-199/200 and exclude the SLM-200 top-level experiment report while preserving measured experiment behavior",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: regenerate SLM-199 evidence from clean v2 code with field-level AgentV checks and stamped result artifacts",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "enforce field-level AgentV checks, restricted checkpoint loading, contained certificate failures, and canonical shared run budgets",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: compact equivalent Vercel exclusions below the 256-character schema limit after preview validation rejected the expanded spelling",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: exclude offline-only SLM-199 train and experiment modules from the Vercel runtime bundle without changing rate, sampler, or evidence behavior",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-199 exact finite-graph rate targets, UNKNOWN-safe adapted bridge targets, positive-rate model, exact Gillespie oracle, bounded production sampler, and honest fixture evidence",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
+        "src/slm_training/models/legal_edit_flow.py",
+        "src/slm_training/flow/targets.py",
+        "src/slm_training/flow/samplers.py",
+        "scripts/run_legal_edit_flow_fixture.py",
+        "scripts/train_legal_edit_flow.py",
+        "tests/test_harnesses/experiments/test_slm199_legal_edit_flow.py",
+        "tests/test_models/test_legal_edit_flow.py",
+        "tests/test_flow/test_targets.py",
+        "tests/test_flow/test_samplers.py",
+        "tests/test_scripts/test_run_legal_edit_flow_fixture.py",
+        "tests/test_scripts/test_vercel_bundle_policy.py",
+        "vercel.json",
+        ".vercelignore",
+        "docs/design/iter-slm199-legal-edit-flow-20260723.json",
+        "docs/design/iter-slm199-legal-edit-flow-20260723.md",
+        "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
+      ],
+      "version": "v5"
+    },
+    "harness.experiments.slm200_flow_objective_attribution": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: make the portable-path helper recognize its stable artifact-directory marker so the existing worktree-independent contract is testable on CI",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "rewrite AgentV artifact paths and encoded projection identities to portable agentv-dir references before committing evidence",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "restrict AgentV primary-parity checks to named booleans while retaining numeric parameter and initialization evidence in the result payload",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "fix normalized version-stamp construction in the SLM-200 publisher before measured evidence generation",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-200 A0-A9 matched objective registry, exact-oracle control, parity validation, powered-protocol pins, confirmation firewall, and honest fixture-screen disposition",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm200_flow_objective_attribution.py",
+        "scripts/run_flow_objective_attribution.py",
+        "tests/test_harnesses/experiments/test_slm200_flow_objective_attribution.py",
+        "tests/test_scripts/test_run_flow_objective_attribution.py"
+      ],
+      "version": "v4"
+    },
+    "harness.experiments.slm209_debt_targeted_curriculum": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: propagate existing design-artifact path controls through the fixture wrapper; curriculum metrics are unchanged",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "extend owner with SLM-210 SDE5FloorEscapeMatrixV1, weight-permuted exposure control, and plan/mass axis audit",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "SLM-209 make debt digests deterministic (drop timestamp); add --design-json/--design-md overrides",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm209_debt_targeted_curriculum.py",
+        "scripts/run_slm209_debt_targeted_curriculum_fixture.py",
+        "tests/test_harnesses/experiments/test_slm209_debt_targeted_curriculum.py",
+        "tests/test_scripts/test_run_slm209_debt_targeted_curriculum_fixture.py",
+        "docs/design/iter-slm209-debt-targeted-curriculum-20260720.json",
+        "docs/design/iter-slm209-debt-targeted-curriculum-20260720.md"
+      ],
+      "version": "v3"
+    },
+    "harness.experiments.slm211_untied_output_head": {
+      "history": [
+        {
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-316 AP-024 review fix (CodeRabbit on PR #976) -- DenoiserTower.project's runtime-symbol-features reshape-and-recurse branch (a per-row compiler/LTR score reshaped to a synthetic [1,N,D] batch to reuse this method) was incorrectly picking up the plan-connector bias a second time because the recursive call is 3D; added an internal _apply_plan_bias switch so that recursion never applies the bias, plus a regression test combining runtime_symbol_features with an attached plan connector. Unrelated to output-head tying/untying and behavior-neutral for this component's concern",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-26",
+          "note": "no-bump: SLM-316 AP-024 added a default-off plan-conditioning bias hook to DenoiserTower.project/__init__ (see model.twotower v252); unrelated to output-head tying/untying and behavior-neutral for this component's concern",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-211 SDE5-04 default-on output-head tying control, copy-init untied arm, explicit checkpoint migration, optimizer deduplication, and spectral/Cactus metadata",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm211_untied_output_head.py",
+        "src/slm_training/models/blocks.py",
+        "src/slm_training/models/hf_denoiser.py",
+        "src/slm_training/runtime/cactus/__init__.py",
+        "tests/test_models/test_tie_output_embedding.py",
+        "docs/design/iter-slm211-untied-output-head-20260721.json",
+        "docs/design/iter-slm211-untied-output-head-20260721.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm212_debt_routing": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-212 SDE5-05 constraint-debt routing over decode paths wiring/fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm212_debt_routing.py",
+        "tests/test_harnesses/experiments/test_slm212_debt_routing.py",
+        "tests/test_scripts/test_run_slm212_debt_routing_fixture.py"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm214_spectral_snapshot": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: preserve the current-registry fixture assertion while merging the externalized-case update",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: make the fixture assertion follow the canonical component registry instead of a stale hard-coded version",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: make fixture assertions follow the current component registry and keep generated design artifacts in pytest temporary paths",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "expose canonical scale-invariant spectral trap projection for SLM-219 without a parallel SVD owner",
+          "version": "v4"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "make Xavier and Kaiming null draws deterministic with supported generator-aware uniform sampling",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "no-bump: update test_inspect_spectral literal to match current component version v2; fixture/report semantics unchanged",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "SLM-211: record tie_output_embedding in SpectralSnapshotV1",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-214 NCS0-01 SpectralSnapshotV1 native-PyTorch spectral backend, role registry, tied-storage detection, and randomized-ESD null calibration",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py",
+        "scripts/inspect_spectral.py",
+        "tests/test_harnesses/experiments/test_slm214_spectral_snapshot.py",
+        "tests/test_scripts/test_inspect_spectral.py",
+        "docs/design/iter-slm214-spectral-snapshot-20260721.json",
+        "docs/design/iter-slm214-spectral-snapshot-20260721.md",
+        ".agents/skills/autotrain/references/inspect.md"
+      ],
+      "version": "v4"
+    },
+    "harness.experiments.slm215_spectral_atlas": {
+      "history": [
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: preserve the current-registry fixture assertion while merging the externalized-case update",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-30",
+          "note": "no-bump: make the fixture assertion follow the canonical component registry instead of a stale hard-coded version",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: pin the custom gate-path regression to the current honest verdict",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: assert that custom gate references and hashes identify the same loaded artifact",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "record the actual caller-supplied SemanticFloorGateV1 path in atlas manifests",
+          "version": "v3"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "bind NCS atlas manifests to SemanticFloorGateV1 and keep strict meaning-v2 separate from legacy meaningful rate",
+          "version": "v2"
+        },
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm215_spectral_atlas.py",
+        "scripts/build_spectral_atlas.py",
+        "tests/test_harnesses/experiments/test_slm215_spectral_atlas.py",
+        "tests/test_scripts/test_build_spectral_atlas.py",
+        "docs/design/iter-slm215-spectral-atlas-20260721.json",
+        "docs/design/iter-slm215-spectral-atlas-20260721.md"
+      ],
+      "version": "v3"
+    },
+    "harness.experiments.slm216_spectral_regime": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial SLM-216 fixed-token batch/data-scale matrix and SpectralRegimeGateV1",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm216_spectral_regime.py",
+        "scripts/run_spectral_regime_matrix.py",
+        "tests/test_harnesses/experiments/test_slm216_spectral_regime.py",
+        "tests/test_scripts/test_run_spectral_regime_matrix.py",
+        "docs/design/iter-slm216-spectral-regime-20260723.json",
+        "docs/design/iter-slm216-spectral-regime-20260723.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm217_functional_spectra": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial FunctionalSpectralSnapshotV1 exact-state contract and bounded fixture",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm217_functional_spectra.py",
+        "scripts/run_functional_spectral_fixture.py",
+        "tests/test_harnesses/experiments/test_slm217_functional_spectra.py",
+        "tests/test_scripts/test_run_functional_spectral_fixture.py",
+        "docs/design/iter-slm217-functional-spectra-20260723.json",
+        "docs/design/iter-slm217-functional-spectra-20260723.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm218_cross_attention_retention": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial CrossAttentionRetentionReportV1 geometry and fail-closed family coverage",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm218_cross_attention_retention.py",
+        "scripts/run_cross_attention_retention.py",
+        "tests/test_harnesses/experiments/test_slm218_cross_attention_retention.py",
+        "tests/test_scripts/test_run_cross_attention_retention.py",
+        "docs/design/iter-slm218-cross-attention-retention-20260723.json",
+        "docs/design/iter-slm218-cross-attention-retention-20260723.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm219_correlation_traps": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial CorrelationTrapReportV1 with deterministic six-checkpoint prefix evidence, independent collapse preregistration, confirmation-timed warnings, native and WeightWatcher controls, and fail-closed decision",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm219_correlation_traps.py",
+        "scripts/collect_correlation_trap_evidence.py",
+        "scripts/run_correlation_trap_retrospective.py",
+        "tests/test_harnesses/experiments/test_slm219_correlation_traps.py",
+        "tests/test_scripts/test_run_correlation_trap_retrospective.py",
+        "docs/design/iter-slm219-correlation-trap-evidence-20260723.json",
+        "docs/design/iter-slm219-correlation-trap-agentv-20260723/",
+        "docs/design/iter-slm219-correlation-trap-20260723.json",
+        "docs/design/iter-slm219-correlation-trap-20260723.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm220_causal_subspace": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "initial CausalSubspaceSnapshotV1 activation-side restriction estimator and rejected fixture-only retrospective",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm220_causal_subspace.py",
+        "scripts/run_causal_subspace_fixture.py",
+        "tests/test_harnesses/experiments/test_slm220_causal_subspace.py",
+        "tests/test_scripts/test_run_causal_subspace_fixture.py",
+        "docs/design/iter-slm220-causal-subspace-20260723.json",
+        "docs/design/iter-slm220-causal-subspace-20260723.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm222_muon_baseline": {
+      "history": [
+        {
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-222 NCS2-03 Muon/AdamW hybrid optimizer baseline fixture harness",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm222_muon_baseline.py",
+        "docs/design/iter-slm222-muon-baseline-20260721.json",
+        "docs/design/iter-slm222-muon-baseline-20260721.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm226_absolute_spectral_gate": {
+      "history": [
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: refresh measured docs from the clean provenance-pinning implementation commit",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "no-bump: pin check-mode provenance to the clean evidence commit across docs-only follow-up commits",
+          "version": "v1"
+        },
+        {
+          "date": "2026-07-23",
+          "note": "initial finite-size null and scratch-width matrix plus AbsoluteSpectralTargetGateV1",
+          "version": "v1"
+        }
+      ],
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm226_absolute_spectral_gate.py",
+        "scripts/run_absolute_spectral_gate.py",
+        "tests/test_harnesses/experiments/test_slm226_absolute_spectral_gate.py",
+        "tests/test_scripts/test_run_absolute_spectral_gate.py",
+        "docs/design/iter-slm226-absolute-spectral-gate-20260723.json",
+        "docs/design/iter-slm226-absolute-spectral-gate-20260723.md"
+      ],
+      "version": "v1"
+    },
+    "harness.experiments.slm228_spectral_disposition": {
+      "history": [
+        {
+          "date": "2026-09-26",
+          "note": "no-bump: record R24 incomplete-pair checkpoint evidence in README and MODEL_CARD; SLM-228 implementation, experiment definition, and metrics remain unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-22",
+          "note": "no-bump: README and MODEL_CARD record the separate CPU SCI-LAB continuation checkpoints; SLM-228 spectral-disposition implementation, experiment definition and existing results are unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c3's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c2's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop recovery2 continuous-loop-20260902-recovery2-b552b74b-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop climb-c continuous-loop-20260902-climb-c-7a4ba2f4-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: record scheduled loop climb-b continuous-loop-20260902-climb-b-cad96bc5-c1's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-09-02",
+          "note": "no-bump: S8 appends the two-tower diffusion / automaton-constrained decoding transfer audit (2026-09-02) section to research-lineage.md; SLM-228 spectral disposition behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260821-continuous-openui-local-8c0b60dd-c541's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260821-continuous-openui-local-8c0b60dd-c538's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c535's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c534's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c533's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c532's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c531's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c530's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c529's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c528's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c527's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c526's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c525's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c524's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c523's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c522's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c521's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c520's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c519's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c518's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-21",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c517's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c515's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c514's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c512's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c510's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c509's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c508's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c507's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c506's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c505's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c504's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c503's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c502's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c500's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c499's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c498's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c497's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c496's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c495's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c494's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c493's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c492's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c491's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c489's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c488's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c487's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c486's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c485's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c484's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c483's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c482's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c477's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c476's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c475's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c474's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c473's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c472's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c471's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c470's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c469's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c468's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c467's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c466's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c465's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
+          "version": "v3"
+        },
+        {
+          "date": "2026-08-20",
+          "note": "no-bump: record scheduled loop continuous-openui-local continuous-loop-20260820-continuous-openui-local-8c0b60dd-c464's checkpoint-note-only doc update (fixture/scratch continuous cycle honesty stub); behavior unchanged.",
           "version": "v3"
         },
         {
