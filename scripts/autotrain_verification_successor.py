@@ -1,1 +1,201 @@
-IiIiUmViaW5kIGEgc2F2ZWQgcmVwYWlyIHByb3Bvc2FsIHdoZW4gaXRzIHZlcmlmaWVyIGVudmlyb25tZW50IGhhcyBkcmlmdGVkLiIiIgoKZnJvbSBfX2Z1dHVyZV9fIGltcG9ydCBhbm5vdGF0aW9ucwoKaW1wb3J0IGpzb24KZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpmcm9tIHNjcmlwdHMubWVyZ2VfdmVyaWZpY2F0aW9uX2V2aWRlbmNlIGltcG9ydCBkaWdlc3QKZnJvbSBzY3JpcHRzLnZlcmlmeV9tZXJnZV9yZWFkeSBpbXBvcnQgbWVyZ2VfZ2F0ZV9zdGVwcwpmcm9tIHNsbV90cmFpbmluZy5oYXJuZXNzX2NvcmUuYWN0aXZpdHlfY29udHJhY3QgaW1wb3J0IFJlc291cmNlR3JhbnQKCgpkZWYgX3JlbWFpbmluZ19ncmFudChzdGF0ZSk6CiAgICBvcmlnaW5hbCA9IHN0YXRlLnNwZWMuZ3JhbnQubW9kZWxfZHVtcChtb2RlPSJqc29uIikKICAgIG9yaWdpbmFsWyJ0b3RhbF9zZWNvbmRzIl0gLT0gc3RhdGUuY2hhcmdlZF9zZWNvbmRzCiAgICBvcmlnaW5hbFsibWF4X2F0dGVtcHRzIl0gLT0gc3RhdGUuYXR0ZW1wdHMKICAgIGlmICgKICAgICAgICBvcmlnaW5hbFsibWF4X2F0dGVtcHRzIl0gPCAxCiAgICAgICAgb3Igb3JpZ2luYWxbInRvdGFsX3NlY29uZHMiXQogICAgICAgIDwgb3JpZ2luYWxbImludGVycnVwdF9zZWNvbmRzIl0gKyBvcmlnaW5hbFsia2lsbF9ncmFjZV9zZWNvbmRzIl0KICAgICAgICArIG9yaWdpbmFsWyJmaW5hbGl6YXRpb25fcmVzZXJ2ZV9zZWNvbmRzIl0KICAgICk6CiAgICAgICAgcmV0dXJuIE5vbmUKICAgIHJldHVybiBSZXNvdXJjZUdyYW50Lm1vZGVsX3ZhbGlkYXRlKG9yaWdpbmFsKQoKCmRlZiBfYXV0aG9yaXplZF9ydW50aW1lX3Jvb3RzKGNvbmZpZyk6CiAgICByZXR1cm4gdHVwbGUoUGF0aChwYXRoKS5yZXNvbHZlKCkgZm9yIHBhdGggaW4gY29uZmlnLnJ1bnRpbWVfcm9vdHMpCgoKZGVmIF9tYXRlcmlhbGl6ZShydW50aW1lLCBwcmVkZWNlc3NvciwgZ3JhbnQpOgogICAgZnJvbSBzbG1fdHJhaW5pbmcuYXV0b3Jlc2VhcmNoLmhlYWwuZGlzcGF0Y2ggaW1wb3J0IF9wcmlvcl9yZXN1bHQKICAgIGZyb20gc2xtX3RyYWluaW5nLmF1dG9yZXNlYXJjaC5oZWFsLnJlY292ZXJ5X2Rpc3BhdGNoIGltcG9ydCAoCiAgICAgICAgUmVjb3ZlcnlDb250ZXh0LAogICAgICAgIGxvYWRfcmVjb3ZlcnlfY29uZmlnLAogICAgKQogICAgZnJvbSBzbG1fdHJhaW5pbmcuYXV0b3Jlc2VhcmNoLmhlYWwucmVwYWlyX2NvbnRyYWN0cyBpbXBvcnQgUmVwYWlyUmVxdWVzdAogICAgZnJvbSBzbG1fdHJhaW5pbmcuYXV0b3Jlc2VhcmNoLmhlYWwuaXNvbGF0aW9uX3dvcmtzcGFjZSBpbXBvcnQgKAogICAgICAgIG1hbmlmZXN0X2RpZ2VzdCwgcHJpdmF0ZV9zbmFwc2hvdCwgdHJlZV9tYW5pZmVzdCwKICAgICkKICAgIGZyb20gc2xtX3RyYWluaW5nLmF1dG9yZXNlYXJjaC5oZWFsLnJlcGFpcl9zb3VyY2Vfd29ya3NwYWNlIGltcG9ydCBwcmVwYXJlX3NvdXJjZV92ZXJpZmljYXRpb24KICAgIGZyb20gc2xtX3RyYWluaW5nLmF1dG9yZXNlYXJjaC5oZWFsLnJlcGFpcl9hY2NlcHRhbmNlIGltcG9ydCBWZXJpZmljYXRpb25Xb3Jrc3BhY2UKICAgIGZyb20gc2xtX3RyYWluaW5nLmF1dG9yZXNlYXJjaC5zdG9yYWdlIGltcG9ydCBDYW1wYWlnblN0b3JlCgogICAgY29tbW9uID0gcHJlZGVjZXNzb3JbIl9zdWNjZXNzb3JfY29tbW9uIl0KICAgIGNvbmZpZ19wYXRoID0gUGF0aChjb21tb25bInJlcGFpcl9jb25maWciXSkKICAgIGNvbmZpZyA9IGxvYWRfcmVjb3ZlcnlfY29uZmlnKAogICAgICAgIGNvbmZpZ19wYXRoLCBleHBlY3RlZF9zaGEyNTY9Y29tbW9uWyJyZXBhaXJfY29uZmlnX2RpZ2VzdCJdCiAgICApCiAgICBpZiBjb25maWcgaXMgTm9uZSBvciBjb25maWcuc291cmNlX3ZlcmlmaWNhdGlvbl9ncmFudCBpcyBOb25lOgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoInNvdXJjZV92ZXJpZmljYXRpb25fc3VjY2Vzc29yX2dyYW50X21pc3NpbmciKQogICAgY29uZmlnID0gY29uZmlnLm1vZGVsX2NvcHkodXBkYXRlPXsic291cmNlX3ZlcmlmaWNhdGlvbl9ncmFudCI6IGdyYW50fSkKICAgIGNhbXBhaWduX3Jvb3QgPSBQYXRoKHByZWRlY2Vzc29yWyJtYW5pZmVzdF9wYXRoIl0pLnJlc29sdmUoKS5wYXJlbnRzWzJdCiAgICBtYW5pZmVzdCA9IGpzb24ubG9hZHMoUGF0aChwcmVkZWNlc3NvclsibWFuaWZlc3RfcGF0aCJdKS5yZWFkX3RleHQoKSkKICAgIGlkZW50aXR5X2ZpZWxkcyA9IHsKICAgICAgICAicmVxdWVzdF9kaWdlc3QiOiBwcmVkZWNlc3NvclsicmVxdWVzdF9kaWdlc3QiXSwKICAgICAgICAicHJvcG9zYWxfZGlnZXN0IjogcHJlZGVjZXNzb3JbInByb3Bvc2FsX2RpZ2VzdCJdLAogICAgICAgICJ2ZXJpZmljYXRpb25faWRlbnRpdHkiOiBwcmVkZWNlc3NvclsidmVyaWZpY2F0aW9uX2lkZW50aXR5Il0sCiAgICAgICAgImNhbmRpZGF0ZV9zbmFwc2hvdF9kaWdlc3QiOiBwcmVkZWNlc3NvclsiY2FuZGlkYXRlX3NuYXBzaG90X2RpZ2VzdCJdLAogICAgICAgICJiYXNlX3JlZiI6IHByZWRlY2Vzc29yWyJiYXNlX3JlZiJdLAogICAgfQogICAgaWYgYW55KG1hbmlmZXN0LmdldChrZXkpICE9IHZhbHVlIGZvciBrZXksIHZhbHVlIGluIGlkZW50aXR5X2ZpZWxkcy5pdGVtcygpKToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKCJzb3VyY2VfdmVyaWZpY2F0aW9uX3ByZWRlY2Vzc29yX21hbmlmZXN0X21pc21hdGNoIikKICAgIGpvdXJuYWwgPSBDYW1wYWlnblN0b3JlKHByZWRlY2Vzc29yWyJjYW1wYWlnbl9pZCJdLCBjYW1wYWlnbl9yb290LnBhcmVudCkKICAgIHJlcXVlc3RfcGF0aCA9IGpvdXJuYWwucm9vdCAvICJhcnRpZmFjdHMiIC8gInJlcGFpcl9yZXF1ZXN0cyIgLyAoCiAgICAgICAgcHJlZGVjZXNzb3JbInJlcXVlc3RfZGlnZXN0Il0gKyAiLmpzb24iCiAgICApCiAgICByZXF1ZXN0ID0gUmVwYWlyUmVxdWVzdC5tb2RlbF92YWxpZGF0ZV9qc29uKHJlcXVlc3RfcGF0aC5yZWFkX3RleHQoKSkKICAgIGlmIHJlcXVlc3QuZGlnZXN0KCkgIT0gcHJlZGVjZXNzb3JbInJlcXVlc3RfZGlnZXN0Il06CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcigic291cmNlX3ZlcmlmaWNhdGlvbl9yZXF1ZXN0X2RpZ2VzdF9taXNtYXRjaCIpCiAgICByZXN1bHQgPSBfcHJpb3JfcmVzdWx0KGpvdXJuYWwsIHJlcXVlc3QsIGpvdXJuYWwudmVyaWZ5X2V2ZW50X2NoYWluKCkpCiAgICBwcm9wb3NhbCA9IHJlc3VsdC5wcm9wb3NhbCBpZiByZXN1bHQgaXMgbm90IE5vbmUgZWxzZSBOb25lCiAgICBpZiBwcm9wb3NhbCBpcyBOb25lIG9yIHByb3Bvc2FsLmRpZ2VzdCgpICE9IHByZWRlY2Vzc29yWyJwcm9wb3NhbF9kaWdlc3QiXToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKCJzb3VyY2VfdmVyaWZpY2F0aW9uX3Byb3Bvc2FsX3VuYXZhaWxhYmxlIikKICAgIHJvb3RzID0gdHVwbGUoc3RyKHBhdGgpIGZvciBwYXRoIGluIF9hdXRob3JpemVkX3J1bnRpbWVfcm9vdHMoY29uZmlnKSkKICAgIGNhbmRpZGF0ZSA9IGNhbXBhaWduX3Jvb3QgLyAicmVwYWlyX3dvcmtzcGFjZXMiIC8gcmVxdWVzdC5kaWdlc3QoKSAvICJjYW5kaWRhdGUiCiAgICBiYXNlX3NlZWQgPSBQYXRoKHByZWRlY2Vzc29yWyJyb290Il0pLnJlc29sdmUoKS5wYXJlbnQgLyAiYmFzZSIKICAgIGJhc2UgPSBjYW5kaWRhdGUucGFyZW50IC8gInZlcmlmaWNhdGlvbi1iYXNlcyIgLyBtYW5pZmVzdFsic291cmNlX3NuYXBzaG90X2RpZ2VzdCJdCiAgICBiYXNlLnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsIGV4aXN0X29rPVRydWUpCiAgICBpZiBub3QgYmFzZS5leGlzdHMoKToKICAgICAgICBwcml2YXRlX3NuYXBzaG90KGJhc2Vfc2VlZCwgYmFzZSkKICAgIGlmIG1hbmlmZXN0X2RpZ2VzdCh0cmVlX21hbmlmZXN0KGJhc2UpKSAhPSBtYW5pZmVzdFsic291cmNlX3NuYXBzaG90X2RpZ2VzdCJdOgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoInNvdXJjZV92ZXJpZmljYXRpb25fcHJlZGVjZXNzb3JfYmFzZV9taXNtYXRjaCIpCiAgICBjb250ZXh0ID0gUmVjb3ZlcnlDb250ZXh0KAogICAgICAgIHJvb3Q9Y2FtcGFpZ25fcm9vdC5wYXJlbnQsCiAgICAgICAgbG9vcF9pZD1jb21tb25bImxvb3BfaWQiXSwKICAgICAgICBjYW1wYWlnbl9pZD1yZXF1ZXN0LmNhbXBhaWduX2lkLAogICAgICAgIHNvdXJjZT1iYXNlLAogICAgICAgIHNvdXJjZV9kaWdlc3Q9bWFuaWZlc3RbInNvdXJjZV9zbmFwc2hvdF9kaWdlc3QiXSwKICAgICAgICBlbnZpcm9ubWVudF9kaWdlc3Q9cmVxdWVzdC5ibG9ja2VyLmVudmlyb25tZW50X2RpZ2VzdCwKICAgICAgICBmZW5jZT1yZXF1ZXN0LmZlbmNlLAogICAgICAgIHBhcmVudF9ldmVudD1yZXF1ZXN0LnBhcmVudF9ldmVudCwKICAgICAgICBhdHRlbXB0X2lkPXJlcXVlc3QuYXR0ZW1wdF9pZCwKICAgICkKICAgIGdhdGUgPSBwcmVwYXJlX3NvdXJjZV92ZXJpZmljYXRpb24oCiAgICAgICAgY29udGV4dCwgY29uZmlnLCByZXF1ZXN0LCBwcm9wb3NhbCwKICAgICAgICBWZXJpZmljYXRpb25Xb3Jrc3BhY2UoYmFzZSwgY2FuZGlkYXRlLCB0dXBsZShQYXRoKHBhdGgpIGZvciBwYXRoIGluIHJvb3RzKSksCiAgICApCiAgICByZXR1cm4gam91cm5hbCwgcmVxdWVzdCwgcHJvcG9zYWwsIGNvbmZpZywgZ2F0ZSwgcm9vdHMKCgpkZWYgX2FjdGl2YXRpb24ocnVudGltZSwgcHJlZGVjZXNzb3JfZXZlbnQsIHByZWRlY2Vzc29yLCByZXF1ZXN0LCBwcm9wb3NhbCwgZGVwZW5kZW5jeSk6CiAgICBhcnRpZmFjdCA9IHJ1bnRpbWUuc3RvcmUud3JpdGVfYXJ0aWZhY3QoInNvdXJjZV92ZXJpZmljYXRpb25fcmVxdWVzdHMiLCBkZXBlbmRlbmN5KQogICAgZGV0YWlsID0gewogICAgICAgICJwcmVkZWNlc3Nvcl9kZXBlbmRlbmN5X2RpZ2VzdCI6IHByZWRlY2Vzc29yX2V2ZW50WyJkZXRhaWwiXVsiZGVwZW5kZW5jeV9kaWdlc3QiXSwKICAgICAgICAicHJlZGVjZXNzb3JfaWRlbnRpdHkiOiBwcmVkZWNlc3NvclsidmVyaWZpY2F0aW9uX2lkZW50aXR5Il0sCiAgICAgICAgInN1Y2Nlc3Nvcl9kZXBlbmRlbmN5X2RpZ2VzdCI6IGFydGlmYWN0LnN0ZW0sCiAgICAgICAgInN1Y2Nlc3Nvcl9pZGVudGl0eSI6IGRlcGVuZGVuY3lbInZlcmlmaWNhdGlvbl9pZGVudGl0eSJdLAogICAgICAgICJzdWNjZXNzb3JfYWN0aXZpdHlfaWQiOiBkZXBlbmRlbmN5WyJhY3Rpdml0eV9pZCJdLAogICAgICAgICJyZXF1ZXN0X2RpZ2VzdCI6IHJlcXVlc3QuZGlnZXN0KCksCiAgICAgICAgInByb3Bvc2FsX2RpZ2VzdCI6IHByb3Bvc2FsLmRpZ2VzdCgpLAogICAgfQogICAgcnVudGltZS5zdG9yZS5hcHBlbmRfZXZlbnQoCiAgICAgICAgInNvdXJjZV92ZXJpZmljYXRpb25fc3VjY2Vzc29yX2FjdGl2YXRlZCIsCiAgICAgICAgZXhwZXJpbWVudF9pZD1wcmVkZWNlc3Nvcl9ldmVudFsiZXhwZXJpbWVudF9pZCJdLAogICAgICAgIGFydGlmYWN0X3NoYTI1Nj1hcnRpZmFjdC5zdGVtLAogICAgICAgIGlkZW1wb3RlbmN5X2tleT0ic291cmNlLXZlcmlmaWNhdGlvbi1zdWNjZXNzb3I6IiArIGRpZ2VzdChkZXRhaWwpLAogICAgICAgIGRldGFpbD1kZXRhaWwsCiAgICApCiAgICByZXR1cm4gYXJ0aWZhY3QKCgpkZWYgcGxhbl9zdWNjZXNzb3IocnVudGltZSwgZXZlbnQsIHByZWRlY2Vzc29yLCBjb21tb24pOgogICAgIiIiUGVyc2lzdCBhIGZyZXNoIHZlcmlmaWVyIGlkZW50aXR5IHVzaW5nIG9ubHkgdGhlIHByZWRlY2Vzc29yJ3MgcmVzaWR1YWwgZ3JhbnQuIiIiCiAgICBmcm9tIHNjcmlwdHMuYXV0b3RyYWluX3ZlcmlmaWNhdGlvbiBpbXBvcnQgbG9hZF9kZXBlbmRlbmN5CgogICAgcHJlZGVjZXNzb3JfZGlnZXN0ID0gZXZlbnRbImRldGFpbCJdWyJkZXBlbmRlbmN5X2RpZ2VzdCJdCiAgICBmb3Igcm93IGluIHJ1bnRpbWUuc3RvcmUudmVyaWZ5X2V2ZW50X2NoYWluKCk6CiAgICAgICAgaWYgKAogICAgICAgICAgICByb3dbImV2ZW50X3R5cGUiXSA9PSAic291cmNlX3ZlcmlmaWNhdGlvbl9zdWNjZXNzb3JfYWN0aXZhdGVkIgogICAgICAgICAgICBhbmQgcm93WyJkZXRhaWwiXS5nZXQoInByZWRlY2Vzc29yX2RlcGVuZGVuY3lfZGlnZXN0IikgPT0gcHJlZGVjZXNzb3JfZGlnZXN0CiAgICAgICAgKToKICAgICAgICAgICAgc3RhdGUgPSBydW50aW1lLnNuYXBzaG90KCkuZ2V0KHByZWRlY2Vzc29yWyJhY3Rpdml0eV9pZCJdKQogICAgICAgICAgICBpZiBzdGF0ZSBhbmQgc3RhdGUuc3RhdHVzIG5vdCBpbiB7ImNhbmNlbGxlZCIsICJzdWNjZWVkZWQifToKICAgICAgICAgICAgICAgIHJ1bnRpbWUuY2FuY2VsKHN0YXRlLnNwZWMuYWN0aXZpdHlfaWQsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICByZWFzb249InNvdXJjZV92ZXJpZmljYXRpb25faWRlbnRpdHlfY2hhbmdlZCIpCiAgICAgICAgICAgIHJldHVybiB7InN0YXR1cyI6ICJzdWNjZXNzb3JfYWN0aXZhdGVkIiwKICAgICAgICAgICAgICAgICAgICAiYWN0aXZpdHlfaWQiOiByb3dbImRldGFpbCJdWyJzdWNjZXNzb3JfYWN0aXZpdHlfaWQiXSwKICAgICAgICAgICAgICAgICAgICAidmVyaWZpY2F0aW9uX2lkZW50aXR5Ijogcm93WyJkZXRhaWwiXVsic3VjY2Vzc29yX2lkZW50aXR5Il19CiAgICBzdGF0ZSA9IHJ1bnRpbWUuc25hcHNob3QoKS5nZXQocHJlZGVjZXNzb3JbImFjdGl2aXR5X2lkIl0pCiAgICBpZiBzdGF0ZSBpcyBOb25lOgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoInNvdXJjZV92ZXJpZmljYXRpb25fcHJlZGVjZXNzb3JfYWN0aXZpdHlfbWlzc2luZyIpCiAgICBmcm9tIHNjcmlwdHMgaW1wb3J0IGF1dG90cmFpbl92ZXJpZmljYXRpb24gYXMgb3duZXIKICAgIGZyb20gc2xtX3RyYWluaW5nLmF1dG9yZXNlYXJjaC5oZWFsLnJlY292ZXJ5X2Rpc3BhdGNoIGltcG9ydCBsb2FkX3JlY292ZXJ5X2NvbmZpZwoKICAgIGNvbmZpZyA9IGxvYWRfcmVjb3ZlcnlfY29uZmlnKAogICAgICAgIFBhdGgoY29tbW9uWyJyZXBhaXJfY29uZmlnIl0pLCBleHBlY3RlZF9zaGEyNTY9Y29tbW9uWyJyZXBhaXJfY29uZmlnX2RpZ2VzdCJdCiAgICApCiAgICBpZiBjb25maWcgaXMgTm9uZToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKCJzb3VyY2VfdmVyaWZpY2F0aW9uX3N1Y2Nlc3Nvcl9jb25maWdfbWlzc2luZyIpCiAgICBjb25maWd1cmVkX3Jvb3RzID0gX2F1dGhvcml6ZWRfcnVudGltZV9yb290cyhjb25maWcpCiAgICBwcmVkZWNlc3Nvcl9yb290cyA9IHR1cGxlKFBhdGgocGF0aCkucmVzb2x2ZSgpIGZvciBwYXRoIGluIHByZWRlY2Vzc29yWyJydW50aW1lX3Jvb3RzIl0pCiAgICBiaW5kaW5nID0gb3duZXIudmVyaWZpY2F0aW9uX2JpbmRpbmcoCiAgICAgICAgUGF0aChwcmVkZWNlc3Nvclsicm9vdCJdKSwgcHJlZGVjZXNzb3JbImJhc2VfcmVmIl0sIG1lcmdlX2dhdGVfc3RlcHMoYmFzZV9yZWY9cHJlZGVjZXNzb3JbImJhc2VfcmVmIl0pLAogICAgICAgIGlzb2xhdGVkPVRydWUsIHJ1bnRpbWVzPXByZWRlY2Vzc29yX3Jvb3RzLAogICAgKQogICAgaWYgKGRpZ2VzdChiaW5kaW5nKSA9PSBwcmVkZWNlc3NvclsidmVyaWZpY2F0aW9uX2lkZW50aXR5Il0KICAgICAgICAgICAgYW5kIGNvbmZpZ3VyZWRfcm9vdHMgPT0gcHJlZGVjZXNzb3Jfcm9vdHMpOgogICAgICAgIHJldHVybiBOb25lCiAgICBncmFudCA9IF9yZW1haW5pbmdfZ3JhbnQoc3RhdGUpCiAgICBpZiBncmFudCBpcyBOb25lOgogICAgICAgIHJ1bnRpbWUuc3RvcmUuYXBwZW5kX2V2ZW50KAogICAgICAgICAgICAic291cmNlX3ZlcmlmaWNhdGlvbl9zdWNjZXNzb3Jfd2FpdCIsCiAgICAgICAgICAgIGV4cGVyaW1lbnRfaWQ9ZXZlbnRbImV4cGVyaW1lbnRfaWQiXSwKICAgICAgICAgICAgaWRlbXBvdGVuY3lfa2V5PSJzb3VyY2UtdmVyaWZpY2F0aW9uLXN1Y2Nlc3Nvci1leGhhdXN0ZWQ6IiArIHByZWRlY2Vzc29yX2RpZ2VzdCwKICAgICAgICAgICAgZGV0YWlsPXsicHJlZGVjZXNzb3JfZGVwZW5kZW5jeV9kaWdlc3QiOiBwcmVkZWNlc3Nvcl9kaWdlc3QsCiAgICAgICAgICAgICAgICAgICAgInJlYXNvbiI6ICJwcmVkZWNlc3Nvcl92ZXJpZmljYXRpb25fZ3JhbnRfZXhoYXVzdGVkIn0sCiAgICAgICAgKQogICAgICAgIHJldHVybiBOb25lCiAgICBtYXRlcmlhbGl6ZWQgPSBfbWF0ZXJpYWxpemUoCiAgICAgICAgcnVudGltZSwgeyoqcHJlZGVjZXNzb3IsICJfc3VjY2Vzc29yX2NvbW1vbiI6IGNvbW1vbn0sIGdyYW50CiAgICApCiAgICBfLCByZXF1ZXN0LCBwcm9wb3NhbCwgY29uZmlnLCBnYXRlLCByb290cyA9IG1hdGVyaWFsaXplZAogICAgY3VycmVudCA9IGxvYWRfZGVwZW5kZW5jeShydW50aW1lLnN0b3JlLCBldmVudCkKICAgIGlmIGFueSgKICAgICAgICBjdXJyZW50LmdldChrZXkpICE9IHByZWRlY2Vzc29yLmdldChrZXkpCiAgICAgICAgZm9yIGtleSBpbiAoInJlcXVlc3RfZGlnZXN0IiwgInByb3Bvc2FsX2RpZ2VzdCIsICJjYW5kaWRhdGVfc25hcHNob3RfZGlnZXN0IikKICAgICk6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcigic291cmNlX3ZlcmlmaWNhdGlvbl9zdWNjZXNzb3JfcmVxdWVzdF9jaGFuZ2VkIikKICAgIGZyb20gc2xtX3RyYWluaW5nLmF1dG9yZXNlYXJjaC5oZWFsIGltcG9ydCByZWNvdmVyeV9kaXNwYXRjaAoKICAgIGRlcGVuZGVuY3kgPSByZWNvdmVyeV9kaXNwYXRjaC5fdmVyaWZpY2F0aW9uX2RlcGVuZGVuY3koCiAgICAgICAgcmVxdWVzdCwgcHJvcG9zYWwsIGdhdGUsIGdyYW50LCByb290cwogICAgKQogICAgc3VjY2Vzc29yID0gcnVudGltZS5zdG9yZS53cml0ZV9hcnRpZmFjdCgic291cmNlX3ZlcmlmaWNhdGlvbl9yZXF1ZXN0cyIsIGRlcGVuZGVuY3kpCiAgICBydW50aW1lLnN0b3JlLmFwcGVuZF9ldmVudCgKICAgICAgICAic291cmNlX3ZlcmlmaWNhdGlvbl9yZXF1ZXN0ZWQiLAogICAgICAgIGV4cGVyaW1lbnRfaWQ9ZXZlbnRbImV4cGVyaW1lbnRfaWQiXSwKICAgICAgICBhcnRpZmFjdF9zaGEyNTY9c3VjY2Vzc29yLnN0ZW0sCiAgICAgICAgaWRlbXBvdGVuY3lfa2V5PSJzb3VyY2UtdmVyaWZpY2F0aW9uOiIgKyBldmVudFsiZXhwZXJpbWVudF9pZCJdICsgIjoiICsgc3VjY2Vzc29yLnN0ZW0sCiAgICAgICAgZGV0YWlsPXsiZGVwZW5kZW5jeV9kaWdlc3QiOiBzdWNjZXNzb3Iuc3RlbSwKICAgICAgICAgICAgICAgICJyZXBhaXJfYWN0aXZpdHlfaWQiOiBldmVudFsiZXhwZXJpbWVudF9pZCJdfSwKICAgICkKICAgIGZyb20gc2NyaXB0cy5hdXRvdHJhaW5fdmVyaWZpY2F0aW9uIGltcG9ydCBkZXBlbmRlbmN5X3BsYW4sIHJlZ2lzdGVyX2RlcGVuZGVuY3kKCiAgICByZWdpc3Rlcl9kZXBlbmRlbmN5KHJ1bnRpbWUsIGRlcGVuZGVuY3lfcGxhbihkZXBlbmRlbmN5KSkKICAgIF9hY3RpdmF0aW9uKHJ1bnRpbWUsIGV2ZW50LCBwcmVkZWNlc3NvciwgcmVxdWVzdCwgcHJvcG9zYWwsIGRlcGVuZGVuY3kpCiAgICBpZiBzdGF0ZS5zdGF0dXMgbm90IGluIHsiY2FuY2VsbGVkIiwgInN1Y2NlZWRlZCJ9OgogICAgICAgIHJ1bnRpbWUuY2FuY2VsKHN0YXRlLnNwZWMuYWN0aXZpdHlfaWQsIHJlYXNvbj0ic291cmNlX3ZlcmlmaWNhdGlvbl9pZGVudGl0eV9jaGFuZ2VkIikKICAgIHJldHVybiB7InN0YXR1cyI6ICJzdWNjZXNzb3JfYWN0aXZhdGVkIiwgImFjdGl2aXR5X2lkIjogZGVwZW5kZW5jeVsiYWN0aXZpdHlfaWQiXSwKICAgICAgICAgICAgInZlcmlmaWNhdGlvbl9pZGVudGl0eSI6IGRlcGVuZGVuY3lbInZlcmlmaWNhdGlvbl9pZGVudGl0eSJdfQo=
+"""Rebind a saved repair proposal when its verifier environment has drifted."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from scripts.merge_verification_evidence import digest
+from scripts.verify_merge_ready import merge_gate_steps
+from slm_training.harness_core.activity_contract import ResourceGrant
+
+
+def _remaining_grant(state):
+    original = state.spec.grant.model_dump(mode="json")
+    original["total_seconds"] -= state.charged_seconds
+    original["max_attempts"] -= state.attempts
+    if (
+        original["max_attempts"] < 1
+        or original["total_seconds"]
+        < original["interrupt_seconds"] + original["kill_grace_seconds"]
+        + original["finalization_reserve_seconds"]
+    ):
+        return None
+    return ResourceGrant.model_validate(original)
+
+
+def _authorized_runtime_roots(config):
+    return tuple(Path(path).resolve() for path in config.runtime_roots)
+
+
+def _materialize(runtime, predecessor, grant):
+    from slm_training.autoresearch.heal.dispatch import _prior_result
+    from slm_training.autoresearch.heal.recovery_dispatch import (
+        RecoveryContext,
+        load_recovery_config,
+    )
+    from slm_training.autoresearch.heal.repair_contracts import RepairRequest
+    from slm_training.autoresearch.heal.isolation_workspace import (
+        manifest_digest, private_snapshot, tree_manifest,
+    )
+    from slm_training.autoresearch.heal.repair_source_workspace import prepare_source_verification
+    from slm_training.autoresearch.heal.repair_acceptance import VerificationWorkspace
+    from slm_training.autoresearch.storage import CampaignStore
+
+    common = predecessor["_successor_common"]
+    config_path = Path(common["repair_config"])
+    config = load_recovery_config(
+        config_path, expected_sha256=common["repair_config_digest"]
+    )
+    if config is None or config.source_verification_grant is None:
+        raise ValueError("source_verification_successor_grant_missing")
+    config = config.model_copy(update={"source_verification_grant": grant})
+    campaign_root = Path(predecessor["manifest_path"]).resolve().parents[2]
+    manifest = json.loads(Path(predecessor["manifest_path"]).read_text())
+    identity_fields = {
+        "request_digest": predecessor["request_digest"],
+        "proposal_digest": predecessor["proposal_digest"],
+        "verification_identity": predecessor["verification_identity"],
+        "candidate_snapshot_digest": predecessor["candidate_snapshot_digest"],
+        "base_ref": predecessor["base_ref"],
+    }
+    if any(manifest.get(key) != value for key, value in identity_fields.items()):
+        raise ValueError("source_verification_predecessor_manifest_mismatch")
+    journal = CampaignStore(predecessor["campaign_id"], campaign_root.parent)
+    request_path = journal.root / "artifacts" / "repair_requests" / (
+        predecessor["request_digest"] + ".json"
+    )
+    request = RepairRequest.model_validate_json(request_path.read_text())
+    if request.digest() != predecessor["request_digest"]:
+        raise ValueError("source_verification_request_digest_mismatch")
+    result = _prior_result(journal, request, journal.verify_event_chain())
+    proposal = result.proposal if result is not None else None
+    if proposal is None or proposal.digest() != predecessor["proposal_digest"]:
+        raise ValueError("source_verification_proposal_unavailable")
+    roots = tuple(str(path) for path in _authorized_runtime_roots(config))
+    candidate = campaign_root / "repair_workspaces" / request.digest() / "candidate"
+    base_seed = Path(predecessor["root"]).resolve().parent / "base"
+    base = candidate.parent / "verification-bases" / manifest["source_snapshot_digest"]
+    base.parent.mkdir(parents=True, exist_ok=True)
+    if not base.exists():
+        private_snapshot(base_seed, base)
+    if manifest_digest(tree_manifest(base)) != manifest["source_snapshot_digest"]:
+        raise ValueError("source_verification_predecessor_base_mismatch")
+    context = RecoveryContext(
+        root=campaign_root.parent,
+        loop_id=common["loop_id"],
+        campaign_id=request.campaign_id,
+        source=base,
+        source_digest=manifest["source_snapshot_digest"],
+        environment_digest=request.blocker.environment_digest,
+        fence=request.fence,
+        parent_event=request.parent_event,
+        attempt_id=request.attempt_id,
+    )
+    gate = prepare_source_verification(
+        context, config, request, proposal,
+        VerificationWorkspace(base, candidate, tuple(Path(path) for path in roots)),
+    )
+    return journal, request, proposal, config, gate, roots
+
+
+def _activation(runtime, predecessor_event, predecessor, request, proposal, dependency):
+    artifact = runtime.store.write_artifact("source_verification_requests", dependency)
+    detail = {
+        "predecessor_dependency_digest": predecessor_event["detail"]["dependency_digest"],
+        "predecessor_identity": predecessor["verification_identity"],
+        "successor_dependency_digest": artifact.stem,
+        "successor_identity": dependency["verification_identity"],
+        "successor_activity_id": dependency["activity_id"],
+        "request_digest": request.digest(),
+        "proposal_digest": proposal.digest(),
+    }
+    runtime.store.append_event(
+        "source_verification_successor_activated",
+        experiment_id=predecessor_event["experiment_id"],
+        artifact_sha256=artifact.stem,
+        idempotency_key="source-verification-successor:" + digest(detail),
+        detail=detail,
+    )
+    return artifact
+
+
+def plan_successor(runtime, event, predecessor, common):
+    """Persist a fresh verifier identity using only the predecessor's residual grant."""
+    from scripts.autotrain_verification import load_dependency
+
+    predecessor_digest = event["detail"]["dependency_digest"]
+    for row in runtime.store.verify_event_chain():
+        if (
+            row["event_type"] == "source_verification_successor_activated"
+            and row["detail"].get("predecessor_dependency_digest") == predecessor_digest
+        ):
+            state = runtime.snapshot().get(predecessor["activity_id"])
+            if state and state.status not in {"cancelled", "succeeded"}:
+                runtime.cancel(state.spec.activity_id,
+                               reason="source_verification_identity_changed")
+            return {"status": "successor_activated",
+                    "activity_id": row["detail"]["successor_activity_id"],
+                    "verification_identity": row["detail"]["successor_identity"]}
+    state = runtime.snapshot().get(predecessor["activity_id"])
+    if state is None:
+        raise ValueError("source_verification_predecessor_activity_missing")
+    from scripts import autotrain_verification as owner
+    from slm_training.autoresearch.heal.recovery_dispatch import load_recovery_config
+
+    config = load_recovery_config(
+        Path(common["repair_config"]), expected_sha256=common["repair_config_digest"]
+    )
+    if config is None:
+        raise ValueError("source_verification_successor_config_missing")
+    configured_roots = _authorized_runtime_roots(config)
+    predecessor_roots = tuple(Path(path).resolve() for path in predecessor["runtime_roots"])
+    binding = owner.verification_binding(
+        Path(predecessor["root"]), predecessor["base_ref"], merge_gate_steps(base_ref=predecessor["base_ref"]),
+        isolated=True, runtimes=predecessor_roots,
+    )
+    if (digest(binding) == predecessor["verification_identity"]
+            and configured_roots == predecessor_roots):
+        return None
+    grant = _remaining_grant(state)
+    if grant is None:
+        runtime.store.append_event(
+            "source_verification_successor_wait",
+            experiment_id=event["experiment_id"],
+            idempotency_key="source-verification-successor-exhausted:" + predecessor_digest,
+            detail={"predecessor_dependency_digest": predecessor_digest,
+                    "reason": "predecessor_verification_grant_exhausted"},
+        )
+        return None
+    materialized = _materialize(
+        runtime, {**predecessor, "_successor_common": common}, grant
+    )
+    _, request, proposal, config, gate, roots = materialized
+    current = load_dependency(runtime.store, event)
+    if any(
+        current.get(key) != predecessor.get(key)
+        for key in ("request_digest", "proposal_digest", "candidate_snapshot_digest")
+    ):
+        raise ValueError("source_verification_successor_request_changed")
+    from slm_training.autoresearch.heal import recovery_dispatch
+
+    dependency = recovery_dispatch._verification_dependency(
+        request, proposal, gate, grant, roots
+    )
+    successor = runtime.store.write_artifact("source_verification_requests", dependency)
+    runtime.store.append_event(
+        "source_verification_requested",
+        experiment_id=event["experiment_id"],
+        artifact_sha256=successor.stem,
+        idempotency_key="source-verification:" + event["experiment_id"] + ":" + successor.stem,
+        detail={"dependency_digest": successor.stem,
+                "repair_activity_id": event["experiment_id"]},
+    )
+    from scripts.autotrain_verification import dependency_plan, register_dependency
+
+    register_dependency(runtime, dependency_plan(dependency))
+    _activation(runtime, event, predecessor, request, proposal, dependency)
+    if state.status not in {"cancelled", "succeeded"}:
+        runtime.cancel(state.spec.activity_id, reason="source_verification_identity_changed")
+    return {"status": "successor_activated", "activity_id": dependency["activity_id"],
+            "verification_identity": dependency["verification_identity"]}
