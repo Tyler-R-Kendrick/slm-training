@@ -106,7 +106,7 @@ class B3CapacityV2Manifest:
             "batch_size": 2,
             "learning_rate": 0.0003,
             "mask_pattern": "diffusion",
-            "grammar_ltr_primary": False,
+            "grammar_ltr_primary": True,
             "grammar_constrained": True,
             "parallel_unmask": "adaptive",
             "gen_steps": 8,
