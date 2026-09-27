@@ -5703,6 +5703,11 @@
       "history": [
         {
           "date": "2026-09-27",
+          "version": "v315",
+          "note": "Select one authenticated source-verification lineage root among duplicate stale requests without increasing supervisor verification complexity; keep ambiguous roots fail-closed."
+        },
+        {
+          "date": "2026-09-27",
           "version": "v314",
           "note": "Resolve duplicate unactivated source-verification roots only through a unique authenticated activation chain; preserve fail-closed ambiguity handling."
         },
@@ -8039,7 +8044,7 @@
         "src/slm_training/harness_core/host_process_identity.py",
         "src/slm_training/harness_core/driver_pending.py"
       ],
-      "version": "v314"
+      "version": "v315"
     },
     "harness.autoresearch.formal": {
       "history": [

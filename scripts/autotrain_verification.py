@@ -207,6 +207,17 @@ def wake_repair(runtime, event, dependency, plan):
     return True
 
 
+def _active_lineage_roots(roots, links):
+    successors = {link["successor_dependency_digest"] for link in links}
+    candidates = [key for key in roots if key not in successors]
+    linked = {
+        link["predecessor_dependency_digest"]
+        for link in links
+        if link["predecessor_dependency_digest"] in candidates
+    }
+    return list(linked) if len(candidates) > 1 and len(linked) == 1 else candidates
+
+
 def _active_dependency(runtime, event, repair):
     """Follow authenticated activations from the parked wake, never mint authority."""
     from scripts.autotrain_verification_successor import _remaining_grant
@@ -224,15 +235,7 @@ def _active_dependency(runtime, event, repair):
              if row["event_type"] == "source_verification_successor_activated"]
     # Runtime rollback can repeat a wake identity with a smaller residual grant.
     # Anchor at activation ancestry; dependency digests distinguish those jobs.
-    activated = {link["successor_dependency_digest"] for link in links}
-    roots = [key for key in roots if key not in activated]
-    if len(roots) > 1:
-        linked_roots = [
-            key for key in roots
-            if any(link["predecessor_dependency_digest"] == key for link in links)
-        ]
-        if len(linked_roots) == 1:
-            roots = linked_roots
+    roots = _active_lineage_roots(roots, links)
     if len(roots) != 1:
         raise ValueError("source_verification_successor_ambiguous_root")
     key, seen = roots[0], set()
