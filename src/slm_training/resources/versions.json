@@ -8690,7 +8690,7 @@
         {
           "date": "2026-09-26",
           "note": "Lock the canonical best-by-primary-then-smallest selection rule in new SLM-298 multi-candidate manifests; preserve explicit manifest deviations and diagnostic-only claims. Unit records use opaque canonical slot identities. Also lock the selection rule in VCE009 oracle-contrast and PCT008 cold/warm artifact producers, preserving their declared endpoint directions.",
-          "version": "v172"
+          "version": "v171"
         },
         {
           "date": "2026-09-26",
