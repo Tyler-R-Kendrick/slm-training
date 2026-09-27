@@ -29,6 +29,31 @@ _mod = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_mod)
 
 
+def _bind_test_controller(monkeypatch, environment):
+    """Provide pinned parent authority while isolating operation behavior."""
+    from scripts import autotrain_controller_execution as controller
+    from slm_training.harness_core import controller_execution as validation
+
+    root = _SCRIPT.resolve().parents[2]
+    binding = {
+        "cwd": str(root),
+        "source_digest": "a" * 64,
+        "runtime_digest": "b" * 64,
+    }
+    monkeypatch.setattr(controller, "configured_controller", lambda _: binding)
+    monkeypatch.setattr(
+        validation,
+        "validated_controller_environment",
+        lambda _: (root, environment),
+    )
+    monkeypatch.setattr(
+        controller,
+        "_operation_controller_binding",
+        lambda request: request.get("controller_execution", binding),
+    )
+    return binding
+
+
 def _git_repo(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     subprocess.check_call(
@@ -148,6 +173,7 @@ def test_park_is_wait_state_not_exit(
     # agent relaunch, the opposite of hands-off.
     monkeypatch.chdir(tmp_path)
     _mock_park_operation(monkeypatch)
+    _bind_test_controller(monkeypatch, {"fixture": True})
     rc = _mod.main(
         [
             "--loop-id",
@@ -171,6 +197,7 @@ def test_exit_on_park_preserves_legacy_single_check(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     _mock_park_operation(monkeypatch)
+    _bind_test_controller(monkeypatch, {"fixture": True})
     rc = _mod.main(
         [
             "--loop-id",
@@ -288,11 +315,13 @@ def test_supervisor_operation_uses_real_activity_contract(tmp_path, monkeypatch,
                "source_digest": "a" * 64, "environment_digest": evidence.digest({"fixture_environment": True})}
     monkeypatch.setattr(evidence, "source_identity", lambda _: "a" * 64)
     monkeypatch.setattr(evidence, "environment_identity", lambda: {"fixture_environment": True})
+    controller = _bind_test_controller(monkeypatch, {"fixture_environment": True})
+    request["controller_execution"] = controller
     monkeypatch.setattr(_mod, "_load_continuous", lambda: SimpleNamespace(
         self_heal_unblock_loop=lambda **_: {"hard_pending": []},
         _check_regime_parked=lambda **_: None,
         _latest_cycle=lambda *_: (0, None)))
-    journal = CampaignStore("controller", tmp_path / "events")
+    journal = CampaignStore("runtime", tmp_path / "data" / "loops" / "fixture")
     with ActivityRuntime(journal) as runtime:
         launches = []
 
@@ -338,7 +367,10 @@ def test_operation_driver_zero_without_handoff_is_failure(tmp_path, monkeypatch,
     # This unit check isolates handoff validation; real delegation has its own
     # process tests and is not established by this mocked context manager.
     monkeypatch.setattr(champion_publication, "champion_publication_scope", lambda *a, **k: nullcontext())
-    with ActivityRuntime(CampaignStore("fixture-runtime", tmp_path)) as runtime:
+    runtime_root = tmp_path / "data"
+    with ActivityRuntime(
+        CampaignStore("runtime", runtime_root / "loops" / "fixture")
+    ) as runtime:
         runtime.register(ActivitySpec(activity_id="driver", family="fixture", kind="control",
             source_digest="a" * 64, environment_digest="b" * 64, input_digest="c" * 64,
             output_namespace="attempts/driver"))
@@ -346,16 +378,18 @@ def test_operation_driver_zero_without_handoff_is_failure(tmp_path, monkeypatch,
 
     monkeypatch.setattr(evidence, "source_identity", lambda _: "a" * 64)
     monkeypatch.setattr(evidence, "environment_identity", lambda: {"fixture_environment": True})
+    controller = _bind_test_controller(monkeypatch, {"fixture_environment": True})
     monkeypatch.setattr(_mod, "_load_continuous", lambda: SimpleNamespace(
         main=lambda _: driver_code, _latest_cycle=lambda *_: (1, "missing")))
     request = tmp_path / "request.json"
-    request.write_text(json.dumps({"cwd": str(tmp_path), "root": str(tmp_path),
+    request.write_text(json.dumps({"cwd": str(tmp_path), "root": str(runtime_root),
         "source_digest": "a" * 64, "operation": "driver", "loop_id": "fixture",
         "environment_digest": evidence.digest({"fixture_environment": True}),
-        "driver_argv": [], "lease": lease.model_dump(mode="json")}))
+        "driver_argv": [], "controller_execution": controller,
+        "lease": lease.model_dump(mode="json")}))
     if stale_handoff:
-        (tmp_path / "missing").mkdir()
-        (tmp_path / "missing" / "cycle_handoff.json").write_text("{}")
+        (runtime_root / "missing").mkdir(parents=True)
+        (runtime_root / "missing" / "cycle_handoff.json").write_text("{}")
     expected = "same-campaign completion lacks one current retirement" if stale_handoff else "without its required handoff"
     if driver_code:
         expected = "driver operation returned unsuccessful status"
