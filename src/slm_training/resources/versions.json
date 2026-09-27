@@ -12136,6 +12136,11 @@
     "harness.experiments.slm197_direct_bridge_policy": {
       "history": [
         {
+          "date": "2026-09-27",
+          "note": "no-bump: E262 capacity-ladder recipe description now matches mandatory grammar_ltr_primary policy; no SLM-197 direct-bridge code, metric, gate, or behavior changed.",
+          "version": "v1"
+        },
+        {
           "date": "2026-09-02",
           "note": "no-bump: append-only quality-experiment-matrix.md section for the S5/N4 decode-only authority ladder, plus removal of three committed merge-conflict marker lines (from merge 7bdc348) that fenced two additive sibling sections; both sections are kept in full. Documentation of measured runs only; no SLM-197 bridge-policy metric, gate, threshold, or harness behaviour changed.",
           "version": "v1"
