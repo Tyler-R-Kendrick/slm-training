@@ -11044,10 +11044,10 @@ def test_is_bank_exhaust_repair_action_matches_handoff_reason() -> None:
     assert not _mod._is_bank_exhaust_repair_action(b)
 
 
-def test_self_heal_incomplete_merge_prefers_main_for_harness(
+def test_self_heal_incomplete_merge_preserves_conflict_for_governed_delivery(
     tmp_path: Path,
 ) -> None:
-    """Interrupted origin/main merge (UU) must finish without human re-prompt."""
+    """Interrupted merge stays intact for authorized immutable delivery."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _init_git_repo(repo)
@@ -11105,109 +11105,58 @@ def test_self_heal_incomplete_merge_prefers_main_for_harness(
         check=False,
     )
     assert merge.returncode != 0, "expected conflict"
-    assert _mod._merge_head_path(repo) is not None
-    root = repo / "outputs" / "autoresearch"
-    root.mkdir(parents=True)
-    kind = _mod._self_heal_incomplete_merge(
-        cwd=repo, root=root, loop_id="continuous-openui-local"
-    )
-    assert kind == "git_merge_complete"
-    assert _mod._merge_head_path(repo) is None
-    assert (repo / "harness.py").read_text(encoding="utf-8") == "main-fixed\n"
-    porcelain = subprocess.check_output(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=repo,
-        text=True,
-    )
-    assert porcelain.strip() == ""
-    # unblock loop must not report foreign_dirty after heal
-    report = _mod.self_heal_unblock_loop(
-        cwd=repo, root=root, loop_id="continuous-openui-local"
-    )
-    assert not any(
-        h.get("kind") == "foreign_dirty_tree" for h in report.get("hard_pending") or []
-    )
-
-
-def test_self_heal_incomplete_merge_aborts_when_commit_fails(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A failed merge commit must abort MERGE_HEAD, not leave foreign_dirty."""
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _init_git_repo(repo)
-    (repo / "harness.py").write_text("v1\n", encoding="utf-8")
-    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
-    subprocess.check_call(
-        ["git", "commit", "-m", "harness v1"],
-        cwd=repo,
-        stdout=subprocess.DEVNULL,
-    )
-    subprocess.check_call(
-        ["git", "branch", "-f", "trunk"], cwd=repo, stdout=subprocess.DEVNULL
-    )
-    (repo / "harness.py").write_text("loop-local\n", encoding="utf-8")
-    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
-    subprocess.check_call(
-        ["git", "commit", "-m", "loop diverge"],
-        cwd=repo,
-        stdout=subprocess.DEVNULL,
-    )
-    loop_branch = subprocess.check_output(
-        ["git", "branch", "--show-current"], cwd=repo, text=True
-    ).strip()
-    subprocess.check_call(
-        ["git", "checkout", "trunk"], cwd=repo, stdout=subprocess.DEVNULL
-    )
-    (repo / "harness.py").write_text("main-fixed\n", encoding="utf-8")
-    subprocess.check_call(["git", "add", "harness.py"], cwd=repo)
-    subprocess.check_call(
-        ["git", "commit", "-m", "harness fix on main"],
-        cwd=repo,
-        stdout=subprocess.DEVNULL,
-    )
-    subprocess.check_call(
-        ["git", "checkout", loop_branch],
-        cwd=repo,
-        stdout=subprocess.DEVNULL,
-    )
-    merge = subprocess.run(
-        ["git", "merge", "--no-edit", "trunk"],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert merge.returncode != 0, "expected conflict"
-    assert _mod._merge_head_path(repo) is not None
-    real_run = _mod._run
-
-    def _run_fail_commit(cmd: list[str], **kwargs: object) -> None:
-        if kwargs.get("stage") == "self-heal-merge-commit":
-            raise RuntimeError("hook: version-stamps history order")
-        real_run(cmd, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(_mod, "_run", _run_fail_commit)
+    merge_head = _mod._merge_head_path(repo)
+    assert merge_head is not None
+    merge_head_value = merge_head.read_text(encoding="utf-8")
     root = repo / "outputs" / "autoresearch"
     root.mkdir(parents=True)
     kind = _mod._self_heal_incomplete_merge(
         cwd=repo, root=root, loop_id="continuous-openui-local"
     )
     assert kind is None
-    assert _mod._merge_head_path(repo) is None
-    porcelain = subprocess.check_output(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=repo,
-        text=True,
+    assert _mod._merge_head_path(repo) == merge_head
+    assert merge_head.read_text(encoding="utf-8") == merge_head_value
+    assert subprocess.check_output(
+        ["git", "diff", "--name-only", "--diff-filter=U"], cwd=repo, text=True
+    ).splitlines() == ["harness.py"]
+    assert "<<<<<<<" in (repo / "harness.py").read_text(encoding="utf-8")
+    assert (repo / "docs" / "design" / "continuous-loop-x-results.md").read_text(
+        encoding="utf-8"
+    ) == "closeout\n"
+    requests = list(
+        (
+            root
+            / "loops"
+            / "continuous-openui-local"
+            / "runtime"
+            / "artifacts"
+            / "workspace_delivery_requests"
+        ).glob("*.json")
     )
-    assert porcelain.strip() == ""
-    assert (repo / "harness.py").read_text(encoding="utf-8") == "loop-local\n"
+    assert len(requests) == 1
+    request = json.loads(requests[0].read_text(encoding="utf-8"))
+    assert request["reason"] == "unresolved_merge"
+    assert request["required_capability"] == "authorized_github_connector_delivery"
+    assert request["source_modified"] is False
+    assert request["paths"] == ["harness.py"]
+    report = _mod.self_heal_unblock_loop(
+        cwd=repo, root=root, loop_id="continuous-openui-local"
+    )
+    assert report["blocker_cleared"] is False
+    assert any(
+        row.get("kind") == "foreign_dirty_tree"
+        for row in report.get("hard_pending", [])
+    )
+    assert any(
+        wait.get("reason") == "workspace_changes"
+        for wait in report.get("delivery_waits", [])
+    )
 
 
-def test_integrate_origin_main_skips_diverged_unmergeable(
+def test_self_heal_git_ancestry_does_not_claim_unverified_successor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Diverged origin/main must abort MERGE_HEAD and not raise CYCLE_ERROR."""
+    """Diverged origin/main requests governed reconciliation without healing."""
     origin = tmp_path / "origin"
     repo = tmp_path / "work"
     origin.mkdir()
@@ -11265,7 +11214,7 @@ def test_integrate_origin_main_skips_diverged_unmergeable(
     wrapped = _mod._self_heal_git_ancestry(
         cwd=repo, root=root, loop_id="continuous-openui-local", exc=exc
     )
-    assert wrapped == "git_ancestry_skip"
+    assert wrapped is None
     assert _mod._merge_head_path(repo) is None
 
 

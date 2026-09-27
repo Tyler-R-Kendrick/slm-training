@@ -997,7 +997,7 @@
     "tests/test_models/test_twotower_numeric_gates.py": 457,
     "tests/test_scripts/test_check_changed.py": 505,
     "tests/test_scripts/test_quality_matrix_verified_solver.py": 460,
-    "tests/test_scripts/test_run_autotrain_continuous.py": 13209,
+    "tests/test_scripts/test_run_autotrain_continuous.py": 13158,
     "tests/test_scripts/test_run_autotrain_continuous_chunked_promotion.py": 462,
     "tests/test_web/test_bad_outputs.py": 446,
     "tests/test_web/test_control_plane.py": 3021,
