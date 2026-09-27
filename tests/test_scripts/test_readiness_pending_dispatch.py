@@ -156,8 +156,11 @@ def local_compiled(monkeypatch):
 
 def test_actual_pre_cycle_repairs_data_and_wakes_without_starving_behind_capability(local_compiled, monkeypatch):
     from scripts import autotrain_controller_repair as dispatcher
+    from scripts.autotrain_controller_execution import controller_authority_scope
     from scripts.autotrain_supervisor_operations import run_operation
     from scripts.autotrain_supervision import pre_cycle
+    from scripts.merge_verification_evidence import digest
+    from scripts.merge_verification_identity import environment_identity
     from slm_training.data.readiness_receipt import current_successors
     from scripts.run_autotrain_supervisor import _source_identity
 
@@ -165,6 +168,14 @@ def test_actual_pre_cycle_repairs_data_and_wakes_without_starving_behind_capabil
     matrix = _matrix_fixture(compiled)
     common = common_for(compiled, monkeypatch)
     common["source_digest"] = _source_identity(compiled["cwd"])
+    controller_root = Path(__file__).resolve().parents[2]
+    controller_environment = environment_identity()
+    controller_environment.pop("execution_environment_sha256", None)
+    controller = {
+        "cwd": str(controller_root),
+        "source_digest": _source_identity(controller_root),
+        "runtime_digest": digest(controller_environment),
+    }
     original = dispatcher.dispatch_screening_rebuild
     monkeypatch.setattr(dispatcher, "dispatch_screening_rebuild", lambda **_: None)
     pending = data_pending(resolve_matrix_readiness(matrix, cwd=compiled["cwd"],
@@ -172,7 +183,7 @@ def test_actual_pre_cycle_repairs_data_and_wakes_without_starving_behind_capabil
     monkeypatch.setattr(dispatcher, "dispatch_screening_rebuild", original)
     store = CampaignStore("runtime", Path(common["root"]) / "loops/pair")
     logs = []
-    with ActivityRuntime(store) as runtime:
+    with ActivityRuntime(store) as runtime, controller_authority_scope(runtime, controller):
         run = runtime.run
         def observed_run(*args, **kwargs):
             result = run(*args, **kwargs)
