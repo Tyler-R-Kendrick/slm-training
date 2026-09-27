@@ -219,7 +219,7 @@ def capacity_ladder(
     Reuses the from-scratch ``scratch_ladder_default`` point construction
     (constant tokens-per-trainable-param proxy, ``budget ∝ d_model²``) so the
     two arms share identical widths/depths/budgets and differ *only* in
-    ``output_tokenizer``. The recipe (diffusion masking, non-LTR MaskGIT
+    ``output_tokenizer``. The recipe (diffusion masking, grammar-LTR
     decode, grammar-constrained) matches the quality-matrix representation
     controls E255 (lexer) / E262 (choice) it is the capacity-swept form of.
     """
@@ -228,7 +228,7 @@ def capacity_ladder(
     )
     decode = dict(base.decode_frozen or {})
     decode["mask_pattern"] = mask_pattern
-    decode["grammar_ltr_primary"] = False
+    decode["grammar_ltr_primary"] = True
     return ScalingLadder(
         ladder_id=f"capacity_{output_tokenizer}_v1",
         track="scratch",
