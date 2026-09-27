@@ -34,6 +34,7 @@ from typing import Any
 from slm_training.autoresearch.experiment_campaign import (
     campaign_manifest_sha256,
     ExperimentCampaignV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
 )
 from slm_training.data.locked_eval_manifest import (
     canonical_manifest_path,
@@ -52,6 +53,7 @@ def _manifest_payload(*, locked_eval_manifest_sha256: str) -> dict[str, Any]:
         "experiment_id": "e001",
         "hypothesis": "Candidate improves the locked primary endpoint.",
         "decision": "Promote only when every preregistered gate passes.",
+        "selection_rule": SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
         "endpoints": [
             {
                 "endpoint_id": "meaning",

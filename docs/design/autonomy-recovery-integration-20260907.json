@@ -1220,5 +1220,2768 @@
     "Historical restored reports are not current verification receipts.",
     "Finite unit/process/fault fixtures are not universal recovery guarantees."
   ],
-  "evidence_collection_note": "An initial metadata extraction requested nonexistent version key autoresearch and failed with KeyError; no result file was written. This manifest uses canonical autoresearch.heal v8 from a fresh successful invocation."
+  "evidence_collection_note": "An initial metadata extraction requested nonexistent version key autoresearch and failed with KeyError; no result file was written. This manifest uses canonical autoresearch.heal v8 from a fresh successful invocation.",
+  "r33_regression_closure_20260926": {
+    "schema": "r33_regression_closure/v1",
+    "claim_class": "fixture",
+    "promotion": false,
+    "tests": {
+      "train_data": {
+        "passed": 7,
+        "seconds": 19.65
+      },
+      "constraint_debt": {
+        "passed": 5,
+        "seconds": 1.98
+      },
+      "rsp003": {
+        "passed": 1,
+        "seconds": 8.19
+      },
+      "selection_rules": {
+        "passed": 27,
+        "seconds": 33.59
+      },
+      "checkpoint_required": {
+        "passed": 1,
+        "seconds": 1.9
+      }
+    },
+    "artifacts": {
+      "quality_report": {
+        "schema_version": 1,
+        "version": "contracts",
+        "profile": "strict",
+        "built_at": "2026-09-26T23:27:11.944625+00:00",
+        "counts": {
+          "seeds": 2,
+          "candidates": 2,
+          "collected": 2,
+          "admitted": 2,
+          "rejected_total": 0,
+          "source_errors": 0,
+          "by_stage": {}
+        },
+        "constraint_fitness": {
+          "parse_failures": 0,
+          "parse_rate": 1.0,
+          "tier_histogram": {
+            "Silver": 2
+          },
+          "judge_pass_rate": 1.0,
+          "quarantined": 0,
+          "placeholder_contract_violations": 0,
+          "judge_contract_violations": 0,
+          "runtime_verified_fraction": null
+        },
+        "garbage": {
+          "quality_rejected": 0,
+          "reason_histogram": {},
+          "admitted_score_histogram": {
+            "<0.4": 0,
+            "0.4-0.55": 0,
+            "0.55-0.7": 0,
+            "0.7-0.85": 1,
+            ">=0.85": 1
+          },
+          "mean_quality_score": 0.875,
+          "min_quality_score": 0.75
+        },
+        "redundancy": {
+          "dropped": {
+            "exact_pair": 0,
+            "fuzzy_minhash": 0,
+            "semantic_cluster_cap": 0,
+            "semantic_cosine": 0,
+            "cross_corpus": 0,
+            "max_records_per_parent": 0
+          },
+          "cluster_exposure": {
+            "unique_clusters": 2,
+            "records_per_cluster": {
+              "max": 1,
+              "p50": 1,
+              "p95": 1
+            }
+          },
+          "top_clusters": [
+            {
+              "cluster": "61e3a6dde14ecc74|91cefb2ac61c72e03672b044acd2c35071f660e0a4905e5a05af98bdb595946d|31d8167d31206a8b",
+              "count": 1,
+              "sample_ids": [
+                "t2"
+              ]
+            },
+            {
+              "cluster": "99a289ecede6a987|982d45cd94b2d2ae976093dafeed8571f3f97de6e5e5ea3e5ea659458f68e702|eab6c02930ca1678",
+              "count": 1,
+              "sample_ids": [
+                "t1"
+              ]
+            }
+          ]
+        },
+        "decontamination": {
+          "structure_reserved_rejected": 0,
+          "ngram_flagged": 0,
+          "ngram_size": 8,
+          "ngram_overlap_threshold": 0.5,
+          "suites_indexed": [
+            "e763_symbol_only_eval_r2_20260722/adversarial",
+            "e763_symbol_only_eval_r2_20260722/held_out",
+            "e763_symbol_only_eval_r2_20260722/ood",
+            "e763_symbol_only_eval_r2_20260722/rico_held",
+            "e763_symbol_only_eval_r2_20260722/smoke",
+            "e827_target_slots_only_v4/adversarial",
+            "e827_target_slots_only_v4/held_out",
+            "e827_target_slots_only_v4/ood",
+            "e827_target_slots_only_v4/rico_held",
+            "e827_target_slots_only_v4/smoke",
+            "e842_harness_owned_slots_v1/adversarial",
+            "e842_harness_owned_slots_v1/held_out",
+            "e842_harness_owned_slots_v1/ood",
+            "e842_harness_owned_slots_v1/rico_held",
+            "e842_harness_owned_slots_v1/smoke",
+            "e938_role_safe_all_targets_heldout24_v1/held_out",
+            "e938_role_safe_all_targets_smoke24_v1/adversarial",
+            "e938_role_safe_all_targets_smoke24_v1/held_out",
+            "e938_role_safe_all_targets_smoke24_v1/ood",
+            "e938_role_safe_all_targets_smoke24_v1/rico_held",
+            "e938_role_safe_all_targets_smoke24_v1/smoke",
+            "e938_role_safe_all_targets_smoke6_v1/adversarial",
+            "e938_role_safe_all_targets_smoke6_v1/held_out",
+            "e938_role_safe_all_targets_smoke6_v1/ood",
+            "e938_role_safe_all_targets_smoke6_v1/rico_held",
+            "e938_role_safe_all_targets_smoke6_v1/smoke",
+            "e938_role_safe_all_targets_smoke96_v1/held_out",
+            "e938_role_safe_all_targets_smoke96_v1/smoke",
+            "e938_role_safe_all_targets_smoke96_v2/adversarial",
+            "e938_role_safe_all_targets_smoke96_v2/held_out",
+            "e938_role_safe_all_targets_smoke96_v2/ood",
+            "e938_role_safe_all_targets_smoke96_v2/rico_held",
+            "e938_role_safe_all_targets_smoke96_v2/smoke",
+            "e938_role_safe_all_targets_v2/adversarial",
+            "e938_role_safe_all_targets_v2/held_out",
+            "e938_role_safe_all_targets_v2/ood",
+            "e938_role_safe_all_targets_v2/rico_held",
+            "e938_role_safe_all_targets_v2/smoke",
+            "remediated/adversarial",
+            "remediated/held_out",
+            "remediated/ood",
+            "remediated/rico_held",
+            "remediated/smoke",
+            "test_seeds"
+          ]
+        },
+        "sanitization": {
+          "mode": "enforce",
+          "sanitized": 2,
+          "changed": 2,
+          "skipped": {},
+          "rewrites": {
+            "defaults_elided": 1,
+            "dead_bindings_removed": 0,
+            "containers_flattened": 0,
+            "flatten_opportunities": 0
+          },
+          "literals_templatized": 0,
+          "records_templatized": 0,
+          "fallbacks": 0,
+          "fallback_reasons": {},
+          "cache": {
+            "hits": 0,
+            "misses": 39
+          }
+        },
+        "per_family": [
+          {
+            "source_family": "human_curated",
+            "record_count": 2,
+            "root_parent_count": 2,
+            "mean_quality_score": 0.875,
+            "min_quality_score": 0.75,
+            "max_quality_score": 1.0,
+            "task_counts": {
+              "generation": 2
+            }
+          }
+        ],
+        "engines": {
+          "similarity": "minhash-char4gram",
+          "semantic_dedup": "lexical-tfidf",
+          "decontam": "ngram-8"
+        },
+        "warnings": [],
+        "source_anchors": {
+          "unique_roots": 2,
+          "trusted_roots": 2,
+          "trusted_root_fraction": 1.0,
+          "promotion_authoritative": true,
+          "deficit": false
+        },
+        "version_stamp": {
+          "stamp_schema": "version_stamp/v1",
+          "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+          "code_dirty": true,
+          "components": {
+            "harness.train_data": "v35"
+          },
+          "stamped_at": "2026-09-26T23:27:12.008847+00:00"
+        }
+      },
+      "synthesis_feedback": {
+        "schema_version": 2,
+        "version": "contracts",
+        "profile": "strict",
+        "built_at": "2026-09-26T23:27:11.944625+00:00",
+        "thresholds": {
+          "low_yield": 0.4,
+          "high_dup_share": 0.5,
+          "min_group_candidates": 8
+        },
+        "families": {
+          "human_curated": {
+            "admitted": 2,
+            "rejected": 0,
+            "by_stage": {},
+            "by_reason": {},
+            "candidates": 2,
+            "yield": 1.0
+          }
+        },
+        "synthesizers": {},
+        "warnings": [],
+        "recommendations": [],
+        "findings": [],
+        "experiment_candidates": [],
+        "claim_class": "fixture_wiring",
+        "capability_certificate": false,
+        "version_stamp": {
+          "stamp_schema": "version_stamp/v1",
+          "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+          "code_dirty": true,
+          "components": {
+            "harness.train_data": "v35"
+          },
+          "stamped_at": "2026-09-26T23:27:12.008847+00:00"
+        }
+      },
+      "rsp003": {
+        "kind": "rsp003_static_summary_fixture/v1",
+        "claim_class": "fixture",
+        "promotion": false,
+        "environment": {
+          "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+          "machine": "aarch64",
+          "python": "3.12.3"
+        },
+        "recipe": {
+          "command": [
+            "python",
+            "-m",
+            "scripts.run_rsp003_static_summary",
+            "--mode",
+            "fixture",
+            "--cold-trials-per-arm",
+            "1",
+            "--warm-trials",
+            "2"
+          ],
+          "docs_path": "/tmp/r33-rsp003-handoff/test_fixture_writes_docs0/iter-slm485-rsp-003.json",
+          "device": "cpu",
+          "honesty_mode": "static_summary_fixture",
+          "matrix_set": "slm485_rsp003_static_summary"
+        },
+        "catalogue_id": "exp-sr-7",
+        "catalogue_manifest_sha256": "adf43d21e71d334aaf3193d964566c0e1eaa9220aaa3b9324ba24187386b536f",
+        "manifest_sha256": "3163bde9258420b17ca7f9d073a82f43bcdbcecfec2937d193700742947becb9",
+        "static_summary_domain_parity_rate": 1.0,
+        "parity_analysis": {
+          "static_summary_domain_parity_rate": 1.0,
+          "checks_passed": 9,
+          "checks_total": 9,
+          "checks": {
+            "differential_corpus_oracle_parity": true,
+            "base_artifact_domain_parity": true,
+            "control_summary_domain_parity": true,
+            "static_lalr_summary_domain_parity": true,
+            "packed_semantic_summary_domain_parity": true,
+            "provider_mediated_domain_parity": true,
+            "deliberate_miss_fallback_closed": true,
+            "packed_summary_request_independent": true,
+            "packed_summary_checker_fail_closed": true
+          },
+          "differential_parity": {
+            "equal": true,
+            "prefixes_checked": 1,
+            "mismatch_count": 0,
+            "mismatches": []
+          },
+          "kill_threshold": 1.0,
+          "kill_operator": "lt",
+          "kill_gate_triggered": false,
+          "certified": true,
+          "packed_summary": {
+            "schema": "openui_packed_semantic_summary/v1",
+            "authority_sha256": "d295a54bfdc7b8f51ca75577eb15d9b07708abcf93397a94dc5ca8bd0990cec0",
+            "vocab_size": 569,
+            "special_id_count": 5,
+            "request_dependent_authority_excluded": [
+              "runtime symbols",
+              "scope visibility",
+              "literal bodies",
+              "macro expansions",
+              "semantic state"
+            ]
+          }
+        },
+        "phase_breakdown_by_arm": {
+          "no_artifact": {
+            "tokenizer_pack_construction": 1.824,
+            "summary_step": 0.02,
+            "first_domain_query": 226.322
+          },
+          "base_artifact": {
+            "tokenizer_pack_construction": 1.962,
+            "summary_step": 96.161,
+            "first_domain_query": 147.514
+          },
+          "control_summary": {
+            "tokenizer_pack_construction": 1.794,
+            "summary_step": 87.434,
+            "first_domain_query": 111.599
+          },
+          "static_lalr_summary": {
+            "tokenizer_pack_construction": 1.811,
+            "summary_step": 171.748,
+            "first_domain_query": 62.686
+          },
+          "packed_semantic_summary": {
+            "tokenizer_pack_construction": 2.434,
+            "summary_step": 104.136,
+            "first_domain_query": 138.477
+          },
+          "provider_mediated": {
+            "tokenizer_pack_construction": 2.786,
+            "summary_step": 165.003,
+            "first_domain_query": 71.03
+          },
+          "deliberate_miss": {
+            "tokenizer_pack_construction": 1.981,
+            "summary_step": 82.418,
+            "first_domain_query": 70.094
+          }
+        },
+        "cold_path_improvement": {
+          "measurable": true,
+          "baseline_arm": "base_artifact",
+          "baseline_summary_step_p50_ms": 96.161,
+          "delta_vs_baseline_ms": {
+            "base_artifact": 0.0,
+            "control_summary": 8.727,
+            "static_lalr_summary": -75.587,
+            "packed_semantic_summary": -7.975,
+            "provider_mediated": -68.842
+          },
+          "best_candidate_arm": "control_summary",
+          "best_delta_ms": 8.727,
+          "cold_path_improved": true,
+          "noise_floor_ms": 5.0
+        },
+        "recommendation": "inconclusive_fixture",
+        "summary": {
+          "excluded_incomplete": 0,
+          "arms": {
+            "cold:feb922536bdc": {
+              "trial_kind": "cold",
+              "config_hash": "feb922536bdcc57a6defe1d3420f215c8c8c5828f2daababdca1b8141f1e59d5",
+              "n": 1,
+              "p50_ms": 902.46,
+              "p95_ms": 902.46,
+              "arm": "no_artifact"
+            },
+            "cold:dda944294999": {
+              "trial_kind": "cold",
+              "config_hash": "dda944294999609d7a27ddd930a6419b3782b25d2cf5bc7696ed572a949edd86",
+              "n": 1,
+              "p50_ms": 924.661,
+              "p95_ms": 924.661,
+              "arm": "base_artifact"
+            },
+            "cold:b15d773bb940": {
+              "trial_kind": "cold",
+              "config_hash": "b15d773bb9406b1f01ef1577cc6f7a8c63a008e295a5a24331630d685a4c7120",
+              "n": 1,
+              "p50_ms": 680.437,
+              "p95_ms": 680.437,
+              "arm": "control_summary"
+            },
+            "cold:3ef964f0b2fd": {
+              "trial_kind": "cold",
+              "config_hash": "3ef964f0b2fd6bb180029989bb07dc1707629ef403d42934c520dde987a076b2",
+              "n": 1,
+              "p50_ms": 672.696,
+              "p95_ms": 672.696,
+              "arm": "static_lalr_summary"
+            },
+            "cold:65c40a2f5e11": {
+              "trial_kind": "cold",
+              "config_hash": "65c40a2f5e119814035d147bf7c95550f08ef329c289aa9211694f1cf2779c13",
+              "n": 1,
+              "p50_ms": 763.368,
+              "p95_ms": 763.368,
+              "arm": "packed_semantic_summary"
+            },
+            "cold:bb722e023e41": {
+              "trial_kind": "cold",
+              "config_hash": "bb722e023e41f582f6220c1a00d306fc66d9596205f121ef2f8ba75cdaf6358a",
+              "n": 1,
+              "p50_ms": 815.506,
+              "p95_ms": 815.506,
+              "arm": "provider_mediated"
+            },
+            "cold:db0355f4fa10": {
+              "trial_kind": "cold",
+              "config_hash": "db0355f4fa1046bb2201177257a250a8f624177dcdafa039b84657fbd98be33a",
+              "n": 1,
+              "p50_ms": 693.059,
+              "p95_ms": 693.059,
+              "arm": "deliberate_miss"
+            },
+            "warm:58caf4144053": {
+              "trial_kind": "warm",
+              "config_hash": "58caf4144053491e28b126fbb79a27fd1cbac2e99d0d126c82d7e6f367bdd574",
+              "n": 1,
+              "p50_ms": 38.655,
+              "p95_ms": 38.655,
+              "arm": "warm_repeated"
+            }
+          }
+        },
+        "trials": [
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "feb922536bdcc57a6defe1d3420f215c8c8c5828f2daababdca1b8141f1e59d5",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 1.8235000025015324
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 0.020499996026046574
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 226.3219989981735
+              }
+            ],
+            "total_ms": 902.4596950039268,
+            "peak_rss_kb": 3092,
+            "exit_code": 0,
+            "trial_hash": "88569a9c17e83f915d475eef885bf202ce70c66052d7c62e97b4cd7ebf50d0bb"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "dda944294999609d7a27ddd930a6419b3782b25d2cf5bc7696ed572a949edd86",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 1.9617999932961538
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 96.1611999955494
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 147.51400001114234
+              }
+            ],
+            "total_ms": 924.6607979875989,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "afcb84b391639a1e88bbc4bdf0a09fea17243cd4ba6abac5e96e8167a69ded84"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "b15d773bb9406b1f01ef1577cc6f7a8c63a008e295a5a24331630d685a4c7120",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 1.7941999976756051
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 87.43410000170115
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 111.59869999391958
+              }
+            ],
+            "total_ms": 680.4365999996662,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "b526f96ebe96e7a01c567c9fa6d5fe3f83f4ba564d16bdd54b418aa3a3be3a82"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "3ef964f0b2fd6bb180029989bb07dc1707629ef403d42934c520dde987a076b2",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 1.8109999946318567
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 171.74849900766276
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 62.68619999173097
+              }
+            ],
+            "total_ms": 672.6955990015995,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "cad7a8bda33de28616959d8667080964063357731f5be677df7048cb942a1671"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "65c40a2f5e119814035d147bf7c95550f08ef329c289aa9211694f1cf2779c13",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 2.4339000083273277
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 104.13589999370743
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 138.4768999996595
+              }
+            ],
+            "total_ms": 763.3678999991389,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "b42bf6e5ce7225164b9ba9c5c28a8258abc4f6220df3e883de8923f30e5eb5ad"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "bb722e023e41f582f6220c1a00d306fc66d9596205f121ef2f8ba75cdaf6358a",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 2.7864000003319234
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 165.00349900161382
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 71.03049999568611
+              }
+            ],
+            "total_ms": 815.5055990064284,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "7e4cbc849cd3a9f93c7be4440e1701f7271fa8df9df9fdd8d0424008690038f6"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "cold",
+            "measurement_stage": "process_cold",
+            "completeness": "complete",
+            "config_hash": "db0355f4fa1046bb2201177257a250a8f624177dcdafa039b84657fbd98be33a",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "process_launch",
+                "duration_ms": null
+              },
+              {
+                "phase": "tokenizer_pack_construction",
+                "duration_ms": 1.9813999970210716
+              },
+              {
+                "phase": "summary_step",
+                "duration_ms": 82.41800000541843
+              },
+              {
+                "phase": "first_domain_query",
+                "duration_ms": 70.09449999895878
+              }
+            ],
+            "total_ms": 693.0587999959243,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "186696ed6662609ac9b5420854b4c7c2b94f24ab8c9503158755c12325a32674"
+          },
+          {
+            "schema_version": "cold_warm_bench_trial/v1",
+            "trial_kind": "warm",
+            "measurement_stage": "steady_state",
+            "completeness": "complete",
+            "config_hash": "58caf4144053491e28b126fbb79a27fd1cbac2e99d0d126c82d7e6f367bdd574",
+            "hardware_identity": {
+              "hostname": "CopilotPro7",
+              "platform": "Linux-6.18.35.2-microsoft-standard-WSL2-aarch64-with-glibc2.39",
+              "python_version": "3.12.3",
+              "cpu_count": 12,
+              "machine": "aarch64"
+            },
+            "phases": [
+              {
+                "phase": "repeated_domain_queries",
+                "duration_ms": null
+              }
+            ],
+            "total_ms": 38.65490001044236,
+            "peak_rss_kb": 257028,
+            "exit_code": 0,
+            "trial_hash": "1257dbad2a2ec78482d8634841619e5402bce6ad1f2252dc7b07d9caff956a6b"
+          }
+        ],
+        "scope_disclaimer": "Fixture-scale EXP-SR-7 evidence for incremental request-independent summary layers on the certified completion artifact. Parity gate uses the fixed hard prefix plus whole-program/empty-prefix samples from STATIC_LALR_CORPUS; every intermediate prefix is owned by tests/test_dsl/test_static_control_domain.py (E1 suite). Measures process launch, tokenizer/pack construction, summary preload, and first completion-domain query \u2014 not model init, first-forward, or full first-verified-program latency. claim_class=fixture; never promotion_candidate/ship_gate. Request-local symbols/binders/placeholders remain overlay.",
+        "version_stamp": {
+          "stamp_schema": "version_stamp/v1",
+          "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+          "code_dirty": true,
+          "components": {
+            "harness.experiments": "v171",
+            "harness.experiments.slm485_rsp003_static_summary": "v1"
+          },
+          "stamped_at": "2026-09-26T23:38:48.308336+00:00"
+        }
+      }
+    },
+    "composition": {
+      "cwd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/verification-source-r33",
+      "runs": [
+        {
+          "name": "two-repair",
+          "command": "rtk proxy timeout --signal=INT --kill-after=10s 120s env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 /home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m pytest -q -o addopts= tests/test_autoresearch/test_verified_supervisor_continuation.py::test_two_verified_repairs_resume_ordinary_supervisor_without_repeating_train --tb=short --junitxml=/tmp/r33-two-repair-startup-final.xml",
+          "exit_code": 0,
+          "passed": 1,
+          "seconds": 87.47,
+          "junit": "/tmp/r33-two-repair-startup-final.xml"
+        },
+        {
+          "name": "unchanged-workload",
+          "command": "rtk proxy timeout --signal=INT --kill-after=10s 120s env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 /home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m pytest -q -o addopts= tests/test_autoresearch/test_verified_supervisor_continuation.py::test_verified_controller_upgrade_resumes_unchanged_workload --tb=short --junitxml=/tmp/r33-unchanged-workload-final.xml",
+          "exit_code": 0,
+          "passed": 1,
+          "seconds": 80.82,
+          "junit": "/tmp/r33-unchanged-workload-final.xml"
+        },
+        {
+          "name": "compatibility-a",
+          "command": "rtk proxy timeout --signal=INT --kill-after=10s 120s env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 /home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m pytest -q -o addopts= tests/test_autoresearch/test_controller_workload_worker.py tests/test_autoresearch/test_controller_journal_authority.py tests/test_autoresearch/test_nested_controller_cli.py tests/test_autoresearch/test_command_cursor_cli.py tests/test_autoresearch/test_operation_recovery.py tests/test_autoresearch/test_locked_supervisor_control.py tests/test_autoresearch/test_workload_import_boundary.py --tb=short --junitxml=/tmp/r33-controller-compatibility-a.xml",
+          "exit_code": 0,
+          "passed": 53,
+          "seconds": 59.23,
+          "junit": "/tmp/r33-controller-compatibility-a.xml"
+        },
+        {
+          "name": "compatibility-b",
+          "command": "rtk proxy timeout --signal=INT --kill-after=10s 120s env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 /home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m pytest -q -o addopts= tests/test_autoresearch/test_driver_partial_cursor_recovery.py --tb=short --junitxml=/tmp/r33-controller-compatibility-b.xml",
+          "exit_code": 0,
+          "passed": 13,
+          "seconds": 52.09,
+          "junit": "/tmp/r33-controller-compatibility-b.xml"
+        }
+      ],
+      "scope": "Fixture verification/publication and actual subprocess composition; no live provider or scientific acceptance claim.",
+      "changes_this_closure": [
+        "scripts/autotrain_controller_execution.py",
+        "scripts/run_autotrain_supervisor.py",
+        "scripts/autotrain_repair_activation.py",
+        "scripts/autotrain_nested_execution.py",
+        "scripts/autotrain_cycle_context.py",
+        "scripts/autoresearch.py",
+        "src/slm_training/harness_core/controller_execution.py",
+        "tests/test_autoresearch/controller_worker_fixture.py",
+        "tests/test_autoresearch/test_controller_workload_worker.py"
+      ],
+      "parent_owned": [
+        "docs",
+        "versions",
+        "quality baseline",
+        "Hooke documentation provenance"
+      ],
+      "validation_policy": "Each test invocation capped at120s, INT then10s kill grace; no cross-boundary authority cache.",
+      "profiles": [
+        "/tmp/r33-controller-validation-before.json",
+        "/tmp/r33-controller-validation-after.json",
+        "/tmp/r33-controller-two-repair-profile-final.json",
+        "/tmp/r33-controller-unchanged-profile-final.json"
+      ],
+      "static_checks": {
+        "focused_ruff": "passed",
+        "focused_test_extraction": "passed",
+        "owned_diff_check": "passed"
+      },
+      "quality_baseline_updated": false,
+      "owned_files_frozen": true,
+      "active_owned_test_sessions": [],
+      "remaining_scope": "Parent integration review, full verifier, docs/version/baseline/publication. No live campaign or provider acceptance executed."
+    },
+    "documentation_provenance": {
+      "status": "consumer_provenance_patch_ready_for_parent_review",
+      "files": {
+        "scripts/autotrain_docs.py": {
+          "sha256": "06206e6af5f0fa6202461d38ee0894042d51ebe4d662226e11786ae4bf186463",
+          "lines": 384
+        },
+        "scripts/run_autotrain_continuous.py": {
+          "sha256": "09dbc5f0a2c8665927a111595684d22eedc312ad4ae77c7867afc2cf79062700",
+          "lines": 12182
+        },
+        "tests/test_scripts/test_continuous_cycle_stamp.py": {
+          "sha256": "12876ba283a4db2de863e93076b085b422828ca907ed82db00552b2e12d6aac8",
+          "lines": 275
+        },
+        "tests/test_scripts/test_run_autotrain_continuous.py": {
+          "sha256": "ed0dda4e39e1eb75d542d16d1890f98263296edd9f92707dd120db635fd6b3e4",
+          "lines": 13209
+        },
+        "scripts/autotrain_locked_diagnostic.py": {
+          "sha256": "1428157f65d9de1ecaa4a1758f95f3d8942047760883af551f6769504e255450",
+          "lines": 268
+        },
+        "tests/test_autoresearch/test_locked_supervisor_control.py": {
+          "sha256": "9c8f63cc4d694ff5853f74e7b4c8cbedc191b6ddc8e3d711b087a4f19ce298e3",
+          "lines": 379
+        }
+      },
+      "validation": {
+        "focused_tests": "21 passed, 368 deselected in 6.04s",
+        "ruff_default": "prior four owned files passed; added boundary files passed E/F and complexity checks",
+        "runner_complexity_violations": 89,
+        "docs_and_focused_test_complexity": "passed",
+        "full_gate_run": false
+      },
+      "baseline_edits": false,
+      "update_commands_run": false,
+      "notes": [
+        "Outcome content hash and campaign lock authenticate stage; scoreboard must match committed stage.",
+        "Contradictory arm stamps fail closed; actual timestamps retained.",
+        "Missing gates.ship recovered only from verified immutable workload registry.",
+        "Controller stamp retained separately; nested delivery inherits measurement ledger partition.",
+        "Typed missing provenance leaves document action pending; measurement artifacts unchanged.",
+        "Runner caller-only edit; parent owns baseline ratchet and final registry/docs.",
+        "Locked first-run closeout replays handoff-bound driver_pending/v1 provenance prerequisite and returns 2; no false delivery wait or files. Valid-proof fixture retains actual delivery-wait coverage."
+      ]
+    },
+    "version_registry_check": "passed: 148 changed files, 20 components touched; inspection against ambient HEAD, not final immutable release validation"
+  },
+  "r33_quality_update": {
+    "status": "final_edits_stopped",
+    "source_root": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/verification-source-r33",
+    "files": {
+      "scripts/verify_code_quality.py": {
+        "sha256": "de273f3dc45c0a78cf585f48aefb701845df14d26efbe5b1d130b1b29f216bef",
+        "lines": 177
+      },
+      "tests/test_quality/test_ratchet.py": {
+        "sha256": "a244859b31081c3ef706fae9405aad2e5c6a212fd68abcd35151a0df6305d68b",
+        "lines": 281
+      }
+    },
+    "behavior": [
+      "Single fresh analysis; evaluate existing baseline before save. Regression rejects update with exit 1 and leaves baseline bytes unchanged, including when other metrics improve.",
+      "Missing baseline supports initial bootstrap; legitimate decreases and stale-entry removal persist.",
+      "Documented Ruff-version change re-scopes complexity only; increases in every other dimension still reject. Missing or unchanged tool version grants no exception.",
+      "Skipped complexity preserves recorded ceilings and tool version."
+    ],
+    "validation": {
+      "command": "timeout --signal=INT --kill-after=10s 170s env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../runtime-r25-python/bin/python -B -m pytest -q --tb=short -p no:cacheprovider tests/test_quality/test_ratchet.py",
+      "result": "39 passed in 0.22s",
+      "log": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-quality-update-validation.log",
+      "old_source_regression_log": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-quality-update-old-code-repro.log",
+      "ruff": "default and C901/PLR0911/PLR0912/PLR0913/PLR0915 clean for both files"
+    },
+    "baseline_edits": false,
+    "active_test_handles": []
+  },
+  "r33_revmath_isolated": {
+    "request_digest": "4d52ecba6c3f21e8a2fb1b1f08a2457c717a6bddc8f9a8e4d462fd3afa87bf7a",
+    "seconds": 29.462880099992617,
+    "exit_code": 0,
+    "nodes": [
+      "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_frozen_corpus_replays_exactly",
+      "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_rebuild_matches_committed_manifest_bytes_identity",
+      "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_missing_tool_probe_uses_temporary_scratch_outside_candidate"
+    ],
+    "evidence_class": "isolated_process",
+    "status": "ok",
+    "output_tail": "...                                                                      [100%]\n3 passed in 13.57s\n",
+    "workload": {
+      "collection_errors": [],
+      "deselected": [],
+      "deselected_markers": {},
+      "exit_code": 0,
+      "markers": {
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_frozen_corpus_replays_exactly": [],
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_missing_tool_probe_uses_temporary_scratch_outside_candidate": [],
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_rebuild_matches_committed_manifest_bytes_identity": []
+      },
+      "nodes": [
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_frozen_corpus_replays_exactly",
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_rebuild_matches_committed_manifest_bytes_identity",
+        "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_missing_tool_probe_uses_temporary_scratch_outside_candidate"
+      ],
+      "pytest_version": "8.4.2",
+      "reports": [
+        {
+          "duration_seconds": 0.0005642989999614656,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_frozen_corpus_replays_exactly",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 5.699884750996716,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_frozen_corpus_replays_exactly",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.0001424999936716631,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_frozen_corpus_replays_exactly",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00016089998825918883,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_rebuild_matches_committed_manifest_bytes_identity",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 5.641354634004529,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_rebuild_matches_committed_manifest_bytes_identity",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 9.650000720284879e-05,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_rebuild_matches_committed_manifest_bytes_identity",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.0006335000070976093,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_missing_tool_probe_uses_temporary_scratch_outside_candidate",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.0005273999995552003,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_missing_tool_probe_uses_temporary_scratch_outside_candidate",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 9.549999958835542e-05,
+          "nodeid": "tests/test_harnesses/reasoning/test_revmath_corpus.py::test_missing_tool_probe_uses_temporary_scratch_outside_candidate",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        }
+      ],
+      "request_digest": "4d52ecba6c3f21e8a2fb1b1f08a2457c717a6bddc8f9a8e4d462fd3afa87bf7a",
+      "schema": "merge_test_workload/v1"
+    },
+    "workload_sha256": "126a347f7fc00c1de0c2fccca7d485c4dd1e02307eabaca72f00782ee22b99e8",
+    "runtime_roots": [
+      "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python",
+      "/home/codex/repos/slm-training/src/apps/openui_bridge",
+      "/home/codex/repos/slm-training/src/apps/design_md_bridge",
+      "/home/codex/repos/slm-training/src/apps/graphql_bridge",
+      "/home/codex/repos/slm-training/node_modules",
+      "/home/codex/.local/opt/node-v26.5.0"
+    ]
+  },
+  "r33_baseline_decrease_audit": {
+    "increases": [],
+    "decreases": [
+      [
+        "/module_lines/scripts/autoresearch.py",
+        2091,
+        2075
+      ],
+      [
+        "/module_lines/scripts/run_autotrain_continuous.py",
+        12184,
+        12182
+      ],
+      [
+        "/module_lines/src/slm_training/harnesses/experiments/pct008_artifact_cold_warm.py",
+        507,
+        506
+      ],
+      [
+        "/module_lines/src/slm_training/harnesses/experiments/rsp003_static_summary.py",
+        732,
+        730
+      ],
+      [
+        "/module_lines/src/slm_training/harnesses/experiments/rsp006_quality_diversity.py",
+        690,
+        688
+      ],
+      [
+        "/module_lines/src/slm_training/harnesses/model_build/factory.py",
+        1136,
+        1135
+      ],
+      [
+        "/module_lines/src/slm_training/models/twotower.py",
+        16641,
+        16635
+      ],
+      [
+        "/module_lines/tests/test_scripts/test_run_autotrain_continuous.py",
+        13305,
+        13209
+      ],
+      [
+        "/package_lines/slm_training.harnesses.experiments",
+        103189,
+        103184
+      ],
+      [
+        "/package_lines/slm_training.models",
+        49602,
+        49598
+      ]
+    ],
+    "interim_giant_test_ceiling": 13209
+  },
+  "r33_document_provenance_findings": {
+    "status": "final_edits_stopped",
+    "source_root": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/verification-source-r33",
+    "files": {
+      "scripts/autotrain_docs.py": {
+        "sha256": "8316f5a106211d9608fe315ee5fa3631c301d9b9657de50a5760abd2cbf09986",
+        "lines": 396
+      },
+      "tests/test_scripts/test_continuous_cycle_stamp.py": {
+        "sha256": "f66c4dce5fbc2cb7e79c9ab8ace49371e28e8a4b8910589225f6f8148cc24bf4",
+        "lines": 342
+      }
+    },
+    "changes": [
+      "Resolve current delivery through latest cycle_delivery_published event and canonical read_artifact; projection must match committed bytes and canonical delivery identity.",
+      "Every stamp now validates original immutable workload source, commit and all declared eval-component versions. Delivery pair and loop must match driver lock; only missing gates.ship is filled from verified registry.",
+      "Evaluation stage must have integer zero exit or satisfy canonical _expected_gate_rejection including real AgentV bindings, resolved against locked workload cwd.",
+      "Mutation tests cover copied/modified delivery metrics flags arm order; forged complete stamp commit/eval/gate versions; failed/unknown exits. Real immutable workload and campaign locks replace mocked lock fixture; canonical exit-8 rejection stays accepted."
+    ],
+    "validation": {
+      "initial_stamp_suite": "27 passed in 46.50s",
+      "final_result": "30 passed, 11 deselected in 29.93s",
+      "final_log": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-docs-findings-final-validation.log",
+      "command": "timeout --signal=INT --kill-after=10s 170s env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../runtime-r25-python/bin/python -B -m pytest -q --tb=short -p no:cacheprovider tests/test_scripts/test_continuous_cycle_stamp.py tests/test_autoresearch/test_locked_supervisor_control.py -k 'not locked_scientific_actions and not locked_driver and not locked_runner and not completion and not completed_pair and not readonly and not pre_cycle and not diagnostic_repair and not document_handoff and not unchanged'",
+      "ruff": "default and C901/PLR0911/PLR0912/PLR0913/PLR0915 clean"
+    },
+    "scope": [
+      "No giant-driver, baseline, version, or docs-registry edits.",
+      "Original six-file handoff superseded only for these two files.",
+      "Missing or contradictory proof still enters documentation_waiting_provenance without creating delivery workspace."
+    ],
+    "active_test_handles": []
+  },
+  "r33_quality_source_selection": {
+    "status": "final_edits_stopped",
+    "files": {
+      "scripts/check_changed.py": {
+        "sha256": "0d33099dcf941f8fa22c97512914577caa4766ef769e0fd5f63793de1c960953",
+        "lines": 893
+      },
+      "tests/test_scripts/test_check_changed.py": {
+        "sha256": "6f4336a4385ccf8d8be6d3ca912b4c62acc9ef48c632e52af534c4ae62150f1f",
+        "lines": 505
+      }
+    },
+    "mapping": "scripts/verify_code_quality.py -> tests/test_quality",
+    "coverage": "Existing domain-selection regression checks source-only and union with unrelated changed test for every listed source, including quality verifier.",
+    "simplification": "Replaced repeated source assertions with shared case table; removed single-use case-resource relative-path alias.",
+    "validation": {
+      "result": "27 passed in 0.77s",
+      "log": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-quality-selection-validation.log",
+      "command": "env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../runtime-r25-python/bin/python -B -m pytest -q --tb=short -p no:cacheprovider tests/test_scripts/test_check_changed.py",
+      "complexity": "unchanged: C901 3, PLR0912 3, PLR0911 1",
+      "ruff_default": "passed"
+    },
+    "baseline_edits": false
+  },
+  "r33_retained_science_environment": {
+    "schema": "retained_science_environment_diagnostic/v1",
+    "before_digest": "0779a204f3be9f3187bfcdf5a8f1867eba5ae139cb28934e24ab31b72c0648a3",
+    "after_digest": "cf6d72c2ed3942b17808f511f81c91c782c1f3d1e6ee3902d31e63c5c03090b6",
+    "original_request_matches_after": true,
+    "changed_environment": {
+      "ORT_DISABLE_TELEMETRY": {
+        "before": null,
+        "after": "1"
+      }
+    },
+    "changed_identity_fields": {
+      "execution_environment_sha256": {
+        "before": "d3a44ced77c41f79e329cf83873e5a106f68922ddf8d86c19a4b52dd96a3e2a7",
+        "after": "a11562316cae5157969969233b93f4c8fbda8b5049355b8d98b5fbe85185bb27"
+      }
+    },
+    "cause": "Read-only diagnostic measured before slm_training package initialization; ordinary supervisor imports package before measuring. No runtime/source drift demonstrated.",
+    "controller_runtime_digest": "b997e7ce91dfdadd4f807c2a15492bcd3b0fae22bafec28b80893f84991c7762",
+    "locked_execution_identity": "788111710fa3118a4971198c13b2a76716ee5932a5ec733e6462e72f26bcf423",
+    "node": "/home/codex/.local/opt/node22/bin/node",
+    "node_version": "v22.23.1",
+    "node_sha256": "d8fa08f79c8198c5a5ccc9faa5a69803052703fc9513f99e7200e0ab42e1d799",
+    "science_sdk_root": "/home/codex/repos/slm-training/outputs/workspaces/autonomy-candidate/node_modules",
+    "yaml_resolution": "/home/codex/repos/slm-training/outputs/workspaces/autonomy-candidate/node_modules/yaml/dist/index.js",
+    "yaml_parse_passed": true,
+    "scientific_subprocess_layout": "native host cwd/PYTHONPATH; no flattening to /runtime/4",
+    "new_controller_sdk_root": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r33-agentv-complete",
+    "use_new_sdk_for_retained_science": false,
+    "reason": "Changing AGENTV_NODE_MODULES changes workload environment identity; controller verification SDK remains separate. No successor needed for exact retained native layout.",
+    "provider_calls": 0,
+    "source_changes": false,
+    "native_sdk_import": {
+      "passed": true,
+      "export_count": 315,
+      "provider_invoked": false
+    }
+  },
+  "r33_rico_followup": {
+    "evidence": {
+      "r32_authenticated_failures": {
+        "attempt_count_at_capture": 231,
+        "attempts": [
+          {
+            "captured_evidence_excerpt": [
+              "FAILED tests/test_harnesses/train_data/test_pipeline.py::test_build_train_data_from_rico_fixtures"
+            ],
+            "exit_code": -2,
+            "kind": "shard",
+            "nodes": [
+              "tests/test_dsl/test_static_control_domain.py::test_e1_kernel_corpus_parity[' TextContent(\":slot_0\")\\\\n']",
+              "tests/test_autoresearch/test_power_preflight_check.py::TestNeverRaises::test_malformed_candidates_block_without_raising[candidate1]",
+              "tests/test_autoresearch/test_thrash_residuals.py::test_slug_from_candidate_id",
+              "tests/test_data/test_scope_extract.py::test_expression_scopes_nest_inside_statements",
+              "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_model_copy_escalation_blocked_at_profile_validation",
+              "tests/test_dsl/test_symbolic_expr_canonicalize.py::test_canonicalization_preserves_evaluated_predictions_bit_for_bit[node4]",
+              "tests/test_evals/test_meaningful_program.py::test_v2_rejects_input_placeholder_in_name_property",
+              "tests/test_formal/test_finite_search_bounds.py::test_frozen_fixture_file_and_exhaustive_cross_check",
+              "tests/test_harness_core/test_source_authority.py::test_initial_readback_rejects_mismatch_before_authority[expired]",
+              "tests/test_harnesses/experiments/test_compute_state_controller.py::test_replay_scores_regret_and_does_not_reward_blanket_abstention",
+              "tests/test_harnesses/experiments/test_self_context_curriculum.py::test_run_fixture_curriculum",
+              "tests/test_harnesses/experiments/test_slm214_spectral_snapshot.py::test_pareto_tail_alpha_recovery",
+              "tests/test_harnesses/model_build/test_checkpoint_exposure.py::test_unknown_legacy_checkpoint_never_invents_examples",
+              "tests/test_harnesses/preference/test_remine_campaign.py::test_stop_rules_are_deterministic[case-006]",
+              "tests/test_harnesses/train_data/test_pipeline.py::test_build_train_data_from_rico_fixtures",
+              "tests/test_models/test_compiler_decode.py::test_binder_component_plan_supervises_instances_and_biases_legal_choices",
+              "tests/test_models/test_local_action_head.py::test_spare_codeword_counterexample",
+              "tests/test_models/test_twotower_numeric_gates.py::test_model_build_config_rejects_compiler_path_levers_when_decode_is_off[case-003]",
+              "tests/test_scripts/test_evaluate_lot_downstream_gate.py::test_slm256_run_reports_not_authorized",
+              "tests/test_scripts/test_run_slm135_trailed_assumptions_fixture.py::test_plan_only_writes_design_docs",
+              "tests/test_web/test_lineage_deployments.py::test_registry_reads_atomic_deployment_identity"
+            ],
+            "output_tail_sha256": "e76e4ecc6889a52d4ee9fbf5a42bdb6421818d735ea756f6bfb6a7fff17cdc17",
+            "seconds": 31.266941174006206,
+            "status": "timeout",
+            "test_or_signal": "test_build_train_data_from_rico_fixtures",
+            "timestamp_bracket_receipts": [
+              {
+                "attempt_count": 138,
+                "journal_sha256": "3373c12c2d3816b87ec1ad0374c7af28cc5294fd4a212928ecff51d3f42348e8",
+                "passed": 1187,
+                "receipt_file_sha256": "a3d8e9da8676f81570b195ba1a717f63de464ede175990e85aa73449822aa22d",
+                "receipt_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/background/20260926T225303Z.json",
+                "utc": "20260926T225303Z"
+              },
+              {
+                "attempt_count": 142,
+                "journal_sha256": "6711c6b5b1135f0bb1cd0c3550ed757d648c265cc728cb41c0528b858f425793",
+                "passed": 1208,
+                "receipt_file_sha256": "651ff4b507d34a0c2e66c941dac67bd56ec33b896ae3d20a11718c19049c4f14",
+                "receipt_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/background/20260926T225529Z.json",
+                "utc": "20260926T225529Z"
+              }
+            ],
+            "zero_based_attempt_index": 139
+          },
+          {
+            "captured_evidence_excerpt": [
+              "..................F."
+            ],
+            "exit_code": -2,
+            "kind": "shard",
+            "nodes": [
+              "tests/test_dsl/test_hierarchical_operator_head.py::test_features_are_constructed_solely_from_the_live_legal_set",
+              "tests/test_autoresearch/test_power_preflight_check.py::TestNeverRaises::test_malformed_candidates_block_without_raising[candidate6]",
+              "tests/test_autoresearch/test_search_preflight_ingestion.py::test_changed_current_selection_does_not_read_old_credit",
+              "tests/test_data/test_progspec_generate.py::test_required_component_groups_include_ordered_topology_variants",
+              "tests/test_dsl/test_goal_support_adversarial.py::test_adversarial_g12_cannot_authorize_production_exact_profile",
+              "tests/test_dsl/test_solver_support.py::test_unknown_from_each_budget_class[tree0-bounds0-budget:max_nodes]",
+              "tests/test_evals/test_judge_resolution.py::test_endpoint_and_manifest_round_trip",
+              "tests/test_formal/test_computability_classification.py::test_fixture_case_parity[neg_print_axioms_as_finite_decidable]",
+              "tests/test_harness_core/test_parameter_efficiency.py::test_unmeasured_params_are_not_charged_as_zero",
+              "tests/test_harnesses/experiments/test_claim_manifest.py::test_classify_iter_artifact_development_only",
+              "tests/test_harnesses/experiments/test_sde4_02_min_controller_capacity.py::test_build_manifest_not_enough_dims",
+              "tests/test_harnesses/experiments/test_slm209_debt_targeted_curriculum.py::test_score_components_persisted_for_each_selection",
+              "tests/test_harnesses/model_build/test_checkpoint_bundle.py::test_real_runtime_fence_blocks_epoch_replacement",
+              "tests/test_harnesses/preference/test_operator_history_pairs.py::test_synthetic_corpus_has_both_train_and_held_out_sessions",
+              "tests/test_harnesses/train_data/test_integrity.py::test_duplicate_binder_fails_reference_scope",
+              "tests/test_models/test_choice_tokenizer.py::test_choice_state_does_not_collapse_content_array_to_placeholder",
+              "tests/test_models/test_legal_action_scorer.py::test_unsupported_pack_abstains[cross_attention]",
+              "tests/test_models/test_tree_edit_diffusion_value_modes.py::test_default_decode_matches_explicit_legacy_stop_accounting",
+              "tests/test_scripts/test_continuous_cycle_stamp.py::test_stamped_record_mines_into_a_real_partition",
+              "tests/test_scripts/test_run_rsp002_bounded_search.py::test_plan_only_exits_zero",
+              "tests/test_web/test_experiment_persistence.py::test_e708_retained_run_persists_without_new_checkpoint",
+              "tests/test_dsl/test_grammar_fastpath_lexer_cache.py::test_lex_tokens_byte_identical_to_uncached_lark_lex",
+              "tests/test_dsl/test_solver_state.py::test_meet_intersects_domains_and_rejects_mismatched_identity",
+              "tests/test_scripts/test_verify_version_stamps.py::test_constants_mirror_slm_training_versioning",
+              "tests/test_dsl/test_engine_direct_feed.py::test_decode_state_append_path_uses_direct_feed",
+              "tests/test_dsl/test_mini_pack.py::test_mini_pack_imports_no_openui",
+              "tests/test_dsl/test_grammar_fastpath.py::test_uncached_native_mask_skips_cache_fingerprint",
+              "tests/test_scripts/test_run_autotrain_continuous.py::test_component_edge_token_arm_is_size_matched_and_replayable",
+              "tests/test_scripts/test_run_autotrain_continuous.py::test_p9_selector_on_empty_ledger_picks_training_or_data_arm"
+            ],
+            "output_tail_sha256": "870fcb91fd585a579ea86fd36f747e61da02397824a5ce95c18777df62f02b0e",
+            "seconds": 86.15871188801248,
+            "status": "timeout",
+            "test_or_signal": "test_stamped_record_mines_into_a_real_partition",
+            "timestamp_bracket_receipts": [
+              {
+                "attempt_count": 163,
+                "journal_sha256": "621e979108082e9ea2d8a1e42d1a0699991905dec0a9769973cf93fad455f570",
+                "passed": 1460,
+                "receipt_file_sha256": "58f4047143177baf94a72c9f4c5bf2698a3b15bb28568f42008123383e5d8801",
+                "receipt_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/background/20260926T230702Z.json",
+                "utc": "20260926T230702Z"
+              },
+              {
+                "attempt_count": 167,
+                "journal_sha256": "d3a09f6d1de9e8c13c8d8962f932f9750cfa036860a1248a54c321c098aab955",
+                "passed": 1523,
+                "receipt_file_sha256": "3d6bfd5425d45ec9bf7ab91c21d2e7139996737d40b06f3681d3fc8dd3362d41",
+                "receipt_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/background/20260926T230910Z.json",
+                "utc": "20260926T230910Z"
+              }
+            ],
+            "zero_based_attempt_index": 164
+          },
+          {
+            "captured_evidence_excerpt": [
+              "..F................."
+            ],
+            "exit_code": -2,
+            "kind": "shard",
+            "nodes": [
+              "tests/test_autoresearch/test_autonomy_adversary.py::test_corrupt_output_digest_guard_is_load_bearing",
+              "tests/test_autoresearch/test_experiment_identity_property.py::test_seed_relabeling_preserves_treatment",
+              "tests/test_autoresearch/test_recovery_behavior.py::test_an_unclassified_deficit_still_asks_for_something",
+              "tests/test_data/test_corrupt.py::test_every_operator_is_rejected_and_has_a_verified_repair[truncated_line]",
+              "tests/test_data/test_semantic_plan_extraction/test_requirements_compile.py::test_evaluation_fixture_stays_evaluation_only",
+              "tests/test_dsl/test_lattice_search.py::test_gram_selector_deduplicates_valid_ast_fingerprints",
+              "tests/test_dsl/test_symbolic_expr_fit.py::test_no_false_affine_over_random_trees",
+              "tests/test_evals/test_power_protocol.py::test_holm_bonferroni_rejects_nonfinite_or_out_of_range_p_values[nan]",
+              "tests/test_formal/test_judgment.py::test_frozen_truth_table[grid_None_False_True_True_True]",
+              "tests/test_harnesses/distill/test_operator_verifier_kd_defer.py::test_build_arm_target_verifier_ranking_kd_stays_within_legal_set",
+              "tests/test_harnesses/experiments/test_goal_support_domain_adequacy.py::test_campaign_runs_live_compiler_verifier_vss_replay_and_closure",
+              "tests/test_harnesses/experiments/test_slm144_plan_predictor_matrix.py::test_render_markdown_includes_caveat_and_arms",
+              "tests/test_harnesses/experiments/test_slm233_recursive_campaign.py::test_incomplete_fairness_is_inconclusive",
+              "tests/test_harnesses/model_build/test_factory_overrides.py::test_semantic_plan_margin_is_an_explicit_runtime_override",
+              "tests/test_harnesses/reasoning/test_revmath_failure_witness.py::test_blocked_and_assumption_classes_have_empty_or_safe_actions",
+              "tests/test_harnesses/train_data/test_semantic_counterfactuals.py::test_both_targets_compiler_valid_and_distinct[required_child]",
+              "tests/test_models/test_compiler_decode.py::test_lexer_root_reference_arity_trains_and_biases_root_list_paths",
+              "tests/test_models/test_prompt_factor_predictor.py::test_classifier_predict_proba_sums_to_one",
+              "tests/test_repair_release.py::test_marker_source_excludes_live_git_and_linked_outputs",
+              "tests/test_scripts/test_merge_ready_gate.py::test_cli_json_summary_shape",
+              "tests/test_scripts/test_supervisor_verification_dependency.py::test_verifier_dependency_is_not_a_failed_repair_attempt[True]",
+              "tests/test_dsl/test_operator_transaction_executor.py::test_declared_commuting_agreeing_overlap_composes"
+            ],
+            "output_tail_sha256": "7af81d350a4df77d85030396044b699e1a14b91bd231393087564b7b5d415350",
+            "seconds": 36.09625224900083,
+            "status": "timeout",
+            "test_or_signal": "test_an_unclassified_deficit_still_asks_for_something",
+            "timestamp_bracket_receipts": [
+              {
+                "attempt_count": 197,
+                "journal_sha256": "092513397565b3db35bb90e4d987375154069ac2352f8aba88b724959c451b6c",
+                "passed": 2021,
+                "receipt_file_sha256": "19a324f55326d1e5addcff0c802ce12ee31339ef14ee5456977b02305abb44cb",
+                "receipt_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/background/20260926T233237Z.json",
+                "utc": "20260926T233237Z"
+              },
+              {
+                "attempt_count": 201,
+                "journal_sha256": "5e4da7c9e4f72f0e56e558e8138f55f2140193ab539a3587cab27bdb123234de",
+                "passed": 2065,
+                "receipt_file_sha256": "2c7d92d278c35ac06017de7aaca8d933ce674abc7617def83fa314bfaf1d52a8",
+                "receipt_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/background/20260926T233450Z.json",
+                "utc": "20260926T233450Z"
+              }
+            ],
+            "zero_based_attempt_index": 198
+          }
+        ],
+        "collected_nodes": 12185,
+        "identity": "8712cb932e377056273506fd7161dc22845cb054d040af2f3a7b14dc8da3fdf3",
+        "journal_file_sha256_at_capture": "4ccf6d532fa33078926c9ff33939b081ea967f340b4c19d15ba80cf75609b8c2",
+        "journal_mtime_utc": "2026-09-27T00:10:41.947866+00:00",
+        "journal_path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/release-state-r32/8712cb932e377056273506fd7161dc22845cb054d040af2f3a7b14dc8da3fdf3.json",
+        "parent_owned_cycle_stamp_note": "Attempt 164 output_tail shows F before timeout but retains no failure traceback; owner path already assigned to parent.",
+        "passed_nodes_at_capture": 2923
+      },
+      "recorded_at_utc": "2026-09-27T00:11:07.426604+00:00",
+      "rico_fixture_sha256": "f5988e2804aaed38ef04ae2c3bf512b850643409e6de93445d805cd24bb284ea",
+      "rico_fixture_test": {
+        "artifacts": {
+          "quality_report.json": {
+            "bytes": 5707,
+            "original_path": "/tmp/r33-pipeline-rico-final/test_build_train_data_from_ric0/train_data/vrico/quality_report.json",
+            "path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-rico-followup-evidence-20260927/quality_report.json",
+            "sha256": "95dd03b885abd6279d216146f30996e2b8228aecaf29e40122378bbb19d3fee2"
+          },
+          "rejected.jsonl": {
+            "bytes": 23530,
+            "original_path": "/tmp/r33-pipeline-rico-final/test_build_train_data_from_ric0/train_data/vrico/rejected.jsonl",
+            "path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-rico-followup-evidence-20260927/rejected.jsonl",
+            "sha256": "19b686d9c0d2e87c751703a8cc60b1cab1a80edf00881f0cb01d88b8f37a58d6"
+          },
+          "synthesis_feedback.json": {
+            "bytes": 3115,
+            "original_path": "/tmp/r33-pipeline-rico-final/test_build_train_data_from_ric0/train_data/vrico/synthesis_feedback.json",
+            "path": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-rico-followup-evidence-20260927/synthesis_feedback.json",
+            "sha256": "d0bbb73dcca412389c65fbe6fafd875087aa3d513bd2a48e65502b846ac0efa7"
+          }
+        },
+        "command": "OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/openui_bridge/cli.mjs PATH=/home/codex/.local/bin:/home/codex/repos/slm-training/.venv/bin:/usr/bin:/bin PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. timeout --signal=INT --kill-after=5s 90s /home/codex/repos/slm-training/.venv/bin/python -m pytest -q --basetemp=/tmp/r33-pipeline-rico-final tests/test_harnesses/train_data/test_pipeline.py::test_build_train_data_from_rico_fixtures",
+        "counts": {
+          "admitted": 2,
+          "by_stage": {
+            "decontamination": 20,
+            "dedup": 56,
+            "verification": 2
+          },
+          "candidates": 80,
+          "collected": 80,
+          "rejected_total": 78,
+          "seeds": 80,
+          "source_errors": 0
+        },
+        "exit_code": 0,
+        "feedback_recommendations": [
+          {
+            "code": "eval_leakage_source",
+            "evidence": {
+              "decontamination_drops": 20
+            },
+            "target": "rico_real"
+          },
+          {
+            "code": "redundant_expansion",
+            "evidence": {
+              "candidates": 78,
+              "dup_share": 0.7179
+            },
+            "target": "rico_real"
+          }
+        ],
+        "quality_report_built_at": "2026-09-27T00:00:24.574223+00:00",
+        "rejected_row_count": 78,
+        "result": "1 passed in 5.93s",
+        "warning_codes": [
+          "eval_overlap_flagged",
+          "high_rejection_rate"
+        ]
+      },
+      "schema": "r33_followup_evidence/v1",
+      "scope_note": "Output evidence copy only. No source edits, rebuild for reporting, docs, version registry, or baseline update.",
+      "source": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/verification-source-r33",
+      "r32_base_commit": "79bbc8fb83e2893554d1d3a346c5b52c93a376cd",
+      "unknown_cause_park_tests": {
+        "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. timeout --signal=INT --kill-after=5s 45s /home/codex/repos/slm-training/.venv/bin/python -m pytest -q tests/test_autoresearch/test_recovery_behavior.py::test_a_suite_volume_deficit_asks_for_data tests/test_autoresearch/test_recovery_behavior.py::test_a_wall_budget_deficit_never_asks_for_data tests/test_autoresearch/test_recovery_behavior.py::test_both_constraints_binding_queue_both_remedies tests/test_autoresearch/test_recovery_behavior.py::test_an_unclassified_deficit_still_asks_for_something tests/test_autoresearch/test_recovery_behavior.py::test_an_unrecognized_binding_constraint_still_asks_for_something",
+        "exit_code": 0,
+        "result": "5 passed in 1.88s",
+        "unknown_cause_case": "test_an_unclassified_deficit_still_asks_for_something"
+      }
+    },
+    "quality_report": {
+      "schema_version": 1,
+      "version": "vrico",
+      "profile": "strict",
+      "built_at": "2026-09-27T00:00:24.574223+00:00",
+      "counts": {
+        "seeds": 80,
+        "candidates": 80,
+        "collected": 80,
+        "admitted": 2,
+        "rejected_total": 78,
+        "source_errors": 0,
+        "by_stage": {
+          "decontamination": 20,
+          "dedup": 56,
+          "verification": 2
+        }
+      },
+      "constraint_fitness": {
+        "parse_failures": 0,
+        "parse_rate": 1.0,
+        "tier_histogram": {
+          "Silver": 2
+        },
+        "judge_pass_rate": 1.0,
+        "quarantined": 2,
+        "placeholder_contract_violations": 0,
+        "judge_contract_violations": 0,
+        "runtime_verified_fraction": null
+      },
+      "garbage": {
+        "quality_rejected": 0,
+        "reason_histogram": {},
+        "admitted_score_histogram": {
+          "<0.4": 0,
+          "0.4-0.55": 0,
+          "0.55-0.7": 0,
+          "0.7-0.85": 0,
+          ">=0.85": 2
+        },
+        "mean_quality_score": 1.0,
+        "min_quality_score": 1.0
+      },
+      "redundancy": {
+        "dropped": {
+          "exact_pair": 56,
+          "fuzzy_minhash": 0,
+          "semantic_cluster_cap": 0,
+          "semantic_cosine": 0,
+          "cross_corpus": 0,
+          "max_records_per_parent": 0
+        },
+        "cluster_exposure": {
+          "unique_clusters": 2,
+          "records_per_cluster": {
+            "max": 1,
+            "p50": 1,
+            "p95": 1
+          }
+        },
+        "top_clusters": [
+          {
+            "cluster": "84c533992eaad7f6|940212ea79cb2f5bd3ebee957725b79370faf50cc9ec50457567213148cbbaaf|cd27614d752a365d",
+            "count": 1,
+            "sample_ids": [
+              "rico_train_44"
+            ]
+          },
+          {
+            "cluster": "84c533992eaad7f6|d19d924956db0e8efb459dc11b20cc2647a4a5fb0210635f78280904d4df51cd|1c6e13a021bc906b",
+            "count": 1,
+            "sample_ids": [
+              "rico_train_15"
+            ]
+          }
+        ]
+      },
+      "decontamination": {
+        "structure_reserved_rejected": 20,
+        "ngram_flagged": 20,
+        "ngram_size": 8,
+        "ngram_overlap_threshold": 0.5,
+        "suites_indexed": [
+          "e763_symbol_only_eval_r2_20260722/adversarial",
+          "e763_symbol_only_eval_r2_20260722/held_out",
+          "e763_symbol_only_eval_r2_20260722/ood",
+          "e763_symbol_only_eval_r2_20260722/rico_held",
+          "e763_symbol_only_eval_r2_20260722/smoke",
+          "e827_target_slots_only_v4/adversarial",
+          "e827_target_slots_only_v4/held_out",
+          "e827_target_slots_only_v4/ood",
+          "e827_target_slots_only_v4/rico_held",
+          "e827_target_slots_only_v4/smoke",
+          "e842_harness_owned_slots_v1/adversarial",
+          "e842_harness_owned_slots_v1/held_out",
+          "e842_harness_owned_slots_v1/ood",
+          "e842_harness_owned_slots_v1/rico_held",
+          "e842_harness_owned_slots_v1/smoke",
+          "e938_role_safe_all_targets_heldout24_v1/held_out",
+          "e938_role_safe_all_targets_smoke24_v1/adversarial",
+          "e938_role_safe_all_targets_smoke24_v1/held_out",
+          "e938_role_safe_all_targets_smoke24_v1/ood",
+          "e938_role_safe_all_targets_smoke24_v1/rico_held",
+          "e938_role_safe_all_targets_smoke24_v1/smoke",
+          "e938_role_safe_all_targets_smoke6_v1/adversarial",
+          "e938_role_safe_all_targets_smoke6_v1/held_out",
+          "e938_role_safe_all_targets_smoke6_v1/ood",
+          "e938_role_safe_all_targets_smoke6_v1/rico_held",
+          "e938_role_safe_all_targets_smoke6_v1/smoke",
+          "e938_role_safe_all_targets_smoke96_v1/held_out",
+          "e938_role_safe_all_targets_smoke96_v1/smoke",
+          "e938_role_safe_all_targets_smoke96_v2/adversarial",
+          "e938_role_safe_all_targets_smoke96_v2/held_out",
+          "e938_role_safe_all_targets_smoke96_v2/ood",
+          "e938_role_safe_all_targets_smoke96_v2/rico_held",
+          "e938_role_safe_all_targets_smoke96_v2/smoke",
+          "e938_role_safe_all_targets_v2/adversarial",
+          "e938_role_safe_all_targets_v2/held_out",
+          "e938_role_safe_all_targets_v2/ood",
+          "e938_role_safe_all_targets_v2/rico_held",
+          "e938_role_safe_all_targets_v2/smoke",
+          "remediated/adversarial",
+          "remediated/held_out",
+          "remediated/ood",
+          "remediated/rico_held",
+          "remediated/smoke",
+          "test_seeds"
+        ]
+      },
+      "sanitization": {
+        "mode": "enforce",
+        "sanitized": 80,
+        "changed": 80,
+        "skipped": {},
+        "rewrites": {
+          "defaults_elided": 74,
+          "dead_bindings_removed": 0,
+          "containers_flattened": 0,
+          "flatten_opportunities": 0
+        },
+        "literals_templatized": 0,
+        "records_templatized": 0,
+        "fallbacks": 0,
+        "fallback_reasons": {},
+        "cache": {
+          "hits": 23,
+          "misses": 94
+        }
+      },
+      "per_family": [
+        {
+          "source_family": "rico_real",
+          "record_count": 2,
+          "root_parent_count": 2,
+          "mean_quality_score": 1.0,
+          "min_quality_score": 1.0,
+          "max_quality_score": 1.0,
+          "task_counts": {
+            "generation": 2
+          }
+        }
+      ],
+      "engines": {
+        "similarity": "minhash-char4gram",
+        "semantic_dedup": "lexical-tfidf",
+        "decontam": "ngram-8"
+      },
+      "warnings": [
+        {
+          "code": "high_rejection_rate",
+          "value": 0.025,
+          "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+        },
+        {
+          "code": "eval_overlap_flagged",
+          "value": 20,
+          "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+        }
+      ],
+      "source_anchors": {
+        "unique_roots": 2,
+        "trusted_roots": 2,
+        "trusted_root_fraction": 1.0,
+        "promotion_authoritative": true,
+        "deficit": false
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+        "code_dirty": true,
+        "components": {
+          "harness.train_data": "v35"
+        },
+        "stamped_at": "2026-09-27T00:00:24.615152+00:00"
+      }
+    },
+    "synthesis_feedback": {
+      "schema_version": 2,
+      "version": "vrico",
+      "profile": "strict",
+      "built_at": "2026-09-27T00:00:24.574223+00:00",
+      "thresholds": {
+        "low_yield": 0.4,
+        "high_dup_share": 0.5,
+        "min_group_candidates": 8
+      },
+      "families": {
+        "rico": {
+          "admitted": 0,
+          "rejected": 2,
+          "by_stage": {
+            "verification": 2
+          },
+          "by_reason": {
+            "quarantine": 2
+          },
+          "candidates": 2,
+          "yield": 0.0
+        },
+        "rico_real": {
+          "admitted": 2,
+          "rejected": 76,
+          "by_stage": {
+            "decontamination": 20,
+            "dedup": 56
+          },
+          "by_reason": {
+            "exact_pair_duplicate": 56,
+            "ngram_overlap": 20
+          },
+          "candidates": 78,
+          "yield": 0.0256
+        }
+      },
+      "synthesizers": {},
+      "warnings": [
+        {
+          "code": "high_rejection_rate",
+          "value": 0.025,
+          "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+        },
+        {
+          "code": "eval_overlap_flagged",
+          "value": 20,
+          "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+        }
+      ],
+      "recommendations": [
+        {
+          "code": "eval_leakage_source",
+          "target_kind": "family",
+          "target": "rico_real",
+          "evidence": {
+            "decontamination_drops": 20
+          },
+          "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+        },
+        {
+          "code": "redundant_expansion",
+          "target_kind": "family",
+          "target": "rico_real",
+          "evidence": {
+            "dup_share": 0.7179,
+            "candidates": 78
+          },
+          "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+        }
+      ],
+      "findings": [],
+      "experiment_candidates": [
+        {
+          "hypothesis": "family:rico_real inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+          "rationale": "build vrico: {'decontamination_drops': 20}",
+          "expected_effect": "decontamination drops reach 0 for this source",
+          "falsification_criteria": "drops persist after source filtering",
+          "knobs": [
+            "decontam_eval_root"
+          ]
+        },
+        {
+          "hypothesis": "Reducing expansion volume or widening template diversity for family:rico_real raises admitted-per-candidate yield without lowering admitted count",
+          "rationale": "build vrico: {'dup_share': 0.7179, 'candidates': 78}",
+          "expected_effect": "dup_share falls below 0.5; admitted holds",
+          "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+          "knobs": [
+            "max_children",
+            "synthesizer"
+          ]
+        }
+      ],
+      "claim_class": "fixture_wiring",
+      "capability_certificate": false,
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "e9a6de0c6c52e4326252e2c6c76d1abad423d690",
+        "code_dirty": true,
+        "components": {
+          "harness.train_data": "v35"
+        },
+        "stamped_at": "2026-09-27T00:00:24.615152+00:00"
+      }
+    }
+  },
+  "r33_retained_science_launch_plan": {
+    "schema": "retained_science_controller_launch_plan/v1",
+    "executed": false,
+    "blocked_until": "Remote frozen R33 commit/tree/source identity and canonical independent materialization supplied by parent.",
+    "cwd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/execution",
+    "argv": [
+      "/home/codex/repos/slm-training/.venv/bin/python",
+      "-I",
+      "-B",
+      "-c",
+      "import runpy,sys;sys.path[:0]=[sys.argv.pop(1),sys.argv.pop(1)];runpy.run_module('scripts.run_autotrain_supervisor',run_name='__main__')",
+      "<PUBLISHED_R33_CONTROLLER_EXECUTION>",
+      "<PUBLISHED_R33_CONTROLLER_EXECUTION>/src",
+      "--controller-root",
+      "<PUBLISHED_R33_CONTROLLER_EXECUTION>",
+      "--controller-source-digest",
+      "<REMOTE_BOUND_R33_MATERIALIZATION_SOURCE_DIGEST>",
+      "--controller-runtime-digest",
+      "b997e7ce91dfdadd4f807c2a15492bcd3b0fae22bafec28b80893f84991c7762",
+      "--locked-preregistration",
+      "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/preregistration.json",
+      "--loop-id",
+      "science-lab-r31-43327120eda9-acceptance",
+      "--root",
+      "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns",
+      "--train-version",
+      "autonomy-mea-train-admitted-v1",
+      "--steps",
+      "6",
+      "--primary-metric",
+      "smoke.eval_nll",
+      "--continuation-grant",
+      "{\"cpu_slots\":1,\"memory_mb\":2048,\"interrupt_seconds\":170.0,\"kill_grace_seconds\":10.0,\"total_seconds\":2700.0,\"finalization_reserve_seconds\":1.0,\"max_attempts\":14}",
+      "--max-cycles",
+      "14"
+    ],
+    "optional_host_configuration_flags": [
+      "--repair-config <APPROVED_SCI_RECOVERY_CONFIG>",
+      "--delivery-config <APPROVED_ORIGINAL_SOURCE_DELIVERY_CONFIG>"
+    ],
+    "configuration_contract": "Trusted parent CLI config path+sha256 bound into live per-lease controller launch receipt; original request stays repair_config=null/delivery_config=null. Future repair/delivery operations consume host configuration. No fresh driver registration or grant.",
+    "unset_environment": [
+      "PYTHONHOME",
+      "PYTHONOPTIMIZE",
+      "MERGE_VERIFICATION_RUNTIME_IDENTITY"
+    ],
+    "environment": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONPATH": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/execution/src:/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/execution",
+      "PATH": "/home/codex/.local/opt/node22/bin:<UNCHANGED_ORIGINAL_PATH_TAIL>",
+      "SLM_TEST_NODE": "/home/codex/.local/opt/node22/bin/node",
+      "CUDA_VISIBLE_DEVICES": "",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "ORT_DISABLE_TELEMETRY": "1",
+      "SLM_DATA_ROOT": "/home/codex/repos/slm-training/outputs/workspaces/autonomy-candidate/outputs/data",
+      "GIT_CEILING_DIRECTORIES": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg",
+      "AGENTV_RUNNER": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/execution/scripts/run_agentv_eval.mjs",
+      "AGENTV_NODE_MODULES": "/home/codex/repos/slm-training/outputs/workspaces/autonomy-candidate/node_modules",
+      "OPENUI_BRIDGE_CLI": "/home/codex/repos/slm-training/outputs/workspaces/autonomy-candidate/src/apps/openui_bridge/cli.mjs",
+      "DESIGN_MD_BRIDGE_CLI": "/home/codex/repos/slm-training/outputs/workspaces/autonomy-candidate/src/apps/design_md_bridge/cli.mjs"
+    },
+    "required_preflight_equalities": {
+      "preregistration_sha256": "576a0a4b7fc2bbddfc314e91d7a850a525065220e9f4805a8f801b1b1799f459",
+      "source_digest": "6a65297fe3418496bd182ef34d5931b0df16397361bb87e235e40f1dcbcbdddc",
+      "workload_environment_digest": "cf6d72c2ed3942b17808f511f81c91c782c1f3d1e6ee3902d31e63c5c03090b6",
+      "execution_identity": "788111710fa3118a4971198c13b2a76716ee5932a5ec733e6462e72f26bcf423",
+      "retained_activity": "supervisor-1-driver-c27384e5916102e8",
+      "original_request_digest": "c27384e5916102e81d310b725c6e4b88f5f4c40402b74c0da75d169c712e498d"
+    },
+    "grant_accounting": {
+      "original_json": "{\"cpu_slots\":1,\"memory_mb\":2048,\"interrupt_seconds\":170.0,\"kill_grace_seconds\":10.0,\"total_seconds\":2700.0,\"finalization_reserve_seconds\":1.0,\"max_attempts\":14}",
+      "attempts_consumed": 3,
+      "charged_seconds": 399.84299738799746,
+      "attempts_remaining": 11,
+      "seconds_remaining": 2300.1570026120025,
+      "instruction": "Keep original2700/14 JSON byte-identical in CLI; journal reduction enforces remaining amount. Never replace JSON with remaining grant."
+    },
+    "compute_lock": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/host-compute.lock",
+    "science_outer_bound": "timeout --signal=INT --kill-after=10s 170s flock -w30 <lock> <argv>; no dispatch until parent approves frozen source",
+    "sdk_evidence": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-retained-science-environment-diff.json",
+    "rep_acceptance": "Separate disposable controlled defect on final R33 source, source-bound repair config/finite grants/Codex subscription host auth. Never reuse SCI checkpoints or treat REP success as SCI outcome. No provider executed.",
+    "pending_validation": null,
+    "validation": {
+      "host_configuration_ordinary_supervisor": {
+        "passed": 1,
+        "seconds": 57.67,
+        "junit": "/tmp/r33-host-config-supervisor.xml"
+      },
+      "pre_consumer_compatibility": {
+        "passed": 39,
+        "seconds": 42.83,
+        "junit": "/tmp/r33-host-config-compatibility-final.xml"
+      },
+      "post_consumer_compatibility": {
+        "passed": 39,
+        "seconds": 31.11,
+        "exit_code": 0,
+        "junit": "/tmp/r33-host-config-delivery-compatibility-final.xml",
+        "serialized": true,
+        "outer_seconds": 170,
+        "lock_wait_seconds": 30,
+        "test_cap_seconds": 120,
+        "command": "rtk proxy timeout 170s flock -w 30 /home/codex/repos/slm-training/outputs/autonomy-integration-20260921/host-compute.lock timeout --signal=INT --kill-after=10s 120s env PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 /home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m pytest -q -o addopts= tests/test_autoresearch/test_controller_workload_worker.py tests/test_autoresearch/test_controller_journal_authority.py tests/test_autoresearch/test_nested_controller_cli.py tests/test_autoresearch/test_operation_recovery.py tests/test_autoresearch/test_locked_supervisor_control.py --tb=short --junitxml=/tmp/r33-host-config-delivery-compatibility-final.xml"
+      }
+    },
+    "owned_source_frozen": true,
+    "active_owned_handles": [],
+    "changed_files": [
+      "scripts/autotrain_controller_execution.py",
+      "scripts/autotrain_pending.py",
+      "scripts/run_autotrain_supervisor.py",
+      "scripts/autotrain_supervisor_operations.py",
+      "tests/test_autoresearch/test_verified_supervisor_continuation.py",
+      "tests/test_autoresearch/controller_worker_fixture.py",
+      "tests/test_autoresearch/test_controller_journal_authority.py"
+    ]
+  },
+  "r33_lalr_state_namespace_probe": {
+    "schema": "lalr_state_namespace_probe/v1",
+    "certified_equal": true,
+    "mismatched_bounds": 30,
+    "examples": [
+      {
+        "program": "root = TextContent(\":slot_0\")\n",
+        "terminal_index": 0,
+        "next_terminal": "NAME",
+        "live_state": 66,
+        "canonical_state": 4,
+        "misindexed_bound": 1,
+        "canonical_bound": 0
+      },
+      {
+        "program": "root = TextContent(\":slot_0\")\n",
+        "terminal_index": 1,
+        "next_terminal": "EQUAL",
+        "live_state": 7,
+        "canonical_state": 112,
+        "misindexed_bound": 0,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = TextContent(\":slot_0\")\n",
+        "terminal_index": 3,
+        "next_terminal": "LPAR",
+        "live_state": 98,
+        "canonical_state": 113,
+        "misindexed_bound": 1,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = TextContent(\":slot_0\")\n",
+        "terminal_index": 4,
+        "next_terminal": "STRING",
+        "live_state": 114,
+        "canonical_state": 65,
+        "misindexed_bound": 2,
+        "canonical_bound": 1
+      },
+      {
+        "program": "root = Card([])\n",
+        "terminal_index": 0,
+        "next_terminal": "NAME",
+        "live_state": 66,
+        "canonical_state": 4,
+        "misindexed_bound": 1,
+        "canonical_bound": 0
+      },
+      {
+        "program": "root = Card([])\n",
+        "terminal_index": 1,
+        "next_terminal": "EQUAL",
+        "live_state": 7,
+        "canonical_state": 112,
+        "misindexed_bound": 0,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([])\n",
+        "terminal_index": 3,
+        "next_terminal": "LPAR",
+        "live_state": 98,
+        "canonical_state": 113,
+        "misindexed_bound": 1,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([])\n",
+        "terminal_index": 4,
+        "next_terminal": "LSQB",
+        "live_state": 114,
+        "canonical_state": 65,
+        "misindexed_bound": 2,
+        "canonical_bound": 1
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 0,
+        "next_terminal": "NAME",
+        "live_state": 66,
+        "canonical_state": 4,
+        "misindexed_bound": 1,
+        "canonical_bound": 0
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 1,
+        "next_terminal": "EQUAL",
+        "live_state": 7,
+        "canonical_state": 112,
+        "misindexed_bound": 0,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 3,
+        "next_terminal": "LPAR",
+        "live_state": 98,
+        "canonical_state": 113,
+        "misindexed_bound": 1,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 4,
+        "next_terminal": "LSQB",
+        "live_state": 114,
+        "canonical_state": 65,
+        "misindexed_bound": 2,
+        "canonical_bound": 1
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 12,
+        "next_terminal": "EQUAL",
+        "live_state": 7,
+        "canonical_state": 112,
+        "misindexed_bound": 0,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 14,
+        "next_terminal": "LPAR",
+        "live_state": 98,
+        "canonical_state": 113,
+        "misindexed_bound": 1,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 15,
+        "next_terminal": "STRING",
+        "live_state": 114,
+        "canonical_state": 65,
+        "misindexed_bound": 2,
+        "canonical_bound": 1
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 18,
+        "next_terminal": "NAME",
+        "live_state": 87,
+        "canonical_state": 5,
+        "misindexed_bound": 1,
+        "canonical_bound": 0
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 19,
+        "next_terminal": "EQUAL",
+        "live_state": 7,
+        "canonical_state": 112,
+        "misindexed_bound": 0,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 21,
+        "next_terminal": "LPAR",
+        "live_state": 98,
+        "canonical_state": 113,
+        "misindexed_bound": 1,
+        "canonical_bound": 2
+      },
+      {
+        "program": "root = Card([b1, b2])\nb1 = TextContent(\":slot_0\")\nb2 = TextContent(\":slot_1\")\n",
+        "terminal_index": 22,
+        "next_terminal": "STRING",
+        "live_state": 114,
+        "canonical_state": 65,
+        "misindexed_bound": 2,
+        "canonical_bound": 1
+      },
+      {
+        "program": "root = Card([b1",
+        "terminal_index": 0,
+        "next_terminal": "NAME",
+        "live_state": 66,
+        "canonical_state": 4,
+        "misindexed_bound": 1,
+        "canonical_bound": 0
+      }
+    ],
+    "production_edits": false
+  },
+  "r33_completion_parity_fixed_shard": {
+    "request_digest": "97dc0391cbe3b6f7a84620d2a83d31840c0d2f4a9a13adb598857d06e8295caf",
+    "seconds": 46.75659653000184,
+    "exit_code": 0,
+    "nodes": [
+      "tests/test_dsl/test_completion_kernel.py::test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]",
+      "tests/test_autoresearch/test_power_preflight_math.py::TestIsDecidable::test_unpaired_variant_uses_permutation_floor",
+      "tests/test_compiler_reasoning_trace_contract.py::test_visible_trace_representation_is_lossless_and_separate",
+      "tests/test_data/test_semantic_contrast_metamorphic.py::test_prompt_paraphrase_invariant_to_whitespace_and_order",
+      "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_skips_incomplete_and_none_forests",
+      "tests/test_dsl/test_symbolic_expr_corpus.py::test_generated_coefficients_are_exactly_recoverable_by_fitting",
+      "tests/test_evals/test_meaningful_program.py::test_free_form_output_string_fails_both_meaningfulness_metrics",
+      "tests/test_formal/test_goal_support_mapping.py::test_unknown_unobserved_never_certified_removed",
+      "tests/test_harnesses/distill/test_grammar_trace.py::test_compute_margin_energy_convention",
+      "tests/test_harnesses/experiments/test_corruption_curriculum.py::test_render_markdown_arm_table",
+      "tests/test_harnesses/experiments/test_semantic_factor_metrics.py::test_campaign_lock_requires_runtime_endpoints",
+      "tests/test_harnesses/experiments/test_slm220_causal_subspace.py::test_intervention_target_reproduces_logits_and_freezes_membership",
+      "tests/test_harnesses/model_build/test_debt_router.py::test_off_returns_cheap_route",
+      "tests/test_harnesses/quality/test_quality_helpers.py::test_retrieval_nearest",
+      "tests/test_harnesses/train_data/test_readiness.py::test_screening_factory_refuses_guessed_or_incomplete_context[suite]",
+      "tests/test_models/test_compiler_decode.py::test_slot_coverage_close_trace_labels_owner_escape",
+      "tests/test_models/test_low_rank_adapter.py::test_adapter_params_follow_base_dtype_and_batched_dims",
+      "tests/test_models/test_twotower_numeric_gates.py::test_twotower_config_rejects_intermediate_only_with_r1",
+      "tests/test_scripts/test_github_source_authority.py::test_explicit_host_policy_derives_first_accepted_source_only",
+      "tests/test_scripts/test_run_slm303_decode_budget_audit.py::test_sha_full_match_and_mismatch",
+      "tests/test_web/test_overview_insights.py::test_live_champion_becomes_comparison_baseline"
+    ],
+    "evidence_class": "isolated_process",
+    "status": "ok",
+    "output_tail": ".....................                                                    [100%]\n21 passed in 27.78s\n",
+    "workload": {
+      "collection_errors": [],
+      "deselected": [],
+      "deselected_markers": {},
+      "exit_code": 0,
+      "markers": {
+        "tests/test_autoresearch/test_power_preflight_math.py::TestIsDecidable::test_unpaired_variant_uses_permutation_floor": [],
+        "tests/test_compiler_reasoning_trace_contract.py::test_visible_trace_representation_is_lossless_and_separate": [],
+        "tests/test_data/test_semantic_contrast_metamorphic.py::test_prompt_paraphrase_invariant_to_whitespace_and_order": [],
+        "tests/test_dsl/test_completion_kernel.py::test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]": [
+          "parametrize"
+        ],
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_skips_incomplete_and_none_forests": [],
+        "tests/test_dsl/test_symbolic_expr_corpus.py::test_generated_coefficients_are_exactly_recoverable_by_fitting": [],
+        "tests/test_evals/test_meaningful_program.py::test_free_form_output_string_fails_both_meaningfulness_metrics": [],
+        "tests/test_formal/test_goal_support_mapping.py::test_unknown_unobserved_never_certified_removed": [],
+        "tests/test_harnesses/distill/test_grammar_trace.py::test_compute_margin_energy_convention": [],
+        "tests/test_harnesses/experiments/test_corruption_curriculum.py::test_render_markdown_arm_table": [],
+        "tests/test_harnesses/experiments/test_semantic_factor_metrics.py::test_campaign_lock_requires_runtime_endpoints": [],
+        "tests/test_harnesses/experiments/test_slm220_causal_subspace.py::test_intervention_target_reproduces_logits_and_freezes_membership": [],
+        "tests/test_harnesses/model_build/test_debt_router.py::test_off_returns_cheap_route": [],
+        "tests/test_harnesses/quality/test_quality_helpers.py::test_retrieval_nearest": [],
+        "tests/test_harnesses/train_data/test_readiness.py::test_screening_factory_refuses_guessed_or_incomplete_context[suite]": [
+          "parametrize"
+        ],
+        "tests/test_models/test_compiler_decode.py::test_slot_coverage_close_trace_labels_owner_escape": [],
+        "tests/test_models/test_low_rank_adapter.py::test_adapter_params_follow_base_dtype_and_batched_dims": [],
+        "tests/test_models/test_twotower_numeric_gates.py::test_twotower_config_rejects_intermediate_only_with_r1": [],
+        "tests/test_scripts/test_github_source_authority.py::test_explicit_host_policy_derives_first_accepted_source_only": [],
+        "tests/test_scripts/test_run_slm303_decode_budget_audit.py::test_sha_full_match_and_mismatch": [],
+        "tests/test_web/test_overview_insights.py::test_live_champion_becomes_comparison_baseline": []
+      },
+      "nodes": [
+        "tests/test_dsl/test_completion_kernel.py::test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]",
+        "tests/test_autoresearch/test_power_preflight_math.py::TestIsDecidable::test_unpaired_variant_uses_permutation_floor",
+        "tests/test_compiler_reasoning_trace_contract.py::test_visible_trace_representation_is_lossless_and_separate",
+        "tests/test_data/test_semantic_contrast_metamorphic.py::test_prompt_paraphrase_invariant_to_whitespace_and_order",
+        "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_skips_incomplete_and_none_forests",
+        "tests/test_dsl/test_symbolic_expr_corpus.py::test_generated_coefficients_are_exactly_recoverable_by_fitting",
+        "tests/test_evals/test_meaningful_program.py::test_free_form_output_string_fails_both_meaningfulness_metrics",
+        "tests/test_formal/test_goal_support_mapping.py::test_unknown_unobserved_never_certified_removed",
+        "tests/test_harnesses/distill/test_grammar_trace.py::test_compute_margin_energy_convention",
+        "tests/test_harnesses/experiments/test_corruption_curriculum.py::test_render_markdown_arm_table",
+        "tests/test_harnesses/experiments/test_semantic_factor_metrics.py::test_campaign_lock_requires_runtime_endpoints",
+        "tests/test_harnesses/experiments/test_slm220_causal_subspace.py::test_intervention_target_reproduces_logits_and_freezes_membership",
+        "tests/test_harnesses/model_build/test_debt_router.py::test_off_returns_cheap_route",
+        "tests/test_harnesses/quality/test_quality_helpers.py::test_retrieval_nearest",
+        "tests/test_harnesses/train_data/test_readiness.py::test_screening_factory_refuses_guessed_or_incomplete_context[suite]",
+        "tests/test_models/test_compiler_decode.py::test_slot_coverage_close_trace_labels_owner_escape",
+        "tests/test_models/test_low_rank_adapter.py::test_adapter_params_follow_base_dtype_and_batched_dims",
+        "tests/test_models/test_twotower_numeric_gates.py::test_twotower_config_rejects_intermediate_only_with_r1",
+        "tests/test_scripts/test_github_source_authority.py::test_explicit_host_policy_derives_first_accepted_source_only",
+        "tests/test_scripts/test_run_slm303_decode_budget_audit.py::test_sha_full_match_and_mismatch",
+        "tests/test_web/test_overview_insights.py::test_live_champion_becomes_comparison_baseline"
+      ],
+      "pytest_version": "8.4.2",
+      "reports": [
+        {
+          "duration_seconds": 0.002953900009742938,
+          "nodeid": "tests/test_dsl/test_completion_kernel.py::test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 20.05843055099831,
+          "nodeid": "tests/test_dsl/test_completion_kernel.py::test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00016480000340379775,
+          "nodeid": "tests/test_dsl/test_completion_kernel.py::test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00033039999834727496,
+          "nodeid": "tests/test_autoresearch/test_power_preflight_math.py::TestIsDecidable::test_unpaired_variant_uses_permutation_floor",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.00034869999217335135,
+          "nodeid": "tests/test_autoresearch/test_power_preflight_math.py::TestIsDecidable::test_unpaired_variant_uses_permutation_floor",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 7.100000220816582e-05,
+          "nodeid": "tests/test_autoresearch/test_power_preflight_math.py::TestIsDecidable::test_unpaired_variant_uses_permutation_floor",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.000258100000792183,
+          "nodeid": "tests/test_compiler_reasoning_trace_contract.py::test_visible_trace_representation_is_lossless_and_separate",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 6.469999789260328e-05,
+          "nodeid": "tests/test_compiler_reasoning_trace_contract.py::test_visible_trace_representation_is_lossless_and_separate",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 6.230000872164965e-05,
+          "nodeid": "tests/test_compiler_reasoning_trace_contract.py::test_visible_trace_representation_is_lossless_and_separate",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 9.929999941959977e-05,
+          "nodeid": "tests/test_data/test_semantic_contrast_metamorphic.py::test_prompt_paraphrase_invariant_to_whitespace_and_order",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.00297359999967739,
+          "nodeid": "tests/test_data/test_semantic_contrast_metamorphic.py::test_prompt_paraphrase_invariant_to_whitespace_and_order",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00010760000441223383,
+          "nodeid": "tests/test_data/test_semantic_contrast_metamorphic.py::test_prompt_paraphrase_invariant_to_whitespace_and_order",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00030250000418163836,
+          "nodeid": "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_skips_incomplete_and_none_forests",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.006458800009568222,
+          "nodeid": "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_skips_incomplete_and_none_forests",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 9.859999408945441e-05,
+          "nodeid": "tests/test_dsl/test_goal_support_decode_g03.py::test_certified_skips_incomplete_and_none_forests",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00014940000255592167,
+          "nodeid": "tests/test_dsl/test_symbolic_expr_corpus.py::test_generated_coefficients_are_exactly_recoverable_by_fitting",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.008837400004267693,
+          "nodeid": "tests/test_dsl/test_symbolic_expr_corpus.py::test_generated_coefficients_are_exactly_recoverable_by_fitting",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.0003470999945420772,
+          "nodeid": "tests/test_dsl/test_symbolic_expr_corpus.py::test_generated_coefficients_are_exactly_recoverable_by_fitting",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00032509998709429055,
+          "nodeid": "tests/test_evals/test_meaningful_program.py::test_free_form_output_string_fails_both_meaningfulness_metrics",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.0493136000004597,
+          "nodeid": "tests/test_evals/test_meaningful_program.py::test_free_form_output_string_fails_both_meaningfulness_metrics",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00010869999823626131,
+          "nodeid": "tests/test_evals/test_meaningful_program.py::test_free_form_output_string_fails_both_meaningfulness_metrics",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00015920000441838056,
+          "nodeid": "tests/test_formal/test_goal_support_mapping.py::test_unknown_unobserved_never_certified_removed",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.0001517000055173412,
+          "nodeid": "tests/test_formal/test_goal_support_mapping.py::test_unknown_unobserved_never_certified_removed",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 6.120000034570694e-05,
+          "nodeid": "tests/test_formal/test_goal_support_mapping.py::test_unknown_unobserved_never_certified_removed",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00032809999538585544,
+          "nodeid": "tests/test_harnesses/distill/test_grammar_trace.py::test_compute_margin_energy_convention",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 6.880000000819564e-05,
+          "nodeid": "tests/test_harnesses/distill/test_grammar_trace.py::test_compute_margin_energy_convention",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 5.990000499878079e-05,
+          "nodeid": "tests/test_harnesses/distill/test_grammar_trace.py::test_compute_margin_energy_convention",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.000221800000872463,
+          "nodeid": "tests/test_harnesses/experiments/test_corruption_curriculum.py::test_render_markdown_arm_table",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 1.214548805000959,
+          "nodeid": "tests/test_harnesses/experiments/test_corruption_curriculum.py::test_render_markdown_arm_table",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00011419999646022916,
+          "nodeid": "tests/test_harnesses/experiments/test_corruption_curriculum.py::test_render_markdown_arm_table",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.0001596000074641779,
+          "nodeid": "tests/test_harnesses/experiments/test_semantic_factor_metrics.py::test_campaign_lock_requires_runtime_endpoints",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.009509100011200644,
+          "nodeid": "tests/test_harnesses/experiments/test_semantic_factor_metrics.py::test_campaign_lock_requires_runtime_endpoints",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00010540000221226364,
+          "nodeid": "tests/test_harnesses/experiments/test_semantic_factor_metrics.py::test_campaign_lock_requires_runtime_endpoints",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00015190000704023987,
+          "nodeid": "tests/test_harnesses/experiments/test_slm220_causal_subspace.py::test_intervention_target_reproduces_logits_and_freezes_membership",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.002265199989778921,
+          "nodeid": "tests/test_harnesses/experiments/test_slm220_causal_subspace.py::test_intervention_target_reproduces_logits_and_freezes_membership",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00018740000086836517,
+          "nodeid": "tests/test_harnesses/experiments/test_slm220_causal_subspace.py::test_intervention_target_reproduces_logits_and_freezes_membership",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.0003156000020680949,
+          "nodeid": "tests/test_harnesses/model_build/test_debt_router.py::test_off_returns_cheap_route",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 8.090000483207405e-05,
+          "nodeid": "tests/test_harnesses/model_build/test_debt_router.py::test_off_returns_cheap_route",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 6.369999027810991e-05,
+          "nodeid": "tests/test_harnesses/model_build/test_debt_router.py::test_off_returns_cheap_route",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.0006180000054882839,
+          "nodeid": "tests/test_harnesses/quality/test_quality_helpers.py::test_retrieval_nearest",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.00011300000187475234,
+          "nodeid": "tests/test_harnesses/quality/test_quality_helpers.py::test_retrieval_nearest",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 6.750000466126949e-05,
+          "nodeid": "tests/test_harnesses/quality/test_quality_helpers.py::test_retrieval_nearest",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.0007860999903641641,
+          "nodeid": "tests/test_harnesses/train_data/test_readiness.py::test_screening_factory_refuses_guessed_or_incomplete_context[suite]",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.01967549999244511,
+          "nodeid": "tests/test_harnesses/train_data/test_readiness.py::test_screening_factory_refuses_guessed_or_incomplete_context[suite]",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00012250000145286322,
+          "nodeid": "tests/test_harnesses/train_data/test_readiness.py::test_screening_factory_refuses_guessed_or_incomplete_context[suite]",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.0005037000082666054,
+          "nodeid": "tests/test_models/test_compiler_decode.py::test_slot_coverage_close_trace_labels_owner_escape",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.018552200010162778,
+          "nodeid": "tests/test_models/test_compiler_decode.py::test_slot_coverage_close_trace_labels_owner_escape",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.000102700010756962,
+          "nodeid": "tests/test_models/test_compiler_decode.py::test_slot_coverage_close_trace_labels_owner_escape",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00015579999308101833,
+          "nodeid": "tests/test_models/test_low_rank_adapter.py::test_adapter_params_follow_base_dtype_and_batched_dims",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.002855200000340119,
+          "nodeid": "tests/test_models/test_low_rank_adapter.py::test_adapter_params_follow_base_dtype_and_batched_dims",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.0001049999991664663,
+          "nodeid": "tests/test_models/test_low_rank_adapter.py::test_adapter_params_follow_base_dtype_and_batched_dims",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00015439999697264284,
+          "nodeid": "tests/test_models/test_twotower_numeric_gates.py::test_twotower_config_rejects_intermediate_only_with_r1",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.0005108000041218475,
+          "nodeid": "tests/test_models/test_twotower_numeric_gates.py::test_twotower_config_rejects_intermediate_only_with_r1",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 6.439999560825527e-05,
+          "nodeid": "tests/test_models/test_twotower_numeric_gates.py::test_twotower_config_rejects_intermediate_only_with_r1",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.004614899997250177,
+          "nodeid": "tests/test_scripts/test_github_source_authority.py::test_explicit_host_policy_derives_first_accepted_source_only",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.00027659999614115804,
+          "nodeid": "tests/test_scripts/test_github_source_authority.py::test_explicit_host_policy_derives_first_accepted_source_only",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00010629999451339245,
+          "nodeid": "tests/test_scripts/test_github_source_authority.py::test_explicit_host_policy_derives_first_accepted_source_only",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00015419999544974416,
+          "nodeid": "tests/test_scripts/test_run_slm303_decode_budget_audit.py::test_sha_full_match_and_mismatch",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 7.900000491645187e-05,
+          "nodeid": "tests/test_scripts/test_run_slm303_decode_budget_audit.py::test_sha_full_match_and_mismatch",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 6.239999493118376e-05,
+          "nodeid": "tests/test_scripts/test_run_slm303_decode_budget_audit.py::test_sha_full_match_and_mismatch",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        },
+        {
+          "duration_seconds": 0.00028660001407843083,
+          "nodeid": "tests/test_web/test_overview_insights.py::test_live_champion_becomes_comparison_baseline",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "duration_seconds": 0.0054216999997152016,
+          "nodeid": "tests/test_web/test_overview_insights.py::test_live_champion_becomes_comparison_baseline",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "duration_seconds": 0.00016420001338701695,
+          "nodeid": "tests/test_web/test_overview_insights.py::test_live_champion_becomes_comparison_baseline",
+          "outcome": "passed",
+          "wasxfail": false,
+          "when": "teardown"
+        }
+      ],
+      "request_digest": "97dc0391cbe3b6f7a84620d2a83d31840c0d2f4a9a13adb598857d06e8295caf",
+      "schema": "merge_test_workload/v1"
+    },
+    "workload_sha256": "d9dcf6699703d3f84da8f1b9ab12a507056009ddda685a06cc4442ea08fec0cc",
+    "runtime_roots": [
+      "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python",
+      "/home/codex/repos/slm-training/src/apps/openui_bridge",
+      "/home/codex/repos/slm-training/src/apps/design_md_bridge",
+      "/home/codex/repos/slm-training/src/apps/graphql_bridge",
+      "/home/codex/repos/slm-training/node_modules",
+      "/home/codex/.local/opt/node-v26.5.0"
+    ]
+  },
+  "r33_learning_cli": {
+    "status": "final_edits_stopped",
+    "source_root": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/verification-source-r33",
+    "files": {
+      "scripts/slm.py": {
+        "sha256": "411a085a6bca7d74e67c82b7ad6e073daee0a722b16b24e68d2c9c36fd907fb7",
+        "lines": 307
+      },
+      ".agents/skills/autotrain/references/experiments.md": {
+        "sha256": "29976898c3e90a2eb50025f495f8ed7af6c844c4356c6fc102d9e5a883f8abcd",
+        "lines": 60
+      }
+    },
+    "change": "Register experiments learning-comparison to existing autonomous_learning.cli, guide experiments. Document explicit fixture activation and existing prepare/corrective/fidelity phases. No parallel command implementation.",
+    "validation": {
+      "result": "16 passed in 4.57s",
+      "log": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/r33-learning-cli-final-validation.log",
+      "command": "timeout --signal=INT --kill-after=10s 170s env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/openui_bridge/cli.mjs ../runtime-r25-python/bin/python -B -m pytest -q --tb=short -p no:cacheprovider tests/test_harnesses/experiments/test_learning_fixture.py::test_canonical_cli_reaches_research_subgroup tests/test_harnesses/experiments/test_learning_fixture.py::test_fixture_cli_requires_explicit_activation tests/test_scripts/test_slm_cli.py",
+      "ruff": "passed scripts/slm.py",
+      "initial_attempt": "15 passed; fixture data build failed without bridge path. Same selection passed with approved existing bridge."
+    },
+    "baseline_edits": false,
+    "active_test_handles": []
+  },
+  "r33_full_parity_corpus": {
+    "schema": "completion_parity_corpus_validation/v1",
+    "scope": "11 existing corpus programs, every tested prefix and configured budget; bounded local validation, not immutable full release proof",
+    "passed": 11,
+    "groups": [
+      {
+        "junit": "outputs/autonomy-integration-20260921/r33-parity-corpus-a.xml",
+        "sha256": "6e41a001aa840d23e984f0a57cb47a0e3289c343ad7e73caccb114f993440e3e",
+        "tests": 4,
+        "seconds": 76.03,
+        "cases": [
+          "test_domain_parity_every_prefix[' TextContent(\":slot_0\")\\\\n'0]",
+          "test_domain_parity_every_prefix['root = Card([])\\\\n']",
+          "test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'0]",
+          "test_domain_parity_every_prefix[' TextContent(\":slot_0\")\\\\n'1]"
+        ]
+      },
+      {
+        "junit": "outputs/autonomy-integration-20260921/r33-parity-corpus-b.xml",
+        "sha256": "6b0d756e67538ab47394bf09bfe138fd9e77002091ab69cb15c1a7c9fbb47061",
+        "tests": 4,
+        "seconds": 48.344,
+        "cases": [
+          "test_domain_parity_every_prefix['ot_0\", \":slot_1\", true)\\\\n']",
+          "test_domain_parity_every_prefix[' TextContent(\":slot_1\")\\\\n'1]",
+          "test_domain_parity_every_prefix['root = Card([b1']",
+          "test_domain_parity_every_prefix['root = Card([b1,']"
+        ]
+      },
+      {
+        "junit": "outputs/autonomy-integration-20260921/r33-parity-corpus-c.xml",
+        "sha256": "19beb9d5994e7fb4bc8e5b5b47a479c85fcbad125752f0a31fba34cc96e1d782",
+        "tests": 3,
+        "seconds": 6.695,
+        "cases": [
+          "test_domain_parity_every_prefix['root =']",
+          "test_domain_parity_every_prefix['root']",
+          "test_domain_parity_every_prefix['']"
+        ]
+      }
+    ]
+  },
+  "r33_staged_materialization": {
+    "passed": 4,
+    "seconds": 0.8,
+    "source": "verification-source-r33",
+    "bridge_environment": [
+      "OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/openui_bridge/cli.mjs",
+      "DESIGN_MD_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/design_md_bridge/cli.mjs"
+    ],
+    "legacy_digest_changed": false,
+    "production_plan_validation_changed": false
+  },
+  "r33_final_two_repair": {
+    "passed": 1,
+    "seconds": 77.35,
+    "junit_sha256": "a4483d4dd1cbef9853172d0a9e6b34556168b552b84acbcc171d54aeb4fe4e56",
+    "test_cap_seconds": 120,
+    "scope": "ordinary supervisor, two successive verified repairs, preserved training prefix; not live provider acceptance"
+  },
+  "r33_final_fast_feedback": {
+    "gate": "verify_merge_ready",
+    "mirrors": ".github/workflows/ci.yml#python-static (+ changed tests)",
+    "rule": "red verify_merge_ready => no merge; GHA silence is not approval",
+    "max_step_seconds": 120.0,
+    "ok": true,
+    "steps": [
+      {
+        "name": "repo_policy",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.repo_policy",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.17
+      },
+      {
+        "name": "decode_invariants",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_decode_invariants",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.38
+      },
+      {
+        "name": "agent_surfaces",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_agent_surfaces",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.05
+      },
+      {
+        "name": "ownership_map",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_ownership_map",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.28
+      },
+      {
+        "name": "research_citation_catalog",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_research_citation_catalog",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.04
+      },
+      {
+        "name": "research_experiment_preregistry",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_research_experiment_preregistry",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.13
+      },
+      {
+        "name": "extract_test_cases",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.extract_test_cases",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 2.04
+      },
+      {
+        "name": "refresh_test_cases",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.refresh_test_cases --check --changed",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.43
+      },
+      {
+        "name": "ruff",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/ruff check .",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.05
+      },
+      {
+        "name": "code_quality",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_code_quality",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 8.27
+      },
+      {
+        "name": "compileall",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m compileall -q src scripts tests",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.11
+      },
+      {
+        "name": "checkpoint_references",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_checkpoint_references --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.76
+      },
+      {
+        "name": "version_stamps",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_version_stamps --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.15
+      },
+      {
+        "name": "formal_evidence_mutations",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_formal_evidence_mutations --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.29
+      },
+      {
+        "name": "evidence_ledger",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.build_evidence_ledger --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 0.8
+      },
+      {
+        "name": "integ06_adversarial_acceptance",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_integ06_adversarial_acceptance --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 2.03
+      },
+      {
+        "name": "integ07_activation_preflight_recall",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_integ07_activation_preflight --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 1.81
+      },
+      {
+        "name": "integ10_release_matrix",
+        "cmd": "/home/codex/repos/slm-training/outputs/autonomy-integration-20260921/runtime-r25-python/bin/python -m scripts.verify_integ10_release_matrix --check",
+        "status": "ok",
+        "exit_code": 0,
+        "seconds": 6.35
+      }
+    ],
+    "verification_complete": false,
+    "release_authorized": false,
+    "fast": true
+  }
 }

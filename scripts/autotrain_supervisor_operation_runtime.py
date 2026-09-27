@@ -51,8 +51,12 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
         attempt_dir / "request.json",
         attempt_dir / "result.json",
     )
+    from scripts.autotrain_controller_execution import record_launch
+
+    launch = record_launch(runtime, request, lease)
     execution_request = {
         **request,
+        **({"controller_launch": launch} if launch is not None else {}),
         "lease": lease.model_dump(mode="json"),
         "parent_event": runtime.store.verify_event_chain()[-1]["event_id"],
     }
@@ -66,6 +70,7 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
         lease,
         [
             sys.executable,
+            "-I",
             "-c",
             bootstrap,
             str(controller),
@@ -75,7 +80,7 @@ def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict |
             "--operation-output",
             str(output_path),
         ],
-        cwd=controller,
+        cwd=Path(request["cwd"]),
     )
     from scripts.run_autotrain_supervisor import _source_identity
 

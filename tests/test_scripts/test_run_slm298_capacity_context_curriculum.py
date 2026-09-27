@@ -10,7 +10,7 @@ from slm_training.dsl.schema import ExampleRecord
 def _train_dir(tmp_path: Path) -> Path:
     path = tmp_path / "train"
     path.mkdir()
-    record = ExampleRecord(id="train", prompt="x", openui='root = TextContent(":x")', placeholders=[":x"])
+    record = ExampleRecord(id="train", prompt="x", openui='root = TextContent(":slot_0")', placeholders=[":slot_0"])
     (path / "records.jsonl").write_text(json.dumps(record.to_dict()) + "\n", encoding="utf-8")
     (path / "manifest.json").write_text("{}\n", encoding="utf-8")
     return path

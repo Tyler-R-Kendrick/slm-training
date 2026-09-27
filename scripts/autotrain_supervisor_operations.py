@@ -301,7 +301,11 @@ def operation_publication_scope(request, root, loop_id):
     publisher = DelegatedPublisher(journal, request["source_digest"])
     from scripts.autotrain_source_publication import publication_repository_scope
 
-    with publication_repository_scope(request), champion_publication_scope(
+    from scripts.autotrain_nested_execution import execution_scope
+    from scripts.autotrain_controller_execution import operation_host_configuration
+
+    publication = {**request, **operation_host_configuration(request)}
+    with execution_scope(request), publication_repository_scope(publication), champion_publication_scope(
         publisher, lease, loop_dir=root / "loops" / loop_id
     ):
         yield
@@ -309,11 +313,14 @@ def operation_publication_scope(request, root, loop_id):
 
 def validate_operation_identity(request, source_identity, boundary):
     """Bind execution/replay to current source and the measured runtime environment."""
-    from scripts.merge_verification_evidence import digest, environment_identity
+    from scripts.merge_verification_evidence import digest
 
+    from scripts.autotrain_controller_execution import operation_environment
+
+    environment = operation_environment(request)
     if source_identity(Path(request["cwd"])) != request["source_digest"]:
         raise ValueError("operation source changed " + boundary)
-    if digest(environment_identity()) != request["environment_digest"]:
+    if digest(environment) != request["environment_digest"]:
         raise ValueError("operation environment changed " + boundary)
 
 

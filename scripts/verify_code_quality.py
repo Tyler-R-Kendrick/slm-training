@@ -93,6 +93,29 @@ def _emit(outcome: baseline.RatchetOutcome) -> None:
         print(f"  DRIFT {entry}")
 
 
+def _update(analysis, recorded, *, root: Path) -> int:
+    """Bootstrap or lower ceilings; only a Ruff version change re-scopes counts."""
+    outcomes = gate.evaluate(analysis, recorded) if recorded else []
+    tooling_note = gate.tooling_drift(analysis, recorded)
+    rejected = [outcome for outcome in outcomes if outcome.failures
+                and not (outcome.dimension == "complexity" and tooling_note)]
+    if rejected:
+        for outcome in rejected:
+            print(f"\n{outcome.dimension}:")
+            _emit(outcome)
+        print("error: update rejected; baseline unchanged", file=sys.stderr)
+        return 1
+    if tooling_note:
+        print(f"note: {tooling_note}", file=sys.stderr)
+    written = baseline.save(
+        gate.merged_dimensions(analysis, recorded), root=root,
+        tools=_tools(analysis, recorded),
+    )
+    print(report.render(analysis))
+    print(f"\nbaseline written: {written.relative_to(root)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     analysis = _analyse(args)
@@ -104,14 +127,7 @@ def main(argv: list[str] | None = None) -> int:
     recorded = baseline.load(root=args.root)
 
     if args.update:
-        written = baseline.save(
-            gate.merged_dimensions(analysis, recorded),
-            root=args.root,
-            tools=_tools(analysis, recorded),
-        )
-        print(report.render(analysis))
-        print(f"\nbaseline written: {written.relative_to(args.root)}")
-        return 0
+        return _update(analysis, recorded, root=args.root)
 
     if not recorded:
         print(

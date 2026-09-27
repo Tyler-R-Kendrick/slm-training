@@ -15,20 +15,10 @@ from pathlib import Path
 import time
 
 from scripts.autoresearch_command_cursor import resolved_continuation_grant
+from scripts.autotrain_cycle_lock import (
+    active_reference as active_reference, load_context as load_context, read_artifact as read_artifact,
+)
 from slm_training.autoresearch.storage import CampaignStore, _sha
-
-
-def read_artifact(store, kind, digest):
-    if (
-        not isinstance(digest, str)
-        or len(digest) != 64
-        or any(char not in "0123456789abcdef" for char in digest)
-    ):
-        raise ValueError("invalid cycle artifact digest")
-    data = json.loads((store.root / "artifacts" / kind / f"{digest}.json").read_text())
-    if _sha(data) != digest:
-        raise ValueError("driver continuation artifact changed")
-    return data
 
 
 @contextmanager
@@ -41,18 +31,6 @@ def writer(root, loop_id):
             yield runtime
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
-
-
-def active_reference(runtime):
-    active = {}
-    for event in runtime.verify_event_chain():
-        if event["event_type"] == "driver_cycle_registered":
-            active[event["detail"]["input_digest"]] = event["detail"]
-        elif event["event_type"] == "driver_cycle_retired":
-            active.pop(event["detail"]["input_digest"], None)
-    if len(active) > 1:
-        raise ValueError("multiple active driver contexts require reconciliation")
-    return next(iter(active.values()), None)
 
 
 def retire(runtime, digest):
@@ -84,47 +62,14 @@ def register(store, runtime, payload):
     return path.stem
 
 
-def load_context(store, digest=None):
-    events = [
-        e
-        for e in store.verify_event_chain()
-        if e["event_type"] == "driver_cycle_locked"
-    ]
-    if not events and digest is None:
-        return None
-    expected = events[-1]["artifact_sha256"] if events else digest
-    if digest is not None and digest != expected:
-        raise ValueError("driver reference differs from campaign lock")
-    value = read_artifact(store, "driver_cycle_inputs", expected)
-    if (
-        value["schema_version"] != "driver_cycle/v1"
-        or value["campaign_id"] != store.campaign_id
-        or value["total_seconds"] != store.load_campaign().budget.logical_seconds
-        or not math.isfinite(value["initial_spent_seconds"])
-        or value["initial_spent_seconds"] < 0
-        or not value["order"]
-        or len(value["order"]) != len(set(value["order"]))
-        or set(value["order"]) != set(value["arms"])
-    ):
-        raise ValueError("invalid driver cycle input contract")
-    if not events:
-        store.append_event(
-            "driver_cycle_locked",
-            artifact_sha256=expected,
-            idempotency_key="driver-cycle-locked",
-        )
-    return value
-
-
 def verify_inputs(store, cwd, value):
     from slm_training.autoresearch.climb_policy import load_climb_policy
 
-    current_identity = resolved_continuation_grant(cwd, value["total_seconds"]).execution_identity
-    if value["execution_identity"] != current_identity:
-        raise ValueError(
-            "driver continuation release/environment/policy changed: "
-            f"expected={value['execution_identity']} current={current_identity}"
-        )
+    if (value["cwd"] != str(Path(cwd).resolve()) or value["execution_identity"] !=
+            resolved_continuation_grant(cwd, value["total_seconds"]).execution_identity):
+        from scripts.autotrain_execution_transition import verify_locked_execution
+
+        verify_locked_execution(store, cwd, value)
     if value["policy_sha256"] != load_climb_policy().sha256:
         raise ValueError("driver continuation release/environment/policy changed: policy")
     for filename, expected in value["files"].items():
@@ -304,6 +249,9 @@ def locked_preregistration_selection(
     if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
         raise ValueError("locked preregistration digest changed")
     plan = json.loads(path.read_text())
+    store = CampaignStore(loop_id, root)
+    from scripts.autotrain_execution_transition import preregistration_source
+    source = preregistration_source(store, cwd, plan)
     if (
         plan.get("schema") not in {
             "locked_pair_preregistration/v1",
@@ -314,20 +262,20 @@ def locked_preregistration_selection(
         or plan.get("evaluation_executed") is not False
         or plan.get("campaign_id") != loop_id
         or Path(plan.get("campaign_root", "")).resolve() != root
-        or Path(plan.get("source_path", "")).resolve() != cwd
+        or Path(plan.get("source_path", "")).resolve() != source
         or set(plan.get("arms", {})) != {"control", "candidate"}
         or set(plan.get("manifest_sha256s", {})) != {"control", "candidate"}
     ):
         raise ValueError("locked preregistration identity or diagnostic policy mismatch")
-    marker = json.loads((cwd / ".autonomy-release.json").read_text())
-    source_digest, provenance = runtime_source_provenance(cwd)
+    marker = json.loads((source / ".autonomy-release.json").read_text())
+    source_digest, provenance = runtime_source_provenance(source)
     if (
         source_digest != plan["source_digest"]
         or provenance != {
             "integration_commit": plan["source_commit"],
             "upstream_commit": plan["source_commit"], "code_dirty": False,
         }
-        or tree_sha(source_entries(cwd, marker["files"])) != plan["source_tree"]
+        or tree_sha(source_entries(source, marker["files"])) != plan["source_tree"]
     ):
         raise ValueError("locked preregistration source differs from execution copy")
     store = CampaignStore(loop_id, root)
@@ -390,11 +338,16 @@ def locked_preregistration_selection(
         preregistration_path=path, expected_commands=commands,
         expected_experiments=experiments,
         preregistered_inputs=input_hashes,
-        expected_design_sha256=plan["design_sha256"], validated_source_digest=source_digest,
+        expected_design_sha256=plan["design_sha256"], validated_source_digest=runtime_source_provenance(cwd)[0] if source != cwd else source_digest,
     )
 
 
 def _assert_locked_code_root(cwd):
     from slm_training.autoresearch import engine
-    if Path(__file__).resolve().parents[1] != cwd or Path(engine.__file__).resolve().parents[3] != cwd:
+    from scripts.autotrain_nested_execution import current_controller
+    from scripts.autotrain_controller_execution import validate_controller
+
+    binding = current_controller()
+    code_root = validate_controller(binding) if binding is not None else cwd
+    if Path(__file__).resolve().parents[1] != code_root or Path(engine.__file__).resolve().parents[3] != code_root:
         raise ValueError("locked preregistration imports differ from execution copy")

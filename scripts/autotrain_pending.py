@@ -29,8 +29,16 @@ def recover_driver_request(runtime, request):
             continue
         state = states.get(event["experiment_id"])
         original = event["detail"]["request"]
-        if (state is not None and state.status not in {"succeeded", "cancelled"}
-                and {k: v for k, v in original.items() if k != "predecessor_campaign_id"} == stable):
+        if state is None or state.status in {"succeeded", "cancelled"}:
+            continue
+        previous = {k: v for k, v in original.items() if k != "predecessor_campaign_id"}
+        if previous == stable:
+            return original
+        from scripts.autotrain_controller_execution import CONFIGURATION_KEYS, authorize_configuration_rebinding
+
+        if ({k: v for k, v in previous.items() if k not in CONFIGURATION_KEYS}
+                == {k: v for k, v in stable.items() if k not in CONFIGURATION_KEYS}):
+            authorize_configuration_rebinding(runtime, request)
             return original
     return request
 

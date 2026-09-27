@@ -100,11 +100,11 @@ def validate_resume_contract(
         )
     if not manifest_sha or payload.get("data_manifest_sha") != manifest_sha:
         raise ValueError("resume_from data mismatch")
+    if payload.get("optimizer_fingerprint") != getattr(optimizer, "fingerprint", None):
+        raise ValueError("optimizer fingerprint mismatch")
     compatibility = _match_resume_identity(
         payload["resume_contract"], resume_identity(config, plugin)
     )
-    if payload.get("optimizer_fingerprint") != getattr(optimizer, "fingerprint", None):
-        raise ValueError("optimizer fingerprint mismatch")
     required = (
         "model",
         "optimizer",

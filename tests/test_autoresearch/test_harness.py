@@ -4625,17 +4625,17 @@ def test_execute_limits_threads_for_scratch_cpu_stages(monkeypatch) -> None:
     )
 
     train_env = engine._stage_environment(
-        scratch, ["python", "-m", "scripts.train_model"]
+        scratch, ["python", "-m", "scripts.train_model"], cwd=Path.cwd()
     )
     eval_env = engine._stage_environment(
-        scratch, ["python", "-m", "scripts.evaluate_model"]
+        scratch, ["python", "-m", "scripts.evaluate_model"], cwd=Path.cwd()
     )
 
     assert train_env and train_env["OMP_NUM_THREADS"] == "1"
     assert train_env["MKL_NUM_THREADS"] == "1"
     assert eval_env and eval_env["OMP_NUM_THREADS"] == "1"
     assert engine._stage_environment(
-        scratch, ["python", "-m", "scripts.build_train_data"]
+        scratch, ["python", "-m", "scripts.build_train_data"], cwd=Path.cwd()
     )["PYTHONPATH"].split(":")[0].endswith("/src")
 
 

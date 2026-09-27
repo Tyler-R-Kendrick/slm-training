@@ -167,7 +167,7 @@ def pending_operation_repairs(runtime) -> list[dict]:
     )
 
 
-def wake_verified_operation(runtime, handoff, *, cwd):
+def wake_verified_operation(runtime, handoff, *, cwd, controller_execution=None):
     """Replace failed execution under a verified source, preserving logical work.
 
     Historical name retained for callers; the old immutable activity is cancelled,
@@ -179,13 +179,18 @@ def wake_verified_operation(runtime, handoff, *, cwd):
         runtime_source_identity,
     )
 
+    if controller_execution is not None:
+        from slm_training.harness_core.controller_execution import validate_controller
+
+        validate_controller(controller_execution)
     checked = verified_activation_handoff(runtime.store, handoff)
     activation = checked.get("activation_id", checked["publication_id"])
     if (
         Path(cwd).resolve() != Path(checked["successor_execution"]).resolve()
         or runtime_source_identity(Path(cwd)) != checked["source_digest"]
         or Path.cwd().resolve() != Path(cwd).resolve()
-        or not Path(__file__).resolve().is_relative_to(Path(cwd).resolve())
+        or (controller_execution is None
+            and not Path(__file__).resolve().is_relative_to(Path(cwd).resolve()))
     ):
         raise ValueError("successor_not_active_in_this_execution")
     activity = checked["resume_activity_id"]
@@ -196,7 +201,9 @@ def wake_verified_operation(runtime, handoff, *, cwd):
         if e["event_type"] == "operation_successor_planned"
         and e["detail"]["handoff"] == checked
     ]
-    plan = plans[-1] if plans else _successor_plan(runtime, checked, events)
+    plan = plans[-1] if plans else _successor_plan(runtime, checked, events, controller_execution)
+    if plan["request"].get("controller_execution") != controller_execution:
+        raise ValueError("successor_controller_binding_changed")
     runtime.store.append_event(
         "operation_successor_planned",
         experiment_id=activity,
@@ -216,10 +223,19 @@ def wake_verified_operation(runtime, handoff, *, cwd):
             "successor_request_digest": contract_digest(plan["request"]),
         },
     )
+    if controller_execution is not None:
+        with runtime._transaction():
+            runtime.store.append_event(
+                "operation_controller_activation_verified",
+                experiment_id=plan["request"]["successor_activity_id"],
+                idempotency_key="controller-activation:" + activation,
+                detail={"plan_digest": contract_digest(plan),
+                        "controller_execution": controller_execution},
+            )
     return plan["request"]
 
 
-def _successor_plan(runtime, checked, events):
+def _successor_plan(runtime, checked, events, controller_execution=None):
     activity = checked["resume_activity_id"]
     rows = [
         e
@@ -288,6 +304,8 @@ def _successor_plan(runtime, checked, events):
             "scientific_replicate_increment": 0,
         },
     }
+    if controller_execution is not None:
+        request["controller_execution"] = controller_execution
     spec = ActivitySpec.model_validate(
         {
             **state.spec.model_dump(mode="json"),

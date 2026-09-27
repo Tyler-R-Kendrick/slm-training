@@ -9,7 +9,9 @@ def locked_startup_commit(cwd):
     """Use authenticated release provenance; an unmarked copy fails closed."""
     from slm_training.harness_core.execution_release import runtime_git_provenance
 
-    provenance = runtime_git_provenance(Path(cwd))
+    from scripts.autotrain_nested_execution import startup_source
+
+    provenance = runtime_git_provenance(startup_source(cwd))
     if not provenance or provenance["code_dirty"] or (
         provenance["upstream_commit"] != provenance["integration_commit"]
     ):
@@ -156,6 +158,11 @@ def locked_first_run_closeout(args, runtime, common, cycle, log_event):
         report = locked_prerequisite_report(common["root"], args.loop_id, args.loop_id)
     locked_repair_rows(report["hard_pending"])
     if report["hard_pending"]:
+        from scripts.autotrain_docs import document_provenance_pending
+        pending = document_provenance_pending(common["root"], args.loop_id)
+        if pending is not None and all(row["kind"] == "document" for row in report["hard_pending"]):
+            log_event({"event": "locked_document_provenance_pending", "cycle": cycle, "pending": pending})
+            return 2
         raise ValueError("locked diagnostic documentation lacks typed delivery wait")
     if report["delivery_waits"]:
         register_delivery_waits(runtime, common, report["delivery_waits"], log_event)
@@ -225,6 +232,8 @@ def finalize_diagnostic(journal, continuous):
     stamp = build_version_stamp("harness.autoresearch.experiment_campaign")
     stamp.update(code_commit=value["integration"], code_dirty=False,
                  stamped_at=store.load_campaign().created_at)
+    from scripts.autotrain_nested_execution import diagnostic_provenance
+
     record = publish_cycle_delivery(store.root.parent, {
         **decision, "schema": "autotrain_sdlc_delivery/v1",
         "loop_id": value["loop_id"], "campaign_id": store.campaign_id,
@@ -233,7 +242,7 @@ def finalize_diagnostic(journal, continuous):
         "stack_layer": False, "measurement_complete": True,
         "arm_order": ids, "arm_exits": state["arm_exits"],
         "measured_effect": effect, "minimum_effect": primary["minimum_effect"],
-        "version_stamp": stamp,
+        **diagnostic_provenance(store, stamp),
         "effect_gate_pass": bool(paired.get("win")),
         "reasons": [*decision.get("reasons", []),
                     "Locked diagnostic only; no promotion or main delivery authority"],

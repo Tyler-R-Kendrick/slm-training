@@ -56,29 +56,27 @@ def test_autoresearch_skill_and_brains_edits_run_the_skill_guard_suite() -> None
 
 
 def test_script_changes_include_their_domain_suite() -> None:
-    assert select_tests(["scripts/train_model.py"]) == [
-        "tests/test_harnesses/model_build",
-        "tests/test_harnesses/quality",
-        "tests/test_harnesses/rl",
-        "tests/test_scripts",
-    ]
-    # Exact path ownership: listed script paths do not also pull scripts/.
-    assert select_tests(["scripts/autoresearch.py"]) == [
-        "tests/test_autoresearch",
-    ]
-    assert select_tests(["scripts/verify_agent_surfaces.py"]) == [
-        "tests/test_scripts/test_verify_agent_surfaces.py",
-    ]
-    assert select_tests(["scripts/check_changed.py"]) == [
-        "tests/test_scripts/test_check_changed.py",
-        "tests/test_scripts/test_merge_verification.py",
-    ]
-    assert select_tests(["scripts/verify_checkpoint_references.py"]) == [
-        "tests/test_scripts/test_verify_checkpoint_references.py",
-    ]
-    assert select_tests(
-        ["src/slm_training/evals/learnability_diagnostics.py"]
-    ) == ["tests/test_evals/test_learnability_diagnostics.py"]
+    cases = {
+        "scripts/train_model.py": [
+            "tests/test_harnesses/model_build",
+            "tests/test_harnesses/quality",
+            "tests/test_harnesses/rl",
+            "tests/test_scripts",
+        ],
+        "scripts/autoresearch.py": ["tests/test_autoresearch"],
+        "scripts/verify_code_quality.py": ["tests/test_quality"],
+        "scripts/verify_agent_surfaces.py": ["tests/test_scripts/test_verify_agent_surfaces.py"],
+        "scripts/check_changed.py": [
+            "tests/test_scripts/test_check_changed.py",
+            "tests/test_scripts/test_merge_verification.py",
+        ],
+        "scripts/verify_checkpoint_references.py": ["tests/test_scripts/test_verify_checkpoint_references.py"],
+        "src/slm_training/evals/learnability_diagnostics.py": ["tests/test_evals/test_learnability_diagnostics.py"],
+    }
+    unrelated = "tests/test_dsl/test_parser.py"
+    for source, expected in cases.items():
+        assert select_tests([source]) == expected
+        assert select_tests([source, unrelated]) == sorted([*expected, unrelated])
 
 
 def test_hook_prefers_explicit_changed_regressions() -> None:

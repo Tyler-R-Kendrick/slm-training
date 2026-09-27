@@ -47,7 +47,10 @@ def recover_release(runtime, common, *, sequence, log_event, run_operation):
         )
     if Path(common["cwd"]).resolve() != Path(checked["successor_execution"]).resolve():
         raise VerifiedRestart(checked)
-    request = wake_verified_operation(runtime, checked, cwd=Path(common["cwd"]))
+    from scripts.autotrain_controller_execution import parent_controller
+
+    request = wake_verified_operation(runtime, checked, cwd=Path(common["cwd"]),
+                                      controller_execution=parent_controller())
     state = runtime.snapshot()[request["successor_activity_id"]]
     if state.status in {"succeeded", "cancelled"}:
         return
@@ -61,9 +64,17 @@ def restart_supervisor(args, handoff):
     Keep the absolute finite pass ceiling and clear old Python import paths.
     """
     execution = Path(handoff["successor_execution"]).resolve(strict=True)
+    from scripts.autotrain_controller_execution import configured_controller, validate_controller
+
+    binding = configured_controller(args)
     argv = [sys.executable, "-m", "scripts.run_autotrain_supervisor"]
+    if binding is not None:
+        controller = validate_controller(binding)
+        bootstrap = "import runpy,sys;sys.path[:0]=[sys.argv.pop(1),sys.argv.pop(1)];runpy.run_module('scripts.run_autotrain_supervisor',run_name='__main__')"
+        argv = [sys.executable, "-I", "-c", bootstrap, str(controller), str(controller / "src")]
+
     for name, value in vars(args).items():
-        if name in {"operation_request", "operation_output"} or value is None:
+        if name.startswith("_") or name in {"operation_request", "operation_output"} or value is None:
             continue
         flag = "--" + name.replace("_", "-")
         if isinstance(value, bool):

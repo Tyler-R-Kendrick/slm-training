@@ -177,7 +177,6 @@ def test_muon_full_state_resume_roundtrip(tmp_path: Path) -> None:
         denoiser_layers=1,
         context_backend="scratch",
         denoiser_backend="scratch",
-        grammar_constrained=False,
         full_state_checkpoint=True,
         seed=0,
     )
@@ -220,7 +219,6 @@ def test_cross_optimizer_resume_is_fail_closed(tmp_path: Path) -> None:
         denoiser_layers=1,
         context_backend="scratch",
         denoiser_backend="scratch",
-        grammar_constrained=False,
         full_state_checkpoint=True,
         seed=0,
     )

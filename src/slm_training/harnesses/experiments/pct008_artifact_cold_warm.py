@@ -64,6 +64,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignGateV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
 )
 from slm_training.autoresearch.schemas import CampaignBudget, CampaignSpec
 from slm_training.autoresearch.storage import CampaignStore
@@ -271,6 +272,7 @@ class Pct008CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.seed,),
             budget=CampaignBudget(
                 max_experiments=self.cold_trials_per_arm * len(COLD_ARMS)
@@ -431,21 +433,18 @@ def run_campaign(
 
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
+    manifest = campaign.manifest()
     store = CampaignStore(campaign.campaign_id, root)
     store.initialize(
         CampaignSpec(
             campaign_id=campaign.campaign_id,
             objective="Fixture-scale cold/warm artifact-parity evidence (PCT-008)",
             primary_metric="artifact_step_p50_ms",
-            budget=CampaignBudget(
-                max_experiments=campaign.cold_trials_per_arm * len(COLD_ARMS)
-                + campaign.warm_trials,
-                max_wall_minutes=campaign.max_wall_minutes,
-            ),
+            budget=manifest.budget,
             created_at="1970-01-01T00:00:00Z",
         )
     )
-    lock = store.lock_experiment_campaign(campaign.manifest())
+    lock = store.lock_experiment_campaign(manifest)
 
     tokenizer = DSLNativeTokenizer.build()
     parity = check_domain_parity(tokenizer)

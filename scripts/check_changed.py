@@ -116,6 +116,7 @@ NON_PYTHON_LOCKFILES = {
     "src/apps/openui_bridge/package-lock.json",
 }
 SUITES_BY_PREFIX = (
+    ("scripts/verify_code_quality.py", ("tests/test_quality",)),
     (".agents/skills/autotrain/", ("tests/test_scripts/test_slm_cli.py",)),
     (
         ".agents/skills/autoresearch/",
@@ -412,8 +413,7 @@ def select_tests(paths: list[str], *, root: Path | None = None) -> list[str]:
                 targets.add(path)
             continue
         if path.startswith(CASE_RESOURCE_PREFIX) and path.endswith(".json"):
-            relative = Path(path.removeprefix(CASE_RESOURCE_PREFIX)).with_suffix(".py")
-            test_path = Path("tests") / relative
+            test_path = Path("tests") / Path(path.removeprefix(CASE_RESOURCE_PREFIX)).with_suffix(".py")
             targets.update(TEST_HELPER_DEPENDENTS.get(test_path.as_posix(), ()))
             if (root / test_path).is_file():
                 targets.add(test_path.as_posix())

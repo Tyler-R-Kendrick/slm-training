@@ -40,6 +40,13 @@ def test_manifest_binds_catalogue_identity() -> None:
     manifest = campaign.manifest()
     catalogue = exp_sr_campaign(CATALOGUE_ID)
     assert isinstance(manifest, ExperimentCampaignV1)
+    assert sum(arm.role == "candidate" for arm in manifest.arms) == 2
+    assert manifest.selection_rule == "best_by_primary_then_smallest"
+    payload = manifest.model_dump(mode="json")
+    assert ExperimentCampaignV1.model_validate(payload) == manifest
+    payload.pop("selection_rule")
+    with pytest.raises(ValueError, match="locked selection_rule"):
+        ExperimentCampaignV1.model_validate(payload)
     assert manifest.experiment_id == CATALOGUE_ID
     assert manifest.claim_class == "fixture"
     assert manifest.claim_class not in {"promotion_candidate", "ship_gate"}
@@ -116,3 +123,4 @@ def test_run_campaign_end_to_end(tmp_path: Path) -> None:
     store = CampaignStore(campaign.campaign_id, tmp_path)
     locked = store.load_experiment_campaign(CATALOGUE_ID)
     assert locked.manifest_sha256 == result["manifest_sha256"]
+    assert locked.manifest.selection_rule == "best_by_primary_then_smallest"

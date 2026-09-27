@@ -23,8 +23,8 @@ def _train_dir(tmp_path: Path) -> Path:
         ExampleRecord(
             id=f"train-{index}",
             prompt=f"record {index}",
-            openui=f'root = TextContent(":label{index}")',
-            placeholders=[f":label{index}"],
+            openui='root = TextContent(":slot_0")',
+            placeholders=[":slot_0"],
         )
         for index in range(3)
     ]
@@ -43,6 +43,7 @@ def test_protocol_has_matched_24_cell_three_seed_factorial(tmp_path: Path) -> No
     campaign = build_campaign(protocol)
     assert campaign.locked_eval_manifest_sha256 == protocol.locked_eval_manifest_sha256
     assert len(campaign.arms) == 8
+    assert campaign.selection_rule == "best_by_primary_then_smallest"
 
 
 def test_complexity_curriculum_is_ast_reference_based_not_token_length(tmp_path: Path) -> None:

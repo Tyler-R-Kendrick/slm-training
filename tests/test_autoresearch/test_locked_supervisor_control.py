@@ -190,7 +190,13 @@ def test_completed_pair_keeps_document_duty_pending(tmp_path, monkeypatch):
                              "campaign_id": plan["campaign_id"]}]
 
 
-def test_first_successful_pair_materializes_typed_wait_before_return(tmp_path, monkeypatch):
+@pytest.mark.parametrize("has_provenance", [True, False])
+def test_first_successful_pair_materializes_typed_wait_before_return(tmp_path, monkeypatch, has_provenance):
+    from scripts import autotrain_docs
+    from tests.test_scripts.test_continuous_cycle_stamp import _stamp
+
+    if has_provenance:
+        monkeypatch.setattr(autotrain_docs, "resolve_measurement_provenance", lambda *args: (_stamp(), {}))
     plan, path, root, store, value = _started_pair(tmp_path, monkeypatch)
     args = SimpleNamespace(
         loop_id=plan["campaign_id"], root=root, max_cycles=1,
@@ -226,6 +232,17 @@ def test_first_successful_pair_materializes_typed_wait_before_return(tmp_path, m
         run_operation=operation, watchdog=lambda **_: None,
     ) == 2
     assert calls == ["driver"]
+    if not has_provenance:
+        from scripts.autotrain_pending import validate_pending
+        pending = autotrain_docs.document_provenance_pending(root, plan["campaign_id"])
+        validate_pending(pending)
+        assert pending["reason"] == "measurement_finish_missing"
+        assert pending["diagnostic_measurement_complete"] is True
+        assert pending["publication_complete"] is False
+        assert waits == []
+        assert not list((store.root / "artifacts/delivery_documents").glob("*.json"))
+        assert json.loads((store.root / "sdlc_delivery.json").read_text())["measurement_complete"] is True
+        return
     assert len(waits) == 1 and waits[0]["kind"] == "document"
     assert waits[0]["required_capability"] == "authorized_github_connector_delivery"
     assert list((store.root / "artifacts" / "delivery_documents").glob("*.json"))

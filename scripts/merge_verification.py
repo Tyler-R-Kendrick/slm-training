@@ -177,18 +177,24 @@ def _execute_pending(
             isolated_static,
             runtimes=tuple(Path(path) for path in state["binding"]["runtime_roots"]),
         )
-    def fast_persist() -> None:
-        persist(validate=False)
+    fast_persist = functools.partial(persist, validate=False)
     phase = functools.partial(run_isolated_phase, state, fast_persist=fast_persist)
-    phase("static", lambda: _run_statics(state, steps, run_step, root, budget, fast_persist))
-    if not state["binding"]["targets"]:
-        state["no_tests_required"] = True
-        persist()
-    elif phase("collection", lambda: _collect(state, root, cache.directory, budget, persist, fast_persist)):
-        state["shard_budget_seconds"] = min(
-            state.get("shard_budget_seconds", budget()), max(1.0, budget() - 1.0)
-        )
+    if "nodes" in state and all(
+        state["static"].get(step.name, {}).get("status") == "ok"
+        for step in steps
+        if step.static
+    ):
         phase("shard", lambda: _run_shards(state, root, cache.directory, budget, fast_persist))
+    else:
+        phase("static", lambda: _run_statics(state, steps, run_step, root, budget, fast_persist))
+        if not state["binding"]["targets"]:
+            state["no_tests_required"] = True
+            persist()
+        elif phase("collection", lambda: _collect(state, root, cache.directory, budget, persist, fast_persist)):
+            state["shard_budget_seconds"] = min(
+                state.get("shard_budget_seconds", budget()), max(1.0, budget() - 1.0)
+            )
+            phase("shard", lambda: _run_shards(state, root, cache.directory, budget, fast_persist))
     persist()
     return {
         **_summary(state),
@@ -220,11 +226,12 @@ def _allowance(state, kind, targets, available, *, exhausted=False, prior=None):
         # time out every split before pytest begins.
         required = min(full, available) if available > 2 * KILL_GRACE_SECONDS else full
     if kind == "shard":
-        # Grow exact timed-out shards so slow singletons escape repeated 15s slices.
         estimate = _shard_estimate_seconds(state, targets, full)
         if prior and isinstance(prior.get("seconds"), (int, float)):
             estimate = min(full, max(1.0, prior["seconds"] * 2))
-        required = min(estimate, available)
+        # Keep estimate independent of this invocation's remaining tail: clipping
+        # to available makes the later admission comparison tautological.
+        required = estimate
     wait_key = digest([kind, targets])
     # A remaining tail at-or-under two kill-graces is never spent on workload
     # obligations; static first-runs are exempt (their requirement is the

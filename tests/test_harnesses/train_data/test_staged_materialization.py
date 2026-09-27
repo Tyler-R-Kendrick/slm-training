@@ -11,6 +11,7 @@ from slm_training.harnesses.train_data.artifact_graph import (
     ArtifactNodeV1,
 )
 from slm_training.harnesses.train_data.split_policy import RootFamilySplitPolicyV1
+from slm_training.harness_core.versioning import component_version
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PLAN_PATH = (
@@ -132,10 +133,34 @@ def _stage_graph(
 
 
 def _write_plan(tmp_path: Path, destination: str) -> Path:
+    plan = SynthesisPlanV1.load(PLAN_PATH)
+    current_version = {
+        "pack.corpus_generator": "harness.train_data",
+        "pack.oracle": "harness.train_data",
+        "symbolic_surface": "dsl.symbolic_surface",
+    }
     plan = replace(
-        SynthesisPlanV1.load(PLAN_PATH),
+        plan,
         plan_id="staged-materialization-fixture",
         destinations=(destination,),
+        generators=tuple(
+            replace(
+                ref,
+                version=component_version(
+                    current_version.get(ref.component_id, ref.component_id)
+                ),
+            )
+            for ref in plan.generators
+        ),
+        validators=tuple(
+            replace(
+                ref,
+                version=component_version(
+                    current_version.get(ref.component_id, ref.component_id)
+                ),
+            )
+            for ref in plan.validators
+        ),
     )
     path = tmp_path / "plan.json"
     path.write_text(json.dumps(plan.to_dict(), indent=2) + "\n", encoding="utf-8")

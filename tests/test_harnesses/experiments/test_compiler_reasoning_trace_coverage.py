@@ -29,7 +29,7 @@ def test_coverage_report_reproduces_deterministically() -> None:
 def test_coverage_report_is_labeled_bounded_probe_over_the_committed_fixture_set() -> None:
     report = build_bounded_coverage_report()
     assert report.evidence_class == "bounded_probe"
-    assert report.sample_size == 16
+    assert report.sample_size == 37
     assert DEFAULT_PROBE_PATH.name == "test_seeds.jsonl"
     assert report.proposed_k == 6
     assert len(report.stage_stats) == 6

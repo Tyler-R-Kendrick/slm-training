@@ -3992,17 +3992,15 @@ def _self_heal_document_actions(
         for i, a in pending_autotrain_actions(root, handoff)
         if a.kind == "document"
     ]
-    if not pending:
+    from scripts.autotrain_docs import render_document_closeout
+
+    rendered = render_document_closeout(store, handoff, pending)
+    if rendered is None:
         return None
     workspace = store.root / "delivery_workspace"
     md_path, json_path = _continuous_docs_paths(workspace, campaign_id)
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    md_text, payload = _render_continuous_cycle_docs(
-        campaign_id=campaign_id,
-        loop_id=loop_id,
-        handoff=handoff,
-        delivery=_read_json(store.root / "sdlc_delivery.json"),
-    )
+    md_text, payload = rendered
     md_path.write_text(md_text)
     json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     touched = [md_path, json_path]

@@ -1,7 +1,7 @@
 """Trusted host configuration and MCP transport for document delivery.
 
-No default endpoint, credentials, REST client, or CLI fallback exists. The host
-must expose the installed GitHub connector tools with pinned input schemas.
+Explicit HTTP or pinned Codex app-server transport; never fallback between them.
+Host exposes installed GitHub connector tools with pinned input schemas.
 """
 
 from __future__ import annotations
@@ -13,9 +13,12 @@ import os
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
 
 from slm_training.harness_core.activity_contract import contract_digest
+from slm_training.harness_core.github_codex_transport import (
+    CodexAppServerConfig, CodexTransportWaiting, codex_connector,
+)
 
 
 class DeliveryWaiting(ValueError):
@@ -33,6 +36,22 @@ class ConnectorConfig(BaseModel):
     tool_names: dict[str, str] = Field(default_factory=dict)
     tool_schema_sha256: dict[str, str] = Field(default_factory=dict)
     max_payload_bytes: int = Field(default=200000, gt=0, le=200000)
+    codex_app_server: CodexAppServerConfig | None = None
+
+    @model_validator(mode="after")
+    def exclusive_transport(self):
+        if self.codex_app_server is not None and (
+            self.endpoint is not None or self.authorization_env is not None
+        ):
+            raise ValueError("connector_transports_are_mutually_exclusive")
+        return self
+
+    @model_serializer(mode="wrap")
+    def legacy_identity(self, handler):
+        value = handler(self)
+        if self.codex_app_server is None:
+            value.pop("codex_app_server", None)
+        return value
 
 
 def check_payload(config, tool, arguments):
@@ -46,13 +65,18 @@ def check_payload(config, tool, arguments):
 
 @asynccontextmanager
 async def host_connector(config, *, allowed_tools, timeout_seconds):
-    """MCP 1.x Streamable HTTP; endpoint/auth are explicit trusted host inputs."""
+    """Selected trusted host transport; errors never select another transport."""
     if (
         isinstance(timeout_seconds, bool)
         or not math.isfinite(timeout_seconds)
         or timeout_seconds <= 0
     ):
         raise ValueError("connector_timeout_must_be_positive_and_finite")
+    config.exclusive_transport()
+    if config.codex_app_server is not None:
+        async with _codex_host_connector(config, allowed_tools, timeout_seconds) as call:
+            yield call
+        return
     headers = _transport_credentials(config)
     try:
         from mcp import ClientSession
@@ -97,6 +121,26 @@ async def host_connector(config, *, allowed_tools, timeout_seconds):
                     return response.model_dump(mode="json", by_alias=True)
 
                 yield call
+
+
+@asynccontextmanager
+async def _codex_host_connector(config, allowed_tools, timeout_seconds):
+    try:
+        async with codex_connector(config, allowed_tools, timeout_seconds) as call:
+            async def checked_call(tool, arguments):
+                if tool not in allowed_tools:
+                    raise ValueError("connector_reader_method_not_allowed")
+                check_payload(config, tool, arguments)
+                try:
+                    return await call(tool, arguments)
+                except CodexTransportWaiting as error:
+                    raise DeliveryWaiting(str(error)) from error
+
+            yield checked_call
+    except CodexTransportWaiting as error:
+        raise DeliveryWaiting(str(error)) from error
+    except OSError as error:
+        raise DeliveryWaiting("codex_transport_unavailable_or_outcome_unknown") from error
 
 
 async def _schemas(session):

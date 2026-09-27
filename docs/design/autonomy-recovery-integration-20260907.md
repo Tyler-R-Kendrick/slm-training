@@ -464,3 +464,524 @@ After extracting file materialization from release preparation to remove a compl
 The retained R31 failure exposed a concrete recovery mismatch: initial compiled evaluation argv advertises resumable records but naturally does not yet contain `--resume-run`. The former recovery helper refused this interrupted boundary even after the complete training prefix was committed. R32 verifies that entire prefix, derives the same run directory through the existing artifact-path owner, and requests explicit evaluator resume. The evaluator still validates prior rows before decoding; no interrupted execution becomes a successful measurement and all prior reservations stay charged.
 
 The complete focused cursor-recovery module passes 13 tests in 28.57 seconds. The original R31 helper fails the new compiler-generated-command regression. Coverage includes interruption before the first evaluation, preserved partial rows, no repeated training, exact locked argv, authenticated training-resume prefixes, and rejection of altered commands. The retained real R31 cursor was inspected read-only; the patched helper derives its existing run directory. Actual repaired campaign execution still requires source-bound delivery and is not claimed from this test.
+
+## R33 integration closure: authenticated source changes across a locked campaign
+
+A follow-up source audit found that R32's outer operation successor does not yet transport the nested locked campaign across a verified implementation repair. The supervisor validates the original preregistration before recovering the release. Driver continuation then requires the original execution path and source/environment identity, and the command cursor digest includes both. These independent checks correctly reject arbitrary drift, but no authenticated transition joins them to the already verified operation handoff.
+
+The real retained R31 operation supplies the counterexample: its six-update control checkpoint and original 2,700-second logical grant remain intact, but changing only the outer operation request cannot resume its nested driver/cursor. Source-repair delivery itself has no circular main-membership prerequisite; publication of original measurements still requires their own authenticated evidence source. The bounded repair-agent acceptance is held before provider execution until this integration boundary is addressed.
+
+The successor must retain old artifacts and scientific identities while authenticating the new physical execution from existing verified release/activation receipts. It must not redefine source identity globally, rewrite old cursor inputs, repeat training, reset resource charges, or infer completion from the checkpoint alone. A fresh supervisor/worker regression must cross the same boundaries as the real operation. This is an open implementation obligation, not completed acceptance.
+
+### Obsolete verifier ownership audit (2026-09-26)
+
+A host process audit found orphaned R25 launcher PID 1373717 still issuing
+bounded verification against superseded source while the R32 timer was active.
+The launcher was stopped after checking its exact command and process start
+identity. Its current bounded child was allowed to finish; all R25 journals
+were retained. Inactive but enabled R26 and R27 timers were disabled to prevent
+restarting obsolete verification at login. The R32 timer and its source were
+not changed. This fixes duplicate compute ownership; historical results still
+do not authorize the current source. Local audit artifact:
+`outputs/autonomy-integration-20260921/obsolete-r25-runner-stop-20260926.json`.
+
+At the recorded R32 observation, all 18 static checks passed and 11 of 17
+collection batches completed, collecting 8,691 nodes. No test nodes had passed
+yet. GitHub returned no pull-request-triggered workflow runs for commit
+`79bbc8fb83e2893554d1d3a346c5b52c93a376cd`; external preview/review statuses
+therefore cannot stand in for the canonical test gate.
+
+### Controller and workload separation under implementation
+
+The real R31 failure cannot be migrated by treating all R33 changes as an
+autonomous worker repair: the integration changes include protected controller
+code. The selected design pins the trusted R33 controller independently and
+retains an R31-derived workload for the narrow worker repair. Fresh supervisor
+and delegated operation-worker processes execute the pinned controller;
+training and evaluation subprocesses execute the accepted workload. Physical
+source identities remain distinct and recorded. Original scientific inputs,
+logical cursor identity, checkpoints, attempt counts, and charged reservations
+remain bound to their original campaign.
+
+This design is not accepted evidence yet. Required regressions include a fresh
+worker crossing the actual boundary, multi-hop continuation through cancelled
+intermediate activities, rejection of copied/self-authored journals, and
+rejection of any workload change affecting protected scientific behavior.
+
+### Current-source verification findings
+
+R32 completed collection of 12,185 selected nodes across 512 initial shards.
+Execution then exposed a remaining admission-reporting defect: after a shard
+used the remaining invocation budget, the persisted next-workload
+`required_seconds` became negative. The earlier fix covered collection only.
+R33 must fix the shared shard admission calculation without raising the run cap
+or resetting retry charges. One single-node shard timed out after 57.84 seconds;
+that interrupted attempt is charged and is not counted as passing evidence.
+
+The R31 subscription transport's 21 mock-only tests passed in 1.00 seconds when
+local Unix sockets were permitted. The three initial sandbox socket failures
+were environmental, not provider outcomes. The real-fault reproducer now also
+retains its assertion traceback and resolves the original workload without an
+environment override. Neither check constitutes live-agent repair acceptance.
+
+The shard defect also affects execution admission, not only reporting. Setting
+`required = min(estimate, available)` makes the subsequent insufficient-budget
+comparison ineffective. It can repeatedly admit a timed-out shard into a tail
+shorter than its increased requirement. The correction must preserve the
+positive estimate (bounded by the canonical workload allowance), defer when
+the current tail cannot cover it, and avoid charging an attempt for that
+deferral. A second two-node shard timed out after 30.89 seconds; both interrupted
+attempts remain recorded rather than counted as passes.
+
+The first R32 assertion failure was an obsolete environment-heal expectation:
+`test_verified_env_heal_rewrites_to_next_experiment` assumed a successful
+environment repair also acknowledged generated documentation. The production
+path correctly retains the document action until authorized connector delivery.
+R33 updates the regression to assert that pending action and both durable
+`documentation_materialized` and `documentation_waiting_delivery` events.
+No publication guard changed. All seven environment-rewrite tests passed in
+1.56 seconds; this focused result does not replace the final canonical gate.
+
+### Independent host connector capability
+
+A dedicated host thread exposed the installed GitHub connector through Codex
+app-server 0.157.1. Two independently started stdio processes resumed that
+probe-owned thread and read PR 1785 with identical response digests. The probe
+used `mcpServer/tool/call` directly, without a model turn, interactive login,
+credential extraction, or remote mutation. The shared-daemon proxy timed out;
+the explicitly selected standalone stdio path succeeded.
+
+This removes the assumed read-capability blocker but is not complete delivery
+evidence. R33 integration must provide an explicitly configured host transport
+under the existing delivery adapter, retain schema and source pins, enforce
+finite process lifetime, and reconcile ambiguous mutations through independent
+readback. It must never silently fall back from an unavailable HTTP transport.
+Unattended write servicing and genuine repair delivery remain unverified.
+
+The R33 shard-admission change passed 52 focused verifier tests across four
+files, including preservation of charges, shards, and passes while waiting for
+a fresh invocation. Parent review confirmed that the implementation removes
+the tail-clipping root cause. An additional fresh-invocation overhead edge is
+under review before this result can support final integration acceptance.
+
+### Monitor replacement and integration review
+
+The replacement host monitor fired through systemd at 17:06 CDT on September
+26, 2026. It invoked canonical R32 `monitor-check` and `status` against the
+retained R31 campaign and read the R32 verifier report. It correctly reported
+that the campaign controller was stopped while its original operation waited
+for reconciliation. The monitor did not launch training or a repair provider.
+The obsolete R4/R12 monitor was disabled with its logs preserved.
+
+Parent verification confirmed a live calendar timer and the next scheduled
+18:00 CDT firing, but found two configuration integration gaps: the initial
+custom unit name was not the name queried by canonical monitor status, and its
+service timeout plus stop grace could exceed the canonical total cap. Both
+require correction before declaring monitoring fully integrated; the initial
+trigger proof remains evidence of that narrower executed configuration.
+
+Authenticated multi-hop transition tests passed: 12 tests in 41.41 seconds,
+plus one unresolved-cursor regression in 16.54 seconds. The implementation
+retains the original logical anchor, subtracts actual predecessor charges, and
+rejects forks, cycles, missing ancestry, copied journals, cancelled endpoints,
+environment drift, and changed seeds. The tests include a fresh delegated worker.
+Controller activation receipt production and strict controller source-pin
+validation still require integrated confirmation; these focused results do not
+prove the actual retained R31 campaign has resumed.
+
+R32 full verification also rejected SLM-298 planning fixtures that persisted
+named `:x`/`:labelN` placeholders. Correcting both fixture producers to opaque
+`:slot_0` exposed a real planning defect: the multi-candidate campaign omitted
+its mandatory selection rule. New manifests now explicitly lock the canonical
+`best_by_primary_then_smallest` rule. Existing manifest revisions continue to
+produce explicit deviation records; historical observations are not re-scored.
+All five CLI/protocol tests passed in 1.91 seconds. The experiment component
+is v171. No training, evaluation, promotion, or scientific campaign ran during
+this unit-test repair.
+
+The configured Codex connector transport passed 113 focused tests in 8.51
+seconds and three canonical `host_connector` PR-read smokes with equal response
+digests. A lost-response regression retains the pending mutation journal and
+prevents duplicate commit dispatch. No real mutation ran. Parent review still
+requires startup time to be debited from the full invocation allowance and
+identity-safe descendant cleanup after the direct child exits. Those lifecycle
+conditions remain part of transport acceptance.
+
+The monitor configuration gaps are now closed. The canonical unit
+`slm-autoresearch-science-lab-r31-43327120eda9-acceptance-monitor.timer` fired
+at 17:16 CDT on September 26. Canonical status reports `ready=true`, that
+actual trigger, and the next production firing at 19:00 CDT. The restored
+calendar is `*-*-* 00/3:00:00 UTC`, with persistence enabled. The service uses
+170-second interrupt and 10-second kill grace, matching the 180-second total
+cap. Both obsolete timers are disabled; their logs and definitions remain
+preserved. The campaign itself remains stopped pending authenticated recovery;
+monitoring liveness is not scientific progress. Evidence:
+`outputs/autonomy-integration-20260921/host-progress-monitor-r32/canonical-trigger-proof-20260926.json`.
+
+Final focused admission checkpoint: 53 tests passed after consolidating
+regressions into the existing resumption test owner. The verifier is 400 lines,
+scheduling tests 337, and resumption tests 363; no debt ceiling increased.
+Completed static/collection phases are bypassed on shard-only continuation.
+Ruff, diff checks, and version stamps passed. Actual full-run scheduling remains
+part of the final-source canonical verification obligation.
+
+Quality review caught the SLM-298 package's two-line growth from adding the
+selection declaration. Constructing factorial cells directly from the existing
+Cartesian-product tuples removes the redundant unpack/repack and restores the
+package ceiling without raising its baseline. The existing five CLI/protocol
+tests still cover all 24 cells and locked manifest behavior.
+
+The compiler-trace coverage test still expected 16 samples although the existing
+committed fixture contains 37 records. R33 updates that exact expectation and
+removes the stale count from the probe docstring; it changes neither fixture
+bytes nor coverage calculations. All four related tests passed in 1.68 seconds
+with the configured OpenUI bridge. Historical measured reports retain their
+original sample counts.
+
+The three-pair NLL classifier regression expected an obsolete null-effect reason.
+Current classification is correctly inconclusive: three pairs lack the declared
+independent-unit evidence and do not clear the six-pair decidability floor.
+R33 asserts `primary_metric_inconclusive`/`paired_inconclusive` while retaining
+`positive=false`, `win=false`, and the exact three-pair count. The focused test
+passed in 2.22 seconds. No classifier, significance threshold, confirmation
+gate, or statistical sample count changed.
+
+Controller/workload integration checkpoint: 66 boundary tests, 31 subsequent
+cursor/CLI tests, one fresh controller-to-worker-to-scientific-subprocess test,
+and 15 diagnostic provenance/startup tests passed in their recorded focused
+runs. These groups are not asserted to be mutually disjoint. The main
+`autoresearch.py` owner shrank from 2,091 to 2,075 lines. The remaining
+composition regression must connect verification/publication to a fresh
+supervisor and retained cursor across two repairs; no live-campaign acceptance
+is inferred from the focused tests.
+
+Full R32 verification identified two further failures. The resumed evaluator
+reached real AgentV publication but the isolated JavaScript runtime lacked the
+`yaml` dependency imported by the pinned AgentV SDK. A separate reasoning
+benchmark passed algebra output through the OpenUI statement-binding admission
+path and failed before training. R33 must provide a complete pinned runtime
+closure and the correct grammar-aware record contract, respectively. Neither
+missing publication nor rejected symbolic training is waived as a fixture issue.
+The active R32 runtime and its verification evidence remain unchanged.
+
+Independent transport review approved the final lifecycle patch against its
+recorded hashes. The reasoning-benchmark failure spans both record admission
+and model construction: training repeats OpenUI-only admission, and the old
+benchmark additionally requests the prohibited compositional tokenizer. Its
+repair must use a supported constrained grammar/tokenizer path; changing
+metadata alone or restoring unrestricted output cannot close this obligation.
+### Further full-verifier regressions resolved (2026-09-26)
+
+The provider-bridge isolation fixture granted a workspace-root file, which the
+current directory-mount guard correctly rejects. The fixture now places that
+file at `src/module.py` and grants that exact path. All 39 provider-bridge tests
+passed in 6.73 seconds with real local Bubblewrap and Unix sockets. No external
+provider was called and no production grant boundary changed.
+
+The stale-positive classification fixture omitted finite parse-rate observations
+for both arms. The existing measurement-completeness predicate therefore
+correctly declined reclassification. Supplying both observations repairs the
+fixture; the focused regression passed, without changing classification,
+statistical thresholds, or the 13,305-line file ceiling.
+
+Focused probes of the retained R31 baseline found six failures, one pass, and
+one skip in 4.80 seconds. Separate frozen-environment classifier and entrypoint
+probes failed in 6.06 and 10.30 seconds respectively. These failures prevent a
+narrow reconciliation-only workload repair from satisfying full-source
+verification. The original campaign and its provider attempt remain untouched.
+A separate source-verification grant permits 1,024 bounded invocations; this
+does not confer scientific execution authority or waive any failure. The
+trusted-controller upgrade and unchanged scientific workload boundary must be
+resolved before dispatch. A separate controlled-defect demonstration cannot
+stand in for continuation of this retained operation.
+### Isolated AgentV dependency resolution repaired
+
+The missing `yaml` import was caused by flattening `node_modules` into a
+runtime mount, not by an absent installed dependency. Node's package search
+could not find sibling packages through the flattened mount. R32 also selected
+Node 26.5.0, outside the pinned SDK's supported engine range. An independent
+read-only runtime now preserves the `node_modules` ancestry and explicitly
+selects Node 22. All 267 installed packages match the lock; the 20 absent lock
+entries are optional or platform-specific. Copied files share no inodes with
+the original runtime, and copied symlinks stay inside the new root.
+
+The exact isolated resumed-evaluation regression and installed-SDK publication
+test both passed (2 tests, 13.86 seconds; isolated worker 37.11 seconds). A
+separate real isolated AgentV case passed with zero execution errors in 1.01
+seconds. These are fixture wiring results, not model-quality evidence. R32's
+runtime grants and journal remain unchanged. Final R33 verification must bind
+`runtime-r33-agentv-complete` and the explicit Node 22 root before these repairs
+can support a release claim. The local handoff records the workload digest and
+exact runtime recipe in `r33-agentv-runtime-handoff.md`.
+### Completion-domain differential failure under investigation
+
+R32 isolated verification reported a packed/reference disagreement at the empty
+prefix with eight tokens remaining: the packed kernel rejected a possible false
+singleton, while the reference returned a complete domain. The production
+false-singleton guard remains unchanged. A local R33 run of all eleven corpus
+parity cases passed in 147.78 seconds. Empty-prefix subprocess probes also agreed
+for Python hash seeds 0 through 7. These results do not resolve the isolated
+failure; its exact journal node is being replayed under the approved isolated
+runtime. An initial reproduction selected an unapproved interpreter and another
+lost parameter escaping; both stopped without executing tests and provide no
+validation evidence. The subsequent invocation uses the exact node bytes from
+the signed journal. No failure is waived as intermittent.
+
+The exact failed completion-domain node passed in canonical R33 isolation:
+1 test in 16.50 seconds, worker 29.57 seconds, workload digest
+`7806608f97ac70ce4c36d5b344a74ae63d24a0f00d58780ccf7f7270660a4eb4`.
+The root cause remains unproven; an unchanged R32 replay follows to separate
+source/runtime effects from a transient result. Passing replays do not erase
+the original failure.
+
+R32 also found six SFF formal/metrics setup failures from one shared cause:
+its multi-candidate campaign omitted the mandatory selection rule. The producer
+now locks `best_by_primary_then_smallest`; regression coverage asserts the rule
+survives manifest locking. Both focused files passed, 21 tests in 1.49 seconds;
+Ruff and diff checks passed. Component
+`harness.experiments.anti_e237_semantic_factor_frontier` is v12. Existing
+scientific artifacts and R32 source remain unchanged.
+
+Unchanged R32 also passed the exact parity node in isolation (1 test, 28.65
+seconds; worker 66.35 seconds). This rules out treating the R33 edits as a
+proven repair. The original complete shard is retained for a collection-context
+reproduction; both passing isolated replays and the original failure remain
+recorded.
+
+The original 21-node R32 shard reproduced the parity failure (2 failures,
+19 passes in 6.60 seconds; the second failure is the separately repaired SFF
+selection declaration). The parity test executes first, so collection/import
+context is the next causal boundary to inspect. This is a reproducible
+integration failure, not a waived flaky test. Exact recipe and output are
+retained in `r32-completion-parity-shard-reproduction.{py,json}`.
+
+A further HTTP promotion test failed before reaching its digest assertions:
+the synthetic multi-candidate campaign omitted its locked selection rule. The
+fixture now declares the canonical rule; all four endpoint regressions pass in
+2.00 seconds, including rejection of a forged on-disk digest and parameter-growth
+charging. Production promotion and digest guards are unchanged.
+
+### Arithmetic integration checkpoint
+
+The canonical arithmetic adapter now has 22 passing focused tests (2.85
+seconds), including actual tiny training/decode/scoring, invalid pack and symbol
+rejection, terminal-witness replay, proof exhaustion, and a singleton-prefix
+zero-forward assertion. Both benchmark arms use constrained lexer decoding;
+bindings expand to equivalent root ASTs without restoring compositional or
+unconstrained fallback. This is fixture integration evidence, not a scientific
+quality result or a completed source gate.
+
+Review still requires the model-build factory to propagate grammar identity,
+resolution of one package-principle regression, and adversarial completion-domain
+review. Module ceilings are restored: pack.py is 1,125 lines; twotower.py is
+16,634 versus its 16,641 ceiling; the models package is 49,595 versus 49,602.
+The final quality ratchet must record these decreases once the implementation
+is stable. The current snapshot is not frozen or release-authorized.
+
+### Unattended delivery preparation checkpoint
+
+The host preparation recipe now constructs the complete strict adapter with
+explicit direct Codex transport, separate mode-locked writer/reader executables,
+trusted configuration digest, finite grants, and controller/source/runtime pins.
+Eight preparation tests pass, plus the canonical lost-commit-response regression.
+No final source identities were fabricated and no remote mutation occurred.
+
+Parent review found a remaining executable-base issue: the retained R31/R32/R33
+source directories reconstruct their published connector trees but share ambient
+local Git HEAD `e9a6de0c6c52e4326252e2c6c76d1abad423d690`. The preparation
+recipe still requires the fault-base checkout HEAD to equal its published source
+commit. This mismatch requires an authenticated base materialization or an
+existing verified-provenance path; neither local ref surgery nor changing the
+expected commit can establish authority. Final adapter preparation remains open.
+
+A lost commit response without a recoverable SHA also remains honestly pending:
+the installed connector cannot pin commit timestamps, so tree/parent/message
+alone cannot reconstruct the missing object identity. Existing independent
+marker search and exact readback may recover it; an ambiguous search result
+must not trigger a duplicate mutation.
+
+Two Muon resume regressions pass in 3.57 seconds after removing invalid
+unconstrained test overrides and reporting optimizer-fingerprint mismatch before
+generic recipe mismatch. The optimizer algorithm and compatibility acceptance
+conditions are unchanged; cross-optimizer resume still fails closed.
+`harness.model_build.train` is v45 and now owns the extracted resume validator.
+
+Two distillation trace regressions pass in 5.88 seconds. Fixtures use opaque
+markers and constrained generation. The corruption probe now mutates an actual
+in-range committed cell that was not remasked, and explicitly asserts that a
+mutation occurred before checking replay rejection. Trace storage and replay
+production code are unchanged. Ruff and diff checks pass. SFF source cleanup
+also restores its 673-line ceiling by reusing loaded campaign/scorer data;
+its 21 focused tests remain passing.
+
+The preparation base mismatch is resolved by reusing canonical immutable source
+copying and `private_git_snapshot`. A new private verifier base contains only
+hash-authenticated blobs/tree/commit reconstructed from connector-observed
+metadata. Its commit SHA must exactly match the published source; shared Git
+metadata and all original source directories remain unchanged. This creates no
+new commit and performs no publication. Eight preparation and five canonical
+snapshot tests pass, including mismatched ambient HEAD and unchanged original
+HEAD. Final pinned preparation and real delivery still await the completed
+source candidate.
+
+Timeout regressions still called the removed retirement helper and expected an
+operational failure to exhaust a scientific hypothesis. Current production
+explicitly rejects that inference. Updated coverage exercises the actual repair
+and frozen-replay action producer, rejects recording a timeout as scientific
+null, and verifies a persisted historical timeout entry cannot block the exact
+arm. A genuine null still blocks the same data-generation identity and permits
+a changed identity; reading either historical entry leaves its bytes intact.
+All four focused regressions pass in 2.41 seconds. No production timeout policy,
+scientific gate, or ledger was changed to satisfy obsolete expectations.
+
+### Controller composition validation checkpoint
+
+Six fresh security/import tests pass in 24.83 seconds, including hostile
+`sitecustomize`, prior-lease launch-receipt replay, copied journals, required
+split-controller pins, and the nested CLI. The fixture complexity finding is
+resolved. These checks do not yet close two remaining composed runs.
+
+The two-repair supervisor regression reached both successor activations and
+wrote both evaluator rows, but its 170.20-second bounded invocation exited 124.
+Its final preservation and severed-boundary assertions are unverified; this is
+not passing evidence. A separate unchanged-workload controller-upgrade test woke
+and executed the original driver, then failed because it expected exit 0/2
+instead of the actual typed pending exit 10. The corrected assertion still
+requires a successful bounded rerun. Remaining work is reducing redundant
+validation overhead without caching stale authority across operation boundaries,
+then rerunning both scenarios within the canonical shard allowance.
+
+Arithmetic review found a certification defect: valid decimal input could render
+as exponent notation rejected by the grammar. Numeric serialization now emits
+grammar-safe fixed-point decimal, and finalization revalidates the returned
+canonical text. Tiny, large, and negative-expression counterexamples preserve
+evaluated values. The model factory now binds grammar identity to persisted
+training-pack identity; data admission no longer imports model code.
+
+Final arithmetic ownership is `dsl/arith_sketch.py` and `dsl/arith_completion.py`,
+with the legacy pack adapter delegating to that canonical owner. ADP/SDP/SAP
+counts return to 56/78/10. Parent reran all three focused files with normal
+repository conftest enabled: 58 tests pass in 8.59 seconds. All ten source/test
+hashes match the agent handoff. Independent final review and the complete signed
+gate remain required; these results establish constrained fixture integration,
+not arithmetic quality or shipment.
+
+Independent final arithmetic re-review accepts the numeric correction. All ten
+handoff hashes match before and after verification; the original tiny-decimal
+counterexample and negative/large numeric round trips remain grammar-valid with
+preserved values. No remaining finding was identified within this review scope.
+This closes the focused P1 finding, not whole-repository release acceptance.
+
+The cycle-stamp regression used an incomplete handoff fixture without its frozen
+creation time. Repairing the fixture exposed an unsafe broad exception handler:
+version provenance failures silently emitted unstamped observations. Closeout now
+propagates that failure instead of publishing an incomparable result. Three
+focused tests pass in 1.67 seconds, covering frozen timestamp, a real ledger
+partition, and unavailable-registry rejection. Ruff passes. Separate review is
+checking whether split-controller closeout attributes evaluation components to
+the workload source rather than the newer controller; that boundary is not yet
+claimed complete.
+
+Split-controller provenance review confirms that closeout currently rebuilds
+measurement versions from the imported controller registry, even though the
+evaluator retains workload stamps and diagnostic delivery separates measurement
+source from controller provenance. R31 and R33 currently share all four eval-key
+component values, so no partition drift was demonstrated for these retained
+measurements. The construction is still wrong: a later controller-only version
+change could repartition unchanged measurements. Correction now binds closeout
+to authenticated original measurement evidence and verifies comparison-component
+agreement; missing workload authority must not fall back to controller versions.
+
+Parent baseline audit rejected two upward changes introduced during concurrent
+validation: the continuous driver complexity ceiling had moved from 89 to 91,
+and its module ceiling from 12,184 to 12,196 lines. Both original ceilings are
+restored; legitimate decreases elsewhere are retained. Current code must meet
+the original limits through implementation changes. No release evidence may
+rely on the raised values. The exact rejected deltas are retained in
+`r33-baseline-upward-change-rejection.json`.
+
+Controller compatibility now passes 64 focused tests in 33.73 seconds. The
+corrected unchanged-workload supervisor regression passes in 77.96 seconds,
+proving fresh controller execution can wake the retained operation without
+rewriting its workload source. The two-repair regression still times out at
+120.06 seconds and remains incomplete. Optimization is restricted to reusing a
+freshly computed environment within the same validation boundary; publication
+fences and later revalidation are retained, with no cross-operation cache.
+
+
+### R33 retained regression closure, September 26
+
+The train-data fixture and prompt-contract checks passed seven tests in 19.65 seconds. Preference constraint-debt checks passed five tests in 1.98 seconds. These repairs retain the constrained-output and contamination gates. The prior fixture overlapped four of eight evaluation n-grams; the replacement prompt removes that fixture contamination without relaxing admission. The retained quality report admitted two human-curated records with two unique roots, rejected none, and emitted no warnings, recommendations, or experiment candidates. The report SHA-256 is `a56f4bea07f00d511b7f1297adaa594fa09553ada84ead4e73458b1e1625b4fe`; the feedback SHA-256 is `0e642434c048fdf57a744a3e2693dc2f2ecd263950bf020f1ba826e3ad5f8268`.
+
+The RSP-003 producer now declares the required canonical selection rule. Its fixture test passed in 8.19 seconds on CPU with one cold trial per arm and two warm trials: seven cold arms and one aggregated warm result completed, parity was 9/9, and the recommendation was `inconclusive_no_cold_gain`. This is fixture evidence with `promotion=false`, not model-quality or ship evidence. The fixture JSON SHA-256 is `6c782b3c103234638656e622afba36bdbd64ee79d339f10679c910b7ce9c4ef2`.
+
+The VCE-009, RSP-006, and PCT-008 selection-rule repairs passed 27 tests in 33.59 seconds after normal formatting and removal of redundant budget construction. The missing-checkpoint regression fixture now uses an opaque placeholder; its exact test passed in 1.90 seconds and Ruff passed. No checkpoint guard was changed.
+
+The controller composition regression completed two successive repairs and fresh supervisor starts in 87.47 seconds under its unchanged 120-second allowance. The unchanged-workload composition regression passed in 80.82 seconds. These are bounded integration tests, not live provider repair or completion of the retained scientific campaign. Documentation provenance checks passed 21 tests in 6.04 seconds. Missing measurement provenance remains a typed pending dependency; it does not produce an unstamped document or silently adopt the controller registry.
+
+
+The parent version-registry check passed against the ambient checkout baseline (148 changed files, 20 components). This is not final release verification. A complete quality analysis initially found no regressions and four unrecorded decreases. The subsequent guarded baseline write detected concurrent Revmath module growth from 1,083 to 1,085 lines and refused to write. The baseline remains unchanged pending that owner's size-preserving fix. The parent uses one fresh analysis for both regression rejection and recording decreases; an unchecked baseline refresh is not acceptance evidence.
+
+Final controller compatibility coverage completed in two bounded invocations: 53 tests passed in 59.23 seconds and 13 passed in 52.09 seconds. Both retained the 120-second allowance. This completes 66 focused compatibility tests after the startup consolidation, including the previously failing documentation wait boundary. The earlier combined invocation timed out and is not passing evidence. Live provider repair and the original scientific campaign remain separate, unfinished acceptance obligations.
+
+### Quality-update guard
+
+The canonical quality verifier now evaluates its fresh measurements before writing an existing baseline. A regression returns exit 1 without changing baseline bytes, even when another metric improves. Initial bootstrap and legitimate decreases remain supported. A changed Ruff version retains the documented complexity-only rebasing behavior; it does not excuse size or dependency regressions. The agent recorded 39 passing ratchet tests in 0.22 seconds and confirmed the prior implementation fails the new regression test. No baseline was refreshed by that implementation task.
+
+The parent independently reran all 39 quality-ratchet tests with normal repository fixtures: 39 passed in 1.17 seconds. The Revmath missing-Lean probe now uses a temporary directory outside the candidate checkout and cleans it up. Three focused tests passed in 13.25 seconds, including frozen corpus replay and byte-identical rebuild. The production module remains at its 1,083-line ceiling. Canonical read-only isolation is being checked separately; the local result alone does not prove that boundary.
+
+Canonical isolated Revmath validation completed successfully: all three regressions passed in 13.57 seconds with the candidate mounted read-only; the bounded worker completed in 29.46 seconds. This directly covers the original EROFS execution boundary. After the fix, the guarded quality update recorded decreases successfully. The parent audited every numeric baseline value against R32: no increases, ten decreases, and the tighter intermediate giant-test ceiling of 13,209 lines remains intact. These checks do not replace the final full merge gate.
+
+The post-update quality check passed with no regressions. The version-stamp check passed against the ambient checkout (152 changed files, 21 components). Independent review nevertheless found unfinished integration: documentation must authenticate the delivery projection, verify complete stamps against the locked workload, and distinguish failed evaluation stages. A separate launch audit found that adding repair configuration to an original null-config request could allocate a different driver activity instead of preserving its grant. These are implementation defects under repair, not waived acceptance conditions. The retained scientific grant remains 11 attempts and 2,300.157002612 seconds; no replacement budget is authorized by this review.
+
+A scratch-instrumented canonical replay of the original 21-node shard completed in 39.48 seconds. Grammar parity passed on this attempt; the retained R32 semantic-factor selection-rule test failed as expected from its old source. This attempt does not resolve the intermittent parity defect. Its trace is a passing comparison for further diagnosis, not evidence that the original failure can be ignored.
+
+Additional parent static feedback passed repository policy and canonical evidence-ledger byte reconstruction. GitHub connector readback confirms both PRs remain open and unmerged at their previously recorded heads. PR #1785 now explicitly distinguishes the unpublished R33 focused results from R32 remote-source evidence and lists the remaining integration defects. No local Git publication or merge substituted for the connector.
+
+A second fresh isolated diagnostic reproduced the grammar parity failure in 27.38 seconds. At prefix length five and remaining budget eight, both implementations reported complete/witness-pruned domains, but the packed result omitted component candidate `(45, 6)` whose reference terminal witness was `(45, 6, 8, 9, 7, 9, 7, 2)`. The earlier failure at the empty prefix is therefore not the only manifestation. The trace is retained as `parity-diagnostic-r32/r32-shard-attempt-002.json`; further instrumentation must retain the failing prefix rather than exhaust its trace limit at the initial prefix. No production guard has been relaxed.
+
+The three documentation review findings now have an implementation and mutation coverage: the delivery projection must match its committed artifact, every complete stamp binds to the immutable original workload, and evaluation stages require a successful exit or the existing authenticated gate-rejection contract. The final focused command passed 30 tests in 29.93 seconds, with 11 unrelated tests deselected; this is not full-suite evidence. The producer uses the existing artifact reader and gate-rejection predicate. Independent review remains required before source freeze.
+
+Independent closeout review found no remaining substantive defects in the authenticated host-configuration receipt or the revised documentation provenance boundary. The reviewer independently passed five controller authority tests in 6.98 seconds and twelve documentation mutation tests in 12.08 seconds. The parent reran the quality gate and version-stamp check after those edits; both passed, and whitespace validation was clean. A source-selection audit found that a future source-only quality-verifier change would omit its tests under `tests/test_quality`; an explicit canonical mapping and regression are being added. The current combined patch already selects the changed regression file, so this is a future source-owned coverage hole rather than evidence of a completed full gate.
+
+The apparent retained-campaign environment mismatch was traced to probe ordering: importing `slm_training` sets `ORT_DISABLE_TELEMETRY=1`. Measuring after the same initialization reproduces the original environment digest `cf6d72c2ed3942b17808f511f81c91c782c1f3d1e6ee3902d31e63c5c03090b6`; no environment successor, drift exception, or grant reset was required. This is a configuration-identity diagnosis, not a resumed scientific cycle. The ordinary-supervisor null-to-configured repair regression passed in 57.67 seconds while retaining the original request, activity, grant, and prior charges.
+
+The source-selection hole is closed: a quality-verifier source change selects `tests/test_quality`, and unrelated explicitly changed tests remain in the selected union. The focused selection suite passed 27 tests in 0.77 seconds; source module size stayed at 893 lines and the existing test module shrank from 507 to 505 lines.
+
+The retained science runtime uses its original native Node 22 layout, not the flattened verifier mount that lost SDK dependencies. Its original SDK resolved and parsed YAML successfully and imported 315 exports. The new controller verification SDK remains separate; changing the original science SDK path would alter the bound workload identity and was not done. These read-only checks invoked no provider and changed no scientific source.
+
+The next parity hypothesis follows a concrete source mismatch: the packed witness bound passes a live Lark numeric state ID into an adapter indexed by canonical state colors. The artifact builder explicitly canonicalizes because Lark IDs vary with process set iteration. Lockstep language certification does not establish numerical equality between those state spaces. This can explain process-dependent negative pruning; the owner is validating the mapping and a state-renumbering regression before changing production behavior. This paragraph records a hypothesis, not a completed fix.
+
+### Retained RICO fixture and unknown-cause recovery regressions
+
+The RICO fixture test passed in 5.93 seconds on September 27 at 00:00:24 UTC. Its 80 candidates produce two admitted records and 78 accounted rejections: 56 duplicates, 20 evaluation overlaps, and two verification failures. The regression now asserts complete accounting and the required low-yield/leakage warnings and recommendations instead of assuming four survivors. No synthesis, deduplication, contamination, or verification gate changed. This fixture exposes poor yield; it is not a repaired production corpus or training-readiness claim. The measured JSON retains the quality report and feedback. The rejection ledger SHA-256 is `19b686d9c0d2e87c751703a8cc60b1cab1a80edf00881f0cb01d88b8f37a58d6`.
+
+Five recovery/park tests passed in 1.88 seconds after correcting the unknown-cause expectation: an unclassified deficit requires bounded harness diagnosis, not an invented data-rebuild cause. Original timed-out R32 shards remain incomplete evidence; the focused successful invocations are recorded separately.
+
+The downstream delivery-consumer defect was reproduced before repair: a fresh worker had no repository publication context despite a bound receipt. The fixed consumer authenticates the live receipt and configuration bytes before passing a configuration view only to publication scope; the logical request remains unchanged. The complete post-fix 39-test compatibility suite passed in 31.11 seconds, including fresh-worker publication-context assertions and configuration/receipt/stale-lease/copied-journal rejection. Repeated lock-wait timeouts before execution were not counted as test results. The parent reserved a slot by stopping future R32 timer activations, preserved its running worker, and restored the minute timer immediately after the successful suite.
+
+The prepublication inventory reconstructs the original R32 tree exactly and currently sees 9,931 successor source paths, 90 changed paths, 20 additions, and no deletions. This inventory is explicitly unfrozen while the grammar fix is in progress. A review against R32, rather than the ambient local HEAD, caught a missing ownership-map component history update for the quality-test selection change; that component is now v30. The broader ambient-HEAD version check had passed and was insufficient to establish this successor-specific obligation.
+
+The parent independently confirmed the state-namespace defect by walking the live parser and the certified adapter in lockstep over the existing certification corpus. Certification reports equal behavior, but 30 positions produce different bounds when the live state number is incorrectly used as an adapter index. Before a TextContent string, live state 114 corresponds to canonical state 65: the misindexed bound is two while the canonical bound is one. This establishes a concrete implementation bug independently of whether a random process reproduces the parity assertion. The raw probe is retained in the measured JSON. Production correction and regression validation remain pending.
+
+### State-ID correction and actual-worktree validation
+
+The mapping repair initially existed in the dirty root checkout rather than the R33 candidate. The parent detected the mismatch by comparing source bytes, preserved the root edits, and transferred the reviewed three-file change into R33. The existing pure LALR adapter and bound calculation were extracted into `completion_lalr.py` to keep the source-size ratchet; equivalent control-flow simplifications remove the moved complexity violations. No baseline ceiling was raised. The runtime-only map comes from the exact parser reconstruction already used to verify the artifact. Frozen tensor and manifest files remain unchanged, including historical V1 consumer metadata.
+
+The adapter and artifact suites passed 18 tests in 4.99 seconds. Restoring the old kernel lookup in a fresh test process makes the new regression fail (bound zero instead of two); the corrected implementation passes, including a deliberate state-ID offset through the kernel consumer. The exact previously failing 21-node shard then passed in canonical isolation: 21 tests in 27.78 seconds, worker 46.76 seconds. That shard ran before the subsequent equivalent complexity cleanup. Full corpus parity is being checked in bounded groups; one passing shard is not the full parity obligation.
+
+Independent review found no substantive defect in the four-file mapping repair. The checked runtime map covers the exact parser, missing IDs disable the optional bound, and serialized artifact bytes remain unchanged. After the complexity cleanup, all 18 adapter/artifact tests passed again. The combined invocation also passed the three original staged-materialization failures, but its fourth staged legacy-byte test failed and remains under investigation; the combined invocation is not reported as wholly passing. The quality check found no regressions and three recordable decreases: artifact module 883 to 693 lines, its complexity findings six to three, and kernel 676 to 674 lines.
+
+The existing learning-comparison CLI is now registered through the canonical `slm experiments learning-comparison` command, with explicit fixture activation retained and the experiments guide updated. Its focused registry/guide/dispatch suite passed 16 tests in 4.57 seconds. No parallel CLI implementation was introduced.
+
+The full existing parity corpus now passes after the mapping correction: all eleven parameterized programs, every exercised prefix and configured budget, completed in three bounded groups (four tests in 76.11 seconds, four in 48.41 seconds, three in 6.77 seconds). No parity assertion or false-singleton guard was removed. The measured JSON retains each JUnit digest and exact case names. This is focused local validation, not the immutable full merge gate.
+
+Fast static feedback passed 16 of 18 obligations. The extraction moved the adapter declaration, so the canonical ownership map and generated prose were updated to name the actual helper while retaining the existing artifact builder/loader owner; its verifier now passes. The remaining static failure requires canonical extraction of four newly added parameter tables and is being corrected without dropping cases.
+
+The staged legacy-byte mismatch is resolved without changing the expected digest or producer: the parent invocation omitted the approved DESIGN.md bridge path. With both bridge paths matching the canonical runner, all four staged-materialization tests passed in 0.80 seconds in R33. The temporary staged-plan fixture pins generator and validator versions from the active registry; production executable-plan validation remains strict. The earlier root-checkout test result was not used as R33 proof. The missing-bridge run remains documented as invalid validation context rather than a production regression or a reason to update golden bytes.
+
+### Final R33 focused closeout before immutable verification
+
+All eighteen fast/static obligations passed with `release_authorized=false`, as required for local feedback. Canonical parameter-table extraction preserved case identities and function bodies; its 97 affected tests passed in 14.91 seconds. The final ordinary-supervisor two-repair regression, including the completed host-configuration consumer wiring, passed in 77.35 seconds under the unchanged 120-second allowance. The original training prefix was not repeated. The parent restored the minute verifier after the reserved test slot.
+
+These results close the known focused failures and support publishing the successor for independent full verification. They do not establish full release authorization, live Codex repair acceptance, completed retained two-arm science, or merged delivery. Those obligations remain open.

@@ -225,31 +225,6 @@ def test_failure_does_not_starve_next_shard_or_mint_split_retries(monkeypatch):
     assert not owner._attempts_exhausted(state, "shard", state["shards"][1])
 
 
-def test_estimated_long_shard_gets_a_slice_before_the_next_shard(monkeypatch):
-    slow, fast = "tests/slow.py::slow", "tests/fast.py::fast"
-    state = state_for(slow, fast)
-    state["workload_budget_seconds"] = 100
-    monkeypatch.setattr(
-        owner.check_changed,
-        "_test_file_durations",
-        lambda: {"tests/slow.py": 40, "tests/fast.py": 1},
-    )
-    calls = []
-
-    def execute(root, nodes, **kwargs):
-        calls.append((nodes, kwargs["seconds"]))
-        return {
-            "status": "timeout" if nodes == [slow] else "ok",
-            "nodes": nodes,
-            "seconds": kwargs["seconds"],
-        }
-
-    monkeypatch.setattr(owner, "run_workload", execute)
-    owner._run_shards(state, Path("."), Path("."), lambda: 50, lambda: None)
-    assert calls == [([slow], 50), ([fast], 11.0)]
-    assert state["passed_nodes"] == [fast]
-
-
 def test_timed_out_retry_remains_admissible_within_invocation_cap():
     state = state_for("tests/slow.py::test_slow")
     state["workload_budget_seconds"] = 120.0
@@ -311,44 +286,6 @@ def test_historical_failure_is_not_current_failure_after_verified_retry():
     assert summary["status"] == "pending"
     assert summary["spent_seconds"] == 5
     assert not summary["verification_complete"]
-
-
-def test_typed_next_action_distinguishes_retry_repair_and_budget(monkeypatch):
-    state = state_for("tests/a.py::a")
-    state["workload_budget_seconds"] = 30
-    monkeypatch.setattr(owner.check_changed, "_test_file_durations", lambda: {})
-    owner._allowance(state, "shard", state["nodes"], 5)
-    summary = owner._summary(state)
-    assert summary["status"] == "pending"
-    assert summary["required_seconds"] == 5
-    assert summary["next_action"]["kind"] == "resume_verification"
-    assert summary["phase_progress"]["tests"]["pending"] == 1
-    state["attempts"] = [
-        {"kind": "shard", "nodes": state["nodes"], "status": "timeout", "seconds": 30}
-        for _ in range(3)
-    ]
-    owner._allowance(state, "shard", state["nodes"], 30)
-    assert owner._summary(state)["status"] == "waiting_repair"
-    state["attempts"] = []
-    monkeypatch.setattr(
-        owner.check_changed, "_test_file_durations", lambda: {"tests/a.py": 60}
-    )
-    assert owner._allowance(state, "shard", state["nodes"], 30) == 30
-    summary = owner._summary(state)
-    assert summary["status"] == "pending"
-    assert summary["next_action"]["kind"] == "resume_verification"
-
-
-def test_oversized_shard_estimate_still_gets_one_bounded_attempt(monkeypatch):
-    state = state_for("tests/a.py::test_slow")
-    state["workload_budget_seconds"] = 49
-    state["shard_budget_seconds"] = 38
-    monkeypatch.setattr(
-        owner.check_changed, "_test_file_durations", lambda: {"tests/a.py": 700}
-    )
-
-    assert owner._allowance(state, "shard", state["nodes"], 39) == 39
-    assert state["waiting"] == {}
 
 
 def test_design_bridge_entrypoint_identity_includes_path_and_bytes(

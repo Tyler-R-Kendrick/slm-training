@@ -46,6 +46,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignGateV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
 )
 from slm_training.autoresearch.schemas import CampaignBudget, CampaignSpec
 from slm_training.autoresearch.storage import CampaignStore
@@ -276,6 +277,7 @@ class Vce009CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.seed,),
             budget=CampaignBudget(
                 max_experiments=self.n_baseline_plans * len(ARM_IDS),
@@ -342,20 +344,18 @@ class Vce009CampaignV1:
 def run_campaign(campaign: Vce009CampaignV1, *, root: Path) -> dict[str, Any]:
     """Run the fixture campaign in-process and persist a ``CampaignResultV1``
     payload under campaign governance. Never spawns a subprocess."""
+    manifest = campaign.manifest()
     store = CampaignStore(campaign.campaign_id, root)
     store.initialize(
         CampaignSpec(
             campaign_id=campaign.campaign_id,
             objective="Fixture-scale oracle/contrast evidence (VCE-009)",
             primary_metric="declared_factor_fidelity_rate",
-            budget=CampaignBudget(
-                max_experiments=campaign.n_baseline_plans * len(ARM_IDS),
-                max_wall_minutes=campaign.max_wall_minutes,
-            ),
+            budget=manifest.budget,
             created_at="1970-01-01T00:00:00Z",
         )
     )
-    lock = store.lock_experiment_campaign(campaign.manifest())
+    lock = store.lock_experiment_campaign(manifest)
 
     pool = load_fixture_plan_pool(limit=campaign.pool_size)
     candidates = [plan for _, plan in pool]

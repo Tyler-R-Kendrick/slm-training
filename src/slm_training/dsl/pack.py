@@ -124,6 +124,7 @@ class DslPack:
     statement_templates: tuple[tuple[str, str], ...] = ()
     canonicalize: Canonicalizer | None = None
     oracle: ValidityOracle | None = None
+    training_validator: Callable[[Any], None] | None = None
     corpus_generator: Callable[..., Any] | None = None
     scope_extractor: Callable[..., list[Any]] | None = None
     prop_order: Callable[[], Mapping[str, Sequence[str]]] | None = None
@@ -1102,13 +1103,12 @@ def _ensure_builtin_packs() -> None:
         register_pack(build_graphql_pack())
     except Exception:  # noqa: BLE001 - graphql pack is optional
         pass
-    # SRP-001 (SLM-441): opt-in symbolic-regression reference pack. Pure
-    # Python/Lark, no external bridge, so no defensive try/except is needed.
-    from slm_training.dsl.symbolic_regression_pack import (
-        build_symbolic_regression_pack,
-    )
+    from slm_training.dsl.symbolic_regression_pack import build_symbolic_regression_pack
+    from slm_training.dsl.arith_sketch import build_canonical_pack
+    from slm_training.dsl.arith_completion import completion_domain
 
     register_pack(build_symbolic_regression_pack())
+    register_pack(build_canonical_pack(DslPack, PlaceholderPolicy, completion_domain))
     _BUILTINS_LOADED = True
 
 

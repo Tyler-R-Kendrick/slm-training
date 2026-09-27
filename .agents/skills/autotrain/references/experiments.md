@@ -27,10 +27,14 @@ slm experiments scaling-ladder --family <f> --arms <n>
 slm experiments mixture-search --train-dir ... --test-dir ...
 slm experiments recipe-evolution --campaign-id g2 --dry-run
 slm experiments reproduce-baseline --train-dir ... --test-dir ... --seeds 3
+slm experiments learning-comparison prepare --run-id <id> --enable-fixture-experiment
 ```
 
-(`slm experiments <action>` ≡ `python -m scripts.run_*` — `slm list` shows the
-mapping.)
+`slm list` shows each command’s target module.
+
+`learning-comparison` routes to the canonical autonomous-learning CLI. Its
+`prepare`, `corrective`, and `fidelity` phases require explicit
+`--enable-fixture-experiment`; fixture results never establish ship readiness.
 
 ## Key flags
 

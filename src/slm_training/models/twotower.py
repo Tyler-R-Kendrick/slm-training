@@ -18,21 +18,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from slm_training.data.record_admission import assert_training_batch, require_model_pack
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.dsl.language_contract import (
     OUTPUT_CONTRACT_VERSION,
-    assert_symbol_only_output,
     require_current_output_contract,
 )
-from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
     ChoiceGenerationResult,
     RuntimeSymbol,
-    assert_canonical_template_markers,
-    assert_no_template_semantic_labels,
     choice_generation_fingerprint,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -63,6 +60,7 @@ from slm_training.models.decode_stats import (
 from slm_training.runtime.decode_schedule import plan_prefill, record_plan
 from slm_training.models.grammar import (
     CompletionBatchCache,
+    active_dsl,
     GrammarDecodeState,
     apply_structural_bias,
     exact_forced_token_id,
@@ -645,6 +643,7 @@ class TwoTowerConfig:
     # compositional = legacy OpenUITokenizer v2; lexer = DSLNativeTokenizer
     # compositional | lexer | choice (B1 pure grammar-choice stream)
     output_tokenizer: str = "lexer"
+    training_pack_id: str = "openui"
     # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
     use_symbol_table: bool = True
     # C1: absolute (<BIND_j>) | relative (<BINDDEF>/<BINDREL_±k> De Bruijn refs).
@@ -3439,11 +3438,7 @@ class TwoTowerModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
-        for record in batch:
-            assert_no_template_semantic_labels(record.prompt, record.design_md)
-            assert_canonical_template_markers(record)
-            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
-            assert_role_safe_output(record.openui, output_kind=record.target_kind)
+        assert_training_batch(batch, self.config.training_pack_id)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -13390,6 +13385,7 @@ class TwoTowerModel(nn.Module):
         """Batched generate — preferred for eval throughput."""
         from slm_training.runtime.telemetry import timed
 
+        require_model_pack(self.config.training_pack_id, active_dsl())
         self.eval()
         if not prompts:
             return []
@@ -13477,6 +13473,7 @@ class TwoTowerModel(nn.Module):
         _opaque_slot_projection: bool = False,
     ) -> list[str]:
         """Generate while scoping opaque codec identity to this call only."""
+        require_model_pack(self.config.training_pack_id, active_dsl())
         require_constrained_generation(
             grammar_constrained,
             configured=bool(self.config.grammar_constrained),
@@ -16264,10 +16261,7 @@ class TwoTowerModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
-        from slm_training.data.record_admission import assert_training_record
-
-        for record in records:
-            assert_training_record(record)
+        assert_training_batch(records, cfg.training_pack_id)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

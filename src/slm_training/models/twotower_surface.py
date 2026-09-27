@@ -75,11 +75,13 @@ def canonical_valid_openui(text: str) -> str | None:
     """Return serialized OpenUI if parseable and non-trivial; else None."""
     try:
         from slm_training.dsl.parser import validate
-    except TimeoutError:
-        raise
-    except Exception:  # noqa: BLE001
-        return None
-    try:
+        from slm_training.dsl.pack import get_pack
+        pack = get_pack()
+        if pack.pack_id != "openui":
+            pack.require("oracle")(text)
+            canonical = pack.require("canonicalize")(text)
+            pack.require("oracle")(canonical)
+            return canonical
         program = validate(text)
     except TimeoutError:
         raise

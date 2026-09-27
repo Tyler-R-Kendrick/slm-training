@@ -1,103 +1,65 @@
-"""Timeout retirements keep data-generation in both identity hashes."""
+"""Operational timeouts never retire scientific hypotheses or erase identity."""
 
-from __future__ import annotations
-
-import importlib.util
-import json
 from pathlib import Path
 
-from slm_training.autoresearch.climb_policy import load_climb_policy
+import pytest
 
-_SCRIPT = (
-    Path(__file__).resolve().parents[2] / "scripts" / "run_autotrain_continuous.py"
+from slm_training.autoresearch.climb_policy import (
+    load_climb_policy,
+    load_loop_exhausted_ledger,
+    loop_data_eval_identity,
+    save_loop_exhausted_ledger,
 )
-_SPEC = importlib.util.spec_from_file_location("run_autotrain_continuous", _SCRIPT)
-assert _SPEC is not None and _SPEC.loader is not None
-_mod = importlib.util.module_from_spec(_SPEC)
-_SPEC.loader.exec_module(_mod)
+from slm_training.autoresearch.hillclimb import (
+    ExhaustedKnobEntry,
+    ExhaustedKnobLedger,
+    HillClimbError,
+    assert_matrix_knobs_not_exhausted,
+    knob_signature_sha256,
+)
 
 _GENERATION = {"unique_root_target": 8, "data_only": True}
 
 
-def test_timeout_retirement_matches_current_data_generation(tmp_path: Path) -> None:
-    root = tmp_path / "autoresearch"
-    loop_id = "loop-1"
-    campaign_id = "continuous-loop-test-c1"
-    camp = root / campaign_id
-    camp.mkdir(parents=True)
-    control_id = "c-test-control"
-    candidate_id = "c-test-data"
-    (camp / "campaign.json").write_text(
-        json.dumps({"campaign_id": campaign_id, "loop_id": loop_id})
-    )
-    (camp / "matrix-proposal.json").write_text(
-        json.dumps(
-            {
-                "hypotheses": [
-                    {
-                        "experiment": {
-                            "experiment_id": control_id,
-                            "knobs": {
-                                "train_version": "wf_smoke_v2",
-                                "eval_version": "e_test",
-                                "binder_arity_loss_weight": 0.0,
-                                "binder_arity_decode_weight": 0.0,
-                            },
-                        }
-                    },
-                    {
-                        "experiment": {
-                            "experiment_id": candidate_id,
-                            "knobs": {
-                                "train_version": "wf_smoke_v2",
-                                "eval_version": "e_test",
-                                "binder_arity_loss_weight": 1.0,
-                                "binder_arity_decode_weight": 1.0,
-                                "data_generation": _GENERATION,
-                            },
-                        }
-                    },
-                ]
-            }
-        )
-    )
-    (camp / "sdlc_delivery.json").write_text(
-        json.dumps(
-            {
-                "campaign_id": campaign_id,
-                "cycle_index": 1,
-                "candidate_id": candidate_id,
-                "control_id": control_id,
-            }
-        )
-    )
-    (camp / "cycle_handoff.json").write_text(
-        json.dumps(
-            {
-                "loop_id": loop_id,
-                "cycle_index": 1,
-                "cycle_intent": "retry_measurement",
-                "primary_metric": "smoke.structural_similarity",
-                "reasons": [f"candidate_runtime_unblock_reproduced:{candidate_id}"],
-            }
-        )
+def _identity(generation):
+    return loop_data_eval_identity(
+        load_climb_policy(), train_version="wf_smoke_v2", eval_version="e_test",
+        primary_metric="smoke.structural_similarity", direction="increase",
+        claim_class="diagnostic", extra={"data_generation": generation},
     )
 
-    policy = load_climb_policy()
-    kwargs = dict(
-        policy=policy,
-        train_version="wf_smoke_v2",
-        eval_version="e_test",
-        primary_metric="smoke.structural_similarity",
-        direction="increase",
-        claim_class="diagnostic",
-    )
-    matched, _ = _mod._sync_reproduced_timeout_retirements(
-        root, loop_id, campaign_id, data_generation=_GENERATION, **kwargs
-    )
-    assert matched == {"binder-arity"}
 
-    mismatched, _ = _mod._sync_reproduced_timeout_retirements(
-        root, loop_id, campaign_id, data_generation=None, **kwargs
+@pytest.mark.parametrize("reason", [
+    "reproduced_decode_timeout_retirement", "primary_lcb_within_noise",
+])
+def test_retirement_preserves_generation_and_rejects_timeout_authority(tmp_path: Path, reason: str):
+    identity, other = _identity(_GENERATION), _identity(None)
+    assert identity != other
+    signature = knob_signature_sha256({"binder_arity_loss_weight": 1.0})
+    entry = ExhaustedKnobEntry(
+        knob_signature_sha256=signature, data_eval_identity=identity,
+        claim_class="diagnostic", reason=reason,
     )
-    assert mismatched == set()
+    ledger = ExhaustedKnobLedger(entries=[entry])
+    path = save_loop_exhausted_ledger(ledger, tmp_path, "loop-1")
+    original = path.read_bytes()
+    restored = load_loop_exhausted_ledger(tmp_path, "loop-1")
+    kwargs = dict(knob_signatures=[signature], ledger=restored, claim_class="diagnostic")
+    if reason == "primary_lcb_within_noise":
+        with pytest.raises(HillClimbError, match="exhausted"):
+            assert_matrix_knobs_not_exhausted(data_eval_identity=identity, **kwargs)
+    else:
+        assert_matrix_knobs_not_exhausted(data_eval_identity=identity, **kwargs)
+    assert_matrix_knobs_not_exhausted(data_eval_identity=other, **kwargs)
+    assert restored.entries == [entry]
+    assert path.read_bytes() == original
+
+
+def test_operational_timeout_cannot_be_recorded_as_scientific_null():
+    ledger = ExhaustedKnobLedger()
+    with pytest.raises(ValueError, match="operational timeout is not scientific null"):
+        ledger.record_null(
+            knob_signature_sha256="a" * 64, data_eval_identity=_identity(_GENERATION),
+            claim_class="diagnostic", reason="reproduced_decode_timeout_retirement",
+        )
+    assert not ledger.entries

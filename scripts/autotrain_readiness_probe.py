@@ -115,8 +115,12 @@ def probe_continuation(inputs, *, root):
         and value["total_seconds"] - state["spent_seconds"] > HARNESS_FINALIZATION_RESERVE_SECONDS)
     if restored and blocked.get("repair_required") in {"driver_pending_no_progress", "continuation_no_progress"}:
         restored = _verified_cursor_advance(store, value, events, frozen, blocked, state)
+    if not restored and state_digest == frozen["blocked_state_digest"]:
+        from scripts.autotrain_cursor_reconcile import committed_prefix_reconcilable
+
+        restored = committed_prefix_reconcilable(store, value, state)
     return {"ready": restored, "state_digest": state_digest,
-            "reason": "current canonical cursor restored" if restored else "original continuation predicate remains unmet"}
+            "reason": "current canonical cursor safely resumable" if restored else "original continuation predicate remains unmet"}
 
 
 def _verified_cursor_advance(store, value, events, frozen, blocked, state):

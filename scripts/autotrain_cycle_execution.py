@@ -45,7 +45,6 @@ def continuous_owner(namespace):
     """Preserve dynamic-import callers and their patched canonical owner symbols."""
     return sys.modules.get(namespace["__name__"]) or SimpleNamespace(**namespace)
 
-
 def _run_arm(journal, continuous, cwd, deadline):
     value, state, store = journal.value, journal.state, journal.store
     eid = value["order"][state["index"]]
@@ -62,7 +61,9 @@ def _run_arm(journal, continuous, cwd, deadline):
     )
     before = {event["event_id"] for event in store.verify_event_chain()}
     attempts = start_attempts(journal, eid)
-    result = continuous._stage_command(
+    from scripts import autoresearch
+    from scripts.autotrain_nested_execution import run_nested
+    result = run_nested(cmd, store=store, cwd=cwd, cli=autoresearch) or continuous._stage_command(
         cmd,
         cwd=cwd,
         deadline=deadline,
@@ -242,7 +243,7 @@ def resume_cycle(cwd, root, loop_id, continuous, deadline=None):
             raise ValueError("invalid referenced driver campaign")
         store = CampaignStore(campaign_id, root)
         value = load_context(store, reference["input_digest"])
-        if value["loop_id"] != loop_id or value["cwd"] != str(Path(cwd).resolve()):
+        if value["loop_id"] != loop_id:
             raise ValueError("driver context workspace/loop mismatch")
         verify_inputs(store, cwd, value)
         journal = CycleJournal(store, value, started=started)
@@ -282,7 +283,7 @@ def completed_cycle_since(cwd, root, loop_id, campaign_id, event_ids):
         raise ValueError("same-campaign completion lacks one current retirement")
     store = CampaignStore(campaign_id, root)
     value = load_context(store, retired[0]["detail"]["input_digest"])
-    if value["loop_id"] != loop_id or value["cwd"] != str(Path(cwd).resolve()):
+    if value["loop_id"] != loop_id:
         raise ValueError("completed driver context workspace/loop mismatch")
     verify_inputs(store, cwd, value)
     journal = CycleJournal(store, value)
@@ -323,10 +324,10 @@ def driver_operation(request, continuous, cwd, root, loop_id):
     journal = CampaignStore("runtime", root / "loops" / loop_id)
     prior_events = {row["event_id"] for row in journal.verify_event_chain()}
     previous_campaign_id = continuous._latest_cycle(root, loop_id)[1]
-    reconciled = reconcile_interrupted_operation(request, journal, cwd, root, loop_id, previous_campaign_id)
-    if reconciled is not None:
-        return reconciled
     with operation_publication_scope(request, root, loop_id):
+        reconciled = reconcile_interrupted_operation(request, journal, cwd, root, loop_id, previous_campaign_id)
+        if reconciled is not None:
+            return reconciled
         returncode = continuous.main(request["driver_argv"])
     if type(returncode) is int and returncode == 10:
         return {
@@ -346,9 +347,10 @@ def driver_operation(request, continuous, cwd, root, loop_id):
         raise ValueError("driver exited zero without its required handoff")
     completion = None
     if campaign_id == previous_campaign_id:
-        completion = completed_cycle_since(
-            cwd, root, loop_id, campaign_id, prior_events
-        )
+        with operation_publication_scope(request, root, loop_id):
+            completion = completed_cycle_since(
+                cwd, root, loop_id, campaign_id, prior_events
+            )
     return {
         "returncode": returncode,
         "campaign_id": campaign_id,
@@ -374,7 +376,7 @@ def reconcile_interrupted_operation(request, journal, cwd, root, loop_id, campai
     if reference is not None:
         store = CampaignStore(reference["campaign_id"], root)
         value = load_context(store, reference["input_digest"])
-        if value["loop_id"] != loop_id or value["cwd"] != str(Path(cwd).resolve()):
+        if value["loop_id"] != loop_id:
             raise ValueError("interrupted driver context workspace/loop mismatch")
         verify_inputs(store, cwd, value)
         return None  # Ordinary main reentry owns cursor reconciliation, before setup.

@@ -225,6 +225,7 @@ def run_activity(
         )
         argv = [
             sys.executable,
+            "-I",
             "-c",
             entry,
             str(gate),

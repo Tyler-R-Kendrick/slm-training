@@ -47,3 +47,33 @@ def _completed_cursor_prefix(outcome, commands, position):
             if pending is None:
                 return False
     return index == position and not pending
+
+
+def committed_prefix_reconcilable(store, value, state):
+    """Read-only scheduling proof; live driver still owns fenced settlement."""
+    from pathlib import Path
+    from scripts.autoresearch_command_cursor import CommandCursor
+    from scripts.autotrain_cycle_context import read_artifact
+    from slm_training.autoresearch.schemas import ExperimentSpec
+    from slm_training.levers import HARNESS_FINALIZATION_RESERVE_SECONDS
+
+    if (state["phase"] != "arms" or state["inflight"] is None
+            or state.get("repair_required") not in {None, "driver_attempt_requires_reconciliation"}
+            or state["index"] >= len(value["order"])
+            or value["total_seconds"] - state["spent_seconds"] <= HARNESS_FINALIZATION_RESERVE_SECONDS):
+        return False
+    eid = value["order"][state["index"]]
+    arm = value["arms"][eid]
+    experiment = ExperimentSpec.model_validate_json(Path(value["by_id"][eid]).read_text())
+    grant = store.load_campaign().budget.continuation_grant
+    cursor = CommandCursor(store, experiment, arm["commands"], arm["manifest_digest"],
+        value["execution_identity"], value["total_seconds"], cwd=value["cwd"],
+        max_attempts=grant.max_attempts if grant else None)
+    locks = [e for e in store.verify_event_chain()
+             if e["event_type"] == "command_cursor_locked" and e["experiment_id"] == eid]
+    if len(locks) != 1 or read_artifact(store, "command_cursor_inputs", locks[0]["artifact_sha256"]) != cursor.inputs:
+        return False
+    cursor._replay(read_only=True)
+    return (cursor.unresolved and cursor.remaining > HARNESS_FINALIZATION_RESERVE_SECONDS
+            and (grant is None or cursor.attempt < grant.max_attempts)
+            and _resumable_cursor_outcome(cursor) is not None)

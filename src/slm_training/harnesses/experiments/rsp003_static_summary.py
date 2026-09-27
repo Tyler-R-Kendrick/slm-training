@@ -36,6 +36,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignGateV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     campaign_manifest_sha256,
 )
 from slm_training.autoresearch.schemas import CampaignBudget, CampaignSpec
@@ -450,11 +451,7 @@ class Rsp003CampaignV1:
             campaign_id=self.campaign_id,
             experiment_id=CATALOGUE_ID,
             hypothesis=catalogue.hypothesis,
-            decision=(
-                "Adopt packed semantic summaries only when domain parity stays "
-                "exact at 1.0 and cold-path summary overhead is measurably "
-                "below exact live construction. Fixture evidence only — never promote."
-            ),
+            decision="Exact parity, lower cold overhead; fixture only, never promote.",
             endpoints=(
                 CampaignEndpointV1(
                     endpoint_id=f"{CATALOGUE_ID}_primary",
@@ -465,6 +462,7 @@ class Rsp003CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.seed,),
             budget=CampaignBudget(
                 max_experiments=self.cold_trials_per_arm * len(COLD_ARMS)

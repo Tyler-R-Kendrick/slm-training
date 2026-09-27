@@ -59,9 +59,11 @@ def test_formal_obligations_nonempty_and_lockable() -> None:
     assert len({o.template_id for o in obligations}) == len(obligations)
     campaign = build_campaign(source_commit="a" * 40, source_dirty=False)
     assert campaign.formal_obligations
+    assert campaign.selection_rule == "best_by_primary_then_smallest"
     assert any(a.kind == "formal_preflight" for a in campaign.artifact_requirements)
     lock = lock_campaign(campaign)
     assert lock.manifest_sha256
+    assert lock.manifest.selection_rule == campaign.selection_rule
 
 
 def test_committed_preflights_are_formal_preflight_v1() -> None:

@@ -8,6 +8,7 @@ import pytest
 from scripts import merge_verification as gate
 from scripts import check_changed
 from tests.test_scripts.test_merge_verification_scheduling import state_for
+from scripts.verify_merge_ready import Step
 
 
 def test_budget_exhaustion_preserves_next_pending_cursor_across_json_restart(monkeypatch):
@@ -35,6 +36,170 @@ def test_budget_exhaustion_preserves_next_pending_cursor_across_json_restart(mon
     assert calls == nodes[262:264]
     assert len(state["shards"]) == 512
     assert sorted(state["passed_nodes"]) == sorted(nodes)
+
+
+def test_fresh_resume_skips_completed_phases_and_funds_full_estimate(
+    tmp_path, monkeypatch
+):
+    node = "tests/test_slow.py::test_slow"
+    state = state_for(node)
+    state["static"]["certificate"] = {"status": "ok", "exit_code": 0}
+    state["attempts"] = [
+        {"kind": "shard", "nodes": [node], "status": "timeout", "seconds": 100.0}
+    ]
+    state["shard_budget_seconds"] = 99.0
+    now = [100.0]
+    monkeypatch.setattr(gate.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(gate.check_changed, "_test_file_durations", lambda: {})
+    phase_calls = []
+    workload_calls = []
+
+    def phase(_state, kind, callback, *, fast_persist):
+        phase_calls.append(kind)
+        if kind in {"static", "collection"}:
+            now[0] += 2.0  # No-op phase setup exceeds old one-second haircut.
+        return callback()
+
+    def execute(root, nodes, **kwargs):
+        workload_calls.append((nodes, kwargs["seconds"]))
+        return {"status": "ok", "nodes": nodes, "seconds": kwargs["seconds"]}
+
+    class Cache:
+        directory = tmp_path
+
+        def save(self, _state):
+            pass
+
+    monkeypatch.setattr(gate, "run_isolated_phase", phase)
+    monkeypatch.setattr(gate, "run_workload", execute)
+    monkeypatch.setattr(gate, "_identity_mismatch", lambda *_args: "")
+    result = gate._execute_pending(
+        state,
+        root=tmp_path,
+        cache=Cache(),
+        steps=(Step("certificate", ("python", "-c", "pass")),),
+        run_step=None,
+        deadline=220.0,
+        step_seconds=100.0,
+    )
+
+    assert phase_calls == ["shard"]
+    assert workload_calls == [([node], 99.0)]
+    assert state["passed_nodes"] == [node]
+    assert result["verification_complete"]
+
+
+def test_estimated_long_shard_defers_when_tail_is_shorter_than_estimate(monkeypatch):
+    slow, fast = "tests/slow.py::slow", "tests/fast.py::fast"
+    state = state_for(slow, fast)
+    state["workload_budget_seconds"] = 100
+    monkeypatch.setattr(
+        gate.check_changed,
+        "_test_file_durations",
+        lambda: {"tests/slow.py": 40, "tests/fast.py": 1},
+    )
+    calls = []
+
+    def execute(root, nodes, **kwargs):
+        calls.append((nodes, kwargs["seconds"]))
+        return {
+            "status": "timeout" if nodes == [slow] else "ok",
+            "nodes": nodes,
+            "seconds": kwargs["seconds"],
+        }
+
+    monkeypatch.setattr(gate, "run_workload", execute)
+    gate._run_shards(state, Path("."), Path("."), lambda: 50, lambda: None)
+    assert calls == [([fast], 11.0)]
+    waiting = next(iter(state["waiting"].values()))
+    assert waiting["required_seconds"] == 81.0
+    assert waiting["available_seconds"] == 50.0
+    assert state["passed_nodes"] == [fast]
+
+
+def test_typed_next_action_distinguishes_retry_repair_and_budget(monkeypatch):
+    state = state_for("tests/a.py::a")
+    state["workload_budget_seconds"] = 30
+    monkeypatch.setattr(gate.check_changed, "_test_file_durations", lambda: {})
+    gate._allowance(state, "shard", state["nodes"], 5)
+    summary = gate._summary(state)
+    assert summary["status"] == "pending"
+    assert summary["required_seconds"] == 11.0
+    assert summary["next_action"]["kind"] == "resume_verification"
+    assert summary["phase_progress"]["tests"]["pending"] == 1
+    state["attempts"] = [
+        {"kind": "shard", "nodes": state["nodes"], "status": "timeout", "seconds": 30}
+        for _ in range(3)
+    ]
+    gate._allowance(state, "shard", state["nodes"], 30)
+    assert gate._summary(state)["status"] == "waiting_repair"
+    state["attempts"] = []
+    monkeypatch.setattr(
+        gate.check_changed, "_test_file_durations", lambda: {"tests/a.py": 60}
+    )
+    assert gate._allowance(state, "shard", state["nodes"], 30) == 30
+    summary = gate._summary(state)
+    assert summary["status"] == "pending"
+    assert summary["next_action"]["kind"] == "resume_verification"
+
+
+def test_oversized_shard_estimate_waits_for_full_bounded_slice(monkeypatch):
+    state = state_for("tests/a.py::test_slow")
+    state["workload_budget_seconds"] = 49
+    state["shard_budget_seconds"] = 38
+    monkeypatch.setattr(
+        gate.check_changed, "_test_file_durations", lambda: {"tests/a.py": 700}
+    )
+
+    assert gate._allowance(state, "shard", state["nodes"], 39) == 0.0
+    wait, = state["waiting"].values()
+    assert wait["required_seconds"] == 49.0
+    assert wait["available_seconds"] == 39.0
+
+
+@pytest.mark.parametrize("tail", [60.0, -2.02556])
+def test_timed_out_shard_waits_for_grown_floor_without_charging_retry(monkeypatch, tail):
+    nodes = [
+        "tests/test_run_var2_01_ops_vocab_first_consumer.py::test_adequacy_audit_reports_all_four_required_tables",
+        "tests/test_web/test_run_data_endpoints.py::test_run_training_data_joins_run_to_dataset",
+    ]
+    state = state_for(*nodes)
+    state["shards"] = [nodes]
+    already_passed = "tests/preserved.py::test_prior_pass"
+    state["passed_nodes"] = [already_passed]
+    state["workload_budget_seconds"] = 100.0
+    state["shard_budget_seconds"] = 100.0
+    timed_out = {"kind": "shard", "nodes": nodes, "status": "timeout", "seconds": 30.895}
+    state["attempts"] = [timed_out]
+    before_shards = [list(shard) for shard in state["shards"]]
+    before_passed = list(state["passed_nodes"])
+    before_attempts = list(state["attempts"])
+    calls = []
+    monkeypatch.setattr(gate.check_changed, "_test_file_durations", lambda: {})
+    monkeypatch.setattr(
+        gate,
+        "run_workload",
+        lambda root, shard, **kwargs: calls.append((shard, kwargs["seconds"]))
+        or {"status": "ok", "nodes": shard, "seconds": kwargs["seconds"]},
+    )
+
+    gate._run_shards(state, Path("."), Path("."), lambda: tail, lambda: None)
+    wait = next(iter(state["waiting"].values()))
+    assert calls == []
+    assert state["attempts"] == before_attempts
+    assert state["shards"] == before_shards
+    assert state["passed_nodes"] == before_passed
+    assert wait["required_seconds"] == pytest.approx(61.79)
+    assert 0 < wait["required_seconds"] <= state["workload_budget_seconds"]
+    assert wait["available_seconds"] == max(0.0, tail)
+    assert gate._summary(state)["required_seconds"] == pytest.approx(61.79)
+
+    gate._run_shards(state, Path("."), Path("."), lambda: 100.0, lambda: None)
+    assert calls == [(nodes, pytest.approx(61.79))]
+    assert len(state["attempts"]) == len(before_attempts) + 1
+    assert state["attempts"][0] == timed_out
+    assert state["shards"] == before_shards
+    assert state["passed_nodes"] == [already_passed, *nodes]
 
 
 def test_split_shards_wrap_and_resume_without_repeating_completed_nodes(monkeypatch):

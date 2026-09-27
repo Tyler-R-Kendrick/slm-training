@@ -208,7 +208,8 @@ def test_actual_runner_grant_mounts_transport_and_tears_it_down(upstream, tmp_pa
     source, runtime = tmp_path / "source", tmp_path / "runtime"
     source.mkdir()
     runtime.mkdir()
-    (source / "module.py").write_text("answer = 0\n")
+    (source / "src").mkdir()
+    (source / "src/module.py").write_text("answer = 0\n")
     executable = runtime / "agent-fixture"
     executable.write_text(
         "#!/usr/bin/python3\nimport http.client,json,time\nfrom pathlib import Path\n"
@@ -219,7 +220,7 @@ def test_actual_runner_grant_mounts_transport_and_tears_it_down(upstream, tmp_pa
     executable.chmod(0o700)
     request_value = make_request.__wrapped__(tmp_path)
     grant = request_value.grant.model_copy(update={"executable": str(executable), "executable_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(), "network": "approved_provider_only", "provider_endpoint": endpoint, "interrupt_seconds": 30})
-    request_value = request_value.model_copy(update={"grant": grant, "allowed_paths": ("module.py",), "blocker": request_value.blocker.model_copy(update={"source_digest": manifest_digest(tree_manifest(source))})})
+    request_value = request_value.model_copy(update={"grant": grant, "allowed_paths": ("src/module.py",), "blocker": request_value.blocker.model_copy(update={"source_digest": manifest_digest(tree_manifest(source))})})
     runner = BubblewrapAgentRunner(source=source, attempt_root=tmp_path / "attempts", runtime_roots=(runtime,))
     assert runner.capability(request_value) is None
     result = runner.run(request_value, (str(executable),), inputs={}, progress=lambda: None,

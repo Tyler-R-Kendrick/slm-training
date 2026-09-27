@@ -91,13 +91,13 @@ def is_latency_probe_command(command: list[str]) -> bool:
 
 
 def _stage_environment(
-    experiment: ExperimentSpec, command: list[str]
+    experiment: ExperimentSpec, command: list[str], *, cwd: Path
 ) -> dict[str, str] | None:
-    """Run repo CLIs from this checkout and bound scratch CPU threads."""
+    """Scientific subprocess imports belong only to the selected workload."""
     if len(command) < 3 or command[1] != "-m" or not command[2].startswith("scripts."):
         return None
-    env = {**os.environ}
-    env["PYTHONPATH"] = os.pathsep.join(filter(None, (str(Path(__file__).resolve().parents[2]), env.get("PYTHONPATH"))))
+    env = {key: value for key, value in os.environ.items() if key != "PYTHONHOME"}
+    env["PYTHONPATH"] = str(Path(cwd).resolve() / "src")
     if experiment.knobs.context_backend == "scratch" and command[2] in {"scripts.train_model", "scripts.evaluate_model"}:
         env.update(OMP_NUM_THREADS="1", MKL_NUM_THREADS="1")
     return env
@@ -1181,7 +1181,7 @@ def execute_commands(
         completed = run_bounded_process(
             command,
             cwd=cwd,
-            env=_stage_environment(experiment, command),
+            env=_stage_environment(experiment, command, cwd=cwd),
             interrupt_after_seconds=interrupt_after,
             kill_grace_seconds=grace,
         )

@@ -19,7 +19,6 @@ backs off; soft failures heal and immediately continue. Parked
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
@@ -182,6 +181,9 @@ def _write_family_closures(log_event) -> None:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--controller-root", type=Path)
+    parser.add_argument("--controller-source-digest")
+    parser.add_argument("--controller-runtime-digest")
     parser.add_argument("--loop-id", default="continuous-openui-local")
     parser.add_argument(
         "--root",
@@ -288,6 +290,17 @@ def _supervise(args, runtime, common: dict) -> int:
                 os.environ["AUTOTRAIN_SUPERVISOR_WORK_DEADLINE"] = previous
 
 
+def _supervise_recovered(args, runtime, common, recovered):
+    from scripts.autotrain_cycle_prepare import pin_locked_preregistration
+
+    if recovered == "waiting_delivery":
+        return 10
+    pinned = pin_locked_preregistration(args, Path(common["cwd"]), Path(common["root"]))
+    if pinned is not None and pinned != common["source_digest"]:
+        raise ValueError("preregistration physical source changed during recovery")
+    return _supervise(args, runtime, common)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     args._supervisor_started = time.monotonic()
@@ -305,16 +318,18 @@ def main(argv: list[str] | None = None) -> int:
         VerifiedRestart, recover_release, restart_supervisor,
     )
 
+    from scripts.autotrain_controller_execution import configured_controller, controller_authority_scope, configured_host_configuration
+
+    controller = configured_controller(args)
+    host_configuration = configured_host_configuration(args)
     cwd = Path.cwd().resolve()
     root = args.root.resolve()
     if Path(args.loop_id).name != args.loop_id or args.loop_id in {".", ".."}:
         raise ValueError("loop-id must be a single path component")
-    from scripts.autotrain_cycle_prepare import pin_locked_preregistration
     store = CampaignStore("runtime", root / "loops" / args.loop_id)
     try:
         # Lease ownership is acquired before importing or invoking the driver/heal.
-        with ActivityRuntime(store) as runtime:
-            pinned_source = pin_locked_preregistration(args, cwd, root)
+        with ActivityRuntime(store) as runtime, controller_authority_scope(runtime, controller, host_configuration=host_configuration) as environment:
             passes = sum(e["event_type"] == "supervisor_pass" for e in store.verify_event_chain())
             if args.max_cycles and args.stop_after_pass is None:
                 args.stop_after_pass = passes + args.max_cycles
@@ -323,20 +338,9 @@ def main(argv: list[str] | None = None) -> int:
                 "root": str(root),
                 "loop_id": args.loop_id,
                 "locked_diagnostic": bool(args.locked_preregistration),
-                "source_digest": pinned_source or _source_identity(cwd),
-                "environment_digest": digest(environment_identity()),
-                "repair_config": str(args.repair_config.resolve())
-                if args.repair_config
-                else None,
-                "repair_config_digest": hashlib.sha256(
-                    args.repair_config.read_bytes()
-                ).hexdigest()
-                if args.repair_config
-                else None,
-                "delivery_config": str(args.delivery_config.resolve())
-                if args.delivery_config else None,
-                "delivery_config_digest": hashlib.sha256(args.delivery_config.read_bytes()).hexdigest()
-                if args.delivery_config else None,
+                "source_digest": _source_identity(cwd),
+                "environment_digest": digest(environment if environment is not None else environment_identity()),
+                **host_configuration,
             }
             previous = {
                 sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)
@@ -348,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
                     runtime, common, sequence=passes, log_event=lambda e: print(json.dumps(e)),
                     run_operation=_run_operation,
                 )
-                return 10 if recovered == "waiting_delivery" else _supervise(args, runtime, common)
+                return _supervise_recovered(args, runtime, common, recovered)
             finally:
                 if runtime.cancel_event.is_set():
                     runtime.cancel_all(reason="explicit supervisor stop")

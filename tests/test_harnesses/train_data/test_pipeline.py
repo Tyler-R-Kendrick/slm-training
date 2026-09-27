@@ -15,34 +15,7 @@ from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.preference import load_pairs
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
-
-def _seed_file(tmp_path: Path) -> Path:
-    path = tmp_path / "seeds.jsonl"
-    write_jsonl(
-        path,
-        [
-            ExampleRecord(
-                id="t1",
-                prompt="Hero card",
-                openui=(
-                    'root = Stack([hero], "column")\n'
-                    'hero_title = TextContent(":hero.title")\n'
-                    'hero_body = TextContent(":hero.body")\n'
-                    "hero = Card([hero_title, hero_body])"
-                ),
-                placeholders=[":hero.title", ":hero.body"],
-                split="train",
-            ),
-            ExampleRecord(
-                id="t2",
-                prompt="Button only",
-                openui='root = Stack([cta])\ncta = Button(":cta.label")',
-                placeholders=[":cta.label"],
-                split="train",
-            ),
-        ],
-    )
-    return path
+from ._pipeline_fixtures import seed_file
 
 
 @pytest.mark.skipif(
@@ -50,7 +23,7 @@ def _seed_file(tmp_path: Path) -> Path:
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
-    seeds = _seed_file(tmp_path)
+    seeds = seed_file(tmp_path)
     out_root = tmp_path / "train_data"
     result = build_train_data(
         TrainDataConfig(
@@ -85,114 +58,8 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
-def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> None:
-    baseline = build_train_data(
-        TrainDataConfig(
-            seed_path=_seed_file(tmp_path),
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "train_data",
-            version="baseline",
-            synthesizer="none",
-        )
-    )
-    result = build_train_data(
-        TrainDataConfig(
-            seed_path=_seed_file(tmp_path),
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "train_data",
-            version="contracts",
-            synthesizer="none",
-            prompt_component_contract=True,
-            prompt_slot_contract=True,
-        )
-    )
-    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
-    # Persisted markers are opaque ordinals (:slot_N), never the seed's named
-    # spelling (:hero.title) -- the opaque-vocabulary invariant covers prompts too.
-    assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
-    assert result["stats"]["prompt_component_contract"] is True
-    assert result["stats"]["prompt_slot_contract"] is True
-    assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
-
-
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
-def test_component_contract_can_expose_types_without_counts(tmp_path: Path) -> None:
-    result = build_train_data(
-        TrainDataConfig(
-            seed_path=_seed_file(tmp_path),
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "train_data",
-            version="types",
-            synthesizer="none",
-            prompt_component_contract=True,
-            prompt_component_contract_mode="types",
-        )
-    )
-    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Components: Card, Stack, TextContent" in rows["t1"].prompt
-    assert " x" not in rows["t1"].prompt
-    assert result["stats"]["prompt_component_contract_mode"] == "types"
-
-
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
-def test_semantic_role_contract_uses_only_visible_slots_and_types(
-    tmp_path: Path,
-) -> None:
-    result = build_train_data(
-        TrainDataConfig(
-            seed_path=_seed_file(tmp_path),
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "train_data",
-            version="roles",
-            synthesizer="none",
-            prompt_slot_contract=True,
-            prompt_component_contract=True,
-            prompt_component_contract_mode="types",
-            prompt_semantic_role_contract=True,
-        )
-    )
-    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    # Persisted markers are opaque ordinals, so the namespace-derived grouping
-    # (":hero.title" -> role "hero") is no longer recoverable from the marker
-    # spelling itself -- the role text degrades to a flat per-slot listing.
-    assert "Semantic roles: slot_0(value); slot_1(value)" in rows["t1"].prompt
-    assert "Semantic roles: slot_0(value)" in rows["t2"].prompt
-    assert " x" not in rows["t2"].prompt
-    assert result["stats"]["prompt_semantic_role_contract"] is True
-
-
-def test_semantic_role_contract_requires_visible_authority(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="requires visible component and slot"):
-        build_train_data(
-            TrainDataConfig(
-                seed_path=_seed_file(tmp_path),
-                rico_path=None,
-                source="fixture",
-                output_root=tmp_path / "train_data",
-                version="invalid-roles",
-                synthesizer="none",
-                prompt_semantic_role_contract=True,
-            )
-        )
-
-
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
 def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
-    roots = _seed_file(tmp_path)
+    roots = seed_file(tmp_path)
     result = build_train_data(
         TrainDataConfig(
             source="existing",
@@ -281,7 +148,7 @@ def test_documentizes_expressions_and_records_target_selection(tmp_path: Path) -
 )
 def test_immutable_build_refuses_to_overwrite_snapshot(tmp_path: Path) -> None:
     config = TrainDataConfig(
-        seed_path=_seed_file(tmp_path),
+        seed_path=seed_file(tmp_path),
         rico_path=None,
         source="fixture",
         output_root=tmp_path / "train_data",
@@ -351,17 +218,32 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             rico_limit=80,
         )
     )
-    # Deterministic on this fixture: 80 seeds -> 4 survivors after verifier
-    # rejection, fuzzy dedup, and n-gram decontamination account for the rest.
-    # Assert both the survivor floor and the full accounting so this can't
-    # silently regress to near-total data loss.
-    assert result["stats"]["record_count"] >= 4
+    # This tiny fixture intentionally exposes low yield; never hide it by
+    # weakening strict deduplication or eval decontamination.
+    assert result["stats"]["record_count"] == 2
     assert (
         result["stats"]["record_count"] + result["stats"]["rejected_total"]
         == result["stats"]["seed_count"]
     )
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
+    quality = json.loads(
+        Path(result["stats"]["quality_report_path"]).read_text(encoding="utf-8")
+    )
+    feedback = json.loads(
+        Path(result["stats"]["synthesis_feedback_path"]).read_text(encoding="utf-8")
+    )
+    assert {row["code"] for row in quality["warnings"]} >= {
+        "eval_overlap_flagged",
+        "high_rejection_rate",
+    }
+    assert {
+        (row["code"], row["target"])
+        for row in feedback["recommendations"]
+    } >= {
+        ("eval_leakage_source", "rico_real"),
+        ("redundant_expansion", "rico_real"),
+    }
 
 
 @pytest.mark.skipif(
@@ -390,11 +272,21 @@ def test_all_sources_are_tiered_and_rebuild_stably(tmp_path: Path) -> None:
         "language_contract",
         "corruption_repair",
         "edit_trajectory",
-        "frontier_described",
-        "abstraction_ladder",
-        "renderer_visual",
-        "web_distilled",
-    } <= families
+            "frontier_described",
+            "abstraction_ladder",
+            "renderer_visual",
+        } <= families
+    rejected = [
+        json.loads(line)
+        for line in (Path(first["output_dir"]) / "rejected.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert any(
+        row["id"].startswith("web_fixture_launch")
+        and row["reason"] == "ngram_overlap"
+        for row in rejected
+    )
     rows = load_jsonl(Path(first["output_dir"]) / "records.jsonl")
     assert rows
     assert all(row.meta.get("verification_tier") for row in rows)

@@ -1071,8 +1071,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     from slm_training.harnesses.experiments.autonomous_learning.measurement_bundle import (
         prepare_bundle_remeasurement, finalize_bundle_remeasurement, validate_continuous_source,
     )
-
+    from scripts.autotrain_nested_execution import workload_cwd, validate_logical_source
     store = _store(args)
+    cwd = None
     campaign = store.load_campaign()
     matrix = _latest_formed_matrix(store)
     assert matrix is not None
@@ -1100,7 +1101,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         if campaign.loop_id is not None:
             assert campaign.upstream_commit is not None
             assert campaign.integration_commit is not None
-            validate_continuous_source(campaign, diagnostic_receipt)
+            cwd = validate_logical_source(store, campaign, diagnostic_receipt, validate_continuous_source, default=ROOT)
             if manifest.source_commit != campaign.integration_commit:
                 raise ValueError(
                     "continuous manifest source_commit must equal integration_commit"
@@ -1114,6 +1115,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             lock = store.load_experiment_campaign(experiment.experiment_id)
         except FileNotFoundError:
             lock = None
+    cwd = workload_cwd(store, ROOT) if cwd is None else cwd
     if args.execute and lock is None:
         raise ValueError("execution requires a preregistered --campaign-manifest lock")
     if getattr(args, "diagnostic_bundle_plan", None) and diagnostic_receipt is None:
@@ -1199,32 +1201,15 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "campaign_manifest_sha256": lock.manifest_sha256,
             },
         )
-    logical_grant = campaign.budget.continuation_grant
-    try:
-        grant = resolved_continuation_grant(
-            ROOT,
-            campaign.budget.logical_seconds,
-            logical_grant.max_attempts if logical_grant else None,
-            interrupt_seconds=logical_grant.interrupt_seconds if logical_grant else None,
-            finalization_reserve_seconds=(
-                logical_grant.finalization_reserve_seconds if logical_grant else None
-            ),
-        )
-    except TypeError as exc:
-        # Preserve compatibility with older injected/test resolvers while the
-        # canonical resolver carries the full grant contract.
-        if "unexpected keyword argument" not in str(exc):
-            raise
-        grant = resolved_continuation_grant(
-            ROOT, campaign.budget.logical_seconds,
-            logical_grant.max_attempts if logical_grant else None,
-        )
+    from scripts.autoresearch_continuation_identity import resolve_campaign_grant
+
+    grant = resolve_campaign_grant(campaign, cwd, resolved_continuation_grant)
     outcome = execute_with_continuation(
         experiment, commands,
         wall_seconds=min(float(INTERRUPT_AFTER_SECONDS), _bounded_experiment_seconds(
             campaign, getattr(args, "experiment_wall_seconds", None))),
         campaign_manifest_sha256=lock.manifest_sha256,
-        execute_commands=execute_commands, cwd=ROOT,
+        execute_commands=execute_commands, cwd=cwd,
         store=store,
         grant=grant,
     )
@@ -1292,7 +1277,6 @@ def cmd_run(args: argparse.Namespace) -> int:
     if optimum is not None and optimum.policy == "stop":
         return 2
     return 0 if outcome.status == "completed" else 2
-
 
 def cmd_formalize(args: argparse.Namespace) -> int:
     store = _store(args)

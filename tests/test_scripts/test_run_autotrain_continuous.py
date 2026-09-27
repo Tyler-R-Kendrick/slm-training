@@ -3264,8 +3264,8 @@ def test_recent_completed_nonpositive_slugs_reclassifies_stale_positive(
         "_classify_positive",
         lambda **_kwargs: {
             "positive": False,
-            "control_metrics": {"structural_similarity": 0.1},
-            "candidate_metrics": {"structural_similarity": 0.2},
+            "control_metrics": {"structural_similarity": 0.1, "parse_rate": 1.0},
+            "candidate_metrics": {"structural_similarity": 0.2, "parse_rate": 1.0},
             "reasons": ["primary_quality_win_rejected_latency_budget"],
         },
     )
@@ -3475,117 +3475,21 @@ def test_predecessor_reclassifies_stale_positive_under_current_policy(
     )
 
 
-def test_reproduced_timeout_retirement_blocks_reintroduced_exact_arm(
-    tmp_path: Path,
-) -> None:
-    from slm_training.autoresearch.climb_policy import (
-        load_climb_policy,
-        load_loop_exhausted_ledger,
+def test_reproduced_timeout_requires_repair_before_frozen_replay(tmp_path: Path) -> None:
+    import hashlib
+
+    manifest = tmp_path / "manifests" / "candidate.json"
+    manifest.parent.mkdir()
+    manifest.write_text('{"frozen": true}')
+    actions = []
+    assert _mod._route_timeout_actions(
+        actions, tmp_path, "candidate", "timeout-evidence", "retry_measurement",
+        {}, True, False,
     )
-
-    root = tmp_path / "autoresearch"
-    loop_id = "loop-1"
-    predecessor = None
-    for cycle in (1, 2):
-        campaign_id = f"continuous-loop-test-c{cycle}"
-        camp = root / campaign_id
-        camp.mkdir(parents=True)
-        control_id = f"c-test-c{cycle}-control"
-        candidate_id = f"c-test-c{cycle}-binder-arity"
-        (camp / "campaign.json").write_text(
-            json.dumps(
-                {
-                    "campaign_id": campaign_id,
-                    "loop_id": loop_id,
-                    "predecessor_campaign_id": predecessor,
-                }
-            )
-        )
-        (camp / "matrix-proposal.json").write_text(
-            json.dumps(
-                {
-                    "hypotheses": [
-                        {
-                            "experiment": {
-                                "experiment_id": control_id,
-                                "knobs": {
-                                    "train_version": "wf_smoke_v2",
-                                    "eval_version": "e_test",
-                                    "binder_arity_loss_weight": 0.0,
-                                    "binder_arity_decode_weight": 0.0,
-                                },
-                            }
-                        },
-                        {
-                            "experiment": {
-                                "experiment_id": candidate_id,
-                                "knobs": {
-                                    "train_version": "wf_smoke_v2",
-                                    "eval_version": "e_test",
-                                    "binder_arity_loss_weight": 1.0,
-                                    "binder_arity_decode_weight": 1.0,
-                                },
-                            }
-                        },
-                    ]
-                }
-            )
-        )
-        (camp / "sdlc_delivery.json").write_text(
-            json.dumps(
-                {
-                    "campaign_id": campaign_id,
-                    "cycle_index": cycle,
-                    "candidate_id": candidate_id,
-                    "control_id": control_id,
-                    "measurement_complete": cycle == 2,
-                    "reasons": [
-                        "measurement_incomplete:control:decode_timeout_count=1"
-                    ],
-                }
-            )
-        )
-        (camp / "cycle_handoff.json").write_text(
-            json.dumps(
-                {
-                    "loop_id": loop_id,
-                    "cycle_index": cycle,
-                    "cycle_intent": "retry_measurement" if cycle == 1 else "screening",
-                    "primary_metric": "smoke.structural_similarity",
-                    "reasons": (
-                        [f"candidate_runtime_unblock_reproduced:{candidate_id}"]
-                        if cycle == 1
-                        else []
-                    ),
-                }
-            )
-        )
-        predecessor = campaign_id
-
-    policy = load_climb_policy()
-    retired, signal_sources = _mod._sync_reproduced_timeout_retirements(
-        root,
-        loop_id,
-        predecessor,
-        policy=policy,
-        train_version="wf_smoke_v2",
-        eval_version="e_test",
-        primary_metric="smoke.structural_similarity",
-        direction="increase",
-        claim_class="diagnostic",
-    )
-    assert retired == {"binder-arity"}
-    assert signal_sources == ("continuous-loop-test-c2",)
-    ledger = load_loop_exhausted_ledger(root, loop_id, policy)
-    assert ledger.entries[0].reason == "reproduced_decode_timeout_retirement"
-
-    current = "continuous-loop-test-c3"
-    (root / current).mkdir()
-    _mod._persist_selector_harness_signal(root, current, loop_id, signal_sources)
-    signal = next((root / current / "artifacts" / "harness_signals").glob("*.json"))
-    payload = json.loads(signal.read_text())
-    assert payload["code"] == "screening_selector_reintroduced_retired_arm"
-    assert payload["reproduced_on_frozen_input"] is True
+    assert [action.kind for action in actions] == ["repair_harness", "retry_measurement"]
+    expected = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    assert all(action.frozen_manifest_sha256 == expected for action in actions)
+    assert all(action.evidence_ids == ("timeout-evidence",) for action in actions)
 
 
 def test_screening_saturation_parks_with_typed_constraint(tmp_path: Path) -> None:
@@ -10381,6 +10285,10 @@ def _document_handoff_campaign(
 @pytest.fixture
 def document_closeout(tmp_path, monkeypatch):
     import slm_training.autoresearch.storage as storage
+    from scripts import autotrain_docs
+    from tests.test_scripts.test_continuous_cycle_stamp import _stamp
+
+    monkeypatch.setattr(autotrain_docs, "resolve_measurement_provenance", lambda *args: (_stamp(), {}))
 
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -10446,13 +10354,8 @@ def _assert_document_delivery_pending(repo, root, loop_id, campaign_id):
 
 @pytest.mark.parametrize("scope", [None, "delivery"], ids=["legacy-campaign", "delivery"])
 def test_self_heal_document_actions_materializes_without_commit_or_ack(document_closeout, scope, monkeypatch):
-    from scripts import autotrain_docs
     from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
 
-    real_stamp = autotrain_docs.build_version_stamp
-    times = iter(("2026-09-21T00:00:00+00:00", "2026-09-21T00:01:00+00:00"))
-    monkeypatch.setattr(autotrain_docs, "build_version_stamp",
-                        lambda *ids: {**real_stamp(*ids), "stamped_at": next(times)})
     repo, root, loop_id, campaign_id = document_closeout
     path = root / campaign_id / "cycle_handoff.json"
     handoff = json.loads(path.read_text())
@@ -10471,7 +10374,8 @@ def test_self_heal_document_actions_materializes_without_commit_or_ack(document_
     published = {p.name: p.read_bytes() for p in artifacts.glob("*.json")}
     materialization = json.loads(next(iter(published.values())))
     result = json.loads(materialization["files"][f"docs/design/{campaign_id}-results.json"])
-    assert result["version_stamp"] == {**real_stamp(*EVAL_KEY_COMPONENTS), "stamped_at": handoff["created_at"]}
+    assert result["version_stamp"]["stamped_at"] == "2026-08-01T00:00:00Z"
+    assert result["version_stamp"]["components"] == dict.fromkeys(EVAL_KEY_COMPONENTS, "retained-v1")
     assert _mod._self_heal_document_actions(
         cwd=repo, root=root, loop_id=loop_id, campaign_id=campaign_id
     ) is None
@@ -12655,8 +12559,8 @@ def test_classify_positive_paired_nll_three_pairs_not_positive(tmp_path: Path) -
     assert result["positive"] is False
     assert result["paired_test"]["n_pairs"] == 3
     assert result["paired_test"]["win"] is False
-    null = next(r for r in reasons if r.startswith("primary_metric_null_or_worse:"))
-    assert "n_pairs=3" in null and "paired_mechanism_no_effect" in null
+    inconclusive = next(r for r in reasons if r.startswith("primary_metric_inconclusive:"))
+    assert "paired_inconclusive:p=1:alpha=1/20:n_pairs=3" in inconclusive
     assert "fixture_insufficient_n:quality_probe" not in reasons
     assert not any(r.startswith("primary_metric_win:") for r in reasons)
 

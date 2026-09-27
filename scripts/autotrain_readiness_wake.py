@@ -25,12 +25,20 @@ def _probe_request(runtime, common, job, repaired):
         raise ValueError("pending readiness belongs to another runtime")
     argv = [sys.executable, "-m", "scripts.autotrain_readiness_probe", "--input", str(path),
             "--input-digest", path.stem, "--root", common["root"]]
+    from scripts.autotrain_controller_execution import parent_controller, validate_controller
+
+    controller = parent_controller()
+    if controller is not None:
+        code = validate_controller(controller)
+        bootstrap = "import runpy,sys;sys.path[:0]=[sys.argv.pop(1),sys.argv.pop(1)];runpy.run_module(\"scripts.autotrain_readiness_probe\",run_name=\"__main__\")"
+        argv = [sys.executable, "-I", "-c", bootstrap, str(code), str(code / "src"), *argv[3:]]
     activity = readiness.get("readiness_campaign_id")
     if activity:
         argv += ["--request-digest", readiness["request_digest"], "--readiness-campaign-id", activity]
         store = CampaignStore(activity, Path(common["root"]))
     trigger = contract_digest({"dependency_events": [e["event_id"] for e in store.verify_event_chain()],
-                               "repair_result": repaired, "repair_config": common.get("repair_config_digest")})
+                               "repair_result": repaired, "controller_execution": controller,
+                               "repair_config": common.get("repair_config_digest")})
     return argv, trigger
 
 
