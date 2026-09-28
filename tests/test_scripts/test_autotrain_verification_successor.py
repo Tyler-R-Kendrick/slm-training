@@ -273,7 +273,7 @@ def test_source_verification_scan_rotates_small_backlogs(monkeypatch):
         snapshot=lambda: states,
     )
     seen = []
-    monkeypatch.setattr(owner, "_attempt_count", lambda *_: 0)
+    monkeypatch.setattr(owner, "_attempt_count", lambda _store, _states, event: int(event["experiment_id"]) >= 2)
     monkeypatch.setattr(
         owner,
         "_run_source_verification",
