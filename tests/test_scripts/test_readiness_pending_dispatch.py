@@ -395,3 +395,37 @@ def test_pre_cycle_missing_source_verification_grant_does_not_starve_actual_insp
                    and row["status"] == "waiting_capability" for row in observations)
         assert any(s.status == "succeeded" and "-inspect-" in key for key, s in runtime.snapshot().items())
         assert not any(row["event_type"] == "source_verification_completed" for row in store.verify_event_chain())
+
+
+def test_pre_cycle_source_verification_exception_does_not_starve_pending_repair(monkeypatch):
+    from scripts import autotrain_pending, autotrain_repair_activation, autotrain_verification
+    from scripts.autotrain_supervision import pre_cycle
+
+    events, calls, logs = [], [], []
+
+    class Store:
+        def append_event(self, event, **kwargs):
+            events.append(event)
+
+    class Runtime:
+        store = Store()
+
+    def fail_verification(*args, **kwargs):
+        raise RuntimeError("injected verifier fault")
+
+    monkeypatch.setattr(autotrain_verification, "drain_source_verification", fail_verification)
+    monkeypatch.setattr(autotrain_pending, "drain_driver_pending", lambda *args, **kwargs: None)
+    monkeypatch.setattr(autotrain_repair_activation, "recover_release", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "slm_training.autoresearch.heal.operation_recovery.pending_operation_repairs",
+        lambda runtime: [{"operation": "repair", "hard_pending": [{"affected_activity_id": "driver"}]}],
+    )
+
+    def run_operation(runtime, request, **kwargs):
+        calls.append(request["operation"])
+        return {"report": {}} if request["operation"] == "inspect" else {}
+
+    assert pre_cycle(Runtime(), {}, 1, logs.append, run_operation) == {"report": {}}
+    assert calls == ["repair", "inspect"]
+    assert "operation_repair_serviced" in events
+    assert any(row.get("event") == "source_verification_drain_error" for row in logs)
