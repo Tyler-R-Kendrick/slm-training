@@ -262,6 +262,31 @@ def test_successor_cannot_wake_for_changed_proposal(tmp_path, monkeypatch):
         assert runtime.snapshot()["repair"].status == "waiting_dependency"
 
 
+def test_source_verification_scan_rotates_small_backlogs(monkeypatch):
+    events = [
+        {"event_type": "source_verification_requested", "experiment_id": str(i)}
+        for i in range(10)
+    ]
+    states = {str(i): SimpleNamespace(status="waiting_dependency") for i in range(10)}
+    runtime = SimpleNamespace(
+        store=SimpleNamespace(verify_event_chain=lambda: events),
+        snapshot=lambda: states,
+    )
+    seen = []
+    monkeypatch.setattr(owner, "_attempt_count", lambda *_: 0)
+    monkeypatch.setattr(
+        owner,
+        "_run_source_verification",
+        lambda _runtime, event, *_args: seen.append(event["experiment_id"]),
+    )
+
+    owner.drain_source_verification(runtime, {}, lambda _: None, cycle=1)
+    assert seen == [str(i) for i in range(10)]
+    seen.clear()
+    owner.drain_source_verification(runtime, {}, lambda _: None, cycle=2)
+    assert seen == [str(i) for i in range(2, 10)] + ["0", "1"]
+
+
 def test_successor_rebinds_authenticated_runtime_grants(tmp_path, monkeypatch):
     from scripts import autotrain_verification_successor as successor_owner
     from slm_training.autoresearch.heal import recovery_dispatch
