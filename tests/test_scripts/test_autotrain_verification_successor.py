@@ -262,6 +262,33 @@ def test_successor_cannot_wake_for_changed_proposal(tmp_path, monkeypatch):
         assert runtime.snapshot()["repair"].status == "waiting_dependency"
 
 
+def test_runtime_config_drift_rebinds_after_old_grant_failure(tmp_path, monkeypatch):
+    from scripts import autotrain_verification_successor as successor_owner
+    from slm_training.autoresearch.heal import recovery_dispatch
+
+    old_root, new_root = tmp_path / "old", tmp_path / "new"
+    dependency = {"runtime_roots": [str(old_root)]}
+    common = {
+        "repair_config": str(tmp_path / "recovery.json"),
+        "repair_config_digest": "a" * 64,
+        "loop_id": "loop",
+    }
+    config = SimpleNamespace(runtime_roots=(str(new_root),))
+    monkeypatch.setattr(recovery_dispatch, "load_recovery_config", lambda *_a, **_kw: config)
+    observed = []
+    monkeypatch.setattr(successor_owner, "plan_successor",
+                        lambda *args: observed.append(args) or {"status": "successor_activated"})
+    error = ValueError("ambiguous_agentv_runtime_grant")
+
+    result, original_error = owner._successor_after_drift(
+        object(), {"event": "request"}, dependency, common, error,
+    )
+
+    assert result == {"status": "successor_activated"}
+    assert original_error is error
+    assert len(observed) == 1
+
+
 def test_source_verification_scan_rotates_small_backlogs(monkeypatch):
     events = [
         {"event_type": "source_verification_requested", "experiment_id": str(i)}
