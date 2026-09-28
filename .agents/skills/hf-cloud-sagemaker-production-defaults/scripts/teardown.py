@@ -127,25 +127,31 @@ def delete_scaling_stack(resource_id: str, dimension: str, reg: list[str]) -> No
 
 
 def list_inference_components(endpoint_name: str, reg: list[str]) -> list[str]:
-    return json_out(
-        run_aws(["sagemaker", "list-inference-components",
-                 "--endpoint-name-equals", endpoint_name,
-                 "--query", "InferenceComponents[*].InferenceComponentName",
-                 "--output", "json", *reg]),
-        [],
-    )
+    proc = run_aws(["sagemaker", "list-inference-components",
+                    "--endpoint-name-equals", endpoint_name,
+                    "--query", "InferenceComponents[*].InferenceComponentName",
+                    "--output", "json", *reg])
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"failed to list inference components (exit {proc.returncode}): "
+            f"{(proc.stderr or proc.stdout).strip()}"
+        )
+    return json_out(proc, [])
 
 
 def component_model_name(ic_name: str, reg: list[str]) -> str:
-    desc = json_out(
-        run_aws(["sagemaker", "describe-inference-component",
-                 "--inference-component-name", ic_name, *reg]),
-        {},
-    )
+    proc = run_aws(["sagemaker", "describe-inference-component",
+                    "--inference-component-name", ic_name, *reg])
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"failed to inspect inference component {ic_name} "
+            f"(exit {proc.returncode}): {(proc.stderr or proc.stdout).strip()}"
+        )
+    desc = json_out(proc, {})
     return desc.get("Specification", {}).get("ModelName", "")
 
 
-def delete_inference_components(ic_names: list[str], reg: list[str],
+def delete_inference_components(endpoint_name: str, ic_names: list[str], reg: list[str],
                                 timeout_seconds: int = 900) -> None:
     """Delete components and wait until they are gone.
 
@@ -166,12 +172,8 @@ def delete_inference_components(ic_names: list[str], reg: list[str],
                 announced.add(ic_name)
             run_aws(["sagemaker", "delete-inference-component",
                      "--inference-component-name", ic_name, *reg])
-        still_there = [
-            ic_name for ic_name in pending
-            if run_aws(["sagemaker", "describe-inference-component",
-                        "--inference-component-name", ic_name, *reg]).returncode == 0
-        ]
-        pending = still_there
+        remaining = set(list_inference_components(endpoint_name, reg))
+        pending = [ic_name for ic_name in pending if ic_name in remaining]
         if pending:
             time.sleep(15)
 
@@ -217,11 +219,19 @@ def main() -> int:
             if variant.get("ModelName"):
                 model_names.append(variant["ModelName"])
 
-    ic_names = list_inference_components(endpoint_name, reg)
+    try:
+        ic_names = list_inference_components(endpoint_name, reg)
+    except RuntimeError as exc:
+        log(f"ERROR: cannot safely inspect endpoint resources: {exc}")
+        return 1
     if ic_names:
         log(f"Inference components on this endpoint: {' '.join(ic_names)}")
         for ic_name in ic_names:
-            model = component_model_name(ic_name, reg)
+            try:
+                model = component_model_name(ic_name, reg)
+            except RuntimeError as exc:
+                log(f"ERROR: cannot safely inspect endpoint resources: {exc}")
+                return 1
             if model and model not in model_names:
                 model_names.append(model)
 
@@ -239,7 +249,7 @@ def main() -> int:
 
         # Inference components must go before the endpoint.
         if ic_names:
-            delete_inference_components(ic_names, reg)
+            delete_inference_components(endpoint_name, ic_names, reg)
 
         # Endpoint (stops billing)
         if endpoint_exists:

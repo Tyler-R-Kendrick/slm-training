@@ -23,6 +23,14 @@ def test_delete_command_failure_is_not_reported_as_success(monkeypatch):
         teardown.delete_aws_resource(["sagemaker", "delete-endpoint"], "endpoint demo")
 
 
+def test_component_discovery_failure_is_not_treated_as_empty(monkeypatch):
+    failure = subprocess.CompletedProcess([], 1, "", "AccessDenied")
+    monkeypatch.setattr(teardown, "run_aws", lambda _args: failure)
+
+    with pytest.raises(RuntimeError, match="failed to list inference components"):
+        teardown.list_inference_components("endpoint", ["--region", "us-east-1"])
+
+
 def test_remaining_components_stop_endpoint_deletion(monkeypatch):
     calls = []
 
