@@ -281,9 +281,7 @@ def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
         if event["event_type"] == "source_verification_requested"
     ]
     states = runtime.snapshot()
-    # Rotate a bounded window before loading per-request dependencies. A full
-    # sort here would still walk an unbounded blocked backlog before the limit.
-    # Least-attempted runnable verification first, then rotate equal-priority rows.
+    # Rotate bounded work before dependency loads; prioritize least-attempted work.
     events.sort(key=lambda event: _attempt_count(runtime.store, states, event))
     if events and cycle > 1:
         start = (cycle - 1) * 32 % len(events)
@@ -339,11 +337,11 @@ def _run_source_verification(runtime, event, common, log_event, repair):
         successor, observation_error = _successor_after_drift(
             runtime, event, dependency, common, exc
         )
-        if successor is not None:
+        if successor is None:
+            _record_source_verification_wait(runtime, event, observation_error, log_event)
+        else:
             log_event({"event": "source_verification_successor", **successor})
-            return successor
-        _record_source_verification_wait(runtime, event, observation_error, log_event)
-        return None
+        return successor
 
 
 def _record_source_verification_wait(runtime, event, error, log_event):
