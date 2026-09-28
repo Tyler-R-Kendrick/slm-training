@@ -359,13 +359,23 @@ def _record_source_verification_wait(runtime, event, error, log_event):
 
 def _successor_after_drift(runtime, event, dependency, common, error):
     if (
-        str(error) != "source_verification_binding_changed"
-        or dependency is None
+        dependency is None
         or not common.get("repair_config")
         or not common.get("repair_config_digest")
         or not common.get("loop_id")
     ):
         return None, error
+    if str(error) != "source_verification_binding_changed":
+        from slm_training.autoresearch.heal.recovery_dispatch import load_recovery_config
+
+        config = load_recovery_config(
+            Path(common["repair_config"]),
+            expected_sha256=common["repair_config_digest"],
+        )
+        if config is None or tuple(Path(path).resolve() for path in config.runtime_roots) == tuple(
+            Path(path).resolve() for path in dependency.get("runtime_roots", ())
+        ):
+            return None, error
     from scripts.autotrain_verification_successor import plan_successor
 
     try:
