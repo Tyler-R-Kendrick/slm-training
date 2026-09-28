@@ -10,7 +10,7 @@
 # ///
 """CrossEncoder listwise training with LambdaLoss.
 
-LambdaLoss is the state-of-the-art listwise ranking loss — it optimizes a
+LambdaLoss is the state-of-the-art listwise ranking loss. It optimizes a
 surrogate of nDCG via weighted pairwise comparisons over a per-query candidate
 list. Use this when you have multiple candidates per query with graded
 relevance, and you want a stronger ranker than pointwise BCE.
@@ -21,8 +21,8 @@ starting from `(question, answer)` pairs: each row gets the positive plus K
 hard negatives, with binary scores (1 for positive, 0 for negatives).
 
 CRITICAL: `activation_fn=nn.Identity()` is mandatory for LambdaLoss / ListNet /
-ListMLE / PListMLE / RankNet / MarginMSE / MSE — anything that's not
-`BinaryCrossEntropyLoss` or `CrossEntropyLoss`. The default `Sigmoid` (with
+ListMLE / PListMLE / RankNet / MarginMSE / MSE (anything that's not
+`BinaryCrossEntropyLoss` or `CrossEntropyLoss`). The default `Sigmoid` (with
 `num_labels=1`) saturates raw logits >5 to ~1.0 inside `predict()`, silently
 collapsing eval ranking. See `../references/troubleshooting.md` ("CrossEncoder
 eval nDCG crashes after distillation / listwise / pairwise training").
@@ -143,7 +143,7 @@ def main() -> None:
     model = CrossEncoder(
         MODEL_NAME,
         num_labels=1,
-        activation_fn=nn.Identity(),  # Mandatory for LambdaLoss; Sigmoid would saturate eval logits.
+        activation_fn=nn.Identity(),  # Mandatory for LambdaLoss. Sigmoid would saturate eval logits.
         model_card_data=CrossEncoderModelCardData(
             language="en",
             license="apache-2.0",
@@ -265,8 +265,8 @@ def main() -> None:
     model.save_pretrained(final_dir)
     logging.info(f"Saved final model to {final_dir}")
 
-    if SMOKE_TEST:
-        logging.info("SMOKE_TEST=1: skipping Hub push")
+    if SMOKE_TEST or os.environ.get("PUBLISH_TO_HUB") != "1":
+        logging.info("Skipping Hub push; set PUBLISH_TO_HUB=1 only after explicit authorization.")
         return
 
     try:
@@ -276,6 +276,7 @@ def main() -> None:
         import traceback
 
         logging.error(f"Hub push failed:\n{traceback.format_exc()}")
+        raise
 
 
 if __name__ == "__main__":

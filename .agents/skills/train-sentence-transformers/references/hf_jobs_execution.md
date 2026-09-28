@@ -1,11 +1,11 @@
 # Hugging Face Jobs Execution
 
-Run training on Hugging Face's managed GPUs without provisioning any local infrastructure. The same training script runs locally and on Jobs — this reference covers only the Jobs-specific concerns.
+Run training on Hugging Face's managed GPUs without provisioning any local infrastructure. The same training script runs locally and on Jobs. This reference covers only the Jobs-specific concerns.
 
 ## Prerequisites
 
 - Hugging Face account with a **Pro, Team, or Enterprise** plan. Jobs are paid.
-- `HF_TOKEN` with **write** permission. Log in once locally with `hf auth login` (the modern command from the `hf` CLI; the older `huggingface-cli login` still works but is deprecated).
+- `HF_TOKEN` with **write** permission. Log in once locally with `hf auth login` (the modern command from the `hf` CLI, replacing the deprecated `huggingface-cli login`).
 - Access to the `hf_jobs()` MCP tool, or the `hf` CLI (`curl -LsSf https://hf.co/cli/install.sh | bash -s`).
 
 ## The three submission paths
@@ -43,7 +43,7 @@ hf_jobs("uv", {
 })
 ```
 
-Local file paths (`./train.py`, `/path/to/train.py`) **do not work** — Jobs run in isolated containers without access to your filesystem.
+Local file paths (`./train.py`, `/path/to/train.py`) **do not work**. Jobs run in isolated containers without access to your filesystem.
 
 ### 3. CLI
 
@@ -60,16 +60,18 @@ Syntax gotchas:
 - Flags (`--flavor`, `--timeout`, `--secrets`) go **before** the script URL.
 - `--secrets` (plural), not `--secret`.
 
-## Required script modifications for Jobs
+## Durable checkpoint storage for Jobs
+
+Choose an approved persistent destination before submission. In this repository,
+follow `AGENTS.md` checkpoint-bucket policy. Hub publication is optional and
+requires explicit authorization for the target repository.
 
 Add these to your `TrainingArguments`:
 
 ```python
 args = SentenceTransformerTrainingArguments(
     ...,
-    push_to_hub=True,
-    hub_model_id="your-username/my-model",
-    hub_strategy="every_save",        # push each checkpoint; timeout-safe
+    push_to_hub=False,                 # enable only after explicit authorization
     save_strategy="steps",
     save_steps=0.1,                   # 10 saves/pushes per epoch; scales with dataset size
 )
@@ -79,10 +81,11 @@ Why each matters:
 
 | Argument | Why |
 |---|---|
-| `push_to_hub=True` | The Jobs container is destroyed after the job finishes. Without Hub push, all weights are lost. |
-| `hub_model_id` | Required to identify the destination repo. |
+| Approved persistent storage | Required when artifacts must survive container shutdown. Configure repository-approved bucket or persistent volume, then verify receipt. |
+| `push_to_hub=True` | Optional. Enable only after explicit authorization for the exact destination. |
+| `hub_model_id` | Required only when authorized Hub upload is enabled. |
 | `hub_strategy="every_save"` | Default, but worth being deliberate about on Jobs: each checkpoint is pushed as it's written, so a timeout leaves all completed checkpoints on the Hub. `"end"` only pushes once `trainer.train()` returns, so a timeout loses everything. |
-| `save_strategy="steps"` + `save_steps=0.1` | Checkpoints must actually be saved for `hub_strategy="every_save"` to push them. Fractional `0.1` = save every 10% of training, auto-scales with dataset size. |
+| `save_strategy="steps"` + `save_steps=0.1` | Save checkpoints for configured persistent storage. |
 
 ## Secrets
 
@@ -90,11 +93,11 @@ Secrets are environment variables injected into the Jobs container. They never a
 
 | Secret | Required when |
 |---|---|
-| `HF_TOKEN` | Always, for Hub push. Also covers Trackio auth. |
+| `HF_TOKEN` | Only when authorized Hub push or authenticated Trackio requires it. |
 | `WANDB_API_KEY` | Using `report_to="wandb"`. |
 | `MLFLOW_TRACKING_URI`, `MLFLOW_TRACKING_TOKEN` | Using MLflow with a remote server. |
 
-The `$HF_TOKEN` syntax in the job config references the value from your local environment at submission time — the literal string `$HF_TOKEN` is replaced with your token's value. Never hardcode tokens in the script itself.
+The `$HF_TOKEN` syntax in the job config references the value from your local environment at submission time. The literal string `$HF_TOKEN` is replaced with your token's value. Never hardcode tokens in the script itself.
 
 Trackio (the default tracker in this skill) uses `HF_TOKEN` for auth, so no extra secrets are needed. Only switch to the W&B / MLflow rows above if you're using those trackers.
 
@@ -111,11 +114,11 @@ Default is **30 minutes**, which is too short for almost any real training. Set 
 
 Rule: **estimated training time × 1.3**. The extra buffer covers model loading, dataset caching, checkpoint saving, and Hub push.
 
-On timeout, the container is killed immediately. Only data on the Hub (`hub_strategy="every_save"` saves you here) or in persistent volumes survives.
+On timeout, the container is killed immediately. Only data in configured persistent storage survives. Verify artifacts after the job; timeout is not success evidence.
 
 ## Dataset caching
 
-Hugging Face datasets are cached at `~/.cache/huggingface/datasets` by default — **inside the container**, which is destroyed after the job. Each Jobs run re-downloads the dataset.
+Hugging Face datasets are cached at `~/.cache/huggingface/datasets` by default. That's **inside the container**, which is destroyed after the job. Each Jobs run re-downloads the dataset.
 
 For large datasets (>5 GB), this matters. Options:
 
@@ -134,20 +137,20 @@ hf jobs hardware                          # list flavors + hourly rates
 
 `hf jobs logs <id> --follow` under `Bash run_in_background` pairs nicely with a `Monitor` watching for the `VERDICT:` line emitted by your training script's verdict block.
 
-MCP equivalents (signatures may vary by server version — check the actual
+MCP equivalents (signatures may vary by server version, so check the actual
 tool listing): `hf_jobs("ps")`, `hf_jobs("logs", {"job_id": ...})`,
 `hf_jobs("cancel", {"job_id": ...})`.
 
 For recurring runs, `hf jobs scheduled uv run "<cron>" <script> ...`
-schedules; `hf jobs scheduled ps/suspend/delete` manages.
+schedules. `hf jobs scheduled ps/suspend/delete` manages.
 
 ## Common failures
 
-### "Model not found on Hub" after a successful-looking run
+### Expected artifact missing after a successful-looking run
 
-The run succeeded but `push_to_hub` was not enabled. The container is gone; the weights are gone.
+The job container is temporary. Check job status and approved persistent storage.
 
-Fix: always set `push_to_hub=True` + `hub_model_id=...` + `secrets={"HF_TOKEN": "$HF_TOKEN"}`.
+Enable Hub upload only after explicit authorization for the exact destination. Otherwise configure this repository's checkpoint bucket or an approved persistent volume, then verify artifact receipt.
 
 ### Tracker not connecting
 
@@ -170,4 +173,4 @@ Large dataset or slow cold-cache. Increase `timeout` or pre-cache to a persisten
 
 The cached losses are incompatible with gradient checkpointing. Disable `gradient_checkpointing`.
 
-After submission, the MCP returns a job ID. Monitor with `hf_jobs("logs", {"job_id": ...})` when you want an update — don't poll in a tight loop. End-to-end submission templates live in `scripts/train_sentence_transformer_example.py` / `scripts/train_cross_encoder_example.py` / `scripts/train_sparse_encoder_example.py`; wrap the script contents in the inline pattern from §1 above.
+After submission, the MCP returns a job ID. Monitor with `hf_jobs("logs", {"job_id": ...})` when you want an update. Don't poll in a tight loop. End-to-end submission templates live in `scripts/train_sentence_transformer_example.py` / `scripts/train_cross_encoder_example.py` / `scripts/train_sparse_encoder_example.py`. Wrap the script contents in the inline pattern from §1 above.

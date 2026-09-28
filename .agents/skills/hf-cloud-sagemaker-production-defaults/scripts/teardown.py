@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """Tear down a SageMaker endpoint and its associated resources. Cross-platform.
 
-Deletes in safe order: alarms -> autoscaling -> endpoint (stops billing)
--> endpoint config -> model.
+Deletes in safe order: alarms -> autoscaling -> inference components ->
+endpoint (stops billing) -> endpoint config -> model.
+
+Handles both deployment shapes:
+  - model-based endpoints (deploy.py, deploy_async.py): the variant carries the
+    model, autoscaling targets endpoint/<name>/variant/AllTraffic
+  - inference-component endpoints (deploy_ic.py, scale-to-zero): the component
+    carries the model, autoscaling targets inference-component/<name>
 
 Does NOT delete: IAM role, data capture S3 objects, SNS topic, model artifacts.
 Idempotent — missing resources are skipped, not errors.
@@ -21,8 +27,10 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
-RESOURCE_DIM = "sagemaker:variant:DesiredInstanceCount"
+VARIANT_DIM = "sagemaker:variant:DesiredInstanceCount"
+IC_DIM = "sagemaker:inference-component:DesiredCopyCount"
 
 
 def log(msg: str) -> None:
@@ -41,6 +49,15 @@ def run_aws(args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run([aws_bin(), *args], capture_output=True, text=True)
 
 
+def json_out(proc: subprocess.CompletedProcess, default):
+    if proc.returncode != 0:
+        return default
+    try:
+        return json.loads(proc.stdout) or default
+    except json.JSONDecodeError:
+        return default
+
+
 def resolve_region(arg_region: str | None) -> str:
     """Region from arg, then env, then the active profile's config."""
     if arg_region:
@@ -50,6 +67,132 @@ def resolve_region(arg_region: str | None) -> str:
             return os.environ[var]
     proc = run_aws(["configure", "get", "region"])
     return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def delete_aws_resource(args: list[str], resource: str) -> None:
+    proc = run_aws(args)
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise RuntimeError(
+            f"failed to delete {resource} (exit {proc.returncode})"
+            + (f": {detail}" if detail else "")
+        )
+
+
+def delete_alarms(prefix: str, reg: list[str]) -> None:
+    alarms = json_out(
+        run_aws(["cloudwatch", "describe-alarms", "--alarm-name-prefix", prefix,
+                 "--query", "MetricAlarms[*].AlarmName", "--output", "json", *reg]),
+        [],
+    )
+    if alarms:
+        delete_aws_resource(
+            ["cloudwatch", "delete-alarms", "--alarm-names", *alarms, *reg],
+            f"CloudWatch alarms {' '.join(alarms)}",
+        )
+        log(f"Deleted alarms: {' '.join(alarms)}")
+
+
+def delete_scaling_stack(resource_id: str, dimension: str, reg: list[str]) -> None:
+    """Delete every scaling policy on a target, then deregister the target."""
+    policies = json_out(
+        run_aws(["application-autoscaling", "describe-scaling-policies",
+                 "--service-namespace", "sagemaker", "--resource-id", resource_id,
+                 "--query", "ScalingPolicies[*].PolicyName", "--output", "json", *reg]),
+        [],
+    )
+    for policy in policies:
+        delete_aws_resource(
+            ["application-autoscaling", "delete-scaling-policy",
+             "--service-namespace", "sagemaker", "--resource-id", resource_id,
+             "--scalable-dimension", dimension, "--policy-name", policy, *reg],
+            f"autoscaling policy {policy}",
+        )
+        log(f"Deleted autoscaling policy: {policy}")
+
+    targets = json_out(
+        run_aws(["application-autoscaling", "describe-scalable-targets",
+                 "--service-namespace", "sagemaker", "--resource-ids", resource_id,
+                 "--query", "ScalableTargets[*].ResourceId", "--output", "json", *reg]),
+        [],
+    )
+    if resource_id in targets:
+        delete_aws_resource(
+            ["application-autoscaling", "deregister-scalable-target",
+             "--service-namespace", "sagemaker", "--resource-id", resource_id,
+             "--scalable-dimension", dimension, *reg],
+            f"autoscaling target {resource_id}",
+        )
+        log(f"Deregistered scalable target: {resource_id}")
+
+
+def list_inference_components(endpoint_name: str, reg: list[str]) -> list[str]:
+    proc = run_aws(["sagemaker", "list-inference-components",
+                    "--endpoint-name-equals", endpoint_name,
+                    "--query", "InferenceComponents[*].InferenceComponentName",
+                    "--output", "json", *reg])
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"failed to list inference components (exit {proc.returncode}): "
+            f"{(proc.stderr or proc.stdout).strip()}"
+        )
+    try:
+        components = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("AWS returned invalid JSON while listing inference components") from exc
+    if not isinstance(components, list) or any(not isinstance(item, str) for item in components):
+        raise RuntimeError("AWS returned invalid inference-component list")
+    return components
+
+
+def component_model_name(ic_name: str, reg: list[str]) -> str:
+    proc = run_aws(["sagemaker", "describe-inference-component",
+                    "--inference-component-name", ic_name, *reg])
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"failed to inspect inference component {ic_name} "
+            f"(exit {proc.returncode}): {(proc.stderr or proc.stdout).strip()}"
+        )
+    try:
+        desc = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"AWS returned invalid JSON for inference component {ic_name}") from exc
+    if not isinstance(desc, dict) or not isinstance(desc.get("Specification", {}), dict):
+        raise RuntimeError(f"AWS returned invalid inference-component description for {ic_name}")
+    return desc.get("Specification", {}).get("ModelName", "")
+
+
+def delete_inference_components(endpoint_name: str, ic_names: list[str], reg: list[str],
+                                timeout_seconds: int = 900) -> None:
+    """Delete components and wait until they are gone.
+
+    Retries the delete on every poll, because SageMaker refuses it in two
+    transient states seen in practice:
+      - CREATE_IN_PROGRESS (container still starting)
+      - UPDATE_RC_IN_PROGRESS (a scaling action is changing the copy count)
+    An adapter component must also go before its base component, and the
+    ordering falls out of the same retry loop.
+    """
+    pending = list(ic_names)
+    deadline = time.time() + timeout_seconds
+    announced: set[str] = set()
+    while pending and time.time() < deadline:
+        for ic_name in pending:
+            if ic_name not in announced:
+                log(f"Deleting inference component: {ic_name}")
+                announced.add(ic_name)
+            run_aws(["sagemaker", "delete-inference-component",
+                     "--inference-component-name", ic_name, *reg])
+        remaining = set(list_inference_components(endpoint_name, reg))
+        pending = [ic_name for ic_name in pending if ic_name in remaining]
+        if pending:
+            time.sleep(15)
+
+    if pending:
+        raise RuntimeError(
+            f"inference components remain after {timeout_seconds}s: {' '.join(pending)}"
+        )
+    log("All inference components deleted")
 
 
 def main() -> int:
@@ -68,103 +211,86 @@ def main() -> int:
 
     # Discover what's attached to this endpoint.
     config_name = ""
-    model_name = ""
+    model_names: list[str] = []
     desc = run_aws(["sagemaker", "describe-endpoint", "--endpoint-name", endpoint_name, *reg])
     endpoint_exists = desc.returncode == 0
     if endpoint_exists:
-        try:
-            config_name = json.loads(desc.stdout).get("EndpointConfigName", "")
-        except json.JSONDecodeError:
-            config_name = ""
+        config_name = json_out(desc, {}).get("EndpointConfigName", "")
     else:
         log("Endpoint not found — checking for orphan resources anyway")
 
     if config_name:
-        cfg = run_aws(
-            ["sagemaker", "describe-endpoint-config", "--endpoint-config-name", config_name, *reg]
+        cfg = json_out(
+            run_aws(["sagemaker", "describe-endpoint-config",
+                     "--endpoint-config-name", config_name, *reg]),
+            {},
         )
-        if cfg.returncode == 0:
+        # Model-based endpoints name the model on the variant. IC-based ones do not.
+        for variant in cfg.get("ProductionVariants", []):
+            if variant.get("ModelName"):
+                model_names.append(variant["ModelName"])
+
+    try:
+        ic_names = list_inference_components(endpoint_name, reg)
+    except RuntimeError as exc:
+        log(f"ERROR: cannot safely inspect endpoint resources: {exc}")
+        return 1
+    if ic_names:
+        log(f"Inference components on this endpoint: {' '.join(ic_names)}")
+        for ic_name in ic_names:
             try:
-                variants = json.loads(cfg.stdout).get("ProductionVariants", [])
-                model_name = variants[0]["ModelName"] if variants else ""
-            except (json.JSONDecodeError, KeyError, IndexError):
-                model_name = ""
+                model = component_model_name(ic_name, reg)
+            except RuntimeError as exc:
+                log(f"ERROR: cannot safely inspect endpoint resources: {exc}")
+                return 1
+            if model and model not in model_names:
+                model_names.append(model)
 
-    # Alarms — discover by name prefix. Both real-time and async deploys create
-    # alarms named "<endpoint-name>-<something>", so this handles either mode.
-    alarms_proc = run_aws(
-        ["cloudwatch", "describe-alarms", "--alarm-name-prefix", f"{endpoint_name}-",
-         "--query", "MetricAlarms[*].AlarmName", "--output", "json", *reg]
-    )
-    alarms: list[str] = []
-    if alarms_proc.returncode == 0:
-        try:
-            alarms = json.loads(alarms_proc.stdout) or []
-        except json.JSONDecodeError:
-            alarms = []
-    if alarms:
-        run_aws(["cloudwatch", "delete-alarms", "--alarm-names", *alarms, *reg])
-        log(f"Deleted alarms: {' '.join(alarms)}")
+    try:
+        # Alarms — discovered by name prefix. deploy.py / deploy_async.py name
+        # them "<endpoint>-*"; deploy_ic.py names wake alarms "<component>-*".
+        delete_alarms(f"{endpoint_name}-", reg)
+        for ic_name in ic_names:
+            delete_alarms(f"{ic_name}-", reg)
 
-    # Autoscaling policies — discover all on this variant. Real-time has 1 policy;
-    # async has 2 (target-tracking + step-scaling for wake-from-zero).
-    resource_id = f"endpoint/{endpoint_name}/variant/AllTraffic"
-    policies_proc = run_aws(
-        ["application-autoscaling", "describe-scaling-policies",
-         "--service-namespace", "sagemaker", "--resource-id", resource_id,
-         "--query", "ScalingPolicies[*].PolicyName", "--output", "json", *reg]
-    )
-    policies: list[str] = []
-    if policies_proc.returncode == 0:
-        try:
-            policies = json.loads(policies_proc.stdout) or []
-        except json.JSONDecodeError:
-            policies = []
-    for policy in policies:
-        run_aws(
-            ["application-autoscaling", "delete-scaling-policy",
-             "--service-namespace", "sagemaker", "--resource-id", resource_id,
-             "--scalable-dimension", RESOURCE_DIM, "--policy-name", policy, *reg]
-        )
-        log(f"Deleted autoscaling policy: {policy}")
+        # Autoscaling — variant target and inference-component targets.
+        delete_scaling_stack(f"endpoint/{endpoint_name}/variant/AllTraffic", VARIANT_DIM, reg)
+        for ic_name in ic_names:
+            delete_scaling_stack(f"inference-component/{ic_name}", IC_DIM, reg)
 
-    targets = run_aws(
-        ["application-autoscaling", "describe-scalable-targets",
-         "--service-namespace", "sagemaker", "--resource-ids", resource_id,
-         "--query", "ScalableTargets[*].ResourceId", "--output", "json", *reg]
-    )
-    has_target = False
-    if targets.returncode == 0:
-        try:
-            has_target = resource_id in (json.loads(targets.stdout) or [])
-        except json.JSONDecodeError:
-            has_target = False
-    if has_target:
-        run_aws(
-            ["application-autoscaling", "deregister-scalable-target",
-             "--service-namespace", "sagemaker", "--resource-id", resource_id,
-             "--scalable-dimension", RESOURCE_DIM, *reg]
-        )
-        log("Deregistered scalable target")
+        # Inference components must go before the endpoint.
+        if ic_names:
+            delete_inference_components(endpoint_name, ic_names, reg)
 
-    # Endpoint (stops billing)
-    if endpoint_exists:
-        run_aws(["sagemaker", "delete-endpoint", "--endpoint-name", endpoint_name, *reg])
-        log(f"Deleted endpoint: {endpoint_name} (billing stopped)")
+        # Endpoint (stops billing)
+        if endpoint_exists:
+            delete_aws_resource(
+                ["sagemaker", "delete-endpoint", "--endpoint-name", endpoint_name, *reg],
+                f"endpoint {endpoint_name}",
+            )
+            log(f"Deleted endpoint: {endpoint_name} (billing stopped)")
 
-    # Endpoint config
-    if config_name and run_aws(
-        ["sagemaker", "describe-endpoint-config", "--endpoint-config-name", config_name, *reg]
-    ).returncode == 0:
-        run_aws(["sagemaker", "delete-endpoint-config", "--endpoint-config-name", config_name, *reg])
-        log(f"Deleted endpoint config: {config_name}")
+        # Endpoint config
+        if config_name and run_aws(
+            ["sagemaker", "describe-endpoint-config", "--endpoint-config-name", config_name, *reg]
+        ).returncode == 0:
+            delete_aws_resource(
+                ["sagemaker", "delete-endpoint-config", "--endpoint-config-name", config_name, *reg],
+                f"endpoint config {config_name}",
+            )
+            log(f"Deleted endpoint config: {config_name}")
 
-    # Model
-    if model_name and run_aws(
-        ["sagemaker", "describe-model", "--model-name", model_name, *reg]
-    ).returncode == 0:
-        run_aws(["sagemaker", "delete-model", "--model-name", model_name, *reg])
-        log(f"Deleted model: {model_name}")
+        # Models
+        for model_name in model_names:
+            if run_aws(["sagemaker", "describe-model", "--model-name", model_name, *reg]).returncode == 0:
+                delete_aws_resource(
+                    ["sagemaker", "delete-model", "--model-name", model_name, *reg],
+                    f"model {model_name}",
+                )
+                log(f"Deleted model: {model_name}")
+    except RuntimeError as exc:
+        log(f"ERROR: teardown stopped: {exc}")
+        return 1
 
     log("Teardown complete. Data capture S3 objects (if any) NOT deleted — manage separately.")
     return 0

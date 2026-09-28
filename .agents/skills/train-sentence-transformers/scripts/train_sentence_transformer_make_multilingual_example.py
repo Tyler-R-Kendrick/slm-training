@@ -11,14 +11,14 @@
 """Multilingual teacher-student distillation: extend an English bi-encoder to other languages.
 
 The trick (Reimers & Gurevych 2020, https://huggingface.co/papers/2004.09813):
-the teacher embeds English; the multilingual student is trained so that BOTH
+the teacher embeds English. The multilingual student is trained so that BOTH
 the English sentence AND its translation map to the SAME teacher embedding.
 Cross-lingual retrieval works out of the box because translations sit near
 each other in the joint space.
 
 Use when you have a strong English bi-encoder and want a multilingual version
 but lack in-language supervised data. If you DO have in-language labeled data,
-train directly with MNRL / CoSENTLoss on it; that usually wins on in-language
+train directly with MNRL / CoSENTLoss on it. That usually wins on in-language
 tasks.
 
 Data: parallel `(english, non_english)` pairs. `sentence-transformers/parallel-sentences-*`
@@ -147,7 +147,7 @@ def load_parallel_data() -> tuple[DatasetDict, DatasetDict]:
 
 def build_evaluator(eval_dict: DatasetDict, teacher: SentenceTransformer) -> SequentialEvaluator:
     """Per-language MSE + TranslationEvaluator. `main_score_function` averages
-    translation accuracies only; MSE (`negative_mse * 100`) is on a different
+    translation accuracies only. MSE (`negative_mse * 100`) is on a different
     scale and would break the verdict threshold if mixed in."""
     sub_evaluators = []
     for subset, ds in eval_dict.items():
@@ -168,7 +168,7 @@ def build_evaluator(eval_dict: DatasetDict, teacher: SentenceTransformer) -> Seq
                 batch_size=TEACHER_ENCODE_BATCH_SIZE,
             )
         )
-    # Sub-evaluators alternate MSE / Translation per language; scores[1::2] are the translation accuracies.
+    # Sub-evaluators alternate MSE / Translation per language: scores[1::2] are the translation accuracies.
     return SequentialEvaluator(sub_evaluators, main_score_function=lambda scores: float(np.mean(scores[1::2])))
 
 
@@ -291,8 +291,8 @@ def main() -> None:
     student.save_pretrained(final_dir)
     logging.info(f"Saved to {final_dir}")
 
-    if SMOKE_TEST:
-        logging.info("SMOKE_TEST=1: skipping Hub push")
+    if SMOKE_TEST or os.environ.get("PUBLISH_TO_HUB") != "1":
+        logging.info("Skipping Hub push; set PUBLISH_TO_HUB=1 only after explicit authorization.")
         return
 
     try:
@@ -302,6 +302,7 @@ def main() -> None:
         import traceback
 
         logging.error(f"Hub push failed:\n{traceback.format_exc()}")
+        raise
 
 
 if __name__ == "__main__":
