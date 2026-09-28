@@ -5703,6 +5703,11 @@
       "history": [
         {
           "date": "2026-09-27",
+          "version": "v317",
+          "note": "Rotate bounded source-verification scans across every backlog size so old orphan requests cannot starve later authenticated repair dependencies."
+        },
+        {
+          "date": "2026-09-27",
           "version": "v316",
           "note": "Rebind source verification to authenticated runtime grants when recovery configuration changes; preserve request, proposal, source identity, and residual grant."
         },
@@ -8049,7 +8054,7 @@
         "src/slm_training/harness_core/host_process_identity.py",
         "src/slm_training/harness_core/driver_pending.py"
       ],
-      "version": "v316"
+      "version": "v317"
     },
     "harness.autoresearch.formal": {
       "history": [
