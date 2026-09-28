@@ -240,6 +240,12 @@ def pre_cycle(runtime, common, cycle, log_event, run_operation):
 
     try:
         drain_source_verification(runtime, common, log_event, cycle=cycle)
+    except Exception as exc:  # noqa: BLE001 — repair dispatch must survive verifier faults.
+        if common.get("locked_diagnostic"):
+            raise
+        log_event({"event": "source_verification_drain_error", "error": repr(exc)})
+
+    try:
         drain_driver_pending(runtime, common, cycle, log_event, run_operation, locked_diagnostic=common.get("locked_diagnostic", False))
         for repair_request in pending_operation_repairs(runtime)[:1]:
             runtime.store.append_event("operation_repair_serviced",
