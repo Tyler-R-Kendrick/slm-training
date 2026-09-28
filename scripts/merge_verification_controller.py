@@ -131,7 +131,15 @@ def validate_observation(result, plan):
         raise ValueError(
             "verification child did not produce a complete operational observation"
         )
-    summary = _last_json_object(result.stdout)
+    try:
+        summary = _last_json_object(result.stdout)
+    except ValueError as output_error:
+        try:
+            summary = _authenticated_journal_summary(plan)
+        except Exception:
+            raise output_error
+        if result.returncode == 1 and summary.get("status") != "invalid_evidence":
+            raise output_error
     if result.returncode == 1:
         if summary.get("status") != "invalid_evidence":
             raise ValueError("failed verification child asserted a nonfailure outcome")
