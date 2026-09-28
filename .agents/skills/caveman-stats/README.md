@@ -38,8 +38,8 @@ Savings: unknown — no measured comparison for this session.
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — hook contract
-- [Honest Numbers](../../docs/HONEST-NUMBERS.md) — measurement limits
-- [Caveman README](../../README.md) — repo overview
+- [Honest Numbers](../../../docs/HONEST-NUMBERS.md) — measurement limits
+- [Caveman README](../../../README.md) — repo overview
 
 Gemini CLI uses its native `/stats model` or `/stats session` report. The Caveman
 command points there; it cannot access Gemini's live metrics or aggregate Claude

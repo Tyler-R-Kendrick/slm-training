@@ -38,11 +38,10 @@ Runs identically in two modes:
     })
 
 Adjust MODEL_NAME, DATASET_NAME, OUTPUT_DIR, RUN_NAME at the top of the script.
-Default Hub push: at end of run, public, under your authenticated user as
-`{user}/{RUN_NAME}`, wrapped in try/except. To skip the push, comment out the
-push_to_hub call. For HF Jobs (ephemeral env), also enable in-trainer push:
-add `push_to_hub=True`, `hub_model_id=RUN_NAME`, `hub_strategy="every_save"`
-to TrainingArguments.
+Hub publication is disabled by default. Set `PUBLISH_TO_HUB=1` only after the
+user authorizes a public destination. For this repository, follow `AGENTS.md`
+checkpoint rules instead. Do not enable in-trainer Hub push without that
+authorization.
 """
 
 from __future__ import annotations
@@ -210,17 +209,18 @@ def main() -> None:
     model.save_pretrained(final_dir)
     logging.info(f"Saved final model to {final_dir}")
 
-    if SMOKE_TEST:
-        logging.info("SMOKE_TEST=1: skipping Hub push")
+    if SMOKE_TEST or os.environ.get("PUBLISH_TO_HUB") != "1":
+        logging.info("Skipping Hub push; set PUBLISH_TO_HUB=1 only after explicit authorization.")
         return
 
     try:
-        commit_url = model.push_to_hub(RUN_NAME)  # public by default. Uses your authenticated user
+        commit_url = model.push_to_hub(RUN_NAME)  # Opt-in only after authorization.
         logging.info(f"Pushed model to {commit_url.rsplit('/commit/', 1)[0]}")
     except Exception:
         import traceback
 
         logging.error(f"Hub push failed:\n{traceback.format_exc()}")
+        raise
 
 
 if __name__ == "__main__":

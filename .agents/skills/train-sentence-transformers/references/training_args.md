@@ -175,7 +175,7 @@ State that persists across resumption: optimizer, scheduler, random seeds, train
 
 ## Hub push
 
-`push_to_hub=True` + `hub_model_id="your-username/my-model"` + `hub_strategy="every_save"` is the standard pattern. On HF Jobs, also pass `secrets={"HF_TOKEN": "$HF_TOKEN"}` on the job submission. The four `hub_strategy` values: `"every_save"` (each checkpoint, mandatory for HF Jobs), `"end"` (final only), `"checkpoint"` (latest, overwrite), `"all_checkpoints"` (each as a separate commit).
+Hub upload is opt-in and requires explicit authorization for the exact destination. When authorized, set `push_to_hub=True`, `hub_model_id`, and deliberate `hub_strategy`; pass `HF_TOKEN` as a job secret. Follow repository checkpoint-storage policy otherwise. Strategies: `"every_save"` (each checkpoint), `"end"` (final only), `"checkpoint"` (latest, overwrite), `"all_checkpoints"` (each as a separate commit).
 
 ## Logging
 

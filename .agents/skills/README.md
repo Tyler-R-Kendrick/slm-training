@@ -42,7 +42,7 @@ Edit only here; discovery symlinks update every client automatically.
 
 ## Token-efficiency pack
 
-Pinned via root [`skills-lock.json`](../../skills-lock.json). Installed for
+Pinned by immutable upstream commit in root [`skills-lock.json`](../../skills-lock.json); `computedHash` records installed skill content. Installed for
 **claude-code**, **cursor**, **codex**, and **github-copilot**.
 
 | Skill | Source |

@@ -71,7 +71,7 @@ Tiebreakers when the request is ambiguous: "embedding model" / "vector search" /
 Override only if the user specifies otherwise:
 - **Local execution.** Pitch HF Jobs only if local hardware can't fit the job.
 - **Single run.** After it completes, propose experimentation if the user would benefit (weak/marginal verdict, "see how high you can push it" framing, etc.). Iteration rules in `references/training_args.md` (Experimentation section).
-- **Public Hub push at end-of-run, wrapped in try-except.** On HF Jobs (ephemeral env) ALSO enable in-trainer push (`push_to_hub=True` + `hub_strategy="every_save"`). Details in `references/hf_jobs_execution.md`.
+- **No Hub publication by default.** Save artifacts locally. For this repository, follow `AGENTS.md` checkpoint-bucket and model-card rules. Any other remote destination needs explicit user authorization and must satisfy repository policy.
 
 ## 4. Constraints the produced script must satisfy
 
@@ -81,7 +81,7 @@ These are non-negotiable contracts. Implementation lives in the production templ
 - Emit a single end-of-run line: `VERDICT: WIN|MARGINAL|REGRESSION | score=... | baseline=... | delta=...`. A monitor scrapes for this.
 - Silence `httpx`, `httpcore`, `huggingface_hub`, `urllib3`, `filelock`, `fsspec` to WARNING (otherwise HF download URLs flood the agent's context).
 - Tee logs to `logs/{RUN_NAME}.log`.
-- End with `model.push_to_hub(...)` wrapped in `try/except`.
+- Do not publish checkpoints by default or hide publication failures. For this repository, use the approved checkpoint flow in `AGENTS.md`; use another destination only after explicit user authorization and policy checks.
 - Smoke-test before any long run (`max_steps=1` + tiny dataset slice). The production templates show one common pattern (`SMOKE_TEST` env var).
 - **[CrossEncoder]** Include `EarlyStoppingCallback(patience>=3)`. CE rerankers often peak mid-training and regress.
 - **[SparseEncoder]** Log `query_active_dims` / `corpus_active_dims` on the verdict line. High nDCG with collapsed sparsity is not a win. The keys come back name-prefixed (e.g. `..._query_active_dims`). Use suffix matching to pluck them. See the SPARSE production template for the exact pattern.
@@ -103,7 +103,7 @@ These are non-negotiable contracts. Implementation lives in the production templ
 pip install "sentence-transformers[train]>=5.0"        # add [train,image] / [audio] / [video] for [SentenceTransformer] multimodal
                                                        # [MultiVectorEncoder] requires >=6.0
 pip install trackio                                    # optional tracker (or wandb / tensorboard / mlflow)
-hf auth login                                          # or set HF_TOKEN with write scope (for Hub push)
+hf auth login                                          # only after explicit authorization for an allowed Hub destination
 ```
 
 GPU strongly recommended. CPU works only for demos and `[SentenceTransformer]` `StaticEmbedding`.

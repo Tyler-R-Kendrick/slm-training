@@ -256,8 +256,8 @@ def main() -> None:
     model.save_pretrained(final_dir)
     logging.info(f"Saved final model to {final_dir}")
 
-    if SMOKE_TEST:
-        logging.info("SMOKE_TEST=1: skipping Hub push")
+    if SMOKE_TEST or os.environ.get("PUBLISH_TO_HUB") != "1":
+        logging.info("Skipping Hub push; set PUBLISH_TO_HUB=1 only after explicit authorization.")
         return
 
     try:
@@ -267,6 +267,7 @@ def main() -> None:
         import traceback
 
         logging.error(f"Hub push failed:\n{traceback.format_exc()}")
+        raise
 
 
 if __name__ == "__main__":

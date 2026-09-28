@@ -3,42 +3,42 @@
   "skills": {
     "caveman": {
       "source": "JuliusBrussee/caveman",
-      "ref": "main",
+      "ref": "2fd153c67988e980fb0b2455c90832159a6a5a25",
       "sourceType": "github",
       "skillPath": "skills/caveman/SKILL.md",
       "computedHash": "e9192d111aa44ea90bd214d5aa2b4f640195b0717faedd881e4b3927da9d88e2"
     },
     "caveman-commit": {
       "source": "JuliusBrussee/caveman",
-      "ref": "main",
+      "ref": "2fd153c67988e980fb0b2455c90832159a6a5a25",
       "sourceType": "github",
       "skillPath": "skills/caveman-commit/SKILL.md",
       "computedHash": "b416cf134b0f33ddadeca7977aebdbb2d3db79a166d0fce2e1aabeec98132766"
     },
     "caveman-compress": {
       "source": "JuliusBrussee/caveman",
-      "ref": "main",
+      "ref": "2fd153c67988e980fb0b2455c90832159a6a5a25",
       "sourceType": "github",
       "skillPath": "skills/caveman-compress/SKILL.md",
       "computedHash": "a4034fd0765c04493691b4d85656f31cf22f46e807980f8d6be4b47a4df0b050"
     },
     "caveman-help": {
       "source": "JuliusBrussee/caveman",
-      "ref": "main",
+      "ref": "2fd153c67988e980fb0b2455c90832159a6a5a25",
       "sourceType": "github",
       "skillPath": "skills/caveman-help/SKILL.md",
       "computedHash": "8b03b0526c2c96f9b44dfde8f2d0063351ec9bbfa946de7a6316c96f6024ca75"
     },
     "caveman-review": {
       "source": "JuliusBrussee/caveman",
-      "ref": "main",
+      "ref": "2fd153c67988e980fb0b2455c90832159a6a5a25",
       "sourceType": "github",
       "skillPath": "skills/caveman-review/SKILL.md",
       "computedHash": "36a4007c5c0c6b90b5accfee1cd769a86e4963b651dece2ce5f17a223a0abb4b"
     },
     "caveman-stats": {
       "source": "JuliusBrussee/caveman",
-      "ref": "main",
+      "ref": "2fd153c67988e980fb0b2455c90832159a6a5a25",
       "sourceType": "github",
       "skillPath": "skills/caveman-stats/SKILL.md",
       "computedHash": "f59785c3571b4016fda470fef975adf48af2b29cac0df0ad43c8c8a8d1bd8f88"
@@ -47,11 +47,12 @@
       "source": "roman-ryzenadvanced/headroom-skill",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "7fea85d5f95be81ca42aa135f3a97fe15fbe95864312911ad8d1594c1bcbe4c9"
+      "computedHash": "7fea85d5f95be81ca42aa135f3a97fe15fbe95864312911ad8d1594c1bcbe4c9",
+      "ref": "118466d7737ebc42806c331e44bd251b5222d59b"
     },
     "nemo-rl-auto-research": {
       "source": "NVIDIA/skills",
-      "ref": "main",
+      "ref": "d8519c57da6db5d9bea274ec1724a4a7a56a3dee",
       "sourceType": "github",
       "skillPath": "skills/nemo-rl-auto-research/SKILL.md",
       "computedHash": "ea45e4cff33d2d7ff0f9493cc107011670de4c660e39317a47d0d561f8757769"
@@ -64,49 +65,49 @@
     },
     "nemo-rl-session-memory": {
       "source": "NVIDIA/skills",
-      "ref": "main",
+      "ref": "d8519c57da6db5d9bea274ec1724a4a7a56a3dee",
       "sourceType": "github",
       "skillPath": "skills/nemo-rl-session-memory/SKILL.md",
       "computedHash": "227fc965ec35b69731af6e8a967de5d7a75d87d2327cffcb903f032c78ac4247"
     },
     "ponytail": {
       "source": "DietrichGebert/ponytail",
-      "ref": "main",
+      "ref": "e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156",
       "sourceType": "github",
       "skillPath": "skills/ponytail/SKILL.md",
       "computedHash": "210fa0831f649ce9f8a305f7b7c8cf2a0dd09ac4dd53067109941b96e7811d4e"
     },
     "ponytail-audit": {
       "source": "DietrichGebert/ponytail",
-      "ref": "main",
+      "ref": "e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156",
       "sourceType": "github",
       "skillPath": "skills/ponytail-audit/SKILL.md",
       "computedHash": "8b8d72e6ff70b65b6c9518d470fcf29dc696eea93d28f3efa10fdcc60cbd696d"
     },
     "ponytail-debt": {
       "source": "DietrichGebert/ponytail",
-      "ref": "main",
+      "ref": "e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156",
       "sourceType": "github",
       "skillPath": "skills/ponytail-debt/SKILL.md",
       "computedHash": "0099b82174e3a4261828b4ec04d2c068b1b294fdab14f76701c2acd1f7c99539"
     },
     "ponytail-gain": {
       "source": "DietrichGebert/ponytail",
-      "ref": "main",
+      "ref": "e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156",
       "sourceType": "github",
       "skillPath": "skills/ponytail-gain/SKILL.md",
       "computedHash": "c45ecba7906960eea904218b623abf097ebff84ecbacca6d68da1d0687435f75"
     },
     "ponytail-help": {
       "source": "DietrichGebert/ponytail",
-      "ref": "main",
+      "ref": "e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156",
       "sourceType": "github",
       "skillPath": "skills/ponytail-help/SKILL.md",
       "computedHash": "10e8382b1033c9a0fec0073de6d3de3846b4f5dca7d78b6df2d476a1f4cd43c6"
     },
     "ponytail-review": {
       "source": "DietrichGebert/ponytail",
-      "ref": "main",
+      "ref": "e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156",
       "sourceType": "github",
       "skillPath": "skills/ponytail-review/SKILL.md",
       "computedHash": "4646594fcd75455533f7ff1425f4f1c5ba0fa65f88241bf262b1c4fc275f049a"
