@@ -348,7 +348,8 @@ def test_continuation_wake_requires_current_canonical_cursor_reconciliation(loca
     manifest = ExperimentCampaignV1.model_validate(_manifest_payload(campaign_id="cursor", claim_class="fixture"))
     store.lock_experiment_campaign(manifest)
     total_seconds = store.load_campaign().budget.logical_seconds
-    value = {"schema_version": "driver_cycle/v1", "campaign_id": "cursor", "total_seconds": total_seconds,
+    value = {"schema_version": "driver_cycle/v1", "campaign_id": "cursor",
+        "cwd": str(local_compiled["cwd"]), "total_seconds": total_seconds,
         "initial_spent_seconds": 0, "order": [manifest.experiment_id],
         "arms": {manifest.experiment_id: {"manifest_digest": store.load_experiment_campaign(manifest.experiment_id).manifest_sha256}}, "files": {},
         "policy_sha256": load_climb_policy().sha256,
