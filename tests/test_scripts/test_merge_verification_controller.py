@@ -293,6 +293,16 @@ sys.exit(0 if summary['verification_complete'] else 10)
     recovered = owner.validate_observation(interrupted, plan)
     assert recovered["verification_complete"]
     assert recovered["identity"] == replay["observation"]["identity"]
+    lost_output = SimpleNamespace(
+        timed_out=False,
+        cancelled=False,
+        progress_stalled=False,
+        returncode=0,
+        stdout="",
+    )
+    recovered_after_exit = owner.validate_observation(lost_output, plan)
+    assert recovered_after_exit["verification_complete"]
+    assert recovered_after_exit["identity"] == recovered["identity"]
 
 
 def test_missing_isolation_parks_only_verification_activity(tmp_path, monkeypatch):
