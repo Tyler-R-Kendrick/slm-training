@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import json
-import time
 from pathlib import Path
 from scripts.autotrain_cycle_prepare import _driver_argv
+from scripts.autotrain_supervisor_operation_runtime import event_logger
 _MAX_HARD_RETRY_SECONDS = 60.0
 _NO_CAMPAIGN_THRESHOLD = 5
 _STALL_KIND = "loop_stalled_no_campaign"
@@ -299,15 +298,7 @@ def supervise(args, runtime, common: dict, *, run_operation, watchdog) -> int:
     log_dir = root / "loops" / args.loop_id
     log_dir.mkdir(parents=True, exist_ok=True)
     supervisor_log = log_dir / "supervisor.jsonl"
-    def log_event(event: dict) -> None:
-        event = {
-            **event,
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "loop_id": args.loop_id,
-        }
-        with supervisor_log.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(event, sort_keys=True) + "\n")
-        print(json.dumps(event, sort_keys=True), flush=True)
+    log_event = event_logger(supervisor_log, args.loop_id)
     # Invocation count is operational only; it never changes a training recipe.
     prior = [
         row

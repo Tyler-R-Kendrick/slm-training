@@ -18,6 +18,20 @@ from scripts.autotrain_supervisor_operations import (
 )
 
 
+def event_logger(path: Path, loop_id: str):
+    def log_event(event: dict) -> None:
+        event = {
+            **event,
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "loop_id": loop_id,
+        }
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event, sort_keys=True) + "\n")
+        print(json.dumps(event, sort_keys=True), flush=True)
+
+    return log_event
+
+
 def run_operation(runtime, request: dict, *, sequence: int, log_event) -> dict | None:
     """Lease, execute and validate one operation; failure is never a model loss."""
     from scripts.merge_verification_evidence import digest

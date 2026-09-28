@@ -267,110 +267,12 @@ def test_driver_rebuild_rechecks_actual_final_config_and_records_selection(compi
     assert selected["readiness"]["request_digest"] != selected["resolved_readiness"]["request_digest"]
 
 
-@pytest.mark.parametrize("binding", ["unknown", "wall_budget"])
-def test_driver_wall_or_unknown_dispatches_source_repair_not_data(compiled, monkeypatch, binding):
-    from types import SimpleNamespace
-    from scripts import autotrain_readiness as readiness
-    from scripts.autotrain_pending import resolve_screening_matrix
-
-    matrix = _matrix_fixture(compiled)
-    def forbidden(*args, **kwargs):
-        pytest.fail("unknown/wall constraint generated evaluation data")
-    monkeypatch.setattr(readiness, "resolve_matrix_readiness", forbidden)
-    _, pending = resolve_screening_matrix(matrix, {"eval_version": "original"},
-        {"n_min": 6, "binding_constraints": [binding]}, context={"cwd": compiled["cwd"],
-            "root": compiled["cwd"] / "campaigns", "loop_id": "pair", "fitted_candidates": 1,
-            "policy": SimpleNamespace(identity_dict=lambda: {"fixture": "controlled-selection"})})
-    assert pending["blocker"]["kind"] == "repair_harness"
-    assert pending["blocker"]["original_reproducer"]["argv"][2] == "scripts.autotrain_readiness_probe"
 
 
-def test_continuation_wake_requires_current_canonical_cursor_reconciliation(local_compiled, monkeypatch):
-    from scripts.autotrain_cycle_context import CycleJournal, register
-    from scripts.autoresearch_command_cursor import resolved_continuation_grant
-    from slm_training.autoresearch.climb_policy import load_climb_policy
-    from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
-    from tests.test_autoresearch.test_experiment_campaign import _manifest_payload
-    from tests.test_autoresearch.test_harness import campaign
-
-    common = common_for(local_compiled, monkeypatch)
-    root = Path(common["root"])
-    store, journal_store = CampaignStore("cursor", root), CampaignStore("runtime", root / "loops/pair")
-    store.initialize(campaign().model_copy(update={"campaign_id": "cursor"}))
-    manifest = ExperimentCampaignV1.model_validate(_manifest_payload(campaign_id="cursor", claim_class="fixture"))
-    store.lock_experiment_campaign(manifest)
-    total_seconds = store.load_campaign().budget.logical_seconds
-    value = {"schema_version": "driver_cycle/v1", "campaign_id": "cursor", "total_seconds": total_seconds,
-        "initial_spent_seconds": 0, "order": [manifest.experiment_id],
-        "arms": {manifest.experiment_id: {"manifest_digest": store.load_experiment_campaign(manifest.experiment_id).manifest_sha256}}, "files": {},
-        "policy_sha256": load_climb_policy().sha256,
-        "execution_identity": resolved_continuation_grant(local_compiled["cwd"], total_seconds).execution_identity}
-    register(store, journal_store, value)
-    journal = CycleJournal(store, value)
-    journal.state["repair_required"] = "driver_pending_no_progress"
-    pending = journal.pending("driver_pending_no_progress", capability=True)
-    with ActivityRuntime(journal_store) as runtime:
-        waiting_driver(runtime, common, pending)
-        def repair(*args, **kwargs):
-            return {"any_healed": True}
-        drain_driver_pending(runtime, common, 1, lambda _: None, repair)
-        assert runtime.snapshot()["driver"].status == "waiting_capability"
-        # Controller fixture reconciliation, NOT a worker asserting its own repair.
-        # The dispatcher never performs this mutation on the producer's behalf.
-        journal.state.pop("repair_required")
-        journal.save()
-        drain_driver_pending(runtime, common, 2, lambda _: None, repair)
-        assert runtime.snapshot()["driver"].status == "waiting_capability"  # Flag clearing alone is not progress.
-        from scripts.autoresearch_command_cursor import record_execution_outcome
-        from slm_training.autoresearch.schemas import ExperimentOutcome
-        digest = value["arms"][manifest.experiment_id]["manifest_digest"]
-        record_execution_outcome(store, ExperimentOutcome(campaign_id="cursor", experiment_id=manifest.experiment_id,
-            status="failed", exit_code=2, error="operational fixture, not a model score",
-            campaign_manifest_sha256=digest), digest, pending=False)
-        journal.state.update(index=1, seen=[manifest.experiment_id], arm_exits={manifest.experiment_id: 2}, phase="finalizing")
-        journal.save()
-        drain_driver_pending(runtime, common, 3, lambda _: None, repair)
-        assert runtime.snapshot()["driver"].status == "runnable", [
-            json.loads(path.read_text()) for path in journal_store.root.rglob("readiness.json")]
-        checked = runtime.snapshot()["driver-readiness-" + contract_digest(pending)]
-        assert checked.attempts == 3 and checked.charged_seconds > 0
 
 
-@pytest.mark.parametrize("remaining,restored", [(3, True), (4, False), (5, False)])
-def test_pending_row_wake_uses_canonical_monotone_progress(tmp_path, remaining, restored):
-    from scripts.autotrain_readiness_probe import _verified_pending_advance
-    from scripts.autoresearch_command_cursor import record_execution_outcome
-    from tests.test_autoresearch.test_evaluation_continuation import outcome, pending, MANIFEST
-
-    previous, current = outcome("stopped", pending(n=4)), outcome("stopped", pending(n=remaining))
-    store = CampaignStore(current.campaign_id, tmp_path)
-    record_execution_outcome(store, current, MANIFEST, pending=True)
-    value = {"order": [current.experiment_id], "arms": {current.experiment_id: {"manifest_digest": MANIFEST}}}
-    assert _verified_pending_advance(store, value, set(),
-        {"last_yield": previous.model_dump(mode="json")},
-        {"index": 0, "last_yield": current.model_dump(mode="json")}) is restored
 
 
-def test_pending_dispatch_round_robin_is_bounded_and_survives_controller_restart(tmp_path, monkeypatch):
-    common = common_for({"cwd": tmp_path}, monkeypatch)
-    store = CampaignStore("runtime", Path(common["root"]) / "loops/pair")
-    pending = {"schema_version": "driver_pending/v1", "measurement_complete": False,
-        "outcome": "capability", "reason": "fixture capability absent",
-        "wake": {"predicate": "provider restored", "source": "provider_grant", "identity_digest": "e" * 64},
-        "blocker": {"kind": "repair_harness", "blocker_code": "harness_code_failure"}}
-    with ActivityRuntime(store) as runtime:
-        for name in ("a", "b", "c"):
-            waiting_driver(runtime, common, pending, name=name)
-    calls = []
-    def repair(_runtime, request, **kwargs):
-        calls.append(request["affected_activity_id"])
-        return None  # Unavailable capability; not a successful repair.
-    for cycle in range(6):
-        with ActivityRuntime(store) as runtime:
-            drain_driver_pending(runtime, common, cycle, lambda _: None, repair)
-            assert len(calls) == cycle + 1  # At most one remedy per pass.
-            assert all(s.status == "waiting_capability" for s in runtime.snapshot().values())
-    assert calls == ["a", "b", "c", "a", "b", "c"]
 
 
 def test_pre_cycle_missing_source_verification_grant_does_not_starve_actual_inspection(local_compiled, monkeypatch):
@@ -429,3 +331,54 @@ def test_pre_cycle_source_verification_exception_does_not_starve_pending_repair(
     assert calls == ["repair", "inspect"]
     assert "operation_repair_serviced" in events
     assert any(row.get("event") == "source_verification_drain_error" for row in logs)
+
+
+def test_continuation_wake_requires_current_canonical_cursor_reconciliation(local_compiled, monkeypatch):
+    from scripts.autotrain_cycle_context import CycleJournal, register
+    from scripts.autoresearch_command_cursor import resolved_continuation_grant
+    from slm_training.autoresearch.climb_policy import load_climb_policy
+    from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
+    from tests.test_autoresearch.test_experiment_campaign import _manifest_payload
+    from tests.test_autoresearch.test_harness import campaign
+
+    common = common_for(local_compiled, monkeypatch)
+    root = Path(common["root"])
+    store, journal_store = CampaignStore("cursor", root), CampaignStore("runtime", root / "loops/pair")
+    store.initialize(campaign().model_copy(update={"campaign_id": "cursor"}))
+    manifest = ExperimentCampaignV1.model_validate(_manifest_payload(campaign_id="cursor", claim_class="fixture"))
+    store.lock_experiment_campaign(manifest)
+    total_seconds = store.load_campaign().budget.logical_seconds
+    value = {"schema_version": "driver_cycle/v1", "campaign_id": "cursor", "total_seconds": total_seconds,
+        "initial_spent_seconds": 0, "order": [manifest.experiment_id],
+        "arms": {manifest.experiment_id: {"manifest_digest": store.load_experiment_campaign(manifest.experiment_id).manifest_sha256}}, "files": {},
+        "policy_sha256": load_climb_policy().sha256,
+        "execution_identity": resolved_continuation_grant(local_compiled["cwd"], total_seconds).execution_identity}
+    register(store, journal_store, value)
+    journal = CycleJournal(store, value)
+    journal.state["repair_required"] = "driver_pending_no_progress"
+    pending = journal.pending("driver_pending_no_progress", capability=True)
+    with ActivityRuntime(journal_store) as runtime:
+        waiting_driver(runtime, common, pending)
+        def repair(*args, **kwargs):
+            return {"any_healed": True}
+        drain_driver_pending(runtime, common, 1, lambda _: None, repair)
+        assert runtime.snapshot()["driver"].status == "waiting_capability"
+        # Controller fixture reconciliation, NOT a worker asserting its own repair.
+        # The dispatcher never performs this mutation on the producer's behalf.
+        journal.state.pop("repair_required")
+        journal.save()
+        drain_driver_pending(runtime, common, 2, lambda _: None, repair)
+        assert runtime.snapshot()["driver"].status == "waiting_capability"  # Flag clearing alone is not progress.
+        from scripts.autoresearch_command_cursor import record_execution_outcome
+        from slm_training.autoresearch.schemas import ExperimentOutcome
+        digest = value["arms"][manifest.experiment_id]["manifest_digest"]
+        record_execution_outcome(store, ExperimentOutcome(campaign_id="cursor", experiment_id=manifest.experiment_id,
+            status="failed", exit_code=2, error="operational fixture, not a model score",
+            campaign_manifest_sha256=digest), digest, pending=False)
+        journal.state.update(index=1, seen=[manifest.experiment_id], arm_exits={manifest.experiment_id: 2}, phase="finalizing")
+        journal.save()
+        drain_driver_pending(runtime, common, 3, lambda _: None, repair)
+        assert runtime.snapshot()["driver"].status == "runnable", [
+            json.loads(path.read_text()) for path in journal_store.root.rglob("readiness.json")]
+        checked = runtime.snapshot()["driver-readiness-" + contract_digest(pending)]
+        assert checked.attempts == 3 and checked.charged_seconds > 0

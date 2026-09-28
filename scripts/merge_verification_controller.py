@@ -134,12 +134,7 @@ def validate_observation(result, plan):
     try:
         summary = _last_json_object(result.stdout)
     except ValueError as output_error:
-        try:
-            summary = _authenticated_journal_summary(plan)
-        except Exception:
-            raise output_error
-        if result.returncode == 1 and summary.get("status") != "invalid_evidence":
-            raise output_error
+        summary = _recover_missing_output(result, plan, output_error)
     if result.returncode == 1:
         if summary.get("status") != "invalid_evidence":
             raise ValueError("failed verification child asserted a nonfailure outcome")
@@ -157,6 +152,20 @@ def validate_observation(result, plan):
         and result.returncode == 20
     ):
         return {**summary, "verification_complete": False, "release_authorized": False}
+    return _validate_journal_observation(summary, plan)
+
+
+def _recover_missing_output(result, plan, output_error):
+    try:
+        summary = _authenticated_journal_summary(plan)
+    except Exception:
+        raise output_error
+    if result.returncode == 1 and summary.get("status") != "invalid_evidence":
+        raise output_error
+    return summary
+
+
+def _validate_journal_observation(summary, plan):
     if plan.get("identity") and summary.get("identity") != plan["identity"]:
         raise ValueError("verification result identity mismatch")
     cache = ReceiptCache(Path(plan["state_dir"]), Path(plan["source"]))
