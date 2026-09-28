@@ -321,6 +321,14 @@ def _run_source_verification(runtime, event, common, log_event, repair):
         if lease is None:
             return None
         summary = execute_release_attempt(runtime, plan, lease)
+        if summary.get("status") == "invalid_evidence":
+            successor, _ = _successor_after_drift(
+                runtime, event, dependency, common,
+                ValueError(summary.get("reason", "invalid_verification_evidence")),
+            )
+            if successor is not None:
+                log_event({"event": "source_verification_successor", **successor})
+                return successor
         woke = wake_repair(runtime, event, dependency, plan)
         log_event({"event": "source_verification_pass", "activity_id": plan["activity_id"],
                    "status": summary["status"], "repair_woken": woke,
