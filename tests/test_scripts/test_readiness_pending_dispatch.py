@@ -282,7 +282,9 @@ def test_pre_cycle_missing_source_verification_grant_does_not_starve_actual_insp
     from tests.test_scripts.test_autotrain_verification import request
 
     common = common_for(local_compiled, monkeypatch)
-    common["source_digest"] = _source_identity(local_compiled["cwd"])
+    controller_root = Path(__file__).resolve().parents[2]
+    common["cwd"] = str(controller_root)
+    common["source_digest"] = _source_identity(controller_root)
     store = CampaignStore("runtime", Path(common["root"]) / "loops/pair")
     dependency = {"schema_version": "repair_verification_dependency/v1", "grant": None,
         "wake": {"predicate": "complete_current_source_verification", "source": "source_verification_completed",
