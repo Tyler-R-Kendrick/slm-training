@@ -5703,6 +5703,11 @@
       "history": [
         {
           "date": "2026-09-27",
+          "version": "v320",
+          "note": "Rebind authenticated runtime configuration after a verifier reports invalid evidence from its superseded SDK grant."
+        },
+        {
+          "date": "2026-09-27",
           "version": "v319",
           "note": "Create authenticated verifier successors when recovery runtime grants change, even if the predecessor fails its old runtime grant preflight."
         },
@@ -8064,7 +8069,7 @@
         "src/slm_training/harness_core/host_process_identity.py",
         "src/slm_training/harness_core/driver_pending.py"
       ],
-      "version": "v319"
+      "version": "v320"
     },
     "harness.autoresearch.formal": {
       "history": [
