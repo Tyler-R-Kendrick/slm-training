@@ -283,7 +283,7 @@ def drain_source_verification(runtime, common, log_event, *, cycle: int = 0):
     states = runtime.snapshot()
     # Rotate a bounded window before loading per-request dependencies. A full
     # sort here would still walk an unbounded blocked backlog before the limit.
-    if len(events) > 32:
+    if events and cycle > 1:
         start = (max(1, cycle) - 1) * 32 % len(events)
         events = (events[start:] + events[:start])[:32]
     # Least-attempted runnable verification first within this bounded window.
