@@ -262,6 +262,32 @@ def test_successor_cannot_wake_for_changed_proposal(tmp_path, monkeypatch):
         assert runtime.snapshot()["repair"].status == "waiting_dependency"
 
 
+def test_invalid_runtime_grant_observation_activates_config_successor(monkeypatch):
+    from scripts import autotrain_verification_successor as successor_owner
+    from slm_training.autoresearch.heal import isolation
+
+    event = {"experiment_id": "repair"}
+    dependency = {"activity_id": "old-verifier"}
+    runtime = SimpleNamespace(claim_next=lambda **_kwargs: object())
+    events = []
+    monkeypatch.setattr(owner, "_active_dependency", lambda *_args: (event, dependency))
+    monkeypatch.setattr(owner, "dependency_plan", lambda _dependency: {"identity": "old"})
+    monkeypatch.setattr(owner, "wake_repair", lambda *_args: False)
+    monkeypatch.setattr(owner, "register_dependency", lambda *_args: None)
+    monkeypatch.setattr(isolation, "probe_isolation", lambda: SimpleNamespace(available=True))
+    monkeypatch.setattr(owner, "execute_release_attempt", lambda *_args: {
+        "status": "invalid_evidence", "reason": "ambiguous_agentv_runtime_grant",
+    })
+    monkeypatch.setattr(owner, "_successor_after_drift", lambda *_args: (
+        {"status": "successor_activated", "activity_id": "new-verifier"}, None,
+    ))
+
+    result = owner._run_source_verification(runtime, event, {}, events.append, object())
+
+    assert result == {"status": "successor_activated", "activity_id": "new-verifier"}
+    assert events == [{"event": "source_verification_successor", **result}]
+
+
 def test_runtime_config_drift_rebinds_after_old_grant_failure(tmp_path, monkeypatch):
     from scripts import autotrain_verification_successor as successor_owner
     from slm_training.autoresearch.heal import recovery_dispatch
