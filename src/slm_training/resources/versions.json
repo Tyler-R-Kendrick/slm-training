@@ -5703,6 +5703,11 @@
       "history": [
         {
           "date": "2026-09-27",
+          "version": "v319",
+          "note": "Create authenticated verifier successors when recovery runtime grants change, even if the predecessor fails its old runtime grant preflight."
+        },
+        {
+          "date": "2026-09-27",
           "version": "v318",
           "note": "Rotate bounded source-verification scans after attempt-priority ordering so low-attempt orphan requests cannot starve other dependencies."
         },
@@ -8059,7 +8064,7 @@
         "src/slm_training/harness_core/host_process_identity.py",
         "src/slm_training/harness_core/driver_pending.py"
       ],
-      "version": "v318"
+      "version": "v319"
     },
     "harness.autoresearch.formal": {
       "history": [
