@@ -136,7 +136,13 @@ def list_inference_components(endpoint_name: str, reg: list[str]) -> list[str]:
             f"failed to list inference components (exit {proc.returncode}): "
             f"{(proc.stderr or proc.stdout).strip()}"
         )
-    return json_out(proc, [])
+    try:
+        components = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("AWS returned invalid JSON while listing inference components") from exc
+    if not isinstance(components, list) or any(not isinstance(item, str) for item in components):
+        raise RuntimeError("AWS returned invalid inference-component list")
+    return components
 
 
 def component_model_name(ic_name: str, reg: list[str]) -> str:
@@ -147,7 +153,12 @@ def component_model_name(ic_name: str, reg: list[str]) -> str:
             f"failed to inspect inference component {ic_name} "
             f"(exit {proc.returncode}): {(proc.stderr or proc.stdout).strip()}"
         )
-    desc = json_out(proc, {})
+    try:
+        desc = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"AWS returned invalid JSON for inference component {ic_name}") from exc
+    if not isinstance(desc, dict) or not isinstance(desc.get("Specification", {}), dict):
+        raise RuntimeError(f"AWS returned invalid inference-component description for {ic_name}")
     return desc.get("Specification", {}).get("ModelName", "")
 
 

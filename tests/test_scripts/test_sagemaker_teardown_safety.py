@@ -31,6 +31,14 @@ def test_component_discovery_failure_is_not_treated_as_empty(monkeypatch):
         teardown.list_inference_components("endpoint", ["--region", "us-east-1"])
 
 
+def test_malformed_component_list_is_not_treated_as_empty(monkeypatch):
+    success = subprocess.CompletedProcess([], 0, "not-json", "")
+    monkeypatch.setattr(teardown, "run_aws", lambda _args: success)
+
+    with pytest.raises(RuntimeError, match="invalid JSON"):
+        teardown.list_inference_components("endpoint", ["--region", "us-east-1"])
+
+
 def test_remaining_components_stop_endpoint_deletion(monkeypatch):
     calls = []
 
