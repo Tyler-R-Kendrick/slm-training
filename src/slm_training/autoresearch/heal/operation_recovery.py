@@ -255,9 +255,22 @@ def _successor_plan(runtime, checked, events, controller_execution=None):
     original = rows[-1]["detail"]["request"]
     state = runtime.snapshot()[activity]
     terminal_timeout = checked.get("schema_version") == "operation_timeout_handoff/v1"
-    if state.spec.input_digest != contract_digest(original) or state.status in {
-        "running", "succeeded",
-    } or (state.status == "cancelled" and not terminal_timeout):
+    # Verified repair activation can continue a cancelled predecessor. The
+    # transition below keeps its request and charges only the grant remainder.
+    cancelled_repair = bool(
+        checked.get("activation_id")
+        and checked.get("publication_id")
+        and checked.get("source_digest")
+        and checked.get("successor_execution")
+    )
+    if (
+        state.spec.input_digest != contract_digest(original)
+        or state.status in {"running", "succeeded"}
+        or (
+            state.status == "cancelled"
+            and not (terminal_timeout or cancelled_repair)
+        )
+    ):
         raise ValueError("original_operation_identity_changed")
     seconds = state.spec.grant.total_seconds - state.charged_seconds
     attempts = state.spec.grant.max_attempts - state.attempts

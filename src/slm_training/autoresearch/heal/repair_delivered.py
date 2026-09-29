@@ -36,7 +36,9 @@ def _environment_transition(runtime, accepted, execution):
     current = environment_identity()
     original = runtime.snapshot()[accepted["resume_activity_id"]]
     before = digest(current)
-    if before != original.spec.environment_digest:
+    # A stopped predecessor can bind a measured successor environment. Keep
+    # its old digest in the activation record; replay checks the successor hash.
+    if before != original.spec.environment_digest and original.status != "cancelled":
         raise ValueError("delivered_activation_predecessor_environment_changed")
     variables = verification_environment()
     if digest(variables) != current["execution_environment_sha256"]:
@@ -44,7 +46,10 @@ def _environment_transition(runtime, accepted, execution):
     variables["PYTHONPATH"] = str(execution / "src")
     variables.pop("PYTHONHOME", None)
     successor = {**current, "execution_environment_sha256": digest(variables)}
-    return {"predecessor_digest": before, "successor_digest": digest(successor)}
+    return {
+        "predecessor_digest": original.spec.environment_digest,
+        "successor_digest": digest(successor),
+    }
 
 
 def _reference(artifact, activation_id):

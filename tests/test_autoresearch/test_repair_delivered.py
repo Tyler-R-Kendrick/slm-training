@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -233,12 +234,39 @@ def test_successor_binds_relocated_environment_and_keeps_remaining_grant(reconci
         _successor_plan(runtime, handoff, runtime.store.verify_event_chain())
 
 
-def test_environment_drift_before_recording_cannot_be_relabelled(reconciled, monkeypatch):
+def test_environment_drift_before_cancelled_activation_cannot_be_relabelled(
+    reconciled, monkeypatch
+):
     runtime, lease, wait, reconciliation, _ = reconciled
     monkeypatch.setenv("OMP_NUM_THREADS", "987")
     with pytest.raises(ValueError, match="predecessor_environment_changed"):
         owner.record_delivered_activation(runtime, lease, wait, reconciliation)
     assert not any(event["event_type"] == "delivered_repair_activation_recorded" for event in runtime.store.verify_event_chain())
+
+
+def test_cancelled_predecessor_records_successor_environment_transition(
+    reconciled, monkeypatch, tmp_path
+):
+    runtime, lease, wait, reconciliation, accepted = reconciled
+    predecessor = runtime.snapshot()[accepted["resume_activity_id"]]
+    runtime.cancel(predecessor.spec.activity_id, reason="verified successor activation")
+    locked_environment = predecessor.spec.environment_digest
+    monkeypatch.setenv("PATH", os.environ["PATH"] + os.pathsep + str(tmp_path))
+
+    reference = owner.record_delivered_activation(runtime, lease, wait, reconciliation)
+    _finish(runtime, lease, reconciliation, reference)
+    handoff = owner.resolve_delivered_activation(runtime.store, reference)
+    transition = handoff["environment_transition"]
+    assert transition["predecessor_digest"] == locked_environment
+    assert transition["successor_digest"] != locked_environment
+
+    monkeypatch.setenv("PYTHONPATH", str(Path(handoff["successor_execution"]) / "src"))
+    monkeypatch.delenv("PYTHONHOME", raising=False)
+    plan = _successor_plan(runtime, handoff, runtime.store.verify_event_chain())
+    assert plan["request"]["environment_digest"] == transition["successor_digest"]
+    monkeypatch.setenv("OMP_NUM_THREADS", "987")
+    with pytest.raises(ValueError, match="successor_environment_transition_mismatch"):
+        _successor_plan(runtime, handoff, runtime.store.verify_event_chain())
 
 
 @pytest.mark.parametrize("fault", [None, "source", "cache"])

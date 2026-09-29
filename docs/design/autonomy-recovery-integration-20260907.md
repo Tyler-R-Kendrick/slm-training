@@ -1035,3 +1035,8 @@ These results close focused integration defects. They do not establish the full 
 After extracting the shared timeout contracts from the autoresearch runtime, the complete timeout suite passed again: **17 passed in 68.45 seconds**. Independent review confirmed byte-identical contract function ASTs and preserved runtime re-exports. The Ruff 0.15.22 complexity gate now passes for the changed modules. The guarded code-quality update lowered four existing module-line ceilings; the subsequent code-quality check passed with no regressions or baseline increases.
 
 R34's focused integration regression set passed **195 tests, with seven existing conditional skips, in 44.57 seconds**. The canonical fast/static merge gate then passed **18/18 obligations** against base `e56115002dd3f2872d2d24d1a5ef85ff36ce49cf`. This fast gate does not collect or run the full source-owned test suite. Full exact-source verification remains open.
+
+
+## Cancelled predecessor environment transition (2026-09-29)
+
+A verified repair may continue a cancelled operation after the host environment changes. Keep the predecessor environment digest unchanged in the original activity. Record the newly measured digest as the successor environment in the delivered activation artifact, then require replay to match that successor digest. Reject environment changes while the predecessor remains active, waiting, or failed. The successor consumes only the original grant remainder and adds no scientific replicate. This transition preserves lineage; it does not establish that measurements across the two environments are confirmatory.
