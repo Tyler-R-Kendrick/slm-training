@@ -6,7 +6,7 @@ from scripts.merge_verification_evidence import digest
 
 
 def summarize(state: dict, *, reason: str = "", full: bool = False) -> dict:
-    current = list(state["static"].values()) + state["attempts"]
+    current = [state["static"][name] for name in sorted(state["static"])] + state["attempts"]
     records = state.get("static_history", []) + current
     completed = set(state["passed_nodes"])
     nodes = state.get("nodes", [])
@@ -15,11 +15,23 @@ def summarize(state: dict, *, reason: str = "", full: bool = False) -> dict:
     statics_ok = all(
         state["static"].get(name, {}).get("status") == "ok" for name in static_names
     )
-    complete = bool(nodes) and set(nodes) == completed and statics_ok and not reason
+    no_tests_required = (
+        not state["binding"].get("targets") and state.get("no_tests_required") is True
+    )
+    collected = bool(nodes) or no_tests_required
+    complete = (
+        collected and set(nodes) == completed and statics_ok and not reason
+    )
     progress = phase_progress(state)
     action = next_action(state, complete=complete, reason=reason)
     fields = ("name", "kind", "status", "exit_code", "seconds", "reason")
-    waits = list(state.get("waiting", {}).values())
+    # The authenticated journal serializes dicts with sorted keys, so project
+    # waits in a canonical order: an insertion-ordered in-memory state and its
+    # reloaded journal must summarize identically.
+    waits = sorted(
+        state.get("waiting", {}).values(),
+        key=lambda row: (row.get("kind", ""), row.get("target_digest", "")),
+    )
     result = {
         "schema": "merge_verification/v2",
         "identity": state["identity"],
@@ -71,7 +83,10 @@ def summarize(state: dict, *, reason: str = "", full: bool = False) -> dict:
 def phase_progress(state):
     """Counts of verified obligations, not receipt/log activity."""
     names = [row[0] for row in state["binding"]["static_commands"]]
-    collected = bool(state.get("nodes"))
+    collected = bool(state.get("nodes")) or (
+        not state["binding"].get("targets")
+        and state.get("no_tests_required") is True
+    )
     counts = {
         "static": (
             len(names),
@@ -97,8 +112,13 @@ def outstanding(state):
     for name, _ in state["binding"]["static_commands"]:
         if state["static"].get(name, {}).get("status") != "ok":
             yield "static", [name]
-    if not state.get("nodes"):
-        yield "collection", state["binding"].get("targets", [])
+    if not state.get("nodes") and not (
+        not state["binding"].get("targets")
+        and state.get("no_tests_required") is True
+    ):
+        batches = state.get("collection_batches", [])
+        index = state.get("collection_batch_index", 0)
+        yield "collection", batches[index] if index < len(batches) else state["binding"].get("targets", [])
     passed = set(state["passed_nodes"])
     for nodes in state.get("shards", []):
         if not set(nodes) <= passed:

@@ -1,27 +1,23 @@
-"""Finite real supervisor/cmd_run acceptance on locked inference-only bundles.
-
-Preparation is an explicitly controlled public fixture, not autonomous research
-selection. The ordinary driver, command cursor, evaluator and verdict run real.
-"""
+"""Public supervisor acceptance on controlled, locked inference-only bundles."""
 
 import argparse
 import sys
 from pathlib import Path
 
-from slm_training.harness_core.activity_contract import contract_digest
+from slm_training.harness_core.activity_contract import ResourceGrant, contract_digest
 from scripts.autotrain_cycle_context import register, writer
 from slm_training.autoresearch.experiment_campaign import (
     ExperimentCampaignV1,
     campaign_manifest_sha256,
 )
 from slm_training.autoresearch.schemas import CampaignSpec, ExperimentSpec
-from slm_training.autoresearch.storage import CampaignStore, _sha as payload_sha
-from slm_training.levers import MAX_RUN_SECONDS
+from slm_training.autoresearch.storage import CampaignStore
 from slm_training.versioning import build_version_stamp
 
 from .cli import _write
 from . import measurement_bundle as bundle
-from .measurement_fixture import _inputs, source_identity
+from .measurement_supervised_evidence import run_supervised as run
+from .measurement_fixture import _inputs, require_release_versions, source_identity
 from .measurement_fixture_plan import _read, _sha, compile_fixture, supervised_matrix
 
 
@@ -49,16 +45,14 @@ def _design(store, plan):
             architecture=_sha(directory / "last.meta.json"),
             tokenizer_layout=_sha(directory / "last.tokenizer.json"),
             training_snapshot=metadata["metadata"]["data_manifest_sha"],
-            preprocessing=dict(
-                source_summary_sha256=plan["arms"][name]["source_summary_sha256"]
-            ),
+            preprocessing=dict(source_summary_sha256=plan["arms"][name]["source_summary_sha256"]),
             starting_checkpoint=bundle["bundle_digest"],
             starting_checkpoint_role="inference_only",
             endpoint=plan["primary"],
             resource_contract=dict(
                 new_training_updates=0,
                 selected_cases=6,
-                total_wall_seconds=MAX_RUN_SECONDS,
+                total_wall_seconds=store.load_campaign().budget.logical_seconds,
             ),
         )
         config = dict(
@@ -67,9 +61,7 @@ def _design(store, plan):
             checkpoint_bundle=bundle["bundle_digest"],
             training_recipe_is_historical=True,
         )
-        treatments.append(
-            treatment_identity(config, bindings=bindings, intervention=contract)
-        )
+        treatments.append(treatment_identity(config, bindings=bindings, intervention=contract))
         configurations.append(dict(config=config, bindings=bindings))
     hypothesis = digest("supervised inference-only remeasurement of the retained pair")
     design_digest = digest(configurations)
@@ -99,7 +91,7 @@ def _design(store, plan):
     return pair
 
 
-def prepare(store, loop_id, retained_plan):
+def prepare(store, loop_id, retained_plan, retained_evidence=None, continuation_grant=None):
     from slm_training.autoresearch.climb_policy import (
         load_climb_policy,
         primary_for_role,
@@ -107,14 +99,14 @@ def prepare(store, loop_id, retained_plan):
     from slm_training.autoresearch.engine import compile_commands
 
     if (store.root / "campaign.json").exists():
-        raise ValueError(
-            "supervised fixture requires a fresh campaign; never overwrite a lock"
-        )
+        raise ValueError("supervised fixture requires a fresh campaign; never overwrite a lock")
+    require_release_versions(source_identity())
     previous = _read(retained_plan)
     inputs = _inputs(
-        Path("outputs/runs/autonomy-mea-data/final-evidence.json"),
+        retained_evidence or Path("outputs/runs/autonomy-mea-data/final-evidence.json"),
         previous["inputs"]["train_version"],
         previous["inputs"]["eval_version"],
+        checkpoint_paths={arm: value["checkpoint"] for arm, value in previous["inputs"]["arms"].items()},
     )
     if inputs != previous["inputs"]:
         raise ValueError("retained fixture input identities changed")
@@ -131,7 +123,8 @@ def prepare(store, loop_id, retained_plan):
         **bundle.continuous_source_commits(stamp["code_commit"]),
         primary_metric=primary["metric"],
         objective="Finite supervised six-case inference-only remeasurement",
-        budget=dict(max_experiments=2, max_gpu_hours=0, max_wall_minutes=3),
+        budget=dict(max_experiments=2, max_gpu_hours=0, max_wall_minutes=3,
+                    continuation_grant=continuation_grant),
         notes="Controlled public fixture preparation; dirty authoring tree explicitly content-bound; no new training or promotion",
     )
     store.initialize(campaign)
@@ -180,8 +173,9 @@ def prepare(store, loop_id, retained_plan):
         source_dirty=True,
         created_at=campaign.created_at,
         author="explicit supervised diagnostic fixture",
+        budget=campaign.budget.model_dump(mode="json"),
         stopping_rules=[
-            "Same-campaign cursor; total driver budget 180 seconds, each arm invocation at most 95 seconds; no training/promotion"
+            f"Same-campaign cursor; total driver budget {campaign.budget.logical_seconds} seconds, each arm invocation at most 95 seconds; no training/promotion"
         ],
     )
     from slm_training.evals.measurement_identity import content_digest
@@ -273,7 +267,7 @@ def _register_cycle(store, campaign, matrix, plan, pair, path):
         skip_slugs=[],
         root_arg=str(root),
         cwd=str(cwd.resolve()),
-        total_seconds=float(MAX_RUN_SECONDS),
+        total_seconds=campaign.budget.logical_seconds,
         initial_spent_seconds=0.0,
         policy_sha256=load_climb_policy().sha256,
         execution_identity=plan["execution_identity"],
@@ -286,92 +280,18 @@ def _register_cycle(store, campaign, matrix, plan, pair, path):
             store.root / "manifests" / f"{name}.json",
         )
         value["arms"][name] = dict(
-            cmd=[
-                *ar,
-                "run",
-                "--campaign-id",
-                store.campaign_id,
-                "--experiment",
-                str(experiment),
-                "--campaign-manifest",
-                str(manifest),
-                "--execute",
-                "--experiment-wall-seconds",
-                "95",
-                "--diagnostic-bundle-plan",
-                str(path),
-            ],
+            cmd=[*ar, "run", "--campaign-id", store.campaign_id,
+                 "--experiment", str(experiment), "--campaign-manifest", str(manifest),
+                 "--execute", "--experiment-wall-seconds", "95",
+                 "--diagnostic-bundle-plan", str(path)],
             commands=arm["commands"],
             manifest_digest=arm["manifest_sha256"],
             experiment_path=str(experiment),
         )
-        value["files"].update(
-            {
-                str(p): _sha(p)
-                for p in (experiment, manifest, Path(arm["source_summary"]))
-            }
-        )
+        value["files"].update({str(p): _sha(p)
+            for p in (experiment, manifest, Path(arm["source_summary"]))})
     with writer(root, campaign.loop_id) as runtime:
         register(store, runtime, value)
-
-
-def run(store):
-    from scripts.autotrain_supervisor_operations import run_operation
-    from scripts.autotrain_pending import drain_driver_pending
-    from scripts.merge_verification_evidence import digest, environment_identity
-    from scripts.run_autotrain_supervisor import _source_identity
-    from .measurement_fixture_evidence import recording_runtime
-    from .measurement_supervised_evidence import collect_supervised
-
-    plan = bundle.load_contract(store, store.root / "supervised_measurement.json")
-    loop_id = store.load_campaign().loop_id
-    journal = CampaignStore("runtime", store.root.parent / "loops" / loop_id)
-    # Finite explicit operation; never install/start a persistent service.
-    request = dict(
-        operation="driver",
-        cwd=str(Path.cwd()),
-        root=str(store.root.parent),
-        loop_id=loop_id,
-        source_digest=_source_identity(Path.cwd()),
-        environment_digest=digest(environment_identity()),
-        driver_argv=[
-            "--root",
-            str(store.root.parent),
-            "--loop-id",
-            loop_id,
-            "--supervised",
-            "--max-cycles",
-            "1",
-        ],
-    )
-    with recording_runtime(journal) as runtime:
-        sequence = len(
-            [
-                e
-                for e in journal.verify_event_chain()
-                if e["event_type"] == "activity_controller_started"
-            ]
-        )
-        result = run_operation(
-            runtime,
-            request,
-            sequence=sequence,
-            log_event=lambda event: print(event, flush=True),
-        )
-        if result and result.get("returncode") == 10:
-            # A pending driver is a resumable activity, not a terminal stop.
-            # Run the canonical probe/repair dispatcher before this bounded
-            # invocation exits so the next invocation has a durable wake source.
-            drain_driver_pending(
-                runtime,
-                request,
-                sequence,
-                lambda event: print(event, flush=True),
-                run_operation,
-            )
-    if result is not None and result.get("returncode") == 0:
-        collect_supervised(store, plan, result)
-    return dict(payload=result, contract_sha256=payload_sha(plan))
 
 
 def main(argv=None):
@@ -387,25 +307,23 @@ def main(argv=None):
         / "autonomy-mea-resolved-endpoint-20260908-r2"
         / "measurement_fixture.json",
     )
-    parser.add_argument(
-        "--enable-fixture-experiment", action="store_true", required=True
-    )
+    parser.add_argument("--retained-evidence", type=Path)
+    parser.add_argument("--continuation-grant", type=ResourceGrant.model_validate_json)
+    parser.add_argument("--enable-fixture-experiment", action="store_true", required=True)
     args = parser.parse_args(argv)
+    if args.action == "run" and args.continuation_grant is not None:
+        parser.error("run uses the locked grant; prepare a successor to change it")
     store = CampaignStore(args.run_id, args.root.resolve())
     result = (
-        prepare(store, args.loop_id, args.retained_plan.resolve())
+        prepare(store, args.loop_id, args.retained_plan.resolve(), args.retained_evidence,
+                args.continuation_grant)
         if args.action == "prepare"
         else run(store)
     )
-    print(
-        {
-            "action": args.action,
-            "campaign_id": store.campaign_id,
-            "promotion_allowed": False,
-            "result": result if args.action == "run" else "locked",
-        }
-    )
-    return 0 if args.action == "prepare" or result["payload"] is not None else 1
+    print(dict(action=args.action, campaign_id=store.campaign_id,
+               promotion_allowed=False,
+               result=result if args.action == "run" else "locked"))
+    return 0 if args.action == "prepare" else result["returncode"]
 
 
 if __name__ == "__main__":

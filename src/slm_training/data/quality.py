@@ -331,11 +331,10 @@ def _prompt_component_requirements(
 ) -> tuple[str, ...]:
     """Find positive component requirements, retaining explicit multiplicity.
 
-    Unlike :func:`_prompt_component_mentions` (which returns a de-duplicated set
-    for the data-quality judge), this drops negated/replaced mentions and keeps
-    explicit counts. It is consumed by the binding-aware meaningful-program eval.
+    Drops negated/replaced mentions; identifier digits never denote quantities.
     """
-    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    prose = re.sub(r"\b(?=\w*[a-z_])(?=\w*\d)\w+\b", "", prompt.lower())
+    normalized = re.sub(r"[^a-z0-9]+", " ", prose).strip()
     component_phrases = _component_phrases()
     occupied: list[tuple[int, int]] = []
     required: dict[str, int] = {}

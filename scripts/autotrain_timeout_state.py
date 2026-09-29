@@ -10,6 +10,7 @@ See ``docs/design/code-quality-contract.md``.
 
 from __future__ import annotations
 
+import hashlib
 import itertools
 from collections.abc import Mapping
 from pathlib import Path
@@ -19,13 +20,55 @@ from scripts.autotrain_io import (
     read_json,
 )
 from slm_training.autoresearch.schemas import (
+    AutotrainActionV1,
     AutotrainCycleHandoffV1,
-)
-from slm_training.autoresearch.storage import (
-    pending_autotrain_actions,
 )
 
 FORMAL_TIMEOUT_STATUSES = frozenset({"timed_out"})
+
+
+def route_timeout_actions(
+    actions: list[AutotrainActionV1],
+    camp_dir: Path,
+    candidate_id: str,
+    evidence_id: str,
+    cycle_intent: str,
+    delivery: Mapping[str, Any],
+    finalized_decode_timeout: bool,
+    control_only_model_timeout: bool,
+) -> bool:
+    """Route typed timeouts without treating an incomplete run as evidence."""
+    if not (finalized_decode_timeout or control_only_model_timeout):
+        return False
+    manifest = camp_dir / "manifests" / f"{candidate_id}.json"
+    manifest_sha = hashlib.sha256(manifest.read_bytes()).hexdigest() if manifest.is_file() else None
+    if control_only_model_timeout:
+        actions.insert(0, AutotrainActionV1(
+            kind="retry_measurement", owner="autotrain",
+            reason="replay the exact frozen pair after the control-only timeout",
+            evidence_ids=(evidence_id,), frozen_manifest_sha256=manifest_sha,
+        ))
+    elif delivery_is_thrash_timeout_residual(delivery) and cycle_intent in {"screening", "retry_measurement"}:
+        actions.append(AutotrainActionV1(
+            kind="next_experiment", owner="autotrain",
+            reason="retire the incomplete thrash timeout residual and consume the next distinct ranked hypothesis",
+            evidence_ids=(evidence_id,),
+        ))
+    else:
+        actions[0:0] = [
+            AutotrainActionV1(
+                kind="repair_harness", owner="improve-openui-harnesses",
+                reason="repair canonical model-build runtime before replaying the frozen arm",
+                evidence_ids=(evidence_id,), harness_family="model_build",
+                frozen_manifest_sha256=manifest_sha,
+            ),
+            AutotrainActionV1(
+                kind="retry_measurement", owner="autotrain",
+                reason="replay the identical frozen arm after the canonical runtime repair",
+                evidence_ids=(evidence_id,), frozen_manifest_sha256=manifest_sha,
+            ),
+        ]
+    return True
 
 
 def delivery_is_thrash_timeout_residual(
@@ -229,7 +272,9 @@ def require_predecessor_actions(
     )
     if handoff.loop_id != loop_id or handoff.campaign_id != predecessor_campaign_id:
         raise RuntimeError("predecessor handoff identity does not match loop lineage")
-    pending = pending_autotrain_actions(root, handoff)
+    from slm_training.autoresearch.action_dependencies import campaign_prerequisites
+
+    pending, _delivery_waits = campaign_prerequisites(root, handoff)
     delivery = read_json(root / predecessor_campaign_id / "sdlc_delivery.json")
     if delivery.get("stack_layer") is False:
         # Historical positive fixture handoffs emitted deliver_stack even when

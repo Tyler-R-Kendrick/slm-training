@@ -7,6 +7,8 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+from tests.test_lineage.manifest_fixture import run_manifest
+
 from scripts.model_cycle import main as model_cycle_main
 from slm_training.lineage.data_cycle import (
     annotations_to_cycle_data,
@@ -30,31 +32,6 @@ from slm_training.lineage.tracks import (
     CAUSAL_BASE_CANDIDATES,
     TWOTOWER_E53_RECIPE,
 )
-
-
-def run_manifest(run_id: str, *, parent_ids: tuple[str, ...] = ()) -> RunManifest:
-    return RunManifest(
-        run_id=run_id,
-        track="twotower",
-        parent_ids=parent_ids,
-        base_model_id="base",
-        base_model_revision="abc123",
-        architecture_sha="arch",
-        tokenizer_sha="tok",
-        parameter_shapes_sha="shapes",
-        data_snapshot_sha="data",
-        eval_snapshot_sha="eval",
-        recipe_sha="recipe",
-        code_sha="code",
-        seed=1,
-        hardware={"device": "cpu"},
-        artifact_uris=(),
-        metrics={},
-        lifecycle_state="running",
-        initialization="parent" if parent_ids else "scratch",
-        recipe={"lr": 1e-3},
-        created_at="2026-01-01T00:00:00Z",
-    )
 
 
 def report(run_id: str, *, seed: int = 0, rung: float = 3.0) -> EvaluationReport:
@@ -309,15 +286,67 @@ def test_causal_base_lock_cannot_move(tmp_path: Path) -> None:
 
 
 def test_twotower_quantized_export_loads_in_browser_adapter(tmp_path: Path) -> None:
+    from slm_training.dsl.schema import ExampleRecord
     from slm_training.models.onnx_inference import OnnxTwoTowerModel
-    from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
-    from slm_training.models.twotower import TwoTowerModel
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
-    model = TwoTowerModel.from_checkpoint(PLAYGROUND_DEMO_CHECKPOINT, device="cpu")
+    model = TwoTowerModel.from_records(
+        [
+            ExampleRecord(
+                id="export-fixture",
+                prompt="A card with a title",
+                openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+                placeholders=[":slot_0"],
+                split="train",
+            )
+        ],
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
     artifacts = model.export(tmp_path / "export", format="onnx")
     assert sum(path.stat().st_size for path in artifacts) < 1_000_000_000
     loaded = OnnxTwoTowerModel.from_checkpoint(tmp_path / "export/model.pt")
     assert loaded.tokenizer.vocab_size == model.tokenizer.vocab_size
+    assert loaded.context_tokenizer.vocab_size == model.context_tokenizer.vocab_size
+
+    captured: dict[str, list[list[int]]] = {}
+
+    class ContextCapture:
+        def run(self, _outputs, inputs):
+            captured["ids"] = inputs["input_ids"].tolist()
+            return ["context-encoded"]
+
+    loaded.context_session = ContextCapture()
+    context, _ = loaded._encode_context("A card with a title")
+    assert context == "context-encoded"
+    assert captured["ids"] == [
+        loaded.context_tokenizer.encode("A card with a title")[: loaded.config.max_prompt_len]
+    ]
+
+    meta_path = tmp_path / "export/model.meta.json"
+    meta = json.loads(meta_path.read_text())
+    context_sidecar = tmp_path / "export/model.context.tokenizer.json"
+    context_sidecar.unlink()
+    with pytest.raises(FileNotFoundError):
+        OnnxTwoTowerModel.from_checkpoint(tmp_path / "export/model.pt")
+
+    meta["context_tokenizer"] = None
+    meta["context_vocab_size"] = model.tokenizer.vocab_size + 1
+    meta_path.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="context_vocab_size"):
+        OnnxTwoTowerModel.from_checkpoint(tmp_path / "export/model.pt")
+
+    meta["context_vocab_size"] = model.context_tokenizer.vocab_size
+    meta["vocab_size"] = model.tokenizer.vocab_size + 1
+    meta_path.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="vocab_size"):
+        OnnxTwoTowerModel.from_checkpoint(tmp_path / "export/model.pt")
 
 
 def test_causal_plugin_identity_and_grammar_masks_are_cached(monkeypatch) -> None:

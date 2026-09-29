@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.test_scripts.controller_fixtures import bind_test_controller
+
 from slm_training.autoresearch.heal.escalation import EscalationLedger
 
 _GIT_ENV = {
@@ -91,6 +93,18 @@ def test_handle_hard_pending_records_escalation_and_governs_backoff(
         log_event=events.append,
     )
     assert second["sleep_seconds"] == 60.0
+    # Escalation may grow without bound, but supervision must keep retrying.
+    third = _mod._handle_hard_pending(
+        [blocker],
+        cwd=repo,
+        root=root,
+        loop_id="loop-1",
+        campaign_id="c3",
+        max_heal_attempts=2,
+        playbooks_enabled=True,
+        log_event=events.append,
+    )
+    assert third["sleep_seconds"] == 60.0
 
 
 def _stub_continuous_parked():
@@ -101,6 +115,19 @@ def _stub_continuous_parked():
         self_heal_unblock_loop=lambda **kwargs: {"soft_healed": []},
         _check_regime_parked=lambda **kwargs: "regime_parked",
     )
+
+
+def _mock_park_operation(monkeypatch):
+    from scripts import merge_verification_evidence as evidence
+
+    monkeypatch.setattr(evidence, "source_identity", lambda _: "a" * 64)
+    monkeypatch.setattr(evidence, "environment_identity", lambda: {"fixture": True})
+
+    def run_operation(runtime, request, **kwargs):
+        assert request["operation"] == "inspect"
+        return {"report": {"soft_healed": []}, "parked": "regime_parked", "campaign_id": None}
+
+    monkeypatch.setattr(_mod, "_run_operation", run_operation)
 
 
 def _park_events(root: Path, loop_id: str) -> list[str]:
@@ -120,7 +147,8 @@ def test_park_is_wait_state_not_exit(
     # never end the process — exiting made the loop depend on an external
     # agent relaunch, the opposite of hands-off.
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(_mod, "_load_continuous", _stub_continuous_parked)
+    _mock_park_operation(monkeypatch)
+    bind_test_controller(monkeypatch, {"fixture": True})
     rc = _mod.main(
         [
             "--loop-id",
@@ -143,7 +171,8 @@ def test_exit_on_park_preserves_legacy_single_check(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(_mod, "_load_continuous", _stub_continuous_parked)
+    _mock_park_operation(monkeypatch)
+    bind_test_controller(monkeypatch, {"fixture": True})
     rc = _mod.main(
         [
             "--loop-id",
@@ -217,6 +246,15 @@ def test_default_primary_metric_matches_climb_policy() -> None:
     policy_metric = str(load_climb_policy().screening_primary["metric"])
     assert _mod._default_primary_metric() == policy_metric
     assert _mod._build_parser().parse_args([]).primary_metric == policy_metric
+
+
+def test_canonical_driver_loader_registers_its_pinned_module():
+    import sys
+
+    driver = _mod._load_continuous()
+    assert sys.modules[driver.__name__] is driver
+
+
 
 
 def test_watchdog_no_campaign_governs_backoff_and_keeps_counting(

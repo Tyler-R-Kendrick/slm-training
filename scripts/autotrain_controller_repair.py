@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 
 from slm_training.autoresearch.runtime.activity_publication import DelegatedPublisher
@@ -39,13 +38,13 @@ def dispatch_controller_repairs(
             return True
 
     path = Path(request["repair_config"]) if request.get("repair_config") else None
-    if (
-        path is not None
-        and hashlib.sha256(path.read_bytes()).hexdigest()
-        != request["repair_config_digest"]
-    ):
-        raise ValueError("repair authority changed during invocation")
-    config = load_recovery_config(path)
+    if path is None:
+        config = load_recovery_config(None)
+    else:
+        config_digest = request.get("repair_config_digest")
+        if not isinstance(config_digest, str):
+            raise ValueError("repair config digest missing")
+        config = load_recovery_config(path, expected_sha256=config_digest)
     source, source_digest = cwd, request["source_digest"]
     publish = None
     if config is not None and config.grant is not None:
@@ -54,7 +53,8 @@ def dispatch_controller_repairs(
             request.get("release_root") or source.parent / "verified-releases"
         )
         publish = verified_release_callback(
-            publisher, lease, destinations=(releases, root)
+            publisher, lease, destinations=(releases, root),
+            verified_predecessor=(cwd, request["source_digest"]),
         )
     context = RecoveryContext(
         root=root,

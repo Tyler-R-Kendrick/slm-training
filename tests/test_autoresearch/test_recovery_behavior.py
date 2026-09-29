@@ -168,10 +168,12 @@ def test_both_constraints_binding_queue_both_remedies(tmp_path: Path) -> None:
 
 
 def test_an_unclassified_deficit_still_asks_for_something(tmp_path: Path) -> None:
-    """A report with no recorded cause must not park silently."""
+    """Unknown cause requests diagnosis instead of inventing a data remedy."""
     actions = _park(tmp_path, {})
 
-    assert [a["kind"] for a in actions][0] == "rebuild_data"
+    assert actions[0]["kind"] == "repair_harness"
+    assert actions[0]["blocker_code"] == "screening_constraint_unknown"
+    assert actions[0]["required_capability"] == "bounded_diagnosis"
     assert any("cause unrecorded" in a["reason"] for a in actions)
 
 

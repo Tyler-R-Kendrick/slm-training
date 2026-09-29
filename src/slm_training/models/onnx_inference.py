@@ -17,7 +17,7 @@ from slm_training.models.grammar import (
     require_constrained_generation,
     structural_token_ids,
 )
-from slm_training.models.tokenizer import OpenUITokenizer
+from slm_training.models.tokenizer import load_tokenizer_sidecar
 
 
 class OnnxTwoTowerModel:
@@ -26,7 +26,8 @@ class OnnxTwoTowerModel:
     def __init__(
         self,
         *,
-        tokenizer: OpenUITokenizer,
+        tokenizer: Any,
+        context_tokenizer: Any,
         config: SimpleNamespace,
         gen_len: int,
         context_path: Path,
@@ -42,6 +43,7 @@ class OnnxTwoTowerModel:
             str(denoiser_path), sess_options=options, providers=["CPUExecutionProvider"]
         )
         self.tokenizer = tokenizer
+        self.context_tokenizer = context_tokenizer
         self.config = config
         self.gen_len = gen_len
         self._last_generation_evidence: list[dict[str, object]] = []
@@ -83,14 +85,29 @@ class OnnxTwoTowerModel:
                 "allow_unconstrained_fallback": False,
             }
         )
-        stem = checkpoint.with_suffix("")
-        context_path = stem.with_suffix(".context.onnx")
-        denoiser_path = stem.with_suffix(".denoiser.onnx")
+        context_path = checkpoint.with_suffix(".context.onnx")
+        denoiser_path = checkpoint.with_suffix(".denoiser.onnx")
         for artifact in (context_path, denoiser_path):
             if not artifact.is_file():
                 raise FileNotFoundError(f"missing ONNX inference artifact: {artifact}")
+        tokenizer = load_tokenizer_sidecar(checkpoint.with_suffix(".tokenizer.json"))
+        context_name = meta.get("context_tokenizer")
+        if context_name and Path(context_name).name != context_name:
+            raise ValueError("context tokenizer sidecar must be a checkpoint sibling")
+        context_tokenizer = (
+            load_tokenizer_sidecar(checkpoint.with_name(context_name))
+            if context_name
+            else tokenizer
+        )
+        for key, sidecar, role in (
+            ("vocab_size", tokenizer, "output"),
+            ("context_vocab_size", context_tokenizer, "context"),
+        ):
+            if meta.get(key) is not None and int(meta[key]) != sidecar.vocab_size:
+                raise ValueError(f"checkpoint {key} does not match {role} tokenizer")
         return cls(
-            tokenizer=OpenUITokenizer.load(checkpoint.with_suffix(".tokenizer.json")),
+            tokenizer=tokenizer,
+            context_tokenizer=context_tokenizer,
             config=SimpleNamespace(**defaults),
             gen_len=int(meta.get("gen_len") or defaults["max_target_len"]),
             context_path=context_path,
@@ -108,11 +125,11 @@ class OnnxTwoTowerModel:
         return f"{prompt}\n\n---DESIGN.md---\n{design_md.strip()[:budget]}"
 
     def _encode_context(self, text: str) -> tuple[np.ndarray, np.ndarray]:
-        ids = self.tokenizer.encode(text)[: int(self.config.max_prompt_len)]
-        if not ids:
-            ids = [self.tokenizer.bos_id]
+        tokenizer = self.context_tokenizer
+        max_prompt_len = int(self.config.max_prompt_len)
+        ids = tokenizer.encode(text)[:max_prompt_len] or [tokenizer.bos_id]
         input_ids = np.asarray([ids], dtype=np.int64)
-        pad_mask = input_ids == self.tokenizer.pad_id
+        pad_mask = input_ids == tokenizer.pad_id
         context = self.context_session.run(
             ["context"], {"input_ids": input_ids}
         )[0]
@@ -125,11 +142,7 @@ class OnnxTwoTowerModel:
             return None
         serialized = (program.serialized or text).strip()
         compact = serialized.replace(" ", "")
-        if (
-            "root=" not in compact
-            or "Stack([]" in compact
-            or "Card([]" in compact
-        ):
+        if "root=" not in compact or "Stack([]" in compact or "Card([]" in compact:
             return None
         return serialized
 
@@ -137,8 +150,8 @@ class OnnxTwoTowerModel:
         self,
         logits: np.ndarray,
         prefix: list[int],
+        legal: set[int],
         forced_token_id: int | None,
-        remaining_tokens: int,
     ) -> int | None:
         blocked = {
             self.tokenizer.pad_id,
@@ -146,14 +159,6 @@ class OnnxTwoTowerModel:
             self.tokenizer.bos_id,
             self.tokenizer.unk_id,
         }
-        forest = build_completion_forest(
-            self.tokenizer,
-            prefix,
-            remaining_tokens=remaining_tokens,
-        )
-        if forest.coverage != "complete":
-            return None
-        legal = set(forest.candidate_ids)
         ranked = np.argsort(-logits).tolist()
         if forced_token_id is not None:
             ranked.insert(0, forced_token_id)
@@ -228,12 +233,7 @@ class OnnxTwoTowerModel:
                 if bool(getattr(self.config, "grammar_fastpath", True))
                 else None
             )
-            choice = self._pick_constrained_token(
-                logits,
-                prefix,
-                forced,
-                length - position,
-            )
+            choice = self._pick_constrained_token(logits, prefix, legal, forced)
             if choice is None:
                 fallback_used = True
                 break

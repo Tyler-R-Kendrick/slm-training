@@ -45,3 +45,84 @@ scheduling/CLI run had 28 passes and one failure: the registered
 documentation. Those broader changes are excluded here. A frozen-tree release
 gate, authenticated independent verification, and integration closeout remain
 open. No training, agent job, service activation, or paid CI was run.
+
+## Candidate target-base selection hardening — 2026-09-23
+
+The full gate now compares against `origin/main` by default; callers targeting a
+different PR base must pass `--base-ref` explicitly. If the comparison has no
+changed paths, the release binding selects the complete `tests` target instead
+of recording `no_tests_required`. A nonempty docs-only change may still select
+zero tests because that empty selection is based on an explicit changed-path
+set. The pre-patch regression had incorrectly treated an identical clean tree
+as release-complete without collecting any tests.
+
+Focused verification after this fix: the autonomy integration, merge-verifier,
+and resumption suites passed **50 tests**; scoped Ruff and `git diff --check`
+passed. The source-bound full release gate is still pending; these focused
+checks do not authorize a merge. `ci.local_merge_gate` advances to v18 and now
+owns the selector/CLI implementation and regression test paths.
+
+## Frozen-root replay and repair-verifier successors — 2026-09-24
+
+The copied pytest worker pins `--rootdir` to the immutable verifier root. This
+keeps collected node IDs relative to that same tree, so later shard invocations
+can replay them after running from a different controller directory. A
+collection receipt containing parent-temp-directory paths is not replayable and
+must remain pending.
+
+If a saved verification binding becomes stale, the controller preserves the
+original repair request and proposal, rematerializes verifier inputs for the
+current binding, and registers a successor using only the predecessor's
+unspent seconds and attempts. It records the predecessor/successor identity
+link before cancelling the stale verifier. A repair wakes from that successor
+only after authenticated completion for the same request and proposal. A later
+repair invocation may reuse that completed receipt only after rechecking the
+current source binding and candidate tree; no new verifier allowance is minted.
+Focused regression evidence (21 passed) covers these transitions. The full
+source-bound merge gate and live subscription-backed repair replay remain
+separate acceptance requirements.
+
+## Isolated test-collection startup allowance — 2026-09-24
+
+The resumable verifier's first collection slice was capped at 10 seconds. In
+the isolated candidate runtime, collection of one test module took 11.5 seconds
+including Bubblewrap and candidate snapshot preparation; the same module
+collected in 2.2 seconds without isolation. This caused repeated timeout,
+split, and retry-exhaustion even though the test itself was collectable.
+Collection admission and the next-invocation journal now use a 20-second
+minimum slice, still bounded by the workload grant and existing per-obligation
+attempt cap. A focused regression checks both the admitted slice and the
+advertised resume requirement. The full source-bound verifier must still
+complete before release is authorized.
+
+## Approved package runtime mount — 2026-09-24
+
+The full isolated run exposed that an approved OpenUI bridge `node_modules`
+runtime was accepted into the identity but not mounted: immutable candidate
+snapshots intentionally omit ignored dependency directories, while the mount
+builder required that target directory to already exist. Tests therefore
+failed with “Install bridge deps” despite the dependency tree being available
+and approved. The isolation owner now matches runtime and candidate package
+names, creates the empty mountpoint only in the disposable snapshot, and mounts
+the dependency tree read-only. A focused regression covers the bridge mapping.
+The affected test shard must pass under the complete source and runtime binding
+before this defect can be considered closed.
+
+## Adaptive shard budgets for unmeasured tests — 2026-09-25
+
+The source-bound run collected 12,036 test nodes, but 908 of the 1,046 test
+files had no recorded duration. The old fallback gave every shard containing
+one such file a 15-second slice; repeated timeouts split shards while completed
+test nodes stayed at 52. Shard estimates now apply the existing five-seconds-per
+node planning floor to each missing duration and include measured isolated
+collection startup. When an exact shard still times out, its next bounded slice
+doubles the previous duration, capped by the current invocation grant. This
+lets a slow singleton receive a useful retry without exceeding the canonical
+run cap or converting a timeout into passing evidence.
+
+The scheduler-throughput, scheduling, and resumption tests passed **43 tests**;
+Ruff passed for the changed verifier and throughput test. These focused checks
+do not replace the full source-bound gate. The preserved old-source journal
+still needs to remain explicitly incomplete; changing the scheduler changes
+source identity, so final acceptance requires a new journal for the corrected
+candidate.

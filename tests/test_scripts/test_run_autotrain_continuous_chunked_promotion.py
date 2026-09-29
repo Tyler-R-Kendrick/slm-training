@@ -206,6 +206,8 @@ class _StubChunkRunner:
                     "suites": {
                         "held_out": {
                             "n": self.total_n,
+                            "selected_record_ids": [f"r{i}" for i in range(self.total_n)],
+                            "measurement_complete": pending == 0,
                             "document_n": self.total_n,
                             "completed_document_n": decoded,
                             "incomplete_document_n": pending,
@@ -309,7 +311,6 @@ def _run_chunks(
         root=root,
         loop_id="loop-p11",
         campaign_id="camp1",
-        camp_dir=camp_dir,
         plan=plan,
         experiment_paths=paths,
         arm_order=arms,
@@ -380,7 +381,8 @@ def test_exhausted_chunk_budget_is_measurement_incomplete_never_a_verdict(
         locked=locked,
         primary_metric="held_out.structural_similarity",
     )
-    assert merged == locked
+    assert merged["measurement_complete"] is False
+    assert merged["decisive"] is False
 
 
 def test_resume_skips_stored_records_and_no_checkpoint_is_typed(
@@ -410,7 +412,7 @@ def test_resume_skips_stored_records_and_no_checkpoint_is_typed(
     assert [row["decoded_this_run_n"] for row in arm["runs"]] == [5, 5, 5, 5, 1]
     assert sum(row["decoded_this_run_n"] for row in arm["runs"]) == SUITE_N - 3
     ledger2 = _run_chunks(
-        tmp_path,
+        tmp_path / "independent-campaign",
         monkeypatch,
         plan=plan,
         runner=runner,
@@ -423,65 +425,38 @@ def test_resume_skips_stored_records_and_no_checkpoint_is_typed(
     assert delivery["reasons"] == ["measurement_incomplete:c-orphan:no_checkpoint_for_chunks"]
 
 
-def test_merged_power_feasibility_uses_final_merged_n(tmp_path: Path) -> None:
+def test_merged_power_feasibility_requires_identical_selected_pairs(tmp_path: Path) -> None:
     camp_dir = tmp_path / "camp1"
-    locked = {"schema": "power_feasibility/v1", "n": 24, "alpha": "1/20", "decisive": True, "required_n": 6, "min_two_sided_p": "1/8388608"}
+    locked = {"n": 24, "alpha": "1/20", "decisive": True}
 
     def board(run_id: str, completed: int) -> None:
         path = camp_dir / "runs" / run_id / "scoreboard.json"
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(
-                {
-                    "measurement_complete": True,
-                    "suites": {"held_out": {"completed_document_n": completed}},
-                }
-            ),
-            encoding="utf-8",
-        )
+        path.write_text(json.dumps({"measurement_complete": True, "suites": {
+            "held_out": {"completed_document_n": completed,
+                         "selected_record_ids": [f"r{i}" for i in range(completed)],
+                         "selection_sha256": "a" * 64}}}))
+
+    def compare(candidate="c-promote"):
+        return _mod._merged_promotion_power_feasibility(
+            camp_dir, control_id="c-control", candidate_id=candidate,
+            locked=locked, primary_metric="held_out.structural_similarity")
 
     board("c-control", 24)
     board("c-promote", 24)
-    merged = _mod._merged_promotion_power_feasibility(
-        camp_dir,
-        control_id="c-control",
-        candidate_id="c-promote",
-        locked=locked,
-        primary_metric="held_out.structural_similarity",
-    )
-    assert merged is not None
-    assert merged["source"] == "merged_scoreboard"
-    assert merged["merged_n"] == 24 and merged["n"] == 24
-    assert merged["decisive"] is True
-    # The smaller completed arm bounds the paired n; five pairs cannot reject
-    # at alpha = 1/20, so the merged report is not decisive.
+    merged = compare()
+    assert merged["measurement_complete"] is True
+    assert merged["merged_n"] == 24 and merged["decisive"] is True
     board("c-promote", 5)
-    merged = _mod._merged_promotion_power_feasibility(
-        camp_dir,
-        control_id="c-control",
-        candidate_id="c-promote",
-        locked=locked,
-        primary_metric="held_out.structural_similarity",
-    )
-    assert merged is not None
-    assert merged["merged_n"] == 5 and merged["n"] == 5
-    assert merged["decisive"] is False
-    assert merged["locked_n"] == 24 and merged["locked_decisive"] is True
-    disposition = _mod.dispose_champion_promote(
-        formal_preflight_status="proved",
-        certificate=None,
-        power_feasibility=merged,
-    )
-    assert disposition["status"] == "promotion_failed"
-    assert any(r.startswith("promotion_infeasible_by_design:n=5:") for r in disposition["reasons"])
-    # A missing scoreboard leaves the locked report untouched.
-    assert (
-        _mod._merged_promotion_power_feasibility(
-            camp_dir,
-            control_id="c-control",
-            candidate_id="missing",
-            locked=locked,
-            primary_metric="held_out.structural_similarity",
-        )
-        == locked
-    )
+    mismatch = compare()
+    assert mismatch["measurement_complete"] is False
+    assert mismatch["reason"] == "selected_pair_identity_mismatch"
+    assert mismatch["decisive"] is False
+    board("c-control", 5)
+    matched = compare()
+    assert matched["measurement_complete"] is True
+    assert matched["merged_n"] == 5 and matched["decisive"] is False
+    assert matched["claim_class"] == "exact_test_decidability_not_power"
+    missing = compare("missing")
+    assert missing["measurement_complete"] is False
+    assert missing["reason"] == "scoreboard_missing"

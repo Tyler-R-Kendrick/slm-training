@@ -25,8 +25,8 @@ def _solver_model():
     record = ExampleRecord(
         id="compiler",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")\n',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")\n',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )

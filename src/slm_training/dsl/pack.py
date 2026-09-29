@@ -28,13 +28,10 @@ Plus honesty metadata required by F3/F4:
   paths, so the F4 ontology variant (grammar → graph-walk constraint,
   oracle → ontology reasoner) can fill the same slots.
 
-Packs may be **partial**: a slot a language genuinely does not provide yet is
-``None``, and :meth:`DslPack.require` fails closed with a message naming the
-pack and the missing slot. ``toy-layout`` is the shipped partial example.
-
-The registry here does not duplicate the grammar-backend registry
-(``dsl/grammar/backends``): the ``backend`` slot references it, and pack
-resolution follows the same ``SLM_GRAMMAR_DSL`` / ``active_dsl()`` convention.
+Partial packs use ``None`` for unavailable slots; :meth:`DslPack.require`
+fails closed naming the pack and slot. ``toy-layout`` is the shipped example.
+The ``backend`` references ``dsl/grammar/backends`` and uses its
+``SLM_GRAMMAR_DSL`` / ``active_dsl()`` resolution convention.
 """
 
 from __future__ import annotations
@@ -127,6 +124,7 @@ class DslPack:
     statement_templates: tuple[tuple[str, str], ...] = ()
     canonicalize: Canonicalizer | None = None
     oracle: ValidityOracle | None = None
+    training_validator: Callable[[Any], None] | None = None
     corpus_generator: Callable[..., Any] | None = None
     scope_extractor: Callable[..., list[Any]] | None = None
     prop_order: Callable[[], Mapping[str, Sequence[str]]] | None = None
@@ -1105,13 +1103,12 @@ def _ensure_builtin_packs() -> None:
         register_pack(build_graphql_pack())
     except Exception:  # noqa: BLE001 - graphql pack is optional
         pass
-    # SRP-001 (SLM-441): opt-in symbolic-regression reference pack. Pure
-    # Python/Lark, no external bridge, so no defensive try/except is needed.
-    from slm_training.dsl.symbolic_regression_pack import (
-        build_symbolic_regression_pack,
-    )
+    from slm_training.dsl.symbolic_regression_pack import build_symbolic_regression_pack
+    from slm_training.dsl.arith_sketch import build_canonical_pack
+    from slm_training.dsl.arith_completion import completion_domain
 
     register_pack(build_symbolic_regression_pack())
+    register_pack(build_canonical_pack(DslPack, PlaceholderPolicy, completion_domain))
     _BUILTINS_LOADED = True
 
 

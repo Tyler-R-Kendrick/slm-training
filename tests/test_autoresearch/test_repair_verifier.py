@@ -33,6 +33,8 @@ def repair(tmp_path: Path) -> tuple[Path, Path, VerificationRequest]:
     (candidate / "broken.py").write_text("def increment(x):\n    return x + 1\n")
     (candidate / "tests").mkdir()
     (candidate / "tests/test_fix.py").write_text(
+        "import sys\nfrom pathlib import Path\n"
+        "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))\n"
         "from broken import increment\ndef test_increment():\n"
         "    assert increment(1) == 2\n"
     )
@@ -73,6 +75,7 @@ def repair(tmp_path: Path) -> tuple[Path, Path, VerificationRequest]:
         hashlib.sha256(b"predicate-miss\n").hexdigest(),
         hashlib.sha256(b"").hexdigest(),
         timeout_seconds=5,
+        regression_test_path="tests/test_fix.py",
     )
     return base, candidate, request
 
@@ -94,6 +97,63 @@ def test_original_failure_replayed_and_independent_predicate_restored(repair) ->
     assert all(row.passed for row in evidence.observations[1:])
     assert evidence.request.fencing_token == "epoch:lease:1"
     assert evidence.evidence_class == "independent_isolated_process"
+
+
+def test_new_regression_must_fail_on_baseline_overlay_and_pass_candidate(repair, monkeypatch):
+    from slm_training.harness_core.bounded_process import run_bounded_process
+    from slm_training.levers import KILL_GRACE_SECONDS
+
+    base, candidate, request = repair
+    def execute(spec, argv):
+        return run_bounded_process(
+            argv, cwd=spec.workspace, interrupt_after_seconds=spec.timeout_seconds,
+            kill_grace_seconds=KILL_GRACE_SECONDS,
+            env={"PYTHONDONTWRITEBYTECODE": "1"},
+        )
+
+    monkeypatch.setattr(
+        "slm_training.autoresearch.heal.repair_verifier.run_isolated", execute
+    )
+    monkeypatch.setattr(
+        "slm_training.autoresearch.heal.repair_regression.run_isolated", execute
+    )
+    evidence = verify_candidate(request, base, candidate)
+    assert evidence.accepted, [(row.phase, row.passed, row.returncode, row.outcome)
+                               for row in evidence.observations]
+    assert [(row.phase, row.passed) for row in evidence.observations
+            if row.phase.endswith("regression")] == [
+                ("baseline_regression", True), ("candidate_regression", True)
+            ]
+
+
+def test_regression_collection_error_does_not_count_as_baseline_failure(repair, monkeypatch):
+    from slm_training.harness_core.bounded_process import run_bounded_process
+    from slm_training.levers import KILL_GRACE_SECONDS
+
+    base, candidate, request = repair
+    (candidate / "tests/test_fix.py").write_text(
+        "import missing_repair_dependency\n"
+        "def test_increment():\n    assert 1 == 1\n"
+    )
+
+    def execute(spec, argv):
+        return run_bounded_process(
+            argv, cwd=spec.workspace, interrupt_after_seconds=spec.timeout_seconds,
+            kill_grace_seconds=KILL_GRACE_SECONDS,
+            env={"PYTHONDONTWRITEBYTECODE": "1"},
+        )
+
+    monkeypatch.setattr(
+        "slm_training.autoresearch.heal.repair_verifier.run_isolated", execute
+    )
+    monkeypatch.setattr(
+        "slm_training.autoresearch.heal.repair_regression.run_isolated", execute
+    )
+    request = replace(request, candidate_digest=manifest_digest(tree_manifest(candidate)))
+    evidence = verify_candidate(request, base, candidate)
+    assert not evidence.accepted and evidence.reason == "regression_not_reproduced"
+    assert evidence.observations[-1].phase == "baseline_regression"
+    assert not evidence.observations[-1].passed
 
 
 def test_agent_says_fixed_but_original_fails(repair) -> None:

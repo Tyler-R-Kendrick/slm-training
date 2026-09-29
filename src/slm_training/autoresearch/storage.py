@@ -41,24 +41,12 @@ from slm_training.lineage.records import canonical_json
 from slm_training.levers import MAX_RUN_SECONDS
 from slm_training.harness_core.checkpoint_publication import controller_artifact_publication
 
-_OUTCOME_BOUNDARY_EVENTS = frozenset(
-    {
-        "experiment_started",
-        "experiment_finished",
-        "outcome_diagnosed",
-        "hypothesizer_feedback_recorded",
-    }
-)
-_PREREQUISITE_ACTION_KINDS = frozenset(
-    {
-        "stop_campaign",
-        "repair_harness",
-        "repair_formal",
-        "rebuild_data",
-        "document",
-        "deliver_stack",
-    }
-)
+_OUTCOME_BOUNDARY_EVENTS = frozenset({
+    "experiment_started", "experiment_finished", "outcome_diagnosed", "hypothesizer_feedback_recorded",
+})
+_PREREQUISITE_ACTION_KINDS = frozenset({
+    "stop_campaign", "repair_harness", "repair_formal", "rebuild_data", "document", "deliver_stack",
+})
 _EXECUTION_ACTION_KINDS = frozenset({"retry_measurement", "next_experiment", "monitor"})
 _REPAIR_ACTION_KINDS = frozenset({"repair_harness", "repair_formal"})
 _MATRIX_CELL_MAX_CHARS = 240
@@ -123,16 +111,7 @@ def append_autotrain_action_receipt(
 def _refresh_loop_state_after_receipt(
     root: Path, receipt: AutotrainActionReceiptV1
 ) -> None:
-    """Keep the human-facing loop state aligned with durable action receipts.
-
-    Handoffs and receipts are the authority for gating, but ``state.json`` is
-    what operators see in the result matrix.  Without this reconciliation an
-    acknowledged prerequisite remains displayed as the next action until the
-    next campaign rewrites the state, which makes a healthy loop look stuck.
-    Only an idle/between-cycle state for the acknowledged campaign is updated;
-    an active driver owns its running state and must not be clobbered.
-    """
-
+    """Refresh operator state from receipts only for the exact idle campaign."""
     handoff_path = root / receipt.campaign_id / "cycle_handoff.json"
     state_path = root / "loops" / receipt.loop_id / "state.json"
     if not handoff_path.is_file() or not state_path.is_file():
@@ -148,9 +127,7 @@ def _refresh_loop_state_after_receipt(
         return
     if handoff.loop_id != receipt.loop_id or handoff.campaign_id != receipt.campaign_id:
         return
-    # Reconcile only the exact completed campaign while the driver is idle.
-    # A stale receipt from an older handoff must never rewrite the operator
-    # view for a newer cycle (or a state file that is still transitioning).
+    # Stale receipts never overwrite newer cycles or active driver state.
     if (
         state.active_campaign_id is not None
         or state.state == "RUNNING"
@@ -265,7 +242,10 @@ def _file_evidence(
 
         validate_data_action_evidence(CampaignStore(handoff.campaign_id, root), handoff,
                                      autotrain_action_sha256(action), path)
-    if action.kind == "document":
+    if action.kind == "document" and kind == "campaign_artifact":
+        from slm_training.autoresearch.action_dependencies import validate_connector_document
+        validate_connector_document(CampaignStore(handoff.campaign_id, root), handoff, action, path)
+    elif action.kind == "document":
         if kind != "repo_file":
             raise ValueError("document evidence must be tracked in the repository")
         relative = path.relative_to(repo_root)
@@ -319,9 +299,6 @@ def _receipt_satisfies_action(
         action.kind == "retry_measurement"
         and _retry_measurement_evidence_is_complete(root, handoff, receipt)
     )
-
-
-
 
 def _retry_measurement_evidence_is_complete(
     root: Path | str,

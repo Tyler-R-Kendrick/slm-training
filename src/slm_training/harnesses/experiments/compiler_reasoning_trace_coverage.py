@@ -99,7 +99,7 @@ def build_bounded_coverage_report(
 ) -> BoundedCoverageReport:
     """Extract traces for every record in ``probe_path`` and report length stats.
 
-    ``probe_path`` defaults to the repo's committed 16-record hand-authored fixture
+    ``probe_path`` defaults to the repo's committed hand-authored fixture
     set -- deliberately not a train/eval corpus, so this never becomes a covert
     corpus build.
     """

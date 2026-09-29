@@ -278,9 +278,7 @@ class CompletionSession:
                 )
             if token_id == bos_id and index != 0:
                 raise ValueError("BOS is legal only at prefix position zero")
-        semantic = _ss.initial_state(
-            self._tokenizer, arena=self._semantic_arena
-        )
+        semantic = _ss.initial_state(self._tokenizer, arena=self._semantic_arena)
         for token_id in ids:
             semantic = _ss.advance(
                 semantic,
@@ -325,7 +323,9 @@ class CompletionSession:
                 record.prefix_ids = prefix
                 return prefix
             if ancestor.parent_state_id is None or ancestor.token_id is None:
-                raise RuntimeError("deferred completion prefix has no concrete ancestor")
+                raise RuntimeError(
+                    "deferred completion prefix has no concrete ancestor"
+                )
             suffix.append(int(ancestor.token_id))
             cursor = int(ancestor.parent_state_id)
 
@@ -486,7 +486,7 @@ class CompletionSession:
     def _min_terminals_bound(self, state_id: int) -> int | None:
         """Certified lower bound on remaining terminals, or None if unknown.
 
-        Uses ``StaticLalrAdapter.min_terminals`` after lockstep certification.
+        Uses ``min_terminals_for_live_state`` after lockstep certification.
         Negative-direction only: a bound of ``b`` means at least ``b`` more
         terminals are required; never used to force a commit or widen legality.
         """
@@ -510,14 +510,12 @@ class CompletionSession:
                 )
 
                 require_certified_static_lalr(self._tokenizer, engine=engine)
-                self._lalr_adapter = static_lalr_adapter(
-                    self._tokenizer, engine=engine
-                )
+                self._lalr_adapter = static_lalr_adapter(self._tokenizer, engine=engine)
             except Exception:  # noqa: BLE001 - bound is optional; fail open to search
                 self._lalr_bound_disabled = True
                 return None
         try:
-            bound = int(self._lalr_adapter.min_terminals(int(stack[-1])))
+            bound = int(self._lalr_adapter.min_terminals_for_live_state(int(stack[-1])))
         except Exception:  # noqa: BLE001
             return None
         return bound if bound >= 0 else None

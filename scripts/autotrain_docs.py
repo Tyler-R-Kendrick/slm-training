@@ -11,6 +11,7 @@ See ``docs/design/code-quality-contract.md``.
 from __future__ import annotations
 
 import json
+import hashlib
 import time
 from collections.abc import Mapping
 from pathlib import Path
@@ -23,7 +24,6 @@ from slm_training.autoresearch.schemas import (
     AutotrainCycleHandoffV1,
     utc_now,
 )
-from slm_training.harness_core.versioning import build_version_stamp
 
 FIVE_LANES = (
     "measurement_control",
@@ -34,26 +34,207 @@ FIVE_LANES = (
 )
 
 
+def with_evidence_ledger(cwd: Path, files: dict[str, str]) -> dict[str, str]:
+    """Bind the derived ledger required by the same documentation successor gate."""
+    from slm_training.autoresearch.evidence_ledger import DEFAULT_LEDGER_PATH, build_ledger
+
+    replacements = {cwd / name: text for name, text in files.items()
+                    if name.startswith("docs/design/") and name.endswith(".json")}
+    ledger = build_ledger(cwd / "docs/design", replacements=replacements)
+    relative = DEFAULT_LEDGER_PATH.relative_to(Path(__file__).resolve().parents[1])
+    return {**files, relative.as_posix(): json.dumps(ledger, indent=2, sort_keys=True) + "\n"}
+
+
+class MeasurementProvenanceUnavailable(ValueError):
+    """Documentation prerequisite missing; never a model-quality verdict."""
+
+
+def _measurement_stamp(stamp):
+    from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
+
+    if (not isinstance(stamp, dict) or stamp.get("stamp_schema") != "version_stamp/v1"
+            or not isinstance(stamp.get("components"), dict)
+            or not stamp.get("stamped_at") or stamp.get("code_dirty") is not False
+            or not isinstance(stamp.get("code_commit"), str)
+            or len(stamp["code_commit"]) != 40
+            or any(c not in "0123456789abcdef" for c in stamp["code_commit"])
+            or any(not isinstance(stamp["components"].get(key), str)
+                   or stamp["components"][key] in {"", "unknown", "UNKNOWN"}
+                   for key in EVAL_KEY_COMPONENTS if key != "gates.ship")):
+        raise MeasurementProvenanceUnavailable("measurement_stamp_missing_or_invalid")
+    return json.loads(json.dumps(stamp))
+
+
+def _arm_measurement_stamp(store, events, arm):
+    from scripts.autotrain_cycle_lock import load_context, read_artifact
+    from slm_training.autoresearch.engine import _expected_gate_rejection
+
+    if not isinstance(arm, str) or Path(arm).name != arm or arm in {".", ".."}:
+        raise MeasurementProvenanceUnavailable("measurement_arm_identity_invalid")
+    finishes = [row for row in events if row["event_type"] == "experiment_finished"
+                and row.get("experiment_id") == arm]
+    if not finishes:
+        raise MeasurementProvenanceUnavailable("measurement_finish_missing")
+    event = finishes[-1]
+    if any(row["event_type"] == "experiment_started" and row.get("experiment_id") == arm
+           for row in events[events.index(event) + 1:]):
+        raise MeasurementProvenanceUnavailable("measurement_newer_attempt_unfinished")
+    outcome = read_artifact(store, "outcomes", event["artifact_sha256"])
+    manifest = store.load_experiment_campaign(arm).manifest_sha256
+    if (outcome.get("campaign_id") != store.campaign_id or outcome.get("experiment_id") != arm
+            or outcome.get("campaign_manifest_sha256") != manifest
+            or event.get("detail", {}).get("campaign_manifest_sha256") != manifest):
+        raise MeasurementProvenanceUnavailable("measurement_outcome_identity_mismatch")
+    path = store.root / "runs" / arm / "scoreboard.json"
+    if path.is_symlink():
+        raise MeasurementProvenanceUnavailable("measurement_scoreboard_symlink")
+    scoreboard = json.loads(path.read_text())
+    if scoreboard.get("measurement_complete") is not True or not scoreboard.get("suites"):
+        raise MeasurementProvenanceUnavailable("measurement_scoreboard_incomplete")
+    stages = [row["parsed_output"] for row in outcome.get("stage_telemetry", [])
+              if "scripts.evaluate_model" in row.get("command", [])
+              and isinstance(row.get("parsed_output"), dict)
+              and row["parsed_output"].get("measurement_complete") is True
+              and type(row.get("exit_code")) is int
+              and (row["exit_code"] == 0 or _expected_gate_rejection(
+                  row["command"], row["exit_code"], row["parsed_output"], artifact_root=Path(load_context(store)["cwd"])))]
+    fields = ("version_stamp", "suites", "checkpoint_sha256", "eval_data_manifest_sha")
+    if not any(all(stage.get(key) == scoreboard.get(key) for key in fields) for stage in stages):
+        raise MeasurementProvenanceUnavailable("measurement_stage_scoreboard_mismatch")
+    return _measurement_stamp(scoreboard.get("version_stamp"))
+
+
+def _workload_gate_version(store, result, delivery):
+    from scripts.autotrain_cycle_lock import load_context
+    from slm_training.harness_core.execution_release import _runtime_manifest
+    from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
+
+    locked = load_context(store)
+    if locked is None:
+        raise MeasurementProvenanceUnavailable("measurement_workload_lock_missing")
+    if locked["order"] != delivery["arm_order"] or locked["loop_id"] != delivery["loop_id"]:
+        raise MeasurementProvenanceUnavailable("measurement_workload_pair_mismatch")
+    source = Path(locked["cwd"])
+    manifest = _runtime_manifest(source)
+    proof = locked["publication_source"]
+    if (manifest is None or manifest["source_digest"] != proof["source_digest"]
+            or proof["commit"] != result["code_commit"]
+            or manifest["git_provenance"]["integration_commit"] != result["code_commit"]
+            or manifest["git_provenance"]["code_dirty"] is not False):
+        raise MeasurementProvenanceUnavailable("measurement_workload_source_mismatch")
+    relative = "src/slm_training/resources/versions.json"
+    raw = (source / relative).read_bytes()
+    if manifest["files"][relative] != ["file", False, hashlib.sha256(raw).hexdigest()]:
+        raise MeasurementProvenanceUnavailable("measurement_registry_bytes_changed")
+    registry = json.loads(raw)
+    if registry.get("schema") != "version_registry/v1":
+        raise MeasurementProvenanceUnavailable("measurement_registry_schema_invalid")
+    versions = {key: registry["components"][key]["version"] for key in EVAL_KEY_COMPONENTS}
+    if any(result["components"][key] != versions[key] for key in EVAL_KEY_COMPONENTS if key in result["components"]):
+        raise MeasurementProvenanceUnavailable("measurement_registry_conflict")
+    return versions["gates.ship"]
+
+
+def resolve_measurement_provenance(store, delivery):
+    """Read committed producer evidence; imported controller registry is irrelevant."""
+
+    from scripts.autotrain_cycle_lock import read_artifact
+    from scripts.autotrain_ledgers import validate_cycle_delivery
+
+    try:
+        events = store.verify_event_chain()
+        publication = next(row for row in reversed(events) if row["event_type"] == "cycle_delivery_published")
+        if delivery != read_artifact(store, "cycle_deliveries", publication["artifact_sha256"]):
+            raise MeasurementProvenanceUnavailable("measurement_delivery_projection_mismatch")
+        validate_cycle_delivery(delivery, campaign_id=store.campaign_id)
+        arms = delivery.get("arm_order") or [delivery.get("control_id"), delivery.get("candidate_id")]
+        if len(arms) != 2 or arms[0] == arms[1]:
+            raise MeasurementProvenanceUnavailable("measurement_pair_missing")
+        stamps = {arm: _arm_measurement_stamp(store, events, arm) for arm in arms}
+        first, second = (stamps[arm] for arm in arms)
+        def identity(stamp):
+            return {key: value for key, value in stamp.items() if key != "stamped_at"}
+        if identity(first) != identity(second):
+            raise MeasurementProvenanceUnavailable("measurement_arm_stamps_conflict")
+        result = _measurement_stamp(first)
+        result["components"]["gates.ship"] = _workload_gate_version(store, result, {**delivery, "arm_order": arms})
+        if not isinstance(result["components"]["gates.ship"], str) or result["components"]["gates.ship"] in {"", "unknown", "UNKNOWN"}:
+            raise MeasurementProvenanceUnavailable("measurement_gate_version_missing")
+        return result, {"arm_stamps": stamps}
+    except MeasurementProvenanceUnavailable:
+        raise
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RuntimeError, StopIteration) as exc:
+        raise MeasurementProvenanceUnavailable("measurement_provenance_unavailable") from exc
+
+
+def document_measurement_provenance(store, delivery):
+    """Leave existing document action pending until producer proof is available."""
+    try:
+        return resolve_measurement_provenance(store, delivery)
+    except MeasurementProvenanceUnavailable as exc:
+        handoff = hashlib.sha256((store.root / "cycle_handoff.json").read_bytes()).hexdigest()
+        store.append_event("documentation_waiting_provenance", detail={"reason": str(exc),
+            "handoff_sha256": handoff, "diagnostic_measurement_complete": delivery.get("measurement_complete"),
+            "wake_source": "authenticated_measurement_provenance", "publication_complete": False},
+            idempotency_key="documentation-provenance:" + handoff + ":" + str(exc))
+        return None
+
+
+def document_provenance_pending(root, campaign_id):
+    """Replay only current handoff's unresolved provenance prerequisite."""
+    from slm_training.autoresearch.storage import CampaignStore, _sha
+
+    store = CampaignStore(campaign_id, Path(root))
+    digest = hashlib.sha256((store.root / "cycle_handoff.json").read_bytes()).hexdigest()
+    for event in reversed(store.verify_event_chain()):
+        if event["event_type"] == "documentation_materialized":
+            return None
+        if event["event_type"] != "documentation_waiting_provenance":
+            continue
+        detail = event["detail"]
+        if detail.get("handoff_sha256") != digest:
+            return None
+        return {"schema_version": "driver_pending/v1", "outcome": "dependency",
+                "reason": detail["reason"], "campaign_id": campaign_id,
+                "measurement_complete": False, "publication_complete": False,
+                "diagnostic_measurement_complete": detail.get("diagnostic_measurement_complete"),
+                "wake": {"predicate": "original measurement provenance authenticated",
+                         "source": "authenticated_measurement_provenance", "identity_digest": _sha(detail)}}
+    return None
+
+
+def render_document_closeout(store, handoff, pending):
+    """Resolve document prerequisites before creating any delivery workspace."""
+    if not pending:
+        return None
+    try:
+        delivery = json.loads((store.root / "sdlc_delivery.json").read_text())
+    except (OSError, ValueError):
+        delivery = {}  # Resolver records missing authority; never creates a stamp.
+    resolved = document_measurement_provenance(store, delivery)
+    if resolved is None:
+        return None
+    stamp, provenance = resolved
+    return render_continuous_cycle_docs(campaign_id=store.campaign_id, loop_id=handoff.loop_id,
+        handoff=handoff, delivery=delivery, measurement_version_stamp=stamp,
+        measurement_provenance=provenance)
+
+
 def render_continuous_cycle_docs(
     *,
     campaign_id: str,
     loop_id: str,
     handoff: AutotrainCycleHandoffV1,
     delivery: Mapping[str, Any],
+    measurement_version_stamp: dict,
+    measurement_provenance: dict | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """Honest fixture-screening closeout payload (not a ship claim)."""
     reasons = list(delivery.get("reasons") or handoff.reasons or [])
-    # Stamp the eval-comparability components so this record lands in a real
-    # cross-version partition of the evidence ledger instead of "unstamped".
-    # Without this, `eval_key_from_stamp` returns None and the record's delta is
-    # pooled with every other unstamped cycle regardless of the scorer/gate
-    # version it actually ran under. Never let stamping fail the closeout.
-    try:
-        from slm_training.autoresearch.evidence_ledger import EVAL_KEY_COMPONENTS
-
-        version_stamp: dict[str, Any] | None = build_version_stamp(*EVAL_KEY_COMPONENTS)
-    except Exception:
-        version_stamp = None
+    version_stamp = _measurement_stamp(measurement_version_stamp)
+    gate = version_stamp["components"].get("gates.ship")
+    if not isinstance(gate, str) or gate in {"", "unknown", "UNKNOWN"}:
+        raise MeasurementProvenanceUnavailable("measurement_gate_version_missing")
     payload: dict[str, Any] = {
         "schema": "continuous_cycle_results/v1",
         "campaign_id": campaign_id,
@@ -72,12 +253,17 @@ def render_continuous_cycle_docs(
         "honesty": "fixture_screening_only_not_ship",
         "auto": True,
     }
-    if version_stamp is not None:
-        payload["version_stamp"] = version_stamp
+    payload["version_stamp"] = version_stamp
+    payload["measurement_provenance"] = measurement_provenance or {}
+    if delivery.get("version_stamp") is not None:
+        payload["controller_provenance"] = {key: delivery[key] for key in
+            ("version_stamp", "controller_execution", "measurement_source") if key in delivery}
     # Embed the rich delivery record (candidate_id/arm_seed/policy_sha256) so
     # future ledger mining never falls back to reasons-string recovery.
     if delivery.get("schema") == "autotrain_sdlc_delivery/v1":
         payload["delivery"] = dict(delivery)
+        # Ledger inherits outer measurement stamp, never diagnostic controller stamp.
+        payload["delivery"].pop("version_stamp", None)
     md = (
         f"# Continuous cycle `{campaign_id}`\n\n"
         f"- loop_id: `{loop_id}`\n"

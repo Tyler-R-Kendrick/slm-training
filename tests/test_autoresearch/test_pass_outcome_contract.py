@@ -98,17 +98,20 @@ def test_only_a_verified_heal_scores_as_progress() -> None:
     assert progress == {"healed"}
 
 
-def test_the_data_rebuild_playbook_writes_a_mapped_outcome() -> None:
-    """The producer side of the drift: pin the literal the playbook emits.
+def test_the_data_rebuild_playbook_writes_a_mapped_outcome(tmp_path: Path) -> None:
+    """An absent readiness contract is persisted as a mapped failed outcome."""
+    from slm_training.autoresearch.heal.playbooks.data_rebuild import execute
 
-    Reading the constant from the driver proves the consumer is total; this
-    proves the producer's verdict is one of the outcomes it is total over.
-    """
-    from slm_training.autoresearch.heal.playbooks import data_rebuild
+    receipt = execute(
+        {}, cwd=tmp_path, root=tmp_path, loop_id="contract",
+        campaign_id="contract", write_receipt=False,
+    )
 
-    source = Path(data_rebuild.__file__).read_text(encoding="utf-8")
-    assert 'outcome = "postcondition_failed"' in source
-    assert "postcondition_failed" in _driver()._PASS_OUTCOME_BY_HEAL_OUTCOME
+    assert receipt.outcome == "postcondition_failed"
+    assert (
+        _driver()._PASS_OUTCOME_BY_HEAL_OUTCOME[receipt.outcome]
+        == "heal_postcondition_failed"
+    )
 
 
 # ---------------------------------------------------------------------------

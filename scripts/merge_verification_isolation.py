@@ -197,22 +197,23 @@ def isolated_workload(
         atomic_json(
             control / "request.json", {**request, "request_digest": request_digest}
         )
-        output = workspace / "workload-result.json"
+        output = workspace / "workload-output" / "result.json"
+        output.parent.mkdir()
         output.write_text("{}")
         argv = runtime_command(
             (
                 sys.executable,
                 "/workspace/control/worker.py",
                 "/workspace/control/request.json",
-                "/workspace/workload-result.json",
+                "/workspace/workload-output/result.json",
             ),
             runtimes,
         )
         argv = _workload_argv(root, runtimes, argv, workspace=workspace)
         bridge_runtime = _bridge_runtime(runtimes)
-        from scripts.merge_verification_runtime import javascript_grants
+        from scripts.merge_verification_runtime import javascript_grants, runtime_roots_with_js_modules
 
-        runtime_grants = javascript_grants(root, runtimes)
+        runtime_grants = javascript_grants(root, runtimes, targets=targets)
         bridge_grants = runtime_grants["bridges"]
         environment = [
             ("OMP_NUM_THREADS", "1"),
@@ -242,16 +243,16 @@ def isolated_workload(
                 environment.extend(
                     (("HF_HOME", f"/runtime/{index}"), ("HF_HUB_OFFLINE", "1"), ("TRANSFORMERS_OFFLINE", "1"))
                 )
-            if (runtime / "chromium-1228").is_dir():
-                environment.append(("PLAYWRIGHT_BROWSERS_PATH", f"/runtime/{index}"))
             if (runtime / "leverproof-lean").is_file():
                 environment.append(("SLM_LEVERPROOF_CHECKER", f"/runtime/{index}/leverproof-lean"))
+        if runtime_grants["playwright_browser_index"] is not None:
+            environment.append(("PLAYWRIGHT_BROWSERS_PATH", f"/runtime/{runtime_grants['playwright_browser_index']}"))
         result = run_isolated(
             IsolationSpec(
                 workspace,
-                writable_paths=("workload-result.json",),
+                writable_paths=("workload-output/result.json",),
                 writable_dirs=("candidate/outputs",),
-                runtime_roots=runtimes,
+                runtime_roots=runtime_roots_with_js_modules(runtimes, runtime_grants),
                 timeout_seconds=_remaining(seconds, started),
                 pythonpath=os.pathsep.join(
                     ("/workspace/candidate/src", *(f"/runtime/{i}" for i in range(1, len(runtimes))))

@@ -1,0 +1,316 @@
+{
+  "schema_version": "science_lab_acceptance_observation/v1",
+  "campaign_id": "science-lab-r31-43327120eda9-acceptance",
+  "status": "control_trained_reconciliation_required",
+  "source": {
+    "commit": "43327120eda92ef9aff2a7eb89d0777e0849317b",
+    "tree": "0fe678f308b5d99cc06ac107a82f129f82ec71c7",
+    "source_digest": "6a65297fe3418496bd182ef34d5931b0df16397361bb87e235e40f1dcbcbdddc",
+    "claim": "PR-head diagnostic"
+  },
+  "preregistration_sha256": "576a0a4b7fc2bbddfc314e91d7a850a525065220e9f4805a8f801b1b1799f459",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "logical_updates_per_arm": 6,
+    "update_chunk": 3,
+    "seed": 7301,
+    "parameters_per_arm": 65826,
+    "training_records": 8,
+    "planned_eval_cases_per_arm": 6,
+    "control_learning_rate": 0.0003,
+    "candidate_learning_rate": 0.0006,
+    "honesty": "public smoke diagnostic only"
+  },
+  "observations": {
+    "supervisor_attempt_exit_codes": [
+      137,
+      124,
+      137,
+      10
+    ],
+    "completed_training_arms": 1,
+    "completed_evaluation_arms": 0,
+    "new_checkpoint_count": 2,
+    "paired_endpoint_measured": false,
+    "retained_driver_cursor": true,
+    "inspect_operation_seconds": 36.226601679998566,
+    "observation_cutoff": "2026-09-26T21:07:19Z",
+    "scope": "Four bounded supervisor invocations; control training complete; explicit driver reconciliation capability wait.",
+    "second_invocation_stop": "KeyboardInterrupt during _runtime_manifest -> _files(release) -> path.read_bytes before supervisor inspection",
+    "serialized_verifier_during_second_invocation": true,
+    "pending_reason": "driver_attempt_requires_reconciliation",
+    "operation_repair_requested": {
+      "activity_id": "supervisor-1-driver-c27384e5916102e8",
+      "artifact_sha256": "8cddf0b0934ffc8a384e0cdff4557981dee156c234297224bd8c880cbc2d3b44",
+      "timestamp": "2026-09-26T21:07:18.979078Z"
+    }
+  },
+  "promotion_allowed": false,
+  "release_authorized": false,
+  "evidence": {
+    "preregistration": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/preregistration.json",
+    "supervisor_log": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/supervisor.log",
+    "campaign_events": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/events.jsonl"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "43327120eda92ef9aff2a7eb89d0777e0849317b",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v310",
+      "config.levers": "v33"
+    },
+    "stamped_at": "2026-09-26T20:25:26.734026+00:00"
+  },
+  "version_stamp_basis": "Published immutable source and component registry observed at preregistration; no later-source evidence is substituted.",
+  "host_remediation": {
+    "kind": "duplicate_same_project_language_servers",
+    "stopped_servers": 4,
+    "retained_loaded_servers": 1,
+    "verified_old_servers_and_children_gone": true,
+    "mem_available_kib_after": 17450200,
+    "memory_pressure_full_avg60_before": 35.42,
+    "memory_pressure_full_avg300_before": 58.83,
+    "evidence": "outputs/autonomy-integration-20260921/duplicate-serena-cleanup-20260926.json",
+    "source_or_grant_changed": false
+  },
+  "control_checkpoint": {
+    "path": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/checkpoints/trial/bundles/712026b16850c9077bfd5aad0b4ed3db2d92d0d658f4b87865263b9b9e94931f/last.pt",
+    "sha256": "673fce9d06eee0b226d6520c1a8f32c9dacbc924ac8997d15a5e765df2b465b8",
+    "steps": 6,
+    "stopped_on": "steps",
+    "record_count": 8,
+    "parameters": 65826,
+    "device": "cpu",
+    "last_training_loss": 40.56913757324219,
+    "bucket": "local scratch --no-sync-checkpoints",
+    "train_summary": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/train_summary.json"
+  },
+  "published_r33_controller_control_completion_20260927": {
+    "result": {
+      "returncode": 10,
+      "elapsed_seconds": 153.3137400150299,
+      "command": [
+        "/usr/bin/timeout",
+        "--signal=INT",
+        "--kill-after=10s",
+        "170s",
+        "/usr/bin/flock",
+        "-E",
+        "75",
+        "-w",
+        "30",
+        "outputs/autonomy-integration-20260921/host-compute.lock",
+        ".venv/bin/python",
+        "-I",
+        "-B",
+        "outputs/autonomy-integration-20260921/run-r33-retained-science.py",
+        "--locked",
+        "outputs/autonomy-integration-20260921/r33-retained-science-run-x6uz19m_"
+      ],
+      "lock_timeout": false,
+      "preflight_passed": true,
+      "scientific_completion_claimed": false
+    },
+    "evidence_dir": "outputs/autonomy-integration-20260921/r33-retained-science-run-x6uz19m_",
+    "scoreboard": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/scoreboard.json",
+    "scoreboard_sha256": "2ffa19cc4db23f23d605c2a6e95932261741e47676a52e20a6a13d0a72cf82a1",
+    "measurement_complete": true,
+    "publication_complete": true,
+    "suite_n": 6,
+    "completed_document_n": 6,
+    "pending_document_n": 0,
+    "parse_rate": 1.0,
+    "eval_nll": 23.894707898417668,
+    "agentv": {
+      "format": "AgentEvals JSONL",
+      "authority": "AgentEvals assertions",
+      "sdk": "@agentv/core",
+      "criteria": {
+        "pass": false,
+        "passed": 2,
+        "failed": 7,
+        "total": 9,
+        "failures": [
+          "smoke:insufficient_n",
+          "smoke:meaningful_program_rate",
+          "smoke:structural_similarity",
+          "smoke:component_type_recall",
+          "smoke:ast_beq_rate",
+          "smoke:canonical_beq_rate",
+          "smoke:reward_score"
+        ],
+        "results": [
+          {
+            "id": "smoke:certified_fallback",
+            "pass": true,
+            "criterion_id": "smoke:certified_fallback",
+            "actual": 0,
+            "operator": "eq",
+            "expected": 0
+          },
+          {
+            "id": "smoke:insufficient_n",
+            "pass": false,
+            "criterion_id": "smoke:insufficient_n",
+            "actual": 6,
+            "operator": "gte",
+            "expected": 20
+          },
+          {
+            "id": "smoke:meaningful_program_rate",
+            "pass": false,
+            "criterion_id": "smoke:meaningful_program_rate",
+            "actual": 0.16666666666666666,
+            "operator": "gte",
+            "expected": 0.66
+          },
+          {
+            "id": "smoke:structural_similarity",
+            "pass": false,
+            "criterion_id": "smoke:structural_similarity",
+            "actual": 0.24445000000000003,
+            "operator": "gte",
+            "expected": 0.35
+          },
+          {
+            "id": "smoke:component_type_recall",
+            "pass": false,
+            "criterion_id": "smoke:component_type_recall",
+            "actual": 0.125,
+            "operator": "gte",
+            "expected": 0.35
+          },
+          {
+            "id": "smoke:ast_beq_rate",
+            "pass": false,
+            "criterion_id": "smoke:ast_beq_rate",
+            "actual": 0,
+            "operator": "gte",
+            "expected": 0.2
+          },
+          {
+            "id": "smoke:canonical_beq_rate",
+            "pass": false,
+            "criterion_id": "smoke:canonical_beq_rate",
+            "actual": 0,
+            "operator": "gte",
+            "expected": 0.1
+          },
+          {
+            "id": "smoke:placeholder_fidelity",
+            "pass": true,
+            "criterion_id": "smoke:placeholder_fidelity",
+            "actual": 0.9166666666666666,
+            "operator": "gte",
+            "expected": 0.25
+          },
+          {
+            "id": "smoke:reward_score",
+            "pass": false,
+            "criterion_id": "smoke:reward_score",
+            "actual": 0,
+            "operator": "gte",
+            "expected": 0.3
+          }
+        ]
+      },
+      "runner": {
+        "name": "AgentV",
+        "sdk": "@agentv/core",
+        "execution_errors": 0
+      },
+      "spec": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00.eval.jsonl",
+      "summary": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "executionErrors": 0,
+        "durationMs": 291,
+        "meanScore": 0
+      },
+      "artifacts": {
+        "runDir": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00",
+        "benchmarkPath": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00/benchmark.json",
+        "indexPath": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00/index.jsonl",
+        "timingPath": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-control/agentv/openui-model-ship-gates-2026-09-27t01-20-33-082001-00-00/timing.json"
+      },
+      "suites_run": [
+        "smoke"
+      ]
+    },
+    "candidate_and_paired_completion": false,
+    "release_authorized": false
+  },
+  "r33_candidate_training_retained_20260927": {
+    "invocation": {
+      "returncode": 124,
+      "elapsed_seconds": 170.00961017608643,
+      "command": [
+        "/usr/bin/timeout",
+        "--signal=INT",
+        "--kill-after=10s",
+        "170s",
+        "/usr/bin/flock",
+        "-E",
+        "75",
+        "-w",
+        "30",
+        "outputs/autonomy-integration-20260921/host-compute.lock",
+        ".venv/bin/python",
+        "-I",
+        "-B",
+        "outputs/autonomy-integration-20260921/run-r33-retained-science.py",
+        "--locked",
+        "outputs/autonomy-integration-20260921/r33-retained-science-run-g3pad1ys"
+      ],
+      "lock_timeout": false,
+      "preflight_passed": true,
+      "scientific_completion_claimed": false
+    },
+    "invocation_completed": false,
+    "retained_training_summary": {
+      "run_id": "science-lab-r31-43327120eda9-acceptance-candidate",
+      "steps": 6,
+      "stopped_on": "steps",
+      "invocation_start_step": 3,
+      "last_loss": 37.89326477050781,
+      "checkpoint": "outputs/autonomy-integration-20260921/science-lab-r31-43327120eda9-acceptance-prereg/campaigns/science-lab-r31-43327120eda9-acceptance/runs/science-lab-r31-43327120eda9-acceptance-candidate/checkpoints/trial/bundles/2493d3e3b76228304a9bc66db2943683c0d001e96ac5a82e42074ccbd429c52e/last.pt",
+      "continuation_kind": "exact_same_environment",
+      "record_count": 8,
+      "device": "cpu",
+      "data_manifest_sha": "9d813cd38d22a113c89e9b122a0e6045f8b96033a3abacfda8aa08c246eab3c6",
+      "finished_at": "2026-09-27T01:25:01.723402+00:00",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "43327120eda92ef9aff2a7eb89d0777e0849317b",
+        "code_dirty": false,
+        "components": {
+          "harness.model_build.train": "v44",
+          "harness.experiment_feature_flags": "v4"
+        },
+        "stamped_at": "2026-09-27T01:25:06.543225+00:00"
+      }
+    },
+    "checkpoint_sha256": "0a125ff5e1ebcf4b456e8f0d432ca03a187eb298f045b77b8a13c81e62d27313",
+    "bundles": [
+      "3b9066c27b7828f15d62364b122ace2c03c76971aefe5e79f0dc6608b89b0042",
+      "2493d3e3b76228304a9bc66db2943683c0d001e96ac5a82e42074ccbd429c52e"
+    ],
+    "honesty": "CPU scratch diagnostic, local no-sync. Whole invocation timed out and is not successful acceptance evidence. Immutable committed training chunks remain resumable. Candidate evaluation and paired result pending.",
+    "release_authorized": false,
+    "settlement_defect": {
+      "activity_id": "supervisor-1-driver-c27384e5916102e8",
+      "status": "cancelled",
+      "sequence": 28,
+      "attempts": 6,
+      "charged_seconds": 696.140410078995,
+      "remaining_attempts_arithmetic": 8,
+      "remaining_seconds_arithmetic": 2003.859589921,
+      "runnable": false,
+      "observation": "Worker yielded after both candidate training chunks committed; enclosing host deadline interrupted settlement. Activity became terminal cancelled; no surviving controller or worker.",
+      "remediation": "Fix canonical deadline/cancellation integration and recover this authorized timeout interruption without changing the original request or refunding/resetting charges. Explicit user cancellation must remain respected."
+    }
+  }
+}

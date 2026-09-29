@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import fcntl
-import json
 import os
 import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from slm_training.autoresearch.runtime.activity_process import (
     controller_status,
@@ -33,6 +33,30 @@ class StartConfig(BaseModel):
     max_cycles: int = Field(ge=0)
     local_execution_authorized: bool
     recovery_config: str | None = None
+    delivery_config: str | None = None
+    runtime_environment: dict[
+        Literal[
+            "PATH",
+            "OPENUI_BRIDGE_CLI",
+            "DESIGN_MD_BRIDGE_CLI",
+            "GRAPHQL_BRIDGE_CLI",
+            "AGENTV_RUNNER",
+            "AGENTV_NODE_MODULES",
+            "SLM_DATA_ROOT",
+        ],
+        str,
+    ] = Field(default_factory=dict)
+
+    @field_validator("runtime_environment")
+    @classmethod
+    def safe_runtime_environment(cls, values):
+        if any(
+            ord(char) < 32 or ord(char) == 127
+            for value in values.values()
+            for char in value
+        ):
+            raise ValueError("runtime_environment_contains_control_character")
+        return values
 
 
 def load_start_config(path: Path) -> StartConfig:
@@ -41,7 +65,9 @@ def load_start_config(path: Path) -> StartConfig:
     return StartConfig.model_validate_json(path.read_text())
 
 
-def start_supervisor(root: Path, config: StartConfig) -> dict:
+def start_supervisor(
+    root: Path, config: StartConfig, *, foreground: bool = False
+) -> dict:
     if not config.local_execution_authorized:
         raise ValueError("local_execution_grant_missing")
     execution = Path(config.execution).resolve(strict=True)
@@ -58,10 +84,10 @@ def start_supervisor(root: Path, config: StartConfig) -> dict:
         status = controller_status(store, now=time.time())
         if status.get("lock_owned"):
             return {"started": False, "already_owned": True, "controller": status}
-        return _launch(root, config, execution, identity, store)
+        return _launch(root, config, execution, identity, store, foreground=foreground)
 
 
-def _launch(root, config, execution, identity, store) -> dict:
+def _launch(root, config, execution, identity, store, *, foreground=False) -> dict:
     argv = [
         sys.executable,
         "-m",
@@ -77,7 +103,7 @@ def _launch(root, config, execution, identity, store) -> dict:
         "--max-cycles",
         str(config.max_cycles),
     ]
-    env = dict(os.environ)
+    env = {**os.environ, **config.runtime_environment}
     env["PYTHONPATH"] = str(execution / "src")
     # Reuse readable dependency bytecode; do not recompile the environment per start.
     # The immutable release and shared runtimes must not acquire new cache writes.
@@ -89,6 +115,18 @@ def _launch(root, config, execution, identity, store) -> dict:
         argv.extend(
             ("--repair-config", str(Path(config.recovery_config).resolve(strict=True)))
         )
+    if config.delivery_config is not None:
+        argv.extend(
+            (
+                "--delivery-config",
+                str(Path(config.delivery_config).resolve(strict=True)),
+            )
+        )
+    if foreground:
+        # exec preserves systemd's MainPID and journal streams. The controller
+        # owns its durable lease; the short launch lock is close-on-exec.
+        os.chdir(execution)
+        os.execve(sys.executable, argv, env)
     child = subprocess.Popen(
         argv,
         cwd=execution,
@@ -167,33 +205,16 @@ def stop_supervisor(root: Path, loop_id: str) -> dict:
 
 
 def service_template(config: Path, root: Path) -> str:
-    """Output a user service recipe only; never install or enable systemd."""
-    # JSON argv is an unambiguous, portable operating recipe, not a shell unit.
-    return json.dumps(
-        {
-            "installed": False,
-            "activated": False,
-            "command": [
-                sys.executable,
-                "-m",
-                "scripts.autoresearch",
-                "--root",
-                str(root),
-                "start",
-                "--config",
-                str(config),
-            ],
-            "stop_command": [
-                sys.executable,
-                "-m",
-                "scripts.autoresearch",
-                "--root",
-                str(root),
-                "stop",
-                "--loop-id",
-                "<configured-loop>",
-            ],
-            "lifecycle": "explicit_user_owned_background_supervisor",
-        },
-        indent=2,
-    )
+    """Render real user-systemd units without installing or activating them."""
+    import json
+    from slm_training.autoresearch.runtime.operations_service import service_units
+
+    return json.dumps(service_units(config, root, load_start_config(config)), indent=2)
+
+
+from slm_training.autoresearch.runtime.operations_delivery import (  # noqa: E402
+    DeliveryHost as DeliveryHost,
+    load_delivery_host as load_delivery_host,
+    consume_delivery as consume_delivery,
+    _delivery_receipt as _delivery_receipt,
+)

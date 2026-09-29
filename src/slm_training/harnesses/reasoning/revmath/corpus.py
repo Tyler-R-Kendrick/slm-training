@@ -9,6 +9,7 @@ detectable via ``split`` + ``root_family_id``.
 from __future__ import annotations
 
 import json
+import tempfile
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -649,9 +650,8 @@ def _run_reversal_pair(task: RevmathTaskV1, meta: Any):
 
 def _run_probe(task: RevmathTaskV1, probe_id: str, root: Path):
     if probe_id == "missing_lean_tool":
-        empty = root / ".corpus_probe_no_lean"
-        empty.mkdir(exist_ok=True)
-        return run_revmath_task(task, lean_root=empty, hermetic=False)
+        with tempfile.TemporaryDirectory(prefix="revmath-no-lean-") as scratch:
+            return run_revmath_task(task, lean_root=Path(scratch), hermetic=False)
     if probe_id == "unsupported_task_kind":
         probe_task = task.model_copy(update={"task_kind": "computability_classification"})
         return run_revmath_task(probe_task, hermetic=True)

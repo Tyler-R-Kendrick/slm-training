@@ -208,6 +208,7 @@ def classify_blocker(
             "screening_suite_volume": "data",
             "screening_constraint_unknown": "unknown",
             "harness_code_failure": "code",
+            "driver_attempt_requires_reconciliation": "code",
             "evaluation_wiring_failure": "code",
             "npm_bridge_unavailable": "environment",
             "data_not_ready": "data",

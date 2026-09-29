@@ -8,63 +8,15 @@ from __future__ import annotations
 import fcntl
 import json
 import math
-import subprocess
 import uuid
-from dataclasses import dataclass
 from pathlib import Path
 
 from slm_training.autoresearch.schemas import ExperimentOutcome
 from slm_training.autoresearch.storage import _sha
-
-
-@dataclass(frozen=True)
-class ContinuationGrant:
-    """Controller-resolved identity and finite logical wall allowance."""
-
-    execution_identity: str
-    total_wall_seconds: float
-    max_attempts: int | None = None
-    interrupt_seconds: float | None = None
-    finalization_reserve_seconds: float | None = None
-
-
-def resolved_continuation_grant(
-    root: Path,
-    total_seconds: float,
-    max_attempts=None,
-    *,
-    interrupt_seconds: float | None = None,
-    finalization_reserve_seconds: float | None = None,
-) -> ContinuationGrant:
-    """Reuse the release/environment identity owners, excluding incidental clocks."""
-    from scripts.merge_verification_evidence import (
-        environment_identity,
-        source_identity,
-    )
-    from slm_training.harness_core.activity_contract import contract_digest
-    from slm_training.harness_core.execution_release import runtime_source_identity
-
-    identity_root = Path(root).resolve()
-    if not (identity_root / ".autonomy-release.json").is_file():
-        try:
-            identity_root = Path(
-                subprocess.run(
-                    ["git", "-C", str(identity_root), "rev-parse", "--show-toplevel"],
-                    check=True, capture_output=True, text=True, timeout=10,
-                ).stdout.strip()
-            ).resolve()
-        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            pass
-    identity = contract_digest(
-        {
-            "source": runtime_source_identity(identity_root) or source_identity(identity_root),
-            "environment": environment_identity(),
-        }
-    )
-    return ContinuationGrant(
-        identity, total_seconds, max_attempts,
-        interrupt_seconds, finalization_reserve_seconds,
-    )
+from scripts.autotrain_execution_transition import logical_cursor_inputs
+from scripts.autoresearch_continuation_identity import (
+    ContinuationGrant as ContinuationGrant, resolved_continuation_grant as resolved_continuation_grant,
+)
 
 
 def record_execution_outcome(store, outcome, manifest, *, pending):
@@ -138,12 +90,11 @@ class CommandCursor:
             total=float(total),
             cwd=str(Path(cwd).resolve()),
         )
-        self.digest = _sha(self.inputs)
         if max_attempts is not None:
             if type(max_attempts) is not int or max_attempts < 1:
                 raise ValueError("continuation attempts must be a positive integer")
             self.inputs["max_attempts"] = max_attempts
-            self.digest = _sha(self.inputs)
+        self.digest = _sha(self.inputs)
         self.position, self.spent, self.attempt = 0, 0.0, 0
         self.outcome = None
         self.unresolved = False
@@ -172,6 +123,8 @@ class CommandCursor:
         self._lock = (self.store.root / f".command-cursor-{lock_name}.lock").open("a+b")
         try:
             fcntl.flock(self._lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.inputs = logical_cursor_inputs(self.store, self.inputs)
+            self.digest = _sha(self.inputs)
             self._replay()
         except BaseException:
             self.__exit__(None, None, None)
@@ -193,7 +146,7 @@ class CommandCursor:
         """Charge observed controller overhead through final accounting emission."""
         self._invocation = started, clock
 
-    def _replay(self):
+    def _replay(self, *, read_only=False):
         found = False
         for event in self.store.verify_event_chain():
             if event["experiment_id"] != self.experiment.experiment_id or not event[
@@ -207,6 +160,10 @@ class CommandCursor:
                 )
             found = True
             self._apply_event(event)
+        if read_only:
+            if not found:
+                raise ValueError("read-only cursor requires existing journal")
+            return
         if not found:
             artifact = self.store.write_artifact("command_cursor_inputs", self.inputs)
             self._event("locked", artifact=artifact.stem)
@@ -351,16 +308,19 @@ class CommandCursor:
         self.unresolved = True
         self._event("started", attempt=self.attempt, reserved_seconds=allowance)
 
-    def checkpoint(self, outcome, position):
+    def _payload(self, outcome, position, spent, kind):
         self._validate_outcome(outcome)
-        payload = dict(
+        return dict(
             input_digest=self.digest,
             outcome=outcome.model_dump(mode="json"),
             position=position,
-            spent_seconds=0.0,
+            spent_seconds=spent,
             attempt=self.attempt,
-            record_type="checkpoint",
+            record_type=kind,
         )
+
+    def checkpoint(self, outcome, position):
+        payload = self._payload(outcome, position, 0.0, "checkpoint")
         self._checkpoint_count += 1
         artifact = self.store.write_artifact("command_cursors", payload)
         self._event(
@@ -368,15 +328,7 @@ class CommandCursor:
         )
 
     def commit(self, outcome, position, spent):
-        self._validate_outcome(outcome)
-        payload = dict(
-            input_digest=self.digest,
-            outcome=outcome.model_dump(mode="json"),
-            position=position,
-            spent_seconds=spent,
-            attempt=self.attempt,
-            record_type="committed",
-        )
+        payload = self._payload(outcome, position, spent, "committed")
         artifact = (
             self.store.write_artifact("command_cursors", payload)
             if self.store

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ from slm_training.autoresearch.hillclimb import (
     assert_warm_start_launch,
     attach_initialize_from,
     champion_epoch_park_reason,
+    climb_champion_checkpoint_path,
     dump_climb_champion,
     load_climb_champion,
     maybe_advance_climb_champion,
@@ -30,6 +32,10 @@ from slm_training.autoresearch.thrash_regime import (
 def _ckpt(path: Path, marker: str = "w") -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(marker.encode("utf-8"))
+    path.with_suffix(".meta.json").write_text(json.dumps({
+        "kind": "twotower", "output_contract_version": 2,
+    }))
+    path.with_suffix(".tokenizer.json").write_text('{"token_to_id": {"a": 0}}')
     return path
 
 
@@ -118,7 +124,7 @@ def test_advance_on_confirm_only(tmp_path: Path) -> None:
     assert after is not None
     assert after.source_campaign == "confirm-win"
     assert after.cumulative_steps == 50
-    assert (loop_dir / "champion" / "last.pt").read_bytes() == b"w"
+    assert climb_champion_checkpoint_path(loop_dir).read_bytes() == b"w"
 
 
 def test_epoch_park_at_cap() -> None:
@@ -127,8 +133,11 @@ def test_epoch_park_at_cap() -> None:
         cumulative_steps=1,
         train_data_manifest_sha="t" * 64,
         cumulative_epochs=50.0,
+        schema="climb_champion/v2",
     )
     assert champion_epoch_park_reason(sidecar, max_cumulative_epochs=50) is None
+    sidecar.schema = "climb_champion/v3"
+    assert champion_epoch_park_reason(sidecar) == "champion_exposure_unavailable"
     sidecar.cumulative_epochs = 50.01
     assert (
         champion_epoch_park_reason(sidecar, max_cumulative_epochs=50)
@@ -248,7 +257,7 @@ def test_baseline_seed_never_advances_on_screening_win(tmp_path: Path) -> None:
     assert kept is not None
     assert kept.status == "baseline_seed"
     assert kept.source_campaign == "seed"
-    assert (loop_dir / "champion" / "last.pt").read_bytes() == b"b"
+    assert climb_champion_checkpoint_path(loop_dir).read_bytes() == b"b"
     # Confirmed win replaces it with a confirmed champion.
     advanced = maybe_advance_climb_champion(
         loop_dir,
@@ -264,12 +273,10 @@ def test_baseline_seed_never_advances_on_screening_win(tmp_path: Path) -> None:
     assert advanced.status == "confirmed"
     assert advanced.cumulative_steps == 62
     assert advanced.train_dir == str(tmp_path / "train")
-    assert (loop_dir / "champion" / "last.pt").read_bytes() == b"w"
+    assert climb_champion_checkpoint_path(loop_dir).read_bytes() == b"w"
 
 
 def test_legacy_sidecar_defaults_to_confirmed(tmp_path: Path) -> None:
-    import json
-
     loop_dir = tmp_path / "loop"
     _ckpt(loop_dir / "champion" / "last.pt", "c")
     (loop_dir / "champion" / "last.json").write_text(
@@ -296,9 +303,7 @@ def test_legacy_sidecar_defaults_to_confirmed(tmp_path: Path) -> None:
         load_climb_champion(loop_dir)
 
 
-def test_epoch_cap_follows_train_manifest_record_count(tmp_path: Path) -> None:
-    import json
-
+def test_epoch_cap_preserves_historical_exposure_across_corpus_changes(tmp_path: Path) -> None:
     from slm_training.autoresearch.hillclimb import (
         champion_cumulative_epochs,
         train_manifest_record_count,
@@ -321,18 +326,18 @@ def test_epoch_cap_follows_train_manifest_record_count(tmp_path: Path) -> None:
         train_dir=str(train_dir),
         record_count=101,
     )
-    # Fixed count would park; the current 676-record corpus does not.
+    # Current corpus size never redivides exposure already consumed.
     assert champion_epoch_park_reason(sidecar, max_cumulative_epochs=50) == (
         CHAMPION_EPOCHS_EXHAUSTED
     )
     assert champion_cumulative_epochs(sidecar, record_count=676) == pytest.approx(
-        5100 / 676
+        5100 / 101
     )
     assert (
         champion_epoch_park_reason(sidecar, max_cumulative_epochs=50, record_count=676)
-        is None
+        == CHAMPION_EPOCHS_EXHAUSTED
     )
-    # A smaller corpus lowers the cap in steps.
+    # Neither larger nor smaller corpus rewrites historical denominators.
     assert (
         champion_epoch_park_reason(sidecar, max_cumulative_epochs=50, record_count=100)
         == CHAMPION_EPOCHS_EXHAUSTED
@@ -357,27 +362,23 @@ def test_warm_start_launch_rejects_unequal_pair() -> None:
 
 
 def test_write_climb_champion_carries_tokenizer_sidecars(tmp_path: Path) -> None:
-    """A warm start reads the tokenizer sidecars beside the checkpoint.
-
-    Copying only ``last.pt`` left the context sidecar missing, so
-    ``TwoTowerModel.load`` fell back to the output tokenizer and refused the
-    warm start with 'scratch-context warm starts require OpenUITokenizer
-    sidecars' — the champion existed, the regime said climb, and every arm
-    still died.
-    """
+    """Publication preserves both declared tokenizer sidecars for warm starts."""
     from slm_training.autoresearch.hillclimb import (
         CLIMB_CHAMPION_STATUS_BASELINE_SEED,
         ClimbChampionSidecar,
-        climb_champion_checkpoint_path,
         write_climb_champion,
     )
 
     run = tmp_path / "run" / "checkpoints"
     run.mkdir(parents=True)
-    (run / "last.pt").write_bytes(b"weights")
+    _ckpt(run / "last.pt", "weights")
     (run / "last.tokenizer.json").write_text('{"output": 1}', encoding="utf-8")
     (run / "last.context.tokenizer.json").write_text('{"context": 1}', encoding="utf-8")
 
+    (run / "last.meta.json").write_text(json.dumps({
+        "kind": "twotower", "output_contract_version": 2,
+        "context_tokenizer": "last.context.tokenizer.json",
+    }))
     loop_dir = tmp_path / "loop"
     sidecar = ClimbChampionSidecar(
         source_campaign="c1",
@@ -400,33 +401,23 @@ def test_write_climb_champion_carries_tokenizer_sidecars(tmp_path: Path) -> None
     )
 
 
-def test_write_climb_champion_without_sidecars_copies_only_the_checkpoint(
-    tmp_path: Path,
+@pytest.mark.parametrize("missing", [".meta.json", ".tokenizer.json"])
+def test_write_climb_champion_missing_required_sidecar_preserves_publication(
+    tmp_path: Path, missing: str,
 ) -> None:
-    """Absent sidecars stay absent; nothing is fabricated."""
-    from slm_training.autoresearch.hillclimb import (
-        CLIMB_CHAMPION_STATUS_BASELINE_SEED,
-        ClimbChampionSidecar,
-        climb_champion_checkpoint_path,
-        write_climb_champion,
-    )
-
-    run = tmp_path / "run" / "checkpoints"
-    run.mkdir(parents=True)
-    (run / "last.pt").write_bytes(b"weights")
+    """Incomplete candidates cannot replace a published champion."""
     loop_dir = tmp_path / "loop"
-    write_climb_champion(
-        loop_dir,
-        checkpoint=run / "last.pt",
-        sidecar=ClimbChampionSidecar(
-            source_campaign="c1",
-            cumulative_steps=1,
-            train_data_manifest_sha="",
-            cumulative_epochs=0.0,
-            status=CLIMB_CHAMPION_STATUS_BASELINE_SEED,
-        ),
+    sidecar = ClimbChampionSidecar(
+        source_campaign="original", cumulative_steps=1,
+        train_data_manifest_sha="", cumulative_epochs=0.0,
     )
-    ckpt = climb_champion_checkpoint_path(loop_dir)
-    assert ckpt.is_file()
-    assert not ckpt.with_name("last.tokenizer.json").exists()
-    assert not ckpt.with_name("last.context.tokenizer.json").exists()
+    original = _ckpt(tmp_path / "original.pt", "original")
+    write_climb_champion(loop_dir, checkpoint=original, sidecar=sidecar)
+    before = {p.relative_to(loop_dir): p.read_bytes()
+              for p in loop_dir.rglob("*") if p.is_file()}
+    candidate = _ckpt(tmp_path / "candidate.pt", "candidate")
+    candidate.with_suffix(missing).unlink()
+    with pytest.raises(ValueError, match="bundle:missing_or_linked_component"):
+        write_climb_champion(loop_dir, checkpoint=candidate, sidecar=sidecar)
+    assert {p.relative_to(loop_dir): p.read_bytes()
+            for p in loop_dir.rglob("*") if p.is_file()} == before

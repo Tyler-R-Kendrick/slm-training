@@ -2,6 +2,7 @@
 
 from scripts.run_slm233_recursive_campaign import (
     ARM_SPECS,
+    DEFAULT_DATA,
     PARAMETER_VIEW_SPECS,
     SEEDS,
     TEST_DEPTHS,
@@ -9,6 +10,10 @@ from scripts.run_slm233_recursive_campaign import (
     _build_model,
     _load_records,
 )
+
+# Model-shape tests use corpus admitted by current symbol-only checks. The
+# campaign's historical corpus stays frozen to its preregistered manifest.
+MODEL_CONFIG_DATA = DEFAULT_DATA.parent / "e938_role_safe_all_targets_v2"
 
 
 def test_primary_matrix_is_five_arms_by_three_paired_seeds() -> None:
@@ -19,10 +24,7 @@ def test_primary_matrix_is_five_arms_by_three_paired_seeds() -> None:
 
 
 def test_recursive_arms_use_only_authorized_layerscale_configuration() -> None:
-    train, _ = _load_records(
-        __import__("scripts.run_slm233_recursive_campaign", fromlist=["DEFAULT_DATA"])
-        .DEFAULT_DATA
-    )
+    train, _ = _load_records(MODEL_CONFIG_DATA)
     for spec in ARM_SPECS:
         model = _build_model(spec, SEEDS[0], train)
         if spec.arm == "A":
@@ -39,18 +41,16 @@ def test_deep_supervision_weights_are_normalized() -> None:
 
 
 def test_objective_only_b_and_c_initialization_is_identical() -> None:
-    from scripts.run_slm233_recursive_campaign import DEFAULT_DATA, _model_hash
+    from scripts.run_slm233_recursive_campaign import _model_hash
 
-    train, _ = _load_records(DEFAULT_DATA)
+    train, _ = _load_records(MODEL_CONFIG_DATA)
     b = _build_model(ARM_SPECS[1], SEEDS[0], train)
     c = _build_model(ARM_SPECS[2], SEEDS[0], train)
     assert _model_hash(b) == _model_hash(c)
 
 
 def test_secondary_pair_matches_active_parameters_and_names_byte_residual() -> None:
-    from scripts.run_slm233_recursive_campaign import DEFAULT_DATA
-
-    train, _ = _load_records(DEFAULT_DATA)
+    train, _ = _load_records(MODEL_CONFIG_DATA)
     left = _build_model(PARAMETER_VIEW_SPECS[0], SEEDS[0], train)
     right = _build_model(PARAMETER_VIEW_SPECS[1], SEEDS[0], train)
     left_accounting = _accounting(left, PARAMETER_VIEW_SPECS[0])

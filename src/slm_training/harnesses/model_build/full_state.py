@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import random
 import subprocess
 import tempfile
 from dataclasses import asdict, is_dataclass
@@ -20,7 +21,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-FULL_STATE_VERSION = 1
+FULL_STATE_VERSION = 2
+
+
+def seed_training_rngs(seed: int) -> None:
+    """Initialize process RNG streams; exact resume restores them afterwards."""
+    import numpy as np
+    import torch
+
+    random.seed(seed)
+    np.random.seed(seed % (2**32))
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def _git_sha() -> str | None:
@@ -53,23 +66,16 @@ def _git_dirty() -> bool | None:
 
 
 def data_manifest_sha(train_dir: Path) -> str | None:
-    """Identity of the training corpus: manifest content fingerprint or file hash."""
-    train_dir = Path(train_dir)
-    manifest = train_dir / "manifest.json"
+    """Published snapshot identity; resume additionally checks actual bytes."""
+    manifest = Path(train_dir) / "manifest.json"
     if manifest.exists():
-        try:
-            data = json.loads(manifest.read_text(encoding="utf-8"))
-            fp = data.get("content_fingerprint")
-            if fp:
-                return str(fp)
-        except Exception:  # noqa: BLE001
-            pass
-    records = train_dir / "records.jsonl"
-    if records.exists():
-        h = hashlib.sha256()
-        h.update(records.read_bytes())
-        return h.hexdigest()
-    return None
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        if data.get("content_fingerprint"):
+            return str(data["content_fingerprint"])
+    records = Path(train_dir) / "records.jsonl"
+    return (
+        hashlib.sha256(records.read_bytes()).hexdigest() if records.is_file() else None
+    )
 
 
 def _jsonable_config(config: Any) -> dict[str, Any]:
@@ -103,9 +109,13 @@ def save_full_state(
     best_weighted_nll: float | None = None,
     best_ship_score: float | None = None,
     mixture_hash: str | None = None,
+    snapshot_tokens: dict | None = None,
 ) -> Path:
     """Atomically write a resumable training-state checkpoint."""
     import torch
+    import numpy as np
+
+    from slm_training.harnesses.model_build.resume_contract import resume_identity
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -120,11 +130,20 @@ def save_full_state(
     payload = {
         "kind": "full_train_state",
         "version": FULL_STATE_VERSION,
+        "resume_contract": resume_identity(config, plugin),
+        "accumulation_position": 0,
+        "scheduler": None,  # This trainer has no learning-rate scheduler.
+        "python_rng": random.getstate(),
+        "numpy_rng": tuple(
+            value.tolist() if isinstance(value, np.ndarray) else value
+            for value in np.random.get_state()
+        ),
         "step": int(step),
         "seen_prompt_tokens": int(seen_prompt_tokens),
         "seen_target_tokens": int(seen_target_tokens),
         "seen_primary_examples": int(seen_primary_examples),
         "seen_replay_examples": int(seen_replay_examples),
+        "snapshot_tokens": snapshot_tokens or {},
         "model": model_state,
         "optimizer": optimizer.state_dict() if optimizer is not None else None,
         # accel returns a stateless _NullScaler when AMP is off.
@@ -134,9 +153,7 @@ def save_full_state(
             else None
         ),
         "loop_rng": loop_rng.getstate() if loop_rng is not None else None,
-        "model_mask_rng": (
-            plugin._rng.getstate() if hasattr(plugin, "_rng") else None
-        ),
+        "model_mask_rng": (plugin._rng.getstate() if hasattr(plugin, "_rng") else None),
         "torch_rng": torch.get_rng_state(),
         "cuda_rng": (
             torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
@@ -169,6 +186,9 @@ def save_full_state(
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(tmp_path, path)
+        from slm_training.harness_core.checkpoint_bundle import _sync_directory
+
+        _sync_directory(path.parent)
         tmp_path = None
     finally:
         if tmp_path is not None:
@@ -181,15 +201,25 @@ def load_full_state(path: Path | str) -> dict[str, Any]:
     import torch
 
     path = Path(path)
-    payload = torch.load(path, map_location="cpu", weights_only=False)
+    payload = torch.load(path, map_location="cpu", weights_only=True)
     if not isinstance(payload, dict) or payload.get("kind") != "full_train_state":
         raise ValueError(f"{path} is not a full_train_state checkpoint")
+    if payload.get("version") not in {1, FULL_STATE_VERSION}:
+        raise ValueError("unsupported full_train_state version")
     return payload
 
 
 def restore_rng_states(payload: dict[str, Any], *, plugin: Any, loop_rng: Any) -> None:
     """Restore every RNG stream captured by :func:`save_full_state`."""
     import torch
+    import numpy as np
+
+    if payload.get("python_rng") is not None:
+        random.setstate(payload["python_rng"])
+    if payload.get("numpy_rng") is not None:
+        state = list(payload["numpy_rng"])
+        state[1] = np.asarray(state[1], dtype=np.uint32)
+        np.random.set_state(tuple(state))
 
     if payload.get("loop_rng") is not None and loop_rng is not None:
         loop_rng.setstate(payload["loop_rng"])
@@ -198,7 +228,4 @@ def restore_rng_states(payload: dict[str, Any], *, plugin: Any, loop_rng: Any) -
     if payload.get("torch_rng") is not None:
         torch.set_rng_state(payload["torch_rng"])
     if payload.get("cuda_rng") is not None and torch.cuda.is_available():
-        try:
-            torch.cuda.set_rng_state_all(payload["cuda_rng"])
-        except Exception:  # noqa: BLE001
-            pass
+        torch.cuda.set_rng_state_all(payload["cuda_rng"])

@@ -60,3 +60,12 @@ class CampaignBudget(StrictModel):
         if not math.isfinite(requested) or requested <= 0:
             raise ValueError("--experiment-wall-seconds must be positive and finite")
         return min(requested, ceiling)
+
+    @property
+    def treatment_resources(self) -> dict:
+        """Charge total resources, not incidental interruption/retry identities."""
+        grant = self.continuation_grant
+        if grant is None:
+            return {}  # Preserve historical treatment and serialized identities.
+        return {"logical_seconds": grant.total_seconds,
+                "cpu_slots": grant.cpu_slots, "memory_mb": grant.memory_mb}

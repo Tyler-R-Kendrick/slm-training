@@ -1,0 +1,520 @@
+{
+  "schema": "startup_identity_profile/v1",
+  "source": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution",
+  "python": ".venv/bin/python",
+  "scope": "read-only identity calls; no supervisor/provider; inherited environment",
+  "cap_seconds": 170,
+  "measurements": [
+    {
+      "function": "runtime_source_identity",
+      "status": "complete",
+      "result": "a99bfac07e5405102e66d6e838385fdbc35eb74025c0c7797d90600b1762291d",
+      "seconds": 28.207635545011726,
+      "top_cumulative": [
+        {
+          "file": "<stdin>",
+          "line": 11,
+          "function": "<lambda>",
+          "calls": 1,
+          "self_seconds": 0.0011278,
+          "cumulative_seconds": 28.207361345000002
+        },
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/src/slm_training/harness_core/execution_release.py",
+          "line": 191,
+          "function": "runtime_source_identity",
+          "calls": 1,
+          "self_seconds": 0.028444499,
+          "cumulative_seconds": 28.206233545000003
+        },
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/src/slm_training/harness_core/execution_release.py",
+          "line": 51,
+          "function": "_files",
+          "calls": 2,
+          "self_seconds": 0.497996258,
+          "cumulative_seconds": 28.127021340000002
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 663,
+          "function": "relative_to",
+          "calls": 19798,
+          "self_seconds": 0.40870135100000005,
+          "cumulative_seconds": 13.576210446000001
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 1017,
+          "function": "read_bytes",
+          "calls": 19430,
+          "self_seconds": 0.108253712,
+          "cumulative_seconds": 9.553221996000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'read' of '_io.BufferedReader' objects>",
+          "calls": 19430,
+          "self_seconds": 8.960004898000001,
+          "cumulative_seconds": 8.960004898000001
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1022,
+          "function": "__iter__",
+          "calls": 278670,
+          "self_seconds": 0.45108747400000004,
+          "cumulative_seconds": 7.8920171550000005
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 276,
+          "function": "__getitem__",
+          "calls": 258506,
+          "self_seconds": 1.029468465,
+          "cumulative_seconds": 7.440929681
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 20164,
+          "self_seconds": 0.11303571400000001,
+          "cumulative_seconds": 6.009009015
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 322980,
+          "self_seconds": 0.8291544270000001,
+          "cumulative_seconds": 4.741501952
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 420,
+          "function": "_from_parsed_parts",
+          "calls": 238708,
+          "self_seconds": 0.5863565030000001,
+          "cumulative_seconds": 4.410977199
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 106244,
+          "self_seconds": 0.242753622,
+          "cumulative_seconds": 3.5325870700000004
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 1159,
+          "function": "__init__",
+          "calls": 346756,
+          "self_seconds": 0.650769711,
+          "cumulative_seconds": 3.483411658
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 207100,
+          "self_seconds": 0.405797194,
+          "cumulative_seconds": 3.42408823
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 20164,
+          "self_seconds": 0.195364538,
+          "cumulative_seconds": 3.361781355
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 86080,
+          "self_seconds": 0.373927449,
+          "cumulative_seconds": 3.289833448
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 519,
+          "function": "__eq__",
+          "calls": 102296,
+          "self_seconds": 0.313261143,
+          "cumulative_seconds": 2.9818115510000003
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 357,
+          "function": "__init__",
+          "calls": 346756,
+          "self_seconds": 1.629895861,
+          "cumulative_seconds": 2.8326419470000004
+        }
+      ]
+    },
+    {
+      "function": "runtime_git_provenance",
+      "status": "complete",
+      "result": {
+        "code_dirty": false,
+        "integration_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+        "upstream_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed"
+      },
+      "seconds": 56.79620150900155,
+      "top_cumulative": [
+        {
+          "file": "<stdin>",
+          "line": 11,
+          "function": "<lambda>",
+          "calls": 1,
+          "self_seconds": 3.5000000000000004e-06,
+          "cumulative_seconds": 56.795531109
+        },
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/src/slm_training/harness_core/execution_release.py",
+          "line": 263,
+          "function": "runtime_git_provenance",
+          "calls": 1,
+          "self_seconds": 0.0048969,
+          "cumulative_seconds": 56.795527609000004
+        },
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/src/slm_training/harness_core/execution_release.py",
+          "line": 191,
+          "function": "runtime_source_identity",
+          "calls": 1,
+          "self_seconds": 0.0290754,
+          "cumulative_seconds": 56.784532109000004
+        },
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/src/slm_training/harness_core/execution_release.py",
+          "line": 51,
+          "function": "_files",
+          "calls": 2,
+          "self_seconds": 0.473130044,
+          "cumulative_seconds": 56.703621812
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 1017,
+          "function": "read_bytes",
+          "calls": 19430,
+          "self_seconds": 0.104800291,
+          "cumulative_seconds": 37.026860762000005
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'read' of '_io.BufferedReader' objects>",
+          "calls": 19430,
+          "self_seconds": 36.474802706000006,
+          "cumulative_seconds": 36.474802706000006
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 663,
+          "function": "relative_to",
+          "calls": 19798,
+          "self_seconds": 0.42118715900000003,
+          "cumulative_seconds": 14.363852468000001
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1022,
+          "function": "__iter__",
+          "calls": 278670,
+          "self_seconds": 0.469772261,
+          "cumulative_seconds": 8.347532463
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 276,
+          "function": "__getitem__",
+          "calls": 258506,
+          "self_seconds": 1.066716394,
+          "cumulative_seconds": 7.877760202
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 690,
+          "function": "is_relative_to",
+          "calls": 20164,
+          "self_seconds": 0.11750418900000001,
+          "cumulative_seconds": 6.452139669
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 322981,
+          "self_seconds": 0.8666480080000001,
+          "cumulative_seconds": 5.046927986
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 420,
+          "function": "_from_parsed_parts",
+          "calls": 238708,
+          "self_seconds": 0.65653633,
+          "cumulative_seconds": 4.724790523
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 106245,
+          "self_seconds": 0.239493478,
+          "cumulative_seconds": 3.705121525
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 1159,
+          "function": "__init__",
+          "calls": 346757,
+          "self_seconds": 0.6733430290000001,
+          "cumulative_seconds": 3.6860973350000004
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 207101,
+          "self_seconds": 0.44506106100000004,
+          "cumulative_seconds": 3.68374352
+        },
+        {
+          "file": "<frozen _collections_abc>",
+          "line": 1032,
+          "function": "__contains__",
+          "calls": 20164,
+          "self_seconds": 0.21138837600000002,
+          "cumulative_seconds": 3.6131273580000003
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 86081,
+          "self_seconds": 0.39614795900000005,
+          "cumulative_seconds": 3.465628047
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 519,
+          "function": "__eq__",
+          "calls": 102296,
+          "self_seconds": 0.34705187000000004,
+          "cumulative_seconds": 3.2137605870000003
+        }
+      ]
+    },
+    {
+      "function": "environment_identity",
+      "status": "complete",
+      "result": {
+        "digest": "f4f429088e1621206b60088b98157226b6802d7964f16f84738fb252b7a1244b"
+      },
+      "seconds": 14.317954648009618,
+      "top_cumulative": [
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/scripts/merge_verification_identity.py",
+          "line": 58,
+          "function": "environment_identity",
+          "calls": 1,
+          "self_seconds": 0.009260812,
+          "cumulative_seconds": 14.316313847000002
+        },
+        {
+          "file": "outputs/autonomy-integration-20260921/science-lab-r30-dadeb857f97c-acceptance-prereg/execution/scripts/merge_verification_identity.py",
+          "line": 152,
+          "function": "_dependency_files",
+          "calls": 1,
+          "self_seconds": 0.29320445300000003,
+          "cumulative_seconds": 12.498438409
+        },
+        {
+          "file": "/usr/lib/python3.12/importlib/metadata/__init__.py",
+          "line": 473,
+          "function": "files",
+          "calls": 164,
+          "self_seconds": 0.0019755000000000003,
+          "cumulative_seconds": 6.667271224
+        },
+        {
+          "file": "/usr/lib/python3.12/importlib/metadata/_functools.py",
+          "line": 99,
+          "function": "wrapper",
+          "calls": 328,
+          "self_seconds": 0.0009015020000000001,
+          "cumulative_seconds": 6.609522505
+        },
+        {
+          "file": "/usr/lib/python3.12/importlib/metadata/__init__.py",
+          "line": 496,
+          "function": "skip_missing_files",
+          "calls": 164,
+          "self_seconds": 0.121999251,
+          "cumulative_seconds": 6.607318203
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 837,
+          "function": "stat",
+          "calls": 85442,
+          "self_seconds": 0.139585956,
+          "cumulative_seconds": 6.52267768
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "calls": 85480,
+          "self_seconds": 1.0960111240000001,
+          "cumulative_seconds": 6.384980124
+        },
+        {
+          "file": "/usr/lib/python3.12/importlib/metadata/__init__.py",
+          "line": 498,
+          "function": "<lambda>",
+          "calls": 42721,
+          "self_seconds": 0.11888225200000001,
+          "cumulative_seconds": 5.778059332000001
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "calls": 86266,
+          "self_seconds": 0.159855084,
+          "cumulative_seconds": 5.347103605
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "calls": 128987,
+          "self_seconds": 0.473505,
+          "cumulative_seconds": 5.220083139000001
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "calls": 171708,
+          "self_seconds": 0.265744024,
+          "cumulative_seconds": 4.451707219
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "calls": 86430,
+          "self_seconds": 0.405667072,
+          "cumulative_seconds": 4.185963195
+        },
+        {
+          "file": "/usr/lib/python3.12/importlib/metadata/__init__.py",
+          "line": 823,
+          "function": "locate_file",
+          "calls": 85442,
+          "self_seconds": 0.233690595,
+          "cumulative_seconds": 4.071058941
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 854,
+          "function": "exists",
+          "calls": 42721,
+          "self_seconds": 0.08370124300000001,
+          "cumulative_seconds": 3.5565109450000003
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 387,
+          "function": "_parse_path",
+          "calls": 86430,
+          "self_seconds": 1.278465129,
+          "cumulative_seconds": 2.734033821
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "calls": 171704,
+          "self_seconds": 0.46936579500000003,
+          "cumulative_seconds": 2.536518645
+        },
+        {
+          "file": "/usr/lib/python3.12/pathlib.py",
+          "line": 731,
+          "function": "parent",
+          "calls": 85442,
+          "self_seconds": 0.365993659,
+          "cumulative_seconds": 2.296348036
+        },
+        {
+          "file": "/usr/lib/python3.12/importlib/metadata/__init__.py",
+          "line": 333,
+          "function": "locate",
+          "calls": 42721,
+          "self_seconds": 0.06881342900000001,
+          "cumulative_seconds": 2.102666135
+        }
+      ]
+    }
+  ],
+  "unprofiled_measurements": [
+    {
+      "function": "runtime_source_identity",
+      "status": "complete",
+      "seconds": 17.28009299399855
+    },
+    {
+      "function": "runtime_git_provenance",
+      "status": "complete",
+      "seconds": 121.22944885700417
+    },
+    {
+      "function": "environment_identity",
+      "status": "failed",
+      "error": "KeyboardInterrupt()",
+      "seconds": 26.57703234400833
+    }
+  ],
+  "bytes_per_source_tree": 392812609,
+  "entries_per_source_tree": 9898,
+  "profile_pass_exit": 0,
+  "unprofiled_pass_exit": 124,
+  "unprofiled_pass_interrupted": true,
+  "source_edits": false,
+  "provider_calls": false,
+  "campaign_mutations": false,
+  "interpretation": "Repeated full release/execution scans plus repeated environment discovery consume startup allowance. Timing variance is consistent with host contention; no system-load attribution measured. Interrupted repeat is incomplete evidence.",
+  "proposed_fix": {
+    "owner": "src/slm_training/harness_core/execution_release.py",
+    "first": "Compute relative directory once per os.walk iteration; construct entry names without per-file Path.relative_to parent traversal. Preserve complete byte hashing, file universe, mode and link checks.",
+    "second": "Expose jointly validated source identity and provenance from one manifest validation for adjacent callers; preserve independent before/after validations and never cache across worker execution.",
+    "validation": "Manifest/digest equality, internal/external symlinks, hardlinks, missing/added/changed files, release/marker/output tampering; same frozen-input startup timing after independent successor publication."
+  },
+  "limitations": [
+    "Inherited profiling environment; production launcher environment not reconstructed.",
+    "cProfile overhead included in first pass.",
+    "No end-to-end supervisor improvement demonstrated.",
+    "Environmental profiling only; no training outcomes."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dadeb857f97c70657a49aae0cc598f599e5235ed",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v309",
+      "config.levers": "v33"
+    },
+    "stamped_at": "2026-09-26T19:33:42.245338+00:00"
+  }
+}

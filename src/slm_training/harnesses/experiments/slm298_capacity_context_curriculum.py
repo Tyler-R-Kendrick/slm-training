@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.autoresearch.experiment_campaign import (
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     ArtifactRequirementV1,
     CampaignArmV1,
     CampaignBudget,
@@ -99,10 +100,8 @@ class Slm298Protocol:
 
 def build_cells() -> tuple[FactorialCell, ...]:
     return tuple(
-        FactorialCell(d_model, context, curriculum, seed)
-        for d_model, context, curriculum, seed in product(
-            WIDTHS, CONTEXTS, CURRICULA, SEEDS
-        )
+        FactorialCell(*cell)
+        for cell in product(WIDTHS, CONTEXTS, CURRICULA, SEEDS)
     )
 
 
@@ -263,6 +262,7 @@ def build_campaign(protocol: Slm298Protocol) -> ExperimentCampaignV1:
             CampaignEndpointV1(endpoint_id="binder_f1", metric="binder_reference_f1", role="secondary", direction="increase", minimum_effect=0.02),
         ),
         arms=arms,
+        selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
         seeds=SEEDS,
         budget=CampaignBudget(max_experiments=len(protocol.cells), max_wall_minutes=MAX_RUN_MINUTES),
         stopping_rules=("Reject any timed-out or incomplete cell; no best-seed selection.",),

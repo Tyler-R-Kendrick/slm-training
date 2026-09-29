@@ -182,7 +182,7 @@ def test_evaluation_requires_a_real_checkpoint(tmp_path: Path) -> None:
             ExampleRecord(
                 id="smoke",
                 prompt="Button",
-                openui='root = Stack([cta])\ncta = Button(":cta")',
+                openui='root = Stack([cta])\ncta = Button(":slot_0")',
                 split="smoke",
             )
         ],

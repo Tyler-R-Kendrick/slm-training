@@ -177,3 +177,19 @@ def test_either_or_does_not_substring_suppress_neighbors() -> None:
         and "CardHeader" not in fact.statement
         for fact in requirements.facts
     )
+
+
+@pytest.mark.parametrize("identifier", ["generated_945137945819", "v945137945819", "945137945819_layout", ":slot_945137945819"])
+def test_identifier_digits_are_not_component_quantities(identifier):
+    # Native scoring previously attempted a 945-billion-entry tuple here.
+    prompt = f"Generate the {identifier} OpenUI program.\nComponents: Accordion, Stack"
+    requirements = _prompt_component_requirements(prompt)
+    assert requirements.count("Accordion") == 1
+    assert requirements.count("Stack") == 1
+    assert len(requirements) == 2
+
+
+def test_explicit_component_quantities_survive_identifier_filtering():
+    requirements = _prompt_component_requirements("In layout_945137945819 use 12 primary Buttons and 3 Inputs")
+    assert requirements.count("Button") == 12
+    assert requirements.count("Input") == 3

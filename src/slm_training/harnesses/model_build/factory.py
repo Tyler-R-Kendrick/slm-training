@@ -22,13 +22,12 @@ def _resolve_freeze_context(backend: str, requested: bool) -> bool:
 
 def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     """Apply eval/train decode + conditioning overrides onto a loaded plugin."""
-    # Activate the selected grammar / DSL backend for constrained decode.
-    try:
-        from slm_training.models.grammar import set_active_dsl
+    from slm_training.models.grammar import set_active_dsl
+    from slm_training.dsl.pack import get_pack
 
-        set_active_dsl(getattr(config, "grammar_dsl", None) or "openui")
-    except Exception:  # noqa: BLE001
-        pass
+    dsl = getattr(config, "grammar_dsl", None) or "openui"
+    get_pack(dsl)  # Unknown authority must not silently retain the old grammar.
+    set_active_dsl(dsl)
     cfg = getattr(model, "config", None)
     if cfg is None:
         return model
@@ -338,13 +337,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
 
 def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
     from slm_training.models.twotower import TwoTowerConfig
+    from slm_training.dsl.pack import get_pack
 
     backend = (config.context_backend or "scratch").lower()
-    freeze = _resolve_freeze_context(backend, config.freeze_context)
     ltr_stages = getattr(config, "grammar_ltr_stages", None)
-    if ltr_stages is None:
-        ltr_stages = (64, 128, 192, 256)
+    ltr_stages = (64, 128, 192, 256) if ltr_stages is None else ltr_stages
     return TwoTowerConfig(
+        training_pack_id=get_pack(config.grammar_dsl or "openui").pack_id,
         d_model=config.d_model,
         n_heads=config.n_heads,
         context_layers=config.context_layers,
@@ -355,7 +354,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         context_backend=backend,
         hf_model_name=config.hf_model_name,
         hf_model_revision=config.hf_model_revision,
-        freeze_context=freeze,
+        freeze_context=_resolve_freeze_context(backend, config.freeze_context),
         local_files_only=config.local_files_only,
         denoiser_backend=config.denoiser_backend,
         denoiser_arch=config.denoiser_arch,

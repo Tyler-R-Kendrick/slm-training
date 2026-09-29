@@ -176,3 +176,100 @@ def _report(*, ruff_version: str | None) -> gate.QualityReport:
         sap=[],
         ruff_version=ruff_version,
     )
+
+
+def _update_report():
+    from slm_training.quality.complexity import Violation
+    from slm_training.quality.martin import ComponentMetrics
+
+    return gate.QualityReport(
+        files=[], oversized=[SourceFile("large.py", 500, "python")],
+        complexity=[Violation("complex.py", "C901", "work", 1)],
+        components=[ComponentMetrics("large", 1, 21000, 0, 0, 0, 0)],
+        edges={}, cycles=[["a", "b"]], sdp=["edge"], sap=["component"],
+        ruff_version="ruff old",
+    )
+
+
+@pytest.mark.parametrize("dimension,key", case_values(__file__, "test_update_rejects_regressions_without_writing"))
+@pytest.mark.parametrize("unlisted", [False, True])
+def test_update_rejects_regressions_without_writing(tmp_path, monkeypatch, dimension, key, unlisted):
+    from scripts import verify_code_quality as verifier
+
+    analysis = _update_report()
+    ceilings = analysis.dimensions()
+    if unlisted:
+        ceilings[dimension].pop(key)
+    else:
+        ceilings[dimension][key] -= 1
+    ceilings["module_lines"]["removed.py"] = 600  # Improvement cannot hide regression.
+    target = baseline.save(ceilings, root=tmp_path, tools={"ruff": "ruff old"})
+    before = target.read_bytes()
+    monkeypatch.setattr(verifier, "_analyse", lambda args: analysis)
+    assert verifier.main(["--update", "--root", str(tmp_path)]) == 1
+    assert target.read_bytes() == before
+
+
+def test_update_lowers_ceilings_and_removes_stale_entries(tmp_path, monkeypatch):
+    from scripts import verify_code_quality as verifier
+
+    analysis = _update_report()
+    ceilings = {name: {key: value + 1 for key, value in values.items()}
+                for name, values in analysis.dimensions().items()}
+    ceilings["module_lines"]["removed.py"] = 600
+    baseline.save(ceilings, root=tmp_path, tools={"ruff": "ruff old"})
+    monkeypatch.setattr(verifier, "_analyse", lambda args: analysis)
+    assert verifier.main(["--update", "--root", str(tmp_path)]) == 0
+    saved = baseline.load(root=tmp_path)
+    assert all(saved[name] == values for name, values in analysis.dimensions().items())
+    assert verifier.main(["--check", "--root", str(tmp_path)]) == 0
+
+
+def test_update_bootstraps_missing_baseline(tmp_path, monkeypatch):
+    from scripts import verify_code_quality as verifier
+
+    analysis = _update_report()
+    monkeypatch.setattr(verifier, "_analyse", lambda args: analysis)
+    assert verifier.main(["--check", "--root", str(tmp_path)]) == 2
+    assert verifier.main(["--update", "--root", str(tmp_path)]) == 0
+    assert verifier.main(["--check", "--root", str(tmp_path)]) == 0
+
+
+@pytest.mark.parametrize("other_regression", [False, True])
+def test_update_tool_change_rescopes_only_complexity(tmp_path, monkeypatch, other_regression):
+    from dataclasses import replace
+    from scripts import verify_code_quality as verifier
+
+    analysis = _update_report()
+    ceilings = analysis.dimensions()
+    ceilings["complexity"] = {}
+    if other_regression:
+        ceilings["module_lines"]["large.py"] -= 1
+    target = baseline.save(ceilings, root=tmp_path, tools={"ruff": "ruff old"})
+    before = target.read_bytes()
+    analysis = replace(analysis, ruff_version="ruff new")
+    monkeypatch.setattr(verifier, "_analyse", lambda args: analysis)
+    assert verifier.main(["--update", "--root", str(tmp_path)]) == int(other_regression)
+    if other_regression:
+        assert target.read_bytes() == before
+    else:
+        saved = baseline.load(root=tmp_path)
+        assert saved["complexity"] == analysis.dimensions()["complexity"]
+        assert saved["tooling"] == {"ruff": "ruff new"}
+
+
+def test_update_skipped_complexity_preserves_counts_and_tool_version(tmp_path, monkeypatch):
+    from dataclasses import replace
+    from scripts import verify_code_quality as verifier
+
+    analysis = _update_report()
+    ceilings = analysis.dimensions()
+    ceilings["module_lines"]["large.py"] += 1
+    baseline.save(ceilings, root=tmp_path, tools={"ruff": "ruff old"})
+    analysis = replace(analysis, complexity=None, ruff_version=None)
+    monkeypatch.setattr(verifier, "_analyse", lambda args: analysis)
+    assert verifier.main(["--update", "--skip-complexity", "--root", str(tmp_path)]) == 0
+    saved = baseline.load(root=tmp_path)
+    assert saved["module_lines"] == analysis.dimensions()["module_lines"]
+    assert saved["complexity"] == ceilings["complexity"]
+    assert saved["tooling"] == {"ruff": "ruff old"}

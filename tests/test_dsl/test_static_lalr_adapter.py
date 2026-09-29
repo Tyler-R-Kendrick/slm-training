@@ -8,16 +8,20 @@ sound lower bound, and that nothing in production consumes any of it yet.
 
 from __future__ import annotations
 
-import subprocess
+import re
 from collections import deque
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+
+from scripts.merge_verification_identity import source_paths
 
 from slm_training.dsl.grammar.fastpath.completion_artifact import (
     StaticLalrAdapter,
     _parse_table_arrays,
 )
+from slm_training.dsl.grammar.fastpath.completion_kernel import CompletionSession
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
 from slm_training.dsl.grammar.fastpath.static_control_domain import (
     STATIC_LALR_CORPUS,
@@ -25,12 +29,14 @@ from slm_training.dsl.grammar.fastpath.static_control_domain import (
     require_certified_static_lalr,
     static_lalr_adapter,
 )
+from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 #: Production decode modules permitted to consume the adapter. Unchanged: the
 #: restriction this file exists to enforce is on the decode path.
 _OWNING_MODULES = {
     "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
+    "src/slm_training/dsl/grammar/fastpath/completion_lalr.py",
     "src/slm_training/dsl/grammar/fastpath/static_control_domain.py",
     # Negative-direction room prune via certified min_terminals.
     "src/slm_training/dsl/grammar/fastpath/completion_kernel.py",
@@ -93,6 +99,45 @@ def test_rule_tensors_match_the_live_parser(engine: OpenUIIncrementalEngine) -> 
     ):
         if kind == 1:
             assert 0 <= target < len(rules)
+
+
+def test_live_state_ids_map_to_canonical_colors_and_survive_renumbering(
+    engine: OpenUIIncrementalEngine, adapter: StaticLalrAdapter, monkeypatch
+) -> None:
+    live_colors: dict[int, int] = {}
+    _parse_table_arrays(engine._parser, live_state_colors=live_colors)
+    live_ids = engine._parser.parser.parser._parse_table.states
+
+    assert set(live_colors) == set(live_ids)
+    assert adapter.live_state_colors == live_colors
+    assert engine.set_prefix("root = Card")
+    live_id = int(engine._ip.parser_state.state_stack[-1])
+    color = live_colors[live_id]
+    assert adapter.min_terminals_for_live_state(live_id) == adapter.min_terminals(color)
+
+    offset = max(live_ids) + 1
+    renumbered = replace(
+        adapter,
+        live_state_colors={
+            state + offset: value for state, value in live_colors.items()
+        },
+    )
+    assert renumbered.min_terminals_for_live_state(
+        live_id + offset
+    ) == adapter.min_terminals(color)
+    assert renumbered.min_terminals_for_live_state(live_id) == -1
+
+    session = CompletionSession(DSLNativeTokenizer.build())
+    prefix = [
+        session._tokenizer.bos_id,
+        *session._tokenizer.encode("root = Card", add_special=False),
+    ]
+    state_id = session.seed(prefix, engine=engine)
+    assert session._min_terminals_bound(state_id) == adapter.min_terminals(color)
+    session._lalr_adapter = renumbered
+    state = session._states[state_id].engine._ip.parser_state
+    monkeypatch.setattr(state, "state_stack", [value + offset for value in state.state_stack])
+    assert session._min_terminals_bound(state_id) == adapter.min_terminals(color)
 
 
 def _certify_mutation(
@@ -221,15 +266,11 @@ def test_state_min_terminals_is_a_sound_lower_bound(
 
 
 def _grep_python_sources(pattern: str) -> set[str]:
-    found = subprocess.run(
-        ["git", "grep", "-l", "-E", pattern, "--", "src/*.py", "scripts/*.py"],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert found.returncode in (0, 1), found.stderr
-    return {line for line in found.stdout.splitlines() if line}
+    return {
+        name for name in source_paths(_REPO_ROOT)
+        if name.startswith(("src/", "scripts/")) and name.endswith(".py")
+        and re.search(pattern, (_REPO_ROOT / name).read_text())
+    }
 
 
 def _production_hits(pattern: str) -> set[str]:

@@ -33,6 +33,7 @@ _LOCATIONS = frozenset(
         "run_id",
         "run_root",
         "checkpoint_every_steps",
+        "max_updates_this_invocation",
         "telemetry",
         "telemetry_sample_interval_ms",
         "campaign_manifest",
@@ -203,6 +204,9 @@ def prepare_pair(
         _bindings(arm, endpoint=endpoint, contract=contract, totals=totals)
         for arm in arms
     ]
+    if campaign.budget.treatment_resources:
+        for binding in bindings:
+            binding["resource_contract"]["continuation"] = campaign.budget.treatment_resources
     design = {
         "control": left,
         "candidate": right,

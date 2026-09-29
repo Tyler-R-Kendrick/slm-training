@@ -18,7 +18,11 @@ from slm_training.autoresearch.heal.repair_contracts import (
     RepairProposal,
     RepairRequest,
 )
-from slm_training.autoresearch.heal.repair_prompt import repair_prompt
+from slm_training.autoresearch.heal.repair_prompt import (
+    repair_prompt,
+    required_regression_path,
+)
+from slm_training.harness_core.provider_bridge import SANDBOX_AUTHORITY
 from slm_training.harness_core.bounded_process import (
     ProcessOutcome,
     run_bounded_process,
@@ -95,11 +99,13 @@ def probe_codex(executable: str) -> dict:
 
 class CodexExecutor:
     def __init__(
-        self, runner: IsolatedAgentRunner | None, *, instructions: str, contract: str
+        self, runner: IsolatedAgentRunner | None, *, instructions: str, contract: str,
+        verification_manifest: dict,
     ) -> None:
         self.runner = runner
         self.instructions = instructions
         self.contract = contract
+        self.verification_manifest = verification_manifest
 
     def capability(self, request: RepairRequest) -> str | None:
         grant = request.grant
@@ -107,6 +113,10 @@ class CodexExecutor:
             return "agent_grant_missing" if grant is None else "agent_grant_expired"
         if request.blocker.blocker_class not in grant.repair_classes:
             return "repair_class_not_granted"
+        try:
+            required_regression_path(request)
+        except ValueError:
+            return "repair_regression_path_not_unique"
         if self.runner is None:
             return "isolation_backend_unavailable"
         failure = self.runner.capability(request)
@@ -141,11 +151,16 @@ class CodexExecutor:
             "--ignore-user-config",
             "--ignore-rules",
             "--config",
-            "model_provider=" + json.dumps(request.grant.provider),
+            "model_provider=" + json.dumps("slm_repair" if request.grant.provider_endpoint else request.grant.provider),
+            *_provider_config(request),
             "--ephemeral",
             "--skip-git-repo-check",
             "--sandbox",
-            "workspace-write",
+            # The enclosing Bubblewrap namespace is the security boundary: it
+            # exposes only exact writable files and the granted provider socket.
+            # A second Codex sandbox cannot initialize against that sparse,
+            # read-only workspace (it tries to create /workspace/.agents).
+            "danger-full-access",
             "--json",
             "--cd",
             "/workspace",
@@ -153,16 +168,23 @@ class CodexExecutor:
             "/input/proposal-schema.json",
             "--output-last-message",
             "/output/proposal.json",
-            "Read /input/repair-instructions.json and execute only that scoped repair task.",
+            "-",  # Complete trusted input arrives on stdin from the readonly file.
         )
+        schema = RepairProposal.model_json_schema()
+        # Native structured output requires every property, including defaults.
+        schema["required"] = list(schema["properties"])
+        schema["properties"]["regression_test"]["enum"] = [
+            required_regression_path(request)
+        ]
         result = self.runner.run(
             request,
             argv,
             inputs={
                 "repair-instructions.json": repair_prompt(
-                    request, instructions=self.instructions, contract=self.contract
+                    request, instructions=self.instructions, contract=self.contract,
+                    verification_manifest=self.verification_manifest,
                 ),
-                "proposal-schema.json": RepairProposal.model_json_schema(),
+                "proposal-schema.json": schema,
             },
             progress=progress,
             cancelled=cancelled,
@@ -193,6 +215,21 @@ class CodexExecutor:
             reason="independent_verification_required",
             **fields,
         )
+
+
+def _provider_config(request: RepairRequest) -> tuple[str, ...]:
+    endpoint = request.grant.provider_endpoint
+    if endpoint is None:
+        return ()
+    provider = "model_providers.slm_repair"
+    settings = {
+        "model": json.dumps(endpoint.model),
+        provider + ".name": json.dumps("OpenAI" if endpoint.authentication == "codex_subscription" else request.grant.provider),
+        provider + ".base_url": json.dumps("http://" + SANDBOX_AUTHORITY + endpoint.base_path),
+        provider + ".wire_api": '"responses"',
+        provider + ".requires_openai_auth": "false",
+    }
+    return tuple(arg for key, value in settings.items() for arg in ("--config", key + "=" + value))
 
 
 def _cli_failure(executable: str, expected_digest: str) -> str | None:

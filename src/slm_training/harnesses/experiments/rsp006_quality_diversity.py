@@ -33,6 +33,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignGateV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     campaign_manifest_sha256,
 )
 from slm_training.autoresearch.schemas import CampaignBudget, CampaignSpec
@@ -510,6 +511,7 @@ class Rsp006CampaignV1:
                 ),
             ),
             arms=arms,
+            selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
             seeds=(self.seed,),
             budget=CampaignBudget(
                 max_experiments=self.generation_budget * len(ARM_IDS) * self.shards,
@@ -595,22 +597,18 @@ def run_campaign(
     *,
     root: Any,
 ) -> dict[str, Any]:
+    manifest = campaign.manifest()
     store = CampaignStore(campaign.campaign_id, root)
     store.initialize(
         CampaignSpec(
             campaign_id=campaign.campaign_id,
             objective="RSP-006 / EXP-SR-10 quality-diversity corpus fixture",
             primary_metric=PRIMARY_METRIC,
-            budget=CampaignBudget(
-                max_experiments=campaign.generation_budget
-                * len(ARM_IDS)
-                * campaign.shards,
-                max_wall_minutes=campaign.max_wall_minutes,
-            ),
+            budget=manifest.budget,
             created_at="1970-01-01T00:00:00Z",
         )
     )
-    lock = store.lock_experiment_campaign(campaign.manifest())
+    lock = store.lock_experiment_campaign(manifest)
     catalogue = campaign.catalogue_manifest()
     grid_keys = enumerate_descriptor_grid(DEFAULT_CONFIG)
 

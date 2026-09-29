@@ -124,23 +124,35 @@ def promotion_chunk_eval_command(
 def promotion_scoreboard_state(run_dir: Path) -> dict[str, Any]:
     """Completion state of an arm's (possibly partial) ``scoreboard.json``."""
 
+    from slm_training.harnesses.model_build.eval_measurement import suite_result_cacheable
+
     path = Path(run_dir) / "scoreboard.json"
     if not path.is_file():
         return {"exists": False, "complete": False, "pending": None, "decoded": None}
     board = read_json(path)
+    if not isinstance(board, dict):
+        return {"exists": True, "complete": False, "pending": None, "decoded": None}
     resume = board.get("resume") if isinstance(board, dict) else None
     resume = resume if isinstance(resume, dict) else {}
 
     def _total(key: str) -> int | None:
         rows = resume.get(key)
-        if not isinstance(rows, dict):
+        if not isinstance(rows, dict) or not rows or any(
+            type(value) is not int or value < 0 for value in rows.values()
+        ):
             return None
-        return sum(int(value) for value in rows.values() if isinstance(value, int))
+        return sum(rows.values())
+
+    suites = board.get("suites")
+    complete = (board.get("measurement_complete") is not False
+                and isinstance(suites, dict) and bool(suites)
+                and all(isinstance(metrics, dict) and suite_result_cacheable(metrics)
+                        for metrics in suites.values()))
 
     return {
         "exists": True,
-        # A scoreboard without the key predates resumable evals: complete.
-        "complete": board.get("measurement_complete") is not False,
+        # Legacy data remains readable, but missing counts never acquire success.
+        "complete": bool(complete),
         "pending": _total("pending_record_n"),
         "decoded": _total("decoded_this_run_n"),
     }
@@ -159,7 +171,10 @@ def attach_promotion_chunks(
     incomplete = False
     for eid, arm in (ledger.get("arms") or {}).items():
         status = str(arm.get("status") or "")
-        if status == "chunk_budget_exhausted":
+        if status in {"pending", "running", "invocation_yield"}:
+            reasons.append(f"measurement_incomplete:{eid}:resume_pending")
+            incomplete = True
+        elif status == "chunk_budget_exhausted":
             reasons.append(
                 f"measurement_incomplete:{eid}:chunk_budget_exhausted:"
                 f"runs={arm.get('runs_used')}/{arm.get('run_budget')}"
@@ -224,36 +239,47 @@ def merged_promotion_power_feasibility(
     locked: dict[str, Any] | None,
     primary_metric: str,
 ) -> dict[str, Any] | None:
-    """Power feasibility at the final merged n, not the planned n.
+    """Exact-test decidability from matched selected identities, never min(n).
 
-    The locked report admits the planned geometry; the disposition must judge
-    the records actually completed in *both* arms of the primary suite (the
-    paired sign test cannot use more pairs than the smaller arm completed).
-    When either scoreboard is missing or still partial the locked report is
-    returned unchanged (the incomplete path decides, never this gate).
+    This is not a power analysis. Missing coverage is operationally incomplete,
+    not a decisive negative or a newly declared product deadline endpoint.
     """
 
     if not isinstance(locked, dict):
         return None
     suite = primary_metric.rsplit(".", 1)[0] if "." in primary_metric else "held_out"
-    merged_n: int | None = None
+    def incomplete(reason: str) -> dict[str, Any]:
+        return {**locked, "decisive": False, "measurement_complete": False,
+                "source": "merged_scoreboard", "reason": reason,
+                "locked_n": locked.get("n"), "locked_decisive": locked.get("decisive"),
+                "claim_class": "exact_test_decidability_not_power"}
+
+    selected = []
+    selections = []
     for run_id in (control_id, candidate_id):
         if not run_id:
-            return dict(locked)
+            return incomplete("run_identity_missing")
         path = camp_dir / "runs" / run_id / "scoreboard.json"
         if not path.is_file():
-            return dict(locked)
+            return incomplete("scoreboard_missing")
         board = read_json(path)
         if not isinstance(board, dict) or board.get("measurement_complete") is False:
-            return dict(locked)
+            return incomplete("scoreboard_partial_or_invalid")
         suites = board.get("suites")
         row = suites.get(suite) if isinstance(suites, dict) else None
         completed = row.get("completed_document_n") if isinstance(row, dict) else None
-        if type(completed) is not int or completed < 0:
-            return dict(locked)
-        merged_n = completed if merged_n is None else min(merged_n, completed)
-    if merged_n is None:
-        return dict(locked)
+        ids = row.get("selected_record_ids") if isinstance(row, dict) else None
+        selection = row.get("selection_sha256") if isinstance(row, dict) else None
+        if (type(completed) is not int or completed <= 0 or not isinstance(ids, list)
+                or any(not isinstance(item, str) or not item for item in ids)
+                or len(set(ids)) != len(ids) or completed != len(ids)
+                or not isinstance(selection, str) or len(selection) != 64):
+            return incomplete("selected_pair_coverage_unverified")
+        selected.append(tuple(ids))
+        selections.append(selection)
+    if selected[0] != selected[1] or selections[0] != selections[1]:
+        return incomplete("selected_pair_identity_mismatch")
+    merged_n = len(selected[0])
     from slm_training.autoresearch import evidence_ledger as _ev
 
     report = _ev.power_feasibility_report(
@@ -268,6 +294,10 @@ def merged_promotion_power_feasibility(
         "merged_n": int(merged_n),
         "merged_suite": suite,
         "source": "merged_scoreboard",
+        "measurement_complete": True,
+        "paired_record_ids": list(selected[0]),
+        "selection_sha256": selections[0],
+        "claim_class": "exact_test_decidability_not_power",
     }
 
 

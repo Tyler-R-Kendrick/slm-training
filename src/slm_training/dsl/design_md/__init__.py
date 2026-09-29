@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import threading
+from pathlib import Path
 from typing import Any
 
 from slm_training.bridge_utils import (
@@ -21,8 +22,11 @@ from slm_training.bridge_utils import (
     sanitized_node_env,
 )
 
-_BRIDGE_DIR = repo_root() / "src" / "apps" / "design_md_bridge"
-_CLI = _BRIDGE_DIR / "cli.mjs"
+_CLI = Path(
+    os.environ.get("DESIGN_MD_BRIDGE_CLI")
+    or (repo_root() / "src" / "apps" / "design_md_bridge" / "cli.mjs")
+).resolve()
+_BRIDGE_DIR = _CLI.parent
 
 _REPL_LOCK = threading.Lock()
 _REPL_PROC: subprocess.Popen[str] | None = None

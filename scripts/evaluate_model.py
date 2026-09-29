@@ -1085,7 +1085,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         if resumable and scoreboard.get("measurement_complete") is False:
             # Partial scoreboard: no gate or threshold verdict exists yet.
-            return EXIT_RESUME_PENDING if _thresholds_requested(args) else 0
+            return EXIT_RESUME_PENDING
         if args.ship_gates:
             gates = scoreboard.get("gates")
             if not gates or "pass" not in gates:
@@ -1144,7 +1144,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     print(json.dumps(summary, indent=2))
     if resumable and metrics.get("measurement_complete") is False:
-        return EXIT_RESUME_PENDING if _thresholds_requested(args) else 0
+        return EXIT_RESUME_PENDING
     return _check_fail_unders(metrics, args)
 
 

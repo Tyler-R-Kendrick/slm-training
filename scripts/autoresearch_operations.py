@@ -31,9 +31,14 @@ def cmd_doctor(args) -> int:
 
 def cmd_start(args) -> int:
     config = load_start_config(args.config)
-    result = start_supervisor(args.root, config)
+    result = start_supervisor(args.root, config, foreground=args.foreground)
     print(json.dumps(result, indent=2))
-    return 0 if result.get("started") or result.get("already_owned") else 2
+    return (
+        0
+        if result.get("started")
+        or (result.get("already_owned") and not args.foreground)
+        else 2
+    )
 
 
 def cmd_stop(args) -> int:
@@ -65,6 +70,30 @@ def cmd_prepare(args) -> int:
 def cmd_service(args) -> int:
     print(service_template(args.config, args.root))
     return 0
+
+
+def cmd_service_install(args) -> int:
+    from slm_training.autoresearch.runtime.operations_service import install_service
+
+    print(
+        json.dumps(
+            install_service(
+                args.config, args.root, load_start_config(args.config), args.unit_dir
+            ),
+            indent=2,
+        )
+    )
+    return 0
+
+
+def cmd_monitor(args) -> int:
+    from slm_training.autoresearch.runtime.operations_service import monitor_check
+
+    result = monitor_check(args.root, args.loop_id)
+    print(json.dumps(result, indent=2))
+    return (
+        2 if result["assessment"] in {"stopped", "stalled", "invalid_evidence"} else 0
+    )
 
 
 def cmd_storage(args) -> int:
@@ -131,7 +160,7 @@ def add_campaign_operations_parser(sub, status_handler, ack_handler, sync_handle
 def add_operations_parser(
     parser: argparse.ArgumentParser, sub
 ) -> argparse.ArgumentParser:
-    from scripts.merge_verification_controller import add_release_parser
+    from scripts.merge_verification_cli import add_release_parser
 
     add_release_parser(sub)
     readiness = sub.add_parser(
@@ -146,6 +175,11 @@ def add_operations_parser(
             name, help="Explicitly start the canonical user-owned supervisor"
         )
         start.add_argument("--config", type=Path, required=True)
+        start.add_argument(
+            "--foreground",
+            action="store_true",
+            help="exec the controller for a service manager",
+        )
         start.set_defaults(func=cmd_start)
     stop = sub.add_parser(
         "stop", help="Stop only the identity-verified owned controller/children"
@@ -167,10 +201,19 @@ def add_operations_parser(
     prepare.set_defaults(func=cmd_prepare)
     service = sub.add_parser(
         "service-template",
-        help="Print an optional lifecycle recipe; never install/activate",
+        help="Render user-systemd service and persistent three-hour timer units",
     )
     service.add_argument("--config", type=Path, required=True)
     service.set_defaults(func=cmd_service)
+    install = sub.add_parser(
+        "service-install", help="Install units without starting production"
+    )
+    install.add_argument("--config", type=Path, required=True)
+    install.add_argument("--unit-dir", type=Path)
+    install.set_defaults(func=cmd_service_install)
+    monitor = sub.add_parser("monitor-check", help="Record one actual progress check")
+    monitor.add_argument("--loop-id", required=True)
+    monitor.set_defaults(func=cmd_monitor)
     storage = sub.add_parser(
         "storage-health", help="Pressure/backpressure assessment; never delete evidence"
     )

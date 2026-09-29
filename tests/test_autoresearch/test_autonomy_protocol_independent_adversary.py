@@ -1,10 +1,7 @@
 """Independent real-producer and real-process evidence-boundary falsifiers."""
 
-import sys
-from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 
 from tests.test_autoresearch.test_search_preflight_ingestion import (
     arms as fixture_arms,

@@ -1,0 +1,19 @@
+{
+  "loss_suite_version": "v2",
+  "weights": {
+    "binding": 0.3,
+    "structural": 0.25,
+    "repair": 0.2,
+    "schema_ood": 0.15,
+    "broad": 0.1
+  },
+  "mask_rates": [0.15, 0.3, 0.5, 0.7, 0.85],
+  "mask_seed": 0,
+  "repair_seed": 0,
+  "repair_edits_per_record": 3,
+  "base_suite": "held_out",
+  "ood_suite": "ood",
+  "objective_predecessor": "v1",
+  "evidence_contract_version": "loss_evidence/v2",
+  "notes": "Evidence-identity successor to v1: ordered selected cases and declared roots, input/scorer/estimator identities, masked-token sufficient statistics, and strict finite-value admissibility. Objective weights, masks, seeds, repair edits and suite roles are unchanged. This is masked-token denoising cross entropy, not exact generative sequence NLL. Frozen v1 remains readable; old rows do not acquire v2 completeness or independence by relabeling. Compare only compatible remeasured evidence."
+}

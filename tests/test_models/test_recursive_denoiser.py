@@ -2660,10 +2660,9 @@ def test_arm_g_is_r1_shared_recursive_and_not_behaviorally_equivalent() -> None:
     assert not torch.allclose(s_logits, g_logits)
 
 
-@pytest.mark.parametrize("arm_id", DEFERRED_ARM_IDS)
-def test_deferred_arms_fail_closed_not_silently_built(arm_id: str) -> None:
-    """E/F/H must never silently construct something -- they raise
-    NotImplementedError until a future iteration actually builds them."""
+@pytest.mark.parametrize("arm_id", DEFERRED_ARM_IDS or [pytest.param("A", id="NOTSET")])
+def test_deferred_arms_fail_closed_not_silently_built(arm_id: str, monkeypatch) -> None:
+    monkeypatch.setitem(construct_arm_tower.__globals__, "DEFERRED_ARM_IDS", (arm_id,))
     with pytest.raises(NotImplementedError, match=arm_id):
         construct_arm_tower(
             arm_id,

@@ -13,7 +13,9 @@ Five categories, each a deterministic denoising-NLL evaluation:
 
 The suite definition (version, weights, rates, seed, record ids) is frozen to
 a JSON artifact so numbers stay comparable across runs; changing any of it is
-an explicit objective change and must bump ``LOSS_SUITE_VERSION``.
+an explicit objective change and must bump ``LOSS_SUITE_VERSION``. Evidence-only
+successors also receive a new identity: v2 preserves v1's numerical objective
+while requiring attributable rows. Loading v1 does not strengthen its claims.
 """
 
 from __future__ import annotations
@@ -30,6 +32,7 @@ import torch
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.evals.measurement_identity import loss_record_rows, selected_identity
 from slm_training.evals.denoising_nll import (
     LOSS_SUITE_VERSION,
     DenoisingNLLConfig,
@@ -117,6 +120,8 @@ def structural_positions(
 
 
 def _repair_rng(record_id: str, edit_index: int, *, suite_version: str, seed: int):
+    # The evidence-only successor keeps the original corruption draws.
+    suite_version = "v1" if suite_version == "v2" else suite_version
     payload = f"{suite_version}|{record_id}|repair|{edit_index}|{seed}"
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     return random.Random(int(digest[:16], 16))
@@ -280,6 +285,8 @@ def loss_suite_definition(
             "ood_record_ids": (
                 sorted(r.id for r in ood_records) if ood_records else None
             ),
+            "base_selection": selected_identity(base_records) if base_records else None,
+            "ood_selection": selected_identity(ood_records) if ood_records else None,
         }
     )
     return definition
@@ -340,6 +347,8 @@ def evaluate_loss_suites(
     base_records = _load_suite(test_dir, base_suite)
     ood_records = _load_suite(test_dir, ood_suite)
     if limit is not None:
+        if type(limit) is not int or limit <= 0:
+            raise ValueError("loss-suite limit must be positive")
         if base_records is not None:
             base_records = base_records[: max(0, int(limit))]
         if ood_records is not None:
@@ -386,7 +395,7 @@ def evaluate_loss_suites(
         mean = (
             report.get("aggregate", {}).get("mean_nll") if report is not None else None
         )
-        if mean is None:
+        if mean is None or type(mean) not in (int, float) or not math.isfinite(mean):
             missing.append(name)
             continue
         weighted_sum += weight * float(mean)
@@ -402,6 +411,8 @@ def evaluate_loss_suites(
     )
     return {
         "definition": definition,
+        "selection": definition["base_selection"],
+        "estimator_id": (categories.get("broad") or {}).get("estimator_id"),
         "categories": categories,
         "aggregate": {
             "weighted_nll": weighted_sum / weight_used if weight_used > 0 else None,
@@ -434,45 +445,30 @@ def per_record_nll_rows(
     carries ``nll`` (its broad mean NLL) and ``masked_tokens``; categories
     that did not score the record leave their key ``None``.
     """
-    rows: dict[str, dict[str, Any]] = {}
-    for category, key in PER_RECORD_CATEGORY_KEYS.items():
-        report = categories.get(category)
-        if not isinstance(report, dict):
-            continue
-        for entry in report.get("per_record") or []:
-            if not isinstance(entry, dict) or entry.get("id") is None:
-                continue
-            record_id = str(entry["id"])
-            row = rows.setdefault(
-                record_id,
-                {
-                    "id": record_id,
-                    **{k: None for k in PER_RECORD_CATEGORY_KEYS.values()},
-                },
-            )
-            mean = entry.get("mean_nll")
-            row[key] = float(mean) if isinstance(mean, (int, float)) else None
-            if category == "broad":
-                row["masked_tokens"] = int(entry.get("masked_tokens") or 0)
-    return [rows[record_id] for record_id in sorted(rows)]
+    return loss_record_rows(categories)
 
 
 def per_record_nll_map(report: dict[str, Any]) -> dict[str, float]:
-    """``{record_id: broad nll}`` for records with a finite broad NLL."""
+    """Broad NLL map; reject invalid entries instead of dropping paired cases."""
     out: dict[str, float] = {}
     for row in report.get("per_record") or []:
         value = row.get("nll") if isinstance(row, dict) else None
-        if isinstance(value, (int, float)) and math.isfinite(float(value)):
-            out[str(row["id"])] = float(value)
+        if value is None:  # OOD-only rows have no broad observation.
+            continue
+        if type(value) not in (int, float) or not math.isfinite(value):
+            raise ValueError("nonfinite per-record NLL evidence")
+        out[str(row["id"])] = float(value)
     return out
 
 
 def write_loss_suite_report(path: Path | str, report: dict[str, Any]) -> Path:
     from slm_training.evals.agentv import publish_agentv_evaluation
+    from slm_training.harness_core.versioning import build_version_stamp
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     aggregate = report.get("aggregate") or {}
+    report["version_stamp"] = build_version_stamp("evals.loss_suite", "model.twotower")
     report["agentv"] = publish_agentv_evaluation(
         path.parent,
         name=f"openui-loss-suites-{path.stem}",

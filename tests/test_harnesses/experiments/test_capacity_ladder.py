@@ -65,9 +65,9 @@ def test_capacity_arms_match_on_everything_but_tokenizer(tmp_path: Path) -> None
         )
         assert lex_cfg.output_tokenizer == "lexer"
         assert cho_cfg.output_tokenizer == "choice"
-        # Matched recipe: same mask pattern, non-LTR, same width/budget/steps.
+        # Matched recipe: same mask pattern, grammar-LTR, same width/budget/steps.
         assert lex_cfg.mask_pattern == cho_cfg.mask_pattern == "diffusion"
-        assert lex_cfg.grammar_ltr_primary is cho_cfg.grammar_ltr_primary is False
+        assert lex_cfg.grammar_ltr_primary is cho_cfg.grammar_ltr_primary is True
         for f in fields(lex_cfg):
             if f.name in _ALLOWED_TO_DIFFER:
                 continue
@@ -81,7 +81,7 @@ def test_capacity_ladder_single_arm_is_scratch_track() -> None:
     assert lad.track == "scratch"
     assert lad.ladder_id == "capacity_choice_v1"
     assert (lad.decode_frozen or {}).get("mask_pattern") == "diffusion"
-    assert (lad.decode_frozen or {}).get("grammar_ltr_primary") is False
+    assert (lad.decode_frozen or {}).get("grammar_ltr_primary") is True
 
 
 def test_ladder_wall_budget_is_configurable_but_capped() -> None:

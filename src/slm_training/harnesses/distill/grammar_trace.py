@@ -16,6 +16,14 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from slm_training.harnesses.distill.choice_diagnostics import (
+    choice_summary,
+    decision_diagnostics,
+    legal_logits,
+    normalize_legal_probs,
+    record_forced_canvas,
+)
+
 SCHEMA_VERSION = "cap1-02.v1"
 _COVERAGE_VALUES = frozenset({"complete", "partial", "none"})
 _CONVENTIONS = frozenset({"logit", "energy"})
@@ -97,6 +105,9 @@ class GrammarTraceRecorder:
     Attach to a model as ``grammar_trace_recorder``. The decode path emits
     records only when the recorder is present, so default decode is unchanged.
     """
+
+    legal_logits = staticmethod(legal_logits)
+    record_forced_canvas = staticmethod(record_forced_canvas)
 
     def __init__(
         self,
@@ -225,41 +236,14 @@ class GrammarTraceRecorder:
 
     def finalize(self) -> list[dict[str, Any]]:
         """Return all recorded traces as plain dicts."""
-        return [record.to_dict() for record in self._records]
+        rows = [record.to_dict() for record in self._records]
+        return [{**row, "choice_diagnostics": decision_diagnostics(row)} for row in rows]
 
     def __len__(self) -> int:
         return len(self._records)
 
     def __iter__(self) -> Iterable[GrammarDecisionTrace]:
         return iter(self._records)
-
-
-def normalize_legal_probs(
-    values: Sequence[float],
-    *,
-    convention: Literal["logit", "energy"] = "logit",
-) -> tuple[float, ...]:
-    """Softmax over the legal action set.
-
-    For energies (lower is better) we negate before exponentiating.
-    """
-    if convention not in _CONVENTIONS:
-        raise ValueError(f"convention must be one of {_CONVENTIONS}")
-    if not values:
-        return ()
-    if convention == "energy":
-        # Lower energy is better; shift so the worst action maps to 0 and
-        # better actions map to positive values before exponentiation.
-        worst = max(values)
-        shifted = [worst - float(v) for v in values]
-    else:
-        shifted = [float(v) - max(values) for v in values]
-    exps = [math.exp(v) for v in shifted]
-    total = sum(exps)
-    if total == 0.0:
-        n = len(values)
-        return tuple(1.0 / n for _ in range(n))
-    return tuple(e / total for e in exps)
 
 
 def compute_entropy(probs: Sequence[float]) -> float | None:
@@ -338,10 +322,10 @@ def legal_action_ids_from_state(
     if engine is None:
         return None
     try:
-        from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
         )
+        from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
         terminals = engine.next_terminals()
         allowed = allowed_id_set(tokenizer, terminals)
@@ -455,6 +439,7 @@ def grammar_trace_coverage_report(
 
     return {
         "n": len(records),
+        "choice_diagnostics": choice_summary(records),
         "unique_states": len(states),
         "state_action_pairs": len(state_action_pairs),
         "scope_signatures": len(scopes),

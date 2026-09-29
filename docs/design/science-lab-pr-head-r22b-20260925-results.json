@@ -1,0 +1,155 @@
+{
+  "arms": {
+    "candidate": {
+      "checkpoint": {
+        "parameter_count": 65826,
+        "path": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-candidate/checkpoints/last.pt",
+        "sha256": "0a125ff5e1ebcf4b456e8f0d432ca03a187eb298f045b77b8a13c81e62d27313",
+        "sync": "local_no_sync"
+      },
+      "experiment_outcome": {
+        "error": "evaluation chunk left records pending; resume with --resume-run under the locked chunk plan",
+        "exit_code": 10,
+        "status": "stopped"
+      },
+      "learning_rate": 0.0006,
+      "run_id": "science-lab-pr1785-0ea5ba4-r22b-20260925-candidate",
+      "smoke_eval": {
+        "decoded_n": 0,
+        "meaningful_program_rate_on_decoded_only": null,
+        "measurement_complete": false,
+        "parse_rate_on_decoded_only": null,
+        "partial_records": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-candidate/eval_smoke.partial.json",
+        "pending_n": 6,
+        "planned_n": 6,
+        "publication_complete": false,
+        "scoreboard": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-candidate/scoreboard.json",
+        "structural_similarity_on_decoded_only": null
+      },
+      "train": {
+        "continuation_kind": "exact_same_environment",
+        "invocation_start_step": 3,
+        "last_loss": 37.89326477050781,
+        "record_count": 8,
+        "status": "completed",
+        "steps": 6,
+        "stopped_on": "steps",
+        "train_summary": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-candidate/train_summary.json"
+      }
+    },
+    "control": {
+      "checkpoint": {
+        "parameter_count": 65826,
+        "path": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-control/checkpoints/last.pt",
+        "sha256": "673fce9d06eee0b226d6520c1a8f32c9dacbc924ac8997d15a5e765df2b465b8",
+        "sync": "local_no_sync"
+      },
+      "experiment_outcome": {
+        "error": "                         [--constraint-debt-routing-calibrator-path CONSTRAINT_DEBT_ROUTING_CALIBRATOR_PATH]\nevaluate_model.py: error: argument --resume-run: expected one argument\n",
+        "exit_code": 2,
+        "status": "failed"
+      },
+      "learning_rate": 0.0003,
+      "run_id": "science-lab-pr1785-0ea5ba4-r22b-20260925-control",
+      "smoke_eval": {
+        "decoded_n": 2,
+        "meaningful_program_rate_on_decoded_only": 0.5,
+        "measurement_complete": false,
+        "parse_rate_on_decoded_only": 1.0,
+        "partial_records": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-control/eval_smoke.partial.json",
+        "pending_n": 4,
+        "planned_n": 6,
+        "publication_complete": false,
+        "scoreboard": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-control/scoreboard.json",
+        "structural_similarity_on_decoded_only": 0.35
+      },
+      "train": {
+        "continuation_kind": "exact_same_environment",
+        "invocation_start_step": 3,
+        "last_loss": 40.56913757324219,
+        "record_count": 8,
+        "status": "completed",
+        "steps": 6,
+        "stopped_on": "steps",
+        "train_summary": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/runs/science-lab-pr1785-0ea5ba4-r22b-20260925-control/train_summary.json"
+      }
+    }
+  },
+  "campaign_id": "science-lab-pr1785-0ea5ba4-r22b-20260925",
+  "evidence": {
+    "campaign_root": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925",
+    "events": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/science-lab-pr1785-0ea5ba4-r22b-20260925/events.jsonl",
+    "supervisor_log": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/campaigns/loops/science-lab-pr1785-0ea5ba4-r22b-20260925/supervisor.jsonl"
+  },
+  "other_evidence": {
+    "agentv_sdk_bundle": "not produced for completed six-case evaluation",
+    "control_eval_nll_records": "Control eval_nll_records.json contains 96 records under a different selection; excluded from preregistered six-case endpoint.",
+    "promotion": false,
+    "ship_gates": "not passed or claimable; both smoke scoreboards have measurement_complete=false",
+    "shipment": false
+  },
+  "preregistration": {
+    "label": "PR-head diagnostic",
+    "manifest_sha256s": {
+      "candidate": "13d247ce59fdacf410ec5662ba38ee0415b88119626e99f9d2fcd4d06a2b41df",
+      "control": "deee770df944d7fb59692c7dd2908f74a049a247562a67da0e5e0a440b08ed30"
+    },
+    "matrix_sha256": "09867d356d408bc32cdc5cf3fb1b3f912709a265ba9d1cd2f93d6404d5fc407e",
+    "path": "outputs/autonomy-integration-20260921/science-lab-r22b-0ea5ba4-prereg/preregistration.json",
+    "promotion_allowed": false,
+    "selected_record_ids": [
+      "lc_component_Separator_repair_c2fe1f4c1b5f",
+      "train_text_only_01__d3fdacf5",
+      "lc_component_Button_as_document__7b1d38de",
+      "lc_multi_child_as_document_aug_dir__0e7757fd",
+      "program_748f040f0cc63303__e54b667a",
+      "program_6154681f3a809853_aug_cta"
+    ],
+    "selection_sha256": "11ccffe86a6cf32ed1788721a39e6f1818fb91a0b9cedd0560a8ee4c3f29c3ff",
+    "sha256": "f53f18ec2458a891722244ef26a0b2ff687f39ad8af6a817fa56c6d88faa0ffd"
+  },
+  "primary": {
+    "candidate_value": null,
+    "control_value": null,
+    "direction": "decrease",
+    "gate_pass": null,
+    "metric": "smoke.eval_nll",
+    "minimum_effect": 0.02,
+    "paired_effect": null,
+    "reason": "No complete six-case paired evaluation; control decoded 2/6, candidate 0/6. Control continuation exited 2."
+  },
+  "recipe": {
+    "batch_size": 2,
+    "context_backend": "scratch",
+    "device": "cpu",
+    "honesty": "PR-head public-fixture diagnostic",
+    "model": "TwoTower",
+    "planned_eval_n": 6,
+    "planned_eval_suite": "smoke",
+    "planned_steps_per_arm": 6,
+    "seed": 7301,
+    "train_records": 8,
+    "trainable_parameters_per_arm": 65826,
+    "updates_per_invocation": 3
+  },
+  "schema": "science_lab_diagnostic_results/v1",
+  "source_commit": "0ea5ba480a138883ec43eda57781bb7c39bb1262",
+  "source_digest": "1b50be5f5a6a688e58c792fcbaebf80287ab0850a0cc7bd6abdb62f1b2b55e09",
+  "source_tree": "a227bf1ea06f23a03f80a43d1ae3771e5fa6a28d",
+  "status": "incomplete_harness_failure",
+  "version_stamp": {
+    "code_commit": "0ea5ba480a138883ec43eda57781bb7c39bb1262",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v33",
+      "evals.meaningful_program": "2.14.0",
+      "evals.power_protocol": "v8",
+      "evals.scoring": "v27",
+      "harness.experiment_feature_flags": "v4",
+      "harness.model_build.eval": "v107",
+      "model.twotower": "v332"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-25T17:52:51.463054+00:00"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "resume_source_migration/v2",
+  "from_sources": [{
+    "resume_contract.py": "ccd8157f017890747eda78d0bc1eb53bd0dafa7243fb7327cc005743aa2c4c19",
+    "train_loop.py": "a11325e4361d81f23005e0cbdb3e6ff10e1a47f3e3f4ed01b2b8ece0afefb5aa"
+  }, {
+    "resume_contract.py": "c3db8913b04274b1d156417778d62b1421db29f2af11f7ead29661716724b176",
+    "train_loop.py": "fa3b92c0057c007b07542b633b5351c43cdc2543b6116e5931689d72153d1ede"
+  }],
+  "to_source": {
+    "resume_contract.py": "12f96ef57a97adbf4d45386ed9e5ed5634e5c25647522f610c2924bfd2fe9e80",
+    "train_loop.py": "e27a1fba77a012add67eca6242c4f06fe28899374e377de659135d45bf62f81d"
+  },
+  "reason": "Exact continuation resolves only byte-identical, fully validated published resume states so ancestor exposure is retained, including through the direct trainer. The two explicit predecessor source pairs preserve the original initialization-provenance repair. No optimizer, RNG, sampler, data, tokenizer, runtime or remaining recipe change is approved. Raw newer periodic states retain unknown ancestry. Nonzero initialized-weight retention still requires unavailable anchor state and is refused."
+}

@@ -170,11 +170,14 @@ def test_no_controller_is_not_running_and_service_recipe_does_not_start(
     monkeypatch.setattr(
         control.subprocess, "Popen", lambda *a, **k: pytest.fail("service activated")
     )
-    recipe = json.loads(control.service_template(tmp_path / "config", tmp_path))
+    config_path = tmp_path / "config"
+    config_path.write_text(json.dumps(dict(schema_version="local_supervisor_start/v1", execution=str(tmp_path),
+        loop_id="not-started", train_version="fixture", steps=1, max_cycles=1, local_execution_authorized=True)))
+    recipe = json.loads(control.service_template(config_path, tmp_path))
     assert recipe["installed"] is False and recipe["activated"] is False
     status = loop_status(tmp_path, "not-started")
     assert not status["active"] and not status["scientific_progress"]
-    assert status["verified_paired_comparisons"] is None
+    assert status["verified_paired_comparisons"] == 0
     assert (
         control.stop_supervisor(tmp_path, "not-started")["reason"]
         == "no_owned_controller"

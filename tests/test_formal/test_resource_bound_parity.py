@@ -54,7 +54,7 @@ def test_evaluate_all_canonical_stable() -> None:
     assert content_sha(first["results"]) == first["results_sha256"]
 
 
-def test_stale_fixture_schema_fails_closed() -> None:
+def test_stale_fixture_schema_fails_closed(tmp_path, monkeypatch) -> None:
     doc = rbp.load_fixtures()
     doc = copy.deepcopy(doc)
     doc["schema"] = "resource_bound_trigger_parity/v0"
@@ -87,14 +87,11 @@ def test_stale_fixture_schema_fails_closed() -> None:
     )
     assert soft["status"] == "unsupported"
     # Document-level load also rejects.
-    path = rbp.fixture_path()
-    original = path.read_text(encoding="utf-8")
-    try:
-        path.write_text(json.dumps(doc), encoding="utf-8")
-        with pytest.raises(rbp.UnsupportedConstructError, match="stale_schema"):
-            rbp.load_fixtures()
-    finally:
-        path.write_text(original, encoding="utf-8")
+    path = tmp_path / "stale-fixtures.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(rbp, "_FIXTURE_PATH", path)
+    with pytest.raises(rbp.UnsupportedConstructError, match="stale_schema"):
+        rbp.load_fixtures()
 
 
 def test_parity_mismatch_names_field_theorem_model() -> None:

@@ -16,9 +16,8 @@ Sketch-of-Thought (Aytes et al., 2503.05179) positioning: that work is
 prompt-level NL-symbolic sketching with a frozen large model; this bench is
 the unclaimed trained-tiny-model + externalized-grammar + deterministic
 bound-span-expansion variant (refs expand deterministically through the
-transformer's resolve pass). Stated boundary: decode is unconstrained
-parallel MaskGIT — wiring the incremental grammar engine into non-OpenUI
-constrained decode is follow-up work, tracked in the design doc.
+transformer's resolve pass). Arithmetic targets use that resolved AST,
+serialized as one root expression. Both arms use constrained lexer decode.
 """
 
 from __future__ import annotations
@@ -49,7 +48,7 @@ def score_sketch_output(text: str, gold: float) -> dict[str, Any]:
 
 
 def score_direct_output(text: str, gold: float) -> dict[str, Any]:
-    token = text.strip().split()[0] if text.strip() else ""
+    token = text.strip()
     try:
         value = float(token)
     except ValueError:
@@ -78,7 +77,7 @@ class ReasoningBenchConfig:
 
 
 def _generate_split(config: ReasoningBenchConfig) -> tuple[list[ExampleRecord], list[ExampleRecord]]:
-    from slm_training.dsl.packs import get_pack
+    from slm_training.dsl.pack import get_pack
 
     pack = get_pack("arith-sketch")
     assert pack.corpus_generator is not None
@@ -105,7 +104,7 @@ def replace_record(record: ExampleRecord, target: str) -> ExampleRecord:
     return ExampleRecord(
         id=f"{record.id}_direct",
         prompt=record.prompt,
-        openui=target,
+        openui=f"root = {target}",
         placeholders=[],
         split=record.split,
         source=record.source,
@@ -125,11 +124,14 @@ def _train_and_decode(
 
     torch.manual_seed(config.seed)
     tt_cfg = TwoTowerConfig(
-        # Compositional tokenizer arm: corpus-derived, DSL-agnostic. The
-        # lexer arm and grammar gate are OpenUI-hard (stated boundary).
-        output_tokenizer="compositional",
+        output_tokenizer="lexer",
+        training_pack_id="arith-sketch",
         context_backend="scratch",
-        grammar_constrained=False,
+        grammar_constrained=True,
+        grammar_ltr_primary=True,
+        grammar_finalize_validate=True,
+        grammar_fastpath=True,
+        compiler_decode_mode="off",
         d_model=config.d_model,
         n_heads=config.n_heads,
         context_layers=config.context_layers,
@@ -158,12 +160,34 @@ def _train_and_decode(
 
 
 def run_reasoning_bench(config: ReasoningBenchConfig) -> dict[str, Any]:
+    """Scope existing grammar dispatcher to the registered arithmetic pack."""
+    import os
+    from slm_training.models import grammar
+    import slm_training.dsl.grammar.backends as backends
+
+    previous, backend = grammar._ACTIVE_DSL, backends._DEFAULT_ID
+    environment = os.environ.get("SLM_GRAMMAR_DSL")
+    try:
+        os.environ["SLM_GRAMMAR_DSL"] = "arith-sketch"
+        grammar.set_active_dsl("arith-sketch")
+        return _run_reasoning_bench(config)
+    finally:
+        if environment is None:
+            os.environ.pop("SLM_GRAMMAR_DSL", None)
+        else:
+            os.environ["SLM_GRAMMAR_DSL"] = environment
+        grammar.set_active_dsl(previous)
+        backends.set_default_backend(backend)
+
+
+def _run_reasoning_bench(config: ReasoningBenchConfig) -> dict[str, Any]:
     """Generate -> train both arms -> decode -> score with one oracle."""
     train, test = _generate_split(config)
     golds = [float(record.meta["gold_answer"]) for record in test]
 
     sketch_outputs = _train_and_decode(train, test, config)
-    direct_outputs = _train_and_decode(_direct_records(train), test, config)
+    direct_programs = _train_and_decode(_direct_records(train), test, config)
+    direct_outputs = [text.removeprefix("root = ").strip() for text in direct_programs]
 
     sketch_scores = [
         score_sketch_output(text, gold)
@@ -196,10 +220,13 @@ def run_reasoning_bench(config: ReasoningBenchConfig) -> dict[str, Any]:
             "outputs": direct_outputs,
         },
         "golds": golds,
+        "training_pack_id": "arith-sketch",
+        "target_representation": "resolved_root_expression",
+        "grammar_constrained": True,
         "note": (
             "fixture-scale matched pair; sketch traces score fail-closed "
-            "(invalid program == wrong); decode is unconstrained parallel "
-            "MaskGIT in both arms (grammar-engine integration is follow-up)"
+            "(invalid program == wrong); constrained lexer decode in both arms; "
+            "sketch bindings expand into the equivalent arithmetic AST"
         ),
     }
     from slm_training.versioning import build_version_stamp

@@ -586,19 +586,16 @@ def test_classify_positive_screening_nll_direction_decrease(
     control_nll: float, candidate_nll: float, expect_positive: bool
 ) -> None:
     policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
+    pairs = _nll_pairs(24, shift=0)
+    pairs["control"] = dict.fromkeys(pairs["control"], control_nll)
+    pairs["candidate"] = dict.fromkeys(pairs["candidate"], candidate_nll)
+    common = {"smoke.structural_similarity": 0.1, "parse_rate": 1.0}
     result = classify_positive_metrics(
         policy,
         role="screening",
-        control_metrics={
-            "smoke.eval_nll": control_nll,
-            "smoke.structural_similarity": 0.1,
-            "parse_rate": 1.0,
-        },
-        candidate_metrics={
-            "smoke.eval_nll": candidate_nll,
-            "smoke.structural_similarity": 0.1,
-            "parse_rate": 1.0,
-        },
+        control_metrics={**common, "smoke.eval_nll": control_nll},
+        candidate_metrics={**common, "smoke.eval_nll": candidate_nll},
+        paired_records=pairs,
     )
     assert result["positive"] is expect_positive
     if expect_positive:
@@ -1131,30 +1128,28 @@ def test_screening_smoke_n_never_borrows_another_metrics_sd() -> None:
     assert n == 0 and report["verdict"] == "infeasible_range_empty"
 
 
-def _nll_pairs(n: int, *, shift: float) -> dict[str, dict[str, float]]:
+def _nll_pairs(n: int, *, shift: float) -> dict:
     control = {f"rec-{i:02d}": 2.5 + 0.02 * i for i in range(n)}
     candidate = {k: v - shift - 0.001 * i for i, (k, v) in enumerate(control.items())}
-    return {"control": control, "candidate": candidate}
+    return {
+        "control": control, "candidate": candidate,
+        "selected_record_ids": list(control),
+        "root_ids": {key: key for key in control},
+    }
 
 
 def test_classify_positive_paired_nll_win_exempt_from_fixture_clamp() -> None:
     policy = load_climb_policy(str(CLIMB_RESOURCE_DIR / "policy.v2.json"))
     assert policy.screening_primary["metric"] == "smoke.eval_nll"
     pairs = _nll_pairs(24, shift=0.2)
-    control_metrics = {
-        "smoke.eval_nll": sum(pairs["control"].values()) / 24,
-        "smoke.n": 24,
-        "smoke.completed_document_n": 24,
-        "parse_rate": 1.0,
-        "structural_similarity": 0.05,
+    common = {
+        "smoke.n": 24, "smoke.completed_document_n": 24,
+        "parse_rate": 1.0, "structural_similarity": 0.05,
     }
-    candidate_metrics = {
-        "smoke.eval_nll": sum(pairs["candidate"].values()) / 24,
-        "smoke.n": 24,
-        "smoke.completed_document_n": 24,
-        "parse_rate": 1.0,
-        "structural_similarity": 0.05,
-    }
+    control_metrics, candidate_metrics = (
+        {**common, "smoke.eval_nll": sum(pairs[arm].values()) / 24}
+        for arm in ("control", "candidate")
+    )
     win = classify_positive_metrics(
         policy,
         role="screening",
@@ -1173,18 +1168,22 @@ def test_classify_positive_paired_nll_win_exempt_from_fixture_clamp() -> None:
     win_reason = next(r for r in win["reasons"] if r.startswith("primary_metric_win:"))
     assert "n_pairs=24" in win_reason and "paired_win:p=" in win_reason
 
-    # I6: a measured parse_rate < 1 still blocks the paired win.
-    illegal = classify_positive_metrics(
-        policy,
-        role="screening",
-        control_metrics=control_metrics,
-        candidate_metrics={**candidate_metrics, "parse_rate": 0.5},
-        fixture_insufficient_n=True,
-        paired_records=pairs,
-    )
-    assert illegal["positive"] is False
-    assert illegal["fixture_clamp_exempt"] is False
-    assert any(r.startswith("invalid_grammar:") for r in illegal["reasons"])
+    for roots, parse_rate in (
+        (None, 1.0),
+        (dict.fromkeys(pairs["control"], "shared-root"), 1.0),
+        (pairs["root_ids"], 0.5),
+    ):
+        rejected = classify_positive_metrics(
+            policy, role="screening", control_metrics=control_metrics,
+            candidate_metrics={**candidate_metrics, "parse_rate": parse_rate},
+            fixture_insufficient_n=True, paired_records={**pairs, "root_ids": roots},
+        )
+        assert not rejected["positive"]
+        assert not rejected["fixture_clamp_exempt"]
+        if parse_rate < 1:
+            assert any(r.startswith("invalid_grammar:") for r in rejected["reasons"])
+        else:
+            assert not rejected["paired_test"]["independence_contract_met"]
 
 
 def test_classify_positive_paired_nll_three_pairs_not_positive() -> None:
@@ -1210,7 +1209,7 @@ def test_classify_positive_paired_nll_three_pairs_not_positive() -> None:
     assert tick["positive"] is False
     assert tick["fixture_clamp_exempt"] is False
     null = next(
-        r for r in tick["reasons"] if r.startswith("primary_metric_null_or_worse:")
+        r for r in tick["reasons"] if r.startswith("primary_metric_inconclusive:")
     )
     assert "n_pairs=3" in null and "p=1" in null
     assert "fixture_insufficient_n_alone" in tick["reasons"]

@@ -176,18 +176,16 @@ def test_keyed_pairing_guard_mutation_is_detected(monkeypatch):
     )
 
     def rejection_oracle():
-        result = owner.paired_record_screening(
-            control, candidate, selection=selection
-        )
-        assert result["n_pairs"] == 0
-        assert not result["diagnostic_complete"]
-        assert not result["win"]
+        try:
+            owner.paired_record_screening(control, candidate, selection=selection)
+        except ValueError as exc:
+            assert "observations outside locked selection" in str(exc)
+            return
+        raise AssertionError("disjoint observations escaped the locked selection")
 
     rejection_oracle()
-    actual = owner.paired_record_deltas
 
     def positional_mutation(*args, **kwargs):
-        pairs = actual(*args, **kwargs)
         return owner.PairedRecordDeltas(
             tuple(control), tuple([1.0] * len(control)), 0, 0
         )

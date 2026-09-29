@@ -15,6 +15,22 @@ from slm_training.harnesses.model_build.resume_contract import exposure_by_snaps
 train_dir = corpus_fixture
 
 
+def test_invocation_cap_rejects_unsupported_plugin_before_updates(train_dir, tmp_path, monkeypatch):
+    from slm_training.harnesses.model_build.factory import build_model
+
+    config = _cfg(train_dir, tmp_path, "unsupported-cap", 6, max_updates_this_invocation=3)
+    from dataclasses import replace
+
+    plugin = build_model(replace(config, model_name="stub"), [])
+    def forbidden(*args, **kwargs):
+        pytest.fail("unsupported plugin reached training or checkpoint saving")
+    monkeypatch.setattr(plugin, "forward", forbidden)
+    monkeypatch.setattr(plugin, "save", forbidden)
+    with pytest.raises(ValueError, match="exact-resume bundle-capable model"):
+        train(config, model=plugin)
+    assert not list((tmp_path / "runs/unsupported-cap").rglob("*.pt"))
+
+
 @pytest.mark.parametrize("warm", [False, True])
 def test_real_accumulated_trial_resume_preserves_optimizer_and_rng(
     train_dir, tmp_path, warm
@@ -36,7 +52,8 @@ def test_real_accumulated_trial_resume_preserves_optimizer_and_rng(
     random.seed(78)
     np.random.seed(78)
     first = train(
-        _cfg(train_dir, tmp_path, "first", 3, grad_accum_steps=2, **initialization)
+        _cfg(train_dir, tmp_path, "first", 6, grad_accum_steps=2,
+             max_updates_this_invocation=3, **initialization)
     )
     cursor = json.loads(
         (tmp_path / "runs/first/checkpoints/trial_cursor.json").read_text()
@@ -84,6 +101,12 @@ def test_real_accumulated_trial_resume_preserves_optimizer_and_rng(
     assert full["exposure_by_snapshot"] == resumed["exposure_by_snapshot"]
     assert full["seen_target_tokens"] == resumed["seen_target_tokens"]
     assert first["steps"] == 3 and resumed["steps"] == 6
+    assert first["stopped_on"] == "invocation_update_budget"
+    assert first["invocation_start_step"] == 0
+    prefix = load_full_state(cursor["resume_from"])
+    assert prefix["config"]["steps"] == a["config"]["steps"] == b["config"]["steps"] == 6
+    assert "max_updates_this_invocation" not in prefix["resume_contract"]["recipe"]
+    assert resumed["stopped_on"] == "steps"
     assert resumed["continuation_kind"] == "exact_same_environment"
     assert cursor["role"] == "trial_cursor"
     assert not (tmp_path / "champion").exists()
@@ -106,24 +129,32 @@ def test_source_migration_is_exact_and_preserves_original_contract(predecessor):
             / "resources/model_build/resume_compatibility_v1.json"
         ).read_text()
     )
-    for name, digest in migration["to_source"].items():
-        assert (
-            hashlib.sha256(
-                Path(owner.__file__).with_name(name).read_bytes()
-            ).hexdigest()
-            == digest
-        )
+    live_source = {name: hashlib.sha256(
+        Path(owner.__file__).with_name(name).read_bytes()
+    ).hexdigest() for name in migration["to_source"]}
     previous = {
         "recipe": {"initialize_from": "ancestor.pt", "lr": 0.01},
+        "runtime": {"torch": "pinned", "device": "cpu", "threads": 1},
+        "tokenizers": {"layout": "pinned-layout"},
+        "data_content": "pinned-records",
+        "replay_content": "pinned-replay",
         "source": {
             **migration["from_sources"][predecessor],
             "model.py": "model-digest",
+            "full_state.py": "full-state-digest",
         },
     }
     current = {
+        **previous,
         "recipe": {"initialize_from": None, "lr": 0.01},
-        "source": {**migration["to_source"], "model.py": "model-digest"},
+        "source": {**previous["source"], **migration["to_source"]},
     }
+    # A historical approved destination is not authority for this changed trainer.
+    assert live_source != migration["to_source"]
+    with pytest.raises(ValueError, match="mismatch"):
+        owner._match_resume_identity(previous, {
+            **current, "source": {**current["source"], **live_source},
+        })
     unchanged = deepcopy(previous)
     receipt = owner._match_resume_identity(previous, current)
     assert receipt["source_migration"]["from_source"] == previous["source"]
@@ -134,7 +165,7 @@ def test_source_migration_is_exact_and_preserves_original_contract(predecessor):
     }
     with pytest.raises(ValueError, match="mismatch"):
         owner._match_resume_identity(unapproved, current)
-    for field in ("model.py", "train_loop.py", "resume_contract.py"):
+    for field in ("model.py", "full_state.py", "train_loop.py", "resume_contract.py"):
         wrong = {**current, "source": {**current["source"], field: "unapproved"}}
         with pytest.raises(ValueError, match="mismatch"):
             owner._match_resume_identity(previous, wrong)
@@ -142,6 +173,9 @@ def test_source_migration_is_exact_and_preserves_original_contract(predecessor):
         owner._match_resume_identity(
             previous, {**current, "recipe": {**current["recipe"], "lr": 0.02}}
         )
+    for field in ("runtime", "tokenizers", "data_content", "replay_content"):
+        with pytest.raises(ValueError, match="mismatch"):
+            owner._match_resume_identity(previous, {**current, field: "changed"})
 
 
 @pytest.mark.parametrize(

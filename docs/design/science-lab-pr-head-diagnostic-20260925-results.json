@@ -1,0 +1,45 @@
+{
+  "campaign_id": "science-lab-pr1785-1e15899-r21-20260925",
+  "evidence": {
+    "campaign_root": "outputs/autonomy-integration-20260921/science-lab-r21-1e15899-prereg/campaigns/science-lab-pr1785-1e15899-r21-20260925",
+    "supervisor_log": "outputs/autonomy-integration-20260921/science-lab-r21-1e15899-prereg/supervisor-attempt-01.log"
+  },
+  "observed": {
+    "blocker": "missing_formed_hypothesis_matrix",
+    "driver_returncode": 1,
+    "eval_executed": false,
+    "first_recorded_event": "2026-09-25T16:52:55Z",
+    "new_checkpoint": false,
+    "promotion": false,
+    "repair_reason": "agent_grant_missing",
+    "repair_status": "waiting_capability",
+    "ship_claim": false,
+    "status": "preexecution_blocked",
+    "train_executed": false
+  },
+  "plan_artifact_sha256": "3647aa7f7e6a16b3c378244319e06be4a5b8a77602381db2acd1ab6ab360b221",
+  "recipe": {
+    "backend": "scratch",
+    "device": "cpu",
+    "honesty": "public-fixture-diagnostic",
+    "model": "TwoTower",
+    "planned_eval_cases": 6,
+    "planned_eval_suite": "smoke",
+    "planned_updates_per_arm": 6,
+    "seed": 7301,
+    "trainable_parameters_per_arm": 65826
+  },
+  "schema": "science_lab_diagnostic_results/v1",
+  "source_commit": "1e15899a1b71303d8de04e3ac90d6252c25e51aa",
+  "source_digest": "85c24c61ff4e67ee727e91cdd94420b56c7c4e026e40389df3d9ceabca07118a",
+  "source_tree": "cb75dde59ff2009b7f03fc3a3563da949df1987f",
+  "version_stamp": {
+    "code_commit": "1e15899a1b71303d8de04e3ac90d6252c25e51aa",
+    "code_dirty": false,
+    "components": {
+      "harness.autoresearch.experiment_campaign": "v302"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-09-25T17:05:06.303055+00:00"
+  }
+}

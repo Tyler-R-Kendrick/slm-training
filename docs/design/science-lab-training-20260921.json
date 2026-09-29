@@ -1,0 +1,60 @@
+{
+  "schema": "science_lab_training_diagnostic/v1",
+  "campaign_id": "science-lab-training-20260921",
+  "measurement_id": "science-lab-supervised-20260921",
+  "evidence_class": "historical_conditional_public_fixture_diagnostic",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "model": "TwoTower",
+    "trainable_parameters_per_arm": 65826,
+    "seed": 7301,
+    "train_records": 8,
+    "logical_updates": 6,
+    "resume_prefix_updates": 3,
+    "continuation": "exact; resumed and uninterrupted references matched",
+    "control_learning_rate": 0.0003,
+    "candidate_learning_rate": 0.0006,
+    "checkpoint_sync": false
+  },
+  "evaluation": {
+    "path": "ordinary_supervisor",
+    "cases_per_arm": 6,
+    "decoded_cases_per_arm": 6,
+    "agentevals_and_agentv": "completed",
+    "primary_metric": "conditional_masked_token_cross_entropy",
+    "direction": "decrease",
+    "control": 24.2345307747,
+    "candidate": 22.4692105171,
+    "paired_test": "two_sided_exact_sign_test",
+    "paired_n": 6,
+    "non_tied_pairs": 6,
+    "p_value": 0.03125,
+    "parse_rate": {
+      "control": 1.0,
+      "candidate": 1.0
+    },
+    "meaningful_program_rate": {
+      "control": 0.1666666667,
+      "candidate": 0.1666666667
+    },
+    "ship_gates": "failed",
+    "confirmation": false,
+    "promotion": false,
+    "shipment": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e56115002dd3f2872d2d24d1a5ef85ff36ce49cf",
+    "code_dirty": true,
+    "components": {
+      "evals.loss_suite": "v2",
+      "evals.scoring": "v27",
+      "harness.experiments": "v167",
+      "harness.model_build.eval": "v107",
+      "model.twotower": "v331"
+    },
+    "stamped_at": "2026-09-22T02:26:58.831348+00:00"
+  },
+  "limitation": "Historical result is not evidence for the later integration source or its merged source."
+}

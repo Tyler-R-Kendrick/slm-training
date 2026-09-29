@@ -187,7 +187,14 @@ def test_verified_env_heal_rewrites_to_next_experiment(
     assert any(
         r.startswith("self_heal:env_repair_verified:") for r in rebuilt["reasons"]
     )
-    _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    # Environment repair does not authorize publication of the closeout docs.
+    with pytest.raises(RuntimeError, match="unacknowledged actions: 0:document"):
+        _mod._require_predecessor_actions(root, loop_id, campaign_id)
+    from slm_training.autoresearch.storage import CampaignStore
+
+    events = CampaignStore(campaign_id, root).verify_event_chain()
+    assert any(e["event_type"] == "documentation_materialized" for e in events)
+    assert any(e["event_type"] == "documentation_waiting_delivery" for e in events)
 
 
 def test_no_heal_receipt_stays_hard(loop_repo: tuple[Path, Path]) -> None:

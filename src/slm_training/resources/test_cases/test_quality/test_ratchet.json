@@ -26,6 +26,63 @@
           ]
         }
       ]
+    },
+    "test_update_rejects_regressions_without_writing": {
+      "parameters": [
+        "dimension",
+        "key"
+      ],
+      "cases": [
+        {
+          "id": "module_lines-large.py",
+          "values": [
+            "module_lines",
+            "large.py"
+          ]
+        },
+        {
+          "id": "complexity-complex.py",
+          "values": [
+            "complexity",
+            "complex.py"
+          ]
+        },
+        {
+          "id": "package_lines-large",
+          "values": [
+            "package_lines",
+            "large"
+          ]
+        },
+        {
+          "id": "package_principles-adp_cycles",
+          "values": [
+            "package_principles",
+            "adp_cycles"
+          ]
+        },
+        {
+          "id": "package_principles-adp_components_in_cycles",
+          "values": [
+            "package_principles",
+            "adp_components_in_cycles"
+          ]
+        },
+        {
+          "id": "package_principles-sdp_violations",
+          "values": [
+            "package_principles",
+            "sdp_violations"
+          ]
+        },
+        {
+          "id": "package_principles-sap_violations",
+          "values": [
+            "package_principles",
+            "sap_violations"
+          ]
+        }
+      ]
     }
   }
 }

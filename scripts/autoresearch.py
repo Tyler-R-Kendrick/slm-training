@@ -107,49 +107,16 @@ def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _validate_continuous_source_refs(upstream: str, integration: str) -> None:
-    resolved_upstream = _git(
-        "rev-parse", "--verify", f"{upstream}^{{commit}}"
-    ).stdout.strip()
-    resolved_integration = _git(
-        "rev-parse", "--verify", f"{integration}^{{commit}}"
-    ).stdout.strip()
-    current_upstream = _git(
-        "rev-parse", "--verify", "origin/main^{commit}"
-    ).stdout.strip()
-    current_head = _git("rev-parse", "--verify", "HEAD^{commit}").stdout.strip()
-    if resolved_integration != current_head:
-        raise ValueError("integration_commit must be the current checked-out HEAD")
-    main_in_head = (
-        _git(
-            "merge-base",
-            "--is-ancestor",
-            current_upstream,
-            current_head,
-            check=False,
-        ).returncode
-        == 0
-    )
-    if main_in_head:
-        if resolved_upstream != current_upstream:
-            raise ValueError(
-                "upstream_commit is stale; fetch origin/main before the cycle"
-            )
-        if _git(
-            "merge-base",
-            "--is-ancestor",
-            resolved_upstream,
-            resolved_integration,
-            check=False,
-        ).returncode:
-            raise ValueError("integration_commit does not contain upstream_commit")
-    elif resolved_upstream != current_head:
-        raise ValueError("integration_commit does not contain upstream_commit")
+def _validate_continuous_source_refs(upstream: str, integration: str) -> dict | None:
+    from slm_training.harness_core.execution_release import validate_source_refs
+
+    return validate_source_refs(ROOT, upstream, integration, git=_git)
 
 
 def _validate_continuous_commits(upstream: str, integration: str) -> None:
-    _validate_continuous_source_refs(upstream, integration)
-    if _git("status", "--porcelain", "--untracked-files=no").stdout.strip():
+    frozen = _validate_continuous_source_refs(upstream, integration)
+    if (frozen["code_dirty"] if frozen is not None
+            else _git("status", "--porcelain", "--untracked-files=no").stdout.strip()):
         raise ValueError("continuous cycle requires a clean tracked worktree")
 
 
@@ -1104,8 +1071,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     from slm_training.harnesses.experiments.autonomous_learning.measurement_bundle import (
         prepare_bundle_remeasurement, finalize_bundle_remeasurement, validate_continuous_source,
     )
-
+    from scripts.autotrain_nested_execution import workload_cwd, validate_logical_source
     store = _store(args)
+    cwd = None
     campaign = store.load_campaign()
     matrix = _latest_formed_matrix(store)
     assert matrix is not None
@@ -1133,7 +1101,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         if campaign.loop_id is not None:
             assert campaign.upstream_commit is not None
             assert campaign.integration_commit is not None
-            validate_continuous_source(campaign, diagnostic_receipt)
+            cwd = validate_logical_source(store, campaign, diagnostic_receipt, validate_continuous_source, default=ROOT)
             if manifest.source_commit != campaign.integration_commit:
                 raise ValueError(
                     "continuous manifest source_commit must equal integration_commit"
@@ -1147,6 +1115,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             lock = store.load_experiment_campaign(experiment.experiment_id)
         except FileNotFoundError:
             lock = None
+    cwd = workload_cwd(store, ROOT) if cwd is None else cwd
     if args.execute and lock is None:
         raise ValueError("execution requires a preregistered --campaign-manifest lock")
     if getattr(args, "diagnostic_bundle_plan", None) and diagnostic_receipt is None:
@@ -1232,32 +1201,15 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "campaign_manifest_sha256": lock.manifest_sha256,
             },
         )
-    logical_grant = campaign.budget.continuation_grant
-    try:
-        grant = resolved_continuation_grant(
-            ROOT,
-            campaign.budget.logical_seconds,
-            logical_grant.max_attempts if logical_grant else None,
-            interrupt_seconds=logical_grant.interrupt_seconds if logical_grant else None,
-            finalization_reserve_seconds=(
-                logical_grant.finalization_reserve_seconds if logical_grant else None
-            ),
-        )
-    except TypeError as exc:
-        # Preserve compatibility with older injected/test resolvers while the
-        # canonical resolver carries the full grant contract.
-        if "unexpected keyword argument" not in str(exc):
-            raise
-        grant = resolved_continuation_grant(
-            ROOT, campaign.budget.logical_seconds,
-            logical_grant.max_attempts if logical_grant else None,
-        )
+    from scripts.autoresearch_continuation_identity import resolve_campaign_grant
+
+    grant = resolve_campaign_grant(campaign, cwd, resolved_continuation_grant)
     outcome = execute_with_continuation(
         experiment, commands,
         wall_seconds=min(float(INTERRUPT_AFTER_SECONDS), _bounded_experiment_seconds(
             campaign, getattr(args, "experiment_wall_seconds", None))),
         campaign_manifest_sha256=lock.manifest_sha256,
-        execute_commands=execute_commands, cwd=ROOT,
+        execute_commands=execute_commands, cwd=cwd,
         store=store,
         grant=grant,
     )
@@ -1325,7 +1277,6 @@ def cmd_run(args: argparse.Namespace) -> int:
     if optimum is not None and optimum.policy == "stop":
         return 2
     return 0 if outcome.status == "completed" else 2
-
 
 def cmd_formalize(args: argparse.Namespace) -> int:
     store = _store(args)
@@ -1493,7 +1444,6 @@ def _baseline_primary_from_store(
     metrics that already name a baseline. Absolute candidate scores alone are
     never treated as the baseline of themselves.
     """
-    import math
 
     from slm_training.autoresearch.hillclimb import resolve_baseline_primary
 

@@ -60,6 +60,22 @@ payload against its mirrored external case resource).
 | (extracted from `model_build/ship_gates.py`) | `harness_core/gate_engine.py` |
 | (extracted from `experiments/promotion.py`) | `harness_core/promotion_engine.py` |
 
+## Bounded process ownership
+
+`harness_core/bounded_process.py` owns the stdlib-only subprocess deadline,
+cancellation, progress-watchdog and observed-descendant lifecycle machinery.
+`process_tree.py` reexports `OwnedProcessTree` and `identity` for runtime callers;
+the implementation stays in the executor so the formal bootstrap can load and
+run it without installed project dependencies. This tracks observed Linux process
+identities; workload isolation remains the isolation backend's responsibility.
+
+The executor reads literal/arithmetic run-limit expressions from canonical
+`levers.py` without importing DSL discovery; `activity_contract.py` shares those
+derived limits. Unsupported expressions fail closed. Blocked trusted telemetry
+callbacks cannot stop the independent deadline loop. Cancellation, timeout or
+stalled progress cannot authorize successful domain output. Scoped validation:
+[2026-09-21 runtime integration](autonomy-runtime-package-20260907.md#2026-09-21-integration-scoped-runtime-validation).
+
 ## DSL seams (how harnesses bind their specifics)
 
 - **Ship gates** — `gate_engine.build_gate_criteria(suites, policy, *,

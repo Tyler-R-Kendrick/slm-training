@@ -14,15 +14,23 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
 
 
 def test_export_cactus_bundle(tmp_path: Path) -> None:
     model = TwoTowerModel.from_records(
-        [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
+        [
+            ExampleRecord(
+                id="a",
+                prompt="Hero",
+                openui=HERO,
+                placeholders=[":slot_0", ":slot_1"],
+                split="train",
+            )
+        ],
         config=TwoTowerConfig(
             d_model=32,
             n_heads=4,

@@ -27,6 +27,7 @@ from slm_training.autoresearch.experiment_campaign import (
     CampaignLockV1,
     ExperimentCampaignV1,
     MultiplicityFamilyV1,
+    SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     campaign_manifest_sha256,
 )
 from slm_training.data.progspec.semantic_evidence import (
@@ -173,6 +174,7 @@ def build_campaign(*, source_commit: str, source_dirty: bool) -> ExperimentCampa
         source_dirty=source_dirty,
         author="semantic-factor-frontier-harness",
         requires_rl=False,
+        selection_rule=SELECTION_RULE_BEST_BY_PRIMARY_THEN_SMALLEST,
     )
 
 
@@ -192,10 +194,9 @@ def lock_campaign(campaign: ExperimentCampaignV1) -> CampaignLockV1:
     return CampaignLockV1(manifest_sha256=digest, manifest=campaign)
 
 
-def _arm_config(arm_id: str, seed: int) -> SemanticResidualScorerConfig:
+def _arm_config(arm_id: str, seed: int, scorer: Any) -> SemanticResidualScorerConfig:
     """Resolve scorer config from external scorer_params.v1.json only."""
 
-    scorer = load_sff_campaign().scorer
     return SemanticResidualScorerConfig.from_external(
         arm=scorer.arm(arm_id),
         defaults=scorer.defaults,
@@ -273,9 +274,9 @@ def run_semantic_factor_frontier(
     """Execute the locked campaign and return metrics + claim verdicts."""
 
     commit = source_commit or ("0" * 40)
-    sff_early = load_sff_campaign()
+    sff = load_sff_campaign()
     if seeds is None:
-        seeds = sff_early.seeds
+        seeds = sff.seeds
     campaign = build_campaign(source_commit=commit, source_dirty=source_dirty)
     lock = lock_campaign(campaign)
     suite = build_ranked_suite()
@@ -315,7 +316,7 @@ def run_semantic_factor_frontier(
                     expected = {f.factor_id: f.membership() for f in snap.factors}
                     if reconstructed != expected:
                         membership_roundtrip_ok = False
-                cfg = _arm_config(arm.arm_id, int(seed))
+                cfg = _arm_config(arm.arm_id, int(seed), sff.scorer)
                 scorer = SemanticResidualScorerV1(cfg)
                 score_t0 = time.perf_counter()
                 result = scorer.score(
@@ -384,7 +385,6 @@ def run_semantic_factor_frontier(
                     )
                 )
 
-    sff = load_sff_campaign()
     metrics_cfg = sff.metrics
     scorer_cfg = sff.scorer
     control_arm_id = scorer_cfg.control_arm_id

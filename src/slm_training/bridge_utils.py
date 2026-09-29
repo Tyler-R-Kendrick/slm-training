@@ -24,6 +24,11 @@ def sanitized_node_env() -> dict[str, str]:
     return env
 
 
+def agentv_node_modules(root: Path) -> Path:
+    """Keep explicit installed SDK mounts independent of the source runner."""
+    return Path(os.getenv("AGENTV_NODE_MODULES") or root / "node_modules").absolute()
+
+
 @lru_cache(maxsize=1)
 def repo_root() -> Path:
     """Locate the repository root by walking up from this file.

@@ -122,6 +122,11 @@ COMMANDS: dict[tuple[str, ...], Command] = {
     ("rl", "molt"): Command(
         "scripts.run_molt_rl", "External MOLT RL wrapper (env-driven)", "rl"
     ),
+    ("experiments", "learning-comparison"): Command(
+        "slm_training.harnesses.experiments.autonomous_learning.cli",
+        "Default-off learning/fidelity fixture comparison",
+        "experiments",
+    ),
     ("experiments", "quality-matrix"): Command(
         "scripts.run_quality_matrix", "Quality matrix (E*)", "experiments"
     ),

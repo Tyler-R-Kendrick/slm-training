@@ -13,10 +13,12 @@ from slm_training.autoresearch.heal.agent_executor import CodexExecutor
 from slm_training.autoresearch.heal.classify import classify_blocker
 from slm_training.autoresearch.heal.dispatch import dispatch_repair
 from slm_training.autoresearch.heal.isolated_agent import BubblewrapAgentRunner
+from .operation_failure_signature import OperationFailureSignature
 from slm_training.autoresearch.heal.repair_acceptance import (
     SourceVerificationGate,
     VerificationWorkspace,
     check_manifest_digest,
+    source_verification_activity_id,
     verify_repair,
 )
 from slm_training.autoresearch.heal.repair_contracts import (
@@ -27,14 +29,9 @@ from slm_training.autoresearch.heal.repair_contracts import (
     RepairProposal,
     RepairRequest,
 )
-from slm_training.autoresearch.heal.repair_jobs import (
-    bind_verification,
-    resumable_proposal,
-)
-from slm_training.autoresearch.heal.repair_verifier import (
-    VerificationCheck,
-    VerificationRequest,
-)
+from slm_training.autoresearch.heal.repair_jobs import bind_verification, resumable_proposal
+from slm_training.autoresearch.heal.repair_governance import reconcile_version_overlay
+from .repair_verifier import VerificationCheck, VerificationRequest
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harness_core.activity_contract import ResourceGrant
 from slm_training.lineage.records import canonical_json
@@ -51,8 +48,18 @@ class RepairRecipe(RepairModel):
     failure_returncode: int = Field(gt=0, lt=256)
     failure_stdout_sha256: Digest
     failure_stderr_sha256: Digest
+    original_failure_signature: OperationFailureSignature | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     semantics_preserving_paths: tuple[str, ...] = ()
     equivalence_checks: tuple[VerificationCheck, ...] = ()
+
+    @field_validator("allowed_paths")
+    @classmethod
+    def controller_owns_version_registry(cls, paths):
+        if "src/slm_training/resources/versions.json" in paths:
+            raise ValueError("version registry is controller-owned")
+        return paths
 
 
 class RecoveryConfig(RepairModel):
@@ -61,6 +68,7 @@ class RecoveryConfig(RepairModel):
     source_verification_grant: ResourceGrant | None = None
     recipes: dict[str, RepairRecipe] = Field(default_factory=dict)
     runtime_roots: tuple[str, ...] = ()
+    codex_subscription_home: str | None = None
     operation_recipes: dict[str, str] = Field(default_factory=dict)
     verifier_release: Digest
 
@@ -69,10 +77,16 @@ class RecoveryConfig(RepairModel):
     def strict_source_grant(cls, value):
         return None if value is None else ResourceGrant.model_validate(value, strict=True)
 
-    def proposal_config_digest(self) -> str:
+    def proposal_config_digest(self, *, include_expiry: bool = False) -> str:
         # New verifier allowance is not a new coding task. Omitting this newly
         # optional field also preserves the pre-extension logical job index.
         value = self.model_dump(mode="json", exclude={"source_verification_grant"})
+        if self.codex_subscription_home is None:
+            value.pop("codex_subscription_home", None)
+        if not self.operation_recipes:
+            value.pop("operation_recipes", None)
+        if not include_expiry and value.get("grant") is not None:
+            value["grant"].pop("expires_at", None)
         return hashlib.sha256(canonical_json(value).encode()).hexdigest()
 
 
@@ -89,13 +103,20 @@ class RecoveryContext:
     attempt_id: str = "attempt-0"
 
 
-def load_recovery_config(path: Path | None) -> RecoveryConfig | None:
+def load_recovery_config(
+    path: Path | None, *, expected_sha256: str | None = None
+) -> RecoveryConfig | None:
     """Only explicit controller-selected config; never infer from CLI/auth/env."""
     if path is None:
+        if expected_sha256 is not None:
+            raise ValueError("recovery config digest supplied without a config path")
         return None
     if path.is_symlink() or path.stat().st_size > 1024 * 1024:
         raise ValueError("invalid recovery config file")
-    return RecoveryConfig.model_validate_json(path.read_text(encoding="utf-8"))
+    raw = path.read_bytes()
+    if expected_sha256 is not None and hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError("repair authority changed during invocation")
+    return RecoveryConfig.model_validate_json(raw)
 
 
 def _wait(
@@ -146,6 +167,9 @@ def build_repair_request(
     recipe = config.recipes.get(code)
     if recipe is None:
         raise ValueError("original_reproducer_not_configured")
+    if (code == "driver_attempt_requires_reconciliation"
+            and recipe.input_digest != pending.get("input_digest")):
+        raise ValueError("driver_reconciliation_recipe_input_mismatch")
     instructions = "\n\n".join(
         _read_instruction(context.source, path)
         for path in ("AGENTS.md", "RTK.md", "docs/design/decode-invariants.md")
@@ -245,17 +269,24 @@ def dispatch_hard_pending(
         )
     # Locate the logical job before comparing attempt/fence identities. Preserve
     # the original request/proposal; only fresh verification authority is rebound.
-    request, prior = resumable_proposal(journal, request, config.proposal_config_digest())
+    request, prior = resumable_proposal(
+        journal, request, config.proposal_config_digest(),
+        legacy_config_digest=config.proposal_config_digest(include_expiry=True),
+    )
     attempt_root = journal.root / "repair_workspaces"
     runner = BubblewrapAgentRunner(
         source=context.source,
         attempt_root=attempt_root,
         runtime_roots=tuple(Path(path) for path in config.runtime_roots),
+        codex_subscription_home=config.codex_subscription_home,
     )
     executor = CodexExecutor(
         runner,
         instructions=request.project_instructions,
         contract=request.owner_contract,
+        verification_manifest=config.recipes[request.blocker.code].model_dump(
+            mode="json", include={"original", "checks", "equivalence_checks"}
+        ),
     )
     result = prior or dispatch_repair(
         request,
@@ -268,6 +299,8 @@ def dispatch_hard_pending(
     workspace = VerificationWorkspace(
         context.source, attempt_root / request.digest() / "candidate", runner.runtime_roots
     )
+    if result.status == "waiting_verification" and result.proposal is not None:
+        result = reconcile_version_overlay(request, result, workspace, journal)
     # The factory only resolves controller-owned materialization/journal inputs.
     # It must not execute the full verification queue inside this repair attempt.
     source_gate = (
@@ -289,7 +322,7 @@ def dispatch_hard_pending(
             result.proposal.tree_digest,
             request.blocker.environment_digest,
             config.verifier_release,
-            config.grant.digest(),
+            request.grant.digest(),
             binding.fence,
             request.allowed_paths,
             recipe.original,
@@ -297,9 +330,10 @@ def dispatch_hard_pending(
             recipe.failure_returncode,
             recipe.failure_stdout_sha256,
             recipe.failure_stderr_sha256,
-            timeout_seconds=config.grant.interrupt_seconds,
+            timeout_seconds=request.grant.interrupt_seconds,
             semantics_preserving_paths=recipe.semantics_preserving_paths,
             equivalence_checks=recipe.equivalence_checks,
+            regression_test_path=result.proposal.regression_test,
         )
         result = verify_repair(
             request,
@@ -314,7 +348,8 @@ def dispatch_hard_pending(
     response = result.model_dump(mode="json")
     if result.status == "waiting_verification" and result.proposal is not None:
         dependency = _verification_dependency(
-            request, result.proposal, source_gate, config.source_verification_grant
+            request, result.proposal, source_gate, config.source_verification_grant,
+            config.runtime_roots,
         )
         artifact = journal.write_artifact("repair_verification_dependencies", dependency)
         journal.append_event(
@@ -331,7 +366,7 @@ def dispatch_hard_pending(
     return response
 
 
-def _verification_dependency(request, proposal, gate: SourceVerificationGate | None, grant=None):
+def _verification_dependency(request, proposal, gate: SourceVerificationGate | None, grant=None, runtime_roots=()):
     """Parent enqueues a separately granted verify activity, then parks this repair.
 
     Wake only after authenticating complete evidence for this exact identity.
@@ -342,7 +377,7 @@ def _verification_dependency(request, proposal, gate: SourceVerificationGate | N
     identity = gate.identity if gate else request.verification_manifest_digest
     return {
         "schema_version": "repair_verification_dependency/v1",
-        "kind": "verify", "activity_id": "source-verification-" + identity if gate else None,
+        "kind": "verify", "activity_id": source_verification_activity_id(identity, grant) if gate else None,
         "request_digest": request.digest(), "proposal_digest": proposal.digest(),
         "campaign_id": request.campaign_id, "blocked_activity_id": request.blocked_activity_id,
         "source_snapshot_digest": request.blocker.source_digest,
@@ -350,6 +385,8 @@ def _verification_dependency(request, proposal, gate: SourceVerificationGate | N
         "verification_identity": gate.identity if gate else None,
         "root": str(gate.root.resolve()) if gate else None,
         "state_dir": str(gate.state_dir.resolve()) if gate else None,
+        "runtime_roots": list(runtime_roots),
+        "runtime_identity": gate.runtime_identity if gate else None,
         "base_ref": gate.base_ref if gate else None,
         "manifest_path": str(gate.root.parent / "manifest.json") if gate else None,
         "grant": grant.model_dump(mode="json") if grant is not None else None,

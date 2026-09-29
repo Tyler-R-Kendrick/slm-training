@@ -10,7 +10,9 @@ running the generated scoreboard.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 from pathlib import Path
 
 
@@ -25,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
         help="Report JSON path (default: <checkpoint dir>/loss_suites.json)",
     )
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--campaign-dir", type=Path)
+    parser.add_argument("--experiment-id")
     parser.add_argument("--base-suite", default="held_out")
     parser.add_argument("--ood-suite", default="ood")
     parser.add_argument("--mask-seed", type=int, default=0)
@@ -43,6 +47,22 @@ def main(argv: list[str] | None = None) -> int:
         "--grammar-dsl", default="openui", help="Grammar backend for legal support."
     )
     args = parser.parse_args(argv)
+    rates = tuple(float(r) for r in str(args.rates).split(",") if r.strip())
+    if not rates or len(set(rates)) != len(rates) or any(
+        not math.isfinite(rate) or not 0 < rate <= 1 for rate in rates
+    ):
+        parser.error("--rates must be unique finite mask fractions in (0, 1]")
+    if args.limit is not None and args.limit <= 0:
+        parser.error("--limit must be positive")
+    if bool(args.campaign_dir) != bool(args.experiment_id):
+        parser.error("--campaign-dir and --experiment-id must be supplied together")
+    attempt_id = None
+    if args.campaign_dir is not None:
+        from scripts.autotrain_nll import campaign_attempt_id
+        from slm_training.autoresearch.storage import CampaignStore
+
+        store = CampaignStore(args.campaign_dir.name, args.campaign_dir.parent)
+        attempt_id = campaign_attempt_id(store, args.experiment_id)
 
     from slm_training.evals.denoising_nll import DenoisingNLLConfig
     from slm_training.evals.loss_suites import (
@@ -56,7 +76,6 @@ def main(argv: list[str] | None = None) -> int:
     set_active_dsl(args.grammar_dsl)
     model = TwoTowerModel.from_checkpoint(args.checkpoint, device=args.device)
 
-    rates = tuple(float(r) for r in str(args.rates).split(",") if r.strip())
     nll_cfg = DenoisingNLLConfig(
         suite_version=LOSS_SUITE_VERSION,
         mask_rates=rates,
@@ -73,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     report["checkpoint"] = str(args.checkpoint)
     report["test_dir"] = str(args.test_dir)
+    report["attempt_id"] = attempt_id
+    if attempt_id is not None and campaign_attempt_id(store, args.experiment_id) != attempt_id:
+        raise ValueError("campaign attempt changed during loss evaluation")
 
     out = args.out or (Path(args.checkpoint).parent / "loss_suites.json")
     write_loss_suite_report(out, report)
@@ -80,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "out": str(out),
+                "report_sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
+                "attempt_id": attempt_id,
                 "aggregate": report["aggregate"],
                 "bits_per_char": (report["categories"].get("broad") or {}).get(
                     "bits_per_char"

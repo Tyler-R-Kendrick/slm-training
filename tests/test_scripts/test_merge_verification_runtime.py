@@ -3,19 +3,23 @@
 import json
 import os
 import shutil
-import subprocess
 import sys
-from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
 
-from scripts.merge_verification_runtime import javascript_grants, runtime_argv
+from scripts.merge_verification_runtime import (
+    approved_runtime_roots,
+    javascript_grants,
+    runtime_argv,
+    runtime_roots_with_js_modules,
+)
 from scripts.merge_verification_isolation import run_workload
 from slm_training.autoresearch.heal.isolation import (
     IsolationSpec,
     IsolationUnavailable,
     build_isolated_command,
+    probe_isolation,
     run_isolated,
 )
 from slm_training.autoresearch.heal.isolation_workspace import IsolationViolation
@@ -26,6 +30,82 @@ def test_missing_js_roots_is_precise_capability_wait(tmp_path):
         IsolationUnavailable, match="explicit_js_runtime_grants_missing"
     ):
         javascript_grants(tmp_path, (), required=True)
+
+
+def test_preview_rejects_runtime_from_different_source_lock(tmp_path):
+    source, runtime = tmp_path / "source", tmp_path / "runtime"
+    source.mkdir()
+    (runtime / "node_modules/@playwright/test").mkdir(parents=True)
+    version = "1.61.1"
+    package = {
+        "name": "candidate",
+        "version": "1.0.0",
+        "devDependencies": {"@playwright/test": version},
+    }
+
+    def lock(lockfile_version):
+        packages = {
+            "": package,
+            "node_modules/@playwright/test": {"version": version, "dev": True},
+        }
+
+        result = {"lockfileVersion": lockfile_version, "packages": packages}
+        if lockfile_version == 2:
+            result["dependencies"] = {
+                "@playwright/test": {"version": version, "dev": True}
+            }
+        return result
+
+    (source / "package.json").write_text(json.dumps(package))
+    (source / "package-lock.json").write_text(json.dumps(lock(3)))
+    (runtime / "package.json").write_text(json.dumps(package))
+    (runtime / "package-lock.json").write_text(json.dumps(lock(2)))
+    (runtime / "node_modules/@playwright/test/package.json").write_text(
+        json.dumps({"name": "@playwright/test", "version": version})
+    )
+    with pytest.raises(ValueError, match="playwright_runtime_source_lock_mismatch"):
+        javascript_grants(
+            source,
+            (runtime,),
+            targets=(
+                "tests/test_data/test_verify.py::test_preview_runtime_and_behavior_seeded_failures",
+            ),
+        )
+
+
+def test_playwright_modules_are_added_as_separate_runtime_root(tmp_path):
+    complete = tmp_path / "complete"
+    modules = complete / "node_modules"
+    modules.mkdir(parents=True)
+    assert runtime_roots_with_js_modules((complete,), {"playwright_index": 0}) == (
+        complete,
+        modules,
+    )
+
+
+def test_playwright_modules_reject_external_symlink(tmp_path):
+    complete = tmp_path / "complete"
+    complete.mkdir()
+    external = tmp_path / "external-node-modules"
+    external.mkdir()
+    (complete / "node_modules").symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="playwright_node_modules_symlink_not_allowed"):
+        runtime_roots_with_js_modules((complete,), {"playwright_index": 0})
+
+
+def test_approved_runtime_roots_include_source_bridge_and_node(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    bridge = source / "src/apps/openui_bridge/node_modules"
+    bridge.mkdir(parents=True)
+    node_root = tmp_path / "node"
+    node = node_root / "bin/node"
+    node.parent.mkdir(parents=True)
+    node.write_text("#!/bin/sh\nexit 0\n")
+    node.chmod(0o755)
+    monkeypatch.setenv("PATH", str(node.parent))
+
+    assert approved_runtime_roots(source, ()) == (Path(sys.prefix), bridge, node_root)
 
 
 def collect_fixture(tmp_path, source):
@@ -49,7 +129,9 @@ def test_collection_terminal_is_compact_but_protocol_keeps_all_nodes(tmp_path):
     assert json.loads(record["output_tail"])["collected"] == 1200
 
 
-def test_isolated_workload_has_disposable_output_scratch(tmp_path):
+@pytest.mark.parametrize("collect_only", [False, True])
+def test_isolated_workload_has_disposable_output_scratch(tmp_path, collect_only):
+    _require_isolation()
     root = tmp_path / "candidate"
     (root / "tests").mkdir(parents=True)
     (root / "tests/test_case.py").write_text(
@@ -58,20 +140,17 @@ def test_isolated_workload_has_disposable_output_scratch(tmp_path):
         "    Path('outputs').mkdir(exist_ok=True)\n"
         "    Path('outputs/result.txt').write_text('scratch')\n"
     )
-    # Nested Bubblewrap is unavailable inside the merge-gate sandbox
-    # (NETLINK_ROUTE). Still prove disposable output; isolate only on the host.
     result = run_workload(
         root,
-        ["tests/test_case.py::test_writes_disposable_output"],
-        collect_only=False,
+        ["tests/test_case.py"] if collect_only else ["tests/test_case.py::test_writes_disposable_output"],
+        collect_only=collect_only,
         seconds=15,
         directory=tmp_path,
-        isolated=not Path("/workspace/candidate").exists(),
+        isolated=True,
         runtimes=(Path(sys.prefix),),
     )
     assert result["status"] == "ok", result
-    if not Path("/workspace/candidate").exists():
-        assert not (root / "outputs/result.txt").exists()
+    assert not (root / "outputs/result.txt").exists()
 
 
 def test_compact_collection_retains_original_import_failure(tmp_path):
@@ -121,17 +200,17 @@ def node_root():
     )
 
 
+def _require_isolation():
+    capability = probe_isolation()
+    if not capability.available:
+        if os.environ.get("SLM_REQUIRE_ISOLATION"):
+            raise IsolationUnavailable(capability.reason)
+        pytest.skip("real isolation unavailable: " + capability.reason)
+
+
 def _isolated(spec, argv):
-    try:
-        return run_isolated(spec, argv)
-    except IsolationUnavailable as exc:
-        if (
-            Path("/workspace/candidate").exists()
-            or os.environ.get("SLM_REQUIRE_ISOLATION") == "1"
-            or "NETLINK_ROUTE" in str(exc)
-        ):
-            return None
-        raise
+    _require_isolation()
+    return run_isolated(spec, argv)
 
 
 def test_complete_transitive_tree_is_mounted_not_copied(tmp_path, monkeypatch):
@@ -154,39 +233,9 @@ console.log(JSON.stringify({transitive_value:m.value}));"""
     )
     staged = [p for p in workspace.rglob("*") if p.is_file()]
     assert [p.name for p in staged] == ["run_agentv_eval.mjs"]
-    if str(argv[0]).startswith("/runtime/"):
-        base = tmp_path / "slm-verification-agentv"
-        (base / "scripts").mkdir(parents=True)
-        (base / "scripts/run_agentv_eval.mjs").write_text(
-            (source / "scripts/run_agentv_eval.mjs").read_text()
-        )
-        (base / "node_modules").symlink_to(modules, target_is_directory=True)
-        result = subprocess.run(
-            [
-                str(runtimes[0] / "bin/node"),
-                "--preserve-symlinks",
-                "--input-type=module",
-                "-e",
-                program,
-            ],
-            cwd=workspace,
-            env={**os.environ, "AGENTV_RUNNER": str(base / "scripts/run_agentv_eval.mjs")},
-            capture_output=True,
-            text=True,
-            timeout=20,
-        )
-        result = SimpleNamespace(
-            returncode=result.returncode,
-            timed_out=False,
-            stderr=result.stderr,
-            stdout=result.stdout,
-        )
-    else:
-        result = _isolated(
-            IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
-        )
-    if result is None:
-        return
+    result = _isolated(
+        IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
+    )
     assert result.returncode == 0 and not result.timed_out, result.stderr
     assert json.loads(result.stdout) == {"transitive_value": 42}
     assert not (workspace / "node_modules").exists()
@@ -210,8 +259,6 @@ await import(pathToFileURL(root+'/node_modules/@agentv/core/dist/index.js'));"""
     result = _isolated(
         IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=20), argv
     )
-    if result is None:
-        return
     assert result.returncode != 0
     assert "ERR_MODULE_NOT_FOUND" in result.stderr
 
@@ -305,8 +352,6 @@ print(json.dumps({'real_sdk_import':True,'openui_ping':True,'design_md_ping':Tru
     result = _isolated(
         IsolationSpec(workspace, runtime_roots=runtimes, timeout_seconds=100), argv
     )
-    if result is None:
-        return
     assert result.returncode == 0 and not result.timed_out, result.stderr
     assert all(json.loads(result.stdout).values())
     assert sum(p.stat().st_size for p in workspace.rglob("*") if p.is_file()) < 10000

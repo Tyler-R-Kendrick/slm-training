@@ -15,6 +15,15 @@ from slm_training.dsl.harness_dsl import (
 )
 
 
+def resolve_published_train_version(
+    version: str, *, root: Path | None = None, store: DataStore | None = None,
+) -> tuple[Path, Path | None]:
+    """Resolve a published corpus and its actual online-sampling policy."""
+    train_dir = root / version if root is not None else (store or DataStore()).resolve("train", version).path
+    mixture = train_dir / "mixture.json"
+    return train_dir, mixture if mixture.is_file() else None
+
+
 def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
     """Load records only after all persisted-record trainer contracts pass."""
     records = load_jsonl(path)

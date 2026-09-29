@@ -2,150 +2,32 @@
 
 from __future__ import annotations
 
-import hashlib
 import hmac
-import importlib.metadata
 import json
 import math
 import os
-import platform
 import secrets
-import site
-import shutil
 import stat
-import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
+from scripts.merge_verification_identity import (
+    digest,
+    environment_identity,
+    file_digest,
+    runtime_identity,
+    source_identity,
+    source_paths,
+)
 
-def digest(value: object) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value, sort_keys=True, separators=(",", ":"), allow_nan=False
-        ).encode()
-    ).hexdigest()
-
-
-def file_digest(path: Path) -> str:
-    with path.open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
-
-
-def source_identity(root: Path) -> str:
-    """Bind tracked, deleted and nonignored new files, including mode/link data."""
-    entries = []
-    for name in source_paths(root):
-        path = root / name
-        if path.is_symlink():
-            content = ["symlink", os.readlink(path)]
-        elif path.is_file():
-            content = ["file", stat.S_IMODE(path.stat().st_mode), file_digest(path)]
-        else:
-            content = ["missing"]
-        entries.append([name, content])
-    return digest(entries)
-
-
-def source_paths(root: Path) -> list[str]:
-    """One file universe for identity and isolated workload materialization."""
-    result = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-        cwd=root,
-        capture_output=True,
-        check=True,
-        timeout=10,
-    )
-    return sorted(set(result.stdout.decode().split("\0")) - {""})
-
-
-def environment_identity() -> dict:
-    # Keep package discovery independent of the caller's sys.path[0].
-    package_paths = list(site.getsitepackages())
-    try:
-        package_paths.append(site.getusersitepackages())
-    except (AttributeError, PermissionError):
-        pass
-    installed = list(importlib.metadata.distributions(path=package_paths))
-    commands = {name: shutil.which(name) for name in ("node", "npm", "npx")}
-    for key in "OPENUI_BRIDGE_CLI DESIGN_MD_BRIDGE_CLI AGENTV_RUNNER".split():
-        commands[key] = os.environ.get(key)
-    distributions = sorted(
-        (
-            dist.metadata.get("Name", ""),
-            dist.metadata.get("Version", "unknown"),
-            digest([dist.read_text("METADATA"), dist.read_text("RECORD")]),
-        )
-        for dist in installed
-    )
-    return {
-        "python": sys.version,
-        "executable_sha256": file_digest(Path(sys.executable)),
-        "platform": platform.platform(),
-        "machine": platform.machine(),
-        "distributions_sha256": digest(distributions),
-        "dependency_files_sha256": digest(_dependency_files(installed)),
-        "command_files": {
-            key: [path, file_digest(Path(path))] if path else None
-            for key, path in commands.items()
-        },
-        "execution_environment_sha256": digest(
-            {
-                key: os.pathsep.join(map(os.path.abspath, value.split(os.pathsep)))
-                if key == "PYTHONPATH"
-                else value
-                for key, value in os.environ.items()
-                if key in {"PATH", "NODE_OPTIONS", "ORT_DISABLE_TELEMETRY"}
-                or key.startswith(
-                    ("PYTHON", "SLM_", "OMP_", "MKL_", "OPENBLAS_", "NUMEXPR_")
-                )
-            }
-        ),
-    }
-
-
-def _dependency_files(installed) -> list:
-    """Linux ctime catches ordinary same-size/mtime-restored installed-file edits.
-
-    Privileged rollback still requires isolation and immutable verifier runtimes.
-    """
-    entries = []
-    for distribution in installed:
-        for relative in distribution.files or ():
-            path = Path(distribution.locate_file(relative))
-            try:
-                info = path.stat()
-                identity = [
-                    info.st_size,
-                    info.st_mtime_ns,
-                    info.st_ctime_ns,
-                    info.st_mode,
-                ]
-            except OSError:
-                identity = ["missing"]
-            entries.append([str(path), identity])
-    return sorted(entries)
-
-
-def runtime_identity(roots: tuple[Path, ...]) -> str:
-    entries = []
-    for root in roots:
-        root = root.resolve(strict=True)
-        for directory, dirs, files in os.walk(root):
-            for name in dirs + files:
-                path = Path(directory) / name
-                info = path.lstat()
-                entries.append(
-                    [
-                        str(path),
-                        info.st_size,
-                        info.st_mtime_ns,
-                        info.st_ctime_ns,
-                        info.st_mode,
-                        os.readlink(path) if path.is_symlink() else None,
-                    ]
-                )
-    return digest(sorted(entries))
+__all__ = [
+    "digest",
+    "environment_identity",
+    "file_digest",
+    "runtime_identity",
+    "source_identity",
+    "source_paths",
+]
 
 
 def validate_workload(
@@ -170,8 +52,24 @@ def validate_workload(
         or any(not isinstance(n, str) or not n.strip() for n in nodes)
     ):
         raise ValueError("empty or malformed test collection")
-    if len(nodes) != len(set(nodes)) or payload.get("deselected") != []:
-        raise ValueError("duplicate or deselected tests")
+    if len(nodes) != len(set(nodes)):
+        raise ValueError("duplicate tests")
+    deselected = payload.get("deselected", [])
+    deselected_markers = payload.get("deselected_markers", {})
+    if (
+        not isinstance(deselected, list)
+        or any(not isinstance(node, str) or not node.strip() for node in deselected)
+        or len(deselected) != len(set(deselected))
+        or not isinstance(deselected_markers, dict)
+        or set(deselected_markers) != set(deselected)
+        or any(
+            not isinstance(markers, list)
+            or any(not isinstance(marker, str) for marker in markers)
+            or not {"training", "slow"}.intersection(markers)
+            for markers in deselected_markers.values()
+        )
+    ):
+        raise ValueError("tests deselected outside the declared run policy")
     if payload.get("collection_errors") != []:
         raise ValueError("collection errors")
     if expected is None:
@@ -316,10 +214,8 @@ class ReceiptCache:
 def authorize_release(
     evidence: dict, *, expected_identity: str, independent_verification: dict
 ) -> bool:
-    """Called by a trusted controller with its own independent verifier receipt.
-
-    The receipt argument must come from the authenticated verifier channel,
-    never a candidate file. This function checks binding, not its authenticity.
+    """Check binding; the trusted caller authenticates its independent receipt.
+    Never accept a receipt supplied by the candidate.
     """
     required = ("scope_passed", "original_reproducer_passed", "isolation_enforced")
     return (

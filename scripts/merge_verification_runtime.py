@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import sys
 from pathlib import Path
 
 from scripts.merge_verification_evidence import file_digest
@@ -28,6 +30,19 @@ BRIDGES = {
         ("cli.mjs", "package.json", "package-lock.json"),
     ),
 }
+
+
+def approved_runtime_roots(source: Path, requested: list[Path]) -> tuple[Path, ...]:
+    roots = list(requested) or [Path(sys.prefix)]
+    bridge = source.resolve() / "src/apps/openui_bridge/node_modules"
+    if bridge.is_dir() and bridge not in roots:
+        roots.append(bridge)
+    node = shutil.which("node")
+    if node:
+        node_root = Path(node).resolve().parent.parent
+        if node_root.is_dir() and node_root not in roots:
+            roots.append(node_root)
+    return tuple(roots)
 
 # This runs inside the existing namespace, without network/host home/store.
 # The entrypoint remains byte-identical; Node resolves all transitive imports
@@ -73,6 +88,96 @@ def bridge_grant(source, runtime, index):
     return {}
 
 
+def _locked_dependency(runtime, packages, importer, name):
+    parent = importer
+    while parent == runtime or runtime in parent.parents:
+        package = parent / "node_modules" / name
+        key = package.relative_to(runtime).as_posix()
+        record = packages.get(key)
+        if record is not None:
+            manifest = json.loads((package / "package.json").read_text())
+            if manifest.get("version") != record.get("version"):
+                raise ValueError("playwright_installed_package_lock_mismatch:" + name)
+            return package, manifest
+        parent = parent.parent
+    raise ValueError("playwright_locked_dependency_missing:" + name)
+
+
+def _playwright_source_lock_matches(runtime, source_files):
+    return all(path.is_file() for path in source_files) and all(
+        (runtime / path.name).is_file()
+        and file_digest(runtime / path.name) == file_digest(path)
+        for path in source_files
+    )
+
+
+def _playwright_revision(source_files, runtime):
+    test_package = runtime / "node_modules/@playwright/test/package.json"
+    if not test_package.exists():
+        if _playwright_source_lock_matches(runtime, source_files) and (
+            runtime / "node_modules/@playwright"
+        ).exists():
+            raise ValueError("incomplete_playwright_runtime_grant")
+        return None
+    if not _playwright_source_lock_matches(runtime, source_files):
+        raise ValueError("playwright_runtime_source_lock_mismatch")
+    packages = json.loads(source_files[1].read_text()).get("packages", {})
+    test_record = packages.get("node_modules/@playwright/test")
+    test_doc = json.loads(test_package.read_text())
+    if not test_record or test_doc.get("version") != test_record.get("version"):
+        raise ValueError("playwright_test_package_lock_mismatch")
+    playwright, _ = _locked_dependency(runtime, packages, test_package.parent, "playwright")
+    core, _ = _locked_dependency(runtime, packages, playwright.parent, "playwright-core")
+    browsers = json.loads((core / "browsers.json").read_text())
+    revisions = [
+        str(item["revision"])
+        for item in browsers["browsers"]
+        if item.get("name") == "chromium-headless-shell"
+    ]
+    if len(revisions) != 1:
+        raise ValueError("playwright_chromium_revision_missing_or_ambiguous")
+    return revisions[0]
+
+
+def _playwright_browser_index(runtimes, revision):
+    browser_index = None
+    expected = f"chromium_headless_shell-{revision}"
+    for index, runtime in enumerate(runtimes):
+        for browser in runtime.glob("chromium_headless_shell-*"):
+            if browser.name != expected or browser.is_symlink():
+                raise ValueError("playwright_browser_revision_mismatch")
+            executable = browser / "chrome-linux/headless_shell"
+            if executable.is_symlink() or not executable.is_file():
+                raise ValueError("playwright_browser_executable_missing_or_unsafe")
+            if browser_index is not None:
+                raise ValueError("ambiguous_playwright_browser_grant")
+            browser_index = index
+    return browser_index
+
+
+def _playwright_grants(source, runtimes):
+    source_files = (source / "package.json", source / "package-lock.json")
+    complete = []
+    for index, runtime in enumerate(runtimes):
+        revision = _playwright_revision(source_files, runtime.resolve(strict=True))
+        if revision is not None:
+            complete.append((index, revision))
+    if len(complete) > 1:
+        raise ValueError("ambiguous_playwright_runtime_grant")
+    if not complete:
+        return None, None
+    playwright_index, revision = complete[0]
+    return playwright_index, _playwright_browser_index(runtimes, revision)
+
+
+def _requires_playwright(targets):
+    return any(
+        str(target).split("::", 1)[0].rstrip("/")
+        in {"tests", "tests/test_data", "tests/test_data/test_verify.py"}
+        for target in targets
+    )
+
+
 def preflight_js(args):
     if args.require_js_runtime:
         return javascript_grants(
@@ -81,37 +186,72 @@ def preflight_js(args):
     return None
 
 
-def javascript_grants(source: Path, runtimes: tuple[Path, ...], *, required=False):
+def _record_js_runtime(source, index, runtime, grants, node_indexes):
+    runtime = runtime.resolve(strict=True)
+    if (runtime / "bin/node").is_file():
+        grants["node_index"] = index
+        node_indexes.append(index)
+    if (runtime / "@agentv/core/dist/index.js").is_file():
+        if grants["sdk_index"] is not None:
+            raise ValueError("ambiguous_agentv_runtime_grant")
+        grants["sdk_index"] = index
+    grants["bridges"].update(bridge_grant(source, runtime, index))
+
+
+def _require_playwright_grants(grants, node_indexes, targets):
+    if not _requires_playwright(targets):
+        return
+    if grants["playwright_index"] is None or grants["playwright_browser_index"] is None:
+        raise IsolationUnavailable("explicit_playwright_runtime_grants_missing")
+    if grants["node_index"] is None:
+        raise IsolationUnavailable("explicit_playwright_node_runtime_missing")
+    if len(node_indexes) != 1:
+        raise ValueError("ambiguous_playwright_node_runtime_grant")
+
+
+def _require_js_bundle(grants, required):
+    if not required:
+        return
+    missing = [name for name in BRIDGES if name not in grants["bridges"]]
+    missing += [name for name in ("sdk_index", "node_index") if grants[name] is None]
+    if missing:
+        raise IsolationUnavailable("explicit_js_runtime_grants_missing:" + ",".join(missing))
+
+
+def _authorize_agentv(source, grants):
+    if grants["sdk_index"] is None:
+        return
+    if grants["node_index"] is None:
+        raise IsolationUnavailable("agentv_requires_explicit_node_runtime")
+    runner = Path(
+        os.environ.get("AGENTV_RUNNER", source / "scripts/run_agentv_eval.mjs")
+    ).resolve()
+    expected = source / "scripts/run_agentv_eval.mjs"
+    if not expected.is_file() or file_digest(runner) != file_digest(expected):
+        raise ValueError("agentv_runner_source_mismatch")
+    grants["runner"] = str(runner)
+
+
+def javascript_grants(
+    source: Path, runtimes: tuple[Path, ...], *, required=False, targets=()
+):
     """Classify explicit roots; no discovery authorizes an additional mount."""
-    grants = {"bridges": {}, "sdk_index": None, "node_index": None}
+    grants = {
+        "bridges": {},
+        "sdk_index": None,
+        "node_index": None,
+        "playwright_index": None,
+        "playwright_browser_index": None,
+    }
+    node_indexes = []
     for index, runtime in enumerate(runtimes):
-        runtime = runtime.resolve(strict=True)
-        if (runtime / "bin/node").is_file():
-            grants["node_index"] = index
-        if (runtime / "@agentv/core/dist/index.js").is_file():
-            if grants["sdk_index"] is not None:
-                raise ValueError("ambiguous_agentv_runtime_grant")
-            grants["sdk_index"] = index
-        grants["bridges"].update(bridge_grant(source, runtime, index))
-    if required:
-        missing = [name for name in BRIDGES if name not in grants["bridges"]]
-        missing += [
-            name for name in ("sdk_index", "node_index") if grants[name] is None
-        ]
-        if missing:
-            raise IsolationUnavailable(
-                "explicit_js_runtime_grants_missing:" + ",".join(missing)
-            )
-    if grants["sdk_index"] is not None:
-        if grants["node_index"] is None:
-            raise IsolationUnavailable("agentv_requires_explicit_node_runtime")
-        runner = Path(
-            os.environ.get("AGENTV_RUNNER", source / "scripts/run_agentv_eval.mjs")
-        ).resolve()
-        expected = source / "scripts/run_agentv_eval.mjs"
-        if not expected.is_file() or file_digest(runner) != file_digest(expected):
-            raise ValueError("agentv_runner_source_mismatch")
-        grants["runner"] = str(runner)
+        _record_js_runtime(source, index, runtime, grants, node_indexes)
+    grants["playwright_index"], grants["playwright_browser_index"] = (
+        _playwright_grants(source, runtimes)
+    )
+    _require_playwright_grants(grants, node_indexes, targets)
+    _require_js_bundle(grants, required)
+    _authorize_agentv(source, grants)
     return grants
 
 
@@ -128,6 +268,8 @@ def runtime_argv(source, runtimes, argv, *, workspace=None, required=False):
         "PYTHONPATH=" + ":".join(pythonpath),
         "PATH=" + ":".join([*bins, "/usr/bin", "/bin"]),
     ]
+    if grants["node_index"] is not None:
+        settings.append(f"SLM_TEST_NODE=/runtime/{grants['node_index']}/bin/node")
     library_paths = [
         f"/runtime/{index}/lib"
         for index, root in enumerate(runtimes)
@@ -159,3 +301,16 @@ def runtime_argv(source, runtimes, argv, *, workspace=None, required=False):
             *argv,
         ]
     return ["/usr/bin/env", *settings, *argv]
+
+
+def runtime_roots_with_js_modules(runtimes, grants):
+    index = grants["playwright_index"]
+    if index is None:
+        return runtimes
+    modules = runtimes[index].resolve(strict=True) / "node_modules"
+    if modules.is_symlink():
+        raise ValueError("playwright_node_modules_symlink_not_allowed")
+    modules = modules.resolve(strict=True)
+    if modules in {root.resolve() for root in runtimes}:
+        return runtimes
+    return (*runtimes, modules)

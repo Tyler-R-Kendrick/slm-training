@@ -932,7 +932,7 @@
         "experiment_campaign"
       ],
       "issue": "RESEARCH-20",
-      "justification": "Isolated default-off local cost kernel vs CSLib/Calf/AARA compare backend + harness over ExperimentCampaignV1/CampaignLockV1 and frozen KERN-06 fixtures; RESEARCH-02 preregistry activation only — no production authority.",
+      "justification": "Isolated default-off local cost kernel vs CSLib/Calf/AARA compare backend + harness over ExperimentCampaignV1/CampaignLockV1 and frozen KERN-06 fixtures; RESEARCH-02 preregistry activation only \u2014 no production authority.",
       "linear_id": "SLM-552",
       "new_owner_justified": false,
       "title": "Experiment: compare the local cost kernel against CSLib, Calf, and AARA approaches"
@@ -1484,13 +1484,24 @@
       "design_doc": "docs/design/certified-completion-artifact-and-tps-target.md",
       "id": "certified_completion_artifact",
       "name": "Certified static-LALR completion artifact",
-      "notes": "Checkpoint-bound, safetensors-encoded control-table artifact. Generated via scripts/build_completion_artifact.py; certified by dsl/grammar/fastpath/static_control_domain.py.",
+      "notes": "Checkpoint-bound, safetensors-encoded control-table artifact. Generated via scripts/build_completion_artifact.py; certified by dsl/grammar/fastpath/static_control_domain.py. The runtime adapter is implemented by the extracted certified_completion_lalr helper and re-exported here for compatibility.",
       "owner_module": "src/slm_training/dsl/grammar/fastpath/completion_artifact.py",
       "owner_symbols": [
         "CompletionArtifact",
-        "StaticLalrAdapter",
         "build_completion_artifact",
         "load_checked_completion_artifact"
+      ]
+    },
+    {
+      "authority_tier": "compiler-hard",
+      "design_doc": "docs/design/certified-completion-artifact-and-tps-target.md",
+      "id": "certified_completion_lalr",
+      "name": "Certified LALR runtime adapter",
+      "notes": "Extracted implementation helper of certified_completion_artifact, not a new artifact or parser authority. Applies checked live-to-canonical state mapping and conservative acceptance-length bounds; artifact construction and verification remain with the existing owner.",
+      "owner_module": "src/slm_training/dsl/grammar/fastpath/completion_lalr.py",
+      "owner_symbols": [
+        "StaticLalrAdapter",
+        "_state_min_terminals"
       ]
     },
     {

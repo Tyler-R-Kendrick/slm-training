@@ -22,7 +22,7 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
+    'hero_title = TextContent(":slot_0")\n'
     "hero = Card([hero_title])"
 )
 
@@ -34,7 +34,7 @@ def _decode_trace() -> dict:
                 id="a",
                 prompt="Hero",
                 openui=HERO,
-                placeholders=[":hero.title"],
+                placeholders=[":slot_0"],
             )
         ],
         config=TwoTowerConfig(
@@ -49,7 +49,7 @@ def _decode_trace() -> dict:
     )
     recorder = DecodeTraceRecorder()
     model.trace_recorder = recorder
-    model.generate("Hero", grammar_constrained=False)
+    model.generate("Hero", grammar_constrained=True)
     model.trace_recorder = None
     return recorder.finalize(labels={"fixture": True})
 
@@ -60,13 +60,25 @@ def test_fixture_decode_trace_is_replayable(tmp_path: Path) -> None:
     assert replay_violations(trace) == []
     # A corrupted canvas is caught — the invariant is not vacuous.
     corrupted = {**trace, "steps": [dict(s) for s in trace["steps"]]}
+    mutated = False
     for step in corrupted["steps"]:
-        if step.get("commits") and step.get("canvas"):
-            t = int(step["commits"][0]["t"])
-            canvas = list(step["canvas"])
-            canvas[t] = canvas[t] + 1
+        canvas = list(step.get("canvas") or [])
+        remasked = {
+            int(t)
+            for remask in step.get("remasks", [])
+            for t in (remask.get("positions") or [])
+        }
+        for commit in step.get("commits", []) or []:
+            t = int(commit["t"])
+            if t >= len(canvas) or t in remasked:
+                continue
+            canvas[t] = int(commit["id"]) + 1
             step["canvas"] = canvas
+            mutated = True
             break
+        if mutated:
+            break
+    assert mutated, "trace had no committed canvas cell eligible for replay"
     assert replay_violations(corrupted)
 
 

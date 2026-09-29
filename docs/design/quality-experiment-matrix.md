@@ -1734,7 +1734,7 @@ alignment laws pinned in `tests/test_dsl/test_choice_codec.py`.
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E262 | B1 pure grammar-choice output stream (`output_tokenizer=choice`) vs E255 lexer control (same diffusion masking, non-LTR MaskGIT decode) | registered / unrun |
+| E262 | B1 pure grammar-choice output stream (`output_tokenizer=choice`) vs E255 lexer control (same diffusion masking and grammar-LTR decode) | registered / unrun |
 
 E2 semantic density (36 fixture seeds, measured 2026-07-17): choice stream
 carries 842 decisions / 3713.2 bits vs production 1019 / 4391.9 and surface
